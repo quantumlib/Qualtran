@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,16 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import abc
 import logging
-from typing import Callable, Dict, Generic, Sequence, Tuple, TYPE_CHECKING
+from typing import Callable
 
-import sympy
 from attrs import frozen
 
-from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import Bloq
 
-from . import CostValT
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
 
@@ -29,6 +26,13 @@ logger = logging.getLogger(__name__)
 
 @frozen
 class SuccessProb(CostKey[float]):
+    """The success probability of a bloq.
+
+    A bloq's success probability is the multiplicative product of its callees'
+    success probabilities. Bloqs that have a specific success probability should override
+    `my_static_costs` to provide their actual success probability.
+    """
+
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], float]) -> float:
         tot: float = 1.0
         callees = get_bloq_callee_counts(bloq)
@@ -38,7 +42,7 @@ class SuccessProb(CostKey[float]):
             tot *= v**n
         return tot
 
-    def zero(self) -> CostValT:
+    def zero(self) -> float:
         return 1.0  # under multiplication, 1 is the identity.
 
     def __str__(self):
