@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union, Sequence
+from typing import Sequence, Union
 
 import numpy as np
 from numpy._typing import NDArray
@@ -26,7 +26,10 @@ class FastQSP:
     P: Co-efficients of a complex QSP polynomial.
     only_reals: If "true", then only real polynomial values will be returned.
     """
-    def __init__(self, poly: Union[NDArray[np.number], Sequence[complex]], only_reals:bool=False):
+
+    def __init__(
+        self, poly: Union[NDArray[np.number], Sequence[complex]], only_reals: bool = False
+    ):
         self.only_reals = only_reals
         if self.only_reals:
             self.conv_p_negative = self.conv_by_flip_conj(poly) * -1
@@ -34,7 +37,9 @@ class FastQSP:
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
-    def normalize(self, input_poly: Union[NDArray[np.number], Sequence[complex]], granularity:int=8):
+    def normalize(
+        self, input_poly: Union[NDArray[np.number], Sequence[complex]], granularity: int = 8
+    ):
 
         P = np.pad(input_poly, (0, 2**granularity - input_poly.shape[0]))
         ft = np.fft.fft(P)
@@ -65,7 +70,7 @@ class FastQSP:
     def conv_by_flip_conj(self, poly):
         return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
 
-    def complex_conv_by_flip_conj(self, real_part: NDArray, imag_part:NDArray):
+    def complex_conv_by_flip_conj(self, real_part: NDArray, imag_part: NDArray):
         """
         Performs the flip convolution.
 
@@ -90,7 +95,11 @@ class FastQSP:
         return real_conv + 1j * imag_conv
 
 
-def fast_complementary_polynomial(P: Union[NDArray[np.number], Sequence[complex]], only_reals:bool=False, tolerance:float=1e-10):
+def fast_complementary_polynomial(
+    P: Union[NDArray[np.number], Sequence[complex]],
+    only_reals: bool = False,
+    tolerance: float = 1e-10,
+):
     """
     Computes the Q polynomial given P
 
@@ -128,7 +137,7 @@ def fast_complementary_polynomial(P: Union[NDArray[np.number], Sequence[complex]
     """
     np.random.seed(42)
     if only_reals:
-        poly = np.array(P,dtype=np.float64)
+        poly = np.array(P, dtype=np.float64)
         q_initial = np.random.randn(poly.shape[0])
     else:
         poly = np.array(P, dtype=np.complex128)
@@ -137,12 +146,7 @@ def fast_complementary_polynomial(P: Union[NDArray[np.number], Sequence[complex]
 
     qsp = FastQSP(poly, only_reals=only_reals)
 
-    minimizer = minimize(
-        qsp.loss_function,
-        q_initial_normalized,
-        jac="3-point",
-        tol=tolerance,
-    )
+    minimizer = minimize(qsp.loss_function, q_initial_normalized, jac="3-point", tol=tolerance)
     if only_reals:
         return minimizer.x
 
