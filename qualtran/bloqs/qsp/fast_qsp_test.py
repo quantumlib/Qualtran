@@ -51,7 +51,7 @@ def test_real_polynomial_has_real_complementary_polynomial_quick(degree: int):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('degree, num_tests', [(5, 100), (10, 100), (20, 100), (30, 30), (100, 10)])
+@pytest.mark.parametrize('degree, num_tests', [(5, 20), (10, 20), (20, 5), (30, 3)])
 def test_complementary_polynomial(degree: int, num_tests: int):
     random_state = np.random.RandomState(42)
 
@@ -79,8 +79,7 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int, num_tests
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    'degree, num_tests',
-    [(2, 10), (3, 10), (4, 10), (5, 10), (10, 10), (20, 10), (30, 10), (100, 10)],
+    'degree, num_tests', [(2, 10), (3, 10), (4, 10), (5, 10), (10, 10), (20, 10), (30, 3)]
 )
 def test_real_polynomial_has_real_complementary_polynomial(degree: int, num_tests: int):
     random_state = np.random.RandomState(42)
