@@ -39,7 +39,7 @@ from qualtran.drawing.musical_score import (
 )
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, Connection, Signature
+    from qualtran import Bloq, Connection, QDType, Signature
 
 
 def _wire_name_prefix_for_soq(soq: Soquet) -> str:
@@ -270,8 +270,7 @@ def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None
     if file_path:
         with open(file_path, 'w') as f:
             f.write('\n'.join(qpic_circuit.data))
-    else:
-        return qpic_circuit.data
+    return qpic_circuit.data
 
 
 def _to_snake_case(name):

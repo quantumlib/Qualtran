@@ -19,7 +19,7 @@ import cirq
 
 from qualtran import Bloq, Controlled
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
+from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 _ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
@@ -37,7 +37,7 @@ class TComplexity:
     def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
         return ceil(1.149 * log2(1.0 / eps) + 9.2)
 
-    def t_incl_rotations(self, eps: float = 1e-11) -> int:
+    def t_incl_rotations(self, eps: float = 1e-11) -> SymbolicInt:
         """Return the total number of T gates after compiling rotations"""
 
         # TODO Determine precise clifford count and/or ignore.
@@ -45,7 +45,7 @@ class TComplexity:
         # a bound of 3 log(1/eps).
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        return self.t + self.rotation_cost(eps) * self.rotations
+        return ceil(self.t + self.rotation_cost(eps) * self.rotations)
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(
@@ -128,7 +128,7 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
         quregs = get_named_qubits(stc.signature)
         qm = cirq.SimpleQubitManager()
         op, _ = stc.as_cirq_op(qubit_manager=qm, **quregs)
-        return t_complexity(cirq.decompose_once(op))
+        return t_complexity(op)
 
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.
@@ -211,7 +211,6 @@ def _t_complexity_from_strategies(
 def _t_complexity_for_gate_or_op(
     gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
-
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate
 

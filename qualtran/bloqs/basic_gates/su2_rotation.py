@@ -12,23 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import TextBox
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicFloat
+from qualtran.drawing import Text, TextBox
+from qualtran.symbolics import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import SympySymbolAllocator
 
@@ -70,6 +70,14 @@ class SU2RotationGate(GateWithRegisters):
 
     @cached_property
     def rotation_matrix(self) -> NDArray[np.complex_]:
+        if isinstance(self.lambd, sympy.Expr):
+            raise ValueError(f'Symbolic lambda not allowed: {self.lambd}')
+        if isinstance(self.phi, sympy.Expr):
+            raise ValueError(f'Symbolic phi not allowed: {self.phi}')
+        if isinstance(self.theta, sympy.Expr):
+            raise ValueError(f'Symbolic theta not allowed: {self.theta}')
+        if isinstance(self.global_shift, sympy.Expr):
+            raise ValueError(f'Symbolic global_shift not allowed: {self.global_shift}')
         return np.exp(1j * self.global_shift) * np.array(
             [
                 [
@@ -112,7 +120,7 @@ class SU2RotationGate(GateWithRegisters):
             qtn.Tensor(
                 data=self.rotation_matrix,
                 inds=(outgoing['q'], incoming['q']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -143,7 +151,10 @@ class SU2RotationGate(GateWithRegisters):
     def pretty_name(self) -> str:
         return 'SU_2'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
+
         return TextBox(
             f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
         )

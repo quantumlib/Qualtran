@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Iterator, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -132,7 +132,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
         rotations_target = quregs.pop('rotations_target')
         interleaved_unitary_target = quregs

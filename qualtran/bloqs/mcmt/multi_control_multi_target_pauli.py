@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterator, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -39,8 +39,9 @@ from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -55,7 +56,7 @@ class MultiTargetCNOT(GateWithRegisters):
         Appendix B.1.
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> Signature:
@@ -68,7 +69,7 @@ class MultiTargetCNOT(GateWithRegisters):
         control: NDArray[cirq.Qid],  # type: ignore[type-var]
         targets: NDArray[cirq.Qid],  # type: ignore[type-var]
     ):
-        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:  # type: ignore[type-var]
+        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> Iterator[cirq.OP_TREE]:  # type: ignore[type-var]
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
 
@@ -80,6 +81,8 @@ class MultiTargetCNOT(GateWithRegisters):
             yield cirq.Moment(cnots_for_depth_i(i, targets))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
 
 
@@ -130,7 +133,7 @@ class MultiControlPauli(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('controls', np.array([])), quregs['target']
         if len(self.cvs) < 2:
             controls = controls.flatten()
@@ -153,7 +156,7 @@ class MultiControlPauli(GateWithRegisters):
         yield and_op_inv
         qm.qfree([*and_ancilla, *and_target])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         n = len(self.cvs)
         ctrl = f'C^{n}' if n > 2 else ['', 'C', 'CC'][n]
         return f'{ctrl}{self.target_gate!s}'
@@ -205,7 +208,7 @@ class MultiControlPauli(GateWithRegisters):
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
     def _has_unitary_(self) -> bool:
@@ -356,5 +359,5 @@ class MultiControlX(Bloq):
         # Return the output registers.
         return {'ctrls': ctrls, 'x': x}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'C^{len(self.cvs)}-NOT'

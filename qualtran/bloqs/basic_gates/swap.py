@@ -13,11 +13,10 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
@@ -29,6 +28,7 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    Register,
     Signature,
     Soquet,
     SoquetT,
@@ -36,12 +36,14 @@ from qualtran import (
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 from .t_gate import TGate
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import CompositeBloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -67,9 +69,6 @@ class TwoBitSwap(Bloq):
         y: the second bit
     """
 
-    def short_name(self) -> str:
-        return 'swap'
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(x=1, y=1)
@@ -79,7 +78,7 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
+        return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -92,10 +91,12 @@ class TwoBitSwap(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         matrix = _swap_matrix()
         out_inds = [outgoing['x'], outgoing['y']]
         in_inds = [incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -136,7 +137,7 @@ class TwoBitCSwap(Bloq):
         ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
         x: NDArray[cirq.Qid],  # type: ignore[type-var]
         y: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         (ctrl,) = ctrl
         (x,) = x
         (y,) = y
@@ -159,10 +160,12 @@ class TwoBitCSwap(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         matrix = _controlled_swap_matrix()
         out_inds = [outgoing['ctrl'], outgoing['x'], outgoing['y']]
         in_inds = [incoming['ctrl'], incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -182,11 +185,10 @@ class TwoBitCSwap(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def short_name(self) -> str:
-        return 'swap'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
             return TextBox('×')
@@ -232,15 +234,14 @@ class Swap(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
 
-    def short_name(self) -> str:
-        return 'swap'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
-        raise ValueError(f"Bad register name {soq.reg.name}")
+        raise ValueError(f"Bad register name {reg.name}")
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -276,7 +277,7 @@ class CSwap(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError("`bitsize` must be a concrete value.")
@@ -301,9 +302,6 @@ class CSwap(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def short_name(self) -> str:
-        return r'x↔y'
-
     @classmethod
     def make_on(
         cls, **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
@@ -318,10 +316,12 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
         else:
             return Circle(filled=True)

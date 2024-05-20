@@ -16,12 +16,14 @@
 from functools import cached_property
 from typing import (
     Callable,
+    cast,
     Dict,
     FrozenSet,
     Hashable,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     overload,
     Sequence,
@@ -47,7 +49,6 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
-    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -137,16 +138,19 @@ class CompositeBloq(Bloq):
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        circuit, out_quregs = self.to_cirq_circuit(qubit_manager=qubit_manager, **cirq_quregs)
+        circuit, out_quregs = self.to_cirq_circuit_and_quregs(
+            qubit_manager=qubit_manager, **cirq_quregs
+        )
         return cirq.CircuitOperation(circuit), out_quregs
 
-    def to_cirq_circuit(
-        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregInT'
+    def to_cirq_circuit_and_quregs(
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
-        """Convert this CompositeBloq to a `cirq.Circuit`.
+        """Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
         Args:
-            qubit_manager: A `cirq.QubitManager` to allocate new qubits.
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits. If not provided,
+                uses `cirq.SimpleQubitManager()` by default.
             **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
 
         Returns:
@@ -164,6 +168,30 @@ class CompositeBloq(Bloq):
             self.signature, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
         )
 
+    def to_cirq_circuit(
+        self,
+        *,
+        qubit_manager: Optional['cirq.QubitManager'] = None,
+        cirq_quregs: Optional[Mapping[str, 'CirqQuregInT']] = None,
+    ) -> 'cirq.FrozenCircuit':
+        """Convert this CompositeBloq to a `cirq.Circuit`.
+
+        Args:
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits. If not provided,
+                uses `cirq.SimpleQubitManager()` by default.
+            cirq_quregs: Mapping from left register names to Cirq qubit arrays. If not provided,
+                uses `get_named_qubits(self.signature.lefts())` by default.
+
+        Returns:
+            circuit: The cirq.FrozenCircuit version of this composite bloq.
+        """
+        from qualtran._infra.gate_with_registers import get_named_qubits
+
+        if cirq_quregs is None:
+            cirq_quregs = get_named_qubits(self.signature.lefts())
+
+        return self.to_cirq_circuit_and_quregs(qubit_manager=qubit_manager, **cirq_quregs)[0]
+
     @classmethod
     def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
         """Construct a composite bloq from a Cirq circuit.
@@ -176,7 +204,9 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union[sympy.Symbol, 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.simulation.classical_sim import call_cbloq_classically
 
@@ -606,7 +636,7 @@ def _reg_to_soq(
 
 def _process_soquets(
     registers: Iterable[Register],
-    in_soqs: Dict[str, SoquetT],
+    in_soqs: Mapping[str, SoquetInT],
     debug_str: str,
     func: Callable[[Soquet, Register, Tuple[int, ...]], None],
 ) -> None:
@@ -631,6 +661,7 @@ def _process_soquets(
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
+    unchecked_names: Set[str] = set(in_soqs.keys())
     for reg in registers:
         try:
             # if we want fancy indexing (which we do), we need numpy
@@ -639,7 +670,7 @@ def _process_soquets(
         except KeyError:
             raise BloqError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
 
-        del in_soqs[reg.name]  # so we can check for surplus arguments.
+        unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
 
         for li in reg.all_idxs():
             idxed_soq = in_soq[li]
@@ -652,9 +683,8 @@ def _process_soquets(
                 raise BloqError(
                     f"{debug_str} register dtypes are not consistent {extra_str}."
                 ) from None
-
-    if in_soqs:
-        raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+    if unchecked_names:
+        raise BloqError(f"{debug_str} does not accept Soquets: {unchecked_names}.") from None
 
 
 def _map_soqs(
@@ -965,7 +995,7 @@ class BloqBuilder:
         return outs
 
     def _add_binst(
-        self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]
+        self, binst: BloqInstance, in_soqs: Mapping[str, SoquetInT]
     ) -> Iterator[Tuple[str, SoquetT]]:
         """Add a bloq instance.
 
@@ -1010,7 +1040,8 @@ class BloqBuilder:
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
-            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.signature.lefts()
+            (_reg_to_soq(LeftDangle, reg), cast(SoquetT, in_soqs[reg.name]))
+            for reg in cbloq.signature.lefts()
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():

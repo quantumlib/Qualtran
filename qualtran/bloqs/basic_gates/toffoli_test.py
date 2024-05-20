@@ -19,6 +19,8 @@ import numpy as np
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
+from qualtran.drawing.musical_score import Circle, ModPlus
+from qualtran.testing import assert_wire_symbols_match_expected
 
 
 def test_toffoli(bloq_autotester):
@@ -40,7 +42,7 @@ def test_toffoli_cirq():
     ctrl, target = bb.add(Toffoli(), ctrl=ctrl, target=target)
     cbloq = bb.finalize(q0=ctrl[0], q1=ctrl[1], q2=target)
 
-    circuit, qubits = cbloq.to_cirq_circuit()
+    circuit, qubits = cbloq.to_cirq_circuit_and_quregs()
     cirq.testing.assert_has_diagram(
         circuit,
         """\
@@ -49,6 +51,9 @@ _c(0): ───@───@───
 _c(1): ───@───@───
           │   │
 _c(2): ───X───X───""",
+    )
+    assert_wire_symbols_match_expected(
+        Toffoli(), [Circle(filled=True), Circle(filled=True), ModPlus()]
     )
 
 

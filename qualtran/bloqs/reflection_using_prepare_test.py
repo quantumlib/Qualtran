@@ -224,5 +224,3 @@ def test_reflection_using_prepare_consistent_protocols_and_controlled():
         gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = gate.controlled(num_controls=2)

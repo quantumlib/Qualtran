@@ -16,7 +16,7 @@ from typing import Dict
 
 import attrs
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet
 from qualtran.bloqs.basic_gates import CNOT, Rx, Rz
 
 
@@ -40,10 +40,10 @@ class IsingXUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'U_X'
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
         system = bb.split(system)
         for iq in range(self.nsites):
             system[iq] = bb.add(Rx(self.angle), q=system[iq])
@@ -70,10 +70,10 @@ class IsingZZUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'U_ZZ'
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
         system = bb.split(system)
         for iq_a in range(self.nsites):
             iq_b = (iq_a + 1) % self.nsites

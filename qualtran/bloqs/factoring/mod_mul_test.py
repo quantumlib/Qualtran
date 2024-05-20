@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
+from typing import cast, Optional
 
 import attrs
 import numpy as np
@@ -21,9 +21,10 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import Bloq
-from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, MontgomeryModDbl
+from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
 from qualtran.bloqs.util_bloqs import Allocate, Free
+from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -93,7 +94,7 @@ def test_consistent_classical():
 def test_modmul_symb_manual():
     k, N, n_x = sympy.symbols('k N n_x')
     bloq = CtrlModMul(k=k, mod=N, bitsize=n_x)
-    assert bloq.short_name() == 'x *= k % N'
+    assert cast(Text, bloq.wire_symbol(reg=None)).text == 'x *= k % N'
 
     # it's all fixed constants, but check it works anyways
     counts = bloq.bloq_counts()

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Iterator, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -46,7 +46,7 @@ class _TestGate(GateWithRegisters):
         regs = Signature([r1, r2, r3])
         return regs
 
-    def decompose_from_registers(self, *, context, **quregs) -> cirq.OP_TREE:
+    def decompose_from_registers(self, *, context, **quregs) -> Iterator[cirq.OP_TREE]:
         yield cirq.H.on_each(quregs['r1'])
         yield cirq.X.on_each(quregs['r2'])
         yield cirq.X.on_each(quregs['r3'])
@@ -79,7 +79,6 @@ def test_gate_with_registers():
     assert (
         tg.controlled(num_controls=1, control_values=[0])
         == tg.controlled(control_values=[0], control_qid_shape=(2,))
-        == tg.controlled(CtrlSpec(cvs=0))
         == tg.controlled(ctrl_spec=CtrlSpec(cvs=0))
     )
 

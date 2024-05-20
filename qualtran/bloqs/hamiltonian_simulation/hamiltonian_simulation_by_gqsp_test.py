@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 import pytest
 import scipy
+import sympy
 from numpy.typing import NDArray
 
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
@@ -26,7 +27,9 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.resource_counting.symbolic_counting_utils import Shaped
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting import big_O
+from qualtran.symbolics import Shaped
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
@@ -95,3 +98,13 @@ def test_hamiltonian_simulation_by_gqsp(
             select_bitsize, target_bitsize, random_state=random_state
         )
         verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, precision=precision)
+
+
+def test_hamiltonian_simulation_by_gqsp_t_complexity():
+    hubbard_time_evolution_by_gqsp = _hubbard_time_evolution_by_gqsp.make()
+    _ = hubbard_time_evolution_by_gqsp.t_complexity()
+
+    symbolic_hamsim_by_gqsp = _symbolic_hamsim_by_gqsp()
+    tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
+    T = big_O(tau * t + sympy.log(inv_eps) / sympy.log(sympy.log(inv_eps)))
+    assert symbolic_hamsim_by_gqsp.t_complexity() == TComplexity(t=T, clifford=T, rotations=T)  # type: ignore[arg-type]

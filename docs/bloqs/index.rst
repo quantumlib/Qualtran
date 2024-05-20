@@ -49,6 +49,7 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -61,6 +62,14 @@ Bloqs Library
     arithmetic/conversions.ipynb
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
+    factoring/ecc/ecc.ipynb
+    factoring/ecc/ec_add.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Modular Arithmetic:
+
+    mod_arithmetic/mod_addition.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -75,6 +84,7 @@ Bloqs Library
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization_walk_operator.ipynb
+    phase_estimation/qubitization_qpe.ipynb
 
 .. toctree::
     :maxdepth: 2

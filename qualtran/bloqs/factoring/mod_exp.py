@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import attrs
 import numpy as np
@@ -29,10 +29,12 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -97,7 +99,7 @@ class ModExp(Bloq):
         """Helper method to return a `CtrlModMul` with attributes forwarded."""
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if isinstance(self.exp_bitsize, sympy.Expr):
             raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
@@ -121,8 +123,12 @@ class ModExp(Bloq):
     def on_classical_vals(self, exponent: int):
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
-    def short_name(self) -> str:
-        return f'{self.base}^e % {self.mod}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'{self.base}^e % {self.mod}')
+        return super().wire_symbol(reg, idx)
 
 
 _K = sympy.Symbol('k_exp')

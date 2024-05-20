@@ -15,9 +15,11 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import BoundedQUInt, QAny, QBit, QInt, Register, Side, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.symbolics import is_symbolic
 
 
 def test_register():
@@ -193,6 +195,13 @@ def test_dtypes_converter():
     r1 = Register("my_reg", QBit())
     r2 = Register("my_reg", QBit())
     assert r1 == r2
-    r2 = Register("my_reg", QAny(5))
+    r1 = Register("my_reg", QAny(5))
     r2 = Register("my_reg", QInt(5))
     assert r1 != r2
+
+
+def test_is_symbolic():
+    r = Register("my_reg", QAny(sympy.Symbol("x")))
+    assert is_symbolic(r)
+    r = Register("my_reg", QAny(2), shape=sympy.symbols("x y"))
+    assert is_symbolic(r)

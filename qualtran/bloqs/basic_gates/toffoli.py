@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -97,7 +97,7 @@ class Toffoli(Bloq):
         )
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', target: 'ClassicalValT'
+        self, ctrl: NDArray[np.integer], target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         assert target in [0, 1]
         if ctrl[0] == 1 and ctrl[1] == 1:
@@ -113,14 +113,17 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        from qualtran.drawing import Circle, ModPlus
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import Circle, ModPlus, Text
 
-        if soq.reg.name == 'ctrl':
+        if reg is None:
+            return Text('')
+
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
 
 @bloq_example

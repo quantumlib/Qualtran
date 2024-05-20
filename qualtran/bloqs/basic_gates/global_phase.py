@@ -21,10 +21,10 @@ from attrs import frozen
 from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.symbolics import sconj, SymbolicComplex
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicComplex
 
 
 @frozen
@@ -47,8 +47,6 @@ class GlobalPhase(CirqGateAsBloqBase):
         raise DecomposeTypeError(f"{self} is atomic")
 
     def adjoint(self) -> 'GlobalPhase':
-        from qualtran.resource_counting.symbolic_counting_utils import sconj
-
         return attrs.evolve(self, coefficient=sconj(self.coefficient))
 
     def pretty_name(self) -> str:

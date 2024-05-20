@@ -19,6 +19,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -43,7 +44,7 @@ class Comparator(Bloq):
         Fig. 1. in main text.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -55,7 +56,7 @@ class Comparator(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "Cmprtr"
 
     def _t_complexity_(self):
@@ -96,14 +97,14 @@ class BitonicSort(Bloq):
         Supporting Information Sec. II.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     k: int
 
     @property
     def signature(self):
         return Signature([Register("input", QAny(self.bitsize), shape=(self.k,))])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "BSort"
 
     def _t_complexity_(self):
