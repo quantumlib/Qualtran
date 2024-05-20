@@ -56,9 +56,9 @@ from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
-from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+from qualtran.bloqs.mod_arithmetic import ModAddK
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
@@ -66,6 +66,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.symbolics.math_funcs import acos, ssqrt
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
@@ -308,7 +309,7 @@ class PrepareHubbard(PrepareOracle):
         temp = quregs['temp']
 
         N = self.x_dim * self.y_dim * 2
-        yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
+        yield cirq.Ry(rads=2 * acos(ssqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
         yield cirq.Ry(rads=2 * np.arccos(np.sqrt(1 / 5))).on(*U).controlled_by(*V)
         yield PrepareUniformSuperposition(self.x_dim).on_registers(controls=[], target=p_x)
         yield PrepareUniformSuperposition(self.y_dim).on_registers(controls=[], target=p_y)
@@ -318,7 +319,7 @@ class PrepareHubbard(PrepareOracle):
         yield from [cirq.X(*V), cirq.H(*alpha).controlled_by(*V), cirq.CX(*V, *beta), cirq.X(*V)]
         yield cirq.Circuit(cirq.CNOT.on_each([*zip([*p_x, *p_y, *alpha], [*q_x, *q_y, *beta])]))
         yield CSwap.make_on(ctrl=temp[:1], x=q_x, y=q_y)
-        yield AddConstantMod(len(q_x), self.x_dim, add_val=1, cvs=[0, 0]).on(*U, *V, *q_x)
+        yield ModAddK(len(q_x), self.x_dim, add_val=1, cvs=[0, 0]).on(*U, *V, *q_x)
         yield CSwap.make_on(ctrl=temp[:1], x=q_x, y=q_y)
 
         and_target = context.qubit_manager.qalloc(1)

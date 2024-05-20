@@ -18,10 +18,10 @@ from typing import Dict, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, QMontgomeryUInt, Register, Signature, Soquet, SoquetT
-from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
+from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mod_arithmetic import ModAdd
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -67,7 +67,6 @@ class MontgomeryModSub(Bloq):
         return {'x': x, 'y': (y - x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
         for i in range(self.bitsize):
@@ -75,16 +74,13 @@ class MontgomeryModSub(Bloq):
         x = bb.join(x_split, dtype=QMontgomeryUInt(self.bitsize))
 
         # Add constant p+1 to the x register.
-        x = bb.add(SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()), x=x)
+        x = bb.add(AddK(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()), x=x)
 
         # Perform in-place addition on quantum register y.
-        x, y = bb.add(MontgomeryModAdd(bitsize=self.bitsize, p=self.p), x=x, y=y)
+        x, y = bb.add(ModAdd(bitsize=self.bitsize, mod=self.p), x=x, y=y)
 
         # Add constant -(p+1) to the x register to uncompute the first addition.
-        x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()).adjoint(),
-            x=x,
-        )
+        x = bb.add(AddK(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()).adjoint(), x=x)
 
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
@@ -129,7 +125,6 @@ class MontgomeryModNeg(Bloq):
         return {'x': (-1 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
-
         # Initialize an ancilla qubit to |1>.
         ctrl = bb.allocate(n=1)
         ctrl = bb.add(XGate(), q=ctrl)
@@ -151,9 +146,7 @@ class MontgomeryModNeg(Bloq):
         # Add constant p+1 to the x register.
         ctrl_split = bb.split(ctrl)
         ctrl_split, x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, cvs=(1,), signed=False),
-            ctrls=ctrl_split,
-            x=x,
+            AddK(bitsize=self.bitsize, k=self.p + 1, cvs=(1,), signed=False), ctrls=ctrl_split, x=x
         )
         ctrl = bb.join(ctrl_split)
 

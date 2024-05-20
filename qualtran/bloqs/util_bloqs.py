@@ -13,13 +13,12 @@
 #  limitations under the License.
 
 """Bloqs for virtual operations and register reshaping."""
-
+import abc
 from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
@@ -42,6 +41,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
     from numpy.typing import NDArray
 
     from qualtran import AddControlledT, CtrlSpec
@@ -50,8 +50,32 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
+    """Base class for utility bloqs used for bookkeeping.
+
+    This bloq:
+    - has trivial controlled versions, which pass through the control register.
+    - does not affect T complexity.
+    """
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # ignore `ctrl_soq` and pass it through for bookkeeping operation.
+            out_soqs = bb.add_t(self, **in_soqs)
+            return ctrl_soqs, out_soqs
+
+        return self, add_controlled
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity()
+
+
 @frozen
-class Split(Bloq):
+class Split(_BookkeepingBloq):
     """Split a bitsize `n` register into a length-`n` array-register.
 
     Attributes:
@@ -75,20 +99,19 @@ class Split(Bloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         if not isinstance(outgoing['reg'], np.ndarray):
             raise ValueError('Outgoing register must be a numpy array')
         tn.add(
@@ -101,16 +124,6 @@ class Split(Bloq):
             )
         )
 
-    def get_ctrl_system(self, ctrl_spec=None) -> Tuple['Bloq', 'AddControlledT']:
-        def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            # ignore `ctrl_soq` and pass it through for bookkeeping operation.
-            out_soqs = bb.add_t(self, **in_soqs)
-            return ctrl_soqs, out_soqs
-
-        return self, add_controlled
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(self.pretty_name())
@@ -121,7 +134,7 @@ class Split(Bloq):
 
 
 @frozen
-class Join(Bloq):
+class Join(_BookkeepingBloq):
     """Join a length-`n` array-register into one register of bitsize `n`.
 
     Attributes:
@@ -145,17 +158,16 @@ class Join(Bloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         if not isinstance(incoming['reg'], np.ndarray):
             raise ValueError('Incoming register must be a numpy array')
         tn.add(
@@ -171,18 +183,6 @@ class Join(Bloq):
     def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            # ignore `ctrl_soq` and pass it through for bookkeeping operation.
-            out_soqs = bb.add_t(self, **in_soqs)
-            return ctrl_soqs, out_soqs
-
-        return self, add_controlled
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -193,7 +193,7 @@ class Join(Bloq):
 
 
 @frozen
-class Partition(Bloq):
+class Partition(_BookkeepingBloq):
     """Partition a generic index into multiple registers.
 
     Args:
@@ -236,17 +236,16 @@ class Partition(Bloq):
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         unitary_shape = []
         soquets = []
         _incoming = incoming if self.partition else outgoing
@@ -317,7 +316,7 @@ class Partition(Bloq):
 
 
 @frozen
-class Allocate(Bloq):
+class Allocate(_BookkeepingBloq):
     """Allocate an `n` bit register.
 
     Attributes:
@@ -336,9 +335,6 @@ class Allocate(Bloq):
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
@@ -347,6 +343,8 @@ class Allocate(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
@@ -359,7 +357,7 @@ class Allocate(Bloq):
 
 
 @frozen
-class Free(Bloq):
+class Free(_BookkeepingBloq):
     """Free (i.e. de-allocate) an `n` bit register.
 
     The tensor decomposition assumes the `n` bit register is uncomputed and is in the $|0^{n}>$
@@ -384,9 +382,6 @@ class Free(Bloq):
             raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
@@ -395,6 +390,8 @@ class Free(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
@@ -430,13 +427,14 @@ class ArbitraryClifford(Bloq):
 
 
 @frozen
-class Cast(Bloq):
+class Cast(_BookkeepingBloq):
     """Cast a register from one n-bit QDType to another QDType.
 
 
     Args:
-        in_qdtype: Input QDType to cast from.
-        out_qdtype: Output QDType to cast to.
+        inp_dtype: Input QDType to cast from.
+        out_dtype: Output QDType to cast to.
+        shape: shape of the register to cast.
 
     Registers:
         in: input register to cast from.
@@ -468,12 +466,14 @@ class Cast(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
@@ -488,9 +488,6 @@ class Cast(Bloq):
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
 
 
 @frozen

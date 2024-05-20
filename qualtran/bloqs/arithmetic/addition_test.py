@@ -17,17 +17,11 @@ import itertools
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QUInt
-from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.arithmetic.addition import (
-    Add,
-    AddConstantMod,
-    OutOfPlaceAdder,
-    SimpleAddConstant,
-)
-from qualtran.bloqs.arithmetic.comparison_test import identity_map
+from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
+from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import (
@@ -248,59 +242,6 @@ def test_add_classical():
     assert ret1 == ret2
 
 
-@pytest.mark.parametrize('bitsize', [3])
-@pytest.mark.parametrize('mod', [5, 8])
-@pytest.mark.parametrize('add_val', [1, 2])
-@pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
-def test_add_mod_n(bitsize, mod, add_val, cvs):
-    gate = AddConstantMod(bitsize, mod, add_val=add_val, cvs=cvs)
-    basis_map = {}
-    num_cvs = len(cvs)
-    for x in range(2**bitsize):
-        y = (x + add_val) % mod if x < mod else x
-        if not num_cvs:
-            basis_map[x] = y
-            continue
-        for cb in range(2**num_cvs):
-            inp = f'0b_{cb:0{num_cvs}b}_{x:0{bitsize}b}'
-            if tuple(int(x) for x in f'{cb:0{num_cvs}b}') == tuple(cvs):
-                out = f'0b_{cb:0{num_cvs}b}_{y:0{bitsize}b}'
-                basis_map[int(inp, 2)] = int(out, 2)
-            else:
-                basis_map[int(inp, 2)] = int(inp, 2)
-
-    op = gate.on_registers(**get_named_qubits(gate.signature))
-    circuit = cirq.Circuit(op)
-    cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
-    # Missing cirq stubs
-    circuit += op**-1  # type: ignore[operator]
-    cirq.testing.assert_equivalent_computational_basis_map(identity_map(gate.num_qubits()), circuit)
-
-
-def test_add_mod_n_protocols():
-    with pytest.raises(ValueError, match="must be between"):
-        _ = AddConstantMod(3, 10)
-    add_one = AddConstantMod(3, 5, 1)
-    add_two = AddConstantMod(3, 5, 2, cvs=[1, 0])
-
-    assert add_one == AddConstantMod(3, 5, 1)
-    assert add_one != add_two
-    assert hash(add_one) != hash(add_two)
-    assert add_two.cvs == (1, 0)
-    assert cirq.circuit_diagram_info(add_two).wire_symbols == ('@', '@(0)') + ('Add_2_Mod_5',) * 3
-
-
-def add_constant_mod_n_ref_t_complexity_(b: AddConstantMod) -> TComplexity:
-    # Rough cost as given in https://arxiv.org/abs/1905.09749
-    return 5 * Add(QUInt(b.bitsize)).t_complexity()
-
-
-@pytest.mark.parametrize('bitsize', [3, 9])
-def test_add_mod_n_gate_counts(bitsize):
-    bloq = AddConstantMod(bitsize, mod=8, add_val=2, cvs=[0, 1])
-    assert bloq.t_complexity() == add_constant_mod_n_ref_t_complexity_(bloq)
-
-
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)
@@ -327,19 +268,26 @@ def test_out_of_place_adder():
     qlt_testing.assert_valid_bloq_decomposition(gate**-1)
 
 
+def test_controlled_add_k():
+    n, k = sympy.symbols('n k')
+    addk = AddK(n, k)
+    assert addk.controlled() == AddK(n, k, cvs=(1,))
+    assert addk.controlled(CtrlSpec(cvs=0)) == AddK(n, k, cvs=(0,))
+
+
 @pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [5, 8])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
-def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
-    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+def test_add_k_decomp_unsigned(bitsize, k, cvs):
+    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=False)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [-5, 8])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
-def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
-    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+def test_add_k_decomp_signed(bitsize, k, cvs):
+    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
@@ -352,8 +300,8 @@ def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
         (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
     ],
 )
-def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrls, result):
-    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
+    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=False)
     cbloq = bloq.decompose_bloq()
     bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
     cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
@@ -368,8 +316,8 @@ def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrls, resul
 # TODO: write tests for signed integer addition (subtraction)
 # https://github.com/quantumlib/Qualtran/issues/606
 @pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
-def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result):
-    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
+    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     cbloq = bloq.decompose_bloq()
     bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
     cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
