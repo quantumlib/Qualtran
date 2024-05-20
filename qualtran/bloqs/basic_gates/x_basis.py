@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
@@ -33,12 +32,13 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.drawing import WireSymbol
     from qualtran.simulation.classical_sim import ClassicalValT
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
@@ -74,16 +74,20 @@ class _XVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_MINUS if self.bit else _PLUS, inds=(side['q'],), tags=[self.short_name(), tag]
+                data=_MINUS if self.bit else _PLUS,
+                inds=(side['q'],),
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -105,11 +109,15 @@ class _XVector(Bloq):
         return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = '-' if self.bit else '+'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def short_name(self) -> str:
-        return '-' if self.bit else '+'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('-' if self.bit else '+')
+        return super().wire_symbol(reg, idx)
 
 
 def _hide_base_fields(cls, fields):
@@ -215,15 +223,17 @@ class XGate(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         tn.add(
             qtn.Tensor(
-                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
             )
         )
 
@@ -248,9 +258,6 @@ class XGate(Bloq):
 
         return bloq, add_controlled
 
-    def short_name(self) -> str:
-        return 'X'
-
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}
 
@@ -269,5 +276,8 @@ class XGate(Bloq):
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import ModPlus
+
+        if reg is None:
+            return Text('X')
 
         return ModPlus()

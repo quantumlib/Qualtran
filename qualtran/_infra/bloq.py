@@ -27,9 +27,11 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
+        Adjoint,
         BloqBuilder,
         CompositeBloq,
         CtrlSpec,
+        GateWithRegisters,
         Register,
         Signature,
         Soquet,
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, CostKey, GeneralizerT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -105,13 +107,6 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def pretty_name(self) -> str:
         return self.__class__.__name__
-
-    def short_name(self) -> str:
-        name = self.pretty_name()
-        if len(name) <= 10:
-            return name
-
-        return name[:8] + '..'
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
@@ -280,7 +275,9 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.simulation.tensor import cbloq_as_contracted_tensor
 
         cbloq = self.decompose_bloq()
-        tn.add(cbloq_as_contracted_tensor(cbloq, incoming, outgoing, tags=[self.short_name(), tag]))
+        tn.add(
+            cbloq_as_contracted_tensor(cbloq, incoming, outgoing, tags=[self.pretty_name(), tag])
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         """Override this method to build the bloq call graph.
@@ -298,6 +295,20 @@ class Bloq(metaclass=abc.ABCMeta):
         the provided `SympySymbolAllocator`.
         """
         return self.decompose_bloq().build_call_graph(ssa)
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        """Override this method to provide static costs.
+
+        The system will query a particular cost by asking for a `cost_key`. This method
+        can optionally provide a value, which will be preferred over a computed cost.
+
+        Static costs can be provided if the particular cost cannot be easily computed or
+        as a performance optimization.
+
+        This method must return `NotImplemented` if a value cannot be provided for the specified
+        CostKey.
+        """
+        return NotImplemented
 
     def call_graph(
         self,
@@ -506,18 +517,30 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent `soq`.
 
         By default, we use a "directional text box", which is a text box that is either
         rectangular for thru-registers or facing to the left or right for non-thru-registers.
+
+        If reg is specified as `None`, this should return a Text label for the title of
+        the gate. If no title is needed (as the wire_symbols are self-explanatory),
+        this should return `Text('')`.
 
         Override this method to provide a more relevant `WireSymbol` for the provided soquet.
         This method can access bloq attributes. For example: you may want to draw either
         a filled or empty circle for a control register depending on a control value bloq
         attribute.
         """
-        from qualtran.drawing import directional_text_box
+        from qualtran.drawing import directional_text_box, Text
+
+        if reg is None:
+            name = self.pretty_name()
+            if len(name) <= 10:
+                return Text(name)
+            return Text(name[:8] + '..')
 
         label = reg.name
         if len(idx) > 0:

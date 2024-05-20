@@ -17,20 +17,19 @@ from typing import Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import cirq
 
-from qualtran.bloqs.basic_gates.rotation import _HasEps
-from qualtran.resource_counting.symbolic_counting_utils import ceil, SymbolicInt
+from qualtran.symbolics import ceil, SymbolicInt
 
 if TYPE_CHECKING:
-    import sympy
-
     from qualtran import Bloq
+    from qualtran.bloqs.basic_gates.rotation import _HasEps
 
 
-def _get_all_rotation_types() -> Tuple[Type[_HasEps], ...]:
+def _get_all_rotation_types() -> Tuple[Type['_HasEps'], ...]:
     """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
-    import qualtran.bloqs.basic_gates  # pylint: disable=unused-import
+    from qualtran.bloqs.basic_gates import GlobalPhase
+    from qualtran.bloqs.basic_gates.rotation import _HasEps
 
-    bloqs_to_exclude = [qualtran.bloqs.basic_gates.GlobalPhase]
+    bloqs_to_exclude = [GlobalPhase]
 
     return tuple(
         v

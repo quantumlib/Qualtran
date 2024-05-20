@@ -54,10 +54,10 @@ def _cirq_style_decompose_from_decompose_bloq(
     """
     cbloq = bloq.decompose_bloq()
     in_quregs = {reg.name: quregs[reg.name] for reg in bloq.signature.lefts()}
-    # Input qubits can get de-allocated by cbloq.to_cirq_circuit, thus mark them as managed.
+    # Input qubits can get de-allocated by cbloq.to_cirq_circuit_and_quregs, thus mark them as managed.
     qm = InteropQubitManager(context.qubit_manager)
     qm.manage_qubits(merge_qubits(bloq.signature.lefts(), **in_quregs))
-    circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **in_quregs)
+    circuit, out_quregs = cbloq.to_cirq_circuit_and_quregs(qubit_manager=qm, **in_quregs)
     qubit_map = {q: q for q in circuit.all_qubits()}
     for reg in bloq.signature.rights():
         if reg.side == Side.RIGHT:
@@ -303,8 +303,8 @@ def _wire_symbol_to_cirq_diagram_info(
     wire_symbols = []
     for reg in bloq.signature:
         if reg.shape:
-            for idx in range(reg.bitsize):
-                for ri in reg.all_idxs():
+            for ri in reg.all_idxs():
+                for idx in range(reg.bitsize):
                     wire_symbols.append(bloq.wire_symbol(reg, ri))
         else:
             wire_symbols.extend([bloq.wire_symbol(reg)] * reg.bitsize)

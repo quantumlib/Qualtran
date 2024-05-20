@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -25,15 +25,11 @@ from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    Shaped,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -177,9 +173,24 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
                 bb.free(soq)
             else:
                 for soq_element in soq:
-                    bb.free(cast(Soquet, soq))
+                    bb.free(cast(Soquet, soq_element))
 
         return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.is_symbolic():
+            from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+
+            d = self.degree
+            return {
+                (self.walk_operator.prepare, 1),
+                (self.walk_operator.prepare.adjoint(), 1),
+                (self.walk_operator.controlled(control_values=[0]), d),
+                (self.walk_operator.adjoint().controlled(), d),
+                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
+            }
+
+        return super().build_call_graph(ssa)
 
 
 @bloq_example
@@ -197,9 +208,8 @@ def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
 
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
-    walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-
-    t, inv_eps = sympy.symbols("t N")
+    tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
+    walk_op = get_walk_operator_for_hubbard_model(2, 2, tau, 4 * tau)
     symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=t, precision=1 / inv_eps)
     return symbolic_hamsim_by_gqsp
 

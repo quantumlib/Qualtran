@@ -19,12 +19,7 @@ import cirq
 
 from qualtran import Bloq, Controlled
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    log2,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 _ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
@@ -133,7 +128,7 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
         quregs = get_named_qubits(stc.signature)
         qm = cirq.SimpleQubitManager()
         op, _ = stc.as_cirq_op(qubit_manager=qm, **quregs)
-        return t_complexity(cirq.decompose_once(op))
+        return t_complexity(op)
 
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.
@@ -216,7 +211,6 @@ def _t_complexity_from_strategies(
 def _t_complexity_for_gate_or_op(
     gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
-
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate
 

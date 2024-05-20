@@ -28,7 +28,7 @@ from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.resource_counting.symbolic_counting_utils import Shaped
+from qualtran.symbolics import Shaped
 
 from .generalized_qsp import (
     _gqsp,

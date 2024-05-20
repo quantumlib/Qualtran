@@ -14,10 +14,10 @@
 import pytest
 from openfermion.resource_estimates.utils import QI, QR
 
-from qualtran.bloqs.chemistry.black_boxes import get_qroam_cost
+from qualtran.bloqs.chemistry.black_boxes import get_qroam_cost_clean_ancilla
 
 
 @pytest.mark.parametrize("data_size, bitsize", ((100, 10), (100, 3), (1_000, 13), (1_000_000, 20)))
 def test_qroam_factors(data_size, bitsize):
-    assert get_qroam_cost(data_size, bitsize) == QR(data_size, bitsize)[-1]
-    assert get_qroam_cost(data_size, bitsize, adjoint=True) == QI(data_size)[-1]
+    assert get_qroam_cost_clean_ancilla(data_size, bitsize) == QR(data_size, bitsize)[-1]
+    assert get_qroam_cost_clean_ancilla(data_size, bitsize, adjoint=True) == QI(data_size)[-1]

@@ -22,6 +22,7 @@ import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     Controlled,
     CtrlSpec,
     QBit,
@@ -100,7 +101,7 @@ def test_ctrl_bloq_as_cirq_op():
 
     def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
         left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(None, **left_quregs)
+        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
         circuit2 = cirq.Circuit(
             gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
         )
@@ -124,9 +125,22 @@ def test_ctrl_bloq_as_cirq_op():
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
-    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(None, **quregs)
+    circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # controlled composite subbloqs
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    cbloq = CompositeBloq.from_cirq_circuit(circuit).controlled().as_composite_bloq()
+    quregs = get_named_qubits(cbloq.signature.lefts())
+
+    circuit1 = cbloq.to_cirq_circuit(qubit_manager=None, cirq_quregs=quregs)
+    ctrl = quregs['ctrl'][0]
+    q = quregs['qubits'][0][0]
+    circuit2 = cirq.Circuit(
+        cirq.CircuitOperation(cirq.Circuit(cirq.X(q)).freeze()).controlled_by(ctrl)
     )
     cirq.testing.assert_same_circuits(circuit1, circuit2)
 
@@ -415,7 +429,7 @@ ctrl: ───@────────
 q: ──────X^0.25───''',
     )
 
-    ctrl_0_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=0))
+    ctrl_0_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=0))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_0_gate.on_registers(**get_named_qubits(ctrl_0_gate.signature))),
         '''
@@ -424,7 +438,7 @@ ctrl: ───(0)──────
 q: ──────X^0.25───''',
     )
 
-    multi_ctrl_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=[0, 1]))
+    multi_ctrl_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(multi_ctrl_gate.on_registers(**get_named_qubits(multi_ctrl_gate.signature))),
         '''
@@ -435,7 +449,7 @@ ctrl[1]: ───@────────
 q: ─────────X^0.25───''',
     )
 
-    ctrl_bloq = Swap(2).controlled(CtrlSpec(cvs=[0, 1]))
+    ctrl_bloq = Swap(2).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_bloq.on_registers(**get_named_qubits(ctrl_bloq.signature))),
         '''

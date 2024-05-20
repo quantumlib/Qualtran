@@ -62,8 +62,10 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.quad_fermion.givens_bloq
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.walk_operator
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
@@ -76,6 +78,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
@@ -269,6 +272,14 @@ CHEMISTRY: List[NotebookSpecV2] = [
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
+    NotebookSpecV2(
+        title='Givens Rotations',
+        module=qualtran.bloqs.chemistry.quad_fermion.givens_bloq,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._REAL_GIVENS_DOC,
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._CPLX_GIVENS_DOC,
+        ],
+    ),
 ]
 
 # --------------------------------------------------------------------------
@@ -281,7 +292,6 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
-            qualtran.bloqs.arithmetic.addition._SIMPLE_ADD_K_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
     ),
@@ -357,6 +367,17 @@ ARITHMETIC = [
     ),
 ]
 
+MOD_ARITHMETIC = [
+    NotebookSpecV2(
+        title='Modular Addition',
+        module=qualtran.bloqs.mod_arithmetic.mod_addition,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+        ],
+    )
+]
+
 
 ROT_QFT_PE = [
     # --------------------------------------------------------------------------
@@ -426,6 +447,11 @@ ROT_QFT_PE = [
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization_walk_operator,
         bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
+    ),
+    NotebookSpecV2(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.qubitization_qpe,
+        bloq_specs=[qualtran.bloqs.phase_estimation.qubitization_qpe._QUBITIZATION_QPE_DOC],
     ),
 ]
 
@@ -529,6 +555,7 @@ NB_BY_SECTION = [
     ('Basic Gates', BASIC_GATES),
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
+    ('Modular Arithmetic', MOD_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Other', OTHER),
 ]

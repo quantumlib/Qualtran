@@ -17,7 +17,6 @@ from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
@@ -43,6 +42,7 @@ from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -84,16 +84,20 @@ class _ZVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), tag]
+                data=_ONE if self.bit else _ZERO,
+                inds=(side['q'],),
+                tags=['1' if self.bit else '0', tag],
             )
         )
 
@@ -128,11 +132,8 @@ class _ZVector(Bloq):
         return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
-
-    def short_name(self) -> str:
-        return '1' if self.bit else '0'
 
 
 def _hide_base_fields(cls, fields):
@@ -236,25 +237,20 @@ class ZGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def short_name(self) -> 'str':
-        return 'Z'
-
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-        tn.add(
-            qtn.Tensor(
-                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
-            )
-        )
+        import quimb.tensor as qtn
+
+        tn.add(qtn.Tensor(data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=["Z", tag]))
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -287,7 +283,7 @@ class _IntVector(Bloq):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    val: int = attrs.field()
+    val: Union[int, sympy.Expr] = attrs.field()
     bitsize: Union[int, sympy.Expr]
     state: bool
 
@@ -342,12 +338,14 @@ class _IntVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
@@ -360,9 +358,9 @@ class _IntVector(Bloq):
         else:
             inds = (incoming['val'],)
 
-        tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=data, inds=inds, tags=[f'{self.val}', tag]))
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -376,15 +374,15 @@ class _IntVector(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(ArbitraryClifford(self.bitsize), 1)}
 
-    def short_name(self) -> str:
-        return f'{self.val}'
-
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box, Text
+
+        if reg is None:
+            return Text(self.pretty_name())
 
         return directional_text_box(text=f'{self.val}', side=reg.side)
 
@@ -401,7 +399,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: Union[int, sympy.Expr]):
+    def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 

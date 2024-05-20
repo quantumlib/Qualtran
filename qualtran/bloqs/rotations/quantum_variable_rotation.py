@@ -75,18 +75,22 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.resource_counting.symbolic_counting_utils import (
+from qualtran.symbolics import (
     bit_length,
     ceil,
     is_symbolic,
     log2,
+    pi,
+    sabs,
     smax,
+    smin,
+    SymbolicFloat,
+    SymbolicInt,
 )
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
@@ -112,14 +116,26 @@ class QvrZPow(QvrInterface):
     r"""QVR oracle that applies a ZPow rotation to every qubit in the n-bit cost register.
 
     This phase oracle simply applies a $Z^{2^{k}}$ rotation to every qubit in the cost register.
-    To obtain a desired accuracy of $\epsilon$, each individual rotation is synthesized with accuracy
-    $\frac{\epsilon}{n}$, where $n$ is the size of cost register.
+    To obtain a desired accuracy of $\epsilon$, each individual rotation is synthesized with
+    accuracy $\frac{\epsilon}{n}$, where $n$ is the size of cost register.
 
     The toffoli cost of this method scales as
 
     $$
-        \text{Toffoli Cost} \approxeq \mathcal{O}\left(n \log{\frac{n}{\epsilon}} \right)
+        \text{T-Cost} \approxeq \mathcal{O}\left(n \log{\frac{n}{\epsilon}} \right)
     $$
+
+    Note that when $n$ is large, we can ignore small angle rotations s.t. number of rotations to
+    synthesize $\leq \log{\left(\frac{2\pi \gamma}{\epsilon}\right)}$
+
+    Thus, the T-cost scales as
+
+    $$\begin{aligned}
+    \text{T-Cost} &\approxeq \mathcal{O}\left(n \log{\frac{n}{\epsilon}} \right) \\
+              &\approxeq \mathcal{O}\left(\log^2{\frac{1}{\epsilon}}
+               + \log{\left(\frac{1}{\epsilon}\right)}
+                 \log{\left(\log{\left(\frac{1}{\epsilon}\right)}\right)}\right)
+    \end{aligned}$$
 
     Args:
         cost_reg: Cost register of dtype `QFxp`. Supports arbitrary `QFxp` types, including signed
@@ -130,15 +146,12 @@ class QvrZPow(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: Union[SymbolicFloat] = 1.0
+    eps: Union[SymbolicFloat] = 1e-9
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: Union[SymbolicFloat] = 1.0, eps: Union[SymbolicFloat] = 1e-9
     ) -> 'QvrZPow':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrZPow(cost_reg, gamma=gamma, eps=eps)
@@ -157,30 +170,45 @@ class QvrZPow(QvrInterface):
     def extra_registers(self) -> Sequence[Register]:
         return ()
 
+    @cached_property
+    def num_frac_rotations(self) -> SymbolicInt:
+        ignoring_small_angle_rots = ceil(log2((pi(self.eps) * 2 * sabs(self.gamma)) / self.eps))
+        return smin(self.cost_dtype.num_frac, ignoring_small_angle_rots)
+
+    @cached_property
+    def num_rotations(self) -> SymbolicInt:
+        return self.cost_dtype.num_int + self.num_frac_rotations + int(self.cost_dtype.signed)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if isinstance(self.cost_dtype.bitsize, sympy.Expr):
             raise ValueError(f'Unsupported symbolic {self.cost_dtype.bitsize} bitsize')
         out = cast(Soquet, soqs[self.cost_reg.name])
         out = bb.split(out)
-        eps = self.eps / len(out)
+        num_rotations = (
+            self.num_rotations
+            if isinstance(self.num_rotations, int)
+            else self.cost_reg.total_bits()
+        )
+        eps = self.eps / num_rotations
         if self.cost_dtype.signed:
             out[0] = bb.add(ZPowGate(exponent=1, eps=eps), q=out[0])
-        for i in range(self.cost_dtype.bitsize):
-            power_of_two = i - self.cost_dtype.num_frac
-            out[-(i + 1)] = bb.add(
-                ZPowGate(exponent=(2**power_of_two) * self.gamma * 2, eps=self.eps / len(out)),
-                q=out[-(i + 1)],
-            )
+        offset = 1 + self.cost_dtype.num_frac - self.num_frac_rotations
+        for i in range(num_rotations):
+            power_of_two = i - self.num_frac_rotations
+            exp = (2**power_of_two) * self.gamma * 2
+            out[-(i + offset)] = bb.add(ZPowGate(exponent=exp, eps=eps), q=out[-(i + offset)])
         return {self.cost_reg.name: bb.join(out, self.cost_reg.dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
-        return {(zpow, self.cost_dtype.bitsize)}
+        zpow = ZPowGate(
+            exponent=self.gamma / (2**self.num_frac_rotations), eps=self.eps / self.num_rotations
+        )
+        return {(zpow, self.num_rotations)}
 
 
 @bloq_example
 def _qvr_zpow() -> QvrZPow:
-    qvr_zpow = QvrZPow.from_bitsize(12)
+    qvr_zpow = QvrZPow.from_bitsize(12, gamma=0.1, eps=1e-2)
     return qvr_zpow
 
 
@@ -234,9 +262,14 @@ class QvrPhaseGradient(QvrInterface):
     A $b_\text{grad}$-bit phase gradient state $|\phi\rangle_{b_\text{grad}}$ can be written as
 
     $$
-        |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}}
-        \sum_{k=0}^{2^{b_\text{grad}} - 1} e^{\frac{-2\pi i k}{2^{b_\text{grad}}}}
-        \ket{\frac{k}{2^{b_\text{grad}}}}
+    \begin{aligned}
+    |\phi\rangle_{b_\text{grad}} &= \frac{1}{\sqrt{2^{b_\text{grad}}}}
+                                    \sum_{k=0}^{2^{b_\text{grad}} - 1}
+                                    e^{\frac{-2\pi i k}{2^{b_\text{grad}}}}
+                                    |\frac{k}{2^{b_\text{grad}}}\rangle \\
+                                 &= \text{QVR}_{(b_\text{grad}, b_\text{grad}), \epsilon}(-1)
+                                    |+\rangle ^ {b_\text{grad}}
+    \end{aligned}
     $$
 
     In the above equation $\frac{k}{2^{b_\text{grad}}}$ represents a fixed point fraction. In
@@ -248,7 +281,7 @@ class QvrPhaseGradient(QvrInterface):
 
     $$
         |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}}
-        \sum_{\tilde{k}=0}^{\frac{2^{b_\text{grad}-1}}{2^{b_\text{grad}}}}
+        \sum_{\tilde{k}=0}^{\frac{2^{b_\text{grad}}-1}{2^{b_\text{grad}}}}
         e^{-2\pi i \tilde{k}} \ket{\tilde{k}}
     $$
 
@@ -330,7 +363,10 @@ class QvrPhaseGradient(QvrInterface):
         such additions, therefore the total Toffoli cost is
 
         $$\begin{aligned}
-            \text{Toffoli Cost} &= \frac{(b_\text{grad} - 2)(\gamma_\text{bitsize} + 2)}{2} \\
+        \text{T-Cost} &= \frac{(b_\text{grad} - 2)(\gamma_\text{bitsize} + 2)}{2} \\
+                  &\approxeq \mathcal{O}\left(\log^2{\frac{1}{\epsilon}} +
+                  \log{\left(\frac{1}{\epsilon}\right)}
+                  \log{\left(\log{\left(\frac{1}{\epsilon}\right)}\right)}\right)
         \end{aligned}$$
 
 
@@ -343,8 +379,8 @@ class QvrPhaseGradient(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: Union[SymbolicFloat] = 1.0
+    eps: Union[SymbolicFloat] = 1e-9
 
     def __attrs_post_init__(self):
         dtype = self.cost_reg.dtype
@@ -353,10 +389,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: Union[SymbolicFloat] = 1.0, eps: Union[SymbolicFloat] = 1e-9
     ) -> 'QvrPhaseGradient':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrPhaseGradient(cost_reg, gamma=gamma, eps=eps)
@@ -465,7 +498,7 @@ class QvrPhaseGradient(QvrInterface):
 
 @bloq_example
 def _qvr_phase_gradient() -> QvrPhaseGradient:
-    qvr_phase_gradient = QvrPhaseGradient.from_bitsize(12)
+    qvr_phase_gradient = QvrPhaseGradient.from_bitsize(12, gamma=0.1, eps=1e-4)
     return qvr_phase_gradient
 
 
