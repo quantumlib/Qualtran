@@ -462,12 +462,12 @@ class Controlled(GateWithRegisters):
 
     def pretty_name(self) -> str:
         num_ctrls = self.ctrl_spec.num_qubits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C{num_ctrls}'
+        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
         return f'{ctrl_string}[{self.subbloq.pretty_name()}]'
 
     def __str__(self) -> str:
         num_ctrls = self.ctrl_spec.num_qubits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C{num_ctrls}'
+        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
         return f'{ctrl_string}[{self.subbloq}]'
 
     def as_cirq_op(
