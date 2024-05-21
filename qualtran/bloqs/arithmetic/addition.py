@@ -441,13 +441,14 @@ class AddK(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
+        N = 2**self.bitsize
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': x + self.k}
+            return {'x': int(math.fmod(x + self.k, N))}
 
         if np.all(self.cvs == ctrls):
-            x = x + self.k
+            x = int(math.fmod(x + self.k, N))
 
         return {'ctrls': ctrls, 'x': x}
 

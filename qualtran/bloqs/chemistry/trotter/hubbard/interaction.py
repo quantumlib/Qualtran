@@ -132,8 +132,8 @@ def _interaction_hwp() -> InteractionHWP:
     length = 8
     angle = 0.5
     hubb_u = 4.0
-    interaction = InteractionHWP(length, angle, hubb_u)
-    return interaction
+    interaction_hwp = InteractionHWP(length, angle, hubb_u)
+    return interaction_hwp
 
 
 _INTERACTION_HWP_DOC = BloqDocSpec(

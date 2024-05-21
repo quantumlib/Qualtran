@@ -226,9 +226,12 @@ class BlockEncoding(Bloq):
     alpha: SymbolicFloat
     epsilon: SymbolicFloat
 
+    def pretty_name(self) -> str:
+        return 'B[H]'
+
     @property
     @abc.abstractmethod
-    def selection_bitsize(self) -> int:
+    def selection_register(self) -> Register:
         """The bitsize for the register `a` registers above"""
 
     @property
@@ -321,9 +324,6 @@ class LCUBlockEncoding(BlockEncoding):
                 Register('system', QAny(self.select.system_bitsize)),
             ]
         )
-
-    def pretty_name(self) -> str:
-        return 'U[H]'
 
     @cached_property
     def signal_state(self) -> BlackBoxPrepare:
@@ -436,7 +436,7 @@ def _black_box_block_bloq() -> LCUBlockEncoding:
     select = SelectHubbard(x_dim=dim, y_dim=dim)
     U = 4
     t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, mu=U)
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
     black_box_block_bloq = LCUBlockEncoding(
@@ -461,7 +461,7 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     select = SelectHubbard(x_dim=dim, y_dim=dim)
     U = 4
     t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, mu=U)
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
     black_box_block_bloq = LCUBlockEncoding(

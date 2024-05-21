@@ -54,6 +54,7 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
+import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -77,6 +78,7 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
+import qualtran.bloqs.hubbard_model
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -268,7 +270,9 @@ CHEMISTRY: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_TILE_HWP_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_HWP_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
@@ -294,6 +298,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Subtraction',
+        module=qualtran.bloqs.arithmetic.subtraction,
+        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -464,6 +473,14 @@ OTHER: List[NotebookSpecV2] = [
         module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
         bloq_specs=[
             qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Qubitized Hubbard Model',
+        module=qualtran.bloqs.hubbard_model,
+        bloq_specs=[
+            qualtran.bloqs.hubbard_model._SELECT_HUBBARD,
+            qualtran.bloqs.hubbard_model._PREPARE_HUBBARD,
         ],
     ),
     NotebookSpecV2(
