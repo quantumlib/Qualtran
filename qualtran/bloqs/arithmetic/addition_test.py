@@ -198,6 +198,12 @@ def test_add_call_classically(a: int, b: int, num_bits: int):
     assert ret == (a, a + b)
 
 
+def test_add_call_classically_overflow():
+    bloq = Add(QUInt(3))
+    ret = bloq.call_classically(a=5, b=6)
+    assert ret == (5, 3)  # 3 = 5+6 mod 8
+
+
 def test_add_truth_table():
     bloq = Add(QUInt(2))
     classical_truth_table = format_classical_truth_table(*get_classical_truth_table(bloq))
