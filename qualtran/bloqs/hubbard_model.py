@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-r"""Gates for Qubitizing the Hubbard Model.
+r"""Bloqs for Qubitizing the Hubbard Model.
 
 This follows section V. of the [Linear T Paper](https://arxiv.org/abs/1805.03662).
 
@@ -54,11 +54,11 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
-from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+from qualtran.bloqs.mod_arithmetic import ModAddK
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
@@ -66,6 +66,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.symbolics.math_funcs import acos, ssqrt
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
@@ -100,7 +101,7 @@ class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type
         control_val: Optional bit specifying the control value for constructing a controlled
             version of this gate. Defaults to None, which means no control.
 
-    Signature:
+    Registers:
         control: A control bit for the entire gate.
         U: Whether we're applying the single-site part of the potential.
         V: Whether we're applying the pairwise part of the potential.
@@ -242,10 +243,10 @@ class PrepareHubbard(PrepareOracle):
         x_dim: the number of sites along the x axis.
         y_dim: the number of sites along the y axis.
         t: coefficient for hopping terms in the Hubbard model hamiltonian.
-        mu: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
+        u: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
             hamiltonian.
 
-    Signature:
+    Registers:
         control: A control bit for the entire gate.
         U: Whether we're applying the single-site part of the potential.
         V: Whether we're applying the pairwise part of the potential.
@@ -265,8 +266,8 @@ class PrepareHubbard(PrepareOracle):
 
     x_dim: int
     y_dim: int
-    t: int
-    mu: int
+    t: float
+    u: float
 
     def __attrs_post_init__(self):
         if self.x_dim != self.y_dim:
@@ -293,7 +294,7 @@ class PrepareHubbard(PrepareOracle):
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
         # https://arxiv.org/abs/1805.03662v2 equation 60
         N = self.x_dim * self.y_dim * 2
-        qlambda = 2 * N * self.t + (N * self.mu) // 2
+        qlambda = 2 * N * self.t + (N * self.u) // 2
         return qlambda
 
     @cached_property
@@ -308,7 +309,7 @@ class PrepareHubbard(PrepareOracle):
         temp = quregs['temp']
 
         N = self.x_dim * self.y_dim * 2
-        yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
+        yield cirq.Ry(rads=2 * acos(ssqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
         yield cirq.Ry(rads=2 * np.arccos(np.sqrt(1 / 5))).on(*U).controlled_by(*V)
         yield PrepareUniformSuperposition(self.x_dim).on_registers(controls=[], target=p_x)
         yield PrepareUniformSuperposition(self.y_dim).on_registers(controls=[], target=p_y)
@@ -318,7 +319,7 @@ class PrepareHubbard(PrepareOracle):
         yield from [cirq.X(*V), cirq.H(*alpha).controlled_by(*V), cirq.CX(*V, *beta), cirq.X(*V)]
         yield cirq.Circuit(cirq.CNOT.on_each([*zip([*p_x, *p_y, *alpha], [*q_x, *q_y, *beta])]))
         yield CSwap.make_on(ctrl=temp[:1], x=q_x, y=q_y)
-        yield AddConstantMod(len(q_x), self.x_dim, add_val=1, cvs=[0, 0]).on(*U, *V, *q_x)
+        yield ModAddK(len(q_x), self.x_dim, add_val=1, cvs=[0, 0]).on(*U, *V, *q_x)
         yield CSwap.make_on(ctrl=temp[:1], x=q_x, y=q_y)
 
         and_target = context.qubit_manager.qalloc(1)
@@ -334,9 +335,41 @@ class PrepareHubbard(PrepareOracle):
 
 
 def get_walk_operator_for_hubbard_model(
-    x_dim: int, y_dim: int, t: int, mu: int
+    x_dim: int, y_dim: int, t: int, u: int
 ) -> 'QubitizationWalkOperator':
     select = SelectHubbard(x_dim, y_dim)
-    prepare = PrepareHubbard(x_dim, y_dim, t, mu)
+    prepare = PrepareHubbard(x_dim, y_dim, t, u)
 
     return QubitizationWalkOperator(select=select, prepare=prepare)
+
+
+@bloq_example
+def _sel_hubb() -> SelectHubbard:
+    x_dim = 4
+    y_dim = 4
+    sel_hubb = SelectHubbard(x_dim, y_dim)
+    return sel_hubb
+
+
+_SELECT_HUBBARD = BloqDocSpec(
+    bloq_cls=SelectHubbard,
+    import_line='from qualtran.bloqs.hubbard_model import SelectHubbard',
+    examples=(_sel_hubb,),
+)
+
+
+@bloq_example
+def _prep_hubb() -> PrepareHubbard:
+    x_dim = 4
+    y_dim = 4
+    t = 1.0
+    u = 4.0 / t
+    prep_hubb = PrepareHubbard(x_dim, y_dim, t=t, u=u)
+    return prep_hubb
+
+
+_PREPARE_HUBBARD = BloqDocSpec(
+    bloq_cls=PrepareHubbard,
+    import_line='from qualtran.bloqs.hubbard_model import PrepareHubbard',
+    examples=(_prep_hubb,),
+)

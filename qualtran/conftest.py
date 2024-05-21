@@ -86,7 +86,10 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'apply_z_to_odd',
         'lp_resource_state_symbolic',
         'select_pauli_lcu',
+        'sel_hubb',
         'walk_op',
+        'thc_walk_op',  # thc_prep does not serialize
+        'qubitization_qpe_chem_thc',  # too slow
         'walk_op_chem_sparse',
         'qubitization_qpe_sparse_chem',  # too slow
         'trott_unitary',

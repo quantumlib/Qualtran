@@ -24,12 +24,22 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Iterator, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -50,7 +60,7 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -60,6 +70,9 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
 )
 from qualtran.simulation.classical_sim import ClassicalValT
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -124,12 +137,14 @@ class And(GateWithRegisters):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
         outgoing: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
     ):
+        import quimb.tensor as qtn
+
         # Fill in our tensor using "and" logic.
         data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
         for c1, c2 in itertools.product((0, 1), repeat=2):
@@ -158,7 +173,9 @@ class And(GateWithRegisters):
             )
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
 
@@ -322,9 +339,10 @@ class MultiAnd(Bloq):
             t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
         if reg.name == 'ctrl':
-            print(idx)
             return Circle(filled=self.cvs[idx[0]] == 1)
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
@@ -333,9 +351,6 @@ class MultiAnd(Bloq):
         else:
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
-
-    def short_name(self) -> str:
-        return 'And'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(And(), len(self.cvs) - 1)}

@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Ty
 
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -50,11 +49,10 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
-from qualtran.simulation.tensor._tensor_data_manipulation import (
-    tensor_data_from_unitary_and_signature,
-)
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran.drawing import WireSymbol
 
 
@@ -106,7 +104,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
@@ -115,7 +113,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         _add_my_tensors_from_gate(
             self.cirq_gate,
             self.signature,
-            self.short_name(),
+            str(self.cirq_gate),
             tn=tn,
             tag=tag,
             incoming=incoming,
@@ -210,12 +208,18 @@ def _add_my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
     short_name: str,
-    tn: qtn.TensorNetwork,
+    tn: 'qtn.TensorNetwork',
     tag: Any,
     *,
     incoming: Dict[str, 'SoquetT'],
     outgoing: Dict[str, 'SoquetT'],
 ):
+    import quimb.tensor as qtn
+
+    from qualtran.simulation.tensor._tensor_data_manipulation import (
+        tensor_data_from_unitary_and_signature,
+    )
+
     if not cirq.has_unitary(gate):
         raise NotImplementedError(
             f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "

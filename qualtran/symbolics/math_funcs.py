@@ -41,6 +41,12 @@ def sabs(x: SymbolicFloat) -> SymbolicFloat:
     return cast(SymbolicFloat, abs(x))
 
 
+def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
+    if isinstance(x, sympy.Basic):
+        return sympy.sqrt(x)
+    return np.sqrt(x)
+
+
 def ceil(x: SymbolicFloat) -> SymbolicInt:
     if not isinstance(x, sympy.Basic):
         return int(np.ceil(x))

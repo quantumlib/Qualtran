@@ -87,7 +87,7 @@ class BlackBoxSelect(Bloq):
     def system_bitsize(self):
         return sum(reg.total_bits() for reg in self.select.target_registers)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'SEL'
 
     @cached_property
@@ -178,7 +178,7 @@ class BlackBoxPrepare(Bloq):
         )
         return {'selection': selection, 'junk': junk}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'Prep'
 
 
@@ -234,7 +234,7 @@ class BlackBoxBlockEncoding(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'B[V]'
 
     def build_composite_bloq(
@@ -281,8 +281,8 @@ class ChebyshevPolynomial(Bloq):
         if self.order < 1:
             raise ValueError(f"order must be greater >= 1. Found {self.order}.")
 
-    def short_name(self) -> str:
-        return f"T_{self.order}[{self.block_encoding.short_name()}]"
+    def pretty_name(self) -> str:
+        return f"T_{self.order}[{self.block_encoding.pretty_name()}]"
 
     @cached_property
     def signature(self) -> Signature:
@@ -342,7 +342,7 @@ def _black_box_block_bloq() -> BlackBoxBlockEncoding:
 
     dim = 3
     select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, u=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     return black_box_block_bloq
 
@@ -361,7 +361,7 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
 
     dim = 3
     select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, u=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return chebyshev_poly

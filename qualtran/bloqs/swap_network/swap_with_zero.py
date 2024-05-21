@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, prod, SymbolicInt
 
@@ -161,6 +161,8 @@ class SwapWithZero(GateWithRegisters):
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return super().wire_symbol(reg, idx)
         name = reg.name
         if 'selection' in name:
             return TextBox('@(r⇋0)')

@@ -49,12 +49,14 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/subtraction.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
@@ -63,6 +65,12 @@ Bloqs Library
     factoring/mod_mul.ipynb
     factoring/ecc/ecc.ipynb
     factoring/ecc/ec_add.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Modular Arithmetic:
+
+    mod_arithmetic/mod_addition.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -84,6 +92,7 @@ Bloqs Library
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
+    hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     data_loading/qrom.ipynb
     block_encoding.ipynb

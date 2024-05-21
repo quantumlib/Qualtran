@@ -29,7 +29,6 @@ from typing import (
 import attrs
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -38,6 +37,8 @@ from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -399,6 +400,8 @@ class Controlled(GateWithRegisters):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         from qualtran._infra.composite_bloq import _flatten_soquet_collection
         from qualtran.simulation.tensor._tensor_data_manipulation import (
             active_space_for_ctrl_spec,
@@ -418,7 +421,7 @@ class Controlled(GateWithRegisters):
         subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
         data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
         # Add the data to the tensor network.
-        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.pretty_name(), tag]))
 
     def _unitary_(self):
         if isinstance(self.subbloq, GateWithRegisters):
@@ -433,11 +436,13 @@ class Controlled(GateWithRegisters):
         # Unable to determine the unitary effect.
         return NotImplemented
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import Text
+
+        if reg is None:
+            return Text(f'C[{self.subbloq.wire_symbol(reg=None)}]')
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
-            print(self.subbloq)
-            print(type(self.subbloq))
             return self.subbloq.wire_symbol(reg, idx)
 
         # Otherwise, it's part of the control register.
@@ -449,9 +454,6 @@ class Controlled(GateWithRegisters):
 
     def pretty_name(self) -> str:
         return f'C[{self.subbloq.pretty_name()}]'
-
-    def short_name(self) -> str:
-        return f'C[{self.subbloq.short_name()}]'
 
     def __str__(self) -> str:
         return f'C[{self.subbloq}]'
