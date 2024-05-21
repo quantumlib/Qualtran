@@ -57,6 +57,7 @@ from qualtran import (
 )
 from qualtran.bloqs import util_bloqs
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt import MultiTargetCNOT
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
@@ -71,6 +72,82 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
+
+
+@frozen
+class _LeftAddPart(Bloq):
+    """The 'left' part of the addition building block from the reference, figure 2."""
+
+    @property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('c', QUInt(1)),
+                Register('i', QUInt(1)),
+                Register('t', QUInt(1)),
+                Register('out', QUInt(1), side=Side.RIGHT),
+            ]
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', c, i, t) -> Dict[str, 'SoquetT']:
+        c, [i, t] = bb.add(MultiTargetCNOT(2), ctrl=c, targets=[i, t])
+        [i, t], out = bb.add(And(), ctrl=[i, t])
+        c, out = bb.add(CNOT(), ctrl=c, target=out)
+        return {'c': c, 'i': i, 't': t, 'out': out}
+
+
+@frozen
+class _RightAddPart(Bloq):
+    """The 'right' part of the addition building block from the reference, figure 2."""
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('c', QUInt(1)),
+                Register('i', QUInt(1)),
+                Register('t', QUInt(1)),
+                Register('cc', QUInt(1), side=Side.LEFT),
+            ]
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', c, i, t, cc) -> Dict[str, 'SoquetT']:
+        c, cc = bb.add(CNOT(), ctrl=c, target=cc)
+        i, t = bb.add(And().adjoint(), ctrl=[i, t], target=cc)
+        c, i = bb.add(CNOT(), ctrl=c, target=i)
+        i, t = bb.add(CNOT(), ctrl=i, target=t)
+        return {'c': c, 'i': i, 't': t}
+
+
+@frozen
+class IdiomaticAdd(Bloq):
+    """An addition circuit; follows figure 1"""
+
+    n: 'SymbolicInt'
+
+    @property
+    def signature(self) -> Signature:
+        return Signature([Register('a', QUInt(self.n)), Register('b', QUInt(self.n))])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', a, b) -> Dict[str, 'SoquetT']:
+        a_bits = bb.split(a)
+        b_bits = bb.split(b)
+        anc = bb.allocate(1)
+        ancs = [anc]
+
+        for i in range(self.n):
+            ancs[-1], a_bits[i], b_bits[i], anc = bb.add(
+                _LeftAddPart(), c=ancs[-1], i=a_bits[i], t=b_bits[i]
+            )
+            ancs.append(anc)
+
+        for i in range(self.n - 1, -1, -1):
+            ancs[i], a_bits[i], b_bits[i] = bb.add(
+                _RightAddPart(), c=ancs[i], i=a_bits[i], t=b_bits[i], cc=ancs[i + 1]
+            )
+
+        bb.free(ancs[0])
+        return {'a': bb.join(a_bits), 'b': bb.join(b_bits)}
 
 
 @frozen
