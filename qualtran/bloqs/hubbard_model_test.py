@@ -24,6 +24,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 def test_prep_hubb_auto(bloq_autotester):
     bloq_autotester(_prep_hubb)
 
+
 def test_sel_hubb_auto(bloq_autotester):
     bloq_autotester(_sel_hubb)
 
