@@ -277,6 +277,10 @@ class LCUBlockEncoding(BlockEncoding):
     Here $|G\rangle = \mathrm{PREPARE}|0\rangle$.
 
     Args:
+        alpha: The normalization constant upper bounding the spectral norm of
+            the Hamiltonian. Often called lambda.
+        epsilon: The precision to which the block encoding is performed.
+            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
 
@@ -357,8 +361,11 @@ class ChebyshevPolynomial(Bloq):
         &\dots
     \end{align*}
 
+    See https://github.com/quantumlib/Qualtran/issues/984 for an alternative.
+
     Args:
         block_encoding: Block encoding of a Hamiltonian $H$, $\mathcal{B}[H]$.
+            Assumes the $|G\rangle$ state of the block encoding is the identity operator.
         order: order of Chebychev polynomial.
 
     References:
