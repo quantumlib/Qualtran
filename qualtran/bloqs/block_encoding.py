@@ -61,7 +61,7 @@ from qualtran import (
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -92,11 +92,11 @@ class BlackBoxSelect(Bloq):
     select: SelectOracle
 
     @cached_property
-    def selection_bitsize(self):
+    def selection_bitsize(self) -> SymbolicInt:
         return sum(reg.total_bits() for reg in self.select.selection_registers)
 
     @cached_property
-    def system_bitsize(self):
+    def system_bitsize(self) -> SymbolicInt:
         return sum(reg.total_bits() for reg in self.select.target_registers)
 
     def pretty_name(self) -> str:
@@ -150,11 +150,11 @@ class BlackBoxPrepare(Bloq):
     prepare: PrepareOracle
 
     @cached_property
-    def selection_bitsize(self):
+    def selection_bitsize(self) -> SymbolicInt:
         return sum(reg.total_bits() for reg in self.prepare.selection_registers)
 
     @cached_property
-    def junk_bitsize(self):
+    def junk_bitsize(self) -> SymbolicInt:
         return sum(reg.total_bits() for reg in self.prepare.selection_registers)
 
     @cached_property
@@ -231,18 +231,18 @@ class BlockEncoding(Bloq):
 
     @property
     @abc.abstractmethod
-    def selection_register(self) -> Register:
-        """The bitsize for the register `a` registers above"""
+    def selection_bitsize(self) -> SymbolicInt:
+        """The bitsize for the register `a` registers above."""
 
     @property
     @abc.abstractmethod
-    def junk_bitsize(self) -> int:
-        """An additional junk register typically used for Prepare which is not reflected on."""
+    def junk_bitsize(self) -> SymbolicInt:
+        """The bitsize of any additional junk register."""
 
     @property
     @abc.abstractmethod
-    def system_bitsize(self) -> int:
-        """The system bitsize for applying the controlled (signal) unitary to."""
+    def system_bitsize(self) -> SymbolicInt:
+        """The system bitsize `s`."""
 
     @property
     @abc.abstractmethod
@@ -304,15 +304,15 @@ class LCUBlockEncoding(BlockEncoding):
     )
 
     @cached_property
-    def selection_bitsize(self):
+    def selection_bitsize(self) -> SymbolicInt:
         return self.prepare.selection_bitsize
 
     @cached_property
-    def junk_bitsize(self):
+    def junk_bitsize(self) -> SymbolicInt:
         return self.prepare.junk_bitsize
 
     @cached_property
-    def system_bitsize(self):
+    def system_bitsize(self) -> SymbolicInt:
         return self.select.system_bitsize
 
     @cached_property
