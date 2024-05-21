@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-r"""Gates for Qubitizing the Hubbard Model.
+r"""Bloqs for Qubitizing the Hubbard Model.
 
 This follows section V. of the [Linear T Paper](https://arxiv.org/abs/1805.03662).
 
@@ -54,7 +54,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
@@ -101,7 +101,7 @@ class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type
         control_val: Optional bit specifying the control value for constructing a controlled
             version of this gate. Defaults to None, which means no control.
 
-    Signature:
+    Registers:
         control: A control bit for the entire gate.
         U: Whether we're applying the single-site part of the potential.
         V: Whether we're applying the pairwise part of the potential.
@@ -246,7 +246,7 @@ class PrepareHubbard(PrepareOracle):
         u: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
             hamiltonian.
 
-    Signature:
+    Registers:
         control: A control bit for the entire gate.
         U: Whether we're applying the single-site part of the potential.
         V: Whether we're applying the pairwise part of the potential.
@@ -341,3 +341,35 @@ def get_walk_operator_for_hubbard_model(
     prepare = PrepareHubbard(x_dim, y_dim, t, u)
 
     return QubitizationWalkOperator(select=select, prepare=prepare)
+
+
+@bloq_example
+def _sel_hubb() -> SelectHubbard:
+    x_dim = 4
+    y_dim = 4
+    sel_hubb = SelectHubbard(x_dim, y_dim)
+    return sel_hubb
+
+
+_SELECT_HUBBARD = BloqDocSpec(
+    bloq_cls=SelectHubbard,
+    import_line='from qualtran.bloqs.hubbard_model import SelectHubbard',
+    examples=(_sel_hubb,),
+)
+
+
+@bloq_example
+def _prep_hubb() -> PrepareHubbard:
+    x_dim = 4
+    y_dim = 4
+    t = 1.0
+    u = 4.0 / t
+    prep_hubb = PrepareHubbard(x_dim, y_dim, t=t, u=u)
+    return prep_hubb
+
+
+_PREPARE_HUBBARD = BloqDocSpec(
+    bloq_cls=PrepareHubbard,
+    import_line='from qualtran.bloqs.hubbard_model import PrepareHubbard',
+    examples=(_prep_hubb,),
+)

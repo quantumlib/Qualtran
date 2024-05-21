@@ -77,6 +77,7 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
+import qualtran.bloqs.hubbard_model
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -464,6 +465,14 @@ OTHER: List[NotebookSpecV2] = [
         module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
         bloq_specs=[
             qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Qubitized Hubbard Model',
+        module=qualtran.bloqs.hubbard_model,
+        bloq_specs=[
+            qualtran.bloqs.hubbard_model._SELECT_HUBBARD,
+            qualtran.bloqs.hubbard_model._PREPARE_HUBBARD,
         ],
     ),
     NotebookSpecV2(
