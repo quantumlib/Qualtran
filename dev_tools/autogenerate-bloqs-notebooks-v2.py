@@ -54,6 +54,7 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
+import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -269,7 +270,9 @@ CHEMISTRY: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_TILE_HWP_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_HWP_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
@@ -295,6 +298,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Subtraction',
+        module=qualtran.bloqs.arithmetic.subtraction,
+        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
     ),
     NotebookSpecV2(
         title='Multiplication',
