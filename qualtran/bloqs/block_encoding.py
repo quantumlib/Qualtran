@@ -205,8 +205,8 @@ class BlockEncoding(Bloq):
     $$
 
     where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
-    called a signal oracle and encodes $H$ in its top right corner, while $|G\rangle_a$ is
-    sometimes called the signal state.
+    called a signal oracle and encodes $H$ in a subspace flagged by the ancilla
+    state $|G\rangle_a$, which is sometimes called the signal state.
 
     Developers users must implement a method to return a bloq preparing the state $|G\rangle$.
 
@@ -223,6 +223,7 @@ class BlockEncoding(Bloq):
             Definition 3 page 8.
 
     """
+
     alpha: SymbolicFloat
     epsilon: SymbolicFloat
 

@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-def _to_tuple(x: Iterable[int]) -> Sequence[int]:
+def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
     """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
     return tuple(x)
 
