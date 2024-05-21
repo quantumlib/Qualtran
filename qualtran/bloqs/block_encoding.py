@@ -205,8 +205,8 @@ class BlockEncoding(Bloq):
     $$
 
     where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
-    called a signal oracle and encodes $H$ in its top right corner, while $|G\rangle_a$ is
-    sometimes called the signal state.
+    called a signal oracle and encodes $H$ in a subspace flagged by the ancilla
+    state $|G\rangle_a$, which is sometimes called the signal state.
 
     Developers users must implement a method to return a bloq preparing the state $|G\rangle$.
 
@@ -223,6 +223,7 @@ class BlockEncoding(Bloq):
             Definition 3 page 8.
 
     """
+
     alpha: SymbolicFloat
     epsilon: SymbolicFloat
 
@@ -234,12 +235,12 @@ class BlockEncoding(Bloq):
     @property
     @abc.abstractmethod
     def junk_bitsize(self) -> int:
-        """An additional junk register typically used for Prepare which is not reflected on."""
+        """The bitsize of any additional junk register."""
 
     @property
     @abc.abstractmethod
     def system_bitsize(self) -> int:
-        """The system bitsize for applying the controlled (signal) unitary to."""
+        r"""The system bitsize $s$."""
 
     @property
     @abc.abstractmethod
@@ -323,7 +324,7 @@ class LCUBlockEncoding(BlockEncoding):
         )
 
     def pretty_name(self) -> str:
-        return 'U[H]'
+        return 'B[H]'
 
     @cached_property
     def signal_state(self) -> BlackBoxPrepare:
