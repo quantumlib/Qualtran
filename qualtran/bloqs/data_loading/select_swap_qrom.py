@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import numbers
 from collections import defaultdict
 from functools import cached_property
 from typing import Iterator, List, Optional, Set, Tuple, Type, Union
@@ -154,7 +155,7 @@ class SelectSwapQROM(QROMABC, GateWithRegisters):
     ) -> 'SelectSwapQROM':
         if log_block_sizes is None:
             return self
-        if isinstance(log_block_sizes, (int, sympy.Basic)):
+        if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
             log_block_sizes = (log_block_sizes,)
         if not is_symbolic(*log_block_sizes):
             assert all(1 <= 2**bs <= ilen for bs, ilen in zip(log_block_sizes, self.data_shape))

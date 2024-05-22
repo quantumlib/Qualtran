@@ -15,7 +15,7 @@
 """Base class for Bloqs implementing a QROM (Quantum read-only memory) circuit."""
 import abc
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Tuple, Type, TYPE_CHECKING, TypeVar, Union
+from typing import Dict, Tuple, Type, TypeVar, Union
 
 import attrs
 import cirq
@@ -25,11 +25,6 @@ from numpy.typing import ArrayLike, NDArray
 from qualtran import BoundedQUInt, QAny, Register
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
-
-# def _to_tuple(x: Iterable[NDArray]) -> Tuple[NDArray, ...]:
-#     """Needed so mypy can correctly infer types."""
-#     return tuple(x)
-#
 
 QROMT = TypeVar('QROMT', bound='QROMABC')
 
