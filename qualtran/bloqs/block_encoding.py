@@ -11,35 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""High level bloqs for defining bloq encodings and operations on block encodings.
-
-In general, given an $s$-qubit operator $H$ then the $(s+a)$-qubit unitary $U$ is
-a $(\alpha, a, \epsilon)$-block encoding of $H$ if it satisfies:
-
-$$
-    \lVert H - \alpha (\langle G|_a\otimes I_s U |G\rangle_a \otimes I_s) \rVert
-    \le \epsilon,
-$$
-
-where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
-called a signal oracle and encodes $H$ in its top right corner, $\alpha \ge
-\lVert H\rVert$ (where $\lVert \cdot \rVert$ denotes the spectral norm), and
-$\epsilon$ is the precision to which the block encoding is prepared. The state
-$|G\rangle_a$ is sometimes called the signal state, and its form depends on the
-details of the block encoding. 
-
-For LCU based block encodings 
-we have
-$$
-U = \sum_l |l\rangle\langle l| \otimes U_l
-$$
-and $|G\rangle = \sum_l \sqrt{\frac{\alpha_l}{\alpha}}|0\rangle_a$, which define the
-usual SELECT and PREPARE oracles.
-
-Other ways of building block encodings exist so we define the abstract base
-class `BlockEncoding` bloq, which expects values for $\alpha$, $\epsilon$,
-system and ancilla registers and a bloq which prepares the state $|G\rangle$. 
-"""
+r"""High level bloqs for defining bloq encodings and operations on block encodings."""
 
 import abc
 from functools import cached_property
@@ -222,23 +194,38 @@ class BlackBoxPrepare(Bloq):
 class BlockEncoding(Bloq):
     r"""Abstract interface for an arbitrary block encoding.
 
-    A $(\alpha, a, \epsilon) block encoding of an s-qubit operator $H$ if it obeys:
+    In general, given an $s$-qubit operator $H$ then the $(s+a)$-qubit unitary $U$ is
+    a $(\alpha, a, \epsilon)$-block encoding of $H$ if it satisfies:
 
     $$
-        \equiv \lVert H - \alpha (\langle G|_a\otimes I_s U |G\rangle_a \otimes I_s) \rVert
+        \lVert H - \alpha (\langle G|_a\otimes I_s U |G\rangle_a \otimes I_s) \rVert
         \le \epsilon,
     $$
 
     where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
-    called a signal oracle and encodes $H$ in a subspace flagged by the ancilla
-    state $|G\rangle_a$, which is sometimes called the signal state.
+    called a signal oracle, $\alpha \ge \lVert H\rVert$ (where $\lVert \cdot \rVert$
+    denotes the spectral norm), and $\epsilon$ is the precision to which the block
+    encoding is prepared. The state $|G\rangle_a$ is sometimes called the signal
+    state, and its form depends on the details of the block encoding.
 
-    Developers users must implement a method to return a bloq preparing the state $|G\rangle$.
+    For LCU based block encodings with $H = \sum_l w_l U_l$
+    we have
+    $$
+    U = \sum_l |l\rangle\langle l| \otimes U_l
+    $$
+    and $|G\rangle = \sum_l \sqrt{\frac{w_l}{\alpha}}|0\rangle_a$, which define the
+    usual SELECT and PREPARE oracles.
+
+    Other ways of building block encodings exist so we define the abstract base
+    class `BlockEncoding` bloq, which expects values for $\alpha$, $\epsilon$,
+    system and ancilla registers and a bloq which prepares the state $|G\rangle$.
 
     Users must specify:
-        1. the normalization constant $\alpha \ge \lVert A \rVert$, where
-            $\lVert \cdot \rVert denotes the spectral norm.
-        2. the precision to which the block encoding is to be prepared ($\epsilon$).
+    1. the normalization constant $\alpha \ge \lVert A \rVert$, where
+        $\lVert \cdot \rVert$ denotes the spectral norm.
+    2. the precision to which the block encoding is to be prepared ($\epsilon$).
+
+    Developers must provide a method to return a bloq to prepare $|G\rangle$.
 
     References:
         [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
@@ -298,7 +285,7 @@ class LCUBlockEncoding(BlockEncoding):
     where
 
     $$
-        |G\rangle = \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\lambda}} |l\rangle_a,
+        |G\rangle = \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\alpha}} |l\rangle_a,
     $$
 
     The ancilla register is at least of size $\log L$.
@@ -371,7 +358,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     $$
     where
     $$
-        \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\lambda}} |l\rangle_a,
+        \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\alpha}} |l\rangle_a,
     $$
     and
     $$
@@ -441,7 +428,10 @@ class LCUBlockEncodingZeroState(BlockEncoding):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
+        prep_reg = {reg.name: soqs[reg.name] for reg in self.prepare.signature}
+        soqs |= bb.add_d(self.prepare, **prep)
         soqs |= bb.add_d(self.select, **select_reg)
+        soqs |= bb.add_d(self.prepare.adjoint(), **prep)
         return soqs
 
 
@@ -547,7 +537,7 @@ def _black_box_select() -> BlackBoxSelect:
 
 
 @bloq_example
-def _lcu_block_encoding() -> LCUBlockEncoding:
+def _lcu_block_bloq() -> LCUBlockEncoding:
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -558,16 +548,83 @@ def _lcu_block_encoding() -> LCUBlockEncoding:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    lcu_block_encoding = LCUBlockEncoding(
+    lcu_block_bloq = LCUBlockEncoding(select=select, prepare=prepare, alpha=qlambda, epsilon=0.0)
+    return lcu_block_bloq
+
+
+@bloq_example
+def _black_box_lcu_block_bloq() -> LCUBlockEncoding:
+    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+
+    # 3x3 hubbard model U/t = 4
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    N = dim * dim * 2
+    qlambda = 2 * N * t + (N * U) // 2
+    black_box_lcu_block_bloq = LCUBlockEncoding(
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+    )
+    return black_box_lcu_block_bloq
+
+
+@bloq_example
+def _lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
+    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+
+    # 3x3 hubbard model U/t = 4
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    N = dim * dim * 2
+    qlambda = 2 * N * t + (N * U) // 2
+    lcu_zero_state_block_bloq = LCUBlockEncodingZeroState(
         select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
     )
-    return lcu_block_encoding
+    return lcu_zero_state_block_bloq
 
 
-_LCUBLOCKENCODINGDOC = BloqDocSpec(
+@bloq_example
+def _black_box_lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
+    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+
+    # 3x3 hubbard model U/t = 4
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    N = dim * dim * 2
+    qlambda = 2 * N * t + (N * U) // 2
+    black_box_lcu_zero_state_block_bloq = LCUBlockEncodingZeroState(
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+    )
+    return black_box_lcu_zero_state_block_bloq
+
+
+_BLOCK_ENCODING_DOC = BloqDocSpec(
+    bloq_cls=BlockEncoding,
+    import_line="from qualtran.bloqs.block_encoding import BlockEncoding",
+    examples=[],
+)
+
+_LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
     bloq_cls=LCUBlockEncoding,
-    examples=(_lcu_block_encoding,),
     import_line='from qualtran.bloqs.block_encoding import LCUBlockEncoding',
+    examples=(_lcu_block_bloq, _black_box_lcu_block_bloq),
+)
+
+_LCU_ZERO_STATE_BLOCK_ENCODING_DOC = BloqDocSpec(
+    bloq_cls=LCUBlockEncodingZeroState,
+    import_line='from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState',
+    examples=(_lcu_zero_state_block_bloq, _black_box_lcu_zero_state_block_bloq),
 )
 
 
@@ -590,8 +647,31 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     return chebyshev_poly
 
 
+@bloq_example
+def _black_box_chebyshev_poly() -> ChebyshevPolynomial:
+    from qualtran.bloqs.block_encoding import (
+        BlackBoxPrepare,
+        BlackBoxSelect,
+        LCUBlockEncodingZeroState,
+    )
+    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    N = dim * dim * 2
+    qlambda = 2 * N * t + (N * U) // 2
+    black_box_block_bloq = LCUBlockEncodingZeroState(
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+    )
+    black_box_chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
+    return black_box_chebyshev_poly
+
+
 _CHEBYSHEV_BLOQ_DOC = BloqDocSpec(
     bloq_cls=ChebyshevPolynomial,
     import_line='from qualtran.bloqs.block_encoding import ChebyshevPolynomial',
-    examples=(_chebyshev_poly,),
+    examples=(_chebyshev_poly, _black_box_chebyshev_poly),
 )

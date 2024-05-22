@@ -497,7 +497,9 @@ OTHER: List[NotebookSpecV2] = [
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[
-            qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC,
+            qualtran.bloqs.block_encoding._BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',

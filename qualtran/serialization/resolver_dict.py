@@ -177,6 +177,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
     "qualtran.bloqs.block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.LCUBlockEncoding,
+    "qualtran.bloqs.block_encoding.LCUBlockEncodingZeroState": qualtran.bloqs.block_encoding.LCUBlockEncodingZeroState,
     "qualtran.bloqs.block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.BlackBoxPrepare,
     "qualtran.bloqs.block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.ChebyshevPolynomial": qualtran.bloqs.block_encoding.ChebyshevPolynomial,
