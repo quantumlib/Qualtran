@@ -13,10 +13,8 @@
 #  limitations under the License.
 
 """Quantum read-only memory."""
-from functools import cached_property
 from typing import (
     Callable,
-    Dict,
     Iterable,
     Iterator,
     Optional,
@@ -33,15 +31,15 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register
+from qualtran import bloq_example, BloqDocSpec, Register
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.data_loading.qrom_abc import QROMABC
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
-from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics import bit_length, is_symbolic, prod, shape, Shaped, SymbolicInt
+from qualtran.symbolics import prod, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
@@ -54,7 +52,7 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 
 @cirq.value_equality()
 @attrs.frozen
-class QROM(UnaryIterationGate):
+class QROM(QROMABC, UnaryIterationGate):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     ## Overview
@@ -146,56 +144,9 @@ class QROM(UnaryIterationGate):
             Babbush et. al. (2020). Figure 3.
     """
 
-    data_or_shape: Union[NDArray, Shaped] = attrs.field(
-        converter=lambda x: np.array(x) if isinstance(x, (list, tuple)) else x
-    )
-    selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
-    )
-    target_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
-    )
-    num_controls: SymbolicInt = 0
-
-    def has_data(self) -> bool:
-        return not isinstance(self.data_or_shape, Shaped)
-
-    @property
-    def data_shape(self) -> Tuple[SymbolicInt, ...]:
-        return shape(self.data_or_shape)[1:]
-
-    @property
-    def data(self) -> np.ndarray:
-        if not self.has_data():
-            raise ValueError(f"Data not available for symbolic QROM {self}")
-        assert isinstance(self.data_or_shape, np.ndarray)
-        return self.data_or_shape
-
-    def __attrs_post_init__(self):
-        assert all([is_symbolic(s) or isinstance(s, int) for s in self.selection_bitsizes])
-        assert all([is_symbolic(t) or isinstance(t, int) for t in self.target_bitsizes])
-        assert len(self.target_bitsizes) == self.data_or_shape.shape[0], (
-            f"len(self.target_bitsizes)={len(self.target_bitsizes)} should be same as "
-            f"len(self.data)={self.data_or_shape.shape[0]}"
-        )
-        if isinstance(self.data_or_shape, np.ndarray) and not is_symbolic(*self.target_bitsizes):
-            assert all(
-                t >= int(np.max(d)).bit_length() for t, d in zip(self.target_bitsizes, self.data)
-            )
-        assert isinstance(self.selection_bitsizes, tuple)
-        assert isinstance(self.target_bitsizes, tuple)
-
     @classmethod
     def build_from_data(cls, *data: ArrayLike, num_controls: SymbolicInt = 0) -> 'QROM':
-        _data = np.array([np.array(d, dtype=int) for d in data])
-        selection_bitsizes = tuple((s - 1).bit_length() for s in _data.shape[1:])
-        target_bitsizes = tuple(max(int(np.max(d)).bit_length(), 1) for d in data)
-        return QROM(
-            data_or_shape=_data,
-            selection_bitsizes=selection_bitsizes,
-            target_bitsizes=target_bitsizes,
-            num_controls=num_controls,
-        )
+        return cls._build_from_data(*data, num_controls=num_controls)
 
     @classmethod
     def build_from_bitsize(
@@ -203,46 +154,16 @@ class QROM(UnaryIterationGate):
         data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         *,
+        target_shapes: Tuple[Union[Shaped, Tuple[SymbolicInt, ...]], ...] = (),
         selection_bitsizes: Tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> 'QROM':
-        data_shape = (
-            (data_len_or_shape,) if isinstance(data_len_or_shape, int) else data_len_or_shape
-        )
-        if not isinstance(target_bitsizes, tuple):
-            target_bitsizes = (target_bitsizes,)
-        _data = Shaped((len(target_bitsizes),) + data_shape)
-        if selection_bitsizes is ():
-            selection_bitsizes = tuple(bit_length(s - 1) for s in _data.shape[1:])
-        assert len(selection_bitsizes) == len(_data.shape) - 1
-        return QROM(
-            data_or_shape=_data,
+        return cls._build_from_bitsize(
+            data_len_or_shape,
+            target_bitsizes,
+            target_shapes=target_shapes,
             selection_bitsizes=selection_bitsizes,
-            target_bitsizes=target_bitsizes,
             num_controls=num_controls,
-        )
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return () if not self.num_controls else (Register('control', QAny(self.num_controls)),)
-
-    @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        types = [
-            BoundedQUInt(sb, l)
-            for l, sb in zip(self.data_or_shape.shape[1:], self.selection_bitsizes)
-            if is_symbolic(sb) or sb > 0
-        ]
-        if len(types) == 1:
-            return (Register('selection', types[0]),)
-        return tuple(Register(f'selection{i}', qdtype) for i, qdtype in enumerate(types))
-
-    @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(
-            Register(f'target{i}_', QAny(l))
-            for i, l in enumerate(self.target_bitsizes)
-            if is_symbolic(l) or l
         )
 
     def _load_nth_data(
@@ -253,9 +174,12 @@ class QROM(UnaryIterationGate):
     ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
             target = target_regs.get(f'target{i}_', ())
-            for q, bit in zip(target, f'{int(d[selection_idx]):0{len(target)}b}'):
-                if int(bit):
-                    yield gate(q)
+            target_bitsize = self.target_bitsizes[i]
+            for idx in np.ndindex(self.target_shapes[i]):
+                data_to_load = int(d[selection_idx + idx])
+                for q, bit in zip(target[idx], f'{data_to_load:0{target_bitsize}b}'):
+                    if int(bit):
+                        yield gate(q)
 
     def decompose_zero_selection(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -301,32 +225,6 @@ class QROM(UnaryIterationGate):
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
         yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        if not self.has_data():
-            raise NotImplementedError(f'Symbolic {self} does not support classical simulation')
-
-        if self.num_controls > 0:
-            control = vals['control']
-            if control != 2**self.num_controls - 1:
-                return vals
-            controls = {'control': control}
-        else:
-            controls = {}
-
-        n_dim = len(self.selection_bitsizes)
-        if n_dim == 1:
-            idx = vals['selection']
-            selections = {'selection': idx}
-        else:
-            # Multidimensional
-            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))  # type: ignore[assignment]
-            selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
-
-        # Retrieve the data; bitwise add them in to the input target values
-        targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
-        targets = {k: v ^ vals[k] for k, v in targets.items()}
-        return controls | selections | targets
-
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
@@ -351,17 +249,6 @@ class QROM(UnaryIterationGate):
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unrecognized register name {name}')
-
-    def __pow__(self, power: int):
-        if power in [1, -1]:
-            return self
-        return NotImplemented  # pragma: no cover
-
-    def _value_equality_values_(self):
-        data_tuple = (
-            tuple(tuple(d.flatten()) for d in self.data) if self.has_data() else self.data_or_shape
-        )
-        return (self.selection_registers, self.target_registers, self.control_registers, data_tuple)
 
     def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)

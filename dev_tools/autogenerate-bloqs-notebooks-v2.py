@@ -75,6 +75,7 @@ import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
+import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
@@ -492,6 +493,11 @@ OTHER: List[NotebookSpecV2] = [
         title='QROM',
         module=qualtran.bloqs.data_loading.qrom,
         bloq_specs=[qualtran.bloqs.data_loading.qrom._QROM_DOC],
+    ),
+    NotebookSpecV2(
+        title='SelectSwapQROM',
+        module=qualtran.bloqs.data_loading.select_swap_qrom,
+        bloq_specs=[qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC],
     ),
     NotebookSpecV2(
         title='Block Encoding',

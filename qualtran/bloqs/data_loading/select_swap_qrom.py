@@ -11,19 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from collections import defaultdict
 from functools import cached_property
-from typing import Iterator, List, Optional, Sequence, Tuple
+from typing import Iterator, List, Optional, Set, Tuple, Type, Union
 
+import attrs
 import cirq
 import numpy as np
-from numpy.typing import NDArray
+import sympy
+from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
-from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
+from qualtran._infra.gate_with_registers import total_bits
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.data_loading.qrom_abc import QROMABC
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicInt
 
 
 def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> int:
@@ -34,7 +39,9 @@ def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> i
         * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
     The corresponding block size for SelectSwapQROM would be 2^k.
     """
-    k = 0.5 * np.log2(iteration_length / target_bitsize)
+    k = 0.5 * log2(iteration_length / target_bitsize)
+    if is_symbolic(k):
+        return k
     if k < 0:
         return 1
 
@@ -45,8 +52,9 @@ def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> i
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
-@cirq.value_equality()
-class SelectSwapQROM(GateWithRegisters):
+@cirq.value_equality(distinct_child_types=True)
+@attrs.frozen
+class SelectSwapQROM(QROMABC, GateWithRegisters):
     """Gate to load data[l] in the target register when the selection register stores integer l.
 
     Let
@@ -87,91 +95,152 @@ class SelectSwapQROM(GateWithRegisters):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def __init__(
-        self,
-        *data: Sequence[int],
-        target_bitsizes: Optional[Sequence[int]] = None,
-        block_size: Optional[int] = None,
-    ):
-        """Initializes SelectSwapQROM
-
-        For a single data sequence of length `N`, maximum target bitsize `b` and block size `B`;
-        SelectSwapQROM requires:
-            - Selection register & ancilla of size `logN` for QROM data load.
-            - 1 clean target register of size `b`.
-            - `B` dirty target signature, each of size `b`.
-
-        Similarly, to load `M` such data sequences, `SelectSwapQROM` requires:
-            - Selection register & ancilla of size `logN` for QROM data load.
-            - 1 clean target register of size `sum(target_bitsizes)`.
-            - `B` dirty target signature, each of size `sum(target_bitsizes)`.
-
-        Args:
-            data: Sequence of integers to load in the target register. If more than one sequence
-                is provided, each sequence must be of the same length.
-            target_bitsizes: Sequence of integers describing the size of target register for each
-                data sequence to load. Defaults to `max(data[i]).bit_length()` for each i.
-            block_size(B): Load batches of `B` data elements in each iteration of traditional QROM
-                (N/B iterations required). Complexity of SelectSwap QROAM scales as
-                `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
-                 `O(sqrt(N / b))`.
-
-        Raises:
-            ValueError: If all target data sequences to load do not have the same length.
-        """
-        # Validate input.
-        if len(set(len(d) for d in data)) != 1:
-            raise ValueError("All data sequences to load must be of equal length.")
-        if target_bitsizes is None:
-            target_bitsizes = [max(d).bit_length() for d in data]
-        assert len(target_bitsizes) == len(data)
-        assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
-        self._num_sequences = len(data)
-        self._target_bitsizes = tuple(target_bitsizes)
-        self._iteration_length = len(data[0])
-        if block_size is None:
-            # Figure out optimal value of block_size
-            block_size = 2 ** find_optimal_log_block_size(len(data[0]), sum(target_bitsizes))
-        assert 0 < block_size <= self._iteration_length
-        self._block_size = block_size
-        self._num_blocks = int(np.ceil(self._iteration_length / self.block_size))
-        self.selection_q, self.selection_r = tuple(
-            (L - 1).bit_length() for L in [self.num_blocks, self.block_size]
-        )
-        self._data = tuple(tuple(d) for d in data)
-
-    @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                'selection',
-                BoundedQUInt(self.selection_q + self.selection_r, self._iteration_length),
-            ),
-        )
-
-    @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
-        # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
-        return tuple(
-            Register(f'target{sequence_id}_', QAny(self._target_bitsizes[sequence_id]))
-            for sequence_id in range(self._num_sequences)
-        )
+    log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
+        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+    )
+    use_dirty_ancilla: bool = True
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.target_registers])
+        return Signature(
+            [*self.control_registers, *self.selection_registers, *self.target_registers]
+        )
 
-    @property
-    def data(self) -> Tuple[Tuple[int, ...], ...]:
-        return self._data
+    # Builder methods and helpers.
+    @log_block_sizes.default
+    def _default_block_sizes(self) -> Tuple[SymbolicInt, ...]:
+        return tuple(
+            find_optimal_log_block_size(ilen, sbitsize)
+            for ilen, sbitsize in zip(self.data_shape, self.selection_bitsizes)
+        )
 
-    @property
-    def block_size(self) -> int:
-        return self._block_size
+    @classmethod
+    def build_from_data(
+        cls: Type['SelectSwapQROM'],
+        *data: ArrayLike,
+        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]] = None,
+        num_controls: SymbolicInt = 0,
+        log_block_sizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]] = None,
+        use_dirty_ancilla: bool = True,
+    ) -> 'SelectSwapQROM':
+        qroam: 'SelectSwapQROM' = cls._build_from_data(
+            *data, target_bitsizes=target_bitsizes, num_controls=num_controls
+        )
+        qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
-    @property
-    def num_blocks(self) -> int:
-        return self._num_blocks
+    @classmethod
+    def build_from_bitsize(
+        cls: Type['SelectSwapQROM'],
+        data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        *,
+        selection_bitsizes: Tuple[SymbolicInt, ...] = (),
+        num_controls: SymbolicInt = 0,
+        log_block_sizes: Tuple[SymbolicInt, ...] = None,
+        use_dirty_ancilla: bool = True,
+    ) -> 'SelectSwapQROM':
+        qroam: 'SelectSwapQROM' = cls._build_from_bitsize(
+            data_len_or_shape,
+            target_bitsizes,
+            selection_bitsizes=selection_bitsizes,
+            num_controls=num_controls,
+        )
+        qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
+
+    def with_log_block_sizes(
+        self, log_block_sizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]] = None
+    ) -> 'SelectSwapQROM':
+        if log_block_sizes is None:
+            return self
+        if isinstance(log_block_sizes, (int, sympy.Basic)):
+            log_block_sizes = (log_block_sizes,)
+        if not is_symbolic(*log_block_sizes):
+            assert all(1 <= 2**bs <= ilen for bs, ilen in zip(log_block_sizes, self.data_shape))
+        return attrs.evolve(self, log_block_sizes=log_block_sizes)
+
+    @cached_property
+    def block_sizes(self) -> Tuple[SymbolicInt, ...]:
+        return tuple(2**log_K for log_K in self.log_block_sizes)
+
+    @cached_property
+    def batched_qrom_shape(self) -> Tuple[SymbolicInt, ...]:
+        return tuple(ceil(N / K) for N, K in zip(self.data_shape, self.block_sizes))
+
+    @cached_property
+    def batched_qrom_selection_bitsizes(self) -> Tuple[SymbolicInt, ...]:
+        return tuple(s - log_K for s, log_K in zip(self.selection_bitsizes, self.log_block_sizes))
+
+    @cached_property
+    def padded_data(self) -> List[np.ndarray]:
+        pad_width = tuple(
+            (0, ceil(N / K) * K - N) for N, K in zip(self.data_shape, self.block_sizes)
+        )
+        return [np.pad(d, pad_width) for d in self.data]
+
+    @cached_property
+    def batched_data_shape(self) -> Tuple[SymbolicInt, ...]:
+        return self.batched_qrom_shape + self.block_sizes
+
+    @cached_property
+    def batched_data(self) -> List[np.ndarray]:
+        # In SelectSwapQROM, for N-dimensional data (one or more datasets), you pick block sizes for
+        # each dimension and load a batched N-dimensional output "at-once" using a traditional QROM read
+        # followed by an N-dimensional SwapWithZero swap.
+        #
+        # For data[N1][N2] with block sizes (k1, k2), you load batches of size `(k1, k2)` at once.
+        # Thus, you load batch[N1/k1][N2/k2] where batch[i][j] = data[i*k1:(i + 1)*k1][j*k2:(j + 1)*k2]
+        batched_data = [np.empty(self.batched_data_shape) for _ in range(len(self.target_bitsizes))]
+        block_slices = [slice(0, k) for k in self.block_sizes]
+        for i, data in enumerate(self.padded_data):
+            for batch_idx in np.ndindex(*self.batched_qrom_shape):
+                data_idx = [slice(x * k, (x + 1) * k) for x, k in zip(batch_idx, self.block_sizes)]
+                batched_data[i][(*batch_idx, *block_slices)] = data[tuple(data_idx)]
+        return batched_data
+
+    @cached_property
+    def qrom_bloq(self) -> QROM:
+        return QROM.build_from_bitsize(
+            self.batched_qrom_shape,
+            self.target_bitsizes,
+            target_shapes=(self.block_sizes,) * len(self.target_bitsizes),
+            selection_bitsizes=self.batched_qrom_selection_bitsizes,
+            num_controls=self.num_controls,
+        )
+
+    @cached_property
+    def swap_with_zero_bloqs(self) -> List[SwapWithZero]:
+        return [
+            SwapWithZero(
+                self.log_block_sizes,
+                target_bitsize=target_bitsize,
+                n_target_registers=self.block_sizes,
+            )
+            for target_bitsize in self.target_bitsizes
+        ]
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        ret = defaultdict(lambda: 0)
+        toggle_overhead = 2 if self.use_dirty_ancilla else 1
+        ret[self.qrom_bloq] += 1
+        ret[self.qrom_bloq.adjoint()] += 1
+        ret[CNOT()] += toggle_overhead * total_bits(self.target_registers)
+        for swz in self.swap_with_zero_bloqs:
+            if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
+                ret[swz] += toggle_overhead
+                ret[swz.adjoint()] += toggle_overhead
+        return set(ret.items())
+
+    def _alloc_qrom_target_qubits(
+        self, reg: Register, qm: cirq.QubitManager
+    ) -> NDArray[cirq.Qid]:  # type:ignore[type-var]
+        qubits = (
+            qm.qborrow(total_bits([reg]))
+            if self.use_dirty_ancilla
+            else qm.qalloc(total_bits([reg]))
+        )
+        return np.array(qubits).reshape(reg.shape + (reg.bitsize,))
 
     def decompose_from_registers(
         self,
@@ -179,68 +248,61 @@ class SelectSwapQROM(GateWithRegisters):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.Operation]:
-        # Divide each data sequence and corresponding target registers into
-        # `self.num_blocks` batches of size `self.block_size`.
-        selection, targets = quregs.pop('selection'), quregs
-        qrom_data: List[NDArray] = []
-        qrom_target_bitsizes: List[int] = []
-        ordered_target_qubits: List[cirq.Qid] = []
-        for block_id in range(self.block_size):
-            for sequence_id in range(self._num_sequences):
-                data = self.data[sequence_id]
-                target_bitsize = self._target_bitsizes[sequence_id]
-                ordered_target_qubits.extend(context.qubit_manager.qborrow(target_bitsize))
-                data_for_current_block = data[block_id :: self.block_size]
-                if len(data_for_current_block) < self.num_blocks:
-                    zero_pad = (0,) * (self.num_blocks - len(data_for_current_block))
-                    data_for_current_block = data_for_current_block + zero_pad
-                qrom_data.append(np.array(data_for_current_block))
-                qrom_target_bitsizes.append(target_bitsize)
-        # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
-        k = (self.block_size - 1).bit_length()
-        q, r = selection[: self.selection_q], selection[self.selection_q :]
-        qrom_gate = QROM(
-            qrom_data,
-            selection_bitsizes=(self.selection_q,),
-            target_bitsizes=tuple(qrom_target_bitsizes),
-        )
-        qrom_op = qrom_gate.on_registers(
-            selection=q, **split_qubits(qrom_gate.target_registers, ordered_target_qubits)
-        )
-        if self.block_size > 1:
-            swap_with_zero_gate = SwapWithZero(
-                k, total_bits(self.target_registers), self.block_size
-            )
-            swap_with_zero_op = swap_with_zero_gate.on_registers(
-                selection=r,
-                **split_qubits(swap_with_zero_gate.target_registers, ordered_target_qubits),
-            )
-        clean_targets = merge_qubits(self.target_registers, **targets)
-        cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(ordered_target_qubits, clean_targets))
+        # 1. Construct QROM to load the batched data.
+        qrom = self.qrom_bloq.with_data(*self.batched_data)
+        qrom_ctrls = {reg.name: quregs[reg.name] for reg in qrom.control_registers}
+        qrom_selection = {
+            qrom_reg.name: quregs[sel_reg.name][: qrom_reg.bitsize]
+            for sel_reg, qrom_reg in zip(self.selection_registers, qrom.selection_registers)
+        }
+        qrom_targets = {
+            reg.name: self._alloc_qrom_target_qubits(reg, context.qubit_manager)
+            for reg in qrom.target_registers
+        }
+        qrom_op = qrom.on_registers(**qrom_ctrls, **qrom_selection, **qrom_targets)
+        # 2. Construct SwapWithZero.
+        swz_ops = []
+        assert len(qrom_targets) == len(self.swap_with_zero_bloqs)
+        for targets, swz in zip(qrom_targets.values(), self.swap_with_zero_bloqs):
+            if len(targets) <= 1:
+                continue
+            swz_selection = {
+                swz_reg.name: quregs[sel_reg.name][-swz_reg.bitsize :]
+                for sel_reg, swz_reg in zip(self.selection_registers, swz.selection_registers)
+            }
+            swz_ops.append(swz.on_registers(**swz_selection, targets=targets))
+        # 3. Construct CNOTs from 0th borrowed register to clean target registers.
+        cnot_ops = []
+        for qrom_batched_target, target_reg in zip(qrom_targets.values(), self.target_registers):
+            cnot_ops += [
+                [cirq.CNOT(a, b) for a, b in zip(qrom_batched_target[0], quregs[target_reg.name])]
+            ]
+
         # Yield the operations in correct order.
-        if self.block_size > 1:
+        if any(b > 0 for b in self.block_sizes):
             yield qrom_op
-            yield swap_with_zero_op
-            yield from cnot_op
-            yield cirq.inverse(swap_with_zero_op)
+            yield swz_ops
+            yield cnot_ops
+            yield cirq.inverse(swz_ops)
             yield cirq.inverse(qrom_op)
-            yield swap_with_zero_op
-            yield from cnot_op
-            yield cirq.inverse(swap_with_zero_op)
+            if self.use_dirty_ancilla:
+                yield swz_ops
+                yield cnot_ops
+                yield cirq.inverse(swz_ops)
         else:
             yield qrom_op
-            yield from cnot_op
+            yield cnot_ops
             yield cirq.inverse(qrom_op)
-            yield from cnot_op
+            yield cnot_ops
 
-        context.qubit_manager.qfree(ordered_target_qubits)
+        context.qubit_manager.qfree(
+            [q for targets in qrom_targets.values() for q in targets.flatten()]
+        )
 
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In_q"] * self.selection_q
-        wire_symbols += ["In_r"] * self.selection_r
-        for i, target in enumerate(self.target_registers):
-            wire_symbols += [f"QROAM_{i}"] * target.total_bits()
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+
+        return _wire_symbol_to_cirq_diagram_info(self, args)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
@@ -252,10 +314,53 @@ class SelectSwapQROM(GateWithRegisters):
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)
-            return TextBox(f'data_{subscript}')
+            return TextBox(f'QROAM_{subscript}')
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unknown register name {name}')
 
     def _value_equality_values_(self):
-        return self.block_size, self._target_bitsizes, self.data
+        return self.log_block_sizes, *super()._value_equality_values_()
+
+
+@bloq_example
+def _qroam_multi_data() -> SelectSwapQROM:
+    data1 = np.arange(5)
+    data2 = np.arange(5) + 1
+    qroam_multi_data = SelectSwapQROM.build_from_data([data1, data2])
+    return qroam_multi_data
+
+
+@bloq_example
+def _qroam_multi_dim() -> SelectSwapQROM:
+    data1 = np.arange(25).reshape((5, 5))
+    data2 = (np.arange(25) + 1).reshape((5, 5))
+    qroam_multi_dim = SelectSwapQROM.build_from_data([data1, data2])
+    return qroam_multi_dim
+
+
+@bloq_example
+def _qroam_symb_dirty() -> SelectSwapQROM:
+    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c')
+    log_block_sizes = (k1, k2)
+    qroam_symb_dirty = SelectSwapQROM.build_from_bitsize(
+        (N, M), (b1, b2), log_block_sizes=log_block_sizes, num_controls=c
+    )
+    return qroam_symb_dirty
+
+
+@bloq_example
+def _qroam_symb_clean() -> SelectSwapQROM:
+    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c')
+    log_block_sizes = (k1, k2)
+    qroam_symb_clean = SelectSwapQROM.build_from_bitsize(
+        (N, M), (b1, b2), log_block_sizes=log_block_sizes, num_controls=c, use_dirty_ancilla=False
+    )
+    return qroam_symb_clean
+
+
+_SELECT_SWAP_QROM_DOC = BloqDocSpec(
+    bloq_cls=SelectSwapQROM,
+    import_line='from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM',
+    examples=[_qroam_multi_data, _qroam_multi_dim, _qroam_symb_dirty, _qroam_symb_clean],
+)
