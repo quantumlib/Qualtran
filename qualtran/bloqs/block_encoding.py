@@ -257,7 +257,7 @@ class LCUBlockEncoding(BlockEncoding):
 
     Builds the block encoding via
     $$
-        U[H] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
+        B[H] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
     $$
     where
     $$
