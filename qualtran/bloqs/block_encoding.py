@@ -282,15 +282,23 @@ class LCUBlockEncoding(BlockEncoding):
 
     Builds the block encoding via
     $$
-        B[H] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
+        B[H] = \mathrm{SELECT}
     $$
-    where
-    $$
-        \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\lambda}} |l\rangle_a,
-    $$
-    and
+
     $$
         \mathrm{SELECT} |l\rangle_a|\psi\rangle_s = |l\rangle_a U_l |\psi\rangle_s.
+    $$
+
+    The Hamiltonian can be extracted via
+
+    $$
+        \langle G | B[H] | G \rangle = H / \alpha
+    $$
+
+    where
+
+    $$
+        |G\rangle = \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\lambda}} |l\rangle_a,
     $$
 
     The ancilla register is at least of size $\log L$.
@@ -299,8 +307,6 @@ class LCUBlockEncoding(BlockEncoding):
     selection registers (i.e.  the $l$ registers above) and junk registers which
     are extra qubits needed by state preparation but not controlled upon during
     SELECT.
-
-    Here $|G\rangle = \mathrm{PREPARE}|0\rangle$.
 
     Args:
         alpha: The normalization constant upper bounding the spectral norm of
@@ -349,14 +355,94 @@ class LCUBlockEncoding(BlockEncoding):
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
         return self.prepare
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
-        # includes selection registers and any selection registers used by PREPARE
-        selection, junk = bb.add(self.prepare, selection=selection, junk=junk)
-        selection, system = bb.add(self.select, selection=selection, system=system)
-        selection, junk = bb.add(self.prepare.adjoint(), selection=selection, junk=junk)
-        return {'selection': selection, 'junk': junk, 'system': system}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
+        select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
+        soqs |= bb.add_d(self.select, **select_reg)
+        return soqs
+
+
+@attrs.frozen
+class LCUBlockEncodingZeroState(BlockEncoding):
+    r"""LCU based block encoding using SELECT and PREPARE oracles.
+
+    Builds the standard block encoding from an LCU as
+    $$
+        B[H] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
+    $$
+    where
+    $$
+        \mathrm{PREPARE} |0\rangle_a = \sum_l \sqrt{\frac{w_l}{\lambda}} |l\rangle_a,
+    $$
+    and
+    $$
+        \mathrm{SELECT} |l\rangle_a|\psi\rangle_s = |l\rangle_a U_l |\psi\rangle_s.
+    $$
+
+    The Hamiltonian can be extracted via
+
+    $$
+        \langle G | B[H] | G \rangle = H / \alpha,
+    $$
+    where $|G\rangle_a = I_a |0\rangle_a$
+
+    The ancilla register is at least of size $\log L$.
+
+    In our implementations we typically split the ancilla registers into
+    selection registers (i.e.  the $l$ registers above) and junk registers which
+    are extra qubits needed by state preparation but not controlled upon during
+    SELECT.
+
+    Args:
+        alpha: The normalization constant upper bounding the spectral norm of
+            the Hamiltonian. Often called lambda.
+        epsilon: The precision to which the block encoding is performed.
+            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
+        select: The bloq implementing the `SelectOracle` interface.
+        prepare: The bloq implementing the `PrepareOracle` interface.
+
+    Registers:
+        selection: The combined selection register.
+        junk: Additional junk registers not prepared upon.
+        system: The combined system register.
+
+    References:
+        [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
+            Sec 3.1, page 7 and 8 for high level overview and definitions. A
+            block encoding is called a standard form encoding there.
+
+        [The power of block-encoded matrix powers: improved regression techniques via faster Hamiltonian simulation](https://arxiv.org/abs/1804.01973)
+            Definition 3 page 8.
+    """
+
+    alpha: SymbolicFloat
+    epsilon: SymbolicFloat
+    select: Union[BlackBoxSelect, SelectOracle]
+    prepare: Union[BlackBoxPrepare, PrepareOracle]
+
+    @cached_property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return self.prepare.selection_registers
+
+    @cached_property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return self.prepare.junk_registers
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return self.select.target_registers
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
+
+    @cached_property
+    def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
+        raise NotImplementedError("IdentityPrepareOracle not yet implemented.")
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
+        select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
+        soqs |= bb.add_d(self.select, **select_reg)
+        return soqs
 
 
 @attrs.frozen
@@ -389,7 +475,7 @@ class ChebyshevPolynomial(Bloq):
             Page 45; Theorem 1.
     """
 
-    block_encoding: BlockEncoding
+    block_encoding: LCUBlockEncodingZeroState
     order: int
 
     def __attrs_post_init__(self):
@@ -403,37 +489,43 @@ class ChebyshevPolynomial(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('selection', QAny(self.block_encoding.selection_bitsize)),
-                Register('junk', QAny(self.block_encoding.junk_bitsize)),
-                Register('system', QAny(self.block_encoding.system_bitsize)),
+                *self.block_encoding.selection_registers,
+                *self.block_encoding.junk_registers,
+                *self.block_encoding.target_registers,
             ]
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    def build_reflection_bloq(self) -> Reflection:
+        refl_bitsizes = (r.bitsize for r in self.block_encoding.selection_registers)
+        num_regs = len(self.block_encoding.selection_registers)
+        return Reflection(bitsizes=refl_bitsizes, cvs=(0,) * num_regs)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         # includes selection registers and any selection registers used by PREPARE
-        selection, junk, system = bb.add(
-            self.block_encoding, selection=selection, junk=junk, system=system
-        )
+        soqs |= bb.add_d(self.block_encoding, **soqs)
+
+        def _extract_soqs(
+            to_regs: Union[Signature, Tuple[Register, ...]],
+            from_regs: Union[Signature, Tuple[Register, ...]],
+            reg_map: Dict[str, 'SoquetT'],
+        ) -> Dict[str, 'SoquetT']:
+            return {t.name: reg_map[f.name] for t, f in zip(to_regs, from_regs)}
+
+        refl_bloq = self.build_reflection_bloq()
         for iorder in range(1, self.order):
-            selection = bb.add(
-                Reflection(bitsizes=(self.block_encoding.selection_bitsize,), cvs=(0,)),
-                reg0=selection,
+            refl_regs = _extract_soqs(
+                refl_bloq.signature, self.block_encoding.selection_registers, soqs
             )
-            selection, junk, system = bb.add(
-                self.block_encoding, selection=selection, junk=junk, system=system
+            refl_regs |= bb.add_d(self.build_reflection_bloq(), **refl_regs)
+            soqs |= _extract_soqs(
+                self.block_encoding.selection_registers, refl_bloq.signature, refl_regs
             )
-        return {'selection': selection, 'junk': junk, 'system': system}
+            soqs |= bb.add_d(self.block_encoding, **soqs)
+        return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.order
-        refl_bitsizes = (r.bitsize for r in self.block_encoding.selection_registers)
-        num_regs = len(self.block_encoding.selection_registers)
-        return {
-            (Reflection(bitsizes=refl_bitsizes, cvs=(0,) * num_regs), n - 1),
-            (self.block_encoding, n),
-        }
+        return {(self.build_reflection_bloq(), n - 1), (self.block_encoding, n)}
 
 
 @bloq_example
@@ -455,7 +547,7 @@ def _black_box_select() -> BlackBoxSelect:
 
 
 @bloq_example
-def _black_box_block_bloq() -> LCUBlockEncoding:
+def _lcu_block_encoding() -> LCUBlockEncoding:
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -466,22 +558,22 @@ def _black_box_block_bloq() -> LCUBlockEncoding:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    black_box_block_bloq = LCUBlockEncoding(
+    lcu_block_encoding = LCUBlockEncoding(
         select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
     )
-    return black_box_block_bloq
+    return lcu_block_encoding
 
 
-_BLACK_BOX_BLOCK_BLOQ_DOC = BloqDocSpec(
+_LCUBLOCKENCODINGDOC = BloqDocSpec(
     bloq_cls=LCUBlockEncoding,
-    examples=(_black_box_block_bloq,),
+    examples=(_lcu_block_encoding,),
     import_line='from qualtran.bloqs.block_encoding import LCUBlockEncoding',
 )
 
 
 @bloq_example
 def _chebyshev_poly() -> ChebyshevPolynomial:
-    from qualtran.bloqs.block_encoding import LCUBlockEncoding
+    from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     dim = 3
@@ -491,7 +583,7 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    black_box_block_bloq = LCUBlockEncoding(
+    black_box_block_bloq = LCUBlockEncodingZeroState(
         select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
     )
     chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
