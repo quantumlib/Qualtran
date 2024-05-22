@@ -43,7 +43,7 @@ system and ancilla registers and a bloq which prepares the state $|G\rangle$.
 
 import abc
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 
@@ -65,6 +65,11 @@ from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+
+def _total_bits(registers: Tuple[Register, ...]) -> SymbolicInt:
+    """Get the bitsize of a collection of registers"""
+    return sum(r.total_bits() for r in registers)
 
 
 @attrs.frozen
@@ -91,20 +96,30 @@ class BlackBoxSelect(Bloq):
 
     select: SelectOracle
 
-    @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
-        return sum(reg.total_bits() for reg in self.select.selection_registers)
-
-    @cached_property
-    def system_bitsize(self) -> SymbolicInt:
-        return sum(reg.total_bits() for reg in self.select.target_registers)
-
     def pretty_name(self) -> str:
-        return 'SEL'
+        return 'SELECT'
+
+    @cached_property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (
+            Register(name='selection', dtype=QAny(_total_bits(self.select.selection_registers))),
+        )
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (Register(name='system', dtype=QAny(_total_bits(self.select.selection_registers))),)
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(selection=self.selection_bitsize, system=self.system_bitsize)
+        return Signature([*self.selection_registers, *self.target_registers])
+
+    @cached_property
+    def selection_bitsize(self) -> SymbolicInt:
+        return self.selection_registers[0].bitsize
+
+    @cached_property
+    def system_bitsize(self) -> SymbolicInt:
+        return self.target_registers[0].bitsize
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', system: 'SoquetT'
@@ -150,12 +165,22 @@ class BlackBoxPrepare(Bloq):
     prepare: PrepareOracle
 
     @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
-        return sum(reg.total_bits() for reg in self.prepare.selection_registers)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (
+            Register(name='selection', dtype=QAny(_total_bits(self.prepare.selection_registers))),
+        )
+
+    @cached_property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return (Register(name='junk', dtype=QAny(_total_bits(self.prepare.junk_registers))),)
 
     @cached_property
     def junk_bitsize(self) -> SymbolicInt:
-        return sum(reg.total_bits() for reg in self.prepare.selection_registers)
+        return self.junk_registers[0].bitsize
+
+    @cached_property
+    def selection_bitsize(self) -> SymbolicInt:
+        return self.selection_registers[0].bitsize
 
     @cached_property
     def signature(self) -> Signature:
@@ -232,23 +257,23 @@ class BlockEncoding(Bloq):
 
     @property
     @abc.abstractmethod
-    def selection_bitsize(self) -> SymbolicInt:
-        """The bitsize for the register `a` registers above."""
+    def selection_registers(self) -> Tuple[Register, ...]:
+        """The ancilla registers `a` above."""
 
     @property
     @abc.abstractmethod
-    def junk_bitsize(self) -> SymbolicInt:
-        """The bitsize of any additional junk register."""
+    def junk_registers(self) -> Tuple[Register, ...]:
+        """Any additional junk registers not included in selection registers."""
 
     @property
     @abc.abstractmethod
-    def system_bitsize(self) -> SymbolicInt:
-        """The system bitsize `s`."""
+    def target_registers(self) -> Tuple[Register, ...]:
+        """The system registers of combined size `s`."""
 
     @property
     @abc.abstractmethod
     def signal_state(self) -> PrepareOracle:
-        r"""Construct the signal state $|G\rangle."""
+        r"""Returns the signal / ancilla flag state $|G\rangle."""
 
 
 @attrs.frozen
@@ -301,37 +326,27 @@ class LCUBlockEncoding(BlockEncoding):
 
     alpha: SymbolicFloat
     epsilon: SymbolicFloat
-    select: BlackBoxSelect = attrs.field(
-        converter=lambda x: BlackBoxSelect(x) if isinstance(x, SelectOracle) else x
-    )
-    prepare: BlackBoxPrepare = attrs.field(
-        converter=lambda x: BlackBoxPrepare(x) if isinstance(x, PrepareOracle) else x
-    )
+    select: Union[BlackBoxSelect, SelectOracle]
+    prepare: Union[BlackBoxPrepare, PrepareOracle]
 
     @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
-        return self.prepare.selection_bitsize
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return self.prepare.selection_registers
 
     @cached_property
-    def junk_bitsize(self) -> SymbolicInt:
-        return self.prepare.junk_bitsize
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return self.prepare.junk_registers
 
     @cached_property
-    def system_bitsize(self) -> SymbolicInt:
-        return self.select.system_bitsize
+    def target_registers(self) -> Tuple[Register, ...]:
+        return self.select.target_registers
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('selection', QAny(self.prepare.selection_bitsize)),
-                Register('junk', QAny(self.prepare.junk_bitsize)),
-                Register('system', QAny(self.select.system_bitsize)),
-            ]
-        )
+        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
 
     @cached_property
-    def signal_state(self) -> BlackBoxPrepare:
+    def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
         return self.prepare
 
     def build_composite_bloq(
@@ -413,8 +428,12 @@ class ChebyshevPolynomial(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.order
-        num_refl = self.block_encoding.selection_bitsize
-        return {(Reflection(bitsizes=(num_refl,), cvs=(0,)), n - 1), (self.block_encoding, n)}
+        refl_bitsizes = (r.bitsize for r in self.block_encoding.selection_registers)
+        num_regs = len(self.block_encoding.selection_registers)
+        return {
+            (Reflection(bitsizes=refl_bitsizes, cvs=(0,) * num_regs), n - 1),
+            (self.block_encoding, n),
+        }
 
 
 @bloq_example
