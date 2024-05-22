@@ -134,3 +134,6 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield cirq.CNOT(control, *accumulator)
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
+
+    def __str__(self):
+        return f'SelectedMajoranaFermion({self.target_gate})'

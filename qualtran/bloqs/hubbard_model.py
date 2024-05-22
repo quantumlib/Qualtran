@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-r"""Bloqs for Qubitizing the Hubbard Model.
+r"""Simulating the Hubbard model Hamiltonian using qubitization.
 
-This follows section V. of the [Linear T Paper](https://arxiv.org/abs/1805.03662).
+This module follows section V. of Encoding Electronic Spectra in Quantum Circuits with Linear T
+Complexity. Babbush et. al. 2018. [arxiv:1805.03662](https://arxiv.org/abs/1805.03662).
 
 The 2D Hubbard model is a special case of the electronic structure Hamiltonian
 restricted to spins on a planar grid.
@@ -24,7 +25,7 @@ H = -t \sum_{\langle p,q \rangle, \sigma} a_{p,\sigma}^\dagger a_{q,\sigma}
     + \frac{u}{2} \sum_{p,\alpha\ne\beta} n_{p, \alpha} n_{p, \beta}
 $$
 
-Under the Jordan-Wigner transformation, this is
+Under the Jordan-Wigner transformation to Pauli operators, this is
 
 $$
 \def\Zvec{\overrightarrow{Z}}
@@ -34,8 +35,13 @@ H = -\frac{t}{2} \sum_{\langle p,q \rangle, \sigma} (\hop{X} + \hop{Y})
   - \frac{u}{4} \sum_{p,\sigma} Z_{p,\sigma} + \frac{uN}{4}\mathbb{1}
 $$
 
+This can be simulated using a qubitization circuit, which consists of PREPARE and SELECT
+operations. This module contains `SelectHubbard` and `PrepareHubbard`, with particular
+compilation optimizations for the Hubbard model. For more insight into how Select and Prepare
+operations can be combined into a quantum walk, please see
+[Qubitization Walk Operator](./qubitization_walk_operator.ipynb).
 
-This model consists of a PREPARE and SELECT operation where our selection operation has indices
+In these operators, our selection register has indices
 for $p$, $\alpha$, $q$, and $\beta$ as well as two indicator bits $U$ and $V$. There are four cases
 considered in both the PREPARE and SELECT operations corresponding to the terms in the Hamiltonian:
 
@@ -43,8 +49,6 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
  - $V=1$, spin-spin ZZ term
  - $p<q$, XZX term
  - $p>q$, YZY term.
-
-See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
 from typing import Iterator, Optional, Tuple, TYPE_CHECKING
@@ -76,9 +80,9 @@ if TYPE_CHECKING:
 class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
-    In contrast to the arbitrary chemistry Hamiltonian, we:
+    In contrast to SELECT for an arbitrary chemistry Hamiltonian, we:
      - explicitly consider the two dimensions of indices to permit optimization of the circuits.
-     - dispense with the `theta` parameter.
+     - dispense with the `theta` index for phases.
 
     If neither $U$ nor $V$ is set we apply the kinetic terms of the Hamiltonian:
 
@@ -91,15 +95,13 @@ class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type
     If $V$ is set we know $p=q, \alpha=0$, and $\beta=1$ and apply the spin term:
     $Z_{p,\alpha}Z_{p,\beta}$
 
-    The circuit for implementing $\textit{C-SELECT}_{Hubbard}$ has a T-cost of $10 * N + log(N)$
-    and $0$ rotations.
-
+    `SelectHubbard`'s construction uses $10 * N + log(N)$ T-gates.
 
     Args:
         x_dim: the number of sites along the x axis.
         y_dim: the number of sites along the y axis.
         control_val: Optional bit specifying the control value for constructing a controlled
-            version of this gate. Defaults to None, which means no control.
+            version of this gate. Defaults to None, which means un-controlled.
 
     Registers:
         control: A control bit for the entire gate.
@@ -227,17 +229,22 @@ class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type
         ctrl = ('@' if self.control_val else '@(0)',)
         return info.with_wire_symbols(ctrl + info.wire_symbols[0:1] + info.wire_symbols[2:])
 
+    def __str__(self):
+        s = f'SelectHubbard({self.x_dim}, {self.y_dim})'
+        if self.control_val is not None:
+            return f'C{s}'
+        return s
+
 
 @attrs.frozen
 class PrepareHubbard(PrepareOracle):
     r"""The PREPARE operation optimized for the 2D Hubbard model.
 
-    In contrast to the arbitrary chemistry Hamiltonian, we:
+    In contrast to PREPARE for an arbitrary chemistry Hamiltonian, we:
      - explicitly consider the two dimensions of indices to permit optimization of the circuits.
-     - dispense with the `theta` parameter.
+     - dispense with the `theta` index for phases.
 
-    The circuit for implementing $\textit{PREPARE}_{Hubbard}$ has a T-cost of $O(log(N)$
-    and uses $O(1)$ single qubit rotations.
+    `PrepareHubbard` uses $O(\log(N))$ T gates and $O(1)$ single-qubit rotations.
 
     Args:
         x_dim: the number of sites along the x axis.
