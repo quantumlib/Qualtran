@@ -427,11 +427,13 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         raise NotImplementedError("IdentityPrepareOracle not yet implemented.")
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
-        select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
-        prep_reg = {reg.name: soqs[reg.name] for reg in self.prepare.signature}
-        soqs |= bb.add_d(self.prepare, **prep_reg)
-        soqs |= bb.add_d(self.select, **select_reg)
-        soqs |= bb.add_d(self.prepare.adjoint(), **prep_reg)
+        def _extract_soqs(bloq: Bloq) -> Dict[str, 'SoquetT']:
+            return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
+
+        print('xxxx')
+        soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
+        soqs |= bb.add_d(self.select, **_extract_soqs(self.select))
+        soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))
         return soqs
 
 
