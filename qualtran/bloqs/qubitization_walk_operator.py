@@ -12,6 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+r"""Bloqs for constructing quantum walks from Select and Prepare operators.
+
+The spectrum of a quantum Hamiltonian can be encoded in the spectrum of a quantum "walk"
+operator. The Prepare and Select subroutines are carefully designed so that the Hamiltonian
+$H$ is encoded as a projection of Select onto the state prepared by Prepare:
+
+$$
+\mathrm{PREPARE}|0\rangle = |\mathcal{L}\rangle \\
+(\langle \mathcal{L} | \otimes \mathbb{1}) \mathrm{SELECT} (|\mathcal{L} \rangle \otimes \mathbb{1}) = H / \lambda
+$$.
+
+We first document the SelectOracle and PrepareOracle abstract base bloqs, and then show
+how they can be combined in `QubitizationWalkOperator`.
+"""
+
 from functools import cached_property
 from typing import Iterator, Optional, Tuple
 

@@ -16,14 +16,14 @@ import abc
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
 
 
 class SelectOracle(GateWithRegisters):
-    r"""Abstract base class that defines the API for a SELECT Oracle.
+    r"""Abstract base class that defines the interface for a SELECT Oracle.
 
     The action of a SELECT oracle on a selection register $|l\rangle$ and target register
     $|\Psi\rangle$ can be defined as:
@@ -62,10 +62,17 @@ class SelectOracle(GateWithRegisters):
         )
 
 
+_SELECT_ORACLE_DOC = BloqDocSpec(
+    bloq_cls=SelectOracle,
+    import_line='from qualtran.bloqs.select_and_prepare import SelectOracle',
+    examples=[],
+)
+
+
 class PrepareOracle(GateWithRegisters):
     r"""Abstract base class that defines the API for a PREPARE Oracle.
 
-    Given a set of coefficients $\{c_0, c_1, ..., c_{N - 1}\}, the PREPARE oracle is used to encode
+    Given a set of coefficients $\{c_0, c_1, ..., c_{N - 1}\}$, the PREPARE oracle is used to encode
     the coefficients as amplitudes of a state $|\Psi\rangle = \sum_{i=0}^{N-1} \sqrt{\frac{c_{i}}{\lambda}} |i\rangle$
     where $\lambda = \sum_i |c_i|$, using a selection register $|i\rangle$. In order to prepare such
     a state, the PREPARE circuit is also allowed to use a junk register that is entangled with
@@ -74,7 +81,7 @@ class PrepareOracle(GateWithRegisters):
     Thus, the action of a PREPARE circuit on an input state $|0\rangle$ can be defined as:
 
     $$
-        PREPARE |0\rangle = \sum_{i=0}^{N-1} \sqrt{ \frac{c_{i}}{\lambda} } |i\rangle |junk_{i}\rangle
+        \mathrm{PREPARE} |0\rangle = \sum_{i=0}^{N-1} \sqrt{ \frac{c_{i}}{\lambda} } |i\rangle |junk_{i}\rangle
     $$
     """
 
@@ -98,3 +105,10 @@ class PrepareOracle(GateWithRegisters):
         For LCU Hamiltonians, this is usually referred to as $\lambda$ in texts.
         """
         return None
+
+
+_PREPARE_ORACLE_DOC = BloqDocSpec(
+    bloq_cls=PrepareOracle,
+    import_line='from qualtran.bloqs.select_and_prepare import PrepareOracle',
+    examples=[],
+)
