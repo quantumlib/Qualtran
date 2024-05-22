@@ -429,9 +429,9 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         select_reg = {reg.name: soqs[reg.name] for reg in self.select.signature}
         prep_reg = {reg.name: soqs[reg.name] for reg in self.prepare.signature}
-        soqs |= bb.add_d(self.prepare, **prep)
+        soqs |= bb.add_d(self.prepare, **prep_reg)
         soqs |= bb.add_d(self.select, **select_reg)
-        soqs |= bb.add_d(self.prepare.adjoint(), **prep)
+        soqs |= bb.add_d(self.prepare.adjoint(), **prep_reg)
         return soqs
 
 
@@ -573,7 +573,6 @@ def _black_box_lcu_block_bloq() -> LCUBlockEncoding:
 
 @bloq_example
 def _lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
-    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -610,7 +609,7 @@ def _black_box_lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
 
 
 _BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=BlockEncoding,
+    bloq_cls=BlockEncoding,  # typing: ignore[type-abstract]
     import_line="from qualtran.bloqs.block_encoding import BlockEncoding",
     examples=[],
 )
@@ -640,10 +639,10 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    black_box_block_bloq = LCUBlockEncodingZeroState(
+    block_bloq = LCUBlockEncodingZeroState(
         select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
     )
-    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
+    chebyshev_poly = ChebyshevPolynomial(block_bloq, order=3)
     return chebyshev_poly
 
 
