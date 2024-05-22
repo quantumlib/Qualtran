@@ -92,6 +92,7 @@ Bloqs Library
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
+    hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     data_loading/qrom.ipynb
     block_encoding.ipynb
