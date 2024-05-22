@@ -20,6 +20,7 @@ from numpy._typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TwoBitCSwap
+from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -71,12 +72,10 @@ class OneHotEncoding(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
-        a = quregs['a'][::-1]
-        b = quregs['b']
+        a = quregs['a']
+        b = quregs['b'].reshape(1, len(quregs['b']))
 
         op_tree: List[cirq.Operation] = []
-        op_tree.append(cirq.X(b[0]))
-        for i in range(len(a)):
-            for j in range(2**i):
-                op_tree.append(TwoBitCSwap().on_registers(ctrl=a[i], x=b[j], y=b[2**i + j]))
+        op_tree.append(cirq.X(b[0][0]))
+        op_tree.append(SwapWithZero((self.binary_bitsize,), 2**self.binary_bitsize, (1,)).on_registers(selection=a, targets=b))
         return op_tree
