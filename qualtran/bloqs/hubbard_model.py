@@ -41,7 +41,7 @@ compilation optimizations for the Hubbard model. For more insight into how Selec
 operations can be combined into a quantum walk, please see
 [Qubitization Walk Operator](./qubitization_walk_operator.ipynb).
 
-In these operators, our selection register has indices
+With these operators, our selection register has indices
 for $p$, $\alpha$, $q$, and $\beta$ as well as two indicator bits $U$ and $V$. There are four cases
 considered in both the PREPARE and SELECT operations corresponding to the terms in the Hamiltonian:
 
