@@ -60,7 +60,9 @@ class MultiTargetCNOT(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(control=1, targets=self.bitsize)
+        return Signature(
+            [Register('ctrl', QBit()), Register('targets', QBit(), shape=(self.bitsize,))]
+        )
 
     def decompose_from_registers(
         self,
