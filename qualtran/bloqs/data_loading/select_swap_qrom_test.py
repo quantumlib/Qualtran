@@ -22,6 +22,7 @@ from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -123,6 +124,12 @@ def test_qroam_hashable():
     qrom = SelectSwapQROM([1, 2, 5, 6, 7, 8])
     assert hash(qrom) is not None
     assert t_complexity(qrom) == TComplexity(32, 160, 0)
+
+
+def test_qrom_t_complexity():
+    qrom = SelectSwapQROM([1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), block_size=4)
+    _, sigma = qrom.call_graph()
+    assert t_counts_from_sigma(sigma) == qrom.t_complexity().t == 192
 
 
 def test_qroam_many_registers():
