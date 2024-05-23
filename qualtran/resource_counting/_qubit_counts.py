@@ -13,10 +13,9 @@
 #  limitations under the License.
 
 import logging
-from typing import Callable, Set, Union
+from typing import Callable, Set
 
 import networkx as nx
-import sympy
 from attrs import frozen
 
 from qualtran import Bloq, Connection, DanglingT, DecomposeNotImplementedError, DecomposeTypeError
