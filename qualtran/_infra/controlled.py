@@ -125,6 +125,14 @@ class CtrlSpec:
         """Tuple of shapes of control registers represented by this CtrlSpec."""
         return tuple(cv.shape for cv in self.cvs)
 
+    @cached_property
+    def num_qubits(self) -> int:
+        """Total number of qubits required for control registers represented by this CtrlSpec."""
+        return sum(
+            dtype.num_qubits * int(np.prod(shape))
+            for dtype, shape in zip(self.qdtypes, self.shapes)
+        )
+
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
         """The data types that serve as input to the 'activation function'.
 
@@ -453,10 +461,14 @@ class Controlled(GateWithRegisters):
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
     def pretty_name(self) -> str:
-        return f'C[{self.subbloq.pretty_name()}]'
+        num_ctrls = self.ctrl_spec.num_qubits
+        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
+        return f'{ctrl_string}[{self.subbloq.pretty_name()}]'
 
     def __str__(self) -> str:
-        return f'C[{self.subbloq}]'
+        num_ctrls = self.ctrl_spec.num_qubits
+        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
+        return f'{ctrl_string}[{self.subbloq}]'
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

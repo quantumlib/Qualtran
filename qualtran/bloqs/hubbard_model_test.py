@@ -16,9 +16,17 @@ import cirq
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+from qualtran.bloqs.hubbard_model import _prep_hubb, _sel_hubb, PrepareHubbard, SelectHubbard
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_prep_hubb_auto(bloq_autotester):
+    bloq_autotester(_prep_hubb)
+
+
+def test_sel_hubb_auto(bloq_autotester):
+    bloq_autotester(_sel_hubb)
 
 
 @pytest.mark.parametrize('dim', [*range(2, 10)])
@@ -33,7 +41,7 @@ def test_select_t_complexity(dim):
 
 @pytest.mark.parametrize('dim', [*range(3, 10)])
 def test_prepare_t_complexity(dim):
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=2, mu=8)
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=2, u=8)
     cost = t_complexity(prepare)
     logN = 2 * (dim - 1).bit_length() + 1
     assert cost.t <= 32 * logN
@@ -44,7 +52,7 @@ def test_prepare_t_complexity(dim):
 
 def test_hubbard_model_consistent_protocols():
     select_gate = SelectHubbard(x_dim=2, y_dim=2)
-    prepare_gate = PrepareHubbard(x_dim=2, y_dim=2, t=1, mu=2)
+    prepare_gate = PrepareHubbard(x_dim=2, y_dim=2, t=1, u=2)
 
     assert_valid_bloq_decomposition(select_gate)
     assert_valid_bloq_decomposition(prepare_gate)

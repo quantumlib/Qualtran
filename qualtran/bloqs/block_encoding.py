@@ -342,7 +342,7 @@ def _black_box_block_bloq() -> BlackBoxBlockEncoding:
 
     dim = 3
     select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, u=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     return black_box_block_bloq
 
@@ -361,7 +361,7 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
 
     dim = 3
     select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, u=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return chebyshev_poly
