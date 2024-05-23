@@ -146,7 +146,7 @@ class BloqDocSpec:
             graph. Note that this example must be included in `examples`.
     """
 
-    bloq_cls: Type[Bloq]
+    bloq_cls: Type
     examples: Sequence[BloqExample] = field(converter=_to_tuple, factory=tuple)
     import_line: str = field()
     call_graph_example: Union[BloqExample, None] = field()
