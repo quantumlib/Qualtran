@@ -33,13 +33,13 @@ from qualtran import (
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
+from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-def _total_bits(registers: Tuple[Register, ...]) -> SymbolicInt:
+def _total_bits(registers: Tuple[Register, ...]) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
 
@@ -86,11 +86,11 @@ class BlackBoxSelect(Bloq):
         return Signature([*self.selection_registers, *self.target_registers])
 
     @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
+    def selection_bitsize(self) -> int:
         return self.selection_registers[0].bitsize
 
     @cached_property
-    def system_bitsize(self) -> SymbolicInt:
+    def system_bitsize(self) -> int:
         return self.target_registers[0].bitsize
 
     def build_composite_bloq(
@@ -147,11 +147,11 @@ class BlackBoxPrepare(Bloq):
         return (Register(name='junk', dtype=QAny(_total_bits(self.prepare.junk_registers))),)
 
     @cached_property
-    def junk_bitsize(self) -> SymbolicInt:
+    def junk_bitsize(self) -> int:
         return self.junk_registers[0].bitsize
 
     @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
+    def selection_bitsize(self) -> int:
         return self.selection_registers[0].bitsize
 
     @cached_property
@@ -608,7 +608,7 @@ def _black_box_lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
 
 
 _BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=BlockEncoding,  # typing: ignore[type-abstract]
+    bloq_cls=BlockEncoding,  # type: ignore[type-abstract]
     import_line="from qualtran.bloqs.block_encoding import BlockEncoding",
     examples=[],
 )
