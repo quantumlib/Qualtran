@@ -194,7 +194,7 @@ class BlackBoxPrepare(Bloq):
 class BlockEncoding(Bloq):
     r"""Abstract interface for an arbitrary block encoding.
 
-    In general, given an $s$-qubit operator $H$ then the $(s+a)$-qubit unitary $U$ is
+    In general, given an $s$-qubit operator $H$ then the $(s+a)$-qubit unitary $B[H] = U$ is
     a $(\alpha, a, \epsilon)$-block encoding of $H$ if it satisfies:
 
     $$
@@ -203,10 +203,11 @@ class BlockEncoding(Bloq):
     $$
 
     where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
-    called a signal oracle, $\alpha \ge \lVert H\rVert$ (where $\lVert \cdot \rVert$
-    denotes the spectral norm), and $\epsilon$ is the precision to which the block
-    encoding is prepared. The state $|G\rangle_a$ is sometimes called the signal
-    state, and its form depends on the details of the block encoding.
+    called a signal oracle, $\alpha$ is a normalization constant chosen such
+    that  $\alpha \ge \lVert H\rVert$ (where $\lVert \cdot \rVert$ denotes the
+    spectral norm), and $\epsilon$ is the precision to which the block encoding
+    is prepared. The state $|G\rangle_a$ is sometimes called the signal state,
+    and its form depends on the details of the block encoding.
 
     For LCU based block encodings with $H = \sum_l w_l U_l$
     we have
@@ -229,10 +230,10 @@ class BlockEncoding(Bloq):
 
     References:
         [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
-            Sec 2 and 3 for introduction and definition of terms.
+            Low et al. 2019. Sec 2 and 3 for introduction and definition of terms.
 
         [The power of block-encoded matrix powers: improved regression techniques via faster Hamiltonian simulation](https://arxiv.org/abs/1804.01973)
-            Definition 3 page 8.
+            Chakraborty et al. 2018. Definition 3 page 8.
 
     """
 
@@ -307,11 +308,11 @@ class LCUBlockEncoding(BlockEncoding):
 
     References:
         [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
-            Sec 3.1, page 7 and 8 for high level overview and definitions. A
+            Low et al. 2019. Sec 3.1, page 7 and 8 for high level overview and definitions. A
             block encoding is called a standard form encoding there.
 
         [The power of block-encoded matrix powers: improved regression techniques via faster Hamiltonian simulation](https://arxiv.org/abs/1804.01973)
-            Definition 3 page 8.
+            Chakraborty et al. 2018. Definition 3 page 8.
     """
 
     alpha: SymbolicFloat
@@ -391,11 +392,11 @@ class LCUBlockEncodingZeroState(BlockEncoding):
 
     References:
         [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
-            Sec 3.1, page 7 and 8 for high level overview and definitions. A
+            Low et al. 2019. Sec 3.1, page 7 and 8 for high level overview and definitions. A
             block encoding is called a standard form encoding there.
 
         [The power of block-encoded matrix powers: improved regression techniques via faster Hamiltonian simulation](https://arxiv.org/abs/1804.01973)
-            Definition 3 page 8.
+            Chakraborty et al. 2018. Definition 3 page 8.
     """
 
     alpha: SymbolicFloat
@@ -461,7 +462,7 @@ class ChebyshevPolynomial(Bloq):
 
     References:
         [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
-            Page 45; Theorem 1.
+            von Burg et al. 2007. Page 45; Theorem 1.
     """
 
     block_encoding: LCUBlockEncodingZeroState
@@ -536,7 +537,7 @@ def _black_box_select() -> BlackBoxSelect:
 
 
 @bloq_example
-def _lcu_block_bloq() -> LCUBlockEncoding:
+def _lcu_block() -> LCUBlockEncoding:
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -547,12 +548,12 @@ def _lcu_block_bloq() -> LCUBlockEncoding:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    lcu_block_bloq = LCUBlockEncoding(select=select, prepare=prepare, alpha=qlambda, epsilon=0.0)
-    return lcu_block_bloq
+    lcu_block = LCUBlockEncoding(select=select, prepare=prepare, alpha=qlambda, epsilon=0.0)
+    return lcu_block
 
 
 @bloq_example
-def _black_box_lcu_block_bloq() -> LCUBlockEncoding:
+def _black_box_lcu_block() -> LCUBlockEncoding:
     from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
@@ -564,14 +565,14 @@ def _black_box_lcu_block_bloq() -> LCUBlockEncoding:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    black_box_lcu_block_bloq = LCUBlockEncoding(
+    black_box_lcu_block = LCUBlockEncoding(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
     )
-    return black_box_lcu_block_bloq
+    return black_box_lcu_block
 
 
 @bloq_example
-def _lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
+def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -582,14 +583,14 @@ def _lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    lcu_zero_state_block_bloq = LCUBlockEncodingZeroState(
+    lcu_zero_state_block = LCUBlockEncodingZeroState(
         select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
     )
-    return lcu_zero_state_block_bloq
+    return lcu_zero_state_block
 
 
 @bloq_example
-def _black_box_lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
+def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
@@ -601,10 +602,10 @@ def _black_box_lcu_zero_state_block_bloq() -> LCUBlockEncodingZeroState:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    black_box_lcu_zero_state_block_bloq = LCUBlockEncodingZeroState(
+    black_box_lcu_zero_state_block = LCUBlockEncodingZeroState(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
     )
-    return black_box_lcu_zero_state_block_bloq
+    return black_box_lcu_zero_state_block
 
 
 _BLOCK_ENCODING_DOC = BloqDocSpec(
@@ -616,13 +617,13 @@ _BLOCK_ENCODING_DOC = BloqDocSpec(
 _LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
     bloq_cls=LCUBlockEncoding,
     import_line='from qualtran.bloqs.block_encoding import LCUBlockEncoding',
-    examples=(_lcu_block_bloq, _black_box_lcu_block_bloq),
+    examples=(_lcu_block, _black_box_lcu_block),
 )
 
 _LCU_ZERO_STATE_BLOCK_ENCODING_DOC = BloqDocSpec(
     bloq_cls=LCUBlockEncodingZeroState,
     import_line='from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState',
-    examples=(_lcu_zero_state_block_bloq, _black_box_lcu_zero_state_block_bloq),
+    examples=(_lcu_zero_state_block, _black_box_lcu_zero_state_block),
 )
 
 
