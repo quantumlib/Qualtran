@@ -139,6 +139,7 @@ def verify_generalized_qsp(
     Q: Optional[Sequence[complex]] = None,
     *,
     negative_power: int = 0,
+    tolerance: float = 1e-5,
 ):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
@@ -154,14 +155,14 @@ def verify_generalized_qsp(
         P, input_unitary, negative_power=negative_power
     )
     actual_top_left = result_unitary[:N, :N]
-    assert_matrices_almost_equal(expected_top_left, actual_top_left)
+    assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=tolerance)
 
     assert not isinstance(gqsp_U.Q, Shaped)
     expected_bottom_left = evaluate_polynomial_of_matrix(
         gqsp_U.Q, input_unitary, negative_power=negative_power
     )
     actual_bottom_left = result_unitary[N:, :N]
-    assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
+    assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left, atol=tolerance)
 
 
 @pytest.mark.slow
