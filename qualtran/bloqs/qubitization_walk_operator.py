@@ -12,6 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+r"""Bloqs for constructing quantum walks from Select and Prepare operators.
+
+The spectrum of a quantum Hamiltonian can be encoded in the spectrum of a quantum "walk"
+operator. The Prepare and Select subroutines are carefully designed so that the Hamiltonian
+$H$ is encoded as a projection of Select onto the state prepared by Prepare:
+
+$$
+\mathrm{PREPARE}|0\rangle = |\mathcal{L}\rangle \\
+(\langle \mathcal{L} | \otimes \mathbb{1}) \mathrm{SELECT} (|\mathcal{L} \rangle \otimes \mathbb{1}) = H / \lambda
+$$.
+
+We first document the SelectOracle and PrepareOracle abstract base bloqs, and then show
+how they can be combined in `QubitizationWalkOperator`.
+"""
+
 from functools import cached_property
 from typing import Iterator, Optional, Tuple
 
@@ -34,27 +49,31 @@ from qualtran.symbolics import SymbolicFloat
 
 @attrs.frozen(cache_hash=True)
 class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
-    r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
+    r"""Construct a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
-    For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
-    Constructs a Szegedy quantum walk operator $W = R_{L} . SELECT$, which is a product of
-    two reflections $R_{L} = (2|L><L| - I)$ and $SELECT=\sum_{l}|l><l|H_{l}$.
+    For a Hamiltonian $H = \sum_l w_l H_l$ (where coefficients $w_l > 0$ and $H_l$ are unitaries),
+    This bloq constructs a Szegedy quantum walk operator $W = R_{L} \cdot \mathrm{SELECT}$,
+    which is a product of two reflections:
+     - $R_L = (2|L\rangle\langle L| - I)$ and
+     - $\mathrm{SELECT}=\sum_l |l\rangle\langle l|H_l$.
 
     The action of $W$ partitions the Hilbert space into a direct sum of two-dimensional irreducible
-        vector spaces. For an arbitrary eigenstate $|k>$ of $H$ with eigenvalue $E_k$, $|\ell>|k>$ and
-    an orthogonal state $\phi_{k}$ span the irreducible two-dimensional space that $|\ell>|k>$ is
-    in under the action of $W$. In this space, $W$ implements a Pauli-Y rotation by an angle of
-    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$,
-    where $\lambda = \sum_l w_l$.
+    vector spaces giving it the name "qubitization".
+    For an arbitrary eigenstate $|k\rangle$ of $H$ with eigenvalue $E_k$,
+    the two-dimensional space is spanned by $|L\rangle|k\rangle$ and
+    an orthogonal state $\phi_k$. In this space, $W$ implements a Pauli-Y rotation by an angle of
+    $-2\arccos(E_k / \lambda)$ where $\lambda = \sum_l w_l$. That is,
+    $W = e^{i \arccos(E_k / \lambda) Y}$.
 
-    Thus, the walk operator $W$ encodes the spectrum of $H$ as a function of eigenphases of $W$
-    s.t. $spectrum(H) = \lambda cos(\arg(\mathrm{spectrum}(W)))$ where $\arg(e^{i\phi}) = \phi$.
+    Thus, the walk operator $W$ encodes the spectrum of $H$ as a function of eigenphases of $W$,
+    specifically $\mathrm{spectrum}(H) = \lambda \cos(\arg(\mathrm{spectrum}(W)))$
+    where $\arg(e^{i\phi}) = \phi$.
 
     Args:
         select: The SELECT lcu gate implementing $\mathrm{SELECT}=\sum_{l}|l\rangle\langle l|H_{l}$.
         prepare: Then PREPARE lcu gate implementing
-            $\mathrm{PREPARE}|00...00\rangle = \sum_{l=0}^{L - 1}\sqrt{\frac{w_{l}}{\lambda}}
-            |l\rangle = |\ell\rangle$
+            $\mathrm{PREPARE}|0\dots 0\rangle = \sum_l \sqrt{\frac{w_{l}}{\lambda}}
+            |l\rangle = |L\rangle$
         control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
             None, in which case the resulting walk operator is not controlled.
 
