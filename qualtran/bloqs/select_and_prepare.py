@@ -72,16 +72,16 @@ _SELECT_ORACLE_DOC = BloqDocSpec(
 class PrepareOracle(GateWithRegisters):
     r"""Abstract base class that defines the API for a PREPARE Oracle.
 
-    Given a set of coefficients $\{c_0, c_1, ..., c_{l - 1}\}$, the PREPARE oracle is used to encode
-    the coefficients as amplitudes of a state $|\Psi\rangle = \sum_{i=0}^{N-1} \sqrt{\frac{c_{i}}{\lambda}} |i\rangle$
-    where $\lambda = \sum_i |c_i|$, using a selection register $|i\rangle$. In order to prepare such
+    Given a set of coefficients $\{c_0, c_1, ..., c_{N - 1}\}$, the PREPARE oracle is used to encode
+    the coefficients as amplitudes of a state $|\Psi\rangle = \sum_{l=0}^{N-1} \sqrt{\frac{c_l}{\lambda}} |l\rangle$
+    where $\lambda = \sum_l |c_l|$, using a selection register $|l\rangle$. In order to prepare such
     a state, the PREPARE circuit is also allowed to use a junk register that is entangled with
     selection register.
 
     Thus, the action of a PREPARE circuit on an input state $|0\rangle$ can be defined as:
 
     $$
-        \mathrm{PREPARE} |0\rangle = \sum_{i=0}^{N-1} \sqrt{ \frac{c_{i}}{\lambda} } |i\rangle |\mathrm{junk}_{i}\rangle
+        \mathrm{PREPARE} |0\rangle = \sum_{l=0}^{N-1} \sqrt{ \frac{c_l}{\lambda} } |l\rangle |\mathrm{junk}_l\rangle
     $$
     """
 
