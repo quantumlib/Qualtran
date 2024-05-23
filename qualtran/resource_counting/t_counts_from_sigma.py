@@ -48,7 +48,7 @@ def t_counts_from_sigma(
 
     if rotation_types is None:
         rotation_types = _get_all_rotation_types()
-    ret = sigma.get(TGate(), 0)
+    ret = sigma.get(TGate(), 0) + sigma.get(TGate().adjoint(), 0)
     for bloq, counts in sigma.items():
         if isinstance(bloq, rotation_types) and not cirq.has_stabilizer_effect(bloq):
             ret += ceil(TComplexity.rotation_cost(bloq.eps)) * counts
