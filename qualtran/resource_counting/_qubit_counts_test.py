@@ -74,6 +74,7 @@ def test_qubit_count_cost():
         TwoBitSwap(): 2,
     }
 
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook("qubit_counts")

@@ -21,7 +21,7 @@ from attrs import frozen
 
 from qualtran import Bloq, Connection, DanglingT, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import _binst_to_cxns
-from qualtran.symbolics import smax
+from qualtran.symbolics import smax, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 def _cbloq_max_width(
-    binst_graph: nx.DiGraph, _bloq_max_width: Callable[[Bloq], int] = lambda b: 0
-) -> Union[int, sympy.Expr]:
+    binst_graph: nx.DiGraph, _bloq_max_width: Callable[[Bloq], SymbolicInt] = lambda b: 0
+) -> SymbolicInt:
     """Get the maximum width of a composite bloq.
 
     Specifically, we treat each binst in series. The width at each inter-bloq time point
@@ -43,7 +43,7 @@ def _cbloq_max_width(
     If the dataflow graph has more than one connected component, we treat each component
     independently.
     """
-    max_width: Union[int, sympy.Expr] = 0
+    max_width: SymbolicInt = 0
     in_play: Set[Connection] = set()
 
     for cc in nx.weakly_connected_components(binst_graph):
@@ -70,7 +70,7 @@ def _cbloq_max_width(
 
 
 @frozen
-class QubitCount(CostKey[int]):
+class QubitCount(CostKey[SymbolicInt]):
     """A cost estimating the number of qubits required to implement a bloq.
 
     The number of qubits is bounded from below by the number of qubits implied by the signature.
@@ -95,7 +95,9 @@ class QubitCount(CostKey[int]):
     large algorithms.
     """
 
-    def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], int]) -> int:
+    def compute(
+        self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], SymbolicInt]
+    ) -> SymbolicInt:
         """Compute an estimate of the number of qubits used by `bloq`.
 
         See the class docstring for more information.
@@ -124,7 +126,7 @@ class QubitCount(CostKey[int]):
             tot = smax(tot, get_callee_cost(callee))
         return tot
 
-    def zero(self) -> int:
+    def zero(self) -> SymbolicInt:
         """Zero cost is zero qubits."""
         return 0
 
