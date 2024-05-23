@@ -632,7 +632,9 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
                 binst_x = rpos.seq_x
 
         if not isinstance(binst, DanglingT):
-            assert binst_x is not None
+            if binst_x is None:
+                # No predecessors or successors
+                continue
             msd.vlines.append(
                 VLine(
                     x=binst_x,
