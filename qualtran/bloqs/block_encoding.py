@@ -236,9 +236,6 @@ class BlockEncoding(Bloq):
 
     """
 
-    alpha: SymbolicFloat
-    epsilon: SymbolicFloat
-
     def pretty_name(self) -> str:
         return 'B[H]'
 
