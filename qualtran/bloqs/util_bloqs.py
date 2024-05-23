@@ -206,7 +206,7 @@ class Partition(_BookkeepingBloq):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: SymbolicInt
+    n: int
     regs: Tuple[Register, ...]
     partition: bool = True
 
