@@ -152,7 +152,7 @@ class DoubleFactorizationOneBody(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return '$B[H_1]$'
+        return 'B[H_1]'
 
     def build_composite_bloq(
         self,

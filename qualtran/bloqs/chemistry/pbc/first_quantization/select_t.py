@@ -58,7 +58,7 @@ class SelectTFirstQuantization(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'SEL $T$'
+        return r'SEL T'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
