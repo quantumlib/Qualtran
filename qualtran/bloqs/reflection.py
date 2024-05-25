@@ -25,12 +25,13 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, Text, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-def _to_tuple(x: Iterable[int]) -> Sequence[int]:
+def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
     """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
     return tuple(x)
 
@@ -46,7 +47,7 @@ class Reflection(Bloq):
         bitsizes: The bitsizes of each of the registers to reflect about.
         cvs: The control values for each register.
     """
-    bitsizes: Tuple[int, ...] = attrs.field(converter=_to_tuple)
+    bitsizes: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
     cvs: Tuple[int, ...] = attrs.field(converter=_to_tuple)
 
     def __attrs_post_init__(self):

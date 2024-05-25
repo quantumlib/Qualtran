@@ -16,16 +16,32 @@ import pytest
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.bloqs.block_encoding import (
-    _black_box_block_bloq,
+    _black_box_chebyshev_poly,
+    _black_box_lcu_block,
+    _black_box_lcu_zero_state_block,
     _black_box_prepare,
     _black_box_select,
     _chebyshev_poly,
+    _lcu_block,
+    _lcu_zero_state_block,
 )
 from qualtran.testing import execute_notebook
 
 
-def test_black_box_bloq(bloq_autotester):
-    bloq_autotester(_black_box_block_bloq)
+def test_lcu_block_encoding(bloq_autotester):
+    bloq_autotester(_lcu_block)
+
+
+def test_black_box_lcu_block_encoding(bloq_autotester):
+    bloq_autotester(_black_box_lcu_block)
+
+
+def test_lcu_zero_state_block_encoding(bloq_autotester):
+    bloq_autotester(_lcu_zero_state_block)
+
+
+def test_black_box_lcu_zero_state_bloq_encoding(bloq_autotester):
+    bloq_autotester(_black_box_lcu_zero_state_block)
 
 
 def test_black_box_prepare(bloq_autotester):
@@ -38,6 +54,10 @@ def test_black_box_select(bloq_autotester):
 
 def test_chebyshev(bloq_autotester):
     bloq_autotester(_chebyshev_poly)
+
+
+def test_black_box_chebyshev(bloq_autotester):
+    bloq_autotester(_black_box_chebyshev_poly)
 
 
 def test_chebyshev_t_counts():

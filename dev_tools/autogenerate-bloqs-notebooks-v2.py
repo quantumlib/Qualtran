@@ -92,6 +92,7 @@ import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.select_and_prepare
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.swap_network.cswap_approx
@@ -456,7 +457,11 @@ ROT_QFT_PE = [
     NotebookSpecV2(
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization_walk_operator,
-        bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
+        bloq_specs=[
+            qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
+            qualtran.bloqs.select_and_prepare._SELECT_ORACLE_DOC,
+            qualtran.bloqs.select_and_prepare._PREPARE_ORACLE_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Qubitization Phase Estimation',
@@ -503,7 +508,9 @@ OTHER: List[NotebookSpecV2] = [
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[
-            qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC,
+            qualtran.bloqs.block_encoding._BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
