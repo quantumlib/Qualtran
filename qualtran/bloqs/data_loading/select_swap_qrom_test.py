@@ -46,10 +46,9 @@ def test_select_swap_qrom(data, block_size):
 
     qubit_regs = get_named_qubits(qrom.signature)
     selection = qubit_regs["selection"]
-    selection_q, selection_r = (
-        selection[: qrom.batched_qrom_selection_bitsizes[0]],
-        selection[qrom.batched_qrom_selection_bitsizes[0] :],
-    )
+    q_len = qrom.batched_qrom_selection_bitsizes[0]
+    assert isinstance(q_len, int)
+    selection_q, selection_r = (selection[:q_len], selection[q_len:])
     targets = [qubit_regs[f"target{i}_"] for i in range(len(data))]
 
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -131,7 +130,9 @@ def test_qroam_hashable():
 
 
 def test_qrom_t_complexity():
-    qrom = SelectSwapQROM([1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), block_size=4)
+    qrom = SelectSwapQROM.build_from_data(
+        [1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), log_block_sizes=(2,)
+    )
     _, sigma = qrom.call_graph()
     assert t_counts_from_sigma(sigma) == qrom.t_complexity().t == 192
 

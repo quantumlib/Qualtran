@@ -13,8 +13,10 @@
 #  limitations under the License.
 
 """Quantum read-only memory."""
+import numbers
 from typing import (
     Callable,
+    cast,
     Iterable,
     Iterator,
     Optional,
@@ -34,15 +36,14 @@ from numpy.typing import ArrayLike, NDArray
 from qualtran import bloq_example, BloqDocSpec, Register
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.data_loading.qrom_abc import QROMABC
+from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
-from qualtran.resource_counting import BloqCountT
-from qualtran.symbolics import prod, Shaped, SymbolicInt
+from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
@@ -52,7 +53,7 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 
 @cirq.value_equality()
 @attrs.frozen
-class QROM(QROMABC, UnaryIterationGate):
+class QROM(QROMBase, UnaryIterationGate):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     ## Overview
@@ -145,8 +146,15 @@ class QROM(QROMABC, UnaryIterationGate):
     """
 
     @classmethod
-    def build_from_data(cls, *data: ArrayLike, num_controls: SymbolicInt = 0) -> 'QROM':
-        return cls._build_from_data(*data, num_controls=num_controls)
+    def build_from_data(
+        cls,
+        *data: ArrayLike,
+        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        num_controls: SymbolicInt = 0,
+    ) -> 'QROM':
+        return cls._build_from_data(
+            *data, target_bitsizes=target_bitsizes, num_controls=num_controls
+        )
 
     @classmethod
     def build_from_bitsize(
@@ -154,7 +162,7 @@ class QROM(QROMABC, UnaryIterationGate):
         data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         *,
-        target_shapes: Tuple[Union[Shaped, Tuple[SymbolicInt, ...]], ...] = (),
+        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: Tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> 'QROM':
@@ -173,9 +181,10 @@ class QROM(QROMABC, UnaryIterationGate):
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
-            target = target_regs.get(f'target{i}_', ())
-            target_bitsize = self.target_bitsizes[i]
-            for idx in np.ndindex(self.target_shapes[i]):
+            target = target_regs.get(f'target{i}_', np.array([]))
+            target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
+            assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
+            for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
                 for q, bit in zip(target[idx], f'{data_to_load:0{target_bitsize}b}'):
                     if int(bit):

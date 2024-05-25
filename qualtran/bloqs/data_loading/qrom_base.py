@@ -14,24 +14,26 @@
 
 """Base class for Bloqs implementing a QROM (Quantum read-only memory) circuit."""
 import abc
+import numbers
 from functools import cached_property
-from typing import Dict, Tuple, Type, TypeVar, Union
+from typing import cast, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy.typing import ArrayLike, NDArray
 
 from qualtran import BoundedQUInt, QAny, Register
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
 
-QROMT = TypeVar('QROMT', bound='QROMABC')
+QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
 @cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
-class QROMABC(abc.ABC):
+class QROMBase(abc.ABC):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     ## Overview
@@ -47,10 +49,10 @@ class QROMABC(abc.ABC):
             |d_L[s_1, s_2, \dots, s_k]\rangle
     $$
 
-    There two high level parameters that control the behavior of a QROM are -
+    The two high level parameters that control the behavior of a QROM are -
 
-    1. Shape of the classical dataset to be loaded ($\text{data.shape} = (S_1, S_2, ..., S_K)$).
-    2. Number of distinct datasets to be loaded ($\text{data.bitsizes} = (b_1, b_2, ..., b_L)$).
+    1. The shape of the classical datasets to be loaded ($\text{data.shape} = (S_1, S_2, ..., S_K)$).
+    2. The number of distinct datasets to be loaded ($\text{data.bitsizes} = (b_1, b_2, ..., b_L)$).
 
     Each of these have an effect on the cost of the QROM. The `data_or_shape` parameter stores
     either
@@ -72,8 +74,9 @@ class QROMABC(abc.ABC):
     registers with bitsizes $(p, q, r, s)$ where
     $p,q,r,s=\log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.
 
-    In general, to load K dimensional data, we use K named selection registers `(selection0,
-    selection1, ..., selection{k})` to index and load the data.
+    In general, to load $K$ dimensional data, we use $K$ named selection registers
+    $(\text{selection}_0, \text{selection}_1, ..., \text{selection}_k)$ to index and
+    load the data.
 
     The T/Toffoli cost of the QROM scales linearly with the number of elements in the dataset
     (i.e. $\mathcal{O}(\mathrm{np.prod(data.shape)}$).
@@ -86,14 +89,14 @@ class QROMABC(abc.ABC):
 
     If you have multiple classical datasets `(data_1, data_2, data_3, ..., data_L)` to be loaded
     and each of them has the same shape `(data_1.shape == data_2.shape == ... == data_L.shape)`
-    and different target bitsizes `(b_1, b_2, ..., b_L)`, then one construct a single classical
-    dataset `data = merge(data_1, data_2, ..., data_L)` where
+    and different target bitsizes `(b_1, b_2, ..., b_L)`, then one can construct a single
+    classical dataset `data = merge(data_1, data_2, ..., data_L)` where
 
     - `data.shape == data_1.shape == data_2.shape == ... == data_L` and
     - `data[idx] = f'{data_1[idx]!0{b_1}b}' + f'{data_2[idx]!0{b_2}b}' + ... + f'{data_L[idx]!0{b_L}b}'`
 
-    Thus, the target bitsize of the merged dataset is $b = b_1 + b_2 + \dots + b_L$ and clifford
-    cost of loading merged dataset scales as
+    Thus, the target bitsize of the merged dataset is $b = b_1 + b_2 + \dots + b_L$ and the
+    clifford cost of loading the merged dataset scales as
     $\mathcal{O}((b_1 + b_2 + \dots + b_L) \mathrm{np.prod}(\mathrm{data.shape}))$.
 
     ## Variable spaced QROM
@@ -132,7 +135,7 @@ class QROMABC(abc.ABC):
     target_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
-    target_shapes: Tuple[Union[Shaped, Tuple[SymbolicInt, ...]], ...] = attrs.field(
+    target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = attrs.field(
         converter=lambda x: tuple(tuple(y) for y in x)
     )
     num_controls: SymbolicInt = 0
@@ -143,12 +146,12 @@ class QROMABC(abc.ABC):
 
     @cached_property
     def data_shape(self) -> Tuple[SymbolicInt, ...]:
-        ret = None
+        ret: Tuple[SymbolicInt, ...] = ()
         for data_or_shape, target_shape in zip(self.data_or_shape, self.target_shapes):
             data_shape = shape(data_or_shape)
             if target_shape:
                 data_shape = data_shape[: -len(target_shape)]
-            if ret is None:
+            if ret == ():
                 ret = data_shape
             if tuple(ret) != tuple(data_shape):
                 raise ValueError("All datasets must have same shape")
@@ -162,7 +165,7 @@ class QROMABC(abc.ABC):
         if not self.has_data():
             raise ValueError(f"Data not available for symbolic QROM {self}")
         assert all(isinstance(d, np.ndarray) for d in self.data_or_shape)
-        return self.data_or_shape
+        return cast(Tuple[np.ndarray, ...], self.data_or_shape)
 
     def __attrs_post_init__(self):
         assert all([is_symbolic(s) or isinstance(s, int) for s in self.selection_bitsizes])
@@ -181,11 +184,11 @@ class QROMABC(abc.ABC):
 
     @classmethod
     def _build_from_data(
-        cls: Type[QROMT],
+        cls: Type[QROM_T],
         *data: ArrayLike,
-        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]] = None,
+        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
         num_controls: SymbolicInt = 0,
-    ) -> QROMT:
+    ) -> QROM_T:
         _data = [np.array(d, dtype=int) for d in data]
         selection_bitsizes = tuple((s - 1).bit_length() for s in _data[0].shape)
         if target_bitsizes is None:
@@ -197,7 +200,7 @@ class QROMABC(abc.ABC):
             num_controls=num_controls,
         )
 
-    def with_data(self, *data: ArrayLike) -> 'QROM':
+    def with_data(self: QROM_T, *data: ArrayLike) -> QROM_T:
         _data = tuple([np.array(d, dtype=int) for d in data])
         assert all(shape(d1) == shape(d2) for d1, d2 in zip(_data, self.data_or_shape))
         assert len(_data) == len(self.target_bitsizes)
@@ -206,16 +209,18 @@ class QROMABC(abc.ABC):
 
     @classmethod
     def _build_from_bitsize(
-        cls: Type[QROMT],
+        cls: Type[QROM_T],
         data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
         *,
-        target_shapes: Tuple[Union[Shaped, Tuple[SymbolicInt, ...]], ...] = (),
+        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: Tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-    ) -> QROMT:
-        data_shape = (
-            (data_len_or_shape,) if isinstance(data_len_or_shape, int) else data_len_or_shape
+    ) -> QROM_T:
+        data_shape: Tuple[SymbolicInt, ...] = (
+            (data_len_or_shape,)
+            if isinstance(data_len_or_shape, (int, numbers.Number, sympy.Basic))
+            else data_len_or_shape
         )
         if not isinstance(target_bitsizes, tuple):
             target_bitsizes = (target_bitsizes,)
@@ -256,10 +261,12 @@ class QROMABC(abc.ABC):
             if is_symbolic(l) or l
         )
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         if not self.has_data():
             raise NotImplementedError(f'Symbolic {self} does not support classical simulation')
-
+        vals = cast(Dict[str, 'ClassicalValT'], vals)
         if self.num_controls > 0:
             control = vals['control']
             if control != 2**self.num_controls - 1:
