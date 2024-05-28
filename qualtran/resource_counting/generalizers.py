@@ -80,8 +80,8 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
     from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
-    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
+    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 
     if isinstance(b, Adjoint):
         b = b.subbloq

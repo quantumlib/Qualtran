@@ -23,8 +23,8 @@ import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
-from qualtran.bloqs.swap_network.swap_with_zero import _swz, _swz_small, SwapWithZero
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.bloqs.swap_network.swap_with_zero import _swz, _swz_small, SwapWithZero
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition

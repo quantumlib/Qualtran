@@ -17,9 +17,9 @@ from typing import Optional
 import cirq
 
 from qualtran import Bloq
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (

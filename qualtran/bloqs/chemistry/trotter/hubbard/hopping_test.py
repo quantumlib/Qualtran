@@ -13,12 +13,12 @@
 #  limitations under the License.
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import Rz, TGate, ZPowGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
     _hopping_tile,
     _hopping_tile_hwp,
     _plaquette,
 )
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
 
 

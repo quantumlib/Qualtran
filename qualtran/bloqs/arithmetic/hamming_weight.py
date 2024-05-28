@@ -20,8 +20,8 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
-from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:

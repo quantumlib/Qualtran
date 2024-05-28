@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from qualtran.bloqs.bookkeeping.util_bloqs import (
-    ArbitraryClifford,
-    Split,
-    Join,
-    Cast,
-    Partition,
     Allocate,
+    ArbitraryClifford,
+    Cast,
     Free,
+    Join,
+    Partition,
     Power,
+    Split,
 )

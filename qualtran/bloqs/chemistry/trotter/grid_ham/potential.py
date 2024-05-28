@@ -32,6 +32,7 @@ from qualtran import (
 )
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
+from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
@@ -40,7 +41,6 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.data_loading.qrom import QROM
-from qualtran.bloqs.bookkeeping import Cast
 from qualtran.drawing import Text, WireSymbol
 
 

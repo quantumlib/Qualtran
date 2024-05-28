@@ -50,6 +50,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
@@ -58,7 +59,6 @@ from qualtran.bloqs.chemistry.df.prepare import (
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
