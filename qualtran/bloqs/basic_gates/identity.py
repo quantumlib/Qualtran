@@ -89,7 +89,7 @@ class Identity(Bloq):
         return {'q': q}
 
     def pretty_name(self) -> str:
-        return self.__str__
+        return self.__str__()
 
     def __str__(self) -> str:
         return 'I'
