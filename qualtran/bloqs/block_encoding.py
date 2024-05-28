@@ -30,7 +30,8 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.reflection.reflection_about_zero import Reflection
+from qualtran.bloqs.reflection import ReflectionUsingPrepare
+from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
 from qualtran.symbolics import SymbolicFloat
@@ -485,10 +486,10 @@ class ChebyshevPolynomial(Bloq):
             ]
         )
 
-    def build_reflection_bloq(self) -> Reflection:
+    def build_reflection_bloq(self) -> ReflectionUsingPrepare:
         refl_bitsizes = (r.bitsize for r in self.block_encoding.selection_registers)
         num_regs = len(self.block_encoding.selection_registers)
-        return Reflection(bitsizes=refl_bitsizes, cvs=(0,) * num_regs)
+        return ReflectionUsingPrepare(PrepareIdentity(bitsizes=refl_bitsizes), global_phase=-1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         # includes selection registers and any selection registers used by PREPARE

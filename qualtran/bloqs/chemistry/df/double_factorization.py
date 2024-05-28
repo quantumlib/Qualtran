@@ -57,8 +57,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
-from qualtran.bloqs.reflection import PrepareIdentity
-from qualtran.bloqs.reflection.reflection_about_zero import Reflection
+from qualtran.bloqs.reflection import PrepareIdentity, ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -438,8 +437,12 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
             sys=sys,
         )
         # The last ctrl is the 'target' register for the MCP gate.
+        # TODO: This is missing an extra-control + I'm not sure the interface is exactly right.
         succ_l, l_ne_zero, p, spin = bb.add(
-            Reflection((1, 1, n_n, 1), (1, 1, 0, 0)), reg0=succ_l, reg1=l_ne_zero, reg2=p, reg3=spin
+            ReflectionUsingPrepare(PrepareIdentity(n_n, 1), control_val=1, global_phase=-1),
+            control=succ_l,
+            reg2=p,
+            reg3=spin,
         )
         succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,

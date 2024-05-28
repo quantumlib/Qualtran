@@ -23,8 +23,8 @@ from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
+from qualtran.bloqs.reflection import ReflectionUsingPrepare
 from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
-from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.reflection.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper

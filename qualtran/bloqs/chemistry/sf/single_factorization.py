@@ -50,8 +50,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.reflection import PrepareIdentity
-from qualtran.bloqs.reflection.reflection_about_zero import Reflection
+from qualtran.bloqs.reflection import PrepareIdentity, ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 if TYPE_CHECKING:
@@ -387,15 +386,15 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
             sys=sys,
         )
         # reflect about the inner state preparation registers, controlled on succ_l and l_ne_zero.
+        # TODO: This is missing a control register.
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
         succ_l, l_ne_zero, p, q, swap_pq, spin = bb.add(
-            Reflection((1, 1, n_n, n_n, 1, 1), cvs=(1, 1, 0, 0, 0, 0)),
-            reg0=succ_l,
-            reg1=l_ne_zero,
-            reg2=p,
-            reg3=q,
-            reg4=swap_pq,
-            reg5=spin,
+            ReflectionUsingPrepare(PrepareIdentity(n_n, n_n, 1, 1), control_val=1, global_phase=-1),
+            control=succ_l,
+            x0=p,
+            x1=q,
+            x2=swap_pq,
+            x3=spin,
         )
         # apply one-body again
         succ_l, l_ne_zero, succ_pq, l, p, q, swap_pq, spin, rot_aa[1], sys = bb.add(

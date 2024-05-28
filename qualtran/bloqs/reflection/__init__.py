@@ -1,3 +1,2 @@
 from .prepare_identity import PrepareIdentity
-from .reflection_about_zero import Reflection
 from .reflection_using_prepare import ReflectionUsingPrepare
