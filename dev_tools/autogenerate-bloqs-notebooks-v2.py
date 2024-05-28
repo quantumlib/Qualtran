@@ -587,7 +587,7 @@ CONCEPTS = [
     'multiplexers/unary_iteration.ipynb',
     'arithmetic/t_complexity_of_comparison_gates.ipynb',
     'arithmetic/error_analysis_for_fxp_arithmetic.ipynb',
-    'phase_estimation_of_quantum_walk.ipynb',
+    'phase_estimation/phase_estimation_of_quantum_walk.ipynb',
     'chemistry/trotter/grid_ham/trotter_costs.ipynb',
     'chemistry/resource_estimation.ipynb',
     'chemistry/writing_algorithms.ipynb',
