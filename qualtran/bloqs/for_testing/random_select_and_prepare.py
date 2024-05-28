@@ -21,9 +21,9 @@ from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
 
 @frozen

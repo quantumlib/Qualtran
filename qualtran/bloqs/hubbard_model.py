@@ -61,12 +61,12 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.basic_gates import CSwap
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.bloqs.mod_arithmetic import ModAddK
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )

@@ -32,6 +32,7 @@ import qualtran.bloqs.basic_gates.x_basis
 import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
+import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.df.prepare
@@ -104,7 +105,6 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
-import qualtran.bloqs.select_and_prepare
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
@@ -176,11 +176,11 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZGate": qualtran.bloqs.basic_gates.z_basis.ZGate,
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
-    "qualtran.bloqs.block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.LCUBlockEncoding,
-    "qualtran.bloqs.block_encoding.LCUBlockEncodingZeroState": qualtran.bloqs.block_encoding.LCUBlockEncodingZeroState,
-    "qualtran.bloqs.block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.BlackBoxPrepare,
-    "qualtran.bloqs.block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.BlackBoxSelect,
-    "qualtran.bloqs.block_encoding.ChebyshevPolynomial": qualtran.bloqs.block_encoding.ChebyshevPolynomial,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
+    "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
     "qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs": qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs,
     "qualtran.bloqs.chemistry.black_boxes.QROAM": qualtran.bloqs.chemistry.black_boxes.QROAM,
     "qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs": qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs,
@@ -308,8 +308,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
-    "qualtran.bloqs.select_and_prepare.PrepareOracle": qualtran.bloqs.select_and_prepare.PrepareOracle,
-    "qualtran.bloqs.select_and_prepare.SelectOracle": qualtran.bloqs.select_and_prepare.SelectOracle,
+    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle,
+    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient": qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient,
