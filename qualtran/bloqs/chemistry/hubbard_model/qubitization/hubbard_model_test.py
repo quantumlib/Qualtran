@@ -16,7 +16,12 @@ import cirq
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.hubbard_model import _prep_hubb, _sel_hubb, PrepareHubbard, SelectHubbard
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
+    _prep_hubb,
+    _sel_hubb,
+    PrepareHubbard,
+    SelectHubbard,
+)
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 

@@ -112,7 +112,7 @@ class ChebyshevPolynomial(Bloq):
 @bloq_example
 def _chebyshev_poly() -> ChebyshevPolynomial:
     from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState
-    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     dim = 3
     select = SelectHubbard(x_dim=dim, y_dim=dim)
@@ -135,7 +135,10 @@ def _black_box_chebyshev_poly() -> ChebyshevPolynomial:
         BlackBoxSelect,
         LCUBlockEncodingZeroState,
     )
-    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
+        PrepareHubbard,
+        SelectHubbard,
+    )
 
     dim = 3
     select = SelectHubbard(x_dim=dim, y_dim=dim)
