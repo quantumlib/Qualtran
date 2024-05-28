@@ -48,6 +48,7 @@ Usage as a script:
 
 from typing import Iterable, List
 
+import qualtran.bloqs.reflection.reflection_about_zero
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
@@ -512,7 +513,7 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Reflection',
         module=qualtran.bloqs.reflection,
-        bloq_specs=[qualtran.bloqs.reflection._REFLECTION_DOC],
+        bloq_specs=[qualtran.bloqs.reflection.reflection_about_zero._REFLECTION_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(

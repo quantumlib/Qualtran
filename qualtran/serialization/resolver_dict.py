@@ -98,7 +98,7 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
-import qualtran.bloqs.reflection_using_prepare
+import qualtran.bloqs.reflection.reflection_using_prepare
 import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -295,7 +295,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
     "qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator,
     "qualtran.bloqs.reflection.Reflection": qualtran.bloqs.reflection.Reflection,
-    "qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare,
+    "qualtran.bloqs.reflection.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflection.reflection_using_prepare.ReflectionUsingPrepare,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient,
     "qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad": qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad,

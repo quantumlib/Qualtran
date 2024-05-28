@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from qualtran import CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
-from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.reflection.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
 
