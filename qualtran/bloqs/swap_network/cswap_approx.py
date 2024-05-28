@@ -21,8 +21,8 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,

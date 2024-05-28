@@ -175,7 +175,7 @@ class BloqAsCirqGate(cirq.Gate):
         if power == -1:
             return self.bloq.adjoint()
 
-        from qualtran.bloqs.util_bloqs import Power
+        from qualtran.bloqs.bookkeeping import Power
 
         bloq = self.bloq if power > 0 else self.bloq.adjoint()
 
