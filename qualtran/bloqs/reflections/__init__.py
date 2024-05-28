@@ -13,4 +13,4 @@
 #  limitations under the License.
 
 from .reflection import Reflection
-from .reflection_using_prepare import ReflectionUsingPrepare
+from .reflections import ReflectionUsingPrepare
