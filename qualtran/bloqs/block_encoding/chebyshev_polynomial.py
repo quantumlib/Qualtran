@@ -20,7 +20,7 @@ import attrs
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncodingZeroState
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections import Reflection
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

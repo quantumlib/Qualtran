@@ -15,7 +15,7 @@ import pytest
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.bloqs.reflection import _reflection
+from qualtran.bloqs.reflections.reflection import _reflection
 from qualtran.testing import execute_notebook
 
 

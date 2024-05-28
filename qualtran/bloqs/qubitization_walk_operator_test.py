@@ -27,7 +27,9 @@ from qualtran.bloqs.qubitization_walk_operator import (
     _walk_op_chem_sparse,
     QubitizationWalkOperator,
 )
-from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
+from qualtran.bloqs.reflections.reflection_using_prepare_test import (
+    construct_gate_helper_and_qubit_order,
+)
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 

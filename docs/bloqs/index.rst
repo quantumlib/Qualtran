@@ -97,7 +97,7 @@ Bloqs Library
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
     block_encoding/block_encoding.ipynb
-    reflection.ipynb
+    reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb
     state_preparation/state_preparation_alias_sampling.ipynb
