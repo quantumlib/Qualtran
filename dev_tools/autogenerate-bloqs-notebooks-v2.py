@@ -56,7 +56,10 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
-import qualtran.bloqs.block_encoding
+import qualtran.bloqs.block_encoding.block_encoding_base
+import qualtran.bloqs.block_encoding.chebyshev_polynomial
+import qualtran.bloqs.block_encoding.lcu_block_encoding
+import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
@@ -91,7 +94,6 @@ import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
-import qualtran.bloqs.select_and_prepare
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.swap_network.cswap_approx
@@ -458,8 +460,8 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qubitization_walk_operator,
         bloq_specs=[
             qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
-            qualtran.bloqs.select_and_prepare._SELECT_ORACLE_DOC,
-            qualtran.bloqs.select_and_prepare._PREPARE_ORACLE_DOC,
+            qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
+            qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -502,12 +504,12 @@ OTHER: List[NotebookSpecV2] = [
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[
-            qualtran.bloqs.block_encoding._BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding._LCU_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
+            qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
         title='Reflection',

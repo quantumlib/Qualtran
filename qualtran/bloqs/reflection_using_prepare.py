@@ -26,8 +26,8 @@ from qualtran._infra.gate_with_registers import (
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen(cache_hash=True)

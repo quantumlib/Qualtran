@@ -19,6 +19,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 import attrs
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncodingZeroState
 from qualtran.bloqs.reflection import Reflection
 
 if TYPE_CHECKING:

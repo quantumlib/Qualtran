@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.block_encoding import (
+from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
     _black_box_lcu_zero_state_block,
     _black_box_prepare,
