@@ -22,6 +22,7 @@ import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
+import qualtran.bloqs.basic_gates.identity
 import qualtran.bloqs.basic_gates.on_each
 import qualtran.bloqs.basic_gates.rotation
 import qualtran.bloqs.basic_gates.s_gate
@@ -145,6 +146,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
+    "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
     "qualtran.bloqs.basic_gates.on_each.OnEach": qualtran.bloqs.basic_gates.on_each.OnEach,

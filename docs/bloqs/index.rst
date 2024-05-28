@@ -34,6 +34,7 @@ Bloqs Library
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
+    basic_gates/identity.ipynb
 
 .. toctree::
     :maxdepth: 2
