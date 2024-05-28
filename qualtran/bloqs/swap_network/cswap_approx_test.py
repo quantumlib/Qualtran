@@ -21,13 +21,13 @@ import sympy
 import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,
     _approx_cswap_small,
     _approx_cswap_symb,
     CSwapApprox,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 

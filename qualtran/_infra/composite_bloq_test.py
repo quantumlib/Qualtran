@@ -41,10 +41,10 @@ from qualtran import (
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
+from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():

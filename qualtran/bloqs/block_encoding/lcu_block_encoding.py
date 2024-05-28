@@ -31,7 +31,7 @@ from qualtran import (
 )
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.util_bloqs import Partition
+from qualtran.bloqs.bookkeeping import Partition
 from qualtran.symbolics import SymbolicFloat
 
 
