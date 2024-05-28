@@ -14,7 +14,7 @@
 from numpy.typing import NDArray
 
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 
 
 def get_walk_operator_for_sparse_chem_ham(

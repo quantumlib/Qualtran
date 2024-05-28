@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,

@@ -21,7 +21,7 @@ import numpy as np
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:

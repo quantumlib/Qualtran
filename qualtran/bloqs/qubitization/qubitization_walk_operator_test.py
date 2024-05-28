@@ -21,7 +21,7 @@ from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
-from qualtran.bloqs.qubitization_walk_operator import (
+from qualtran.bloqs.qubitization.qubitization_walk_operator import (
     _thc_walk_op,
     _walk_op,
     _walk_op_chem_sparse,

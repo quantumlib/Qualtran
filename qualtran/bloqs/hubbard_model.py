@@ -66,7 +66,7 @@ from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.bloqs.mod_arithmetic import ModAddK
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )

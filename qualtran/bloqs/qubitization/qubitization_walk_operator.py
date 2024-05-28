@@ -154,7 +154,9 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _walk_op() -> QubitizationWalkOperator:
-    from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
+    from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
+        get_walk_operator_for_1d_ising_model,
+    )
 
     walk_op = get_walk_operator_for_1d_ising_model(4, 2e-1)
     return walk_op
@@ -205,6 +207,6 @@ def _walk_op_chem_sparse() -> QubitizationWalkOperator:
 
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
     bloq_cls=QubitizationWalkOperator,
-    import_line='from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator',
+    import_line='from qualtran.bloqs.qubitization import QubitizationWalkOperator',
     examples=(_walk_op, _thc_walk_op, _walk_op_chem_sparse),
 )
