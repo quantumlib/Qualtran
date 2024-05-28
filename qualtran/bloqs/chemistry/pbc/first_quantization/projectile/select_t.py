@@ -70,7 +70,7 @@ class SelectTFirstQuantizationWithProj(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'SEL $T$'
+        return r'SEL T'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Modification of the SEL T costs from the first quantized bloq with n_p replace with n_n.
