@@ -33,6 +33,7 @@ import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.df.prepare
@@ -111,7 +112,6 @@ import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
 import qualtran.bloqs.swap_network.swap_with_zero
-import qualtran.bloqs.util_bloqs
 from qualtran import Adjoint, Bloq, CompositeBloq, Controlled, CtrlSpec
 from qualtran.cirq_interop import CirqGateAsBloq
 
@@ -181,6 +181,14 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Allocate": qualtran.bloqs.bookkeeping.util_bloqs.Allocate,
+    "qualtran.bloqs.bookkeeping.util_bloqs.ArbitraryClifford": qualtran.bloqs.bookkeeping.util_bloqs.ArbitraryClifford,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Cast": qualtran.bloqs.bookkeeping.util_bloqs.Cast,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Free": qualtran.bloqs.bookkeeping.util_bloqs.Free,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Join": qualtran.bloqs.bookkeeping.util_bloqs.Join,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Partition": qualtran.bloqs.bookkeeping.util_bloqs.Partition,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Power": qualtran.bloqs.bookkeeping.util_bloqs.Power,
+    "qualtran.bloqs.bookkeeping.util_bloqs.Split": qualtran.bloqs.bookkeeping.util_bloqs.Split,
     "qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs": qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs,
     "qualtran.bloqs.chemistry.black_boxes.QROAM": qualtran.bloqs.chemistry.black_boxes.QROAM,
     "qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs": qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs,
@@ -317,14 +325,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.swap_network.cswap_approx.CSwapApprox": qualtran.bloqs.swap_network.cswap_approx.CSwapApprox,
     "qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap": qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap,
     "qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero": qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero,
-    "qualtran.bloqs.util_bloqs.Allocate": qualtran.bloqs.util_bloqs.Allocate,
-    "qualtran.bloqs.util_bloqs.ArbitraryClifford": qualtran.bloqs.util_bloqs.ArbitraryClifford,
-    "qualtran.bloqs.util_bloqs.Cast": qualtran.bloqs.util_bloqs.Cast,
-    "qualtran.bloqs.util_bloqs.Free": qualtran.bloqs.util_bloqs.Free,
-    "qualtran.bloqs.util_bloqs.Join": qualtran.bloqs.util_bloqs.Join,
-    "qualtran.bloqs.util_bloqs.Partition": qualtran.bloqs.util_bloqs.Partition,
-    "qualtran.bloqs.util_bloqs.Power": qualtran.bloqs.util_bloqs.Power,
-    "qualtran.bloqs.util_bloqs.Split": qualtran.bloqs.util_bloqs.Split,
 }
 
 

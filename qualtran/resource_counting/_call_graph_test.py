@@ -24,7 +24,7 @@ from attrs import field, frozen
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
+from qualtran.bloqs.bookkeeping import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import (
     BloqCountT,
     get_bloq_call_graph,

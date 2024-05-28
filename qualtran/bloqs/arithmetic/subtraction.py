@@ -31,9 +31,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs import util_bloqs
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.bookkeeping import util_bloqs
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:

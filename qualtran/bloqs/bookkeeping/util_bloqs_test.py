@@ -23,9 +23,9 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.bookkeeping import Allocate, Cast, Free, Join, Partition, Power, Split
 from qualtran.bloqs.for_testing import TestAtom, TestCastToFrom, TestMultiRegister
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
-from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Power, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -296,4 +296,4 @@ def test_notebook():
 
 def test_no_circular_import():
     # There was a circular import that would only be triggered by this import incantation
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs import util_bloqs'])
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import util_bloqs'])
