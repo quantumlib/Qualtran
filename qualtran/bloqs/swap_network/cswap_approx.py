@@ -23,7 +23,6 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
@@ -96,14 +95,6 @@ class CSwapApprox(GateWithRegisters):
 
     def pretty_name(self) -> str:
         return '~swap'
-
-    def _t_complexity_(self) -> TComplexity:
-        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
-        n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
-        # 4 * n: CNOTs
-        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return TComplexity(t=4 * n, clifford=22 * n - 1)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:
