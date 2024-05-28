@@ -285,7 +285,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
-        from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_style_method
+        from qualtran.cirq_interop import decompose_from_cirq_style_method
 
         try:
             return Bloq.decompose_bloq(self)
