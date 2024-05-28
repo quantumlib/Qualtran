@@ -518,8 +518,8 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Reflection',
         module=qualtran.bloqs.reflection,
-        bloq_specs=[qualtran.bloqs.reflection.reflection_about_zero._REFLECTION_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        bloq_specs=[qualtran.bloqs.reflection.reflection_using_prepare._REFL_USING_PREP_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/reflection',
     ),
     NotebookSpecV2(
         title='Multi-Paulis',

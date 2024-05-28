@@ -20,37 +20,41 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import (
     merge_qubits,
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
 from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 @attrs.frozen(cache_hash=True)
 class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
-    Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$
-    s.t. $P|0> = |s>$.
+    Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =
+    P(I - 2|0\rangle\langle0|)P^{\dagger}$ s.t. $P|0\rangle = |s\rangle$.
 
-    Here
-        $|s>$: The state along which we want to reflect.
-        $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$
-        $R_{s}$: Reflection operator that adds a `-1` phase to all states in the subspace
-            spanned by $|s>$.
-        $g$: The global phase to control the behavior of the reflection. For example:
-            We often use $g=-1$ in literature to denote the reflection operator as
-            $R_{s} = -1 (I - 2|s><s|) = 2|s><s| - I$
+    Here:
+    - $|s\rangle$: The state along which we want to reflect.
+    - $P$: Unitary that prepares that state $|s\rangle $ from the zero state $|0\rangle$
+    - $R_{s}$: Reflection operator that adds a `-1` phase to all states in the subspace
+        spanned by $|s\rangle$.
+    - $g$: The global phase to control the behavior of the reflection. For example:
+        We often use $g=-1$ in literature to denote the reflection operator as
+        $R_{s} = -1 (I - 2|s\rangle\langle s|) = 2|s\rangle\langle s| - I$
 
     The composite gate corresponds to implementing the following circuit:
 
+    ```
     |control> ------------------ Z -------------------
                                  |
     |L>       ---- PREPARE^† --- o --- PREPARE -------
+    ```
 
 
     Args:
@@ -61,8 +65,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             controlled reflection operator, the global phase translates into a relative phase.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. (2018). Figure 1.
     """
 
@@ -126,3 +129,29 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _refl_using_prep() -> ReflectionUsingPrepare:
+    from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+
+    data = [1] * 5
+    eps = 1e-2
+    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+
+    refl_using_prep = ReflectionUsingPrepare(prepare_gate)
+    return refl_using_prep
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _refl_using_identity() -> ReflectionUsingPrepare:
+    prepare_gate = PrepareIdentity(bitsizes=(1,))
+    refl_using_prep = ReflectionUsingPrepare(prepare_gate)
+    return refl_using_prep
+
+
+_REFL_USING_PREP_DOC = BloqDocSpec(
+    bloq_cls=ReflectionUsingPrepare,
+    import_line='from qualtran.bloqs.reflection.reflection_using_prepare import ReflectionUsingPrepare',
+    examples=(_refl_using_prep, _refl_using_identity),
+)

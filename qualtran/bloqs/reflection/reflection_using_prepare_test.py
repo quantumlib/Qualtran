@@ -23,9 +23,12 @@ from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
+from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.reflection.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.protos.args_pb2 import NDArray
 from qualtran.testing import assert_valid_bloq_decomposition
 
 gateset_to_keep = cirq.Gateset(
@@ -224,3 +227,21 @@ def test_reflection_using_prepare_consistent_protocols_and_controlled():
         gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
+
+
+def test_reflection_around_zero():
+    def ref_state(nqubits: int) -> NDArray:
+        zero = np.zeros(shape=(2**nqubits, 2**nqubits))
+        zero[0, 0] = 2.0
+        zero -= np.eye(2**nqubits)
+        return zero
+
+    # Check the tensor is 2|0><0| - 1
+    bitsizes = (1,)
+    zero_prep = PrepareIdentity(bitsizes)
+    bloq = ReflectionUsingPrepare(zero_prep, global_phase=-1)
+    assert np.allclose(bloq.tensor_contract(), ref_state(1))
+    bitsizes = (1, 2)
+    zero_prep = PrepareIdentity(bitsizes)
+    bloq = ReflectionUsingPrepare(zero_prep, global_phase=-1)
+    assert np.allclose(bloq.tensor_contract(), ref_state(3))
