@@ -93,7 +93,7 @@ import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
-import qualtran.bloqs.reflection
+import qualtran.bloqs.reflections
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -526,9 +526,9 @@ OTHER: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Reflection',
-        module=qualtran.bloqs.reflection,
-        bloq_specs=[qualtran.bloqs.reflection._REFLECTION_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        module=qualtran.bloqs.reflections,
+        bloq_specs=[qualtran.bloqs.reflections.reflection._REFLECTION_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
