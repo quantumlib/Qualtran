@@ -145,9 +145,11 @@ def _refl_using_prep() -> ReflectionUsingPrepare:
 
 @bloq_example(generalizer=ignore_split_join)
 def _refl_using_identity() -> ReflectionUsingPrepare:
+    from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
+
     prepare_gate = PrepareIdentity(bitsizes=(1,))
-    refl_using_prep = ReflectionUsingPrepare(prepare_gate)
-    return refl_using_prep
+    refl_using_identity = ReflectionUsingPrepare(prepare_gate)
+    return refl_using_identity
 
 
 _REFL_USING_PREP_DOC = BloqDocSpec(

@@ -17,6 +17,7 @@ import itertools
 import cirq
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
@@ -28,7 +29,6 @@ from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflection.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper
-from qualtran.protos.args_pb2 import NDArray
 from qualtran.testing import assert_valid_bloq_decomposition
 
 gateset_to_keep = cirq.Gateset(
