@@ -96,7 +96,7 @@ Bloqs Library
     multiplexers/apply_gate_to_lth_target.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
-    block_encoding.ipynb
+    block_encoding/block_encoding.ipynb
     reflection.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb
