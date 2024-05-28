@@ -382,7 +382,7 @@ class PrepareTHC(PrepareOracle):
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
         )
@@ -444,7 +444,7 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
         )
