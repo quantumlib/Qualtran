@@ -49,7 +49,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections import Reflection Reflection
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

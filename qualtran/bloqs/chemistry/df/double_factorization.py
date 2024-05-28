@@ -57,7 +57,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections import Reflection Reflection
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:

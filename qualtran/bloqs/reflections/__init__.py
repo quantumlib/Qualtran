@@ -11,24 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
 
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.bloqs.reflections import Reflection _reflection
-from qualtran.testing import execute_notebook
-
-
-def test_reflection(bloq_autotester):
-    bloq_autotester(_reflection)
-
-
-def test_reflection_t_counts():
-    counts = _reflection().call_graph()[1]
-    counts_decomp = _reflection().decompose_bloq().call_graph()[1]
-    assert counts[TGate()] == counts_decomp[TGate()]
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('reflection')
+from .reflection import Reflection
+from .reflection_using_prepare import ReflectionUsingPrepare
