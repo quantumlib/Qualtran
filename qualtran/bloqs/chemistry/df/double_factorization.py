@@ -57,6 +57,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
+from qualtran.bloqs.reflection import PrepareIdentity
 from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -143,7 +144,8 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        bitsizes = tuple(r.bitsize for r in self.selection_registers)
+        return PrepareIdentity(bitsizes=bitsizes)
 
     @cached_property
     def signature(self) -> Signature:
@@ -368,7 +370,8 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        bitsizes = tuple(r.bitsize for r in self.selection_registers)
+        return PrepareIdentity(bitsizes=bitsizes)
 
     @cached_property
     def signature(self) -> Signature:
