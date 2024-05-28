@@ -38,7 +38,6 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -50,6 +49,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
@@ -58,6 +58,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
@@ -65,7 +66,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class DoubleFactorizationOneBody(Bloq):
+class DoubleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of double factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -139,6 +140,10 @@ class DoubleFactorizationOneBody(Bloq):
     @property
     def target_registers(self) -> Iterable[Register]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        raise NotImplementedError("Not implemented yet.")
 
     @cached_property
     def signature(self) -> Signature:
@@ -264,7 +269,7 @@ class DoubleFactorizationOneBody(Bloq):
 
 
 @frozen
-class DoubleFactorizationBlockEncoding(Bloq):
+class DoubleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of double factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -360,6 +365,10 @@ class DoubleFactorizationBlockEncoding(Bloq):
     @property
     def target_registers(self) -> Iterable[Register]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        raise NotImplementedError("Not implemented yet.")
 
     @cached_property
     def signature(self) -> Signature:
