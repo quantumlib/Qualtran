@@ -30,7 +30,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
 from qualtran.symbolics import SymbolicFloat

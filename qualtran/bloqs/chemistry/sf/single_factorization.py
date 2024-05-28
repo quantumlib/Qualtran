@@ -50,7 +50,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 if TYPE_CHECKING:

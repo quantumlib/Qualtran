@@ -48,7 +48,6 @@ Usage as a script:
 
 from typing import Iterable, List
 
-import qualtran.bloqs.reflection.reflection_about_zero
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
@@ -90,6 +89,7 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
+import qualtran.bloqs.reflection.reflection_about_zero
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.select_and_prepare

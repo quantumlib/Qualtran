@@ -96,6 +96,6 @@ def _reflection() -> Reflection:
 
 _REFLECTION_DOC = BloqDocSpec(
     bloq_cls=Reflection,
-    import_line='from qualtran.bloqs.reflection import Reflection',
+    import_line='from qualtran.bloqs.reflection.reflection_about_zero import Reflection',
     examples=(_reflection,),
 )

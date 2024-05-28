@@ -44,7 +44,7 @@ from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflection.reflection_about_zero import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
