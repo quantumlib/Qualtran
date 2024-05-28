@@ -363,7 +363,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
 
 @bloq_example
 def _black_box_prepare() -> BlackBoxPrepare:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import PrepareHubbard
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard
 
     prepare = PrepareHubbard(2, 2, 1, 4)
     black_box_prepare = BlackBoxPrepare(prepare=prepare)
@@ -372,7 +372,7 @@ def _black_box_prepare() -> BlackBoxPrepare:
 
 @bloq_example
 def _black_box_select() -> BlackBoxSelect:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import SelectHubbard
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import SelectHubbard
 
     select = SelectHubbard(2, 2)
     black_box_select = BlackBoxSelect(select=select)
@@ -381,10 +381,7 @@ def _black_box_select() -> BlackBoxSelect:
 
 @bloq_example
 def _lcu_block() -> LCUBlockEncoding:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
-        PrepareHubbard,
-        SelectHubbard,
-    )
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
     dim = 3
@@ -401,10 +398,7 @@ def _lcu_block() -> LCUBlockEncoding:
 @bloq_example
 def _black_box_lcu_block() -> LCUBlockEncoding:
     from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
-        PrepareHubbard,
-        SelectHubbard,
-    )
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
     dim = 3
@@ -422,10 +416,7 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
 
 @bloq_example
 def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
-        PrepareHubbard,
-        SelectHubbard,
-    )
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
     dim = 3

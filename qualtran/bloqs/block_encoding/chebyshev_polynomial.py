@@ -135,10 +135,7 @@ def _black_box_chebyshev_poly() -> ChebyshevPolynomial:
         BlackBoxSelect,
         LCUBlockEncodingZeroState,
     )
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization.hubbard_model import (
-        PrepareHubbard,
-        SelectHubbard,
-    )
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     dim = 3
     select = SelectHubbard(x_dim=dim, y_dim=dim)

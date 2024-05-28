@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import SelectHubbard
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import PrepareHubbard
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import SelectHubbard
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 
 
 def get_walk_operator_for_hubbard_model(

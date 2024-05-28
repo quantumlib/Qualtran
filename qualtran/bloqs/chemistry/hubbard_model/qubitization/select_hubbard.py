@@ -198,6 +198,6 @@ def _sel_hubb() -> SelectHubbard:
 
 _SELECT_HUBBARD = BloqDocSpec(
     bloq_cls=SelectHubbard,
-    import_line='from qualtran.bloqs.hubbard_model import SelectHubbard',
+    import_line='from qualtran.bloqs.chemistry.hubbard_model.qubitization import SelectHubbard',
     examples=(_sel_hubb,),
 )

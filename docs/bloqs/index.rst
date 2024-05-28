@@ -93,7 +93,7 @@ Bloqs Library
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
-    hubbard_model.ipynb
+    chemistry/hubbard_model/qubitization/qubitization.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
