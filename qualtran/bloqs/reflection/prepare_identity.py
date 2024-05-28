@@ -1,22 +1,30 @@
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Sequence, Tuple, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import field, frozen
 
-from qualtran import QAny, Register, SoquetT
+from qualtran import bloq_example, BloqDocSpec, QAny, Register, SoquetT
+from qualtran.bloqs.basic_gates import Identity
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
-
     from qualtran import BloqBuilder, Soquet, SoquetT
+
+
+def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
+    """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
+    return tuple(x)
 
 
 @frozen
 class PrepareIdentity(PrepareOracle):
-    """An identity gate for reflecting around the zero state.
+    """An identity gate PrepareOracle.
 
+    This is mainly used as an intermediate bloq as input for the
+    ReflectionUsingPrepare to produce a reflection about zero.
 
     Args:
         bitsize: the size of the register.
@@ -25,33 +33,33 @@ class PrepareIdentity(PrepareOracle):
         x: The register to build the Identity operation on.
     """
 
-    bitsize: SymbolicInt
+    bitsizes: Tuple[SymbolicInt, ...] = field(converter=_to_tuple)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('x', QAny(self.bitsize)),)
+        return tuple(Register(f'x{i}', QAny(b)) for i, b in enumerate(self.bitsizes))
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         return ()
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> Dict[str, SoquetT]:
+        for i, b in enumerate(self.bitsizes):
+            label = f'x{i}'
+            reg = soqs[label]
+            q = bb.add(OnEach(b, Identity()), q=reg)
+            soqs[label] = q
+        return soqs
 
-        from qualtran._infra.composite_bloq import _flatten_soquet_collection
-        from qualtran.simulation.tensor._tensor_data_manipulation import eye_tensor_for_signature
 
-        data = eye_tensor_for_signature(self.signature)
-        in_ind = _flatten_soquet_collection(incoming[reg.name] for reg in self.signature.lefts())
-        out_ind = _flatten_soquet_collection(outgoing[reg.name] for reg in self.signature.rights())
-        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.pretty_name(), tag]))
+@bloq_example(generalizer=ignore_split_join)
+def _prepare_identity() -> PrepareIdentity:
+    prepare = PrepareIdentity(bitsizes=(10, 4, 1))
+    return prepare
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> Dict[str, SoquetT]:
-        return {'x': x}
+
+_PREPARE_IDENTITY_DOC = BloqDocSpec(
+    bloq_cls=PrepareIdentity,
+    import_line='from qualtran.bloqs.reflection.prepare_identity import PrepareIdentity',
+    examples=(_prepare_identity,),
+)
