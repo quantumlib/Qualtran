@@ -172,6 +172,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
         module=qualtran.bloqs.basic_gates.global_phase,
         bloq_specs=[qualtran.bloqs.basic_gates.global_phase._GLOBAL_PHASE_DOC],
     ),
+    NotebookSpecV2(
+        title='Identity Gate',
+        module=qualtran.bloqs.basic_gates.identity,
+        bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
+    ),
 ]
 
 
