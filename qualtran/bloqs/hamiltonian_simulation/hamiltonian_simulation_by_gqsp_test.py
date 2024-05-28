@@ -26,7 +26,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     check_polynomial_pair_on_random_points_on_unit_circle,
     verify_generalized_qsp,
 )
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O
 from qualtran.symbolics import Shaped
