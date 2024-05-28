@@ -492,6 +492,7 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Qubitized Hubbard Model',
         module=qualtran.bloqs.chemistry.hubbard_model.qubitization,
+        path_stem='hubbard_model',
         bloq_specs=[
             qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD,
             qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard._PREPARE_HUBBARD,
