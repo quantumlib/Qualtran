@@ -50,6 +50,7 @@ from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
@@ -628,12 +629,6 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("a>b")
@@ -646,11 +641,8 @@ class GreaterThan(Bloq):
         raise ValueError(f'Unknown register name {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
         tc = t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
-        return {(TGate(), tc.t)}
+        return {(TGate(), tc.t), (ArbitraryClifford(n=1), tc.clifford)}
 
 
 @bloq_example
@@ -868,12 +860,6 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def _t_complexity_(self) -> TComplexity:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
@@ -884,11 +870,8 @@ class GreaterThanConstant(Bloq):
         raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
         tc = t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
-        return {(TGate(), tc.t)}
+        return {(TGate(), tc.t), (ArbitraryClifford(n=1), tc.clifford)}
 
 
 @bloq_example
@@ -922,9 +905,6 @@ class EqualsAConstant(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=4 * (self.bitsize - 1))
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
