@@ -320,6 +320,7 @@ class MultiAnd(Bloq):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
+        assert 'junk' in quregs
         control, ancilla, target = (
             quregs['ctrl'].flatten(),
             quregs.get('junk', np.array([])).flatten(),

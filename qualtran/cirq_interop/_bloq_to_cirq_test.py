@@ -187,7 +187,7 @@ def test_bloq_as_cirq_gate_left_register():
     bb.free(q)
     cbloq = bb.finalize()
     circuit = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
+    cirq.testing.assert_has_diagram(circuit, """_c(0): ───X───""")
 
 
 def test_bloq_as_cirq_gate_for_mod_exp():
