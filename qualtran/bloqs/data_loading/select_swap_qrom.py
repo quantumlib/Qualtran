@@ -71,21 +71,21 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     The `SelectSwapQROM` is a hybrid of the following two existing primitives:
 
-        * Unary Iteration based `QROM` requires O(N) T-gates to load `N` data
-        elements into a b-bit target register. Note that the T-complexity is independent of `b`.
-        * `SwapWithZeroGate` can swap a `b` bit register indexed `x` with a `b`
-        bit register at index `0` using O(b) T-gates, if the selection register stores integer `x`.
-        Note that the swap complexity is independent of the iteration length `N`.
+    - Unary Iteration based `QROM` requires O(N) T-gates to load `N` data
+    elements into a b-bit target register. Note that the T-complexity is independent of `b`.
+    - `SwapWithZeroGate` can swap a `b` bit register indexed `x` with a `b`
+    bit register at index `0` using O(b) T-gates, if the selection register stores integer `x`.
+    Note that the swap complexity is independent of the iteration length `N`.
 
     The `SelectSwapQROM` uses square root decomposition by combining the above two approaches to
     further optimize the T-gate complexity of loading `N` data elements, each into a `b` bit
     target register as follows:
 
-        * Divide the `N` data elements into batches of size `B` (a variable) and
-        load each batch simultaneously into `B` distinct target signature using the conventional
-        QROM. This has T-complexity `O(N / B)`.
-        * Use `SwapWithZeroGate` to swap the `i % B`'th target register in batch number `i / B`
-        to load `data[i]` in the 0'th target register. This has T-complexity `O(B * b)`.
+    - Divide the `N` data elements into batches of size `B` (a variable) and
+    load each batch simultaneously into `B` distinct target signature using the conventional
+    QROM. This has T-complexity `O(N / B)`.
+    - Use `SwapWithZeroGate` to swap the `i % B`'th target register in batch number `i / B`
+    to load `data[i]` in the 0'th target register. This has T-complexity `O(B * b)`.
 
     This, the final T-complexity of `SelectSwapQROM` is `O(B * b + N / B)` T-gates; where `B` is
     the block-size with an optimal value of `O(sqrt(N / b))`.
@@ -101,6 +101,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
         Low, Kliuchnikov, Schaeffer. 2018.
+
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
+            Berry et. al. (2019). Appendix A. and B.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(

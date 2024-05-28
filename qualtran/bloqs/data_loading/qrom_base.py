@@ -24,7 +24,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BoundedQUInt, QAny, Register
+from qualtran import BloqDocSpec, BoundedQUInt, QAny, Register
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
 
@@ -34,7 +34,7 @@ QROM_T = TypeVar('QROM_T', bound='QROMBase')
 @cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
 class QROMBase(metaclass=abc.ABCMeta):
-    r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
+    r"""Interface for Bloqs to load `data[l]` when the selection register stores index `l`.
 
     ## Overview
     The action of a QROM can be described as
@@ -49,81 +49,103 @@ class QROMBase(metaclass=abc.ABCMeta):
             |d_L[s_1, s_2, \dots, s_k]\rangle
     $$
 
-    The two high level parameters that control the behavior of a QROM are -
+    A behavior of a QROM can be understood in terms of its classical analogue, where a for-loop
+    over one or more (selection) indices can be used to load one or more classical datasets, where
+    each of the classical dataset can be multidimensional.
 
-    1. The shape of the classical datasets to be loaded ($\text{data.shape} = (S_1, S_2, ..., S_K)$).
-    2. The number of distinct datasets to be loaded ($\text{data.bitsizes} = (b_1, b_2, ..., b_L)$).
+    ```
+    >>> # N, M, P, Q, R, S, T are pre-initialized integer parameters.
+    >>> output = [np.zeros((P, Q)), np.zeros((R, S, T))]
+    >>> # Load two different classical datasets; each of different shape.
+    >>> data = [np.random.rand(N, M, P, Q), np.random.rand(N, M, R, S, T)]
+    >>> for i in range(N): # For loop over two selection indices i and j.
+    >>>     for j in range(M):
+    >>>        # Load two multidimensional classical datasets data[0] and data[1] s.t.
+    >>>        # |i, j⟩|0⟩  -> |i, j⟩|data[0][i, j, :]⟩|data[1][i, j, :]⟩
+    >>>        output[0] = data[0][i, j, :]
+    >>>        output[1] = data[1][i, j, :]
+    ```
 
-    Each of these have an effect on the cost of the QROM. The `data_or_shape` parameter stores
-    either
-    1. A numpy array of shape $(L, S_1, S_2, ..., S_K)$ when $L$ classical datasets, each of
-       shape $(S_1, S_2, ..., S_K)$ and bitsizes $(b_1, b_2, ..., b_L)$ are to be loaded and
-       the classical data is available to instantiate the QROM bloq. In this case, the helper
-       builder `QROM.build_from_data(data_1, data_2, ..., data_L)` can be used to build the QROM.
+    The parameters that control the behavior and costs of a QROM are -
 
-    2. A `Shaped` object that stores a (potentially symbolic) tuple $(L, S_1, S_2, ..., S_K)$
-       that represents the number of classical datasets `L=data_or_shape.shape[0]` and
-       their shape `data_shape=data_or_shape.shape[1:]` to be loaded by this QROM. This is used
-       to instantiate QROM bloqs for symbolic cost analysis where the exact data to be loaded
-       is not known. In this case, the helper builder `QROM.build_from_bitsize` can be used
-       to build the QROM.
+    1. Number of selection registers (eg: $i$, $j$) and their iteration lengths (eg: $N$, $M$).
+    2. Number of target registers, their quantum datatype and shape.
+        - Number of target registers: One for each classical dataset to load (eg: $\text{data}[0]$
+            and $\text{data}[1]$)
+        - QDType of target registers: Depends on `dtype` of the $i$'th classical dataset
+        - Shape of target registers: Depends on shape of classical data (eg: $(P, Q)$ and
+            $(R, S, T)$ above)
 
-    ### Shape of the classical dataset to be loaded.
-    The QROM bloq supports loading multidimensional classical datasets. In order to load a data
-    set of shape $\mathrm{data.shape} == (P, Q, R, S)$ the QROM bloq needs four selection
-    registers with bitsizes $(p, q, r, s)$ where
-    $p,q,r,s=\log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.
+    ### Specification of classical data via `data_or_shape`
+    Users can specify the classical data to load via QROM by passing in an appropriate value
+    for `data_or_shape` attribute. This is a list of numpy arrays or `Shaped` objects, where
+    each item of the list corresponds to a classical dataset to load.
+
+    Each classical dataset to load can be specified as a numpy array (or a `Shaped` object for
+    symbolic bloqs). The shape of the dataset is a union of the selection shape and target shape,
+    s.t.
+    $$
+        \text{data[i].shape} = \text{selection\_shape} + \text{target\_shape[i]}
+    $$
+
+    Note that the $\text{selection\_shape}$ should be same across all classical datasets to be
+    loaded and correspond to a tuple of iteration lengths of selection indices (i.e. $(N, M)$
+    in the example above).
+
+    The target shape of each classical dataset can be different and parameterizes the size of
+    the desired output that should be loaded in a target register.
+
+    ### Number of selection registers and their iteration lengths
+    As describe in the previous section, the number of selection registers and their iteration
+    lengths can be inferred from the shape of the classical dataset. All classical datasets
+    to be loaded must have the same $\text{selection\_shape}$, which is a tuple of iteration
+    lengths over each dimension of the dataset (i.e. the range for each nested for-loop).
+
+    In order to load a data set with $\text{selection\_shape} == (P, Q, R, S)$ the QROM bloq
+    needs four selection registers with bitsizes $(p, q, r, s)$ where each of
+    $p,q,r,s \geq \log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.
 
     In general, to load $K$ dimensional data, we use $K$ named selection registers
     $(\text{selection}_0, \text{selection}_1, ..., \text{selection}_k)$ to index and
-    load the data.
+    load the data. For the $i$'th selection register, its size is configured using
+    attribute $\text{selection\_bitsizes[i]}$ and the iteration range is configued
+    using $\text{data\_or\_shape[0].shape[i]}$.
 
-    The T/Toffoli cost of the QROM scales linearly with the number of elements in the dataset
-    (i.e. $\mathcal{O}(\mathrm{np.prod(data.shape)}$).
+    ### Number of target registers, their quantum datatype and shape
+    QROM bloq uses one target register for each entry corresponding to classical dataset in the
+    tuple `data_or_shape`. Thus, to load $L$ classical datsets, we use $L$ names target registers
+    $(\text{target}_0, \text{target}_1, ..., \text{target}_L)$
 
-    ### Number of distinct datasets to be loaded, and their corresponding target bitsize.
-    To load a classical dataset into a target register of bitsize $b$, the clifford cost of a QROM
-    scales as $\mathcal{O}(b \mathrm{np.prod}(\mathrm{data.shape}))$. This is because we need
-    $\mathcal{O}(b)$ CNOT gates to load the ith data element in the target register when the
-    selection register stores index $i$.
+    Each named target register has a bitsize $b_{i}=\text{target\_bitsizes[i]}$ that represents
+    the size of the register and depends upon the maximum value of individual elements in the
+    $i$'th classical dataset.
 
-    If you have multiple classical datasets `(data_1, data_2, data_3, ..., data_L)` to be loaded
-    and each of them has the same shape `(data_1.shape == data_2.shape == ... == data_L.shape)`
-    and different target bitsizes `(b_1, b_2, ..., b_L)`, then one can construct a single
-    classical dataset `data = merge(data_1, data_2, ..., data_L)` where
-
-    - `data.shape == data_1.shape == data_2.shape == ... == data_L` and
-    - `data[idx] = f'{data_1[idx]!0{b_1}b}' + f'{data_2[idx]!0{b_2}b}' + ... + f'{data_L[idx]!0{b_L}b}'`
-
-    Thus, the target bitsize of the merged dataset is $b = b_1 + b_2 + \dots + b_L$ and the
-    clifford cost of loading the merged dataset scales as
-    $\mathcal{O}((b_1 + b_2 + \dots + b_L) \mathrm{np.prod}(\mathrm{data.shape}))$.
-
-    ## Variable spaced QROM
-    When the input classical data contains consecutive entries of identical data elements to
-    load, the QROM also implements the "variable-spaced" QROM optimization described in Ref [2].
+    Each named target register has a shape that can be configured using attribute
+    $\text{target\_shape[i]}$ that represents the number of target registers if the output to load
+    is multidimensional.
 
     Args:
         data_or_shape: List of numpy ndarrays specifying the data to load. If the length
             of this list ($L$) is greater than one then we use the same selection indices
-            to load each dataset. Each data set is required to have the same
-            shape $(S_1, S_2, ..., S_K)$ and to be of integer type. For symbolic QROMs,
-            pass a `Shaped` object instead with shape $(L, S_1, S_2, ..., S_K)$.
+            to load each dataset. The shape of a classical dataset is a concatenation of
+            selection_shape and target_shape[i]; i.e. `data_or_shape[i].shape =
+            selection_shape + target_shape[i]`. Thus, each data set is required to have the
+            same selection shape $(S_1, S_2, ..., S_K)$ and can have a different
+            target shape given by `target_shapes[i]`. For symbolic QROMs, pass a list of
+            `Shaped` objects instead with shape $(S_1, S_2, ..., S_K) + target_shape[i]$.
         selection_bitsizes: The number of bits used to represent each selection register
-            corresponding to the size of each dimension of the array $(S_1, S_2, ..., S_K)$.
-            Should be the same length as the shape of each of the datasets.
-        target_bitsizes: The number of bits used to represent the data signature. This can be
-            deduced from the maximum element of each of the datasets. Should be a tuple
-            $(b_1, b_2, ..., b_L)$ of length `L = len(data)`, i.e. the number of datasets to
-            be loaded.
-        num_controls: The number of controls.
-
-    References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
-
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
-            Babbush et. al. (2020). Figure 3.
+            corresponding to the size of each dimension of the selection_shape
+            $(S_1, S_2, ..., S_K)$. Should be the same length as the selection shape of
+            each of the datasets and $2**\text{selection\_bitsizes[i]} >= S_i$
+        target_shapes: Shape of target registers for each classical dataset to be loaded.
+            Must be consistent with `data_or_shape` s.t. `len(data_or_shape) == len(target_shapes)`
+            and `data_or_shape[-len(target_shapes[i]):] == target_shapes[i]`.
+        target_bitsizes: Bitsize (or qdtype) of the target registers for each classical
+            dataset to be loaded. This can be deduced from the maximum element of each
+            of the datasets. Must be consistent with `data_or_shape` s.t.
+            `len(data_or_shape) == len(target_bitsizes)` and
+            `target_bitsizes[i] >= max(data[i]).bitsize`.
+        num_controls: The number of controls to instanstiate a controlled version of this bloq.
     """
 
     data_or_shape: Tuple[Union[NDArray, Shaped], ...] = attrs.field(
@@ -299,3 +321,6 @@ class QROMBase(metaclass=abc.ABCMeta):
         if power in [1, -1]:
             return self
         return NotImplemented  # pragma: no cover
+
+
+_QROM_BASE_DOC = BloqDocSpec(bloq_cls=QROMBase, import_line='', examples=[])

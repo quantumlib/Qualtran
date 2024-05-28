@@ -56,86 +56,33 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
-    ## Overview
-    The action of a QROM can be described as
-    $$
-            \text{QROM}_{s_1, s_2, \dots, s_K}^{d_1, d_2, \dots, d_L}
-            |s_1\rangle |s_2\rangle \dots |s_K\rangle
-            |0\rangle^{\otimes b_1} |0\rangle^{\otimes b_2} \dots |0\rangle^{\otimes b_L}
-            \rightarrow
-            |s_1\rangle |s_2\rangle \dots |s_K\rangle
-            |d_1[s_1, s_2, \dots, s_k]\rangle
-            |d_2[s_1, s_2, \dots, s_k]\rangle \dots
-            |d_L[s_1, s_2, \dots, s_k]\rangle
-    $$
+    See docstrings of `QROMBase` for an overview of the QROM primitive and the various attributes.
 
-    There two high level parameters that control the behavior of a QROM are -
+    This bloq is an implementation of the `QROMBase` interface that uses the unary iteration based
+    approach described in Ref [1].
 
-    1. Shape of the classical dataset to be loaded ($\text{data.shape} = (S_1, S_2, ..., S_K)$).
-    2. Number of distinct datasets to be loaded ($\text{data.bitsizes} = (b_1, b_2, ..., b_L)$).
+    ## Cost of this (unary iteration based) QROM
 
-    Each of these have an effect on the cost of the QROM. The `data_or_shape` parameter stores
-    either
-    1. A numpy array of shape $(L, S_1, S_2, ..., S_K)$ when $L$ classical datasets, each of
-       shape $(S_1, S_2, ..., S_K)$ and bitsizes $(b_1, b_2, ..., b_L)$ are to be loaded and
-       the classical data is available to instantiate the QROM bloq. In this case, the helper
-       builder `QROM.build_from_data(data_1, data_2, ..., data_L)` can be used to build the QROM.
+    ### T / Toffoli cost
+    The T/Toffoli cost of this QROM scales linearly with the product of iteration lengths over
+    all dimensions (i.e. $\mathcal{O}(\mathrm{np.prod(\text{selection\_shape})}$).
 
-    2. A `Shaped` object that stores a (potentially symbolic) tuple $(L, S_1, S_2, ..., S_K)$
-       that represents the number of classical datasets `L=data_or_shape.shape[0]` and
-       their shape `data_shape=data_or_shape.shape[1:]` to be loaded by this QROM. This is used
-       to instantiate QROM bloqs for symbolic cost analysis where the exact data to be loaded
-       is not known. In this case, the helper builder `QROM.build_from_bitsize` can be used
-       to build the QROM.
+    ### Clifford Cost
+    To load a classical dataset into a target register of bitsize $b$ and shape
+    $\text{target\_shape}$, the clifford cost of this QROM scales as
+    $\mathcal{O}(b \cdot \text{np.prod(selection\_shape+target\_shape)})
+    =\mathcal{O}(b \cdot \text{np.prod(data.shape)})$. This is because we need $\mathcal{O}(b)$
+    CNOT gates to load 1 classical data element in the target register and for each of the
+    $\text{np.prod(selection\_shape)}$ selection indices, we have $\text{np.prod(target\_shape)}$
+    such data elements to load.
 
-    ### Shape of the classical dataset to be loaded.
-    QROM bloq supports loading multidimensional classical datasets. In order to load a data
-    set of shape $\mathrm{data.shape} == (P, Q, R, S)$ the QROM bloq needs four selection
-    registers with bitsizes $(p, q, r, s)$ where
-    $p,q,r,s=\log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.
-
-    In general, to load K dimensional data, we use K named selection registers `(selection0,
-    selection1, ..., selection{k})` to index and load the data.
-
-    The T/Toffoli cost of the QROM scales linearly with the number of elements in the dataset
-    (i.e. $\mathcal{O}(\mathrm{np.prod(data.shape)}$).
-
-    ### Number of distinct datasets to be loaded, and their corresponding target bitsize.
-    To load a classical dataset into a target register of bitsize $b$, the clifford cost of a QROM
-    scales as $\mathcal{O}(b \mathrm{np.prod}(\mathrm{data.shape}))$. This is because we need
-    $\mathcal{O}(b)$ CNOT gates to load the ith data element in the target register when the
-    selection register stores index $i$.
-
-    If you have multiple classical datasets `(data_1, data_2, data_3, ..., data_L)` to be loaded
-    and each of them has the same shape `(data_1.shape == data_2.shape == ... == data_L.shape)`
-    and different target bitsizes `(b_1, b_2, ..., b_L)`, then one construct a single classical
-    dataset `data = merge(data_1, data_2, ..., data_L)` where
-
-    - `data.shape == data_1.shape == data_2.shape == ... == data_L` and
-    - `data[idx] = f'{data_1[idx]!0{b_1}b}' + f'{data_2[idx]!0{b_2}b}' + ... + f'{data_L[idx]!0{b_L}b}'`
-
-    Thus, the target bitsize of the merged dataset is $b = b_1 + b_2 + \dots + b_L$ and clifford
-    cost of loading merged dataset scales as
-    $\mathcal{O}((b_1 + b_2 + \dots + b_L) \mathrm{np.prod}(\mathrm{data.shape}))$.
+    ### Ancilla cost
+    The number of clean ancilla required by this QROM scales linearly with the size of the
+    selection registers + number of controls.
 
     ## Variable spaced QROM
     When the input classical data contains consecutive entries of identical data elements to
     load, the QROM also implements the "variable-spaced" QROM optimization described in Ref [2].
-
-    Args:
-        data_or_shape: List of numpy ndarrays specifying the data to load. If the length
-            of this list ($L$) is greater than one then we use the same selection indices
-            to load each dataset. Each data set is required to have the same
-            shape $(S_1, S_2, ..., S_K)$ and to be of integer type. For symbolic QROMs,
-            pass a `Shaped` object instead with shape $(L, S_1, S_2, ..., S_K)$.
-        selection_bitsizes: The number of bits used to represent each selection register
-            corresponding to the size of each dimension of the array $(S_1, S_2, ..., S_K)$.
-            Should be the same length as the shape of each of the datasets.
-        target_bitsizes: The number of bits used to represent the data signature. This can be
-            deduced from the maximum element of each of the datasets. Should be a tuple
-            $(b_1, b_2, ..., b_L)$ of length `L = len(data)`, i.e. the number of datasets to
-            be loaded.
-        num_controls: The number of controls.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
