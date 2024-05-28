@@ -92,7 +92,7 @@ import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
-import qualtran.bloqs.qubitization_walk_operator
+import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
@@ -459,9 +459,9 @@ ROT_QFT_PE = [
     ),
     NotebookSpecV2(
         title='Qubitization Walk Operator',
-        module=qualtran.bloqs.qubitization_walk_operator,
+        module=qualtran.bloqs.qubitization.qubitization_walk_operator,
         bloq_specs=[
-            qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
+            qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
             qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
             qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
         ],
