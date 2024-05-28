@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from qualtran import Bloq
-from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.reflections import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.drawing.qpic_diagram import get_qpic_data
 
