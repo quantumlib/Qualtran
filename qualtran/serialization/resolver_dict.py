@@ -301,15 +301,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qft.qft_text_book.QFTTextBook": qualtran.bloqs.qft.qft_text_book.QFTTextBook,
     "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT": qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT,
     "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
-<<<<<<< HEAD
     "qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator,
-    "qualtran.bloqs.reflection.Reflection": qualtran.bloqs.reflection.Reflection,
-    "qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare,
-=======
-    "qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator,
     "qualtran.bloqs.reflections.reflection.Reflection": qualtran.bloqs.reflections.reflection.Reflection,
     "qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare,
->>>>>>> 1ee8ba6ab68f7fa5502a10eaa2f53767c1fb1aa9
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient,
     "qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad": qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad,
