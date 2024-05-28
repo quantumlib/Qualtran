@@ -58,7 +58,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

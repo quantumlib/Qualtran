@@ -40,7 +40,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.data_loading.qrom import QROM
-from qualtran.bloqs.util_bloqs import Cast
+from qualtran.bloqs.bookkeeping import Cast
 from qualtran.drawing import Text, WireSymbol
 
 

@@ -44,7 +44,7 @@ from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.util_bloqs import Join
+from qualtran.bloqs.bookkeeping import Join
 
 
 def _manually_make_test_cbloq_cxns():

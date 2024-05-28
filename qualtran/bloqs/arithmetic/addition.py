@@ -55,7 +55,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs import util_bloqs
+from qualtran.bloqs.bookkeeping import util_bloqs
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX

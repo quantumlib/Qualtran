@@ -20,7 +20,7 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signature, SoquetT
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.bloqs.util_bloqs import Free
+from qualtran.bloqs.bookkeeping import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
 

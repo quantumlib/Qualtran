@@ -16,7 +16,7 @@ import cirq
 from qualtran import Adjoint, QAny, Register
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
+from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Partition, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._generalization import _make_composite_generalizer
 from qualtran.resource_counting.generalizers import (

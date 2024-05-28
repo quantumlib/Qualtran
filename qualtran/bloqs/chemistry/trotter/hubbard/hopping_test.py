@@ -18,7 +18,7 @@ from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
     _hopping_tile_hwp,
     _plaquette,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
 
 

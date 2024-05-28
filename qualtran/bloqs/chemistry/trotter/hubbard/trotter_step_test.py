@@ -19,7 +19,7 @@ from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.bloqs.chemistry.trotter.hubbard.trotter_step import (
     build_plaq_unitary_second_order_suzuki,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
 from qualtran.testing import execute_notebook
 
