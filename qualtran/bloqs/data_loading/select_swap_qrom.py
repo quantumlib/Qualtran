@@ -62,7 +62,7 @@ def find_optimal_log_block_size(
 
 @cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
-class SelectSwapQROM(QROMBase, GateWithRegisters):
+class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     """Gate to load data[l] in the target register when the selection register stores integer l.
 
     Let
@@ -250,7 +250,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):
         )
         return np.array(qubits).reshape(reg.shape + (reg.bitsize,))
 
-    def decompose_from_registers(
+    def decompose_from_registers(  # type: ignore[return]
         self,
         *,
         context: cirq.DecompositionContext,

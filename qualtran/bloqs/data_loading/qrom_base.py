@@ -33,7 +33,7 @@ QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 @cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
-class QROMBase(abc.ABC):
+class QROMBase(metaclass=abc.ABCMeta):
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     ## Overview
@@ -69,7 +69,7 @@ class QROMBase(abc.ABC):
        to build the QROM.
 
     ### Shape of the classical dataset to be loaded.
-    QROM bloq supports loading multidimensional classical datasets. In order to load a data
+    The QROM bloq supports loading multidimensional classical datasets. In order to load a data
     set of shape $\mathrm{data.shape} == (P, Q, R, S)$ the QROM bloq needs four selection
     registers with bitsizes $(p, q, r, s)$ where
     $p,q,r,s=\log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.

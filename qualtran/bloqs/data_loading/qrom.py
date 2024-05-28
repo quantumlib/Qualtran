@@ -53,7 +53,7 @@ def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
 
 @cirq.value_equality()
 @attrs.frozen
-class QROM(QROMBase, UnaryIterationGate):
+class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     r"""Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
     ## Overview
