@@ -44,6 +44,8 @@ from qualtran import (
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
@@ -56,7 +58,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class SingleFactorizationOneBody(Bloq):
+class SingleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of single factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -149,6 +151,10 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return ()
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        raise NotImplementedError("Not implemented yet.")
 
     @cached_property
     def signature(self) -> Signature:
@@ -250,7 +256,7 @@ class SingleFactorizationOneBody(Bloq):
 
 
 @frozen
-class SingleFactorizationBlockEncoding(Bloq):
+class SingleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of single factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -328,6 +334,10 @@ class SingleFactorizationBlockEncoding(Bloq):
                 *self.target_registers,
             ]
         )
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        raise NotImplementedError("Not implemented yet.")
 
     def build_composite_bloq(
         self,
