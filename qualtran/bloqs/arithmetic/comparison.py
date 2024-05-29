@@ -641,8 +641,7 @@ class GreaterThan(Bloq):
         raise ValueError(f'Unknown register name {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        tc = t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
-        return {(TGate(), tc.t), (ArbitraryClifford(n=1), tc.clifford)}
+        return {(LessThanEqual(self.a_bitsize, self.b_bitsize), 1)}
 
 
 @bloq_example
@@ -870,8 +869,7 @@ class GreaterThanConstant(Bloq):
         raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        tc = t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
-        return {(TGate(), tc.t), (ArbitraryClifford(n=1), tc.clifford)}
+        return {(LessThanConstant(self.bitsize, less_than_val=self.val), 1)}
 
 
 @bloq_example
