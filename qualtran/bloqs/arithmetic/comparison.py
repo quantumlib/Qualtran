@@ -50,9 +50,8 @@ from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 
