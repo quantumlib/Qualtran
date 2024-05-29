@@ -32,6 +32,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     LinearDepthGreaterThan,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
@@ -179,10 +180,10 @@ def test_greater_than_manual():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
-    cbloq.t_complexity()
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
     )
+    assert cbloq.t_complexity() == t_complexity(LessThanEqual(bitsize, bitsize))
 
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])
@@ -229,9 +230,11 @@ def test_greater_than_constant():
     anc = bb.add_register('result', 1)
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
-    cbloq.t_complexity()
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
+    assert t_complexity(GreaterThanConstant(bitsize, 17)) == t_complexity(
+        LessThanConstant(bitsize, 17)
     )
 
 
@@ -246,6 +249,7 @@ def test_equals_a_constant():
     qlt_testing.assert_wire_symbols_match_expected(
         EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
     )
+    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(t=4 * (bitsize - 1))
 
 
 @pytest.mark.notebook
