@@ -51,6 +51,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:
@@ -154,7 +155,7 @@ class SingleFactorizationOneBody(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        return PrepareIdentity(self.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
@@ -337,7 +338,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        return PrepareIdentity(self.selection_registers)
 
     def build_composite_bloq(
         self,

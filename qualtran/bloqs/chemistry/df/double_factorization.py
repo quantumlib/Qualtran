@@ -59,6 +59,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:
@@ -144,7 +145,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        return PrepareIdentity(self.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
@@ -370,7 +371,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError("Not implemented yet.")
+        return PrepareIdentity(self.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
