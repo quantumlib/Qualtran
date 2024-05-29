@@ -26,6 +26,7 @@ from qualtran.bloqs.phase_estimation.qubitization_qpe import (
 )
 from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.testing import execute_notebook
 
 
 @pytest.mark.slow
@@ -94,3 +95,8 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.sin(phase)), atol=eps),
         ]
         assert np.any(is_close)
+
+
+@pytest.mark.notebook
+def test_phase_estimation_of_qubitized_hubbard_model():
+    execute_notebook('phase_estimation_of_quantum_walk')

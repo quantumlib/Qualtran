@@ -29,8 +29,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
-from qualtran.bloqs.util_bloqs import Power
+from qualtran.bloqs.basic_gates import Power, XGate, YGate, ZGate
 from qualtran.testing import execute_notebook
 
 if TYPE_CHECKING:

@@ -24,7 +24,9 @@ requirements.
 from .cnot import CNOT
 from .global_phase import GlobalPhase
 from .hadamard import Hadamard
+from .identity import Identity
 from .on_each import OnEach
+from .power import Power
 from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from .s_gate import SGate
 from .su2_rotation import SU2RotationGate

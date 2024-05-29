@@ -25,6 +25,7 @@ import attrs
 import sympy
 
 from qualtran import Bloq
+from qualtran.symbolics import HasLength
 
 PHI = sympy.Symbol(r'\phi')
 CV = sympy.Symbol("cv")
@@ -32,7 +33,7 @@ CV = sympy.Symbol("cv")
 
 def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores split and join operations."""
-    from qualtran.bloqs.util_bloqs import Cast, Join, Partition, Split
+    from qualtran.bloqs.bookkeeping import Cast, Join, Partition, Split
 
     if isinstance(b, (Split, Join, Partition, Cast)):
         return None
@@ -41,7 +42,7 @@ def ignore_split_join(b: Bloq) -> Optional[Bloq]:
 
 def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores allocations and frees."""
-    from qualtran.bloqs.util_bloqs import Allocate, Free
+    from qualtran.bloqs.bookkeeping import Allocate, Free
 
     if isinstance(b, (Allocate, Free)):
         return None
@@ -72,7 +73,7 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
     if isinstance(b, MultiAnd):
-        return attrs.evolve(b, cvs=(CV,) * len(b.cvs))
+        return attrs.evolve(b, cvs=HasLength(b.n_ctrls))
 
     return b
 

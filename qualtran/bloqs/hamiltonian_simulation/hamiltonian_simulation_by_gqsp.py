@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
@@ -195,7 +195,9 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
 @bloq_example
 def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
     hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
@@ -206,7 +208,9 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
 def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
     import sympy
 
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
 
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
     walk_op = get_walk_operator_for_hubbard_model(2, 2, tau, 4 * tau)
