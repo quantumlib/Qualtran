@@ -355,7 +355,7 @@ class MultiAnd(Bloq):
         pre_post_cliffords = set()
         if not (
             is_symbolic(self.cvs)
-            or is_symbolic(*self.cvs)
+            or is_symbolic(*self.control_values)
             or (self.bitsize == sum(self.control_values))
         ):
             pre_post_cliffords = {(XGate(), 2 * (self.bitsize - sum(self.control_values)))}
