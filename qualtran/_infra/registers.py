@@ -46,18 +46,17 @@ class Side(enum.Flag):
 
 @frozen
 class Register:
-    """A data type describing a register of qubits.
+    """A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
-    Each register has a name as well as attributes describing the quantum data expected
-    to be passed to the register. A collection of `Register` objects can be used to define
-    a bloq's signature, see the `Signature` class.
+    Each register has a name and a quantum data type. A collection of `Register` objects are used
+    to define a bloq's signature, see the `Signature` class.
 
     Attributes:
-        name: The string name of the register
-        _bitsize: The number of (qu)bits in the register OR the quantum data type of the register.
-            If an integer is given it will be converted into either a QAny
-            dtype or QBit dtype (_bitsize = 1).
-        shape: A tuple of integer dimensions to declare a multidimensional register. The
+        name: The string name of the register. This name is used to 'wire up' quantum inputs
+            by name, analogous to Python's keyword-arguments.
+        dtype: The quantum data type of the register, for example `QBit()`, `QUInt(n)`, `QAny(n)`,
+            or any of the data types provided in the top-level `qualtran` namespace.
+        shape: An optional tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
             for more information.

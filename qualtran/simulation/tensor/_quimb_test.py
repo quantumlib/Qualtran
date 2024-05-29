@@ -20,7 +20,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, DanglingT, QAny, Signature, Soquet, SoquetT
-from qualtran.bloqs.util_bloqs import Join, Split
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.simulation.tensor import cbloq_to_quimb
 
 

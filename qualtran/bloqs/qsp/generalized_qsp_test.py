@@ -26,7 +26,9 @@ from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
+from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
+    get_walk_operator_for_1d_ising_model,
+)
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import Shaped
 
