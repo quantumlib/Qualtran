@@ -61,6 +61,7 @@ import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
@@ -83,7 +84,6 @@ import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
-import qualtran.bloqs.hubbard_model
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -491,10 +491,11 @@ OTHER: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Qubitized Hubbard Model',
-        module=qualtran.bloqs.hubbard_model,
+        module=qualtran.bloqs.chemistry.hubbard_model.qubitization,
+        path_stem='hubbard_model',
         bloq_specs=[
-            qualtran.bloqs.hubbard_model._SELECT_HUBBARD,
-            qualtran.bloqs.hubbard_model._PREPARE_HUBBARD,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard._PREPARE_HUBBARD,
         ],
     ),
     NotebookSpecV2(
