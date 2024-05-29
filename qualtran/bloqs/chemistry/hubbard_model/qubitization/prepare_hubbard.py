@@ -107,7 +107,10 @@ class PrepareHubbard(PrepareOracle):
         return Signature([*self.selection_registers, *self.junk_registers])
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         p_x, p_y, q_x, q_y = quregs['p_x'], quregs['p_y'], quregs['q_x'], quregs['q_y']
         U, V, alpha, beta = quregs['U'], quregs['V'], quregs['alpha'], quregs['beta']
