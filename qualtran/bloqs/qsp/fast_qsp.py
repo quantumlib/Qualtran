@@ -18,13 +18,13 @@ from numpy._typing import NDArray
 from scipy.optimize import minimize
 
 
-class FastQSP:
+class FastComplementaryQSPHelper:
     """
-    A helper class to obtain Q polynomial given P.
+    A helper class to obtain the complimentary polynomial given a QSP polynomial.
 
-    This will
-    P: Co-efficients of a complex QSP polynomial.
-    only_reals: If "true", then only real polynomial values will be returned.
+    Attributes:
+        P: Co-efficients of a complex QSP polynomial.
+        only_reals: If `true`, then only real polynomial values will be returned.
     """
 
     def __init__(self, poly: NDArray[np.number], only_reals: bool = False):
@@ -37,7 +37,6 @@ class FastQSP:
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
     def loss_function(self, x):
-
         if self.only_reals:
             conv_result = self.conv_by_flip_conj(x)
         else:
@@ -55,7 +54,8 @@ class FastQSP:
         imag_part = x[len(x) // 2 :]
         return real_part + 1.0j * imag_part
 
-    def conv_by_flip_conj(self, poly):
+    @staticmethod
+    def conv_by_flip_conj( poly):
         return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
 
     def complex_conv_by_flip_conj(self, real_part: NDArray, imag_part: NDArray):
@@ -132,7 +132,7 @@ def fast_complementary_polynomial(
         q_initial = np.random.randn(poly.shape[0] * 2)
     q_initial_normalized = q_initial / np.linalg.norm(q_initial)
 
-    qsp = FastQSP(poly, only_reals=only_reals)
+    qsp = FastComplementaryQSPHelper(poly, only_reals=only_reals)
 
     minimizer = minimize(qsp.loss_function, q_initial_normalized, jac="3-point", tol=tolerance)
     if only_reals:

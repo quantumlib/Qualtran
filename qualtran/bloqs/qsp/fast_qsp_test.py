@@ -57,11 +57,9 @@ def test_real_polynomial_has_real_complementary_polynomial_quick(degree: int, pr
 def test_complementary_polynomial(degree: int, num_tests: int, precision: float):
     random_state = np.random.RandomState(42)
 
-    results = []
     for _ in range(num_tests):
         P = random_qsp_polynomial(degree, random_state=random_state)
         Q = fast_complementary_polynomial(P)
-        results.append(np.array(Q))
         check_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=precision
         )
@@ -69,7 +67,7 @@ def test_complementary_polynomial(degree: int, num_tests: int, precision: float)
 
 @pytest.mark.slow
 @pytest.mark.parametrize("degree, num_tests", [(2, 10), (3, 10), (4, 10), (5, 10), (10, 10)])
-def test_fast_real_qsp_with_symbolic_signal_matrix(degree: int, num_tests: int):
+def test_fast_qsp_on_random_unitaries(degree: int, num_tests: int):
     random_state = np.random.RandomState(102)
 
     for _ in range(num_tests):
@@ -99,20 +97,21 @@ def test_real_polynomial_has_real_complementary_polynomial(
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("bitsize",[1,2,3])
 @pytest.mark.parametrize(
     "bitsize, degree, negative_power, tolerance",
     [
-        (1, 2, 0, 1e-5),
-        (1, 2, 1, 1e-5),
-        (1, 2, 2, 1e-5),
-        (2, 2, 0, 1e-5),
-        (2, 2, 1, 1e-5),
-        (2, 2, 2, 1e-5),
-        (1, 5, 2, 1e-4),
-        (1, 5, 0, 1e-4),
-        (3, 5, 0, 1e-4),
-        (3, 5, 2, 1e-4),
-        (2, 20, 1, 1e-1),
+        (2, 0, 1e-5),
+        (2, 1, 1e-5),
+        (2, 2, 1e-5),
+        (2, 0, 1e-5),
+        (2, 1, 1e-5),
+        (2, 2, 1e-5),
+        (5, 2, 1e-4),
+        (5, 0, 1e-4),
+        (5, 0, 1e-4),
+        (5, 2, 1e-4),
+        (20, 1, 1e-1),
     ],
 )
 def test_generalized_qsp_with_complex_poly_on_random_unitaries(
