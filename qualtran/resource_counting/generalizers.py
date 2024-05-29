@@ -25,6 +25,7 @@ import attrs
 import sympy
 
 from qualtran import Adjoint, Bloq
+from qualtran.symbolics import HasLength
 
 PHI = sympy.Symbol(r'\phi')
 CV = sympy.Symbol("cv")
@@ -72,7 +73,7 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
     if isinstance(b, MultiAnd):
-        return attrs.evolve(b, cvs=(CV,) * len(b.cvs))
+        return attrs.evolve(b, cvs=HasLength(b.n_ctrls))
 
     return b
 
