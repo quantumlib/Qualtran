@@ -55,7 +55,7 @@ else
 fi
 
 typeset -a changed
-IFS=$'\n' read -r -d '' -a changed < <(git diff --name-only "${rev}" -- '*.py')
+IFS=$'\n' read -r -d '' -a changed < <(git diff --diff-filter=d --name-only "${rev}" -- '*.py')
 
 num_changed=${#changed[@]}
 
