@@ -31,4 +31,4 @@ def test_reflection_t_counts():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('reflection')
+    execute_notebook('reflections')

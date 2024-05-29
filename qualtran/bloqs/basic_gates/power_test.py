@@ -17,7 +17,7 @@ import cirq
 import pytest
 
 from qualtran._infra.gate_with_registers import GateWithRegisters
-from qualtran.bloqs.bookkeeping import Power
+from qualtran.bloqs.basic_gates import Power
 from qualtran.bloqs.for_testing import TestAtom, TestMultiRegister
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 
@@ -88,4 +88,4 @@ def test_power_circuit_diagram():
 
 
 def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import power'])
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.basic_gates import power'])
