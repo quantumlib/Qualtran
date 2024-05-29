@@ -12,12 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.arithmetic.addition import (
-    Add,
-    AddConstantMod,
-    OutOfPlaceAdder,
-    SimpleAddConstant,
-)
+from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     EqualsAConstant,
@@ -39,3 +34,6 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+from qualtran.bloqs.arithmetic.subtraction import Subtract
+
+from ._shims import CHalf, Lt, MultiCToffoli, Negate

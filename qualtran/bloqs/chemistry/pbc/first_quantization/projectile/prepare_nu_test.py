@@ -46,7 +46,7 @@ def test_prepare_nu_with_proj_t_counts():
     prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param)
     _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
-    prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param, adjoint=True)
+    prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param).adjoint()
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4

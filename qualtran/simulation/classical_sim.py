@@ -14,7 +14,7 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Type, Union
 
 import networkx as nx
 import numpy as np
@@ -34,7 +34,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
-ClassicalValT = Union[int, NDArray[int]]
+ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
 def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
@@ -52,7 +52,9 @@ def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[
     return np.sum(basis * bitstrings, axis=1)
 
 
-def ints_to_bits(x: Union[int, Sequence[int], NDArray[np.uint]], w: int) -> NDArray[np.uint8]:
+def ints_to_bits(
+    x: Union[int, np.integer, Sequence[int], NDArray[np.integer]], w: int
+) -> NDArray[np.uint8]:
     """Returns the big-endian bitstrings specified by the given integers.
 
     Args:
@@ -70,14 +72,14 @@ def ints_to_bits(x: Union[int, Sequence[int], NDArray[np.uint]], w: int) -> NDAr
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
+    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
     if reg.bitsize <= 8:
-        dtype = np.uint8
+        dtype: Type = np.uint8
     elif reg.bitsize <= 16:
         dtype = np.uint16
     elif reg.bitsize <= 32:
@@ -100,9 +102,11 @@ def _get_in_vals(
 
 def _update_assign_from_vals(
     regs: Iterable[Register],
-    binst: BloqInstance,
-    vals: Dict[str, ClassicalValT],
-    soq_assign: Dict[Soquet, ClassicalValT],
+    binst: Union[DanglingT, BloqInstance],
+    vals: Union[Dict[str, Union[sympy.Symbol, ClassicalValT]], Dict[str, ClassicalValT]],
+    soq_assign: Union[
+        Dict[Soquet, Union[sympy.Symbol, ClassicalValT]], Dict[Soquet, ClassicalValT]
+    ],
 ):
     """Update `soq_assign` using `vals`.
 
@@ -133,7 +137,7 @@ def _update_assign_from_vals(
         elif isinstance(val, sympy.Expr):
             # `val` is symbolic
             soq = Soquet(binst, reg)
-            soq_assign[soq] = val
+            soq_assign[soq] = val  # type: ignore[assignment]
 
         else:
             # `val` is one value.
@@ -172,7 +176,9 @@ def _binst_on_classical_vals(
 
 
 def call_cbloq_classically(
-    signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+    signature: Signature,
+    vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+    binst_graph: nx.DiGraph,
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -192,7 +198,7 @@ def call_cbloq_classically(
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
     soq_assign: Dict[Soquet, ClassicalValT] = {}
-    _update_assign_from_vals(signature.lefts(), LeftDangle, vals, soq_assign)
+    _update_assign_from_vals(signature.lefts(), LeftDangle, dict(vals), soq_assign)
 
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):

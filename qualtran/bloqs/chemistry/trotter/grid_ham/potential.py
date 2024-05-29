@@ -14,7 +14,7 @@
 """Bloqs for the Potential energy of a 3D grid based Hamiltonian."""
 
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 from attrs import field, frozen
@@ -27,10 +27,12 @@ from qualtran import (
     QAny,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
+from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
@@ -39,7 +41,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.data_loading.qrom import QROM
-from qualtran.bloqs.util_bloqs import Cast
+from qualtran.drawing import Text, WireSymbol
 
 
 @frozen
@@ -84,12 +86,18 @@ class PairPotential(Bloq):
     def pretty_name(self) -> str:
         return "PairPotential"
 
-    def short_name(self) -> str:
-        return f'U_{self.label}(dt)_ij'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'U_{self.label}(dt)_ij')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, *, system_i: SoquetT, system_j: SoquetT
     ) -> Dict[str, SoquetT]:
+        if isinstance(system_i, Soquet) or isinstance(system_j, Soquet):
+            raise ValueError("system_i and system_j must be numpy arrays of Soquet")
         # compute r_i - r_j
         # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
         diff_ij = [0, 0, 0]
@@ -99,10 +107,12 @@ class PairPotential(Bloq):
             )
         # Compute r_{ij}^2 = (x_i-x_j)^2 + ...
         bitsize_rij_sq = 2 * (self.bitsize + 1) + 2
-        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize + 1, k=3), input=diff_ij)
+        diff_ij, sos = bb.add(
+            SumOfSquares(bitsize=self.bitsize + 1, k=3), input=np.asarray(diff_ij)
+        )
         for xyz in range(3):
             system_i[xyz], system_j[xyz] = bb.add(
-                OutOfPlaceAdder(self.bitsize, adjoint=True),
+                OutOfPlaceAdder(self.bitsize, is_adjoint=True),
                 a=system_i[xyz],
                 b=system_j[xyz],
                 c=diff_ij[xyz],
@@ -215,10 +225,16 @@ class PotentialEnergy(Bloq):
     def pretty_name(self) -> str:
         return "PotentialEnergy"
 
-    def short_name(self) -> str:
-        return f'U_{self.label}(dt)'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'U_{self.label}(dt)')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+        if isinstance(system, Soquet):
+            raise ValueError("system must be a numpy array of Soquet")
         bitsize = (self.num_grid - 1).bit_length() + 1
         ij_pairs = np.triu_indices(self.num_elec, k=1)
         poly_coeffs = get_inverse_square_root_poly_coeffs()

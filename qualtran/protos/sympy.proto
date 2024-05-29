@@ -1,0 +1,75 @@
+/*
+  Copyright 2023 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
+syntax = "proto3";
+package qualtran;
+
+// A function sympy expression.
+enum Function {
+    // Each Term has an associated function. A "NONE" function means that the term
+    // is made up of a single parameter and can not be decomposed further.
+    NONE = 0;
+    Add = 1;
+    Mul = 2;
+    Pow = 3;
+    Mod = 4;
+    Log = 5;
+    Floor = 6;
+    Ceiling = 7;
+    Max = 8;
+    Min = 9;
+    Sin = 10;
+    Cos = 11;
+    Tan = 12;
+}
+
+// Represents a constant, rational number.
+message Rational {
+    Parameter numerator = 1;
+    Parameter denominator = 2;
+}
+
+enum ConstSymbol {
+    Pi = 0;
+    E = 1;
+    EulerGamma = 2;
+    Infinity = 3;
+    ImaginaryUnit = 4;
+}
+
+// A single parameter of a sympy expression.
+message Parameter {
+    oneof parameter {
+        int32 const_int = 1;
+        string symbol = 2;
+        Rational const_rat = 3;
+        float const_float = 4;
+        ConstSymbol const_symbol = 5;
+
+    }
+}
+
+message Operand {
+    oneof operand {
+        Term term = 1;
+        Parameter parameter = 2;
+    }
+}
+
+message Term {
+    Function function = 1;
+    repeated Operand operands = 2;
+}

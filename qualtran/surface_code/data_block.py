@@ -81,8 +81,9 @@ class SimpleDataBlock(DataBlock):
 
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
-        data_cells = self.n_logical_qubits(n_algo_qubits) * n_cycles
-        return data_cells * self.qec_scheme.logical_error_rate(
+        # spacetime_volue = number of data cells x number of cycles they will live for.
+        spacetime_volume = self.n_logical_qubits(n_algo_qubits) * n_cycles
+        return spacetime_volume * self.qec_scheme.logical_error_rate(
             physical_error_rate=phys_err, code_distance=self.data_d
         )
 
@@ -177,10 +178,15 @@ class FastDataBlock(DataBlock):
         return FastDataBlock.grid_size(n_algo_qubits)
 
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
-        data_cells = self.n_logical_qubits(n_algo_qubits) * n_cycles
-        return data_cells * self.qec_scheme.logical_error_rate(
+        """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
+        # spacetime_volue = number of data cells x number of cycles they will live for.
+        spacetime_volume = self.n_logical_qubits(n_algo_qubits) * n_cycles
+        return spacetime_volume * self.qec_scheme.logical_error_rate(
             physical_error_rate=phys_err, code_distance=self.data_d
         )
+
+    def n_logical_qubits(self, n_algo_qubits: int) -> int:
+        return FastDataBlock.grid_size(n_algo_qubits)
 
     def n_cycles_to_consume_a_magic_state(self) -> int:
         return self.data_d

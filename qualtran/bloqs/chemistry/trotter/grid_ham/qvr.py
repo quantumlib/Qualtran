@@ -53,7 +53,7 @@ class QuantumVariableRotation(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('phi', QAny(bitsize=self.phi_bitsize))])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'e^{i*phi}'
 
     def _t_complexity_(self) -> 'TComplexity':

@@ -20,12 +20,13 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
     bits_to_ints,
     call_cbloq_classically,
+    ClassicalValT,
     ints_to_bits,
 )
 from qualtran.testing import execute_notebook
@@ -68,7 +69,7 @@ def test_int_to_bits():
 
 def test_dtype_validation():
     # set up mocks for `_update_assign_from_vals`
-    soq_assign = {}  # gets assigned to; we discard in this test.
+    soq_assign: Dict[Soquet, ClassicalValT] = {}  # gets assigned to; we discard in this test.
     binst = 'MyBinst'  # binst is only used for error messages, so we can mock with a string
 
     # set up different register dtypes
@@ -86,21 +87,21 @@ def test_dtype_validation():
         'bit_arr': np.array([1, 0, 1, 0, 1], dtype=np.uint8),
         'int_arr': np.arange(5),
     }
-    _update_assign_from_vals(regs, binst, vals, soq_assign)
+    _update_assign_from_vals(regs, binst, vals, soq_assign)  # type: ignore[arg-type]
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
     with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
-        _update_assign_from_vals(regs, binst, vals2, soq_assign)
+        _update_assign_from_vals(regs, binst, vals2, soq_assign)  # type: ignore[arg-type]
 
     # int is a numpy int
     vals3 = {**vals, 'int': np.arange(5, dtype=np.uint8)[4]}
-    _update_assign_from_vals(regs, binst, vals3, soq_assign)
+    _update_assign_from_vals(regs, binst, vals3, soq_assign)  # type: ignore[arg-type]
 
     # wrong shape
     vals4 = {**vals, 'int_arr': np.arange(6)}
     with pytest.raises(ValueError, match=r'Incorrect shape.*Want \(5,\)\.'):
-        _update_assign_from_vals(regs, binst, vals4, soq_assign)
+        _update_assign_from_vals(regs, binst, vals4, soq_assign)  # type: ignore[arg-type]
 
 
 @frozen
@@ -121,11 +122,15 @@ def test_apply_classical():
     bloq = ApplyClassicalTest()
     x, z = bloq.call_classically(x=np.zeros(5, dtype=np.uint8))
     np.testing.assert_array_equal(x, np.zeros(5))
+    assert not isinstance(x, int)
+    assert not isinstance(z, int)
     assert x.dtype == np.uint8
     assert z.dtype == np.uint8
     np.testing.assert_array_equal(z, [1, 0, 1, 0, 1])
 
     x2, z2 = bloq.call_classically(x=np.ones(5, dtype=np.uint8))
+    assert not isinstance(x2, int)
+    assert not isinstance(z2, int)
     assert x2.dtype == np.uint8
     assert z2.dtype == np.uint8
     np.testing.assert_array_equal(x2, np.ones(5))
@@ -147,11 +152,12 @@ def test_cnot_assign_dict():
 def test_apply_classical_cbloq():
     bb = BloqBuilder()
     x = bb.add_register(Register('x', QBit(), shape=(5,)))
+    assert x is not None
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)
 
-    xarr = np.zeros(5)
+    xarr = np.zeros(5, dtype=np.intc)
     x, y, z = cbloq.call_classically(x=xarr)
     np.testing.assert_array_equal(x, xarr)
     np.testing.assert_array_equal(y, [1, 0, 1, 0, 1])

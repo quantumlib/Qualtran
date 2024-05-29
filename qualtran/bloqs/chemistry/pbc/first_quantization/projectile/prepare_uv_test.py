@@ -45,8 +45,8 @@ def test_prepare_uv_t_counts():
     _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
     prep = PrepareUVFirstQuantizationWithProj(
-        num_bits_p, num_bits_n, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos, adjoint=True
-    )
+        num_bits_p, num_bits_n, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
+    ).adjoint()
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4

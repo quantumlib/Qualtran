@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -363,7 +363,7 @@ def create_qubit_pie_chart(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
-            n_algo_qubits=algorithm.algorithm_qubits,
+            n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, int(magic_count)) for f in iter_ccz2t_factories()],
@@ -380,15 +380,15 @@ def create_qubit_pie_chart(
         fig.update_traces(textinfo='value')
         return fig
     else:
-        factory = MultiFactory(magic_factory, int(magic_count))
+        multi_factory = MultiFactory(magic_factory, int(magic_count))
         memory_footprint = pd.DataFrame(columns=['source', 'qubits'])
         memory_footprint['source'] = [
             'logical qubits + routing overhead',
             'Magic State Distillation',
         ]
         memory_footprint['qubits'] = [
-            FastDataBlock.grid_size(algorithm.algorithm_qubits),
-            factory.footprint(),
+            FastDataBlock.grid_size(int(algorithm.algorithm_qubits)),
+            multi_factory.footprint(),
         ]
         fig = px.pie(
             memory_footprint, values='qubits', names='source', title='Physical Qubit Utilization'
@@ -403,21 +403,21 @@ def format_duration(duration: Sequence[float]) -> Tuple[str, Sequence[float]]:
     Finds the best unit to report `duration` and assumes that `duration` is initially in us.
     """
     unit = 'us'
-    if duration[0] > 1000:
+    if duration[0] > 86400_000_000:
+        duration = [d / 86400_000_000 for d in duration]
+        unit = 'days'
+    elif duration[0] > 3600_000_000:
+        duration = [d / 3600_000_000 for d in duration]
+        unit = 'hours'
+    elif duration[0] > 60_000_000:
+        duration = [d / 60_000_000 for d in duration]
+        unit = 'min'
+    elif duration[0] > 1000_000:
+        duration = [d / 1000_000 for d in duration]
+        unit = 's'
+    elif duration[0] > 1000:
         duration = [d / 1000 for d in duration]
         unit = 'ms'
-    if duration[0] > 1000:
-        duration = [d / 1000 for d in duration]
-        unit = 's'
-    if duration[0] > 60:
-        duration = [d / 60 for d in duration]
-        unit = 'min'
-    if duration[0] > 60:
-        duration = [d / 60 for d in duration]
-        unit = 'hours'
-    if duration[0] > 24:
-        duration = [d / 24 for d in duration]
-        unit = 'days'
     return unit, duration
 
 
@@ -466,7 +466,8 @@ def create_runtime_plot(
     unit, duration = format_duration(duration)
     duration_name = f'Duration ({unit})'
     num_qubits = (
-        FastDataBlock.grid_size(algorithm.algorithm_qubits) + factory.footprint() * magic_counts
+        FastDataBlock.grid_size(int(algorithm.algorithm_qubits))
+        + factory.footprint() * magic_counts
     )
     df = pd.DataFrame(
         {
@@ -556,7 +557,7 @@ def update(
     )
 
 
-def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[Tuple[str, ...], str]:
+def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[List[str], str]:
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
     total_ccz = total_t / 4
@@ -601,7 +602,7 @@ def compute_duration(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
-            n_algo_qubits=algorithm.algorithm_qubits,
+            n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, magic_count) for f in iter_ccz2t_factories()],

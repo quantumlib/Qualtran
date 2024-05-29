@@ -42,7 +42,7 @@ def _call_graph(bc: Type[Bloq]):
         )
     if annot['ssa'] != 'SympySymbolAllocator':
         print(f"{bc}.build_call_graph `ssa: 'SympySymbolAllocator'`")
-    if annot['return'] != Set[ForwardRef('BloqCountT')]:
+    if annot['return'] != Set[ForwardRef('BloqCountT')]:  # type: ignore[misc]
         print(f"{bc}.build_call_graph -> 'BloqCountT'")
 
 

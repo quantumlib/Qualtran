@@ -37,20 +37,20 @@ def linear(x: NDArray[np.float64], a: float, c: float) -> NDArray[np.float64]:
 def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> Tuple[float, float]:
     """Fit a line given x and y values.
 
-    Args
+    Args:
         x: the independent variable (x value) for the linear fit.
         y: the dependent (y) for the linear fit.
 
-    Returns
+    Returns:
         slope: The slope of the linear fit.
         intercept: the intercept of the linear fit.
+
+    Raises:
+        np.linalg.LinAlgError: if fitting fails.
     """
-    try:
-        # pylint: disable-next=unbalanced-tuple-unpacking
-        popt, _ = scipy.optimize.curve_fit(linear, x, y)
-        return popt
-    except np.linalg.LinAlgError:
-        return None
+    # pylint: disable-next=unbalanced-tuple-unpacking
+    popt, _ = scipy.optimize.curve_fit(linear, x, y)
+    return popt
 
 
 def gen_random_chem_ham(num_spin_orb: int):
@@ -103,6 +103,13 @@ def plot_linear_log_log(
     y_vals = np.exp(intr) * x_vals**slope
     if label is None:
         label = ''
-    ax.loglog(xs, ys, marker='o', ls='None', label=rf'{label} $N^{{{slope:3.2f}}}$', color=color)
+    ax.loglog(
+        xs,
+        ys,
+        marker='o',
+        ls='None',
+        label=rf'{label} ${{{np.exp(intr):3.1f}}}N^{{{slope:3.2f}}}$',
+        color=color,
+    )
     ax.loglog(x_vals, y_vals, marker='None', linestyle='--', color=color)
     ax.legend()

@@ -12,19 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import cast, Dict, TYPE_CHECKING
 
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Adjoint, Bloq, CompositeBloq, Side, Signature, Soquet
+from qualtran import Adjoint, Bloq, CompositeBloq, Side, Signature
 from qualtran._infra.adjoint import _adjoint_cbloq
 from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import LarrowTextBox, RarrowTextBox
+from qualtran.drawing import LarrowTextBox, RarrowTextBox, Text
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 def test_serial_combo_adjoint():
@@ -145,11 +149,11 @@ def test_call_graph():
 def test_names():
     atom = TestAtom()
     assert atom.pretty_name() == "TestAtom"
-    assert atom.short_name() == "Atom"
+    assert cast(Text, atom.wire_symbol(reg=None)).text == "TestAtom"
 
     adj_atom = Adjoint(atom)
     assert adj_atom.pretty_name() == "TestAtom†"
-    assert adj_atom.short_name() == "Atom†"
+    assert cast(Text, adj_atom.wire_symbol(reg=None)).text == "TestAtom†"
     assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
@@ -158,8 +162,8 @@ def test_wire_symbol():
     (reg,) = zero.signature
     adj = Adjoint(zero)  # specifically use the Adjoint wrapper for testing
 
-    ws = zero.wire_symbol(Soquet(None, reg))
-    adj_ws = adj.wire_symbol(Soquet(None, reg.adjoint()))
+    ws = zero.wire_symbol(reg)
+    adj_ws = adj.wire_symbol(reg.adjoint())
     assert isinstance(ws, LarrowTextBox)
     assert isinstance(adj_ws, RarrowTextBox)
 
@@ -179,7 +183,7 @@ class DecomposesIntoTAcceptsAdjoint(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT'):
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         soqs = bb.add_d(TAcceptsAdjoint(), **soqs)
         return soqs
 

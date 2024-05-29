@@ -22,12 +22,12 @@ def test_mul():
     assert AlgorithmSummary(t_gates=9) == 3 * AlgorithmSummary(t_gates=3)
 
     with pytest.raises(TypeError):
-        _ = complex(1, 0) * AlgorithmSummary(rotation_gates=1)
+        _ = complex(1, 0) * AlgorithmSummary(rotation_gates=1)  # type: ignore[operator]
 
 
 def test_addition():
     with pytest.raises(TypeError):
-        _ = AlgorithmSummary() + 5
+        _ = AlgorithmSummary() + 5  # type: ignore[operator]
 
     a = AlgorithmSummary(
         algorithm_qubits=7,
@@ -57,7 +57,7 @@ def test_addition():
 
 def test_subtraction():
     with pytest.raises(TypeError):
-        _ = AlgorithmSummary() - 5
+        _ = AlgorithmSummary() - 5  # type: ignore[operator]
 
     a = AlgorithmSummary(
         algorithm_qubits=7,

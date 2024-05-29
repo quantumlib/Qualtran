@@ -176,6 +176,8 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
         with paths.html_out.open('w') as f:
             f.write(html)
 
+    return None
+
 
 class _NotebookRunClosure:
     """Used to run notebook execution logic in subprocesses."""

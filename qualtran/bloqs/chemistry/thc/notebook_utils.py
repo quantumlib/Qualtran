@@ -17,9 +17,9 @@ from typing import Optional
 import cirq
 
 from qualtran import Bloq
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
@@ -48,12 +48,12 @@ mcp_cv0 = ssa.new_symbol('cv3')
 
 
 def custom_qroam_repr(self) -> str:
-    target_repr = repr(self._target_bitsizes)
-    return f"SelectSwapQROM(target_bitsizes={target_repr}, block_size={self.block_size})"
+    target_repr = repr(self.target_bitsizes)
+    return f"SelectSwapQROM(target_bitsizes={target_repr}, block_sizes={self.block_sizes})"
 
 
 # TODO: better way of customizing label
-SelectSwapQROM.__repr__ = custom_qroam_repr
+SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[assignment]
 
 
 def custom_qrom_repr(self) -> str:
@@ -62,7 +62,8 @@ def custom_qrom_repr(self) -> str:
     return f"QROM(selection_bitsizes={selection_repr}, target_bitsizes={target_repr})"
 
 
-QROM.__repr__ = custom_qrom_repr
+# TODO: better way of customizing label
+QROM.__repr__ = custom_qrom_repr  # type: ignore[assignment]
 
 
 def custom_generalizations(bloq: Bloq) -> Optional[Bloq]:

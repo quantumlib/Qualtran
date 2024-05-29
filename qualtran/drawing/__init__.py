@@ -39,6 +39,18 @@ from .musical_score import (
 
 from .classical_sim_graph import ClassicalSimGraphDrawer
 
-from .bloq_counts_graph import GraphvizCounts, format_counts_sigma, format_counts_graph_markdown
+from .bloq_counts_graph import (
+    GraphvizCounts,
+    GraphvizCallGraph,
+    format_counts_sigma,
+    format_counts_graph_markdown,
+)
 
-from ._show_funcs import show_bloq, show_bloqs, show_call_graph, show_counts_sigma, show_flame_graph
+from ._show_funcs import (
+    show_bloq,
+    show_bloqs,
+    show_call_graph,
+    show_counts_sigma,
+    show_flame_graph,
+    show_bloq_via_qpic,
+)

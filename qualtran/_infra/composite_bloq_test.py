@@ -40,12 +40,11 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
-from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
+from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():
@@ -143,6 +142,8 @@ def test_map_soqs():
             assert in_soqs == bb.map_soqs(in_soqs, soq_map)
         elif binst.i == 1:
             for k, val in bb.map_soqs(in_soqs, soq_map).items():
+                assert isinstance(val, Soquet)
+                assert isinstance(val.binst, BloqInstance)
                 assert val.binst.i >= 100
         else:
             raise AssertionError()
@@ -153,6 +154,8 @@ def test_map_soqs():
 
     fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
     for k, val in fsoqs.items():
+        assert isinstance(val, Soquet)
+        assert isinstance(val.binst, BloqInstance)
         assert val.binst.i >= 100
     cbloq = bb.finalize(**fsoqs)
     assert isinstance(cbloq, CompositeBloq)
@@ -160,13 +163,25 @@ def test_map_soqs():
 
 def test_bb_composite_bloq():
     cbloq_auto = TestTwoCNOT().decompose_bloq()
-    circuit, _ = cbloq_auto.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
+    circuit, _ = cbloq_auto.to_cirq_circuit_and_quregs(
+        q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]
+    )
     cirq.testing.assert_has_diagram(
         circuit,
         desired="""\
 1: ───@───X───
       │   │
 2: ───X───@─── \
+    """,
+    )
+
+    circuit = cbloq_auto.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        desired="""\
+q1: ───@───X───
+       │   │
+q2: ───X───@───
     """,
     )
 
@@ -303,12 +318,14 @@ def test_get_soquets():
     soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=True)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
+    assert isinstance(soq, Soquet)
     assert soq.binst == RightDangle
     assert soq.reg.bitsize == 10
 
     soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=False)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
+    assert isinstance(soq, np.ndarray)
     assert soq.shape == (10,)
     assert soq[0].reg.bitsize == 1
 
@@ -320,7 +337,7 @@ class TestMultiCNOT(Bloq):
         return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']
+        self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']  # type: ignore[type-var]
     ) -> Dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
@@ -338,7 +355,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit, _ = cbloq.to_cirq_circuit(**get_named_qubits(bloq.signature.lefts()))
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         """\
@@ -375,19 +392,19 @@ def test_util_convenience_methods_errors():
 
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        qs = bb.split(qs)
+        qs = bb.split(qs)  # type: ignore[arg-type]
 
     qs = bb.allocate(5)
     with pytest.raises(ValueError, match='.*expects a 1-d array'):
-        qs = bb.join(qs)
+        qs = bb.join(qs)  # type: ignore[arg-type]
 
     # but this works:
     qs = np.asarray([bb.allocate(), bb.allocate()])
     qs = bb.join(qs)
 
-    qs = np.asarray([bb.allocate(5), bb.allocate(5)])
+    arr = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
-        bb.free(qs)
+        bb.free(arr)  # type: ignore[arg-type]
 
 
 def test_test_serial_combo_decomp():
@@ -460,6 +477,7 @@ def test_final_soqs():
 def test_add_from_left_bloq():
     bb = BloqBuilder()
     x = bb.add_register(Register('x', QAny(8), side=Side.LEFT))
+    assert x is not None
 
     # The following exercises the special case of calling `final_soqs`
     # for a gate with left registers only
@@ -501,6 +519,10 @@ def test_type_error():
     b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))
+    assert a is not None
+    assert b is not None
+    assert c is not None
+    assert d is not None
     a, b, c, d = bb.add(TestMultiTypedRegister(), a=a, b=b, c=c, d=d)
     with pytest.raises(BloqError, match=r'.*register dtypes are not consistent.*'):
         b, a = bb.add(TestQFxp(), xx=b, yy=a)
@@ -510,6 +532,11 @@ def test_type_error():
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))
     e = bb.add_register_from_dtype('m', QFxp(8, 7, True))
+    assert a is not None
+    assert b is not None
+    assert c is not None
+    assert d is not None
+    assert e is not None
     a, b, c, d = bb.add(TestMultiTypedRegister(), a=a, b=b, c=c, d=d)
     # Correct: literal type comparison
     b, c = bb.add(TestQFxp(), xx=b, yy=c)

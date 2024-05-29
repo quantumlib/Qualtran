@@ -19,7 +19,11 @@ from qualtran.surface_code import FastDataBlock
 
 
 @pytest.mark.parametrize(
-    ["logical_qubits", "logical_qubits_with_routing"], [[100, 230], [1318, 2740], [12581, 25481]]
+    ["logical_qubits", "logical_qubits_with_routing", "data_error"],
+    [[100, 230, 0.69], [1318, 2740, 8.22], [12581, 25481, 76.443]],
 )
-def test_fast_block(logical_qubits, logical_qubits_with_routing):
+def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
     assert FastDataBlock.grid_size(n_algo_qubits=logical_qubits) == logical_qubits_with_routing
+    assert FastDataBlock(3).data_error(
+        n_algo_qubits=logical_qubits, n_cycles=3, phys_err=1e-3
+    ) == pytest.approx(data_error)

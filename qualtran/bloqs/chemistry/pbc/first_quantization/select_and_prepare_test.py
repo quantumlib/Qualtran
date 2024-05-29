@@ -91,8 +91,7 @@ def test_prepare_t_costs():
         m_param=2**num_bits_m,
         num_bits_rot_aa=b_r,
         num_bits_t=num_bits_t,
-        adjoint=True,
-    )
+    ).adjoint()
     cost += prep_first_quant.call_graph()[1][TGate()] // 4
     n_eta = (eta - 1).bit_length()
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)

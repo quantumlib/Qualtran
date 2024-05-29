@@ -21,6 +21,7 @@ import "qualtran/protos/args.proto";
 import "qualtran/protos/registers.proto";
 import "qualtran/protos/data_types.proto";
 import "qualtran/protos/ctrl_spec.proto";
+import "qualtran/protos/sympy.proto";
 
 package qualtran;
 
@@ -32,7 +33,7 @@ message BloqArg {
     double float_val = 3;
     string string_val = 4;
     // Sympy expression generated using str(expr).
-    string sympy_expr = 5;
+    Term sympy_expr = 5;
     // N-dimensional numpy array stored as bytes.
     NDArray ndarray = 6;
     // Integer reference of a subbloq. Assumes access to a BloqLibrary.

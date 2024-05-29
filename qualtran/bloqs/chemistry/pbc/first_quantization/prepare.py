@@ -44,7 +44,6 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
     """
     eta: int
     num_bits_rot_aa: int
-    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:

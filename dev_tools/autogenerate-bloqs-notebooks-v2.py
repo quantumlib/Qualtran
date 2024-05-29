@@ -54,16 +54,23 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
+import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
-import qualtran.bloqs.block_encoding
+import qualtran.bloqs.block_encoding.block_encoding_base
+import qualtran.bloqs.block_encoding.chebyshev_polynomial
+import qualtran.bloqs.block_encoding.lcu_block_encoding
+import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.quad_fermion.givens_bloq
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.walk_operator
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
@@ -72,15 +79,21 @@ import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
+import qualtran.bloqs.data_loading.qrom_base
+import qualtran.bloqs.data_loading.select_swap_qrom
+import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
-import qualtran.bloqs.qubitization_walk_operator
-import qualtran.bloqs.reflection
+import qualtran.bloqs.qsp.generalized_qsp
+import qualtran.bloqs.qubitization.qubitization_walk_operator
+import qualtran.bloqs.reflections
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -161,6 +174,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Global Phase',
         module=qualtran.bloqs.basic_gates.global_phase,
         bloq_specs=[qualtran.bloqs.basic_gates.global_phase._GLOBAL_PHASE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Identity Gate',
+        module=qualtran.bloqs.basic_gates.identity,
+        bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
     ),
 ]
 
@@ -262,9 +280,19 @@ CHEMISTRY: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_TILE_HWP_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_HWP_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
+    ),
+    NotebookSpecV2(
+        title='Givens Rotations',
+        module=qualtran.bloqs.chemistry.quad_fermion.givens_bloq,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._REAL_GIVENS_DOC,
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._CPLX_GIVENS_DOC,
+        ],
     ),
 ]
 
@@ -278,9 +306,13 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
-            qualtran.bloqs.arithmetic.addition._SIMPLE_ADD_K_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Subtraction',
+        module=qualtran.bloqs.arithmetic.subtraction,
+        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -337,6 +369,32 @@ ARITHMETIC = [
         bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
     ),
+    NotebookSpecV2(
+        title='Elliptic Curve Cryptography',
+        module=qualtran.bloqs.factoring.ecc,
+        bloq_specs=[
+            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Elliptic Curve Addition',
+        module=qualtran.bloqs.factoring.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
+    ),
+]
+
+MOD_ARITHMETIC = [
+    NotebookSpecV2(
+        title='Modular Addition',
+        module=qualtran.bloqs.mod_arithmetic.mod_addition,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+        ],
+    )
 ]
 
 
@@ -406,8 +464,17 @@ ROT_QFT_PE = [
     ),
     NotebookSpecV2(
         title='Qubitization Walk Operator',
-        module=qualtran.bloqs.qubitization_walk_operator,
-        bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
+        module=qualtran.bloqs.qubitization.qubitization_walk_operator,
+        bloq_specs=[
+            qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
+            qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
+            qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.qubitization_qpe,
+        bloq_specs=[qualtran.bloqs.phase_estimation.qubitization_qpe._QUBITIZATION_QPE_DOC],
     ),
 ]
 
@@ -423,6 +490,15 @@ OTHER: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Qubitized Hubbard Model',
+        module=qualtran.bloqs.chemistry.hubbard_model.qubitization,
+        path_stem='hubbard_model',
+        bloq_specs=[
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard._PREPARE_HUBBARD,
+        ],
+    ),
+    NotebookSpecV2(
         title='Apply to Lth Target',
         module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
         bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
@@ -430,22 +506,35 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='QROM',
         module=qualtran.bloqs.data_loading.qrom,
-        bloq_specs=[qualtran.bloqs.data_loading.qrom._QROM_DOC],
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.qrom._QROM_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='SelectSwapQROM',
+        module=qualtran.bloqs.data_loading.select_swap_qrom,
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[
-            qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC,
-            qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
+            qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
         title='Reflection',
-        module=qualtran.bloqs.reflection,
-        bloq_specs=[qualtran.bloqs.reflection._REFLECTION_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        module=qualtran.bloqs.reflections,
+        bloq_specs=[qualtran.bloqs.reflections.reflection._REFLECTION_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
@@ -476,6 +565,18 @@ OTHER: List[NotebookSpecV2] = [
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
+    NotebookSpecV2(
+        title='Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.qsp.generalized_qsp,
+        bloq_specs=[qualtran.bloqs.qsp.generalized_qsp._Generalized_QSP_DOC],
+    ),
+    NotebookSpecV2(
+        title='Hamiltonian Simulation by Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp,
+        bloq_specs=[
+            qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp._Hamiltonian_Simulation_by_GQSP_DOC
+        ],
+    ),
 ]
 
 # --------------------------------------------------------------------------
@@ -487,7 +588,7 @@ CONCEPTS = [
     'multiplexers/unary_iteration.ipynb',
     'arithmetic/t_complexity_of_comparison_gates.ipynb',
     'arithmetic/error_analysis_for_fxp_arithmetic.ipynb',
-    'phase_estimation_of_quantum_walk.ipynb',
+    'phase_estimation/phase_estimation_of_quantum_walk.ipynb',
     'chemistry/trotter/grid_ham/trotter_costs.ipynb',
     'chemistry/resource_estimation.ipynb',
     'chemistry/writing_algorithms.ipynb',
@@ -499,6 +600,7 @@ NB_BY_SECTION = [
     ('Basic Gates', BASIC_GATES),
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
+    ('Modular Arithmetic', MOD_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Other', OTHER),
 ]

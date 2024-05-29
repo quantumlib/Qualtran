@@ -13,16 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
+from typing import Iterator, Optional, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.drawing import Text, WireSymbol
 
 
 @attrs.frozen
@@ -48,7 +50,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         Fig 12.
     """
 
-    n: int
+    n: Union[int, sympy.Expr]
     cvs: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
@@ -57,8 +59,12 @@ class PrepareUniformSuperposition(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
 
-    def short_name(self) -> str:
-        return r'$\sum_l |l\rangle$'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('Σ |l>')
+        return super().wire_symbol(reg, idx)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
@@ -71,7 +77,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         n, k = self.n, 0
@@ -91,7 +97,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
-        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1
+        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1  # type: ignore[operator]
         context.qubit_manager.qfree(ancilla)
 
         yield cirq.H.on_each(*logL_qubits)
@@ -102,7 +108,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         ctrl = np.asarray([*logL_qubits, *controls])[:, np.newaxis]
         junk = np.asarray(and_ancilla)[:, np.newaxis]
         if len(and_cv) <= 2:
-            and_op = And(*and_cv).on_registers(ctrl=ctrl, target=and_target)
+            and_op = And(and_cv[0], and_cv[1]).on_registers(ctrl=ctrl, target=and_target)
         else:
             and_op = MultiAnd(cvs=and_cv).on_registers(ctrl=ctrl, junk=junk, target=and_target)
 

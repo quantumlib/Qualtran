@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -21,15 +21,15 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -59,15 +59,15 @@ class CSwapApprox(GateWithRegisters):
         Low et. al. 2018. See Appendix B.2.c.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 
         def g(q: cirq.Qid, adjoint=False) -> cirq.ops.op_tree.OpTree:
@@ -93,16 +93,8 @@ class CSwapApprox(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return '~swap'
-
-    def _t_complexity_(self) -> TComplexity:
-        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
-        n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
-        # 4 * n: CNOTs
-        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return TComplexity(t=4 * n, clifford=22 * n - 1)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:

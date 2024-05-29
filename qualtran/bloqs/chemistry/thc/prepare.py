@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -29,6 +29,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
@@ -41,11 +42,12 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.reflections import Reflection
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.drawing import Text, WireSymbol
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
@@ -103,8 +105,13 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('Σ |μν>')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -354,7 +361,7 @@ class PrepareTHC(PrepareOracle):
         nu_eq_mp1: SoquetT,
         theta: SoquetT,
         s: SoquetT,
-        alt_mn: SoquetT,
+        alt_mn: NDArray[Soquet],  # type: ignore[type-var]
         alt_theta: SoquetT,
         keep: SoquetT,
         less_than: SoquetT,
@@ -375,7 +382,7 @@ class PrepareTHC(PrepareOracle):
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
         )
@@ -437,7 +444,7 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
         )

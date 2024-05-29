@@ -11,10 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import random
 import re
+from typing import List
 
+from qualtran.bloqs.for_testing import TestBloqWithCallGraph
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
-from qualtran.drawing import format_counts_graph_markdown, format_counts_sigma, GraphvizCounts
+from qualtran.drawing import (
+    format_counts_graph_markdown,
+    format_counts_sigma,
+    GraphvizCallGraph,
+    GraphvizCounts,
+)
+from qualtran.drawing.bloq_counts_graph import _CallGraphDrawerBase
 from qualtran.resource_counting import get_bloq_call_graph
 
 
@@ -35,11 +44,12 @@ def test_format_counts_graph_markdown():
     ret = format_counts_graph_markdown(graph)
     assert (
         ret
-        == r""" - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1))`
-   - `And(cv1=1, cv2=1, uncompute=False)`: $\displaystyle 5$
+        == """\
+ - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1))`
+   - `And(cv1=1, cv2=1, uncompute=False)`: $\\displaystyle 5$
  - `And(cv1=1, cv2=1, uncompute=False)`
-   - `ArbitraryClifford(n=2)`: $\displaystyle 9$
-   - `TGate()`: $\displaystyle 4$
+   - `ArbitraryClifford(n=2)`: $\\displaystyle 9$
+   - `TGate()`: $\\displaystyle 4$
 """
     )
 
@@ -70,3 +80,51 @@ def test_abbreviate_details():
         GraphvizCounts.abbreviate_field_list(namevals[:5])
         == "x=5, y=100, s='aaaaaaa ..., x1=1.2, x2=1.3"
     )
+
+
+def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> List[str]:
+    graph = drawer.get_graph()
+    node_labels = [node.get_label() for node in graph.get_node_list()]
+    random.shuffle(node_labels)  # don't rely on order of graphviz nodes
+    return node_labels
+
+
+def test_graphviz_call_graph_no_data():
+    # Example call graph
+    bloq = TestBloqWithCallGraph()
+    call_graph, _ = bloq.call_graph()
+
+    drawer = GraphvizCallGraph(call_graph)
+    node_labels = _get_node_labels_from_pydot_graph(drawer)
+    for nl in node_labels:
+        # Spot check one of the nodes
+        if 'TestBloqWithCallGraph' in nl:
+            assert nl == (
+                '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph()</font></td></tr>\n'
+                '</table></font>>'
+            )
+
+
+def test_graphviz_call_graph_with_data():
+    # Example call graph
+    bloq = TestBloqWithCallGraph()
+    call_graph, _ = bloq.call_graph()
+
+    # Collect T-Complexity data
+    bloq_data = {}
+    for bloq in call_graph.nodes:
+        tcomp = bloq.t_complexity()
+        record = {'T count': tcomp.t, 'clifford': tcomp.clifford, 'rot': tcomp.rotations}
+        bloq_data[bloq] = record
+
+    drawer = GraphvizCallGraph(call_graph, bloq_data=bloq_data)
+    node_labels = _get_node_labels_from_pydot_graph(drawer)
+    for nl in node_labels:
+        # Spot check one of the nodes
+        if 'TestBloqWithCallGraph' in nl:
+            assert nl == (
+                '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph()</font></td></tr>\n'
+                '<tr><td>T count</td><td>100*_n0 + 600</td></tr><tr><td>clifford</td><td>0</td></tr><tr><td>rot</td><td>0</td></tr></table></font>>'
+            )

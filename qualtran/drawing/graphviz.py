@@ -26,6 +26,7 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QBit,
     QDType,
     Register,
     RightDangle,
@@ -207,11 +208,11 @@ class GraphDrawer:
 
         if rowspan != 1:
             assert rowspan > 1
-            rowspan = f'rowspan="{rowspan}"'
+            rowspan_html = f'rowspan="{rowspan}"'
         else:
-            rowspan = ''
+            rowspan_html = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
+        return f'<TD {rowspan_html} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,
@@ -371,14 +372,18 @@ class PrettyGraphDrawer(GraphDrawer):
         return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
 
     def get_binst_header_text(self, binst: BloqInstance):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
+        # This wire symbol should always be a text element
+        wire_symbol_title = binst.bloq.wire_symbol(reg=None).text  # type: ignore[attr-defined]
+        if not wire_symbol_title:
+            return ''
+        return f'<font point-size="10">{html.escape(wire_symbol_title)}</font>'
 
     def soq_label(self, soq: Soquet):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, (Split, Join)):
             return ''
@@ -413,6 +418,8 @@ class TypedGraphDrawer(PrettyGraphDrawer):
         l, r = cxn.left.reg.dtype, cxn.right.reg.dtype
         if l == r:
             return self._fmt_dtype(l)
+        elif l.num_qubits == 1:
+            return self._fmt_dtype(l if isinstance(l, QBit) else r)
         else:
             return f'{self._fmt_dtype(l)}-{self._fmt_dtype(r)}'
 
