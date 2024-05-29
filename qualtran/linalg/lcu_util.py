@@ -15,7 +15,9 @@
 """Utility methods for LCU circuits as implemented in https://github.com/quantumlib/OpenFermion"""
 
 import math
-from typing import Sequence
+from typing import Optional, overload, Sequence
+
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 
 def _partial_sums(vals):
@@ -38,7 +40,7 @@ def _differences(weights):
         have_previous_weight = True
 
 
-def _discretize_probability_distribution(unnormalized_probabilities, epsilon):
+def _discretize_probability_distribution(unnormalized_probabilities, sub_bit_precision):
     """Approximates probabilities with integers over a common denominator.
 
     Args:
@@ -59,7 +61,6 @@ def _discretize_probability_distribution(unnormalized_probabilities, epsilon):
         the i'th input probability (after normalization).
     """
     n = len(unnormalized_probabilities)
-    sub_bit_precision = max(0, int(math.ceil(-math.log(epsilon * n, 2))))
     bin_count = 2**sub_bit_precision * n
 
     cumulative = list(_partial_sums(unnormalized_probabilities))
@@ -146,8 +147,25 @@ def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
     return alternates, keep_weights
 
 
+@overload
+def sub_bit_prec_from_epsilon(n: int, epsilon: float) -> int:
+    ...
+
+
+@overload
+def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> SymbolicInt:
+    ...
+
+
+def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> SymbolicInt:
+    ret = ceil(-log2(epsilon * n))
+    return ret if is_symbolic(ret) else max(0, ret)
+
+
 def preprocess_lcu_coefficients_for_reversible_sampling(
-    lcu_coefficients: Sequence[float], **precision: float
+    lcu_coefficients: Sequence[float],
+    epsilon: Optional[float] = None,
+    sub_bit_prec: Optional[float] = None,
 ):
     """Prepares data used to perform efficient reversible roulette selection.
 
@@ -168,9 +186,10 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
         lcu_coefficients: A list of non-negative floats, with the i'th float
             corresponding to the i'th coefficient of an LCU decomposition
             of the Hamiltonian (in an ordering determined by the caller).
-        epsilon/sub_bit_prec: keyword arguments, exactly one of them must be
-            provided. Epsilon is the absolute error tolerance, whereas
-            sub_bit_prec is the bits of precision.
+        epsilon: Epsilon is the absolute error tolerance. Exactly one of
+            epsilon or sub_bit_prec must be provided.
+        sub_bit_prec: sub_bit_prec is the number of bits of precision.
+            Exactly one of epsilon or sub_bit_prec must be provided.
 
     Returns:
         alternates (list[int]): A python list of ints indicating alternative
@@ -184,12 +203,13 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
             denominator to divide the items in keep_numers by in order to get
             a probability. The actual denominator is 2**sub_bit_precision.
     """
-    eps_provided = "epsilon" in precision.keys()
-    bit_prec_provided = "sub_bit_prec" in precision.keys()
-    assert eps_provided ^ bit_prec_provided == 1, "epsilon or sub_bit_prec must be provided"
-    epsilon = precision["epsilon"] if eps_provided else 1 / 2 ** precision["sub_bit_prec"]
+    if not ((epsilon is None) ^ (sub_bit_prec is None)):
+        raise ValueError("Exactly one of epsilon or sub_bit_prec must be provided")
+    if sub_bit_prec is None:
+        assert epsilon is not None  # make mypy happpy
+        sub_bit_prec = sub_bit_prec_from_epsilon(len(lcu_coefficients), epsilon)
     numers, denom, sub_bit_precision = _discretize_probability_distribution(
-        lcu_coefficients, epsilon
+        lcu_coefficients, sub_bit_prec
     )
     assert denom == 2**sub_bit_precision * len(numers)
     alternates, keep_numers = _preprocess_for_efficient_roulette_selection(numers)
