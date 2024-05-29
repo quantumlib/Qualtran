@@ -36,7 +36,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.classical_sim import ints_to_bits
 

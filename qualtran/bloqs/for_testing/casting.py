@@ -29,7 +29,7 @@ from qualtran import (
     Soquet,
 )
 from qualtran.bloqs.arithmetic.addition import Add
-from qualtran.bloqs.util_bloqs import Cast
+from qualtran.bloqs.bookkeeping import Cast
 
 
 @frozen
