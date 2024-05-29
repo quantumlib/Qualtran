@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple, Union
+from typing import Iterator, Optional, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -23,8 +23,10 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
+from qualtran.bloqs.basic_gates import Hadamard, Rz
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import Text, WireSymbol
+from qualtran.symbolics import bit_length, HasLength
 
 
 @attrs.frozen
@@ -118,6 +120,17 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        logN = bit_length(self.n - 1)
+        theta = sympy.Symbol("theta")
+        return {
+            (Hadamard(), 3 * logN),
+            (LessThanConstant(logN, self.n), 2),
+            (Rz(theta), 2),
+            (MultiAnd(HasLength(logN)), 1),
+            (MultiAnd(HasLength(logN)).adjoint(), 1),
+        }
 
 
 @bloq_example

@@ -158,7 +158,7 @@ def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> Symboli
 
 
 def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> SymbolicInt:
-    ret = ceil(-log2(epsilon * n))
+    ret = ceil(log2(1 / (n * epsilon)))
     return ret if is_symbolic(ret) else max(0, ret)
 
 

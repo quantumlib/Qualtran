@@ -19,30 +19,34 @@ a technique for initializing a state with $L$ unique coefficients (provided by a
 database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is the
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
-
 from functools import cached_property
-from typing import Iterator, Sequence, Tuple, TYPE_CHECKING
+from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
-from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import (
+    preprocess_lcu_coefficients_for_reversible_sampling,
+    sub_bit_prec_from_epsilon,
+)
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.symbolics import bit_length, is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
@@ -96,10 +100,10 @@ class StatePreparationAliasSampling(PrepareOracle):
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    alt: NDArray[np.int_]
-    keep: NDArray[np.int_]
-    mu: int
-    sum_of_lcu_coeffs: float
+    alt: Union[Shaped, NDArray[np.int_]]
+    keep: Union[Shaped, NDArray[np.int_]]
+    mu: SymbolicInt
+    sum_of_lcu_coeffs: SymbolicFloat
 
     @classmethod
     def from_lcu_probs(
@@ -125,6 +129,38 @@ class StatePreparationAliasSampling(PrepareOracle):
             mu=mu,
             sum_of_lcu_coeffs=sum(lcu_probabilities),
         )
+
+    @classmethod
+    def from_n_coeff(
+        cls,
+        n_coeff: SymbolicInt,
+        sum_of_lcu_coeffs: SymbolicFloat,
+        *,
+        probability_epsilon: SymbolicFloat = 1.0e-5,
+    ) -> 'StatePreparationAliasSampling':
+        """Factory to construct the state preparation gate for a given set of LCU coefficients.
+
+        Args:
+            n_coeff: Number of LCU coefficients in the prepared state.
+            probability_epsilon: The desired accuracy to represent each probability
+                (which sets mu size and keep/alt integers).
+                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                for more information.
+        """
+        mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
+        selection_bitsize = bit_length(n_coeff - 1)
+        alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
+        return StatePreparationAliasSampling(
+            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            alt=alt,
+            keep=keep,
+            mu=mu,
+            sum_of_lcu_coeffs=sum_of_lcu_coeffs,
+        )
+
+    @property
+    def n_coeff(self) -> SymbolicInt:
+        return self.selection_registers[0].dtype.iteration_length_or_zero()
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
@@ -160,9 +196,17 @@ class StatePreparationAliasSampling(PrepareOracle):
     def _value_equality_values_(self):
         return (
             self.selection_registers,
-            tuple(self.alt.ravel()),
-            tuple(self.keep.ravel()),
+            self.alt if isinstance(self.alt, Shaped) else tuple(self.alt.ravel()),
+            self.keep if isinstance(self.keep, Shaped) else tuple(self.keep.ravel()),
             self.mu,
+        )
+
+    @cached_property
+    def qrom_bloq(self) -> QROM:
+        return QROM(
+            (self.alt, self.keep),
+            (self.selection_bitsize,),
+            (self.alternates_bitsize, self.keep_bitsize),
         )
 
     def decompose_from_registers(
@@ -171,21 +215,24 @@ class StatePreparationAliasSampling(PrepareOracle):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
-        N = self.selection_registers[0].dtype.iteration_length_or_zero()
-        yield PrepareUniformSuperposition(N).on(*quregs['selection'])
+        yield PrepareUniformSuperposition(self.n_coeff).on(*quregs['selection'])
         if self.mu == 0:
             return
         selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
         sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
         yield cirq.H.on_each(*sigma_mu)
-        qrom_gate = QROM(
-            [self.alt, self.keep],
-            (self.selection_bitsize,),
-            (self.alternates_bitsize, self.keep_bitsize),
-        )
-        yield qrom_gate.on_registers(selection=selection, target0_=alt, target1_=keep)
+        yield self.qrom_bloq.on_registers(selection=selection, target0_=alt, target1_=keep)
         yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (PrepareUniformSuperposition(self.n_coeff), 1),
+            (self.qrom_bloq, 1),
+            (LessThanEqual(self.mu, self.mu), 1),
+            (CSwap(self.selection_bitsize), 1),
+            (Hadamard(), self.mu),
+        }
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
@@ -198,8 +245,19 @@ def _state_prep_alias() -> StatePreparationAliasSampling:
     return state_prep_alias
 
 
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _state_prep_alias_symb() -> StatePreparationAliasSampling:
+    import sympy
+
+    n_coeffs, sum_coeff, eps = sympy.symbols("L S \epsilon")
+    state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
+        n_coeffs, sum_coeff, probability_epsilon=eps
+    )
+    return state_prep_alias_symb
+
+
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(
     bloq_cls=StatePreparationAliasSampling,
     import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
-    examples=(_state_prep_alias,),
+    examples=(_state_prep_alias, _state_prep_alias_symb),
 )

@@ -54,12 +54,12 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -174,6 +174,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return True
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if is_symbolic(self.less_than_val, self.bitsize):
+            return {(And(), self.bitsize), (And().adjoint(), self.bitsize)}
         if self.less_than_val >= 2**self.bitsize:
             return {(XGate(), 1)}
         num_set_bits = self.less_than_val.bit_count()
@@ -556,6 +558,14 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         yield from reversed(adjoint)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if is_symbolic(self.x_bitsize, self.y_bitsize):
+            return {
+                (BiQubitsMixer(), self.x_bitsize),
+                (BiQubitsMixer().adjoint(), self.x_bitsize),
+                (SingleQubitCompare(), 1),
+                (SingleQubitCompare().adjoint(), 1),
+            }
+
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
