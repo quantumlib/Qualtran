@@ -21,13 +21,15 @@ from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
     preprocess_lcu_coefficients_for_reversible_sampling,
+    sub_bit_prec_from_epsilon,
 )
 
 
 class DiscretizeDistributionTest(unittest.TestCase):
     def assertGetDiscretizedDistribution(self, probabilities, epsilon):
         total_probability = sum(probabilities)
-        numers, denom, mu = _discretize_probability_distribution(probabilities, epsilon)
+        sub_bit_prec = sub_bit_prec_from_epsilon(len(probabilities), epsilon)
+        numers, denom, mu = _discretize_probability_distribution(probabilities, sub_bit_prec)
         self.assertEqual(sum(numers), denom)
         self.assertEqual(len(numers), len(probabilities))
         self.assertEqual(len(probabilities) * 2**mu, denom)
