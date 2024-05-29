@@ -271,7 +271,7 @@ def test_multi_and_t_complexity(gate):
         pre_post_cliffords = len(gate.concrete_cvs) - sum(
             gate.concrete_cvs
         )  # number of zeros in self.cv
-        num_single_and = len(gate.cvs) - 1
+        num_single_and = len(gate.concrete_cvs) - 1
         if adjoint:
             return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
         return TComplexity(
