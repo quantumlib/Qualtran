@@ -16,8 +16,9 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
+import numpy as np
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
+from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature, bloq_example, BloqDocSpec
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
@@ -59,7 +60,7 @@ class HammingWeightPhasing(GateWithRegisters):
     """
 
     bitsize: int
-    exponent: float
+    exponent: float = 1
     eps: Union[SymbolicFloat] = 1e-10
 
     @cached_property
@@ -92,6 +93,20 @@ class HammingWeightPhasing(GateWithRegisters):
                 self.bitsize.bit_length(),
             ),
         }
+
+
+@bloq_example
+def _hamming_weight_phasing() -> HammingWeightPhasing:
+    hamming_weight_phasing = HammingWeightPhasing(4, np.pi / 2.)
+    print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
+    return hamming_weight_phasing
+
+
+_HAMMING_WEIGHT_PHASING_DOC = BloqDocSpec(
+    bloq_cls=HammingWeightPhasing,
+    import_line='from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing',
+    examples=(_hamming_weight_phasing,),
+)
 
 
 @attrs.frozen
@@ -168,3 +183,17 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     def pretty_name(self) -> str:
         return f'HWPG_{self.bitsize}(Z^{self.exponent})'
+
+
+@bloq_example
+def _hamming_weight_phasing_via_phase_gradient() -> HammingWeightPhasingViaPhaseGradient:
+    hamming_weight_phasing_via_phase_gradient = HammingWeightPhasingViaPhaseGradient(4, np.pi / 2.)
+    print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
+    return hamming_weight_phasing_via_phase_gradient
+
+
+_HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
+    bloq_cls=HammingWeightPhasingViaPhaseGradient,
+    import_line='from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing',
+    examples=(_hamming_weight_phasing_via_phase_gradient,),
+)

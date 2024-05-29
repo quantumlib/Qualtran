@@ -22,7 +22,7 @@ from cirq._compat import cached_method
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
+from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature, BloqDocSpec, bloq_example
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
@@ -45,7 +45,7 @@ class PhaseGradientUnitary(GateWithRegisters):
     thereof. The n bit phase gradient unitary is defined as
 
     $$
-        \text{PhaseGrad}_{n, t} = \sum_{k=0}^{2^{n}-1}|k\rangle\ langle k| \omega_{n, t}^{k}
+        \text{PhaseGrad}_{n, t} = \sum_{k=0}^{2^{n}-1}|k\rangle \langle k| \omega_{n, t}^{k}
     $$
 
     where
@@ -55,6 +55,14 @@ class PhaseGradientUnitary(GateWithRegisters):
     $$
 
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
+
+    Registers:
+        phase_grad: A THRU register which the phase gradient is applied to.
+
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
+        Appendix A: Addition for controlled rotations
+        [Halving the cost of quantum addition](https://quantum-journal.org/papers/q-2018-06-18-74/pdf/) 
     """
 
     bitsize: 'SymbolicInt'
@@ -71,18 +79,18 @@ class PhaseGradientUnitary(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+            self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
         for i, q in enumerate(quregs['phase_grad']):
-            yield gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize).on(*ctrl, q)
+            yield gate(exponent=self.exponent / 2 ** i, eps=self.eps / self.bitsize).on(*ctrl, q)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
         wire_symbols = ['@'] * self.is_controlled + [
-            f'Z^{self.exponent}/{2**(i+1)}' for i in range(self.bitsize)
+            f'Z^{self.exponent}/{2 ** (i + 1)}' for i in range(self.bitsize)
         ]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -92,6 +100,19 @@ class PhaseGradientUnitary(GateWithRegisters):
         return PhaseGradientUnitary(
             self.bitsize, self.exponent * power, self.is_controlled, self.eps
         )
+
+
+@bloq_example
+def _phase_gradient_unitary() -> PhaseGradientUnitary:
+    phase_gradient_unitary = PhaseGradientUnitary(4)
+    return phase_gradient_unitary
+
+
+_PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
+    bloq_cls=PhaseGradientUnitary,
+    import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary',
+    examples=(_phase_gradient_unitary,),
+)
 
 
 @attrs.frozen
@@ -127,7 +148,7 @@ class PhaseGradientState(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+            self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
@@ -137,6 +158,19 @@ class PhaseGradientState(GateWithRegisters):
         yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps).on_registers(
             phase_grad=phase_grad
         )
+
+
+@bloq_example
+def _phase_gradient_state() -> PhaseGradientState:
+    phase_gradient_state = PhaseGradientState(4)
+    return phase_gradient_state
+
+
+_PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
+    bloq_cls=PhaseGradientState,
+    import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState',
+    examples=(_phase_gradient_state,),
+)
 
 
 @attrs.frozen
@@ -213,8 +247,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def scaled_val(self, x: int) -> int:
         """Computes `phase_grad + x` using fixed point arithmetic."""
         x_width = self.x_bitsize + self.right_shift
-        x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
-        return int(x_fxp.astype(float) * 2**self.phase_bitsize)
+        x_fxp = _fxp(x / 2 ** x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
+        return int(x_fxp.astype(float) * 2 ** self.phase_bitsize)
 
     def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
         if self.controlled_by is not None:
@@ -232,13 +266,13 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             ctrl = kwargs['ctrl']
             if ctrl == self.controlled_by:
                 phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
-                    2**self.phase_bitsize
+                        2 ** self.phase_bitsize
                 )
             else:
                 phase_grad_out = phase_grad
             return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
 
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
+        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2 ** self.phase_bitsize)
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -269,18 +303,31 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
 
     def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
+            self,
+            tn: 'qtn.TensorNetwork',
+            tag: Any,
+            *,
+            incoming: Dict[str, 'SoquetT'],
+            outgoing: Dict[str, 'SoquetT'],
     ):
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
             self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
+
+
+@bloq_example
+def _add_into_phase_grad() -> AddIntoPhaseGrad:
+    add_into_phase_grad = AddIntoPhaseGrad(4, 4)
+    return add_into_phase_grad
+
+
+_ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(
+    bloq_cls=AddIntoPhaseGrad,
+    import_line='from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad',
+    examples=(_add_into_phase_grad,),
+)
 
 
 def _fxp(x: float, n: 'SymbolicInt') -> Fxp:
@@ -323,10 +370,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     r"""Optimized quantum-quantum addition into a phase gradient register scaled by a constant $\gamma$.
 
     $$
-        U(\gamma)|x\rangle|\text{phase\_grad}\rangle = |x\rangle|\text{phase\_grad} + x * \gamma\rangle
+        U(\gamma)|x\rangle|\text{phase_grad}\rangle = |x\rangle|\text{phase_grad} + x * \gamma\rangle
     $$
 
-    The operation calls `AddIntoPhaseGrad` gate $(gamma_bitsize + 2) / 2$ times.
+    The operation calls `AddIntoPhaseGrad` gate $(\text{gamma_bitsize} + 2) / 2$ times.
 
     Args:
         x_dtype: Fixed point specification of the input register.
@@ -336,9 +383,9 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             integer and fractional part of `gamma`.
 
     Registers:
-        - x : Input THRU register storing input value x to be scaled and added to the phase
+        x : Input THRU register storing input value x to be scaled and added to the phase
             gradient register.
-        - phase_grad : Phase gradient THRU register.
+        phase_grad : Phase gradient THRU register.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
@@ -352,7 +399,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     @classmethod
     def from_bitsize(
-        cls, x_bitsize: int, phase_bitsize: int, gamma: float, gamma_bitsize: int
+            cls, x_bitsize: int, phase_bitsize: int, gamma: float, gamma_bitsize: int
     ) -> 'AddScaledValIntoPhaseReg':
         return AddScaledValIntoPhaseReg(
             QFxp(x_bitsize, x_bitsize, signed=False),
@@ -393,7 +440,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
         # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
         # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
+        x_fxp = Fxp(x / 2 ** self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
@@ -405,10 +452,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
-        return int(np.floor(result.astype(float) * 2**self.phase_dtype.bitsize) * sign)
+        return int(np.floor(result.astype(float) * 2 ** self.phase_dtype.bitsize) * sign)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+            self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.gamma, sympy.Expr):
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
@@ -422,7 +469,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                 # Left shift by `shift` bits / multiply by 2**shift
                 yield AddIntoPhaseGrad(
                     self.x_dtype.num_frac - shift, self.phase_bitsize, sign=sign
-                ).on_registers(x=x[shift + self.x_dtype.num_int :], phase_grad=phase_grad)
+                ).on_registers(x=x[shift + self.x_dtype.num_int:], phase_grad=phase_grad)
             elif -len(phase_grad) - self.x_dtype.num_int < shift < 0:
                 # Right shift by `shift` bits / divide by 2**shift
                 shift = abs(shift)
@@ -435,7 +482,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                 ).on_registers(x=x_qubits[:x_bitsize], phase_grad=phase_grad)
 
     def apply(
-        self, x: int, phase_grad: int
+            self, x: int, phase_grad: int
     ) -> Tuple[
         Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
     ]:
@@ -443,7 +490,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return out['x'], out['phase_grad']
 
     def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
+        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2 ** self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -464,15 +511,28 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return n * add_into_phase.t_complexity()
 
     def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
+            self,
+            tn: 'qtn.TensorNetwork',
+            tag: Any,
+            *,
+            incoming: Dict[str, 'SoquetT'],
+            outgoing: Dict[str, 'SoquetT'],
     ):
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
             self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
+
+
+@bloq_example
+def _add_scaled_val_into_phase_reg() -> AddScaledValIntoPhaseReg:
+    add_scaled_val_into_phase_reg = AddScaledValIntoPhaseReg(QFxp(2, 2), phase_bitsize=2, gamma=2, gamma_dtype=QFxp(2, 2))
+    return add_scaled_val_into_phase_reg
+
+
+_ADD_SCALED_VAL_INTO_PHASE_REG_DOC = BloqDocSpec(
+    bloq_cls=AddScaledValIntoPhaseReg,
+    import_line='from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad',
+    examples=(_add_scaled_val_into_phase_reg,),
+)
