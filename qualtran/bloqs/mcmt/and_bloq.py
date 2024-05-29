@@ -22,7 +22,6 @@ The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bi
 to the and of its control registers. `And` will output the result into a fresh register.
 """
 import itertools
-import numbers
 from functools import cached_property
 from typing import Any, Dict, Iterable, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
 
@@ -59,7 +58,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
 )
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics import is_symbolic, Length, SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -239,13 +238,14 @@ _AND_DOC = BloqDocSpec(
 )
 
 
-def _to_tuple(
-    x: Union[SymbolicInt, Iterable[SymbolicInt]]
-) -> Union[Length, Tuple[SymbolicInt, ...]]:
-    if isinstance(x, sympy.Expr):
-        return Length(x)
-    if isinstance(x, (numbers.Integral, int)):
-        return (1,) * x
+def _to_tuple_or_has_length(
+    x: Union[HasLength, Iterable[SymbolicInt]]
+) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
+    if isinstance(x, HasLength):
+        if is_symbolic(x.n):
+            return x
+        else:
+            return (1,) * x.n
     return tuple(x)
 
 
@@ -256,7 +256,7 @@ class MultiAnd(Bloq):
     Args:
         cvs: A tuple of control variable settings. Each entry specifies whether that
             control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
-            If a (symbolic) integer is passed, assumes the control values to be all 1's.
+            If a HasLength object is passed, assumes the control values to be all 1's.
 
 
     Registers:
@@ -265,20 +265,20 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Union[Length, Tuple[SymbolicInt, ...]] = field(converter=_to_tuple)
+    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
 
     @cvs.validator
     def _validate_cvs(self, field, val):
         if not is_symbolic(val) and len(val) < 3:
-            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
+            raise ValueError("MultiAnd must cvshave at least 3 control values `cvs`.")
 
     @property
-    def bitsize(self) -> SymbolicInt:
-        return self.cvs.bitsize if isinstance(self.cvs, Length) else len(self.cvs)
+    def n_ctrls(self) -> SymbolicInt:
+        return self.cvs.n if isinstance(self.cvs, HasLength) else len(self.cvs)
 
     @property
-    def control_values(self) -> Tuple[SymbolicInt, ...]:
-        if isinstance(self.cvs, Length):
+    def concrete_cvs(self) -> Tuple[SymbolicInt, ...]:
+        if isinstance(self.cvs, HasLength):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
 
@@ -286,8 +286,8 @@ class MultiAnd(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', QBit(), shape=(self.bitsize,)),
-                Register('junk', QBit(), shape=(self.bitsize - 2,), side=Side.RIGHT),
+                Register('ctrl', QBit(), shape=(self.n_ctrls,)),
+                Register('junk', QBit(), shape=(self.n_ctrls - 2,), side=Side.RIGHT),
                 Register('target', QBit(), side=Side.RIGHT),
             ]
         )
@@ -333,7 +333,7 @@ class MultiAnd(Bloq):
             quregs.get('junk', np.array([])).flatten(),
             quregs['target'].flatten(),
         )
-        yield self._decompose_via_tree(control, self.control_values, ancilla, *target)
+        yield self._decompose_via_tree(control, self.concrete_cvs, ancilla, *target)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -342,7 +342,7 @@ class MultiAnd(Bloq):
         if reg is None:
             return Text('And')
         if reg.name == 'ctrl':
-            return Circle(filled=self.control_values[idx[0]] == 1)
+            return Circle(filled=self.concrete_cvs[idx[0]] == 1)
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
         if len(idx) > 0:
@@ -355,12 +355,12 @@ class MultiAnd(Bloq):
         pre_post_cliffords = set()
         if not (
             is_symbolic(self.cvs)
-            or is_symbolic(*self.control_values)
-            or (self.bitsize == sum(self.control_values))
+            or is_symbolic(*self.concrete_cvs)
+            or (self.n_ctrls == sum(self.concrete_cvs))
         ):
-            pre_post_cliffords = {(XGate(), 2 * (self.bitsize - sum(self.control_values)))}
+            pre_post_cliffords = {(XGate(), 2 * (self.n_ctrls - sum(self.concrete_cvs)))}
 
-        return {(And(), self.bitsize - 1)} | pre_post_cliffords
+        return {(And(), self.n_ctrls - 1)} | pre_post_cliffords
 
 
 @bloq_example(generalizer=(ignore_cliffords, generalize_cvs))
@@ -373,7 +373,9 @@ def _multi_and() -> MultiAnd:
 def _multi_and_symb() -> MultiAnd:
     import sympy
 
-    multi_and_symb = MultiAnd(cvs=sympy.Symbol("n"))
+    from qualtran.symbolics.types import HasLength
+
+    multi_and_symb = MultiAnd(cvs=HasLength(sympy.Symbol("n")))
     return multi_and_symb
 
 

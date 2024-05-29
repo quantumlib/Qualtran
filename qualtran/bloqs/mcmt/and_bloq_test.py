@@ -27,6 +27,7 @@ from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroStat
 from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, get_musical_score_data
+from qualtran.symbolics.types import HasLength
 
 
 def test_and_bloq(bloq_autotester):
@@ -40,7 +41,7 @@ def test_multi_and(bloq_autotester):
 def test_multi_and_symb():
     # bloq-autotester will fail since `shape` cannot be symbolic right now.
     bloq = _multi_and_symb.make()
-    assert bloq.t_complexity().t == 4 * bloq.bitsize - 4
+    assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):
@@ -262,11 +263,13 @@ def test_multiand_diagram():
     )
 
 
-@pytest.mark.parametrize('gate', [MultiAnd(cvs=[0] * 10), MultiAnd(cvs=[1, 0] * 10), MultiAnd(10)])
+@pytest.mark.parametrize(
+    'gate', [MultiAnd(cvs=[0] * 10), MultiAnd(cvs=[1, 0] * 10), MultiAnd(cvs=HasLength(10))]
+)
 def test_multi_and_t_complexity(gate):
     def expected_complexity(gate: MultiAnd, adjoint: bool = False) -> TComplexity:
-        pre_post_cliffords = len(gate.control_values) - sum(
-            gate.control_values
+        pre_post_cliffords = len(gate.concrete_cvs) - sum(
+            gate.concrete_cvs
         )  # number of zeros in self.cv
         num_single_and = len(gate.cvs) - 1
         if adjoint:

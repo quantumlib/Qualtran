@@ -29,8 +29,8 @@ from qualtran.symbolics.math_funcs import (
     smin,
 )
 from qualtran.symbolics.types import (
+    HasLength,
     is_symbolic,
-    Length,
     Shaped,
     SymbolicComplex,
     SymbolicFloat,

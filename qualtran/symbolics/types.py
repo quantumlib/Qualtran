@@ -47,16 +47,20 @@ class Shaped:
 
 
 @frozen
-class Length:
-    """Symbolic value for an object that has a length."""
+class HasLength:
+    """Symbolic value for an object that has a length.
 
-    bitsize: SymbolicInt
+
+    Note that we cannot override __len__ and return a sympy symbol because Python has
+    special treatment for __len__ and expects you to return a non-negative integers.
+
+    See https://docs.python.org/3/reference/datamodel.html#object.__len__ for more details.
+    """
+
+    n: SymbolicInt
 
     def is_symbolic(self):
         return True
-
-    def __len__(self):
-        return self.bitsize
 
 
 def is_symbolic(*args) -> bool:
