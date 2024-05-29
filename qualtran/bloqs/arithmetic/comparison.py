@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import defaultdict
 from functools import cached_property
 from typing import (
     Dict,
@@ -48,11 +49,9 @@ from qualtran import (
 )
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 
@@ -556,26 +555,37 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
         yield from reversed(adjoint)
 
-    def _t_complexity_(self) -> TComplexity:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
-        if d == 0:
-            # When both registers are of the same size the T complexity is
-            # 8n - 4 same as in the second reference.
-            return TComplexity(t=8 * n - 4, clifford=46 * n - 21)
-        else:
-            # When the registers differ in size and `n` is the size of the smaller one and
-            # `d` is the difference in size. The T complexity is the sum of the tree
-            # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
-            # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
-            # From the decomposition we get that the constant is -4 as well as the clifford counts.
+        ret: Dict['Bloq', int] = defaultdict(lambda: 0)
+        if d > 0:
             if d == 1:
-                return TComplexity(t=8 * n, clifford=46 * n - 1 + 2 * is_second_longer)
+                ret[CNOT()] += 2
+                ret[XGate()] += 2
+            elif d == 2:
+                ret[And(0, 0)] += 1
+                ret[And(0, 0).adjoint()] += 1
             else:
-                return TComplexity(
-                    t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 18 + 2 * is_second_longer
-                )
+                ret[MultiAnd(cvs=[0] * d)] += 1
+                ret[MultiAnd(cvs=[0] * d).adjoint()] += 1
+            if is_second_longer:
+                ret[CNOT()] += 1
+                ret[XGate()] += 1
+        ret[BiQubitsMixer()] += n - 1
+        ret[BiQubitsMixer().adjoint()] += n - 1
+        ret[SingleQubitCompare()] += 1
+        ret[SingleQubitCompare().adjoint()] += 1
+        if not d:
+            ret[XGate()] += 1
+            ret[CNOT()] += 1
+        else:
+            ret[And(1, 0)] += 1
+            ret[And(1, 0).adjoint()] += 1
+            ret[CNOT()] += 1
+
+        return set(ret.items())
 
     def _has_unitary_(self):
         return True
