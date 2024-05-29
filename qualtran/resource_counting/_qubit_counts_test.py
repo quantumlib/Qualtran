@@ -18,12 +18,12 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import QAny
 from qualtran.bloqs.basic_gates import Swap, TwoBitSwap
+from qualtran.bloqs.bookkeeping import Allocate, Free
 from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
 from qualtran.bloqs.for_testing.with_decomposition import (
     TestIndependentParallelCombo,
     TestSerialCombo,
 )
-from qualtran.bloqs.bookkeeping import Allocate, Free
 from qualtran.drawing import show_bloq
 from qualtran.resource_counting import get_cost_cache, QubitCount
 from qualtran.resource_counting._qubit_counts import _cbloq_max_width
