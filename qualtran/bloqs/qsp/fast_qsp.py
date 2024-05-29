@@ -55,7 +55,7 @@ class FastComplementaryQSPHelper:
         return real_part + 1.0j * imag_part
 
     @staticmethod
-    def conv_by_flip_conj( poly):
+    def conv_by_flip_conj(poly):
         return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
 
     def complex_conv_by_flip_conj(self, real_part: NDArray, imag_part: NDArray):
