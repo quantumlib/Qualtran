@@ -1,4 +1,4 @@
-#  Copyright 2024 Google LLC
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Bloqs for virtual operations and register reshaping."""
+import subprocess
 
-from qualtran.bloqs.bookkeeping.allocate import Allocate
-from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
-from qualtran.bloqs.bookkeeping.cast import Cast
-from qualtran.bloqs.bookkeeping.free import Free
-from qualtran.bloqs.bookkeeping.join import Join
-from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.bookkeeping.power import Power
-from qualtran.bloqs.bookkeeping.split import Split
+
+def test_no_circular_import():
+    subprocess.check_call(
+        ['python', '-c', 'from qualtran.bloqs.bookkeeping import arbitrary_clifford']
+    )
