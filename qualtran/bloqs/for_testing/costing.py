@@ -24,6 +24,13 @@ def _convert_callees(callees: Sequence[BloqCountT]) -> Tuple[BloqCountT, ...]:
     return tuple(callees)
 
 
+def _convert_static_costs(
+    static_costs: Sequence[Tuple[CostKey, Any]]
+) -> Tuple[Tuple[CostKey, Any], ...]:
+    # Convert to tuples in a type-checked way.
+    return tuple(static_costs)
+
+
 @frozen
 class CostingBloq(Bloq):
     """A bloq that lets you set the costs via attributes."""
@@ -31,7 +38,9 @@ class CostingBloq(Bloq):
     name: str
     num_qubits: int
     callees: Sequence[BloqCountT] = field(converter=_convert_callees, factory=tuple)
-    static_costs: Sequence[Tuple[CostKey, Any]] = field(converter=tuple, factory=tuple)
+    static_costs: Sequence[Tuple[CostKey, Any]] = field(
+        converter=_convert_static_costs, factory=tuple
+    )
 
     @property
     def signature(self) -> 'Signature':
