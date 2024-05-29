@@ -46,6 +46,19 @@ class Shaped:
         return True
 
 
+@frozen
+class Length:
+    """Symbolic value for an object that has a length."""
+
+    bitsize: SymbolicInt
+
+    def is_symbolic(self):
+        return True
+
+    def __len__(self):
+        return self.bitsize
+
+
 def is_symbolic(*args) -> bool:
     """Returns whether the inputs contain any symbolic object.
 

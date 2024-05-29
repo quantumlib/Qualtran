@@ -30,6 +30,7 @@ from qualtran.symbolics.math_funcs import (
 )
 from qualtran.symbolics.types import (
     is_symbolic,
+    Length,
     Shaped,
     SymbolicComplex,
     SymbolicFloat,

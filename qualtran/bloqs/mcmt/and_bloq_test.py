@@ -24,7 +24,8 @@ from attrs import frozen
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
-from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, And, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, get_musical_score_data
 
 
@@ -34,6 +35,12 @@ def test_and_bloq(bloq_autotester):
 
 def test_multi_and(bloq_autotester):
     bloq_autotester(_multi_and)
+
+
+def test_multi_and_symb():
+    # bloq-autotester will fail since `shape` cannot be symbolic right now.
+    bloq = _multi_and_symb.make()
+    assert bloq.t_complexity().t == 4 * bloq.bitsize - 4
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):
@@ -253,3 +260,20 @@ def test_multiand_diagram():
       │
 4: ───∧─────────""",
     )
+
+
+@pytest.mark.parametrize('gate', [MultiAnd(cvs=[0] * 10), MultiAnd(cvs=[1, 0] * 10), MultiAnd(10)])
+def test_multi_and_t_complexity(gate):
+    def expected_complexity(gate: MultiAnd, adjoint: bool = False) -> TComplexity:
+        pre_post_cliffords = len(gate.control_values) - sum(
+            gate.control_values
+        )  # number of zeros in self.cv
+        num_single_and = len(gate.cvs) - 1
+        if adjoint:
+            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
+        return TComplexity(
+            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+        )
+
+    assert gate.t_complexity() == expected_complexity(gate)
+    assert gate.adjoint().t_complexity() == expected_complexity(gate, adjoint=True)
