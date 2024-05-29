@@ -372,7 +372,7 @@ class PrettyGraphDrawer(GraphDrawer):
         return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
 
     def get_binst_header_text(self, binst: BloqInstance):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
@@ -383,7 +383,7 @@ class PrettyGraphDrawer(GraphDrawer):
         return f'<font point-size="10">{html.escape(wire_symbol_title)}</font>'
 
     def soq_label(self, soq: Soquet):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, (Split, Join)):
             return ''

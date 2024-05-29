@@ -32,7 +32,7 @@ CV = sympy.Symbol("cv")
 
 def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores split and join operations."""
-    from qualtran.bloqs.util_bloqs import Cast, Join, Partition, Split
+    from qualtran.bloqs.bookkeeping import Cast, Join, Partition, Split
 
     if isinstance(b, (Split, Join, Partition, Cast)):
         return None
@@ -41,7 +41,7 @@ def ignore_split_join(b: Bloq) -> Optional[Bloq]:
 
 def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores allocations and frees."""
-    from qualtran.bloqs.util_bloqs import Allocate, Free
+    from qualtran.bloqs.bookkeeping import Allocate, Free
 
     if isinstance(b, (Allocate, Free)):
         return None
@@ -80,8 +80,8 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
     from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
-    from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
     if isinstance(b, Adjoint):
         b = b.subbloq
