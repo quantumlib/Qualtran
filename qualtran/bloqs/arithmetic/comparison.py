@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import defaultdict
 from functools import cached_property
 from typing import (
     Dict,
@@ -51,7 +52,6 @@ from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 
@@ -110,7 +110,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
-        """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
+        """Decomposes the gate into N And & And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
         qubit while maintaining whether the qubit sequence is equal to the current prefix of the
@@ -173,11 +173,16 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def _has_unitary_(self):
         return True
 
-    def _t_complexity_(self) -> TComplexity:
-        n = self.bitsize
-        if self.less_than_val >= 2**n:
-            return TComplexity(clifford=1)
-        return TComplexity(t=4 * n, clifford=15 * n + 3 * bin(self.less_than_val).count("1") + 2)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.less_than_val >= 2**self.bitsize:
+            return {(XGate(), 1)}
+        num_set_bits = self.less_than_val.bit_count()
+        return {
+            (And(), self.bitsize),
+            (And().adjoint(), self.bitsize),
+            (CNOT(), num_set_bits + 2 * self.bitsize),
+            (XGate(), 2 * (1 + num_set_bits)),
+        }
 
 
 @bloq_example
@@ -285,10 +290,8 @@ class BiQubitsMixer(GateWithRegisters):
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.is_adjoint:
-            return TComplexity(clifford=18)
-        return TComplexity(t=8, clifford=28)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(XGate(), 1), (CNOT(), 9), (And(uncompute=self.is_adjoint), 2)}
 
     def _has_unitary_(self):
         return not self.is_adjoint
@@ -360,10 +363,8 @@ class SingleQubitCompare(GateWithRegisters):
             return self.adjoint()
         return self
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.is_adjoint:
-            return TComplexity(clifford=11)
-        return TComplexity(t=4, clifford=16)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(XGate(), 1), (CNOT(), 4), (And(uncompute=self.is_adjoint), 1)}
 
 
 @bloq_example
@@ -554,26 +555,37 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
         yield from reversed(adjoint)
 
-    def _t_complexity_(self) -> TComplexity:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
-        if d == 0:
-            # When both registers are of the same size the T complexity is
-            # 8n - 4 same as in the second reference.
-            return TComplexity(t=8 * n - 4, clifford=46 * n - 17)
-        else:
-            # When the registers differ in size and `n` is the size of the smaller one and
-            # `d` is the difference in size. The T complexity is the sum of the tree
-            # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
-            # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
-            # From the decomposition we get that the constant is -4 as well as the clifford counts.
+        ret: Dict['Bloq', int] = defaultdict(lambda: 0)
+        if d > 0:
             if d == 1:
-                return TComplexity(t=8 * n, clifford=46 * n + 3 + 2 * is_second_longer)
+                ret[CNOT()] += 2
+                ret[XGate()] += 2
+            elif d == 2:
+                ret[And(0, 0)] += 1
+                ret[And(0, 0).adjoint()] += 1
             else:
-                return TComplexity(
-                    t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 14 + 2 * is_second_longer
-                )
+                ret[MultiAnd(cvs=[0] * d)] += 1
+                ret[MultiAnd(cvs=[0] * d).adjoint()] += 1
+            if is_second_longer:
+                ret[CNOT()] += 1
+                ret[XGate()] += 1
+        ret[BiQubitsMixer()] += n - 1
+        ret[BiQubitsMixer().adjoint()] += n - 1
+        ret[SingleQubitCompare()] += 1
+        ret[SingleQubitCompare().adjoint()] += 1
+        if not d:
+            ret[XGate()] += 1
+            ret[CNOT()] += 1
+        else:
+            ret[And(1, 0)] += 1
+            ret[And(1, 0).adjoint()] += 1
+            ret[CNOT()] += 1
+
+        return set(ret.items())
 
     def _has_unitary_(self):
         return True
