@@ -33,7 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.bloqs.bookkeeping import Split, Join
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
