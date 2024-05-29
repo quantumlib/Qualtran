@@ -368,7 +368,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         if abs(power) == 1:
             return bloq
         if all(reg.side == Side.THRU for reg in self.signature):
-            from qualtran.bloqs.bookkeeping import Power
+            from qualtran.bloqs.basic_gates import Power
 
             return Power(bloq, abs(power))
         raise NotImplementedError(f"{self} does not implemented __pow__ for {power=}.")
