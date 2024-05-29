@@ -24,12 +24,14 @@ from qualtran.bloqs.arithmetic.comparison import (
     _eq_k,
     _greater_than,
     _gt_k,
+    BiQubitsMixer,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
     LinearDepthGreaterThan,
+    SingleQubitCompare,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -116,11 +118,28 @@ def test_decompose_less_than_gate(bits: int, val: int):
 @pytest.mark.parametrize("val", [3, 4, 5, 7, 8, 9])
 def test_less_than_consistent_protocols(n: int, val: int):
     g = LessThanConstant(n, val)
-    assert_decompose_is_consistent_with_t_complexity(g)
+    expected_t_complexity = (
+        TComplexity(clifford=1)
+        if val >= 2**n
+        else TComplexity(t=4 * n, clifford=15 * n + 3 * bin(val).count("1") + 2)
+    )
+    assert g.t_complexity() == expected_t_complexity
     # Test the unitary is self-inverse
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (n + 1)))
     qlt_testing.assert_valid_bloq_decomposition(g)
+
+
+def test_bi_qubits_mixer_t_complexity():
+    g = BiQubitsMixer()
+    assert g.t_complexity() == TComplexity(t=8, clifford=28)
+    assert g.adjoint().t_complexity() == TComplexity(clifford=18)
+
+
+def test_single_qubit_compare_t_complexity():
+    g = SingleQubitCompare()
+    assert g.t_complexity() == TComplexity(t=4, clifford=14)
+    assert g.adjoint().t_complexity() == TComplexity(clifford=9)
 
 
 def test_multi_in_less_equal_than_gate():
