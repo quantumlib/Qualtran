@@ -22,8 +22,8 @@ import pytest
 from attrs import frozen
 
 from qualtran import QAny, QBit, Register
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
-from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import bit_tools
 from qualtran.cirq_interop import testing as cq_testing
 from qualtran.testing import assert_valid_bloq_decomposition

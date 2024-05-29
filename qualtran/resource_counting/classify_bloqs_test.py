@@ -23,7 +23,7 @@ from qualtran.bloqs.arithmetic.comparison import LessThanConstant
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections import Reflection
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.resource_counting import BloqCountT
 from qualtran.resource_counting.classify_bloqs import (

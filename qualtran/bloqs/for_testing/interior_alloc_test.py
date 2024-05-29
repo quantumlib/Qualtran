@@ -14,8 +14,8 @@
 import qualtran.testing as qlt_testing
 from qualtran import QAny
 from qualtran.bloqs.basic_gates.swap import Swap
+from qualtran.bloqs.bookkeeping import Allocate, Free
 from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
-from qualtran.bloqs.util_bloqs import Allocate, Free
 
 
 def test_interior_alloc():
