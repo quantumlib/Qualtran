@@ -113,7 +113,7 @@ def test_generalize_cvs():
         Join(QAny(bitsize=5)),
         TwoBitSwap(),
         And(CV, CV),  # changed
-        MultiAnd((CV,) * 4),  # changed
+        MultiAnd((1,) * 4),  # changed
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
@@ -180,7 +180,7 @@ def test_many_generalizers():
         # Join(QAny(n=5)),
         # TwoBitSwap(),
         And(CV, CV),
-        MultiAnd((CV,) * 4),
+        MultiAnd((1,) * 4),  # changed
         Rx(PHI),
         # Allocate(QAny(n=5)),
         # Free(QAny(n=5)),

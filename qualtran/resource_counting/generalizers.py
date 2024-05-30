@@ -24,7 +24,8 @@ from typing import Optional
 import attrs
 import sympy
 
-from qualtran import Adjoint, Bloq
+from qualtran import Bloq
+from qualtran.symbolics import HasLength
 
 PHI = sympy.Symbol(r'\phi')
 CV = sympy.Symbol("cv")
@@ -72,25 +73,17 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
     if isinstance(b, MultiAnd):
-        return attrs.evolve(b, cvs=(CV,) * len(b.cvs))
+        return attrs.evolve(b, cvs=HasLength(b.n_ctrls))
 
     return b
 
 
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
-    from qualtran.bloqs.bookkeeping import ArbitraryClifford
-    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
+    from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
 
-    if isinstance(b, Adjoint):
-        b = b.subbloq
-
-    if isinstance(
-        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT, SGate)
-    ):
+    if bloq_is_clifford(b):
         return None
-
     return b
 
 
