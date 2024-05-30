@@ -29,7 +29,7 @@ from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
-from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicInt
+from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -51,7 +51,7 @@ def find_optimal_log_block_size(
         return ceil(k)
 
     if k < 0:
-        return 1
+        return 0
 
     def value(kk: List[int]):
         return iteration_length / np.power(2, kk) + target_bitsize * (np.power(2, kk) - 1)
@@ -120,10 +120,10 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     # Builder methods and helpers.
     @log_block_sizes.default
     def _default_block_sizes(self) -> Tuple[SymbolicInt, ...]:
-        return tuple(
-            find_optimal_log_block_size(ilen, sbitsize)
-            for ilen, sbitsize in zip(self.data_shape, self.selection_bitsizes)
+        target_bitsize = sum(self.target_bitsizes) * sum(
+            prod(*shape) for shape in self.target_shapes
         )
+        return tuple(find_optimal_log_block_size(ilen, target_bitsize) for ilen in self.data_shape)
 
     @classmethod
     def build_from_data(
