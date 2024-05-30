@@ -53,7 +53,7 @@ class GlobalPhase(CirqGateAsBloqBase):
         return 'GPhase'
 
     def __str__(self) -> str:
-        return str(self.coefficient)
+        return f'GPhase({self.coefficient})'
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
