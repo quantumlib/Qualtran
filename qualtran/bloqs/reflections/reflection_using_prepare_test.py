@@ -13,19 +13,29 @@
 #  limitations under the License.
 
 import itertools
+from typing import Optional
 
 import cirq
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 
+from qualtran import Bloq
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
+from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
-from qualtran.bloqs.reflections import ReflectionUsingPrepare
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.resource_counting.generalizers import (
+    ignore_alloc_free,
+    ignore_cliffords,
+    ignore_split_join,
+)
 from qualtran.testing import assert_valid_bloq_decomposition
 
 gateset_to_keep = cirq.Gateset(
@@ -224,3 +234,54 @@ def test_reflection_using_prepare_consistent_protocols_and_controlled():
         gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
+
+
+def test_reflection_around_zero():
+    def ref_state(nqubits: int) -> NDArray:
+        zero = np.zeros(shape=(2**nqubits, 2**nqubits))
+        zero[0, 0] = 2.0
+        zero -= np.eye(2**nqubits)
+        return zero
+
+    # Check the tensor is 2|0><0| - 1
+    bitsizes = (1,)
+    zero_prep = PrepareIdentity.from_bitsizes(bitsizes)
+    bloq = ReflectionUsingPrepare(zero_prep, global_phase=-1)
+    assert np.allclose(bloq.tensor_contract(), ref_state(1))
+    bitsizes = (1, 2)
+    zero_prep = PrepareIdentity.from_bitsizes(bitsizes)
+    bloq = ReflectionUsingPrepare(zero_prep, global_phase=-1)
+    assert np.allclose(bloq.tensor_contract(), ref_state(3))
+
+
+@pytest.mark.parametrize('global_phase', [+1, -1j])
+@pytest.mark.parametrize('control_val', [None, 0, 1])
+def test_call_graph_matches_decomp(global_phase, control_val):
+    data = [1] * 5
+    eps = 1e-11
+    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=0.01)
+
+    def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
+        # Hack to catch the fact that cirq special cases some ZPowGates
+        if isinstance(bloq, ZPowGate) and np.isclose(
+            float(bloq.exponent), np.angle(global_phase) / np.pi
+        ):
+            # we're already ignoring cliffords
+            return None
+        return bloq
+
+    gate = ReflectionUsingPrepare(
+        prepare_gate, global_phase=global_phase, eps=eps, control_val=control_val
+    )
+    cost_decomp = gate.decompose_bloq().call_graph(
+        generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
+    )[1]
+    cost_call = gate.call_graph(
+        generalizer=[
+            ignore_split_join,
+            ignore_alloc_free,
+            ignore_cliffords,
+            catch_zpow_bloq_s_gate_inv,
+        ]
+    )[1]
+    assert cost_decomp == cost_call
