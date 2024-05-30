@@ -38,7 +38,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.reflections import ReflectionUsingPrepare
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,

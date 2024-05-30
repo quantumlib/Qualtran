@@ -22,7 +22,7 @@ def test_costing_bloqs():
     assert (
         format_call_graph_debug_text(g)
         == """\
-Algo -- 1 -> Func1
+Algo -- 2 -> Func1
 Algo -- 1 -> Func2
 Func1 -- 10 -> Hadamard()
 Func1 -- 10 -> TGate()
