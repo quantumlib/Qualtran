@@ -85,6 +85,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
+    QAny,
+    Register,
     Signature,
     Soquet,
     SoquetT,
@@ -189,9 +191,7 @@ class StatePreparationViaRotations(GateWithRegisters):
                 qi, self.phase_bitsize, tuple(rom_vals[qi]), self.control_bitsize + 1
             )
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
-            if qi:
-                # first qubit does not have selection registers, only controls
-                soqs["selection"] = bb.join(state_qubits[:qi])
+            soqs["selection"] = bb.join(state_qubits[:qi])
             if self.control_bitsize > 1:
                 soqs["control"] = bb.join(
                     np.array(
@@ -207,8 +207,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             if self.control_bitsize != 0:
                 soqs["prepare_control"] = bb.join(separated[:-1])
             state_qubits[qi] = separated[-1]
-            if qi:
-                state_qubits[:qi] = bb.split(cast(Soquet, soqs.pop("selection")))
+            state_qubits[:qi] = bb.split(cast(Soquet, soqs.pop("selection")))
             state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[qi])
 
         soqs["target_state"] = bb.join(state_qubits)
@@ -317,10 +316,12 @@ class PRGAViaPhaseGradient(Bloq):
 
     @property
     def signature(self) -> Signature:
-        return Signature.build(
-            control=self.control_bitsize,
-            selection=self.selection_bitsize,
-            phase_gradient=self.phase_bitsize,
+        return Signature(
+            [
+                Register("control", QAny(self.control_bitsize)),
+                Register("selection", QAny(self.selection_bitsize)),
+                Register("phase_gradient", QAny(self.phase_bitsize)),
+            ]
         )
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
