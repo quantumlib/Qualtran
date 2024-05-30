@@ -94,6 +94,8 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
+import qualtran.bloqs.reflections.prepare_identity
+import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -531,9 +533,12 @@ OTHER: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
-        title='Reflection',
+        title='Reflections',
         module=qualtran.bloqs.reflections,
-        bloq_specs=[qualtran.bloqs.reflections.reflection._REFLECTION_DOC],
+        bloq_specs=[
+            qualtran.bloqs.reflections.prepare_identity._PREPARE_IDENTITY_DOC,
+            qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(

@@ -13,44 +13,54 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import (
     merge_qubits,
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
+from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+from qualtran.bloqs.basic_gates.rotation import ZPowGate
+from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics.types import SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen(cache_hash=True)
 class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
-    Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$
-    s.t. $P|0> = |s>$.
+    Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =
+    P(I - 2|0\rangle\langle0|)P^{\dagger}$ s.t. $P|0\rangle = |s\rangle$.
 
-    Here
-        $|s>$: The state along which we want to reflect.
-        $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$
-        $R_{s}$: Reflection operator that adds a `-1` phase to all states in the subspace
-            spanned by $|s>$.
-        $g$: The global phase to control the behavior of the reflection. For example:
-            We often use $g=-1$ in literature to denote the reflection operator as
-            $R_{s} = -1 (I - 2|s><s|) = 2|s><s| - I$
+    Here:
+    - $|s\rangle$: The state along which we want to reflect.
+    - $P$: Unitary that prepares that state $|s\rangle $ from the zero state $|0\rangle$
+    - $R_{s}$: Reflection operator that adds a `-1` phase to all states in the subspace
+        spanned by $|s\rangle$.
+    - $g$: The global phase to control the behavior of the reflection. For example:
+        We often use $g=-1$ in literature to denote the reflection operator as
+        $R_{s} = -1 (I - 2|s\rangle\langle s|) = 2|s\rangle\langle s| - I$
 
     The composite gate corresponds to implementing the following circuit:
 
+    ```
     |control> ------------------ Z -------------------
                                  |
     |L>       ---- PREPARE^† --- o --- PREPARE -------
+    ```
 
 
     Args:
@@ -59,16 +69,18 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             Defaults to None, in which case the resulting reflection operator is not controlled.
         global_phase: The global phase to apply in front of the reflection operator. When building a
             controlled reflection operator, the global phase translates into a relative phase.
+        eps: precision for implementation of rotation. Only relevant if
+            global_phase is arbitrary angle and gate is not controlled.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. (2018). Figure 1.
     """
 
     prepare_gate: PrepareOracle
     control_val: Optional[int] = None
     global_phase: complex = 1
+    eps: float = 1e-11
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -81,6 +93,33 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
     @cached_property
     def signature(self) -> Signature:
         return Signature([*self.control_registers, *self.selection_registers])
+
+    @classmethod
+    def reflection_around_zero(
+        cls,
+        bitsizes: Sequence[SymbolicInt],
+        control_val: Optional[int] = None,
+        global_phase: complex = 1,
+        eps: float = 1e-11,
+    ) -> 'ReflectionUsingPrepare':
+        """Build a reflection around zero bloq.
+
+        Args:
+            bitsizes: A list of bitsizes for the selection registers.
+            control_val: If 0/1, a controlled version of the reflection operator is constructed.
+                Defaults to None, in which case the resulting reflection operator is not controlled.
+            global_phase: The global phase to apply in front of the reflection operator. When
+                building a controlled reflection operator, the global phase translates into a
+                relative phase.
+            eps: precision for implementation of rotation. Only relevant if
+                global_phase is arbitrary angle and gate is not controlled.
+        """
+        from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+
+        prepare_gate = PrepareIdentity.from_bitsizes(bitsizes=bitsizes)
+        return ReflectionUsingPrepare(
+            prepare_gate, control_val=control_val, global_phase=global_phase, eps=eps
+        )
 
     def decompose_from_registers(
         self,
@@ -110,7 +149,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
         )
         if self.global_phase != 1:
             if self.control_val is None:
-                yield cirq.global_phase_operation(self.global_phase)
+                yield cirq.global_phase_operation(self.global_phase, atol=self.eps)
             else:
                 yield cirq.Z(phase_target) ** (np.angle(self.global_phase) / np.pi)
         yield cirq.X(phase_target) if not self.control_val else []
@@ -126,3 +165,48 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
+        costs: Set['BloqCountT'] = {
+            (self.prepare_gate, 1),
+            (self.prepare_gate.adjoint(), 1),
+            (MultiControlPauli([0] * n_phase_control, target_gate=cirq.Z), 1),
+        }
+        if self.control_val is None:
+            costs.add((XGate(), 2))
+        if self.global_phase != 1:
+            if self.control_val is None:
+                costs.add((GlobalPhase(self.global_phase, self.eps), 1))
+            else:
+                costs.add(
+                    (ZPowGate(exponent=float(np.angle(self.global_phase)) / np.pi, eps=self.eps), 1)
+                )
+        return costs
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _refl_using_prep() -> ReflectionUsingPrepare:
+    from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+
+    data = [1] * 5
+    eps = 1e-2
+    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+
+    refl_using_prep = ReflectionUsingPrepare(prepare_gate)
+    return refl_using_prep
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _refl_around_zero() -> ReflectionUsingPrepare:
+    refl_around_zero = ReflectionUsingPrepare.reflection_around_zero(
+        bitsizes=(1, 2, 3), global_phase=-1, control_val=1
+    )
+    return refl_around_zero
+
+
+_REFL_USING_PREP_DOC = BloqDocSpec(
+    bloq_cls=ReflectionUsingPrepare,
+    import_line='from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare',
+    examples=(_refl_using_prep, _refl_around_zero),
+)
