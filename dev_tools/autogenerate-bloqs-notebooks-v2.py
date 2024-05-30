@@ -441,7 +441,7 @@ ROT_QFT_PE = [
             qualtran.bloqs.rotations.phase_gradient._PHASE_GRADIENT_STATE_DOC,
             qualtran.bloqs.rotations.phase_gradient._ADD_INTO_PHASE_GRAD_DOC,
             qualtran.bloqs.rotations.phase_gradient._ADD_SCALED_VAL_INTO_PHASE_REG_DOC,
-        ]
+        ],
     ),
     NotebookSpecV2(
         title='Z Rotations via Hamming Weight Phasing',
@@ -455,7 +455,7 @@ ROT_QFT_PE = [
         title='Programmable Rotation Gate Array',
         module=qualtran.bloqs.rotations.programmable_rotation_gate_array,
         bloq_specs=[
-            qualtran.bloqs.rotations.programmable_rotation_gate_array._PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC,
+            qualtran.bloqs.rotations.programmable_rotation_gate_array._PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC
         ],
     ),
     # --------------------------------------------------------------------------

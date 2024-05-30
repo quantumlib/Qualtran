@@ -21,7 +21,15 @@ import numpy as np
 from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, BloqDocSpec, bloq_example
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BoundedQUInt,
+    GateWithRegisters,
+    QAny,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -98,7 +106,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     @abc.abstractmethod
     def interleaved_unitary(
-            self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type:ignore[type-var]
+        self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type:ignore[type-var]
     ) -> cirq.Operation:
         pass
 
@@ -131,7 +139,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         )
 
     def decompose_from_registers(
-            self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
         rotations_target = quregs.pop('rotations_target')
@@ -186,11 +194,11 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
     """
 
     def __init__(
-            self,
-            *angles: Sequence[int],
-            kappa: int,
-            rotation_gate: cirq.Gate,
-            interleaved_unitaries: Sequence[cirq.Gate] = (),
+        self,
+        *angles: Sequence[int],
+        kappa: int,
+        rotation_gate: cirq.Gate,
+        interleaved_unitaries: Sequence[cirq.Gate] = (),
     ):
         super().__init__(*angles, kappa=kappa, rotation_gate=rotation_gate)
         if not interleaved_unitaries:
@@ -210,8 +218,9 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
 
 @bloq_example
 def _programmable_rotation_gate_array() -> ProgrammableRotationGateArray:
-    programmable_rotation_gate_array = ProgrammableRotationGateArray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], kappa=2,
-                                                                     rotation_gate=cirq.Z)
+    programmable_rotation_gate_array = ProgrammableRotationGateArray(
+        [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], kappa=2, rotation_gate=cirq.Z
+    )
     return programmable_rotation_gate_array
 
 
