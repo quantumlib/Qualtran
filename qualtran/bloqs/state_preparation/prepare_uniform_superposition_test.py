@@ -21,11 +21,11 @@ from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     _c_prep_uniform,
     _prep_uniform,
-    PrepareUniformSuperposition,
     _prep_uniform_symb,
+    PrepareUniformSuperposition,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
-from qualtran.symbolics import log2, ceil
+from qualtran.symbolics import ceil, log2
 
 
 def test_prep_uniform(bloq_autotester):

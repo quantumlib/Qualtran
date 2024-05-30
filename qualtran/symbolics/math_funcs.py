@@ -17,9 +17,9 @@ import numpy as np
 import sympy
 
 from qualtran.symbolics.types import (
+    HasLength,
     is_symbolic,
     Shaped,
-    HasLength,
     SymbolicComplex,
     SymbolicFloat,
     SymbolicInt,

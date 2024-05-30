@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple, Union, Set, TYPE_CHECKING, cast
+from typing import cast, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -22,23 +22,22 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import Hadamard, Rz
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, MultiAnd
 from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import (
-    bit_length,
-    HasLength,
-    SymbolicInt,
-    slen,
     acos,
+    bit_length,
     floor,
-    log2,
+    HasLength,
     is_symbolic,
+    log2,
+    slen,
+    SymbolicInt,
 )
-from qualtran.bloqs.basic_gates import Hadamard, Rz
-from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator, BloqCountT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
