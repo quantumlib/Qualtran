@@ -73,7 +73,8 @@ References:
 
 """
 
-from typing import cast, Dict, Iterable, List, Sequence, Tuple
+from collections import defaultdict
+from typing import cast, Dict, Iterable, List, Sequence, Set, Tuple, Union
 
 import attrs
 import numpy as np
@@ -92,7 +93,9 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+from qualtran.symbolics import bit_length, HasLength, is_symbolic, Shaped, slen, SymbolicInt
 
 
 def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
@@ -124,24 +127,28 @@ class StatePreparationViaRotations(GateWithRegisters):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
+    state_coefficients: Union[HasLength, Tuple[complex, ...]] = attrs.field(
+        converter=_to_tuple_or_has_length
+    )
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...] = attrs.field(converter=_to_tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 
     def __attrs_post_init__(self):
-        # a valid quantum state has a number of coefficients that is a power of two
-        assert len(self.state_coefficients) == 2**self.state_bitsize
-        # negative number of control bits is not allowed
-        assert self.control_bitsize >= 0
-        # the register to which the angle is written must be at least of size two
-        assert self.phase_bitsize > 1
-        # a valid quantum state must have norm one
-        assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
+        if not is_symbolic(self.state_coefficients):
+            # a valid quantum state has a number of coefficients that is a power of two
+            assert slen(self.state_coefficients) == 2**self.state_bitsize
+            # negative number of control bits is not allowed
+            assert self.control_bitsize >= 0
+            # the register to which the angle is written must be at least of size two
+            assert self.phase_bitsize > 1
+            # a valid quantum state must have norm one
+            assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
 
     @property
     def state_bitsize(self) -> int:
-        return (len(self.state_coefficients) - 1).bit_length()
+        L = slen(self.state_coefficients)
+        return bit_length(L) if is_symbolic(L) else (L - 1).bit_length()
 
     @property
     def signature(self) -> Signature:
@@ -151,43 +158,82 @@ class StatePreparationViaRotations(GateWithRegisters):
             phase_gradient=self.phase_bitsize,
         )
 
+    @property
+    def rotation_tree(self) -> 'RotationTree':
+        return RotationTree(np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute)
+
+    @property
+    def prga_prepare_amplitude(self) -> List['PRGAViaPhaseGradient']:
+        if is_symbolic(self.state_coefficients):
+            return [
+                PRGAViaPhaseGradient(
+                    self.state_bitsize,
+                    self.phase_bitsize,
+                    Shaped((self.state_coefficients.n,)),
+                    self.control_bitsize + 1,
+                )
+            ]
+        ret = []
+        ampl_rv, _ = self.rotation_tree.get_rom_vals()
+        for qi in range(self.state_bitsize):
+            ctrl_rot_q = PRGAViaPhaseGradient(
+                qi, self.phase_bitsize, tuple(ampl_rv[qi]), self.control_bitsize + 1
+            )
+            ret.append(ctrl_rot_q)
+        return ret
+
+    @property
+    def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
+        data_or_shape = (
+            Shaped((self.state_coefficients.n,))
+            if isinstance(self.state_coefficients, HasLength)
+            else tuple(self.rotation_tree.get_rom_vals()[1])
+        )
+        return PRGAViaPhaseGradient(
+            self.state_bitsize, self.phase_bitsize, data_or_shape, self.control_bitsize + 1
+        )
+
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         r"""Parameters:
         * prepare_control: only if control_bitsize != 0
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
-        rotation_tree = RotationTree(
-            np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute
-        )
-        ampl_rv, phase_rv = rotation_tree.get_rom_vals()
         if self.uncompute:
-            soqs = self._prepare_phases(phase_rv, bb, **soqs)
-            soqs = self._prepare_amplitudes(ampl_rv, bb, **soqs)
+            soqs = self._prepare_phases(bb, **soqs)
+            soqs = self._prepare_amplitudes(bb, **soqs)
         else:
-            soqs = self._prepare_amplitudes(ampl_rv, bb, **soqs)
-            soqs = self._prepare_phases(phase_rv, bb, **soqs)
+            soqs = self._prepare_amplitudes(bb, **soqs)
+            soqs = self._prepare_phases(bb, **soqs)
         return soqs
 
-    def _prepare_amplitudes(
-        self, rom_vals: List[List[int]], bb: BloqBuilder, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        ret = defaultdict(lambda: 0)
+        ret |= {
+            Rx(angle=-np.pi / 2): self.state_bitsize,
+            Rx(angle=np.pi / 2): self.state_bitsize,
+            XGate(): 2,
+            self.prga_prepare_phases: 1,
+        }
+        for bloq in self.prga_prepare_amplitude:
+            ret[bloq] += 1
+        return set(ret.items())
+
+    def _prepare_amplitudes(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         r"""Parameters into soqs:
         * prepare_control: only if control_bitsize != 0
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
         state_qubits = bb.split(cast(Soquet, soqs.pop("target_state")))
-        for i in range(self.state_bitsize):
+        ctrl_rot_bloqs = (
+            reversed(list(enumerate(self.prga_prepare_amplitude)))
+            if self.uncompute
+            else enumerate(self.prga_prepare_amplitude)
+        )
+        for qi, ctrl_rot_q in ctrl_rot_bloqs:
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
-            if self.uncompute:
-                qi = self.state_bitsize - i - 1
-            else:
-                qi = i
-            ctrl_rot_q = PRGAViaPhaseGradient(
-                qi, self.phase_bitsize, tuple(rom_vals[qi]), self.control_bitsize + 1
-            )
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
             if qi:
                 # first qubit does not have selection registers, only controls
@@ -214,9 +260,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         soqs["target_state"] = bb.join(state_qubits)
         return soqs
 
-    def _prepare_phases(
-        self, rom_vals: List[int], bb: BloqBuilder, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    def _prepare_phases(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         """Encodes the phase of each coefficient.
 
         Takes into account both the phase of the original coefficient and offsets caused by the
@@ -247,9 +291,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs["control"] = bb.join(np.array([soqs.pop("prepare_control"), rot_ancilla]))
         else:
             soqs["control"] = rot_ancilla
-        ctrl_rot = PRGAViaPhaseGradient(
-            self.state_bitsize, self.phase_bitsize, tuple(rom_vals), self.control_bitsize + 1
-        )
+        ctrl_rot = self.prga_prepare_phases
         # rename some registers to make them compatible with PRGAViaPhaseGradient
         soqs["selection"] = soqs.pop("target_state")
         soqs = bb.add_d(ctrl_rot, **soqs)
@@ -310,10 +352,10 @@ class PRGAViaPhaseGradient(Bloq):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    selection_bitsize: int
-    phase_bitsize: int
-    rom_values: Tuple[int, ...]
-    control_bitsize: int
+    selection_bitsize: SymbolicInt
+    phase_bitsize: SymbolicInt
+    rom_values: Union[Shaped, Tuple[int, ...]]
+    control_bitsize: SymbolicInt
 
     @property
     def signature(self) -> Signature:
@@ -323,35 +365,52 @@ class PRGAViaPhaseGradient(Bloq):
             phase_gradient=self.phase_bitsize,
         )
 
+    @property
+    def qrom_bloq(self) -> QROM:
+        return QROM(
+            (self.rom_values,),
+            selection_bitsizes=(self.selection_bitsize,),
+            target_bitsizes=(self.phase_bitsize,),
+            num_controls=self.control_bitsize,
+        )
+
+    @property
+    def add_into_phase_grad(self) -> AddIntoPhaseGrad:
+        return AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize)
+
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         """Parameters:
         * control
         * selection (not necessary if selection_bitsize == 0)
         * phase_gradient
         """
-        qrom = QROM(
-            [np.array(self.rom_values)],
-            selection_bitsizes=(self.selection_bitsize,),
-            target_bitsizes=(self.phase_bitsize,),
-            num_controls=self.control_bitsize,
-        )
         # allocate a register to store the rotation angle
         soqs["target0_"] = bb.allocate(self.phase_bitsize)
         phase_grad = soqs.pop("phase_gradient")
         # load angles in rot_reg (line 1 of eq (8) in [1])
-        soqs = bb.add_d(qrom, **soqs)
+        soqs = bb.add_d(self.qrom_bloq, **soqs)
         # phase kickback via phase_grad += rot_reg (line 2 of eq (8) in [1])
         soqs["target0_"], phase_grad = bb.add(
-            AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize),
-            x=soqs["target0_"],
-            phase_grad=phase_grad,
+            self.add_into_phase_grad, x=soqs["target0_"], phase_grad=phase_grad
         )
         # uncompute angle load in rot_reg to disentangle it from selection register
         # (line 1 of eq (8) in [1])
-        soqs = bb.add_d(qrom, **soqs)
+        soqs = bb.add_d(self.qrom_bloq.adjoint(), **soqs)
         soqs["phase_gradient"] = phase_grad
         bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(self.qrom_bloq, 1), (self.qrom_bloq.adjoint(), 1), (self.add_into_phase_grad, 1)}
+
+    def __repr__(self):
+        return (
+            f'PRGAViaPhaseGradient('
+            f'selection_bitsize={self.selection_bitsize}, '
+            f'phase_bitsize={self.phase_bitsize}, '
+            f'num_rom_values={slen(self.rom_values)}, '
+            f'control_bitsize={self.control_bitsize}, )'
+        )
 
 
 class RotationTree:

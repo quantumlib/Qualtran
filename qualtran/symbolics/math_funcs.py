@@ -17,6 +17,7 @@ import numpy as np
 import sympy
 
 from qualtran.symbolics.types import (
+    HasLength,
     is_symbolic,
     Shaped,
     SymbolicComplex,
@@ -102,6 +103,8 @@ def sconj(x: SymbolicComplex) -> SymbolicComplex:
 def slen(x: Union[Sized, Shaped]) -> SymbolicInt:
     if isinstance(x, Shaped):
         return x.shape[0]
+    if isinstance(x, HasLength):
+        return x.n
     return len(x)
 
 

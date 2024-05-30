@@ -148,7 +148,7 @@ class StatePreparationAliasSampling(PrepareOracle):
                 for more information.
         """
         mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
-        selection_bitsize = bit_length(n_coeff - 1)
+        selection_bitsize = bit_length(n_coeff)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
             selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
