@@ -298,3 +298,11 @@ def test_t_complexity_of_comparison_gates_notebook():
 @pytest.mark.notebook
 def test_comparison_notebook():
     qlt_testing.execute_notebook('comparison')
+
+
+@pytest.mark.parametrize('gate', [LessThanConstant(3, 3), LessThanEqual(3, 3)])
+def test_decomposition_frees_ancilla(gate):
+    op = gate(*cirq.LineQid.for_gate(gate))
+    qubit_manager = cirq.ops.GreedyQubitManager(prefix='_test')
+    _ = cirq.decompose(op, context=cirq.DecompositionContext(qubit_manager))
+    assert len(qubit_manager._used_qubits) == 0
