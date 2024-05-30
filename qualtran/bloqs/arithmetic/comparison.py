@@ -167,8 +167,9 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 # b_i=0, q_i=1 => current prefixes are not equal so we need to flip `are_equal`.
                 yield cirq.CNOT(a, are_equal)
                 adjoint.append(cirq.CNOT(a, are_equal))
-
         yield from reversed(adjoint)
+        context.qubit_manager.qfree(ancilla)
+        context.qubit_manager.qfree([are_equal])
 
     def _has_unitary_(self):
         return True
@@ -499,6 +500,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
+        input_qubits = set(lhs + rhs + [target])
 
         n = min(len(lhs), len(rhs))
 
@@ -554,6 +556,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
             yield cirq.CNOT(less_than_or_equal, target)
 
         yield from reversed(adjoint)
+        all_ancilla = set([q for op in adjoint for q in op.qubits if q not in input_qubits])
+        context.qubit_manager.qfree(all_ancilla)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = min(self.x_bitsize, self.y_bitsize)
