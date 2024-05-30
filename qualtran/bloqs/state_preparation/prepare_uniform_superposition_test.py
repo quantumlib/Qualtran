@@ -22,8 +22,10 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     _c_prep_uniform,
     _prep_uniform,
     PrepareUniformSuperposition,
+    _prep_uniform_symb,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
+from qualtran.symbolics import log2, ceil
 
 
 def test_prep_uniform(bloq_autotester):
@@ -32,6 +34,13 @@ def test_prep_uniform(bloq_autotester):
 
 def test_c_prep_uniform(bloq_autotester):
     bloq_autotester(_c_prep_uniform)
+
+
+def test_prep_uniform_symb():
+    bloq = _prep_uniform_symb.make()
+    # TODO: This should be 8logL instead because LessThanConst + LessThanConst.adjoint() should combined
+    # be n AND / AND^{dagger} gates. We are doing the work twice right now.
+    assert bloq.t_complexity().t == 12 * ceil(log2(bloq.n - 1)) - 4
 
 
 @pytest.mark.notebook

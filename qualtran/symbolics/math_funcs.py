@@ -19,6 +19,7 @@ import sympy
 from qualtran.symbolics.types import (
     is_symbolic,
     Shaped,
+    HasLength,
     SymbolicComplex,
     SymbolicFloat,
     SymbolicInt,
@@ -99,9 +100,11 @@ def sconj(x: SymbolicComplex) -> SymbolicComplex:
     return sympy.conjugate(x) if isinstance(x, sympy.Expr) else np.conjugate(x)
 
 
-def slen(x: Union[Sized, Shaped]) -> SymbolicInt:
+def slen(x: Union[Sized, Shaped, HasLength]) -> SymbolicInt:
     if isinstance(x, Shaped):
         return x.shape[0]
+    if isinstance(x, HasLength):
+        return x.n
     return len(x)
 
 
