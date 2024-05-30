@@ -36,8 +36,9 @@ from qualtran.testing import assert_valid_bloq_decomposition
             id=f"{block_size}-data{didx}",
             marks=pytest.mark.slow if block_size == 2 and didx == 0 else (),
         )
-        for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
+        for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]], [[1], [2], [3]]])
         for block_size in [None, 0, 1]
+        if block_size is None or 2**block_size <= len(data[0])
     ],
 )
 def test_select_swap_qrom(data, block_size):
@@ -45,7 +46,7 @@ def test_select_swap_qrom(data, block_size):
     assert_valid_bloq_decomposition(qrom)
 
     qubit_regs = get_named_qubits(qrom.signature)
-    selection = qubit_regs["selection"]
+    selection = qubit_regs.get("selection", ())
     q_len = qrom.batched_qrom_selection_bitsizes[0]
     assert isinstance(q_len, int)
     selection_q, selection_r = (selection[:q_len], selection[q_len:])
@@ -94,7 +95,6 @@ def test_select_swap_qrom(data, block_size):
 
 def test_qroam_diagram():
     data = [[1, 2, 3], [4, 5, 6]]
-    blocksize = 2
     qrom = SelectSwapQROM.build_from_data(*data, log_block_sizes=(1,))
     q = cirq.LineQubit.range(cirq.num_qubits(qrom))
     circuit = cirq.Circuit(qrom.on_registers(**split_qubits(qrom.signature, q)))

@@ -20,7 +20,7 @@ import attrs
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncodingZeroState
-from qualtran.bloqs.reflections import Reflection
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -76,10 +76,11 @@ class ChebyshevPolynomial(Bloq):
             ]
         )
 
-    def build_reflection_bloq(self) -> Reflection:
-        refl_bitsizes = (r.bitsize for r in self.block_encoding.selection_registers)
-        num_regs = len(self.block_encoding.selection_registers)
-        return Reflection(bitsizes=refl_bitsizes, cvs=(0,) * num_regs)
+    def build_reflection_bloq(self) -> 'ReflectionUsingPrepare':
+        refl_bitsizes = tuple(r.bitsize for r in self.block_encoding.selection_registers)
+        return ReflectionUsingPrepare.reflection_around_zero(
+            bitsizes=refl_bitsizes, global_phase=-1
+        )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         # includes selection registers and any selection registers used by PREPARE
