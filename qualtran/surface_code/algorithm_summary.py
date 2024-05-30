@@ -121,5 +121,5 @@ class AlgorithmSummary:
     @staticmethod
     def from_bloq(bloq: 'qualtran.Bloq') -> 'AlgorithmSummary':
         ret = AlgorithmSummary(**get_cost_value(bloq, _SUMMARY_COUNTS))
-        ret = evolve(ret, algorithm_qubits=get_cost_value(bloq, _QUBIT_COUNT))
+        ret = evolve(ret, algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)))
         return ret

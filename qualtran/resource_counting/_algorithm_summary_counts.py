@@ -72,7 +72,7 @@ class AlgorithmSummaryCounts(CostKey[AlgorithmSummaryDict]):
 
         # Recursive case
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
-        totals = {}
+        totals: AlgorithmSummaryDict = {}
         depth = 0
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)

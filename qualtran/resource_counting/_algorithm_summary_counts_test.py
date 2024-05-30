@@ -15,7 +15,6 @@
 import cirq
 import pytest
 
-import qualtran
 from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.resource_counting import AlgorithmSummaryCounts, get_cost_value
 
