@@ -191,7 +191,6 @@ class StatePreparationViaRotations(GateWithRegisters):
                 qi, self.phase_bitsize, tuple(rom_vals[qi]), self.control_bitsize + 1
             )
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
-            # first qubit does not have selection registers, only controls
             soqs["selection"] = bb.join(state_qubits[:qi])
             if self.control_bitsize > 1:
                 soqs["control"] = bb.join(
