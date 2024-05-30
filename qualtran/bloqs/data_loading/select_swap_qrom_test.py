@@ -95,7 +95,6 @@ def test_select_swap_qrom(data, block_size):
 
 def test_qroam_diagram():
     data = [[1, 2, 3], [4, 5, 6]]
-    blocksize = 2
     qrom = SelectSwapQROM.build_from_data(*data, log_block_sizes=(1,))
     q = cirq.LineQubit.range(cirq.num_qubits(qrom))
     circuit = cirq.Circuit(qrom.on_registers(**split_qubits(qrom.signature, q)))
