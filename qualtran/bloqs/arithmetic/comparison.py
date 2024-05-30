@@ -66,8 +66,8 @@ if TYPE_CHECKING:
 class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
-    bitsize: int
-    less_than_val: int
+    bitsize: SymbolicInt
+    less_than_val: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -85,7 +85,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return [2] * self.bitsize, self.less_than_val, [2]
+        return [2] * int(self.bitsize), int(self.less_than_val), [2]
 
     def with_registers(self, *new_registers) -> "LessThanConstant":
         return LessThanConstant(len(new_registers[0]), new_registers[1])
@@ -98,7 +98,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.bitsize
+        wire_symbols = ["In(x)"] * int(self.bitsize)
         wire_symbols += [f'⨁(x < {self.less_than_val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -140,8 +140,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
-        ancilla = context.qubit_manager.qalloc(self.bitsize)
-        for b, q, a in zip(iter_bits(self.less_than_val, self.bitsize), qubits, ancilla):
+        ancilla = context.qubit_manager.qalloc(int(self.bitsize))
+        for b, q, a in zip(iter_bits(int(self.less_than_val), int(self.bitsize)), qubits, ancilla):
             if b:
                 yield cirq.X(q)
                 adjoint.append(cirq.X(q))
@@ -181,7 +181,9 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         ):
             return {(XGate(), 1)}
         num_set_bits = (
-            self.less_than_val.bit_count() if not is_symbolic(self.less_than_val) else self.bitsize
+            int(self.less_than_val).bit_count()
+            if not is_symbolic(self.less_than_val)
+            else self.bitsize
         )
         return {
             (And(), self.bitsize),
