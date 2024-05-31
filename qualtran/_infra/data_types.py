@@ -501,15 +501,20 @@ class QFxp(QDType):
             x: The number to encode.
             require_exact: Raise `ValueError` if `x` cannot be exactly represented.
             ones_complement: Use ones-complement representation of negative binary fractions.
+
+        Raises:
+            ValueError: If `x` is negative but this `QFxp` is not signed.
         """
         if require_exact:
             self._assert_valid_classical_val(x)
-        if not ones_complement:
+        if x < 0 and not self.signed:
+            raise ValueError(f"unsigned QFxp cannot represent {x}.")
+        if self.signed and not ones_complement:
             sign = int(x < 0)
             x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
         bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
-        if not ones_complement:
+        if self.signed and not ones_complement:
             bits[0] = sign
         return bits
 
@@ -518,6 +523,12 @@ class QFxp(QDType):
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
         return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
+
+    def to_fixed_width_int(self, x: Union[float, Fxp]) -> int:
+        """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
+        if x < 0:
+            raise ValueError("x must be >= 0.")
+        return int(''.join(str(b) for b in self.to_bits(x, require_exact=False)), 2)
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
