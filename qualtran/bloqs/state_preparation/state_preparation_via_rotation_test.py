@@ -11,17 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Tuple
 
+import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _state_prep_via_rotation,
+    _state_prep_via_rotation_symb,
     PRGAViaPhaseGradient,
     StatePreparationViaRotations,
 )
@@ -34,6 +36,28 @@ def accuracy(state1, state2):
 
 def test_state_prep_via_rotation(bloq_autotester):
     bloq_autotester(_state_prep_via_rotation)
+
+
+def test_state_prep_via_rotation_symb():
+    bloq = _state_prep_via_rotation_symb.make()
+    L, phase = bloq.n_coeff, bloq.phase_bitsize
+    expected_t_count_expr = 16 * L + 8 * phase - 32
+    assert isinstance(expected_t_count_expr, sympy.Expr)
+    assert bloq.t_complexity().t == expected_t_count_expr
+
+    # Compare bloq counts via expression to actual bloq counts and make sure they
+    # are "close enough"
+    N, phase_bitsize = 2**16, 10
+    state_coefs = cirq.testing.random_superposition(N)
+    bloq_concrete = StatePreparationViaRotations(
+        state_coefficients=state_coefs, phase_bitsize=phase_bitsize
+    )
+    concrete_t_counts = bloq_concrete.t_complexity().t
+    # Symbolic T-counts
+    symb_t_counts = int(expected_t_count_expr.subs({L: N, phase: phase_bitsize}))
+
+    # assert they are "close enough"
+    np.testing.assert_allclose(symb_t_counts, concrete_t_counts, rtol=1e-3)
 
 
 # these states can be prepared exactly with the given phase_bitsize
