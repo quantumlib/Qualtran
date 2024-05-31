@@ -42,3 +42,6 @@ class ArbitraryClifford(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
+
+    def __str__(self):
+        return f'ArbitraryClifford(n={self.n})'
