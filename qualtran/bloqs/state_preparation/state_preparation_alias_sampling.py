@@ -137,10 +137,10 @@ class StatePreparationAliasSampling(PrepareOracle):
         *,
         probability_epsilon: SymbolicFloat = 1.0e-5,
     ) -> 'StatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for a given number of LCU coefficients.
+        """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
 
         Args:
-            n_coeff: Number of LCU coefficients in the prepared state.
+            n_coeff: Symbolic number of LCU coefficients in the prepared state.
             sum_of_lcu_coeffs: Sum of absolute values of coefficients of the prepared state.
             probability_epsilon: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
