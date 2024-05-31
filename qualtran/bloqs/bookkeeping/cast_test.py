@@ -15,8 +15,13 @@ import subprocess
 
 from qualtran import QFxp, QInt
 from qualtran.bloqs.bookkeeping import Cast
+from qualtran.bloqs.bookkeeping.cast import _cast
 from qualtran.bloqs.for_testing import TestCastToFrom
 from qualtran.simulation.tensor import cbloq_to_quimb
+
+
+def test_cast(bloq_autotester):
+    bloq_autotester(_cast)
 
 
 def test_cast_tensor_contraction():
