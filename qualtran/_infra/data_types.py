@@ -492,11 +492,26 @@ class QFxp(QDType):
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize, self.num_frac)
 
-    def to_bits(self, x: Union[float, Fxp]) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
-        self._assert_valid_classical_val(x)
+    def to_bits(
+        self, x: Union[float, Fxp], require_exact: bool = True, ones_complement: bool = True
+    ) -> List[int]:
+        """Yields individual bits corresponding to binary representation of `x`.
+
+        Args:
+            x: The number to encode.
+            require_exact: Raise `ValueError` if `x` cannot be exactly represented.
+            ones_complement: Use ones-complement representation of negative binary fractions.
+        """
+        if require_exact:
+            self._assert_valid_classical_val(x)
+        if not ones_complement:
+            sign = int(x < 0)
+            x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
-        return [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        if not ones_complement:
+            bits[0] = sign
+        return bits
 
     def from_bits(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""

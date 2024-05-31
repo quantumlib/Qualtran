@@ -293,11 +293,15 @@ def test_to_and_from_bits():
     assert list(qfxp_4_3.to_bits(0.625)) == [0, 1, 0, 1]
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(+0.625)).get_val() == +0.625
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.625)).get_val() == -0.625
-    assert list(QFxp(4, 3, True).to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(0.375)).get_val() == 0.375
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.375)).get_val() == -0.375
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(0.1)
+    assert list(qfxp_4_3.to_bits(0.7, require_exact=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(0.7, require_exact=False, ones_complement=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False)) == [1, 0, 1, 1]
+    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False, ones_complement=False)) == [1, 1, 0, 1]
 
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(1.5)
