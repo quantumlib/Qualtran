@@ -132,7 +132,7 @@ def test_bloq_counts():
 
 def test_call_graph():
     graph, _ = Adjoint(TestBloqWithCallGraph()).call_graph()
-    edge_strs = {f'{caller} -> {callee}' for caller, callee in graph.edges}
+    edge_strs = {f'{repr(caller)} -> {repr(callee)}' for caller, callee in graph.edges}
     assert edge_strs == {
         'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestAtom())',
         'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestParallelCombo())',

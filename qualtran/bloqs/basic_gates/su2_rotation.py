@@ -148,17 +148,6 @@ class SU2RotationGate(GateWithRegisters):
             eps=self.eps,
         )
 
-    def pretty_name(self) -> str:
-        return 'SU_2'
-
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        if reg is None:
-            return Text("")
-
-        return TextBox(
-            f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
-        )
-
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3)
 
@@ -174,6 +163,20 @@ class SU2RotationGate(GateWithRegisters):
         alpha = ssa.new_symbol("alpha")
         eps = ssa.new_symbol("eps")
         return cls(theta, phi, lambd, alpha, eps)
+
+    def pretty_name(self) -> str:
+        return 'SU_2'
+
+    def __str__(self):
+        return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(
+                f'({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+            )
+
+        return TextBox("SU2")
 
 
 @bloq_example

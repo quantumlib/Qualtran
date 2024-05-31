@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Protocol, runtime_checkable, Union
+from typing import Optional, Protocol, runtime_checkable, Tuple, Union
 
 import attrs
 import cirq
@@ -20,9 +20,10 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
+from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
@@ -92,6 +93,11 @@ class ZPowGate(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'ZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
 
 
 @bloq_example
@@ -184,6 +190,11 @@ class XPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'XPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
 
 @bloq_example
 def _x_pow() -> XPowGate:
@@ -249,6 +260,11 @@ class YPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'YPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
 
 @bloq_example
 def _y_pow() -> YPowGate:
@@ -291,6 +307,11 @@ class Rz(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rz':
         return attrs.evolve(self, angle=-self.angle)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
@@ -307,6 +328,11 @@ class Rx(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
@@ -322,6 +348,11 @@ class Ry(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
 
 
 @bloq_example

@@ -247,7 +247,7 @@ class GraphDrawer:
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Overridable method returning the text used for the header cell of a bloq."""
-        return f'{html.escape(binst.bloq.pretty_name())}'
+        return f'{html.escape(str(binst.bloq))}'
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         """Process and add a bloq instance to the Graph."""
@@ -376,11 +376,7 @@ class PrettyGraphDrawer(GraphDrawer):
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        # This wire symbol should always be a text element
-        wire_symbol_title = binst.bloq.wire_symbol(reg=None).text  # type: ignore[attr-defined]
-        if not wire_symbol_title:
-            return ''
-        return f'<font point-size="10">{html.escape(wire_symbol_title)}</font>'
+        return f'<font point-size="10">{html.escape(str(binst.bloq))}</font>'
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.bookkeeping import Join, Split
