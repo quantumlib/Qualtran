@@ -19,6 +19,11 @@ import pytest
 
 from qualtran import BloqBuilder, QAny, Side
 from qualtran.bloqs.bookkeeping import Allocate, Join, Split
+from qualtran.bloqs.bookkeeping.join import _join
+
+
+def test_join(bloq_autotester):
+    bloq_autotester(_join)
 
 
 @pytest.mark.parametrize('n', [5, 123])
