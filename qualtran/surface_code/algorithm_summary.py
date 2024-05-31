@@ -16,7 +16,7 @@ from typing import Optional, TYPE_CHECKING
 
 from attrs import evolve, field, frozen
 
-from qualtran.resource_counting import AlgorithmSummaryCounts, get_cost_value, QubitCount
+from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
 from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.rotation_cost_model import RotationCostModel
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 _PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
 
 _QUBIT_COUNT = QubitCount()
-_SUMMARY_COUNTS = AlgorithmSummaryCounts()
+_QEC_COUNT = QECGatesCost()
 
 
 @frozen
@@ -120,6 +120,12 @@ class AlgorithmSummary:
 
     @staticmethod
     def from_bloq(bloq: 'qualtran.Bloq') -> 'AlgorithmSummary':
-        ret = AlgorithmSummary(**get_cost_value(bloq, _SUMMARY_COUNTS))
-        ret = evolve(ret, algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)))
-        return ret
+        gate_count = get_cost_value(bloq, _QEC_COUNT)
+        return AlgorithmSummary(
+            t_gates=gate_count.t,
+            toffoli_gates=gate_count.toffoli + gate_count.and_bloq + gate_count.cswap,
+            rotation_gates=gate_count.rotation,
+            measurements=gate_count.measurement,
+            rotation_circuit_depth=gate_count.depth,
+            algorithm_qubits=get_cost_value(bloq, _QUBIT_COUNT),
+        )
