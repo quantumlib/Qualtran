@@ -19,8 +19,14 @@ import scipy
 import sympy
 from numpy.typing import NDArray
 
+from qualtran.bloqs.basic_gates import TGate, TwoBitCSwap
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
+from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
+    _hubbard_time_evolution_by_gqsp,
+    _symbolic_hamsim_by_gqsp,
+    HamiltonianSimulationByGQSP,
+)
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
     check_polynomial_pair_on_random_points_on_unit_circle,
@@ -28,14 +34,8 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import big_O
+from qualtran.resource_counting import big_O, BloqCount, get_cost_value
 from qualtran.symbolics import Shaped
-
-from .hamiltonian_simulation_by_gqsp import (
-    _hubbard_time_evolution_by_gqsp,
-    _symbolic_hamsim_by_gqsp,
-    HamiltonianSimulationByGQSP,
-)
 
 
 def test_examples(bloq_autotester):
@@ -102,7 +102,10 @@ def test_hamiltonian_simulation_by_gqsp(
 
 def test_hamiltonian_simulation_by_gqsp_t_complexity():
     hubbard_time_evolution_by_gqsp = _hubbard_time_evolution_by_gqsp.make()
-    _ = hubbard_time_evolution_by_gqsp.t_complexity()
+    t_comp = hubbard_time_evolution_by_gqsp.t_complexity()
+
+    counts = get_cost_value(hubbard_time_evolution_by_gqsp, BloqCount.for_gateset('t+tof+cswap'))
+    assert t_comp.t == counts[TwoBitCSwap()] * 7 + counts[TGate()]
 
     symbolic_hamsim_by_gqsp = _symbolic_hamsim_by_gqsp()
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)

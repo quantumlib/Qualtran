@@ -60,6 +60,7 @@ import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
@@ -94,6 +95,8 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
+import qualtran.bloqs.reflections.prepare_identity
+import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -179,6 +182,18 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Identity Gate',
         module=qualtran.bloqs.basic_gates.identity,
         bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
+    ),
+    NotebookSpecV2(
+        title='Bookkeeping Bloqs',
+        module=qualtran.bloqs.bookkeeping,
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.allocate._ALLOC_DOC,
+            qualtran.bloqs.bookkeeping.free._FREE_DOC,
+            qualtran.bloqs.bookkeeping.split._SPLIT_DOC,
+            qualtran.bloqs.bookkeeping.join._JOIN_DOC,
+            qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
+            qualtran.bloqs.bookkeeping.cast._CAST_DOC,
+        ],
     ),
 ]
 
@@ -531,9 +546,12 @@ OTHER: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
-        title='Reflection',
+        title='Reflections',
         module=qualtran.bloqs.reflections,
-        bloq_specs=[qualtran.bloqs.reflections.reflection._REFLECTION_DOC],
+        bloq_specs=[
+            qualtran.bloqs.reflections.prepare_identity._PREPARE_IDENTITY_DOC,
+            qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(

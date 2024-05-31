@@ -18,7 +18,17 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import QAny, Register, Side, Signature, SoquetT
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QAny,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -57,6 +67,9 @@ class Partition(_BookkeepingBloq):
             [Register('x', QAny(bitsize=self.n), side=lumped)]
             + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
         )
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic')
 
     def adjoint(self):
         return attrs.evolve(self, partition=not self.partition)
@@ -151,3 +164,14 @@ class Partition(_BookkeepingBloq):
             text = f'[{",".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
         return directional_text_box(' ', side=reg.side)
+
+
+@bloq_example
+def _partition() -> Partition:
+    regs = (Register('xx', QAny(2), shape=(2, 3)), Register('yy', QAny(37)))
+    bitsize = sum(reg.total_bits() for reg in regs)
+    partition = Partition(n=bitsize, regs=regs)
+    return partition
+
+
+_PARTITION_DOC = BloqDocSpec(bloq_cls=Partition, examples=[_partition], call_graph_example=None)

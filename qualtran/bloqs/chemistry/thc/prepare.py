@@ -45,7 +45,7 @@ from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.reflections import Reflection
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
@@ -154,11 +154,11 @@ class UniformSuperpositionTHC(Bloq):
         # 6. Reflect on comparitors, rotated qubit and |+>.
         # ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
         rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
-            Reflection((1, 1, 1, 1), (1, 1, 1, 1)),
-            reg0=rot,
-            reg1=lte_nu_mp1,
-            reg2=lte_mu_nu,
-            reg3=junk,
+            ReflectionUsingPrepare.reflection_around_zero(bitsizes=(1, 1, 1, 1), global_phase=1),
+            reg0_=rot,
+            reg1_=lte_nu_mp1,
+            reg2_=lte_mu_nu,
+            reg3_=junk,
         )
         # (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
@@ -175,7 +175,12 @@ class UniformSuperpositionTHC(Bloq):
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         mu, nu, rot = bb.add(
-            Reflection((num_bits_mu, num_bits_mu, 1), (1, 1, 1)), reg0=mu, reg1=nu, reg2=rot
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(num_bits_mu, num_bits_mu, 1), global_phase=1
+            ),
+            reg0_=mu,
+            reg1_=nu,
+            reg2_=rot,
         )
         # amp = trg[0]
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)

@@ -269,7 +269,7 @@ class QROMBase(metaclass=abc.ABCMeta):
         types = [
             BoundedQUInt(sb, l)
             for l, sb in zip(self.data_shape, self.selection_bitsizes)
-            if is_symbolic(sb) or sb > 0
+            if is_symbolic(l) or l > 0
         ]
         if len(types) == 1:
             return (Register('selection', types[0]),)

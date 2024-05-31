@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast
 
 import cirq
 import numpy as np
@@ -37,7 +36,6 @@ from qualtran.bloqs.basic_gates.z_basis import (
     _zero_state,
     _zgate,
 )
-from qualtran.drawing import Text
 
 
 def test_zero_state(bloq_autotester):
@@ -70,7 +68,7 @@ def test_int_effect(bloq_autotester):
 
 def test_zero_state_manual():
     bloq = ZeroState()
-    assert str(bloq) == 'ZeroState(n=1)'
+    assert str(bloq) == 'ZeroState'
     assert not bloq.bit
     vector = bloq.tensor_contract()
     should_be = np.array([1, 0])
@@ -159,7 +157,6 @@ def test_zero_state_effect(bit):
 
 def test_int_state_manual():
     k = IntState(255, bitsize=8)
-    assert cast(Text, k.wire_symbol(reg=None)).text == '|255>'
     assert k.pretty_name() == '|255>'
     (val,) = k.call_classically()
     assert val == 255
@@ -174,7 +171,6 @@ def test_int_state_manual():
 
 def test_int_effect_manual():
     k = IntEffect(255, bitsize=8)
-    assert cast(Text, k.wire_symbol(reg=None)).text == '<255|'
     assert k.pretty_name() == '<255|'
     ret = k.call_classically(val=255)
     assert ret == ()

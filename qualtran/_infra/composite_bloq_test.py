@@ -30,6 +30,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -98,15 +99,15 @@ def test_composite_bloq():
     assert (
         cbloq.debug_text()
         == """\
-TestTwoBitOp()<1>
+TestTwoBitOp<1>
   LeftDangle.q1 -> ctrl
   LeftDangle.q2 -> target
-  ctrl -> TestTwoBitOp()<2>.target
-  target -> TestTwoBitOp()<2>.ctrl
+  ctrl -> TestTwoBitOp<2>.target
+  target -> TestTwoBitOp<2>.ctrl
 --------------------
-TestTwoBitOp()<2>
-  TestTwoBitOp()<1>.ctrl -> target
-  TestTwoBitOp()<1>.target -> ctrl
+TestTwoBitOp<2>
+  TestTwoBitOp<1>.ctrl -> target
+  TestTwoBitOp<1>.target -> ctrl
   ctrl -> RightDangle.q1
   target -> RightDangle.q2"""
     )
@@ -234,9 +235,7 @@ def test_double_use_2():
 
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(
-        BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp\(\)\.ctrl`\.'
-    ):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp\.ctrl`\.'):
         x3, y3 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
 
@@ -440,27 +439,27 @@ def test_add_from(call_decompose):
     assert (
         bloq.debug_text()
         == """\
-TestParallelCombo()<0>
+TestParallelCombo<0>
   LeftDangle.stuff -> reg
-  reg -> Split(dtype=QAny(bitsize=3))<1>.reg
+  reg -> Split<1>.reg
 --------------------
-Split(dtype=QAny(bitsize=3))<1>
-  TestParallelCombo()<0>.reg -> reg
+Split<1>
+  TestParallelCombo<0>.reg -> reg
   reg[0] -> TestAtom()<2>.q
   reg[1] -> TestAtom()<3>.q
   reg[2] -> TestAtom()<4>.q
 --------------------
 TestAtom()<2>
-  Split(dtype=QAny(bitsize=3))<1>.reg[0] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[0]
+  Split<1>.reg[0] -> q
+  q -> Join<5>.reg[0]
 TestAtom()<3>
-  Split(dtype=QAny(bitsize=3))<1>.reg[1] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[1]
+  Split<1>.reg[1] -> q
+  q -> Join<5>.reg[1]
 TestAtom()<4>
-  Split(dtype=QAny(bitsize=3))<1>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[2]
+  Split<1>.reg[2] -> q
+  q -> Join<5>.reg[2]
 --------------------
-Join(dtype=QAny(bitsize=3))<5>
+Join<5>
   TestAtom()<2>.q -> reg[0]
   TestAtom()<3>.q -> reg[1]
   TestAtom()<4>.q -> reg[2]
@@ -505,7 +504,7 @@ def test_flatten():
     cbloq2 = cbloq.flatten_once(lambda binst: True)
     assert len(cbloq2.bloq_instances) == 5 * 2
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(DecomposeTypeError):
         # Will keep trying to flatten non-decomposable things
         cbloq.flatten(lambda x: True)
 

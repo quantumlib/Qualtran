@@ -54,20 +54,20 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
 class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
-    bitsize: int
-    less_than_val: int
+    bitsize: SymbolicInt
+    less_than_val: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -85,7 +85,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return [2] * self.bitsize, self.less_than_val, [2]
+        return [2] * int(self.bitsize), int(self.less_than_val), [2]
 
     def with_registers(self, *new_registers) -> "LessThanConstant":
         return LessThanConstant(len(new_registers[0]), new_registers[1])
@@ -98,7 +98,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.bitsize
+        wire_symbols = ["In(x)"] * int(self.bitsize)
         wire_symbols += [f'⨁(x < {self.less_than_val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -140,8 +140,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
-        ancilla = context.qubit_manager.qalloc(self.bitsize)
-        for b, q, a in zip(iter_bits(self.less_than_val, self.bitsize), qubits, ancilla):
+        ancilla = context.qubit_manager.qalloc(int(self.bitsize))
+        for b, q, a in zip(iter_bits(int(self.less_than_val), int(self.bitsize)), qubits, ancilla):
             if b:
                 yield cirq.X(q)
                 adjoint.append(cirq.X(q))
@@ -167,16 +167,24 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 # b_i=0, q_i=1 => current prefixes are not equal so we need to flip `are_equal`.
                 yield cirq.CNOT(a, are_equal)
                 adjoint.append(cirq.CNOT(a, are_equal))
-
         yield from reversed(adjoint)
+        context.qubit_manager.qfree(ancilla)
+        context.qubit_manager.qfree([are_equal])
 
     def _has_unitary_(self):
         return True
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.less_than_val >= 2**self.bitsize:
+        if (
+            not is_symbolic(self.less_than_val, self.bitsize)
+            and self.less_than_val >= 2**self.bitsize
+        ):
             return {(XGate(), 1)}
-        num_set_bits = self.less_than_val.bit_count()
+        num_set_bits = (
+            int(self.less_than_val).bit_count()
+            if not is_symbolic(self.less_than_val)
+            else self.bitsize
+        )
         return {
             (And(), self.bitsize),
             (And().adjoint(), self.bitsize),
@@ -499,6 +507,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
+        input_qubits = set(lhs + rhs + [target])
 
         n = min(len(lhs), len(rhs))
 
@@ -554,8 +563,18 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
             yield cirq.CNOT(less_than_or_equal, target)
 
         yield from reversed(adjoint)
+        all_ancilla = set([q for op in adjoint for q in op.qubits if q not in input_qubits])
+        context.qubit_manager.qfree(all_ancilla)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if is_symbolic(self.x_bitsize, self.y_bitsize):
+            return {
+                (BiQubitsMixer(), self.x_bitsize),
+                (BiQubitsMixer().adjoint(), self.x_bitsize),
+                (SingleQubitCompare(), 1),
+                (SingleQubitCompare().adjoint(), 1),
+            }
+
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
