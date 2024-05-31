@@ -12,14 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from attrs import field, frozen
 
+from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
 from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.rotation_cost_model import RotationCostModel
 
+if TYPE_CHECKING:
+    from qualtran import Bloq
+
 _PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
+
+_QUBIT_COUNT = QubitCount()
+_QEC_COUNT = QECGatesCost()
 
 
 @frozen
@@ -110,3 +117,15 @@ class AlgorithmSummary:
                 * rotation_model.rotation_cost(error_budget / self.rotation_gates)
             )
         return ret
+
+    @staticmethod
+    def from_bloq(bloq: 'Bloq') -> 'AlgorithmSummary':
+        gate_count = get_cost_value(bloq, _QEC_COUNT)
+        return AlgorithmSummary(
+            t_gates=gate_count.t,
+            toffoli_gates=gate_count.toffoli + gate_count.and_bloq + gate_count.cswap,
+            rotation_gates=gate_count.rotation,
+            measurements=gate_count.measurement,
+            rotation_circuit_depth=gate_count.depth,
+            algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)),
+        )

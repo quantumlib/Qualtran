@@ -21,7 +21,7 @@ from attrs import field, frozen
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford
+from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -117,7 +117,9 @@ class GateCounts:
     """A data class of counts of the typical target gates in a compilation.
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
-    `TwoBitCSwap`, `And`, and clifford bloqs.
+    `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
+    In addition to this, the class holds a heuristic approximation for the depth of the
+    circuit `depth` which we compute as the depth of the call graph.
     """
 
     t: int = 0
@@ -125,6 +127,9 @@ class GateCounts:
     cswap: int = 0
     and_bloq: int = 0
     clifford: int = 0
+    rotation: int = 0
+    measurement: int = 0
+    depth: int = 0
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -136,6 +141,9 @@ class GateCounts:
             cswap=self.cswap + other.cswap,
             and_bloq=self.and_bloq + other.and_bloq,
             clifford=self.clifford + other.clifford,
+            rotation=self.rotation + other.rotation,
+            measurement=self.measurement + other.measurement,
+            depth=self.depth + other.depth,
         )
 
     def __mul__(self, other):
@@ -145,6 +153,9 @@ class GateCounts:
             cswap=other * self.cswap,
             and_bloq=other * self.and_bloq,
             clifford=other * self.clifford,
+            rotation=other * self.rotation,
+            measurement=other * self.measurement,
+            depth=other * self.depth,
         )
 
     def __rmul__(self, other):
@@ -162,18 +173,26 @@ class GateCounts:
         return '-'
 
     def total_t_count(
-        self, ts_per_toffoli: int = 4, ts_per_cswap: int = 7, ts_per_and_bloq: int = 4
+        self,
+        ts_per_toffoli: int = 4,
+        ts_per_cswap: int = 7,
+        ts_per_and_bloq: int = 4,
+        ts_per_rotation: int = 11,
     ) -> int:
         """Get the total number of T Gates for the `GateCounts` object.
 
         This simply multiplies each gate type by its cost in terms of T gates, which is configurable
         via the arguments to this method.
+
+        The default value for `ts_per_rotation` assumes the rotation is approximated using
+        `Mixed fallback` protocol with error budget 1e-3.
         """
         return (
             self.t
             + ts_per_toffoli * self.toffoli
             + ts_per_cswap * self.cswap
             + ts_per_and_bloq * self.and_bloq
+            + ts_per_rotation * self.rotation
         )
 
 
@@ -197,7 +216,9 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(toffoli=1)
 
         # 'And' bloqs
-        if isinstance(bloq, And) and not bloq.uncompute:
+        if isinstance(bloq, And):
+            if bloq.uncompute:
+                return GateCounts(measurement=1, clifford=1)
             return GateCounts(and_bloq=1)
 
         # CSwaps aka Fredkin
@@ -208,13 +229,19 @@ class QECGatesCost(CostKey[GateCounts]):
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
 
+        if bloq_is_rotation(bloq):
+            return GateCounts(rotation=1)
+
         # Recursive case
         totals = GateCounts()
         callees = get_bloq_callee_counts(bloq)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
+        depth = 0
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)
             totals += n_times_called * callee_cost
+            depth = max(depth, callee_cost.depth + 1)
+        totals = attrs.evolve(totals, depth=depth)
         return totals
 
     def zero(self) -> GateCounts:
