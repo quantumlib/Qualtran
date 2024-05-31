@@ -14,7 +14,7 @@
 
 from typing import Optional, TYPE_CHECKING
 
-from attrs import evolve, field, frozen
+from attrs import field, frozen
 
 from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
 from qualtran.surface_code.magic_count import MagicCount
@@ -127,5 +127,5 @@ class AlgorithmSummary:
             rotation_gates=gate_count.rotation,
             measurements=gate_count.measurement,
             rotation_circuit_depth=gate_count.depth,
-            algorithm_qubits=get_cost_value(bloq, _QUBIT_COUNT),
+            algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)),
         )
