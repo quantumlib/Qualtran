@@ -185,7 +185,7 @@ class GateCounts:
         via the arguments to this method.
 
         The default value for `ts_per_rotation` assumes the rotation is approximated using
-        `Mixed fallback` with error budget 1e-3.
+        `Mixed fallback` protocol with error budget 1e-3.
         """
         return (
             self.t
