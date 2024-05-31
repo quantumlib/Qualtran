@@ -315,7 +315,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(self.pretty_name())
+            return Text(str(self))
 
         return _wire_symbol_from_gate(self, self.signature, reg, idx)
 

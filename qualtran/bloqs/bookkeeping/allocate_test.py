@@ -18,7 +18,12 @@ import pytest
 
 from qualtran import BloqBuilder, QAny
 from qualtran.bloqs.bookkeeping import Allocate, Free
+from qualtran.bloqs.bookkeeping.allocate import _alloc
 from qualtran.testing import execute_notebook
+
+
+def test_alloc(bloq_autotester):
+    bloq_autotester(_alloc)
 
 
 def test_free_nonzero_state_vector_leads_to_unnormalized_state():
@@ -34,7 +39,7 @@ def test_free_nonzero_state_vector_leads_to_unnormalized_state():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('bookkeeping_bloqs')
+    execute_notebook('bookkeeping')
 
 
 def test_no_circular_import():

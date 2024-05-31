@@ -110,9 +110,6 @@ class FindECCPrivateKey(Bloq):
 
         return {(ECPhaseEstimateR(n=self.n, point=generic_point), 2)}
 
-    def __str__(self):
-        return 'FindECCPrivateKey'
-
     def cost_attrs(self):
         return [('n', self.n)]
 

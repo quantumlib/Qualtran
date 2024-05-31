@@ -60,6 +60,7 @@ import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
@@ -181,6 +182,18 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Identity Gate',
         module=qualtran.bloqs.basic_gates.identity,
         bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
+    ),
+    NotebookSpecV2(
+        title='Bookkeeping Bloqs',
+        module=qualtran.bloqs.bookkeeping,
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.allocate._ALLOC_DOC,
+            qualtran.bloqs.bookkeeping.free._FREE_DOC,
+            qualtran.bloqs.bookkeeping.split._SPLIT_DOC,
+            qualtran.bloqs.bookkeeping.join._JOIN_DOC,
+            qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
+            qualtran.bloqs.bookkeeping.cast._CAST_DOC,
+        ],
     ),
 ]
 

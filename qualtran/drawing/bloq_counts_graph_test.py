@@ -35,7 +35,7 @@ def test_format_counts_sigma():
         == """\
 #### Counts totals:
  - `ArbitraryClifford(n=2)`: 45
- - `TGate()`: 20"""
+ - `T`: 20"""
     )
 
 
@@ -45,11 +45,11 @@ def test_format_counts_graph_markdown():
     assert (
         ret
         == """\
- - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1))`
-   - `And(cv1=1, cv2=1, uncompute=False)`: $\\displaystyle 5$
- - `And(cv1=1, cv2=1, uncompute=False)`
+ - `MultiAnd(n=6)`
+   - `And`: $\\displaystyle 5$
+ - `And`
    - `ArbitraryClifford(n=2)`: $\\displaystyle 9$
-   - `TGate()`: $\\displaystyle 4$
+   - `T`: $\\displaystyle 4$
 """
     )
 
@@ -101,7 +101,7 @@ def test_graphviz_call_graph_no_data():
         if 'TestBloqWithCallGraph' in nl:
             assert nl == (
                 '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
-                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph()</font></td></tr>\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph</font></td></tr>\n'
                 '</table></font>>'
             )
 
@@ -125,6 +125,6 @@ def test_graphviz_call_graph_with_data():
         if 'TestBloqWithCallGraph' in nl:
             assert nl == (
                 '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
-                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph()</font></td></tr>\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph</font></td></tr>\n'
                 '<tr><td>T count</td><td>100*_n0 + 600</td></tr><tr><td>clifford</td><td>0</td></tr><tr><td>rot</td><td>0</td></tr></table></font>>'
             )
