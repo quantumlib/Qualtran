@@ -49,16 +49,28 @@ class FastComplementaryQSPHelper:
         return loss
 
     @staticmethod
-    def array_to_complex(x):
+    def array_to_complex(x: NDArray[float]) -> NDArray[complex]:
+        """
+        Converts a real array into a complex array.
+
+        This method assumes that the real array is 1d and is twice the size of the desired complex array. The first half
+        of the array is understood to be the real part, and the second half, the imaginary part.
+
+        Args:
+             A real nd array twice as long as the desired complex array
+        Returns:
+            A complex nd array built from the real array
+        """
         real_part = x[: len(x) // 2]
         imag_part = x[len(x) // 2 :]
         return real_part + 1.0j * imag_part
 
     @staticmethod
-    def conv_by_flip_conj(poly):
+    def conv_by_flip_conj(poly: NDArray[np.number]) -> NDArray:
         return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
 
-    def complex_conv_by_flip_conj(self, real_part: NDArray, imag_part: NDArray):
+    @staticmethod
+    def complex_conv_by_flip_conj(real_part: NDArray, imag_part: NDArray):
         """
         Performs the flip convolution.
 
@@ -85,6 +97,7 @@ class FastComplementaryQSPHelper:
 
 def fast_complementary_polynomial(
     P: Union[NDArray[np.number], Sequence[complex]],
+    random_state: np.random.RandomState,
     only_reals: bool = False,
     tolerance: float = 1e-10,
 ):
@@ -96,7 +109,7 @@ def fast_complementary_polynomial(
         $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
 
     using the flip convolution method described in Eq(60).  This
-    a replacement for the complementary_polynomial in the
+    an alternative for the complementary_polynomial in the
     generalized_qsp module.
 
     Note that by default, this method will take a complex input and
@@ -112,6 +125,8 @@ def fast_complementary_polynomial(
 
     Args:
         P: Co-efficients of a complex polynomial.
+        random_state: The random state to use to generate the initial guess of the
+            complementary polynomial Q.
         only_reals: If true, performs the calculation to only use and return real
             valued coefficients. Note that if this is set to "true", and P is
             complex, an error will be thrown.
@@ -123,13 +138,12 @@ def fast_complementary_polynomial(
     [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
         Motlagh and Wiebe. (2023). Equation 60.
     """
-    np.random.seed(42)
     if only_reals:
         poly = np.array(P, dtype=np.float64)
-        q_initial = np.random.randn(poly.shape[0])
+        q_initial = random_state.randn(poly.shape[0])
     else:
         poly = np.array(P, dtype=np.complex128)
-        q_initial = np.random.randn(poly.shape[0] * 2)
+        q_initial = random_state.randn(poly.shape[0] * 2)
     q_initial_normalized = q_initial / np.linalg.norm(q_initial)
 
     qsp = FastComplementaryQSPHelper(poly, only_reals=only_reals)
