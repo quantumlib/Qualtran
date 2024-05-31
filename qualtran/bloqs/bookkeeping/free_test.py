@@ -15,6 +15,11 @@ import subprocess
 
 from qualtran import BloqBuilder, QAny, Soquet
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
+from qualtran.bloqs.bookkeeping.free import _free
+
+
+def test_free(bloq_autotester):
+    bloq_autotester(_free)
 
 
 def test_util_bloqs():
