@@ -18,6 +18,7 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import QInt, QUInt
 from qualtran.bloqs.arithmetic import Subtract
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 def test_subtract_bloq_decomposition():
@@ -41,4 +42,6 @@ def test_subtract_bloq_validation():
 
 
 def test_subtract_bloq_consitant_counts():
-    qlt_testing.assert_equivalent_bloq_counts(Subtract(QInt(3), QInt(4)))
+    qlt_testing.assert_equivalent_bloq_counts(
+        Subtract(QInt(3), QInt(4)), generalizer=ignore_split_join
+    )
