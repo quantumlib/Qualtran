@@ -92,6 +92,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
 
     def k_l_logL(self) -> Tuple[SymbolicInt, SymbolicInt, SymbolicInt]:
+        # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         k, n, logL = 0, self.n, bit_length(self.n - 1)
         if is_symbolic(n):
             return 0, self.n, bit_length(self.n - 1)
@@ -109,7 +110,6 @@ class PrepareUniformSuperposition(GateWithRegisters):
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
-        # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         k, l, logL = self.k_l_logL()
         assert isinstance(logL, int)
         assert isinstance(k, int)
