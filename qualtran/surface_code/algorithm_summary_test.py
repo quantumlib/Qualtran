@@ -109,7 +109,7 @@ def test_subtraction():
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            AlgorithmSummary(algorithm_qubits=10, rotation_gates=12, rotation_circuit_depth=1),
+            AlgorithmSummary(algorithm_qubits=10, rotation_gates=10, rotation_circuit_depth=1),
         ],
         [
             mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),

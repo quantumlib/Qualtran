@@ -21,7 +21,7 @@ from attrs import field, frozen
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford
+from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -117,7 +117,9 @@ class GateCounts:
     """A data class of counts of the typical target gates in a compilation.
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
-    `TwoBitCSwap`, `And`, and clifford bloqs.
+    `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
+    In addition to this, the class holds a heuristic approximation for the depth of the
+    circuit `depth` which we compute as the depth of the call graph.
     """
 
     t: int = 0
@@ -227,12 +229,12 @@ class QECGatesCost(CostKey[GateCounts]):
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
 
+        if bloq_is_rotation(bloq):
+            return GateCounts(rotation=1)
+
         # Recursive case
         totals = GateCounts()
         callees = get_bloq_callee_counts(bloq)
-        if len(callees) == 0:
-            return GateCounts(rotation=1)
-
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
         depth = 0
         for callee, n_times_called in callees:

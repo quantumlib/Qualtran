@@ -121,3 +121,9 @@ def bloq_is_clifford(b: Bloq):
         return True
 
     return False
+
+
+def bloq_is_rotation(b: Bloq):
+    from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+
+    return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))
