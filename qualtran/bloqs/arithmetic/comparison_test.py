@@ -24,6 +24,8 @@ from qualtran.bloqs.arithmetic.comparison import (
     _eq_k,
     _greater_than,
     _gt_k,
+    _leq_symb,
+    _lt_k_symb,
     BiQubitsMixer,
     EqualsAConstant,
     GreaterThan,
@@ -44,6 +46,14 @@ def test_greater_than(bloq_autotester):
 
 def test_gt_k(bloq_autotester):
     bloq_autotester(_gt_k)
+
+
+def test_lt_k_symb(bloq_autotester):
+    bloq_autotester(_lt_k_symb)
+
+
+def test_leq_symb(bloq_autotester):
+    bloq_autotester(_leq_symb)
 
 
 def test_eq_k(bloq_autotester):
@@ -298,3 +308,11 @@ def test_t_complexity_of_comparison_gates_notebook():
 @pytest.mark.notebook
 def test_comparison_notebook():
     qlt_testing.execute_notebook('comparison')
+
+
+@pytest.mark.parametrize('gate', [LessThanConstant(3, 3), LessThanEqual(3, 3)])
+def test_decomposition_frees_ancilla(gate):
+    op = gate(*cirq.LineQid.for_gate(gate))
+    qubit_manager = cirq.ops.GreedyQubitManager(prefix='_test')
+    _ = cirq.decompose(op, context=cirq.DecompositionContext(qubit_manager))
+    assert len(qubit_manager._used_qubits) == 0

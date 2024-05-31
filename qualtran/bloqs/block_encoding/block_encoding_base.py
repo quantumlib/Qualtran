@@ -41,7 +41,7 @@ class BlockEncoding(Bloq):
     $$
     U = \sum_l |l\rangle\langle l| \otimes U_l
     $$
-    and $|G\rangle = \sum_l \sqrt{\frac{w_l}{\alpha}}|0\rangle_a$, which define the
+    and $|G\rangle = \sum_l \sqrt{\frac{w_l}{\alpha}}|l\rangle_a$, which define the
     usual SELECT and PREPARE oracles.
 
     Other ways of building block encodings exist so we define the abstract base
