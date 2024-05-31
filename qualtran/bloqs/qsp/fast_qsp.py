@@ -27,16 +27,17 @@ class FastComplementaryQSPHelper:
         only_reals: If `true`, then only real polynomial values will be returned.
     """
 
-    def __init__(self, poly: NDArray[np.number], only_reals: bool = False):
+    def __init__(self, poly: NDArray, only_reals: bool = False):
         self.only_reals = only_reals
         if self.only_reals:
+            assert poly.dtype == np.float64
             self.conv_p_negative = self.conv_by_flip_conj(poly) * -1
         else:
             assert poly.dtype == np.complex128
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
-    def loss_function(self, x):
+    def loss_function(self, x: NDArray):
         if self.only_reals:
             conv_result = self.conv_by_flip_conj(x)
         else:
@@ -49,7 +50,7 @@ class FastComplementaryQSPHelper:
         return loss
 
     @staticmethod
-    def array_to_complex(x: NDArray[float]) -> NDArray[complex]:
+    def array_to_complex(x: NDArray) -> NDArray:
         """
         Converts a real array into a complex array.
 
@@ -66,7 +67,7 @@ class FastComplementaryQSPHelper:
         return real_part + 1.0j * imag_part
 
     @staticmethod
-    def conv_by_flip_conj(poly: NDArray[np.number]) -> NDArray:
+    def conv_by_flip_conj(poly: NDArray) -> NDArray:
         return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
 
     @staticmethod
@@ -96,7 +97,7 @@ class FastComplementaryQSPHelper:
 
 
 def fast_complementary_polynomial(
-    P: Union[NDArray[np.number], Sequence[complex]],
+    P: Union[Sequence[float], Sequence[complex]],
     random_state: np.random.RandomState,
     only_reals: bool = False,
     tolerance: float = 1e-10,
