@@ -36,6 +36,7 @@ def test_state_prep_alias_sampling_symb():
     L, logL, log_eps_inv = bloq.n_coeff, bloq.selection_bitsize, bloq.mu
     # Scales as 4l + O(logL) + O(log(1 / eps))
     expected_t_count_expr = 4 * L + 8 * log_eps_inv + 19 * logL - 8
+    assert isinstance(expected_t_count_expr, sympy.Expr)
     assert bloq.t_complexity().t == expected_t_count_expr
     # Compare bloq counts via expression to actual bloq counts and make sure they
     # are "close enough".
