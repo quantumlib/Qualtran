@@ -23,9 +23,14 @@ from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, Soque
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.bookkeeping.partition import _partition
 from qualtran.bloqs.for_testing import TestMultiRegister
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition
+
+
+def test_partition(bloq_autotester):
+    bloq_autotester(_partition)
 
 
 @frozen
@@ -51,7 +56,7 @@ class TestPartition(Bloq):
         return {'test_regs': test_regs}
 
 
-def test_partition():
+def test_partition_wrapper():
     bloq = TestPartition(test_bloq=CNOT())
     assert_valid_bloq_decomposition(bloq)
 
@@ -59,14 +64,14 @@ def test_partition():
     assert_valid_bloq_decomposition(bloq)
 
 
-def test_partition_tensor_contract():
+def test_partition_wrapper_tensor_contract():
     bloq = TestPartition(test_bloq=TestMultiRegister())
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
     assert len(tn.tensors) == 3
     assert tn.shape == (4096, 4096)
 
 
-def test_partition_as_cirq_op():
+def test_partition_wrapper_as_cirq_op():
     bloq = TestPartition(test_bloq=CNOT())
     quregs = get_named_qubits(bloq.signature.lefts())
     op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
