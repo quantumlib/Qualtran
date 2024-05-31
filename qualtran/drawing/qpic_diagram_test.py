@@ -67,7 +67,7 @@ reg_3:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
 reg_3 / \textrm{\scalebox{0.5}{QAny(1)}}
 reg_4:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
 reg_4 / \textrm{\scalebox{0.5}{QAny(1)}}
-_empty_wire G:width=33:shape=8 (-0-1j)
+_empty_wire G:width=65:shape=8 GPhase((-0-1j))
 selection G:width=121:shape=box \textrm{\scalebox{0.8}{StatePreparationAliasSampling}} reg G:width=37:shape=box \textrm{\scalebox{0.8}{sigma\_mu}} reg_1 G:width=17:shape=box \textrm{\scalebox{0.8}{alt}} reg_2 G:width=21:shape=box \textrm{\scalebox{0.8}{keep}} reg_3 G:width=65:shape=box \textrm{\scalebox{0.8}{less\_than\_equal}}
 +reg_4
 selection:off G:width=5:shape=> \textrm{\scalebox{0.8}{}} reg[0]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[0]}} reg[1]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[1]}}
