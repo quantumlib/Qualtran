@@ -76,12 +76,6 @@ class ECPhaseEstimateR(Bloq):
             return f'PE${point_str}$'
         return 'PE(R)'
 
-    def __str__(self):
-        return 'ECPhaseEstimateR'
-
-    def cost_attrs(self):
-        return [('n', self.n)]
-
 
 @bloq_example
 def _ec_pe() -> ECPhaseEstimateR:

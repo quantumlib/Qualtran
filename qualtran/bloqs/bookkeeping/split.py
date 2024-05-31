@@ -12,14 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Bloqs for virtual operations and register reshaping."""
 from functools import cached_property
 from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 
-from qualtran import Bloq, QBit, QDType, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QBit,
+    QDType,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.simulation.classical_sim import ints_to_bits
@@ -33,13 +45,21 @@ if TYPE_CHECKING:
 
 @frozen
 class Split(_BookkeepingBloq):
-    """Split a bitsize `n` register into a length-`n` array-register.
+    """Split a register of a given `dtype` into an array of `QBit`s.
 
-    Attributes:
-        dtype: The quantum data type of the bitsize of the left register.
+    A logical operation may be defined on e.g. a quantum integer, but to define its decomposition
+    we must operate on individual bits. `Split` can be used for this purpose. See `Join` for the
+    inverse operation.
+
+    Args:
+        dtype: The quantum data type of the incoming data that will be split into an array of `QBit`s.
+
+    Registers:
+        reg: The register to be split. On its left, it is of the given data type. On the right, it is an array
+            of `QBit()`s of shape `(dtype.num_qubits,)`.
     """
 
-    dtype: QDType
+    dtype: QDType = field()
 
     @cached_property
     def signature(self) -> Signature:
@@ -49,6 +69,14 @@ class Split(_BookkeepingBloq):
                 Register('reg', QBit(), shape=(self.dtype.num_qubits,), side=Side.RIGHT),
             ]
         )
+
+    @dtype.validator
+    def _validate_dtype(self, attribute, value):
+        if value.is_symbolic():
+            raise ValueError(f"{self} cannot have a symbolic data type.")
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic')
 
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.join import Join
@@ -85,8 +113,17 @@ class Split(_BookkeepingBloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('')
         if reg.shape:
             text = f'[{", ".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
         return directional_text_box(' ', side=reg.side)
+
+
+@bloq_example
+def _split() -> Split:
+    split = Split(QUInt(4))
+    return split
+
+
+_SPLIT_DOC = BloqDocSpec(bloq_cls=Split, examples=[_split], call_graph_example=None)

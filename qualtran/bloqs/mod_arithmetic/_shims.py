@@ -85,9 +85,6 @@ class CModSub(Bloq):
             return TextBox('x-y')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return self.__class__.__name__
-
 
 @frozen
 class CModAdd(Bloq):
@@ -147,9 +144,6 @@ class _ModInvInner(Bloq):
             return TextBox('$x^{-1}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return self.__class__.__name__
-
 
 @frozen
 class ModInv(Bloq):
@@ -180,9 +174,6 @@ class ModInv(Bloq):
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -239,9 +230,6 @@ class ModDbl(Bloq):
             return TextBox('$2x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return self.__class__.__name__
-
 
 @frozen
 class ModNeg(Bloq):
@@ -269,9 +257,6 @@ class ModNeg(Bloq):
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return self.__class__.__name__
-
 
 @frozen
 class CModNeg(Bloq):
@@ -296,6 +281,3 @@ class CModNeg(Bloq):
         elif reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__

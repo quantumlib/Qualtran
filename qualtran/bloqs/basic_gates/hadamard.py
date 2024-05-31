@@ -93,6 +93,9 @@ class Hadamard(Bloq):
             return Text('')
         return TextBox('H')
 
+    def __str__(self):
+        return 'H'
+
 
 @bloq_example
 def _hadamard() -> Hadamard:
