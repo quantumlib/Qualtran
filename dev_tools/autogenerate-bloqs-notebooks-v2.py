@@ -372,6 +372,23 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
     ),
+]
+
+MOD_ARITHMETIC = [
+    NotebookSpecV2(
+        title='Modular Addition',
+        module=qualtran.bloqs.mod_arithmetic.mod_addition,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Modular Multiplication',
+        module=qualtran.bloqs.factoring.mod_mul,
+        bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
     NotebookSpecV2(
         title='Modular Exponentiation',
         module=qualtran.bloqs.factoring.mod_exp,
@@ -379,10 +396,9 @@ ARITHMETIC = [
         directory=f'{SOURCE_DIR}/bloqs/factoring',
     ),
     NotebookSpecV2(
-        title='Modular Multiplication',
-        module=qualtran.bloqs.factoring.mod_mul,
-        bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
+        title='Elliptic Curve Addition',
+        module=qualtran.bloqs.factoring.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
@@ -394,22 +410,6 @@ ARITHMETIC = [
             qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
-    NotebookSpecV2(
-        title='Elliptic Curve Addition',
-        module=qualtran.bloqs.factoring.ecc.ec_add,
-        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
-    ),
-]
-
-MOD_ARITHMETIC = [
-    NotebookSpecV2(
-        title='Modular Addition',
-        module=qualtran.bloqs.mod_arithmetic.mod_addition,
-        bloq_specs=[
-            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
-            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
-        ],
-    )
 ]
 
 
@@ -608,6 +608,7 @@ CONCEPTS = [
     'arithmetic/error_analysis_for_fxp_arithmetic.ipynb',
     'phase_estimation/phase_estimation_of_quantum_walk.ipynb',
     'chemistry/trotter/grid_ham/trotter_costs.ipynb',
+    'chemistry/trotter/hubbard/qpe_cost_optimization.ipynb',
     'chemistry/resource_estimation.ipynb',
     'chemistry/writing_algorithms.ipynb',
     'factoring/factoring-via-modexp.ipynb',
