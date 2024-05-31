@@ -493,14 +493,14 @@ class QFxp(QDType):
         return is_symbolic(self.bitsize, self.num_frac)
 
     def to_bits(
-        self, x: Union[float, Fxp], require_exact: bool = True, ones_complement: bool = True
+        self, x: Union[float, Fxp], require_exact: bool = True, complement: bool = True
     ) -> List[int]:
         """Yields individual bits corresponding to binary representation of `x`.
 
         Args:
-            x: The number to encode.
+            x: The value to encode.
             require_exact: Raise `ValueError` if `x` cannot be exactly represented.
-            ones_complement: Use ones-complement representation of negative binary fractions.
+            complement: Use twos-complement rather than sign-magnitude representation of negative values.
 
         Raises:
             ValueError: If `x` is negative but this `QFxp` is not signed.
@@ -509,12 +509,12 @@ class QFxp(QDType):
             self._assert_valid_classical_val(x)
         if x < 0 and not self.signed:
             raise ValueError(f"unsigned QFxp cannot represent {x}.")
-        if self.signed and not ones_complement:
+        if self.signed and not complement:
             sign = int(x < 0)
             x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
         bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
-        if self.signed and not ones_complement:
+        if self.signed and not complement:
             bits[0] = sign
         return bits
 

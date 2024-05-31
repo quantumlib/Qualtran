@@ -302,9 +302,9 @@ def test_to_and_from_bits():
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(0.1)
     assert list(qfxp_4_3.to_bits(0.7, require_exact=False)) == [0, 1, 0, 1]
-    assert list(qfxp_4_3.to_bits(0.7, require_exact=False, ones_complement=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(0.7, require_exact=False, complement=False)) == [0, 1, 0, 1]
     assert list(qfxp_4_3.to_bits(-0.7, require_exact=False)) == [1, 0, 1, 1]
-    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False, ones_complement=False)) == [1, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False, complement=False)) == [1, 1, 0, 1]
 
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(1.5)
@@ -348,11 +348,11 @@ def test_fixed_point(val, width, signed):
     if (val < 0) and not signed:
         with pytest.raises(ValueError):
             _ = QFxp(width + int(signed), width, signed=signed).to_bits(
-                val, require_exact=False, ones_complement=False
+                val, require_exact=False, complement=False
             )
     else:
         bits = QFxp(width + int(signed), width, signed=signed).to_bits(
-            val, require_exact=False, ones_complement=False
+            val, require_exact=False, complement=False
         )
         if signed:
             sign, bits = bits[0], bits[1:]
