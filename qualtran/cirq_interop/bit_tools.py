@@ -17,7 +17,7 @@ from typing import Iterator, Tuple
 import numpy as np
 
 
-def iter_bits(val: int, width: int, *, signed: bool = False) -> Iterator[int]:
+def iter_bits(val: int, width: int) -> Iterator[int]:
     """Iterate over the bits in a binary representation of `val`.
 
     This uses a big-endian convention where the most significant bit
@@ -31,15 +31,8 @@ def iter_bits(val: int, width: int, *, signed: bool = False) -> Iterator[int]:
     Raises:
         ValueError: If `val` is negative or if `val.bit_length()` exceeds `width`.
     """
-    if val.bit_length() + int(val < 0) > width:
-        raise ValueError(f"{val} exceeds width {width}.")
-    if val < 0 and not signed:
-        raise ValueError(f"{val} is negative.")
-    if signed:
-        yield 1 if val < 0 else 0
-        width -= 1
-    for b in f'{abs(val):0{width}b}':
-        yield int(b)
+    from qualtran.simulation.classical_sim import ints_to_bits
+    return iter(ints_to_bits(val, width).flatten().tolist())
 
 
 def iter_bits_twos_complement(val: int, width: int) -> Iterator[int]:
