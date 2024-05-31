@@ -30,7 +30,7 @@ def test_iter_bits():
     assert list(iter_bits(1, 2)) == [0, 1]
     assert list(iter_bits(2, 2)) == [1, 0]
     assert list(iter_bits(3, 2)) == [1, 1]
-    
+
 
 def test_iter_bits_twos():
     assert list(iter_bits_twos_complement(0, 4)) == [0, 0, 0, 0]
@@ -62,5 +62,7 @@ def test_iter_bits_fixed_point(val, width, signed):
         assert math.isclose(
             val, approx_val, abs_tol=1 / 2**unsigned_width
         ), f'{val}:{approx_val}:{width}'
-        bits_from_int = list(iter_bits(float_as_fixed_width_int(val, unsigned_width + 1)[1], unsigned_width))
+        bits_from_int = list(
+            iter_bits(float_as_fixed_width_int(val, unsigned_width + 1)[1], unsigned_width)
+        )
         assert bits == bits_from_int

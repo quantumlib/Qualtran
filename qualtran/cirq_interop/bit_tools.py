@@ -26,12 +26,11 @@ def iter_bits(val: int, width: int) -> Iterator[int]:
     Args:
         val: The integer value. Its bitsize must fit within `width`
         width: The number of output bits.
-        signed: If True, the most significant bit represents the sign of
-            the number (ones complement) which is 1 if val < 0 else 0.
     Raises:
         ValueError: If `val` is negative or if `val.bit_length()` exceeds `width`.
     """
     from qualtran.simulation.classical_sim import ints_to_bits
+
     return iter(ints_to_bits(val, width).flatten().tolist())
 
 
