@@ -19,6 +19,7 @@ import pytest
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _state_prep_alias,
+    _state_prep_alias_symb,
     StatePreparationAliasSampling,
 )
 from qualtran.cirq_interop.testing import GateHelper
@@ -27,6 +28,13 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+
+
+def test_state_prep_alias_sampling_symb():
+    bloq = _state_prep_alias_symb.make()
+    L, logL, log_eps_inv = bloq.n_coeff, bloq.selection_bitsize, bloq.mu
+    # Scales as 4l + O(logL) + O(log(1 / eps))
+    assert bloq.t_complexity().t == 4 * L + 8 * log_eps_inv + 19 * logL - 8
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
