@@ -48,7 +48,7 @@ def test_state_prep_via_rotation_symb():
     # Compare bloq counts via expression to actual bloq counts and make sure they
     # are "close enough"
     N, phase_bitsize = 2**16, 10
-    state_coefs = cirq.testing.random_superposition(N)
+    state_coefs = cirq.testing.random_superposition(N, random_state=1234)
     bloq_concrete = StatePreparationViaRotations(
         state_coefficients=state_coefs, phase_bitsize=phase_bitsize
     )
