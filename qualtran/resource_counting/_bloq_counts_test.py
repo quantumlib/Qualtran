@@ -83,7 +83,7 @@ def test_qec_gates_cost():
         # Recursive
         [
             mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
-            GateCounts(and_bloq=2, depth=2, measurement=2, clifford=1),
+            GateCounts(and_bloq=2, depth=2, measurement=2, clifford=3),
         ],
     ],
 )

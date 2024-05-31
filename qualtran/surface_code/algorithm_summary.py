@@ -21,7 +21,7 @@ from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.rotation_cost_model import RotationCostModel
 
 if TYPE_CHECKING:
-    import qualtran
+    from qualtran import Bloq
 
 _PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
 
@@ -119,7 +119,7 @@ class AlgorithmSummary:
         return ret
 
     @staticmethod
-    def from_bloq(bloq: 'qualtran.Bloq') -> 'AlgorithmSummary':
+    def from_bloq(bloq: 'Bloq') -> 'AlgorithmSummary':
         gate_count = get_cost_value(bloq, _QEC_COUNT)
         return AlgorithmSummary(
             t_gates=gate_count.t,

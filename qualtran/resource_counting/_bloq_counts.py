@@ -218,7 +218,7 @@ class QECGatesCost(CostKey[GateCounts]):
         # 'And' bloqs
         if isinstance(bloq, And):
             if bloq.uncompute:
-                return GateCounts(measurement=1)
+                return GateCounts(measurement=1, clifford=1)
             return GateCounts(and_bloq=1)
 
         # CSwaps aka Fredkin
