@@ -16,10 +16,9 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BoundedQUInt, Register
+from qualtran import BoundedQUInt, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -44,7 +43,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, targe
         # All controls 'on' to activate circuit
         qubit_vals.update({c: 1 for c in g.quregs['control']})
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         initial_state = [qubit_vals[x] for x in g.operation.qubits]
 

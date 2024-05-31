@@ -15,6 +15,7 @@
 import numpy as np
 import pytest
 
+from qualtran import QUInt
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     _nr_inv_sqrt,
@@ -24,7 +25,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     NewtonRaphsonApproxInverseSquareRoot,
     PolynmomialEvaluationInverseSquareRoot,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
+from qualtran.cirq_interop.bit_tools import iter_bits_fixed_point
 
 
 def test_newton_raphson_inverse_sqrt(bloq_autotester):
@@ -55,7 +56,7 @@ def test_poly_eval_inverse_sqrt_bloq_counts():
 
 
 def fixed_point_to_float(x: int, width: int) -> float:
-    bits = iter_bits(int(x), width)
+    bits = QUInt(width).to_bits(int(x))
     approx_val = np.sum([b * (1 / 2 ** (1 + i)) for i, b in enumerate(bits)])
     return approx_val
 
