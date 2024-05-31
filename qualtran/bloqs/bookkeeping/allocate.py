@@ -15,9 +15,22 @@ from functools import cached_property
 from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
+import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QDType, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QDType,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
@@ -29,8 +42,11 @@ if TYPE_CHECKING:
 class Allocate(_BookkeepingBloq):
     """Allocate an `n` bit register.
 
-    Attributes:
-          dtype: the quantum data type of the allocated register.
+    Args:
+        dtype: the quantum data type of the allocated register.
+
+    Registers:
+        reg [right]: The allocated register.
     """
 
     dtype: QDType
@@ -38,6 +54,9 @@ class Allocate(_BookkeepingBloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('reg', self.dtype, side=Side.RIGHT)])
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic.')
 
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.free import Free
@@ -66,3 +85,13 @@ class Allocate(_BookkeepingBloq):
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
+
+
+@bloq_example
+def _alloc() -> Allocate:
+    n = sympy.Symbol('n')
+    alloc = Allocate(QUInt(n))
+    return alloc
+
+
+_ALLOC_DOC = BloqDocSpec(bloq_cls=Allocate, examples=[_alloc])

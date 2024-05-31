@@ -35,6 +35,7 @@ Bloqs Library
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
+    bookkeeping/bookkeeping.ipynb
 
 .. toctree::
     :maxdepth: 2
