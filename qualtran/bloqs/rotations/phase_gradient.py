@@ -120,7 +120,6 @@ def _phase_gradient_unitary() -> PhaseGradientUnitary:
 
 _PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
     bloq_cls=PhaseGradientUnitary,
-    import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary',
     examples=(_phase_gradient_unitary,),
 )
 
@@ -178,7 +177,6 @@ def _phase_gradient_state() -> PhaseGradientState:
 
 _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
     bloq_cls=PhaseGradientState,
-    import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState',
     examples=(_phase_gradient_state,),
 )
 
@@ -335,7 +333,6 @@ def _add_into_phase_grad() -> AddIntoPhaseGrad:
 
 _ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(
     bloq_cls=AddIntoPhaseGrad,
-    import_line='from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad',
     examples=(_add_into_phase_grad,),
 )
 
@@ -545,6 +542,5 @@ def _add_scaled_val_into_phase_reg() -> AddScaledValIntoPhaseReg:
 
 _ADD_SCALED_VAL_INTO_PHASE_REG_DOC = BloqDocSpec(
     bloq_cls=AddScaledValIntoPhaseReg,
-    import_line='from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad',
     examples=(_add_scaled_val_into_phase_reg,),
 )
