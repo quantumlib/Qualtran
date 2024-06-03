@@ -86,7 +86,7 @@ class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
             label = sympy.printing.pretty(n)
             graph.add_edge(pydot.Edge(self.get_id(b1), self.get_id(b2), label=label))
 
-    def get_graph(self):
+    def get_graph(self) -> pydot.Dot:
         """Get the pydot graph."""
         graph = pydot.Dot('counts', graph_type='digraph', rankdir='TB')
         self.add_nodes(graph)
@@ -95,7 +95,7 @@ class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
 
     def get_svg_bytes(self) -> bytes:
         """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create_svg()
+        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')
 
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""
