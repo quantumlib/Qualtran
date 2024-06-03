@@ -22,6 +22,7 @@ from qualtran.bloqs.phase_estimation.lp_resource_state import (
     LPResourceState,
     LPRSInterimPrep,
 )
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
@@ -77,3 +78,10 @@ def test_t_complexity(n):
         bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
     )
     assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6
+
+
+@pytest.mark.parametrize('bitsize', [8, 16, 32])
+def test_interim_lp2s_interim_prep_t_complexity(bitsize: int):
+    assert t_complexity(LPRSInterimPrep(bitsize)) == TComplexity(
+        rotations=bitsize + 1, clifford=2 + bitsize
+    )

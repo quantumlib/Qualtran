@@ -15,6 +15,8 @@
 import numpy as np
 import pytest
 
+from qualtran import QInt
+from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     _nr_inv_sqrt,
@@ -46,12 +48,21 @@ def test_newton_raphson_inverse_sqrt_bloq_counts():
     cost_mult = 2 * (target_bitsize**2 - target_bitsize - 1)
     cost_add = target_bitsize - 1
     assert counts[TGate()] == 4 * (cost_square + cost_scale + cost_mult + cost_add)
+    cost = (
+        SquareRealNumber(poly_bitsize).t_complexity()
+        + ScaleIntByReal(poly_bitsize, int_bitsize).t_complexity()
+        + 2 * MultiplyTwoReals(target_bitsize).t_complexity()
+        + Add(QInt(target_bitsize)).t_complexity()
+    )
+    assert bloq.t_complexity() == cost
 
 
 def test_poly_eval_inverse_sqrt_bloq_counts():
     bloq = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
     _, counts = bloq.call_graph()
     assert counts[TGate()] == 744
+    cost = 3 * (Add(QInt(8)).t_complexity() + MultiplyTwoReals(8).t_complexity())
+    assert bloq.t_complexity() == cost
 
 
 def fixed_point_to_float(x: int, width: int) -> float:

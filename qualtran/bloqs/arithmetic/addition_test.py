@@ -22,13 +22,10 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
 from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.cirq_interop.testing import (
-    assert_circuit_inp_out_cirqsim,
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
-)
+from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
@@ -269,9 +266,10 @@ def test_out_of_place_adder():
         assert_circuit_inp_out_cirqsim(circuit, qubit_order, bits, bits)
     assert gate.t_complexity().t == 3 * 4
     assert (gate**-1).t_complexity().t == 0
-    assert_decompose_is_consistent_with_t_complexity(gate**-1)
     qlt_testing.assert_valid_bloq_decomposition(gate)
     qlt_testing.assert_valid_bloq_decomposition(gate**-1)
+    and_t = And().t_complexity()
+    assert gate.t_complexity() == TComplexity(t=3 * and_t.t, clifford=3 * (5 + and_t.clifford))
 
 
 def test_controlled_add_k():
