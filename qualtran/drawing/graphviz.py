@@ -340,7 +340,7 @@ class GraphDrawer:
         graph.add_edge(self.cxn_edge(left, right, cxn))
         return graph
 
-    def get_graph(self) -> pydot.Graph:
+    def get_graph(self) -> pydot.Dot:
         """Get the graphviz graph representing the Bloq.
 
         This is the main entry-point to this class.
@@ -360,7 +360,7 @@ class GraphDrawer:
 
     def get_svg_bytes(self) -> bytes:
         """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create_svg()
+        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')
 
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""
