@@ -42,6 +42,7 @@
    qualtran/serialization.md
    qualtran/simulation.md
    qualtran/surface_code.md
+   qualtran/symbolics.md
    qualtran/testing.md
 
 .. toctree::
@@ -116,16 +117,25 @@
    :hidden:
    :caption: resource_counting
 
+   qualtran/resource_counting/BloqCount.md
    qualtran/resource_counting/BloqCountT.md
+   qualtran/resource_counting/CostKey.md
+   qualtran/resource_counting/GateCounts.md
    qualtran/resource_counting/GeneralizerT.md
+   qualtran/resource_counting/QECGatesCost.md
+   qualtran/resource_counting/QubitCount.md
+   qualtran/resource_counting/SuccessProb.md
    qualtran/resource_counting/SympySymbolAllocator.md
    qualtran/resource_counting/big_O.md
    qualtran/resource_counting/build_cbloq_call_graph.md
+   qualtran/resource_counting/classify_bloqs.md
+   qualtran/resource_counting/format_call_graph_debug_text.md
    qualtran/resource_counting/generalizers.md
    qualtran/resource_counting/get_bloq_call_graph.md
    qualtran/resource_counting/get_bloq_callee_counts.md
-   qualtran/resource_counting/print_counts_graph.md
-   qualtran/resource_counting/symbolic_counting_utils.md
+   qualtran/resource_counting/get_cost_cache.md
+   qualtran/resource_counting/get_cost_value.md
+   qualtran/resource_counting/query_costs.md
    qualtran/resource_counting/t_counts_from_sigma.md
 
 .. toctree::
@@ -185,6 +195,32 @@
 
 .. toctree::
    :hidden:
+   :caption: symbolics
+
+   qualtran/symbolics/HasLength.md
+   qualtran/symbolics/Shaped.md
+   qualtran/symbolics/SymbolicComplex.md
+   qualtran/symbolics/SymbolicFloat.md
+   qualtran/symbolics/SymbolicInt.md
+   qualtran/symbolics/acos.md
+   qualtran/symbolics/bit_length.md
+   qualtran/symbolics/ceil.md
+   qualtran/symbolics/floor.md
+   qualtran/symbolics/is_symbolic.md
+   qualtran/symbolics/log2.md
+   qualtran/symbolics/math_funcs.md
+   qualtran/symbolics/pi.md
+   qualtran/symbolics/prod.md
+   qualtran/symbolics/sabs.md
+   qualtran/symbolics/sconj.md
+   qualtran/symbolics/shape.md
+   qualtran/symbolics/slen.md
+   qualtran/symbolics/smax.md
+   qualtran/symbolics/smin.md
+   qualtran/symbolics/types.md
+
+.. toctree::
+   :hidden:
    :caption: musical_score
 
    qualtran/drawing/musical_score/MusicalScoreEncoder.md
@@ -228,21 +264,12 @@
 
 .. toctree::
    :hidden:
-   :caption: symbolic_counting_utils
+   :caption: classify_bloqs
 
-   qualtran/resource_counting/symbolic_counting_utils/Shaped.md
-   qualtran/resource_counting/symbolic_counting_utils/SymbolicComplex.md
-   qualtran/resource_counting/symbolic_counting_utils/acos.md
-   qualtran/resource_counting/symbolic_counting_utils/bit_length.md
-   qualtran/resource_counting/symbolic_counting_utils/ceil.md
-   qualtran/resource_counting/symbolic_counting_utils/floor.md
-   qualtran/resource_counting/symbolic_counting_utils/is_symbolic.md
-   qualtran/resource_counting/symbolic_counting_utils/log2.md
-   qualtran/resource_counting/symbolic_counting_utils/pi.md
-   qualtran/resource_counting/symbolic_counting_utils/sconj.md
-   qualtran/resource_counting/symbolic_counting_utils/slen.md
-   qualtran/resource_counting/symbolic_counting_utils/smax.md
-   qualtran/resource_counting/symbolic_counting_utils/smin.md
+   qualtran/resource_counting/classify_bloqs/bloq_is_clifford.md
+   qualtran/resource_counting/classify_bloqs/bloq_is_rotation.md
+   qualtran/resource_counting/classify_bloqs/classify_bloq.md
+   qualtran/resource_counting/classify_bloqs/classify_t_count_by_bloq_type.md
 
 .. toctree::
    :hidden:
@@ -255,8 +282,6 @@
    :caption: t_complexity_protocol
 
    qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
-   qualtran/cirq_interop/t_complexity_protocol/SymbolicFloat.md
-   qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.md
    qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
 
@@ -311,4 +336,10 @@
    :caption: quantum_error_correction_scheme_summary
 
    qualtran/surface_code/quantum_error_correction_scheme_summary/SimpliedSurfaceCode.md
+
+.. toctree::
+   :hidden:
+   :caption: math_funcs
+
+   qualtran/symbolics/math_funcs/ssqrt.md
 

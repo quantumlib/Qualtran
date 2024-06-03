@@ -25,7 +25,7 @@ Format `sigma` as markdown.
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.drawing.format_counts_sigma(
-    sigma: Dict[<a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>, Union[int, <a href="../../qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.html"><code>qualtran.cirq_interop.t_complexity_protocol.SymbolicInt</code></a>]]
+    sigma: Dict[<a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>, Union[int, <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>]]
 ) -> str
 </code></pre>
 

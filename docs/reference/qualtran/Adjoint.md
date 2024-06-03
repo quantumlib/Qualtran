@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L88-L207">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L88-L210">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -155,20 +155,9 @@ The 'double adjoint' brings you back to the original bloq.
 The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph.
 
 
-<h3 id="short_name"><code>short_name</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L173-L175">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>short_name() -> str
-</code></pre>
-
-The subbloq's short_name with a dagger.
-
-
 <h3 id="pretty_name"><code>pretty_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L177-L179">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L173-L175">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>pretty_name() -> str
@@ -179,11 +168,11 @@ The subbloq's pretty_name with a dagger.
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L185-L189">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L181-L192">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
-    reg: 'Register', idx: Tuple[int, ...] = tuple()
+    reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
 ) -> 'WireSymbol'
 </code></pre>
 
@@ -191,6 +180,10 @@ On a musical score visualization, use this `WireSymbol` to represent `soq`.
 
 By default, we use a "directional text box", which is a text box that is either
 rectangular for thru-registers or facing to the left or right for non-thru-registers.
+
+If reg is specified as `None`, this should return a Text label for the title of
+the gate. If no title is needed (as the wire_symbols are self-explanatory),
+this should return `Text('')`.
 
 Override this method to provide a more relevant `WireSymbol` for the provided soquet.
 This method can access bloq attributes. For example: you may want to draw either

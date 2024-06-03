@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L81-L429">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L80-L455">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -82,7 +82,7 @@ composite bloq.
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L136-L143">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L135-L144">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -93,23 +93,24 @@ composite bloq.
 Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq.
 
 
-<h3 id="to_cirq_circuit"><code>to_cirq_circuit</code></h3>
+<h3 id="to_cirq_circuit_and_quregs"><code>to_cirq_circuit_and_quregs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L145-L167">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L146-L169">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>to_cirq_circuit(
+<code>to_cirq_circuit_and_quregs(
     qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs
 ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]
 </code></pre>
 
-Convert this CompositeBloq to a `cirq.Circuit`.
+Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
 
 Args
 
 `qubit_manager`
-: A `cirq.QubitManager` to allocate new qubits.
+: A `cirq.QubitManager` to allocate new qubits. If not provided,
+  uses `cirq.SimpleQubitManager()` by default.
 
 `**cirq_quregs`
 : Mapping from left register names to Cirq qubit arrays.
@@ -128,9 +129,45 @@ Returns
 
 
 
+<h3 id="to_cirq_circuit"><code>to_cirq_circuit</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L171-L193">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>to_cirq_circuit(
+    *,
+    qubit_manager: Optional['cirq.QubitManager'] = None,
+    cirq_quregs: Optional[Mapping[str, 'CirqQuregInT']] = None
+) -> 'cirq.FrozenCircuit'
+</code></pre>
+
+Convert this CompositeBloq to a `cirq.Circuit`.
+
+
+Args
+
+`qubit_manager`
+: A `cirq.QubitManager` to allocate new qubits. If not provided,
+  uses `cirq.SimpleQubitManager()` by default.
+
+`cirq_quregs`
+: Mapping from left register names to Cirq qubit arrays. If not provided,
+  uses `get_named_qubits(self.signature.lefts())` by default.
+
+
+
+
+Returns
+
+`circuit`
+: The cirq.FrozenCircuit version of this composite bloq.
+
+
+
+
 <h3 id="from_cirq_circuit"><code>from_cirq_circuit</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L169-L179">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L195-L205">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -147,7 +184,7 @@ named "qubits" of shape `(n_qubits,)`.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L181-L188">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L207-L214">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
@@ -160,7 +197,7 @@ Support classical data by recursing into the composite bloq.
 
 <h3 id="call_classically"><code>call_classically</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L190-L195">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L216-L221">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_classically(
@@ -173,7 +210,7 @@ Support classical data by recursing into the composite bloq.
 
 <h3 id="as_composite_bloq"><code>as_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L197-L199">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L223-L225">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_composite_bloq() -> 'CompositeBloq'
@@ -184,7 +221,7 @@ This override just returns the present composite bloq.
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L201-L202">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L227-L228">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -212,7 +249,7 @@ Raises
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L204-L208">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L230-L234">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -225,7 +262,7 @@ Return the bloq counts by counting up all the subbloqs.
 
 <h3 id="iter_bloqnections"><code>iter_bloqnections</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L210-L229">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L236-L255">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>iter_bloqnections() -> Iterator[Tuple[BloqInstance, List[Connection], List[Connection]]]
@@ -241,7 +278,7 @@ Yields
 
 <h3 id="iter_bloqsoqs"><code>iter_bloqsoqs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L231-L264">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L257-L290">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>iter_bloqsoqs() -> Iterator[Tuple[BloqInstance, Dict[str, SoquetT], Tuple[SoquetT, ...]]]
@@ -281,7 +318,7 @@ Yields
 
 <h3 id="final_soqs"><code>final_soqs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L266-L279">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L292-L305">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>final_soqs() -> Dict[str, SoquetT]
@@ -293,7 +330,7 @@ This method is helpful for finalizing an "add from" operation, see `iter_bloqsoq
 
 <h3 id="copy"><code>copy</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L281-L291">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L307-L317">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>copy() -> 'CompositeBloq'
@@ -304,7 +341,7 @@ Create a copy of this composite bloq by re-building it.
 
 <h3 id="flatten_once"><code>flatten_once</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L293-L346">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L319-L372">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>flatten_once(
@@ -347,7 +384,7 @@ Raises
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L348-L356">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L374-L382">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'CompositeBloq'
@@ -360,7 +397,7 @@ operations is reversed and each subbloq is replaced with its adjoint.
 
 <h3 id="flatten"><code>flatten</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L358-L389">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L384-L415">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>flatten(
@@ -403,7 +440,7 @@ Raises
 
 <h3 id="debug_text"><code>debug_text</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L406-L429">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L432-L455">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>debug_text() -> str

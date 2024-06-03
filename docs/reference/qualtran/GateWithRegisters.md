@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L202-L551">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L203-L537">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -88,7 +88,7 @@ y1: ─────y──────────────────
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L252-L292">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L253-L293">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -137,7 +137,7 @@ Raises
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L294-L310">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L295-L311">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -166,11 +166,11 @@ Returns
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L312-L315">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L313-L320">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
-    reg: <a href="../qualtran/Register.html"><code>qualtran.Register</code></a>,
+    reg: Optional[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>],
     idx: Tuple[int, ...] = tuple()
 ) -> 'WireSymbol'
 </code></pre>
@@ -180,6 +180,10 @@ On a musical score visualization, use this `WireSymbol` to represent `soq`.
 By default, we use a "directional text box", which is a text box that is either
 rectangular for thru-registers or facing to the left or right for non-thru-registers.
 
+If reg is specified as `None`, this should return a Text label for the title of
+the gate. If no title is needed (as the wire_symbols are self-explanatory),
+this should return `Text('')`.
+
 Override this method to provide a more relevant `WireSymbol` for the provided soquet.
 This method can access bloq attributes. For example: you may want to draw either
 a filled or empty circle for a control register depending on a control value bloq
@@ -187,7 +191,7 @@ attribute.
 
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L322-L325">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L327-L330">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
@@ -200,7 +204,7 @@ attribute.
 
 <h3 id="on"><code>on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L350-L354">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L355-L359">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on(
@@ -230,7 +234,7 @@ See Also
 
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L356-L359">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L361-L364">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
@@ -259,7 +263,7 @@ See Also
 
 <h3 id="__pow__"><code>__pow__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L361-L369">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L366-L374">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__pow__(
@@ -272,7 +276,7 @@ See Also
 
 <h3 id="controlled"><code>controlled</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L458-L513">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L454-L505">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>controlled(
@@ -297,10 +301,6 @@ via arguments `num_controls`, `control_values` and `control_qid_shape`, and cons
 By default, the system will use the <a href="../qualtran/Controlled.html"><code>qualtran.Controlled</code></a> meta-bloq to wrap this
 bloq. Bloqs authors can declare their own, custom controlled versions by overriding
 <a href="../qualtran/Bloq.html#get_ctrl_system"><code>Bloq.get_ctrl_system</code></a> in the bloq.
-
-If overriding the `GWR.controlled()` method directly, Bloq authors can use the
-`self._get_ctrl_spec` helper to construct a `CtrlSpec` object from the input parameters of
-`GWR.controlled()` and use it to return a custom controlled version of this Bloq.
 
 
 Args
@@ -341,7 +341,7 @@ Returns
 
 <h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L518-L539">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L510-L525">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_my_tensors(

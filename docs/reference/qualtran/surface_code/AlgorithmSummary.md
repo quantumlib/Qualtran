@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L25-L112">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L32-L131">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -72,7 +72,7 @@ All counts default to zero.
 
 <h3 id="__mul__"><code>__mul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L49-L62">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L56-L69">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__mul__(
@@ -85,7 +85,7 @@ All counts default to zero.
 
 <h3 id="__rmul__"><code>__rmul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L64-L65">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L71-L72">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__rmul__(
@@ -98,7 +98,7 @@ All counts default to zero.
 
 <h3 id="__add__"><code>__add__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L67-L79">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L74-L86">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__add__(
@@ -111,7 +111,7 @@ All counts default to zero.
 
 <h3 id="__sub__"><code>__sub__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L81-L93">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L88-L100">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__sub__(
@@ -124,13 +124,27 @@ All counts default to zero.
 
 <h3 id="to_magic_count"><code>to_magic_count</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L95-L112">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L102-L119">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_magic_count(
     rotation_model: Optional[<a href="../../qualtran/surface_code/RotationCostModel.html"><code>qualtran.surface_code.RotationCostModel</code></a>] = None,
     error_budget: Optional[float] = None
 ) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
+</code></pre>
+
+
+
+
+<h3 id="from_bloq"><code>from_bloq</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L121-L131">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>@staticmethod</code>
+<code>from_bloq(
+    bloq: 'Bloq'
+) -> 'AlgorithmSummary'
 </code></pre>
 
 

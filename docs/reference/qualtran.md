@@ -23,6 +23,8 @@ isort:skip_file
 
 [`surface_code`](./qualtran/surface_code.md) module
 
+[`symbolics`](./qualtran/symbolics.md) module
+
 [`testing`](./qualtran/testing.md) module
 
 ## Classes
@@ -59,7 +61,7 @@ isort:skip_file
 
 [`class QMontgomeryUInt`](./qualtran/QMontgomeryUInt.md): Montgomery form of an unsigned integer of a given width bitsize which wraps around upon overflow.
 
-[`class Register`](./qualtran/Register.md): A data type describing a register of qubits.
+[`class Register`](./qualtran/Register.md): A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
 [`class Signature`](./qualtran/Signature.md): An ordered sequence of `Register`s that follow the rules for a bloq signature.
 

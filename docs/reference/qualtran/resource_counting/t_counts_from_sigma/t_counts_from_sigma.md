@@ -19,7 +19,7 @@ Aggregates T-counts from a sigma dictionary by summing T-costs for all rotation 
 <code>qualtran.resource_counting.t_counts_from_sigma.t_counts_from_sigma(
     sigma: Mapping['Bloq', SymbolicInt],
     rotation_types: Optional[Tuple[Type['_HasEps'], ...]] = None
-) -> <a href="../../../qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.html"><code>qualtran.cirq_interop.t_complexity_protocol.SymbolicInt</code></a>
+) -> <a href="../../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>
 </code></pre>
 
 
