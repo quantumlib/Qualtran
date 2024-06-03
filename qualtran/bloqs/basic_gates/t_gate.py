@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -87,7 +87,7 @@ class TGate(Bloq):
         data = _TMATRIX.conj().T if self.is_adjoint else _TMATRIX
         tn.add(
             qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
             )
         )
 
@@ -108,11 +108,14 @@ class TGate(Bloq):
         return f'T{maybe_dag}'
 
     def __str__(self):
-        maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
-        return f'TGate({maybe_dag})'
+        maybe_dag = '†' if self.is_adjoint else ''
+        return f'T{maybe_dag}'
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        return TextBox(self.pretty_name())
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        maybe_dag = '†' if self.is_adjoint else ''
+        return TextBox(f'T{maybe_dag}')
 
 
 @bloq_example

@@ -25,13 +25,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.bloqs.rotations import AddIntoPhaseGrad
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

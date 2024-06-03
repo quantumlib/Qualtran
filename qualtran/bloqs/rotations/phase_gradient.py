@@ -33,8 +33,8 @@ if TYPE_CHECKING:
 
     from qualtran import Bloq, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @attrs.frozen
@@ -279,7 +279,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
 
@@ -474,5 +474,5 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )

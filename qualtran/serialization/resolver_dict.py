@@ -22,6 +22,7 @@ import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
+import qualtran.bloqs.basic_gates.identity
 import qualtran.bloqs.basic_gates.on_each
 import qualtran.bloqs.basic_gates.rotation
 import qualtran.bloqs.basic_gates.s_gate
@@ -32,10 +33,14 @@ import qualtran.bloqs.basic_gates.x_basis
 import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
+import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.df.prepare
 import qualtran.bloqs.chemistry.df.select_bloq
+import qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard
+import qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
@@ -67,7 +72,6 @@ import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.mod_add
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_mul
 import qualtran.bloqs.factoring.mod_sub
@@ -78,12 +82,12 @@ import qualtran.bloqs.for_testing.many_registers
 import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
-import qualtran.bloqs.hubbard_model
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mean_estimation.arctan
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
+import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
@@ -96,22 +100,20 @@ import qualtran.bloqs.qft.qft_phase_gradient
 import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
-import qualtran.bloqs.qubitization_walk_operator
-import qualtran.bloqs.reflection
-import qualtran.bloqs.reflection_using_prepare
+import qualtran.bloqs.qubitization.qubitization_walk_operator
+import qualtran.bloqs.reflections.prepare_identity
+import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
-import qualtran.bloqs.select_and_prepare
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
 import qualtran.bloqs.swap_network.swap_with_zero
-import qualtran.bloqs.util_bloqs
 from qualtran import Adjoint, Bloq, CompositeBloq, Controlled, CtrlSpec
 from qualtran.cirq_interop import CirqGateAsBloq
 
@@ -122,9 +124,8 @@ RESOLVER_DICT = {
     "qualtran._infra.composite_bloq.CompositeBloq": CompositeBloq,
     "qualtran.cirq_interop._cirq_to_bloq.CirqGateAsBloq": CirqGateAsBloq,
     "qualtran.bloqs.arithmetic.addition.Add": qualtran.bloqs.arithmetic.addition.Add,
-    "qualtran.bloqs.arithmetic.addition.AddConstantMod": qualtran.bloqs.arithmetic.addition.AddConstantMod,
     "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder,
-    "qualtran.bloqs.arithmetic.addition.SimpleAddConstant": qualtran.bloqs.arithmetic.addition.SimpleAddConstant,
+    "qualtran.bloqs.arithmetic.addition.AddK": qualtran.bloqs.arithmetic.AddK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
     "qualtran.bloqs.arithmetic.comparison.EqualsAConstant": qualtran.bloqs.arithmetic.comparison.EqualsAConstant,
     "qualtran.bloqs.arithmetic.comparison.GreaterThan": qualtran.bloqs.arithmetic.comparison.GreaterThan,
@@ -146,6 +147,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
+    "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
     "qualtran.bloqs.basic_gates.on_each.OnEach": qualtran.bloqs.basic_gates.on_each.OnEach,
@@ -177,10 +179,19 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZGate": qualtran.bloqs.basic_gates.z_basis.ZGate,
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
-    "qualtran.bloqs.block_encoding.BlackBoxBlockEncoding": qualtran.bloqs.block_encoding.BlackBoxBlockEncoding,
-    "qualtran.bloqs.block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.BlackBoxPrepare,
-    "qualtran.bloqs.block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.BlackBoxSelect,
-    "qualtran.bloqs.block_encoding.ChebyshevPolynomial": qualtran.bloqs.block_encoding.ChebyshevPolynomial,
+    "qualtran.bloqs.basic_gates.power.Power": qualtran.bloqs.basic_gates.power.Power,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
+    "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
+    "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
+    "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
+    "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
+    "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
+    "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
+    "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
+    "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,
     "qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs": qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs,
     "qualtran.bloqs.chemistry.black_boxes.QROAM": qualtran.bloqs.chemistry.black_boxes.QROAM,
     "qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs": qualtran.bloqs.chemistry.black_boxes.QROAMTwoRegs,
@@ -240,15 +251,17 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingXUnitary": qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingXUnitary,
     "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingZZUnitary": qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingZZUnitary,
     "qualtran.bloqs.chemistry.trotter.hubbard.interaction.Interaction": qualtran.bloqs.chemistry.trotter.hubbard.interaction.Interaction,
+    "qualtran.bloqs.chemistry.trotter.hubbard.interaction.InteractionHWP": qualtran.bloqs.chemistry.trotter.hubbard.interaction.InteractionHWP,
     "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingPlaquette": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingPlaquette,
     "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile,
+    "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTileHWP": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTileHWP,
     "qualtran.bloqs.chemistry.trotter.trotterized_unitary": qualtran.bloqs.chemistry.trotter.trotterized_unitary,
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
-    "qualtran.bloqs.factoring.mod_add.CtrlAddK": qualtran.bloqs.factoring.mod_add.CtrlAddK,
-    "qualtran.bloqs.factoring.mod_add.CtrlModAddK": qualtran.bloqs.factoring.mod_add.CtrlModAddK,
-    "qualtran.bloqs.factoring.mod_add.CtrlScaleModAdd": qualtran.bloqs.factoring.mod_add.CtrlScaleModAdd,
-    "qualtran.bloqs.factoring.mod_add.MontgomeryModAdd": qualtran.bloqs.factoring.mod_add.MontgomeryModAdd,
+    "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
+    "qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK": qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK,
+    "qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd": qualtran.bloqs.mod_arithmetic.CtrlScaleModAdd,
+    "qualtran.bloqs.mod_arithmetic.ModAdd": qualtran.bloqs.mod_arithmetic.ModAdd,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.factoring.mod_mul.CtrlModMul": qualtran.bloqs.factoring.mod_mul.CtrlModMul,
     "qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl": qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl,
@@ -268,8 +281,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
-    "qualtran.bloqs.hubbard_model.PrepareHubbard": qualtran.bloqs.hubbard_model.PrepareHubbard,
-    "qualtran.bloqs.hubbard_model.SelectHubbard": qualtran.bloqs.hubbard_model.SelectHubbard,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
@@ -291,9 +304,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qft.qft_text_book.QFTTextBook": qualtran.bloqs.qft.qft_text_book.QFTTextBook,
     "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT": qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT,
     "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
-    "qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator,
-    "qualtran.bloqs.reflection.Reflection": qualtran.bloqs.reflection.Reflection,
-    "qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare,
+    "qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator,
+    "qualtran.bloqs.reflections.prepare_identity.PrepareIdentity": qualtran.bloqs.reflections.prepare_identity.PrepareIdentity,
+    "qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient,
     "qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad": qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad,
@@ -306,8 +319,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
-    "qualtran.bloqs.select_and_prepare.PrepareOracle": qualtran.bloqs.select_and_prepare.PrepareOracle,
-    "qualtran.bloqs.select_and_prepare.SelectOracle": qualtran.bloqs.select_and_prepare.SelectOracle,
+    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle,
+    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient": qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient,
@@ -315,14 +328,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.swap_network.cswap_approx.CSwapApprox": qualtran.bloqs.swap_network.cswap_approx.CSwapApprox,
     "qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap": qualtran.bloqs.swap_network.multiplexed_cswap.MultiplexedCSwap,
     "qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero": qualtran.bloqs.swap_network.swap_with_zero.SwapWithZero,
-    "qualtran.bloqs.util_bloqs.Allocate": qualtran.bloqs.util_bloqs.Allocate,
-    "qualtran.bloqs.util_bloqs.ArbitraryClifford": qualtran.bloqs.util_bloqs.ArbitraryClifford,
-    "qualtran.bloqs.util_bloqs.Cast": qualtran.bloqs.util_bloqs.Cast,
-    "qualtran.bloqs.util_bloqs.Free": qualtran.bloqs.util_bloqs.Free,
-    "qualtran.bloqs.util_bloqs.Join": qualtran.bloqs.util_bloqs.Join,
-    "qualtran.bloqs.util_bloqs.Partition": qualtran.bloqs.util_bloqs.Partition,
-    "qualtran.bloqs.util_bloqs.Power": qualtran.bloqs.util_bloqs.Power,
-    "qualtran.bloqs.util_bloqs.Split": qualtran.bloqs.util_bloqs.Split,
 }
 
 

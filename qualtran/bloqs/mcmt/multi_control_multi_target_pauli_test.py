@@ -18,10 +18,21 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+    _ccpauli,
+    _ccpauli_symb,
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,
 )
+
+
+def test_ccpauli(bloq_autotester):
+    bloq_autotester(_ccpauli)
+
+
+def test_ccpauli_symb():
+    bloq = _ccpauli_symb.make()
+    assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])

@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QUInt, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
 @attrs.frozen

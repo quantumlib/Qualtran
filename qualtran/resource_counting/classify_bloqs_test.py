@@ -23,7 +23,8 @@ from qualtran.bloqs.arithmetic.comparison import LessThanConstant
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.resource_counting import BloqCountT
 from qualtran.resource_counting.classify_bloqs import (
@@ -57,10 +58,10 @@ class TestBundleOfBloqs(Bloq):
         (((CSwap(10), 42),), 'swaps'),
         (((HammingWeightPhasing(10, 1.11), 11),), 'rotations'),
         (((Add(QInt(8)), 4),), 'arithmetic'),
-        (((QROM.build([4, 10, 11, 34]), 8),), 'data_loading'),
+        (((QROM.build_from_data([4, 10, 11, 34]), 8),), 'data_loading'),
         (((And(), 4),), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (((Reflection((3, 3, 2), (0, 0, 1)), 100),), 'reflection'),  # type: ignore[arg-type]
+        (((ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 100),), 'reflection'),  # type: ignore[arg-type]
         (((LessThanConstant(8, 3), 10),), 'arithmetic'),
     ),
 )
@@ -76,10 +77,10 @@ def test_default_classification(bloq_count, classification):
         (CSwap(10), 'swaps'),
         (HammingWeightPhasing(10, 1.11), 'rotations'),
         (Add(QInt(8)), 'arithmetic'),
-        (QROM.build([4, 10, 11, 34]), 'data_loading'),
+        (QROM.build_from_data([4, 10, 11, 34]), 'data_loading'),
         (And(), 'multi_control_pauli'),
         # https://github.com/python/mypy/issues/5313
-        (Reflection((3, 3, 2), (0, 0, 1)), 'reflection'),  # type: ignore[arg-type]
+        (ReflectionUsingPrepare(PrepareIdentity.from_bitsizes((3, 3, 2))), 'reflection'),  # type: ignore[arg-type]
         (LessThanConstant(8, 3).adjoint(), 'arithmetic'),
     ),
 )

@@ -519,7 +519,7 @@ class VLine:
     x: int
     top_y: int
     bottom_y: int
-    label: str
+    label: Text
 
     def json_dict(self):
         return attrs.asdict(self)
@@ -632,13 +632,15 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
                 binst_x = rpos.seq_x
 
         if not isinstance(binst, DanglingT):
-            assert binst_x is not None
+            if binst_x is None:
+                # No predecessors or successors
+                continue
             msd.vlines.append(
                 VLine(
                     x=binst_x,
                     top_y=binst_top_y,
                     bottom_y=binst_bot_y,
-                    label=binst.bloq.short_name(),
+                    label=binst.bloq.wire_symbol(reg=None),
                 )
             )
 
@@ -683,7 +685,8 @@ def draw_musical_score(
 
     for vline in msd.vlines:
         ax.vlines(vline.x, -vline.top_y, -vline.bottom_y, color='k', zorder=-1)
-        Text(vline.label).draw(ax, vline.x, vline.bottom_y - 0.5)
+        if vline.label.text:
+            vline.label.draw(ax, vline.x, vline.bottom_y - 0.5)
 
     for soq in msd.soqs:
         symb = soq.symb

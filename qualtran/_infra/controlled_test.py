@@ -22,6 +22,7 @@ import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     Controlled,
     CtrlSpec,
     QBit,
@@ -70,7 +71,6 @@ def test_ctrl_spec():
     assert cspec3.qdtypes[0].num_qubits == 64
     assert cspec3.cvs[0] == 234234
     assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
@@ -100,7 +100,7 @@ def test_ctrl_bloq_as_cirq_op():
 
     def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
         left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(None, **left_quregs)
+        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
         circuit2 = cirq.Circuit(
             gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
         )
@@ -124,9 +124,22 @@ def test_ctrl_bloq_as_cirq_op():
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
-    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(None, **quregs)
+    circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # controlled composite subbloqs
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    cbloq = CompositeBloq.from_cirq_circuit(circuit).controlled().as_composite_bloq()
+    quregs = get_named_qubits(cbloq.signature.lefts())
+
+    circuit1 = cbloq.to_cirq_circuit(qubit_manager=None, cirq_quregs=quregs)
+    ctrl = quregs['ctrl'][0]
+    q = quregs['qubits'][0][0]
+    circuit2 = cirq.Circuit(
+        cirq.CircuitOperation(cirq.Circuit(cirq.X(q)).freeze()).controlled_by(ctrl)
     )
     cirq.testing.assert_same_circuits(circuit1, circuit2)
 
@@ -194,7 +207,7 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-Split(dtype=QAny(bitsize=3))<0>
+Split<0>
   LeftDangle.reg -> reg
   reg[0] -> C[TestAtom()]<1>.q
   reg[1] -> C[TestAtom()]<2>.q
@@ -202,23 +215,23 @@ Split(dtype=QAny(bitsize=3))<0>
 --------------------
 C[TestAtom()]<1>
   LeftDangle.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[0] -> q
+  Split<0>.reg[0] -> q
   ctrl -> C[TestAtom()]<2>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[0]
+  q -> Join<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[1] -> q
+  Split<0>.reg[1] -> q
   ctrl -> C[TestAtom()]<3>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[1]
+  q -> Join<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[2]
+  Split<0>.reg[2] -> q
+  q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join(dtype=QAny(bitsize=3))<4>
+Join<4>
   C[TestAtom()]<1>.q -> reg[0]
   C[TestAtom()]<2>.q -> reg[1]
   C[TestAtom()]<3>.q -> reg[2]

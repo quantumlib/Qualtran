@@ -20,8 +20,8 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -64,7 +64,7 @@ class HammingWeightCompute(GateWithRegisters):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "out = x.bit_count()"
 
     def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -22,13 +22,13 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import TextBox
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicFloat
+from qualtran.drawing import Text, TextBox
+from qualtran.symbolics import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import SympySymbolAllocator
 
@@ -120,7 +120,7 @@ class SU2RotationGate(GateWithRegisters):
             qtn.Tensor(
                 data=self.rotation_matrix,
                 inds=(outgoing['q'], incoming['q']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -148,14 +148,6 @@ class SU2RotationGate(GateWithRegisters):
             eps=self.eps,
         )
 
-    def pretty_name(self) -> str:
-        return 'SU_2'
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        return TextBox(
-            f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
-        )
-
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3)
 
@@ -171,6 +163,20 @@ class SU2RotationGate(GateWithRegisters):
         alpha = ssa.new_symbol("alpha")
         eps = ssa.new_symbol("eps")
         return cls(theta, phi, lambd, alpha, eps)
+
+    def pretty_name(self) -> str:
+        return 'SU_2'
+
+    def __str__(self):
+        return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(
+                f'({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+            )
+
+        return TextBox("SU2")
 
 
 @bloq_example

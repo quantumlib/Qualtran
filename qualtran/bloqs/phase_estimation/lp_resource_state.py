@@ -14,13 +14,13 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
 import sympy
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -64,7 +64,7 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'LPRS'
 
     def decompose_from_registers(
@@ -160,15 +160,15 @@ class LPResourceState(GateWithRegisters):
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.resource_counting.symbolic_counting_utils import acos
-
         flag_angle = acos(1 / (1 + 2**self.bitsize))
-
+        cvs: Union[HasLength, Tuple[int, ...]] = (
+            HasLength(self.bitsize + 1) if is_symbolic(self.bitsize) else (0,) * (self.bitsize + 1)
+        )
         return {
             (LPRSInterimPrep(self.bitsize), 2),
             (LPRSInterimPrep(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
+            (MultiControlPauli(cvs, target_gate=cirq.Z), 1),
             (XGate(), 4),
             (GlobalPhase(1j), 1),
             (CZPowGate(), 1),
@@ -197,9 +197,6 @@ def _lp_resource_state_small() -> LPResourceState:
 @bloq_example
 def _lp_resource_state_symbolic() -> LPResourceState:
     import sympy
-
-    # Note: Symbolic callgraphs currently don't work due to
-    # https://github.com/quantumlib/Qualtran/issues/786
 
     lp_resource_state_symbolic = LPResourceState(sympy.Symbol('n'))
     return lp_resource_state_symbolic

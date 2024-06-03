@@ -16,12 +16,14 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
+from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
 import numpy as np
 import sympy
 from attrs import field, frozen
+
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 from .data_types import QAny, QBit, QDType
 
@@ -44,18 +46,17 @@ class Side(enum.Flag):
 
 @frozen
 class Register:
-    """A data type describing a register of qubits.
+    """A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
-    Each register has a name as well as attributes describing the quantum data expected
-    to be passed to the register. A collection of `Register` objects can be used to define
-    a bloq's signature, see the `Signature` class.
+    Each register has a name and a quantum data type. A collection of `Register` objects are used
+    to define a bloq's signature, see the `Signature` class.
 
     Attributes:
-        name: The string name of the register
-        _bitsize: The number of (qu)bits in the register OR the quantum data type of the register.
-            If an integer is given it will be converted into either a QAny
-            dtype or QBit dtype (_bitsize = 1).
-        shape: A tuple of integer dimensions to declare a multidimensional register. The
+        name: The string name of the register. This name is used to 'wire up' quantum inputs
+            by name, analogous to Python's keyword-arguments.
+        dtype: The quantum data type of the register, for example `QBit()`, `QUInt(n)`, `QAny(n)`,
+            or any of the data types provided in the top-level `qualtran` namespace.
+        shape: An optional tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
             for more information.
@@ -63,7 +64,7 @@ class Register:
 
     name: str
     dtype: QDType
-    shape: Tuple[int, ...] = field(
+    _shape: Tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
@@ -71,6 +72,19 @@ class Register:
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, QDType):
             raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.dtype, *self._shape)
+
+    @property
+    def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
+        return self._shape
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        if is_symbolic(*self._shape):
+            raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
+        return cast(Tuple[int, ...], self._shape)
 
     @property
     def bitsize(self) -> int:

@@ -162,7 +162,7 @@ def test_bloq_with_non_trivial_inds():
     assert_valid_bloq_decomposition(bloq)
     cirq_qubits = cirq.LineQubit.range(2)
     cirq_quregs = {'q0': [cirq_qubits[0]], 'q1': [cirq_qubits[1]]}
-    cirq_circuit, _ = bloq.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
+    cirq_circuit = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=cirq_quregs)
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
     np.testing.assert_allclose(cirq_unitary, bloq.decompose_bloq().tensor_contract())
     np.testing.assert_allclose(cirq_unitary, bloq.tensor_contract())

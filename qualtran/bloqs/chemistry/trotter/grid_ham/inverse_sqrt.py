@@ -166,7 +166,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'y = x^{-1/2}'
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -225,7 +225,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'y ~ x^{-1/2}'
 
     def _t_complexity_(self) -> 'TComplexity':

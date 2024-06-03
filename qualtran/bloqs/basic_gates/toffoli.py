@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -113,8 +113,11 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import Circle, ModPlus
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import Circle, ModPlus, Text
+
+        if reg is None:
+            return Text('')
 
         if reg.name == 'ctrl':
             return Circle(filled=True)

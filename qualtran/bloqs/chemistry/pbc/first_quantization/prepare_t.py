@@ -55,8 +55,8 @@ class PreparePowerTwoState(Bloq):
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize)
 
-    def short_name(self) -> str:
-        return r'PREP $2^{r/2} |r\rangle$'
+    def pretty_name(self) -> str:
+        return r'PREP 2^(r/2) |r⟩'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.bitsize - 2))}
@@ -101,8 +101,8 @@ class PrepareTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(w=2, r=self.num_bits_p, s=self.num_bits_p)
 
-    def short_name(self) -> str:
-        return r'PREP $T$'
+    def pretty_name(self) -> str:
+        return r'PREP T'
 
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT

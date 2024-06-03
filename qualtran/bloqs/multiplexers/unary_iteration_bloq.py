@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+    from qualtran.symbolics import SymbolicInt
 
 
 def _unary_iteration_segtree(

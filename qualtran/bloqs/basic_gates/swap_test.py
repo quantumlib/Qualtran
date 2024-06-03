@@ -65,7 +65,9 @@ def test_two_bit_swap_unitary_vs_cirq():
 def test_two_bit_swap_as_cirq_op():
     q = cirq.LineQubit.range(2)
     expected_circuit = cirq.Circuit(cirq.SWAP(*q))
-    cbloq_to_circuit, quregs = TwoBitSwap().as_composite_bloq().to_cirq_circuit(x=[q[0]], y=[q[1]])
+    cbloq_to_circuit = (
+        TwoBitSwap().as_composite_bloq().to_cirq_circuit(cirq_quregs={'x': [q[0]], 'y': [q[1]]})
+    )
     cirq.testing.assert_same_circuits(expected_circuit, cbloq_to_circuit)
 
 

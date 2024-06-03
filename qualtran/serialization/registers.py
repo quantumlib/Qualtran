@@ -32,7 +32,7 @@ def register_to_proto(register: Register) -> registers_pb2.Register:
     return registers_pb2.Register(
         name=register.name,
         dtype=data_type_to_proto(register.dtype),
-        shape=(args.int_or_sympy_to_proto(s) for s in register.shape),
+        shape=(args.int_or_sympy_to_proto(s) for s in register.shape_symbolic),
         side=_side_to_proto(register.side),
     )
 

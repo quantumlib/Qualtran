@@ -14,7 +14,7 @@
 
 from attrs import frozen
 
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
 @frozen

@@ -16,6 +16,8 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran.symbolics import is_symbolic
+
 from .data_types import (
     BoundedQUInt,
     check_dtypes_consistent,
@@ -39,6 +41,7 @@ def test_qint():
     qint_8 = QInt(n)
     assert qint_8.num_qubits == n
     assert str(qint_8) == 'QInt(x)'
+    assert is_symbolic(QInt(sympy.Symbol('x')))
 
 
 def test_qint_ones():
@@ -50,6 +53,7 @@ def test_qint_ones():
     n = sympy.symbols('x')
     qint_8 = QIntOnesComp(n)
     assert qint_8.num_qubits == n
+    assert is_symbolic(QIntOnesComp(sympy.Symbol('x')))
 
 
 def test_quint():
@@ -62,6 +66,7 @@ def test_quint():
     n = sympy.symbols('x')
     qint_8 = QUInt(n)
     assert qint_8.num_qubits == n
+    assert is_symbolic(QUInt(sympy.Symbol('x')))
 
 
 def test_bounded_quint():
@@ -77,6 +82,9 @@ def test_bounded_quint():
     qint_8 = BoundedQUInt(n, l)
     assert qint_8.num_qubits == n
     assert qint_8.iteration_length == l
+    assert is_symbolic(BoundedQUInt(sympy.Symbol('x'), 2))
+    assert is_symbolic(BoundedQUInt(2, sympy.Symbol('x')))
+    assert is_symbolic(BoundedQUInt(*sympy.symbols('x y')))
 
 
 def test_qfxp():
@@ -105,6 +113,7 @@ def test_qfxp():
     qfp = QFxp(b, f, True)
     assert qfp.num_qubits == b
     assert qfp.num_int == b - f - 1
+    assert is_symbolic(QFxp(*sympy.symbols('x y')))
 
 
 def test_qmontgomeryuint():
@@ -116,6 +125,7 @@ def test_qmontgomeryuint():
     n = sympy.symbols('x')
     qmontgomeryuint_8 = QMontgomeryUInt(n)
     assert qmontgomeryuint_8.num_qubits == n
+    assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
 
 
 @pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])

@@ -22,14 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    Shaped,
-    slen,
-    smax,
-    smin,
-    SymbolicInt,
-)
+from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq

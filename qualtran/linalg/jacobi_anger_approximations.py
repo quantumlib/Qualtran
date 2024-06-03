@@ -19,11 +19,7 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran.resource_counting import big_O
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 
 def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFloat) -> SymbolicInt:

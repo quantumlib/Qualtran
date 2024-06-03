@@ -15,8 +15,8 @@ import cirq
 
 from qualtran import Adjoint, QAny, Register
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
+from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Partition, Split
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._generalization import _make_composite_generalizer
 from qualtran.resource_counting.generalizers import (
@@ -113,7 +113,7 @@ def test_generalize_cvs():
         Join(QAny(bitsize=5)),
         TwoBitSwap(),
         And(CV, CV),  # changed
-        MultiAnd((CV,) * 4),  # changed
+        MultiAnd((1,) * 4),  # changed
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
@@ -180,7 +180,7 @@ def test_many_generalizers():
         # Join(QAny(n=5)),
         # TwoBitSwap(),
         And(CV, CV),
-        MultiAnd((CV,) * 4),
+        MultiAnd((1,) * 4),  # changed
         Rx(PHI),
         # Allocate(QAny(n=5)),
         # Free(QAny(n=5)),

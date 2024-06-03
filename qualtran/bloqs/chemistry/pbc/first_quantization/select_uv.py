@@ -56,8 +56,8 @@ class ApplyNuclearPhase(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
-        return r'$-e^{-k_\nu\cdot R_l$'
+    def pretty_name(self) -> str:
+        return r'-e^(-k_ν⋅R_l)'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_p = self.num_bits_p
@@ -111,7 +111,7 @@ class SelectUVFirstQuantization(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'SEL UV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

@@ -31,7 +31,7 @@ from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_split_join,
 )
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT

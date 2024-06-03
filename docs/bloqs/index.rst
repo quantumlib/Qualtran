@@ -14,8 +14,9 @@ Bloqs Library
     multiplexers/unary_iteration.ipynb
     arithmetic/t_complexity_of_comparison_gates.ipynb
     arithmetic/error_analysis_for_fxp_arithmetic.ipynb
-    phase_estimation_of_quantum_walk.ipynb
+    phase_estimation/phase_estimation_of_quantum_walk.ipynb
     chemistry/trotter/grid_ham/trotter_costs.ipynb
+    chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
@@ -34,6 +35,8 @@ Bloqs Library
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
+    basic_gates/identity.ipynb
+    bookkeeping/bookkeeping.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -49,20 +52,28 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/subtraction.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
-    factoring/mod_exp.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Modular Arithmetic:
+
+    mod_arithmetic/mod_addition.ipynb
     factoring/mod_mul.ipynb
-    factoring/ecc/ecc.ipynb
+    factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
+    factoring/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -76,17 +87,20 @@ Bloqs Library
     qft/approximate_qft.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
-    qubitization_walk_operator.ipynb
+    qubitization/qubitization_walk_operator.ipynb
+    phase_estimation/qubitization_qpe.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
+    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     data_loading/qrom.ipynb
-    block_encoding.ipynb
-    reflection.ipynb
+    data_loading/select_swap_qrom.ipynb
+    block_encoding/block_encoding.ipynb
+    reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb
     state_preparation/state_preparation_alias_sampling.ipynb

@@ -70,17 +70,11 @@ class ECPhaseEstimateR(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(ECAddR(n=self.n, R=self.point), self.n), (MeasureQFT(n=self.n), 1)}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         point_str = str(self.point)
         if len(point_str) < 5 or True:
             return f'PE${point_str}$'
         return 'PE(R)'
-
-    def __str__(self):
-        return 'ECPhaseEstimateR'
-
-    def cost_attrs(self):
-        return [('n', self.n)]
 
 
 @bloq_example

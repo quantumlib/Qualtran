@@ -247,7 +247,7 @@ class GraphDrawer:
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Overridable method returning the text used for the header cell of a bloq."""
-        return f'{html.escape(binst.bloq.pretty_name())}'
+        return f'{html.escape(str(binst.bloq))}'
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         """Process and add a bloq instance to the Graph."""
@@ -340,7 +340,7 @@ class GraphDrawer:
         graph.add_edge(self.cxn_edge(left, right, cxn))
         return graph
 
-    def get_graph(self) -> pydot.Graph:
+    def get_graph(self) -> pydot.Dot:
         """Get the graphviz graph representing the Bloq.
 
         This is the main entry-point to this class.
@@ -360,7 +360,7 @@ class GraphDrawer:
 
     def get_svg_bytes(self) -> bytes:
         """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create_svg()
+        return self.get_graph().create(prog='dot', format='svg', encoding='utf-8')
 
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""
@@ -372,14 +372,14 @@ class PrettyGraphDrawer(GraphDrawer):
         return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
 
     def get_binst_header_text(self, binst: BloqInstance):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
+        return f'<font point-size="10">{html.escape(str(binst.bloq))}</font>'
 
     def soq_label(self, soq: Soquet):
-        from qualtran.bloqs.util_bloqs import Join, Split
+        from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, (Split, Join)):
             return ''

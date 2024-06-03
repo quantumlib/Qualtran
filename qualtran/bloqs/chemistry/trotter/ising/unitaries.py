@@ -40,7 +40,7 @@ class IsingXUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'U_X'
 
     def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
@@ -70,7 +70,7 @@ class IsingZZUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'U_ZZ'
 
     def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:

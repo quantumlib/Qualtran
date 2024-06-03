@@ -35,8 +35,8 @@ from qualtran import (
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
+from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -76,13 +76,8 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
 
     assert str(x) == 'X'
     assert x.pretty_name() == 'cirq.X'
-    assert x.short_name() == 'cirq.X'
-
     assert rx.pretty_name() == 'cirq.Rx'
-    assert rx.short_name() == 'cirq.Rx'
-
     assert toffoli.pretty_name() == 'cirq.TOFFOLI'
-    assert toffoli.short_name() == 'cirq.TOF..'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
@@ -107,7 +102,7 @@ def test_bloq_decompose():
     assert tb.pretty_name() == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
-    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
+    circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
 
@@ -136,7 +131,7 @@ def test_cbloq_to_cirq_circuit():
     # Note: a 1d `shape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
-    circuit2, _ = cbloq.to_cirq_circuit(
+    circuit2, _ = cbloq.to_cirq_circuit_and_quregs(
         qubits=np.asarray([[q] for q in qubits]), qubit_manager=cirq.ops.SimpleQubitManager()
     )
 

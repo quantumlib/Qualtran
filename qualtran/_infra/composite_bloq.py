@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
-    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -139,16 +138,19 @@ class CompositeBloq(Bloq):
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        circuit, out_quregs = self.to_cirq_circuit(qubit_manager=qubit_manager, **cirq_quregs)
+        circuit, out_quregs = self.to_cirq_circuit_and_quregs(
+            qubit_manager=qubit_manager, **cirq_quregs
+        )
         return cirq.CircuitOperation(circuit), out_quregs
 
-    def to_cirq_circuit(
-        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregInT'
+    def to_cirq_circuit_and_quregs(
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
-        """Convert this CompositeBloq to a `cirq.Circuit`.
+        """Convert this CompositeBloq to a `cirq.Circuit` and output qubit registers.
 
         Args:
-            qubit_manager: A `cirq.QubitManager` to allocate new qubits.
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits. If not provided,
+                uses `cirq.SimpleQubitManager()` by default.
             **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
 
         Returns:
@@ -165,6 +167,30 @@ class CompositeBloq(Bloq):
         return _cbloq_to_cirq_circuit(
             self.signature, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
         )
+
+    def to_cirq_circuit(
+        self,
+        *,
+        qubit_manager: Optional['cirq.QubitManager'] = None,
+        cirq_quregs: Optional[Mapping[str, 'CirqQuregInT']] = None,
+    ) -> 'cirq.FrozenCircuit':
+        """Convert this CompositeBloq to a `cirq.Circuit`.
+
+        Args:
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits. If not provided,
+                uses `cirq.SimpleQubitManager()` by default.
+            cirq_quregs: Mapping from left register names to Cirq qubit arrays. If not provided,
+                uses `get_named_qubits(self.signature.lefts())` by default.
+
+        Returns:
+            circuit: The cirq.FrozenCircuit version of this composite bloq.
+        """
+        from qualtran._infra.gate_with_registers import get_named_qubits
+
+        if cirq_quregs is None:
+            cirq_quregs = get_named_qubits(self.signature.lefts())
+
+        return self.to_cirq_circuit_and_quregs(qubit_manager=qubit_manager, **cirq_quregs)[0]
 
     @classmethod
     def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
@@ -1091,14 +1117,14 @@ class BloqBuilder:
         )
 
     def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
-        from qualtran.bloqs.util_bloqs import Allocate
+        from qualtran.bloqs.bookkeeping import Allocate
 
         if dtype is not None:
             return self.add(Allocate(dtype=dtype))
         return self.add(Allocate(dtype=(QAny(n))))
 
     def free(self, soq: Soquet) -> None:
-        from qualtran.bloqs.util_bloqs import Free
+        from qualtran.bloqs.bookkeeping import Free
 
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
@@ -1107,7 +1133,7 @@ class BloqBuilder:
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
-        from qualtran.bloqs.util_bloqs import Split
+        from qualtran.bloqs.bookkeeping import Split
 
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
@@ -1115,7 +1141,7 @@ class BloqBuilder:
         return self.add(Split(dtype=soq.reg.dtype), reg=soq)
 
     def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:  # type: ignore[type-var]
-        from qualtran.bloqs.util_bloqs import Join
+        from qualtran.bloqs.bookkeeping import Join
 
         try:
             (n,) = soqs.shape

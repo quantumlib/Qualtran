@@ -103,6 +103,13 @@ def plot_linear_log_log(
     y_vals = np.exp(intr) * x_vals**slope
     if label is None:
         label = ''
-    ax.loglog(xs, ys, marker='o', ls='None', label=rf'{label} $N^{{{slope:3.2f}}}$', color=color)
+    ax.loglog(
+        xs,
+        ys,
+        marker='o',
+        ls='None',
+        label=rf'{label} ${{{np.exp(intr):3.1f}}}N^{{{slope:3.2f}}}$',
+        color=color,
+    )
     ax.loglog(x_vals, y_vals, marker='None', linestyle='--', color=color)
     ax.legend()

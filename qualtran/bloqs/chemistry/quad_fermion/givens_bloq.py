@@ -168,8 +168,8 @@ class RealGivensRotationByPhaseGradient(Bloq):
 
 @bloq_example
 def _real_givens() -> RealGivensRotationByPhaseGradient:
-    r_givens = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
-    return r_givens
+    real_givens = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    return real_givens
 
 
 _REAL_GIVENS_DOC = BloqDocSpec(
@@ -263,8 +263,8 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
 
 @bloq_example
 def _cplx_givens() -> ComplexGivensRotationByPhaseGradient:
-    c_givens = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
-    return c_givens
+    cplx_givens = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    return cplx_givens
 
 
 _CPLX_GIVENS_DOC = BloqDocSpec(
