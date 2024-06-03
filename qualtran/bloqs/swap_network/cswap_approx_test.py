@@ -18,9 +18,8 @@ from typing import Dict, Tuple, Union
 import pytest
 import sympy
 
-import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,

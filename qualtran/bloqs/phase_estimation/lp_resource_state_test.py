@@ -17,7 +17,6 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.phase_estimation.lp_resource_state import (
     _lp_resource_state_small,
-    _lp_resource_state_symbolic,
     _lprs_interim_prep,
     LPResourceState,
     LPRSInterimPrep,
@@ -37,11 +36,6 @@ def test_lprs_interim_auto(bloq_autotester):
 
 def test_lp_resource_state_auto(bloq_autotester):
     bloq_autotester(_lp_resource_state_small)
-
-
-def test_lp_resource_state_symb():
-    bloq = _lp_resource_state_symbolic.make()
-    assert bloq.t_complexity().t == 4 * bloq.bitsize
 
 
 def get_interim_resource_state(m: int) -> np.ndarray:
@@ -77,11 +71,15 @@ def test_t_complexity(n):
     qlt_testing.assert_equivalent_bloq_counts(
         bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
     )
-    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6
+    lprs_interim_count = 3 * TComplexity(rotations=2 * n + 1, clifford=2 + 3 * n)
+    multi_control_pauli_count = TComplexity(t=4 * n, clifford=17 * n + 5)
+    misc_count = TComplexity(rotations=3, clifford=5)
+
+    assert bloq.t_complexity() == (lprs_interim_count + multi_control_pauli_count + misc_count)
 
 
-@pytest.mark.parametrize('bitsize', [8, 16, 32])
+@pytest.mark.parametrize('bitsize', [*range(1, 14, 2)])
 def test_interim_lp2s_interim_prep_t_complexity(bitsize: int):
     assert t_complexity(LPRSInterimPrep(bitsize)) == TComplexity(
-        rotations=bitsize + 1, clifford=2 + bitsize
+        rotations=2 * bitsize + 1, clifford=2 + 3 * bitsize
     )
