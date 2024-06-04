@@ -34,6 +34,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
@@ -92,6 +93,12 @@ class LPRSInterimPrep(GateWithRegisters):
                 (Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(int(self.bitsize))
             }
         return ret
+
+    def _t_complexity_(self) -> 'TComplexity':
+        # Uses self.bitsize controlled-Rz rotations which decomposes into
+        # 2 single-qubit rotations and 3 cliffords
+        # TODO: Once a CRz exists, this can be updated.
+        return TComplexity(rotations=2 * self.bitsize + 1, clifford=2 + 3 * self.bitsize)
 
 
 @attrs.frozen

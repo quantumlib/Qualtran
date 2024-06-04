@@ -39,7 +39,6 @@ def test_lp_resource_state_auto(bloq_autotester):
     bloq_autotester(_lp_resource_state_small)
 
 
-@pytest.mark.xfail
 def test_lp_resource_state_symb():
     bloq = _lp_resource_state_symbolic.make()
     assert bloq.t_complexity().t == 4 * bloq.bitsize
