@@ -162,6 +162,15 @@ class QROMBase(metaclass=abc.ABCMeta):
     )
     num_controls: SymbolicInt = 0
 
+    def is_symbolic(self) -> bool:
+        return is_symbolic(
+            self.num_controls,
+            *self.data_or_shape,
+            *self.selection_bitsizes,
+            *self.target_bitsizes,
+            *[sh for target_shape in self.target_shapes for sh in target_shape],
+        )
+
     @target_shapes.default
     def _default_target_shapes(self):
         return ((),) * len(self.data_or_shape)

@@ -208,7 +208,14 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
-        return {(CNOT(), sum(int(d[selection_idx]).bit_count() for d in self.data))}
+        ret = 0
+        for i, d in enumerate(self.data):
+            target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
+            assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
+            for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
+                data_to_load = int(d[selection_idx + idx])
+                ret += data_to_load.bit_count()
+        return {(CNOT(), ret)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.has_data():

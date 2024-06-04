@@ -135,12 +135,12 @@ def test_qroam_hashable():
     assert t_complexity(qrom) == TComplexity(32, 160, 0)
 
 
-def test_qrom_t_complexity():
-    qrom = SelectSwapQROM.build_from_data(
+def test_qroam_t_complexity():
+    qroam = SelectSwapQROM.build_from_data(
         [1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), log_block_sizes=(2,)
     )
-    _, sigma = qrom.call_graph()
-    assert t_counts_from_sigma(sigma) == qrom.t_complexity().t == 192
+    _, sigma = qroam.call_graph()
+    assert t_counts_from_sigma(sigma) == qroam.t_complexity().t == 192
 
 
 def test_qroam_many_registers():
@@ -166,15 +166,20 @@ def test_qroam_many_registers():
     qrom.call_graph()
 
 
-@pytest.mark.parametrize('bloq_example', [_qroam_multi_data, _qroam_multi_dim])
-def test_valid_decomposition(bloq_example):
-    assert_valid_bloq_decomposition(bloq_example.make())
+def test_qroam_multi_data_autotest(bloq_autotester):
+    bloq_autotester(_qroam_multi_data)
+
+
+def test_qroam_multi_dim_autotest(bloq_autotester):
+    bloq_autotester(_qroam_multi_dim)
 
 
 @pytest.mark.parametrize('use_dirty_ancilla', [True, False])
 def test_tensor_contraction(use_dirty_ancilla: bool):
-    data1 = np.array([[1, 2, 0, 1]] * 4)
-    data2 = np.array([[1, 1, 0, 2]] * 4)
-    qroam = SelectSwapQROM.build_from_data(data1, data2, use_dirty_ancilla=use_dirty_ancilla)
-    qrom = QROM.build_from_data(data1, data2)
+    data = np.array([[0, 1, 0, 1]] * 8)
+    log_block_sizes = (2, 1)
+    qroam = SelectSwapQROM.build_from_data(
+        data, use_dirty_ancilla=use_dirty_ancilla, log_block_sizes=log_block_sizes
+    )
+    qrom = QROM.build_from_data(data)
     np.testing.assert_allclose(qrom.tensor_contract(), qroam.tensor_contract(), atol=1e-8)
