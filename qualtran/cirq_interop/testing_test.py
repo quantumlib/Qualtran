@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from qualtran import QBit, Register, Side, Signature
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.cirq_interop import testing
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -69,6 +69,21 @@ class DoesNotDecompose(cirq.Operation):
         pass
 
 
+class ConsistentDecompostion(cirq.Operation):
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(clifford=1)
+
+    def _decompose_(self) -> Iterator[cirq.OP_TREE]:
+        yield cirq.X(self.qubits[0])
+
+    @property
+    def qubits(self):
+        return tuple(cirq.LineQubit(3).range(3))
+
+    def with_qubits(self, _):
+        pass
+
+
 class InconsistentDecompostion(cirq.Operation):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=1)
@@ -85,7 +100,7 @@ class InconsistentDecompostion(cirq.Operation):
 
 
 def test_assert_decompose_is_consistent_with_t_complexity():
-    testing.assert_decompose_is_consistent_with_t_complexity(And())
+    testing.assert_decompose_is_consistent_with_t_complexity(ConsistentDecompostion())
 
 
 def test_assert_decompose_is_consistent_with_t_complexity_raises():
