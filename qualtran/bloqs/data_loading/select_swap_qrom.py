@@ -60,7 +60,6 @@ def find_optimal_log_block_size(
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
-@cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
 class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     """Gate to load data[l] in the target register when the selection register stores integer l.
@@ -335,9 +334,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unknown register name {name}')
-
-    def _value_equality_values_(self):
-        return self.use_dirty_ancilla, self.log_block_sizes, *super()._value_equality_values_()
 
 
 @bloq_example

@@ -19,7 +19,6 @@ from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
-import cirq
 import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
@@ -31,7 +30,10 @@ from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicI
 QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
-@cirq.value_equality(distinct_child_types=True)
+def _data_or_shape_to_tuple(data_or_shape: Tuple[Union[NDArray, Shaped], ...]) -> Tuple:
+    return tuple(tuple(d.flatten()) if isinstance(d, np.ndarray) else d for d in data_or_shape)
+
+
 @attrs.frozen
 class QROMBase(metaclass=abc.ABCMeta):
     r"""Interface for Bloqs to load `data[l]` when the selection register stores index `l`.
@@ -149,7 +151,8 @@ class QROMBase(metaclass=abc.ABCMeta):
     """
 
     data_or_shape: Tuple[Union[NDArray, Shaped], ...] = attrs.field(
-        converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x)
+        converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x),
+        eq=_data_or_shape_to_tuple,
     )
     selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
