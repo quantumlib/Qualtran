@@ -17,6 +17,7 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.phase_estimation.lp_resource_state import (
     _lp_resource_state_small,
+    _lp_resource_state_symbolic,
     _lprs_interim_prep,
     LPResourceState,
     LPRSInterimPrep,
@@ -36,6 +37,12 @@ def test_lprs_interim_auto(bloq_autotester):
 
 def test_lp_resource_state_auto(bloq_autotester):
     bloq_autotester(_lp_resource_state_small)
+
+
+@pytest.mark.xfail
+def test_lp_resource_state_symb():
+    bloq = _lp_resource_state_symbolic.make()
+    assert bloq.t_complexity().t == 4 * bloq.bitsize
 
 
 def get_interim_resource_state(m: int) -> np.ndarray:
