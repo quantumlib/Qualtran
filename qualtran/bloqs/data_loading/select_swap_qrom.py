@@ -285,8 +285,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         # 3. Construct CNOTs from 0th borrowed register to clean target registers.
         cnot_ops = []
         for qrom_batched_target, target_reg in zip(qrom_targets.values(), self.target_registers):
+            idx = (0,) * len(qrom.target_registers[0].shape)
             cnot_ops += [
-                [cirq.CNOT(a, b) for a, b in zip(qrom_batched_target[0], quregs[target_reg.name])]
+                [cirq.CNOT(a, b) for a, b in zip(qrom_batched_target[idx], quregs[target_reg.name])]
             ]
 
         # Yield the operations in correct order.
@@ -331,7 +332,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         raise ValueError(f'Unknown register name {name}')
 
     def _value_equality_values_(self):
-        return self.log_block_sizes, *super()._value_equality_values_()
+        return self.use_dirty_ancilla, self.log_block_sizes, *super()._value_equality_values_()
 
 
 @bloq_example

@@ -18,7 +18,13 @@ import pytest
 
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
-from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
+from qualtran.bloqs.data_loading import QROM
+from qualtran.bloqs.data_loading.select_swap_qrom import (
+    _qroam_multi_data,
+    _qroam_multi_dim,
+    find_optimal_log_block_size,
+    SelectSwapQROM,
+)
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
@@ -158,3 +164,17 @@ def test_qroam_many_registers():
         log_block_sizes=(log_block_size,),
     )
     qrom.call_graph()
+
+
+@pytest.mark.parametrize('bloq_example', [_qroam_multi_data, _qroam_multi_dim])
+def test_valid_decomposition(bloq_example):
+    assert_valid_bloq_decomposition(bloq_example.make())
+
+
+@pytest.mark.parametrize('use_dirty_ancilla', [True, False])
+def test_tensor_contraction(use_dirty_ancilla: bool):
+    data1 = np.array([[1, 2, 0, 1]] * 4)
+    data2 = np.array([[1, 1, 0, 2]] * 4)
+    qroam = SelectSwapQROM.build_from_data(data1, data2, use_dirty_ancilla=use_dirty_ancilla)
+    qrom = QROM.build_from_data(data1, data2)
+    np.testing.assert_allclose(qrom.tensor_contract(), qroam.tensor_contract(), atol=1e-8)
