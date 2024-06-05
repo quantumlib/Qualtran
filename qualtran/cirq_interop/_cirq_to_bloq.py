@@ -16,8 +16,8 @@
 import abc
 import itertools
 import numbers
-from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
+from functools import cache, cached_property
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
@@ -342,28 +342,56 @@ def _gather_input_soqs(
     return qvars_in
 
 
-def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
-    from qualtran import Adjoint
+@cache
+def _cirq_gate_to_bloq_map() -> Dict[cirq.Gate, Bloq]:
+    # Check specific basic gates instances.
     from qualtran.bloqs.basic_gates import (
         CNOT,
         CSwap,
-        CZPowGate,
-        GlobalPhase,
         Hadamard,
-        Rx,
-        Ry,
-        Rz,
         SGate,
         TGate,
         Toffoli,
         TwoBitSwap,
         XGate,
-        XPowGate,
         YGate,
-        YPowGate,
         ZGate,
-        ZPowGate,
     )
+
+    return {
+        cirq.T: TGate(),
+        cirq.T**-1: TGate().adjoint(),
+        cirq.S: SGate(),
+        cirq.S**-1: SGate().adjoint(),
+        cirq.H: Hadamard(),
+        cirq.CNOT: CNOT(),
+        cirq.TOFFOLI: Toffoli(),
+        cirq.X: XGate(),
+        cirq.Y: YGate(),
+        cirq.Z: ZGate(),
+        cirq.SWAP: TwoBitSwap(),
+        cirq.CSWAP: CSwap(1),
+    }
+
+
+@cache
+def _cirq_type_to_bloq_map() -> Dict[Type[cirq.Gate], Type[Bloq]]:
+    from qualtran.bloqs.basic_gates import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+
+    return {
+        cirq.Rz: Rz,
+        cirq.Rx: Rx,
+        cirq.Ry: Ry,
+        cirq.XPowGate: XPowGate,
+        cirq.YPowGate: YPowGate,
+        cirq.ZPowGate: ZPowGate,
+        cirq.CZPowGate: CZPowGate,
+    }
+
+
+def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+    from qualtran import Adjoint
+    from qualtran.bloqs.basic_gates import GlobalPhase
     from qualtran.cirq_interop import CirqGateAsBloq
     from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
@@ -382,35 +410,11 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return Controlled(
             _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
         )
-
-    # Check specific basic gates instances.
-    CIRQ_GATE_TO_BLOQ_MAP = {
-        cirq.T: TGate(),
-        cirq.T**-1: TGate().adjoint(),
-        cirq.S: SGate(),
-        cirq.S**-1: SGate().adjoint(),
-        cirq.H: Hadamard(),
-        cirq.CNOT: CNOT(),
-        cirq.TOFFOLI: Toffoli(),
-        cirq.X: XGate(),
-        cirq.Y: YGate(),
-        cirq.Z: ZGate(),
-        cirq.SWAP: TwoBitSwap(),
-        cirq.CSWAP: CSwap(1),
-    }
+    CIRQ_GATE_TO_BLOQ_MAP = _cirq_gate_to_bloq_map()
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
-
+    CIRQ_TYPE_TO_BLOQ_MAP = _cirq_type_to_bloq_map()
     # Check specific basic gates types.
-    CIRQ_TYPE_TO_BLOQ_MAP = {
-        cirq.Rz: Rz,
-        cirq.Rx: Rx,
-        cirq.Ry: Ry,
-        cirq.XPowGate: XPowGate,
-        cirq.YPowGate: YPowGate,
-        cirq.ZPowGate: ZPowGate,
-        cirq.CZPowGate: CZPowGate,
-    }
     if isinstance(gate, (cirq.Rx, cirq.Ry, cirq.Rz)):
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](angle=gate._rads)
 

@@ -108,7 +108,7 @@ def _unary_iteration_segtree(
     yield from _unary_iteration_segtree(
         ops, anc, selection, ancilla, sl + 1, l, m, l_iter, r_iter, break_early
     )
-    ops.append(CNOT().on(control, anc))
+    ops.append(cirq.CNOT(control, anc))
     yield from _unary_iteration_segtree(
         ops, anc, selection, ancilla, sl + 1, m, r, l_iter, r_iter, break_early
     )
@@ -130,11 +130,11 @@ def _unary_iteration_zero_control(
             ops, selection[1:], ancilla, l_iter, r_iter, break_early
         )
         return
-    ops.append(XGate().on(selection[0]))
+    ops.append(cirq.X(selection[0]))
     yield from _unary_iteration_segtree(
         ops, selection[0], selection[1:], ancilla, sl, l, m, l_iter, r_iter, break_early
     )
-    ops.append(XGate().on(selection[0]))
+    ops.append(cirq.X(selection[0]))
     yield from _unary_iteration_segtree(
         ops, selection[0], selection[1:], ancilla, sl, m, r, l_iter, r_iter, break_early
     )
