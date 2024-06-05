@@ -13,16 +13,31 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
+from typing import cast, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import Hadamard, Rz
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, MultiAnd
+from qualtran.drawing import Text, WireSymbol
+from qualtran.symbolics import (
+    acos,
+    bit_length,
+    floor,
+    HasLength,
+    is_symbolic,
+    log2,
+    slen,
+    SymbolicInt,
+)
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -48,41 +63,62 @@ class PrepareUniformSuperposition(GateWithRegisters):
         Fig 12.
     """
 
-    n: int
-    cvs: Tuple[int, ...] = attrs.field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
+    n: SymbolicInt
+    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = attrs.field(
+        converter=_to_tuple_or_has_length, default=()
     )
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
+        return Signature.build(ctrl=slen(self.cvs), target=bit_length(self.n - 1))
 
-    def short_name(self) -> str:
-        return r'$\sum_l |l\rangle$'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('Σ |l>')
+        return super().wire_symbol(reg, idx)
+
+    @property
+    def concrete_cvs(self) -> Tuple[int, ...]:
+        if isinstance(self.cvs, HasLength):
+            raise ValueError(f"{self.cvs} is symbolic")
+        return cast(Tuple[int, ...], self.cvs)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
+        control_symbols = ["@" if cv else "@(0)" for cv in self.concrete_cvs]
         target_symbols = ['target'] * self.signature.get_left('target').total_bits()
         target_symbols[0] = f"UNIFORM({self.n})"
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
+
+    def k_l_logL(self) -> Tuple[SymbolicInt, SymbolicInt, SymbolicInt]:
+        # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
+        k, n, logL = 0, self.n, bit_length(self.n - 1)
+        if is_symbolic(n):
+            return 0, self.n, bit_length(self.n - 1)
+        n = int(n)
+        while n > 1 and n % 2 == 0:
+            k += 1
+            logL -= 1
+            n = n // 2
+        return k, n, logL
 
     def decompose_from_registers(
         self,
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
-        # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
-        n, k = self.n, 0
-        while n > 1 and n % 2 == 0:
-            k += 1
-            n = n // 2
-        l, logL = int(n), self.signature.get_left('target').total_bits() - k
+        k, l, logL = self.k_l_logL()
+        assert isinstance(logL, int)
+        assert isinstance(k, int)
+        assert isinstance(l, int)
         logL_qubits = target[:logL]
 
         yield [
-            op.controlled_by(*controls, control_values=self.cvs) for op in cirq.H.on_each(*target)
+            op.controlled_by(*controls, control_values=self.concrete_cvs)
+            for op in cirq.H.on_each(*target)
         ]
         if not len(logL_qubits):
             return
@@ -91,18 +127,18 @@ class PrepareUniformSuperposition(GateWithRegisters):
         theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
-        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1
+        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1  # type: ignore[operator]
         context.qubit_manager.qfree(ancilla)
 
         yield cirq.H.on_each(*logL_qubits)
 
-        and_ancilla = context.qubit_manager.qalloc(len(self.cvs) + logL - 2)
+        and_ancilla = context.qubit_manager.qalloc(len(self.concrete_cvs) + logL - 2)
         and_target = context.qubit_manager.qalloc(1)
-        and_cv = (0,) * logL + self.cvs
+        and_cv = (0,) * logL + self.concrete_cvs
         ctrl = np.asarray([*logL_qubits, *controls])[:, np.newaxis]
         junk = np.asarray(and_ancilla)[:, np.newaxis]
         if len(and_cv) <= 2:
-            and_op = And(*and_cv).on_registers(ctrl=ctrl, target=and_target)
+            and_op = And(and_cv[0], and_cv[1]).on_registers(ctrl=ctrl, target=and_target)
         else:
             and_op = MultiAnd(cvs=and_cv).on_registers(ctrl=ctrl, junk=junk, target=and_target)
 
@@ -113,11 +149,34 @@ class PrepareUniformSuperposition(GateWithRegisters):
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if not is_symbolic(self.n, self.cvs):
+            # build from decomposition
+            return super().build_call_graph(ssa)
+        _, l, logL = self.k_l_logL()
+        theta = acos(1 - (2 ** floor(log2(l))) / l)
+        return {
+            (Hadamard(), 3 * logL),
+            (LessThanConstant(logL, l), 1),
+            (LessThanConstant(logL, l).adjoint(), 1),
+            (Rz(theta), 2),
+            (MultiAnd(HasLength(logL)), 1),
+            (MultiAnd(HasLength(logL)).adjoint(), 1),
+        }
+
 
 @bloq_example
 def _prep_uniform() -> PrepareUniformSuperposition:
     prep_uniform = PrepareUniformSuperposition(n=5)
     return prep_uniform
+
+
+@bloq_example
+def _prep_uniform_symb() -> PrepareUniformSuperposition:
+    import sympy
+
+    prep_uniform_symb = PrepareUniformSuperposition(n=sympy.Symbol("n"))
+    return prep_uniform_symb
 
 
 @bloq_example

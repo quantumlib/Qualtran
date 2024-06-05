@@ -94,11 +94,11 @@ def mixin_custom_template(template_name: str) -> Type:
     return _CustomTemplateMixin
 
 
-class MyModulePageBuilder(mixin_custom_template('module'), ModulePageBuilder):
+class MyModulePageBuilder(mixin_custom_template('module'), ModulePageBuilder):  # type: ignore[misc]
     """Use a custom template for module pages."""
 
 
-class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):
+class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):  # type: ignore[misc]
     """Use a custom template for class pages.
 
     Additionally, this will re-sort the class members (i.e. methods) to match
@@ -112,19 +112,19 @@ class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):
         # you pass in, so we can't do this sorting where it would make the most sense in
         # MyClassPageInfo.collect_docs()
         methods = _filter_and_sort_members(
-            self.page_info.py_object, self.methods.info_dict.values()
+            self.page_info.py_object, self.methods.info_dict.values()  # type: ignore[has-type]
         )
         self.methods = Methods(
             info_dict={meth.short_name: meth for meth in methods},
-            constructor=self.methods.constructor,
+            constructor=self.methods.constructor,  # type: ignore[has-type]
         )
 
 
-class MyFunctionPageBuilder(mixin_custom_template('function'), FunctionPageBuilder):
+class MyFunctionPageBuilder(mixin_custom_template('function'), FunctionPageBuilder):  # type: ignore[misc]
     """Use a custom template for function pages."""
 
 
-class MyTypeAliasPageBuilder(mixin_custom_template('type_alias'), TypeAliasPageBuilder):
+class MyTypeAliasPageBuilder(mixin_custom_template('type_alias'), TypeAliasPageBuilder):  # type: ignore[misc]
     """Use a custom template for type alias pages."""
 
 
@@ -135,7 +135,7 @@ class MyModulePageInfo(ModulePageInfo):
 
     def collect_docs(self):
         ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
-        self._classes = _filter_and_sort_members(self.py_object, self._classes)
+        self._classes = _filter_and_sort_members(self.py_object, self._classes)  # type: ignore[has-type]
         return ret
 
 
@@ -149,7 +149,7 @@ class MyClassPageInfo(ClassPageInfo):
         # Note: currently the following sort is un-done by the class page builder.
         # If the upstream page builder changes to respect the member order (like for the other
         # page types), we should sort them here.
-        self._methods = _filter_and_sort_members(self.py_object, self._methods)
+        self._methods = _filter_and_sort_members(self.py_object, self._methods)  # type: ignore[has-type]
         return ret
 
 

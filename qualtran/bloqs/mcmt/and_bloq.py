@@ -21,15 +21,13 @@ means that a bit value of '1' is logical true for the and operation. A control v
 The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bit according
 to the and of its control registers. `And` will output the result into a fresh register.
 """
-
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -45,13 +43,12 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT,
 )
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.basic_gates import TGate, XGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -60,6 +57,11 @@ from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
 )
+from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -81,8 +83,8 @@ class And(GateWithRegisters):
         [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
-    cv1: int = 1
-    cv2: int = 1
+    cv1: Union[int, sympy.Expr] = 1
+    cv2: Union[int, sympy.Expr] = 1
     uncompute: bool = False
 
     @cached_property
@@ -99,7 +101,7 @@ class And(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords = big_O(1)
+            pre_post_cliffords: Union[sympy.Order, int] = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.uncompute:
@@ -107,13 +109,9 @@ class And(GateWithRegisters):
 
         return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.uncompute else ''
-        return f'And{dag}'
-
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
-    ) -> Dict[str, NDArray[np.uint8]]:
+    ) -> Dict[str, ClassicalValT]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
             return {'ctrl': ctrl, 'target': out}
@@ -124,12 +122,14 @@ class And(GateWithRegisters):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
+        incoming: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
+        outgoing: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
     ):
+        import quimb.tensor as qtn
+
         # Fill in our tensor using "and" logic.
         data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
         for c1, c2 in itertools.product((0, 1), repeat=2):
@@ -158,17 +158,27 @@ class And(GateWithRegisters):
             )
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
+    def pretty_name(self) -> str:
+        dag = '†' if self.uncompute else ''
+        return f'And{dag}'
 
-        (c_idx,) = soq.idx
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
+
+        (c_idx,) = idx
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
         return Circle(filled)
 
+    def __str__(self):
+        dag = '†' if self.uncompute else ''
+        return f'And{dag}'
+
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -202,7 +212,10 @@ class And(GateWithRegisters):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.uncompute else "And"
-        wire_symbols = [controls[self.cv1], controls[self.cv2], target]
+        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
+            wire_symbols = [str(self.cv1), str(self.cv2), target]
+        else:
+            wire_symbols = [controls[self.cv1], controls[self.cv2], target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _has_unitary_(self) -> bool:
@@ -229,6 +242,17 @@ _AND_DOC = BloqDocSpec(
 )
 
 
+def _to_tuple_or_has_length(
+    x: Union[HasLength, Iterable[SymbolicInt]]
+) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
+    if isinstance(x, HasLength):
+        if is_symbolic(x.n):
+            return x
+        else:
+            return (1,) * x.n
+    return tuple(x)
+
+
 @frozen
 class MultiAnd(Bloq):
     """A many-bit (multi-control) 'and' operation.
@@ -236,6 +260,8 @@ class MultiAnd(Bloq):
     Args:
         cvs: A tuple of control variable settings. Each entry specifies whether that
             control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
+            If a HasLength object is passed, assumes the control values to be all 1's.
+
 
     Registers:
         ctrl: An n-bit control register.
@@ -243,29 +269,41 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(converter=tuple)
+    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
 
     @cvs.validator
     def _validate_cvs(self, field, val):
-        if len(val) < 3:
-            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
+        if not is_symbolic(val) and len(val) < 3:
+            raise ValueError("MultiAnd must cvshave at least 3 control values `cvs`.")
+
+    @property
+    def n_ctrls(self) -> SymbolicInt:
+        return self.cvs.n if isinstance(self.cvs, HasLength) else len(self.cvs)
+
+    @property
+    def concrete_cvs(self) -> Tuple[SymbolicInt, ...]:
+        if isinstance(self.cvs, HasLength):
+            raise ValueError(f"{self.cvs} is symbolic")
+        return self.cvs
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', QBit(), shape=(len(self.cvs),)),
-                Register('junk', QBit(), shape=(len(self.cvs) - 2,), side=Side.RIGHT),
+                Register('ctrl', QBit(), shape=(self.n_ctrls,)),
+                Register('junk', QBit(), shape=(self.n_ctrls - 2,), side=Side.RIGHT),
                 Register('target', QBit(), side=Side.RIGHT),
             ]
         )
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
+        accumulate_and = np.bitwise_and.accumulate(
+            np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
+        )
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
-    def __pow__(self, power: int) -> "MultiAnd":
+    def __pow__(self, power: int) -> "Bloq":
         if power == 1:
             return self
         if power == -1:
@@ -275,62 +313,77 @@ class MultiAnd(Bloq):
     def _decompose_via_tree(
         self,
         controls: NDArray[cirq.Qid],
-        control_values: Tuple[int, ...],
+        control_values: Tuple[SymbolicInt, ...],
         ancillas: NDArray[cirq.Qid],
         target: cirq.Qid,
     ) -> cirq.ops.op_tree.OpTree:
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
 
         if len(controls) == 2:
-            yield And(*control_values).on(*controls, target)
+            yield And(control_values[0], control_values[1]).on(*controls, target)
             return
         new_controls = np.concatenate([ancillas[0:1], controls[2:]])
         new_control_values = (1, *control_values[2:])
-        and_op = And(*control_values[:2]).on(*controls[:2], ancillas[0])
+        and_op = And(control_values[0], control_values[1]).on(*controls[:2], ancillas[0])
 
         yield and_op
         yield from self._decompose_via_tree(new_controls, new_control_values, ancillas[1:], target)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         control, ancilla, target = (
             quregs['ctrl'].flatten(),
             quregs.get('junk', np.array([])).flatten(),
             quregs['target'].flatten(),
         )
-        yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
+        yield self._decompose_via_tree(control, self.concrete_cvs, ancilla, *target)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
-        num_single_and = len(self.cvs) - 1
-        if adjoint:
-            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
-        return TComplexity(
-            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
-        )
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
+            return Circle(filled=self.concrete_cvs[idx[0]] == 1)
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
+        if len(idx) > 0:
+            pretty_text = f'{reg.name}[{", ".join(str(i) for i in idx)}]'
+        else:
+            pretty_text = reg.name
+        return directional_text_box(text=pretty_text, side=reg.side)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
-            return Circle(filled=self.cvs[soq.idx[0]] == 1)
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
-        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
-
-    def short_name(self) -> str:
-        return 'And'
+    def __str__(self):
+        return f'MultiAnd(n={self.n_ctrls})'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(And(), len(self.cvs) - 1)}
+        pre_post_cliffords = set()
+        if not (
+            is_symbolic(self.cvs)
+            or is_symbolic(*self.concrete_cvs)
+            or (self.n_ctrls == sum(self.concrete_cvs))
+        ):
+            pre_post_cliffords = {(XGate(), 2 * (self.n_ctrls - sum(self.concrete_cvs)))}
+
+        return {(And(), self.n_ctrls - 1)} | pre_post_cliffords
 
 
 @bloq_example(generalizer=(ignore_cliffords, generalize_cvs))
 def _multi_and() -> MultiAnd:
     multi_and = MultiAnd(cvs=(1, 0, 1, 0, 1, 0))
     return multi_and
+
+
+@bloq_example
+def _multi_and_symb() -> MultiAnd:
+    import sympy
+
+    from qualtran.symbolics.types import HasLength
+
+    multi_and_symb = MultiAnd(cvs=HasLength(sympy.Symbol("n")))
+    return multi_and_symb
 
 
 _MULTI_AND_DOC = BloqDocSpec(

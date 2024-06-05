@@ -38,7 +38,8 @@ def test_arctan(selection_bitsize, target_bitsize):
     op = gate.on(*cirq.LineQubit.range(num_qubits))
     circuit = cirq.Circuit(op)
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
-    circuit += op**-1
+    # missing cirq stubs
+    circuit += op**-1  # type: ignore[operator]
     cirq.testing.assert_allclose_up_to_global_phase(
         circuit.unitary(), np.diag([1] * 2**num_qubits), atol=1e-8
     )

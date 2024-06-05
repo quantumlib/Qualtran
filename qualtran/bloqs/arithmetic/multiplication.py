@@ -16,7 +16,7 @@ from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -31,25 +31,27 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import smax
+from qualtran.symbolics import smax
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
-class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
+class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Performs result += a * b"""
 
     a_bitsize: int
     b_bitsize: int
     result_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
-    def short_name(self) -> str:
-        return "result -= a*b" if self.adjoint else "result += a*b"
+    def pretty_name(self) -> str:
+        return "result -= a*b" if self.is_adjoint else "result += a*b"
 
     @property
     def signature(self) -> 'Signature':
@@ -62,14 +64,17 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
 
+    def adjoint(self) -> 'PlusEqualProduct':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
-        return a, b, (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        return a, b, (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("Not needed.")
 
     def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
-        result_out = (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -78,7 +83,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
-        wire_symbols += ['c-=a*b' if self.adjoint else 'c+=a*b'] * self.result_bitsize
+        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power):
@@ -86,7 +91,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
             return self
         if power == -1:
             return PlusEqualProduct(
-                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.adjoint
+                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.is_adjoint
             )
         raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
 
@@ -101,7 +106,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -158,7 +163,7 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a^2"
 
     def _t_complexity_(self):
@@ -245,7 +250,7 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "SOS"
 
     def _t_complexity_(self):
@@ -308,7 +313,7 @@ class Product(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a*b"
 
     def _t_complexity_(self):
@@ -373,7 +378,7 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "r*i"
 
     def _t_complexity_(self):
@@ -436,7 +441,7 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a*b"
 
     def _t_complexity_(self):
@@ -500,7 +505,7 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a^2"
 
     def _t_complexity_(self):

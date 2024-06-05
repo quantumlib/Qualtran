@@ -20,18 +20,12 @@ from qualtran.bloqs.basic_gates import Hadamard, OneState
 from qualtran.bloqs.basic_gates.hadamard import _hadamard
 
 
-def _make_Hadamard():
-    from qualtran.bloqs.basic_gates import Hadamard
-
-    return Hadamard()
-
-
 def test_to_cirq():
     bb = BloqBuilder()
     q = bb.add(OneState())
     q = bb.add(Hadamard(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───X───H───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)

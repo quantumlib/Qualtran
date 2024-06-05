@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 """Qubit Manager to use when converting Cirq gates to/from Bloqs."""
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Set
 
 import cirq
 
@@ -25,7 +25,7 @@ class InteropQubitManager(cirq.QubitManager):
         if qm is None:
             qm = cirq.SimpleQubitManager()
         self._qm = qm
-        self._managed_qubits = set()
+        self._managed_qubits: Set[cirq.Qid] = set()
 
     def qalloc(self, n: int, dim: int = 2) -> List['cirq.Qid']:
         return self._qm.qalloc(n, dim)

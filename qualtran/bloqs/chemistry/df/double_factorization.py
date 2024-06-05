@@ -46,9 +46,11 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
@@ -56,8 +58,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
-from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -101,6 +102,7 @@ class DoubleFactorizationOneBody(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
     """
+
     num_aux: int
     num_spin_orb: int
     num_eig: int
@@ -150,15 +152,15 @@ class DoubleFactorizationOneBody(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
-        return '$B[H_1]$'
+    def pretty_name(self) -> str:
+        return 'B[H_1]'
 
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
-        succ_l: SoquetT,
+        succ_l: Soquet,
         l_ne_zero: SoquetT,
-        succ_p: SoquetT,
+        succ_p: Soquet,
         p: SoquetT,
         rot_aa: SoquetT,
         spin: SoquetT,
@@ -166,7 +168,7 @@ class DoubleFactorizationOneBody(Bloq):
         offset: SoquetT,
         rot: SoquetT,
         rotations: SoquetT,
-        sys: SoquetT,
+        sys: NDArray[Soquet],  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # 1st half
         in_prep = InnerPrepareDoubleFactorization(
@@ -302,6 +304,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494)
     """
+
     num_spin_orb: int
     num_aux: int
     num_eig: int
@@ -374,7 +377,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
-        ctrl: SoquetT,
+        ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
         p: SoquetT,
         spin: SoquetT,
@@ -425,8 +428,14 @@ class DoubleFactorizationBlockEncoding(Bloq):
             sys=sys,
         )
         # The last ctrl is the 'target' register for the MCP gate.
-        succ_l, l_ne_zero, p, spin = bb.add(
-            Reflection((1, 1, n_n, 1), (1, 1, 0, 0)), reg0=succ_l, reg1=l_ne_zero, reg2=p, reg3=spin
+        # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+        succ_l, p, spin = bb.add(
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(n_n, 1), control_val=1, global_phase=-1
+            ),
+            control=succ_l,
+            reg0_=p,
+            reg1_=spin,
         )
         succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,
@@ -459,7 +468,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             num_bits_rot_aa=self.num_bits_rot_aa_outer,
         ).adjoint()
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
-        ctrl = succ_l, l_ne_zero, theta, succ_p
+        ctrl = np.asarray([succ_l, l_ne_zero, theta, succ_p])
         return {
             'ctrl': ctrl,
             'l': l,

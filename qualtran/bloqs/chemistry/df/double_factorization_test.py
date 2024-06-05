@@ -100,7 +100,9 @@ def test_compare_cost_to_openfermion():
     qpe_toff = 2
     of_cost = of_cost - inner_refl - walk_refl - qpe_toff
     of_cost *= 4
-    assert of_cost == qual_cost
+    # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+    delta_refl_missing_ctrl = 4
+    assert of_cost == qual_cost + delta_refl_missing_ctrl
 
 
 @pytest.mark.notebook

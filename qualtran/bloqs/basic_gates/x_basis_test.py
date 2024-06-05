@@ -22,12 +22,6 @@ from qualtran.simulation.classical_sim import (
 )
 
 
-def _make_plus_state():
-    from qualtran.bloqs.basic_gates import PlusState
-
-    return PlusState()
-
-
 def test_plus_state():
     bloq = PlusState()
     vector = bloq.tensor_contract()
@@ -68,7 +62,7 @@ def test_to_cirq():
     q = bb.add(PlusState())
     q = bb.add(XGate(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───X───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
@@ -78,7 +72,7 @@ def test_to_cirq():
     q = bb.add(MinusState())
     q = bb.add(XGate(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───[ _c(0): ───X───H─── ]───X───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)

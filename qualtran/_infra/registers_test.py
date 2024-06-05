@@ -15,9 +15,11 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import BoundedQUInt, QAny, QBit, QInt, Register, Side, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.symbolics import is_symbolic
 
 
 def test_register():
@@ -45,13 +47,14 @@ def test_multidim_register():
 
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
 def test_selection_registers_indexing(n, N, m, M):
-    regs = [Register('x', BoundedQUInt(n, N)), Register('y', BoundedQUInt(m, M))]
-    for x in range(regs[0].dtype.iteration_length):
-        for y in range(regs[1].dtype.iteration_length):
+    dtypes = [BoundedQUInt(n, N), BoundedQUInt(m, M)]
+    regs = [Register(sym, dtype) for sym, dtype in zip(['x', 'y'], dtypes)]
+    for x in range(int(dtypes[0].iteration_length)):
+        for y in range(int(dtypes[1].iteration_length)):
             assert np.ravel_multi_index((x, y), (N, M)) == x * M + y
             assert np.unravel_index(x * M + y, (N, M)) == (x, y)
 
-    assert np.prod(tuple(reg.dtype.iteration_length for reg in regs)) == N * M
+    assert np.prod(tuple(int(dtype.iteration_length) for dtype in dtypes)) == N * M
 
 
 def test_selection_registers_consistent():
@@ -72,11 +75,11 @@ def test_selection_registers_consistent():
 def test_registers_getitem_raises():
     g = Signature.build(a=4, b=3, c=2)
     with pytest.raises(TypeError, match="indices must be integers or slices"):
-        _ = g[2.5]
+        _ = g[2.5]  # type: ignore[call-overload]
 
     selection_reg = Signature([Register('n', BoundedQUInt(bitsize=3, iteration_length=5))])
     with pytest.raises(TypeError, match='indices must be integers or slices'):
-        _ = selection_reg[2.5]
+        _ = selection_reg[2.5]  # type: ignore[call-overload]
 
 
 def test_signature():
@@ -192,6 +195,13 @@ def test_dtypes_converter():
     r1 = Register("my_reg", QBit())
     r2 = Register("my_reg", QBit())
     assert r1 == r2
-    r2 = Register("my_reg", QAny(5))
+    r1 = Register("my_reg", QAny(5))
     r2 = Register("my_reg", QInt(5))
     assert r1 != r2
+
+
+def test_is_symbolic():
+    r = Register("my_reg", QAny(sympy.Symbol("x")))
+    assert is_symbolic(r)
+    r = Register("my_reg", QAny(2), shape=sympy.symbols("x y"))
+    assert is_symbolic(r)

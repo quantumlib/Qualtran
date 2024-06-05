@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -26,6 +26,9 @@ from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -55,21 +58,13 @@ class SwapTwoBitsTest(Bloq):
 
 
 def test_swap_two_bits_to_cirq():
-    circuit, out_quregs = (
-        SwapTwoBitsTest()
-        .as_composite_bloq()
-        .to_cirq_circuit(
-            x=[cirq.NamedQubit('q1')],
-            y=[cirq.NamedQubit('q2')],
-            qubit_manager=cirq.ops.SimpleQubitManager(),
-        )
-    )
+    circuit = SwapTwoBitsTest().as_composite_bloq().to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         """\
-q1: ───×───
-       │
-q2: ───×───""",
+x: ───×───
+      │
+y: ───×───""",
     )
 
 
@@ -82,7 +77,7 @@ class SwapTest(Bloq):
         return Signature.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: Soquet, y: Soquet
+        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, **kwargs
     ) -> Dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)
@@ -118,12 +113,11 @@ def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
 
 
 def test_swap():
-    swap_circuit, _ = (
+    swap_circuit = (
         SwapTest(n=5)
         .as_composite_bloq()
         .to_cirq_circuit(
-            x=cirq.LineQubit.range(5),
-            y=cirq.LineQubit.range(100, 105),
+            cirq_quregs={'x': cirq.LineQubit.range(5), 'y': cirq.LineQubit.range(100, 105)},
             qubit_manager=cirq.ops.SimpleQubitManager(),
         )
     )
@@ -148,7 +142,7 @@ def test_multi_and_allocates():
     multi_and = MultiAnd(cvs=(1, 1, 1, 1))
     cirq_quregs = get_named_qubits(multi_and.signature.lefts())
     assert sorted(cirq_quregs.keys()) == ['ctrl']
-    multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit(
+    multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit_and_quregs(
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()
     )
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
@@ -173,7 +167,7 @@ def test_construct_op_from_gate_raises():
     and_gate = And()
     qm = cirq.ops.SimpleQubitManager()
     q = [*cirq.LineQubit.range(2)]
-    in_quregs = {}
+    in_quregs: dict[str, np.ndarray] = {}
     with pytest.raises(ValueError, match='Compatible reg.*must exist'):
         _ = and_gate.as_cirq_op(qm, **in_quregs)
 
@@ -192,7 +186,7 @@ def test_bloq_as_cirq_gate_left_register():
     q = bb.add(XGate(), q=q)
     bb.free(q)
     cbloq = bb.finalize()
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 
@@ -231,7 +225,7 @@ x1: ──────────x──────────1───*=3�
     cbloq = mod_exp.decompose_bloq()
     # When converting a composite Bloq to a Cirq circuit, we only need to specify the input
     # registers.
-    decomposed_circuit, out_regs = cbloq.to_cirq_circuit(exponent=quregs['exponent'])
+    decomposed_circuit, out_regs = cbloq.to_cirq_circuit_and_quregs(exponent=quregs['exponent'])
     # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
     # specify both input and output registers.
     circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)

@@ -90,5 +90,4 @@ def get_1d_ising_lcu_coeffs(
     spins = cirq.LineQubit.range(n_spins)
     ham = get_1d_ising_hamiltonian(spins, j_zz_strength, gamma_x_strength)
     coeffs = np.array([term.coefficient.real for term in ham])
-    lcu_coeffs = coeffs / np.sum(abs(coeffs))
-    return lcu_coeffs
+    return coeffs

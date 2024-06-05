@@ -16,7 +16,10 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
+import sympy
 
 from qualtran import (
     Bloq,
@@ -29,10 +32,11 @@ from qualtran import (
     LeftDangle,
     RightDangle,
     Side,
-    Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran._infra.data_types import check_dtypes_consistent
+from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.drawing.musical_score import WireSymbol
+from qualtran.resource_counting import GeneralizerT
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -133,6 +137,26 @@ def assert_connections_compatible(cbloq: CompositeBloq):
             raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
 
 
+def assert_connections_consistent_qdtypes(
+    cbloq: CompositeBloq,
+    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
+):
+    """Check that a composite bloq's connections have consistent qdtypes.
+
+    Args:
+         cbloq: The composite bloq.
+         type_checking_severity: How strict to be in type checking. See the documentation
+            for the QDTypeCheckingSeverity enum for details.
+    """
+    for cxn in cbloq.connections:
+        lr = cxn.left.reg
+        rr = cxn.right.reg
+        if not check_dtypes_consistent(
+            lr.dtype, rr.dtype, type_checking_severity=type_checking_severity
+        ):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
+
+
 def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
     """Check that all soquet's registers make sense.
 
@@ -189,7 +213,7 @@ def assert_valid_cbloq(cbloq: CompositeBloq):
     assert_soquets_used_exactly_once(cbloq)
 
 
-def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -197,26 +221,41 @@ def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
 
     This returns the decomposed, composite bloq on which you can do further testing.
     """
+    assert bloq is not None
     cbloq = assert_registers_match_parent(bloq)
     assert_valid_cbloq(cbloq)
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, WireSymbol]]):
     """Assert a bloq's wire symbols match the expected ones.
+
+    For multi-dimensional registers (with a shape), this will iterate
+    through the register indices (see numpy.ndindices for iteration order).
 
     Args:
         bloq: the bloq whose wire symbols we want to check.
-        expected_ws: A list of the expected wire symbols.
+        expected_ws: A list of the expected wire symbols or their associated text.
     """
-    ws = []
-    regs = bloq.signature
-    for i, r in enumerate(regs):
-        # note this will only work if shape = ().
-        # See: https://github.com/quantumlib/Qualtran/issues/608
-        ws.append(bloq.wire_symbol(Soquet(i, r)).text)
-
-    assert ws == expected_ws
+    expected_idx = 0
+    for reg in bloq.signature:
+        if reg.shape:
+            indices = np.ndindex(reg.shape)
+        else:
+            indices = np.ndindex((1,))
+        for idx in indices:
+            wire_symbol = bloq.wire_symbol(reg, idx)
+            expected_symbol = expected_ws[expected_idx]
+            if isinstance(expected_symbol, str):
+                wire_text = getattr(wire_symbol, 'text', None)
+                assert (
+                    wire_text == expected_symbol
+                ), f'Wire symbol {wire_text} does not match expected {expected_symbol}'
+            else:
+                assert (
+                    wire_symbol == expected_symbol
+                ), f'Wire symbol {wire_symbol} does not match expected {expected_symbol}'
+            expected_idx += 1
 
 
 def execute_notebook(name: str):
@@ -414,8 +453,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts = None
-    decomp_counts = None
+    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -465,6 +504,23 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
 
 
+def assert_equivalent_bloq_counts(
+    bloq: Bloq, generalizer: Union[GeneralizerT, Sequence[GeneralizerT]] = lambda x: x
+) -> None:
+    """Assert that the BloqExample has consistent bloq counts.
+
+    See the documentation for `assert_equivalent_bloq_example_counts` for details on this function.
+    """
+    assert_equivalent_bloq_example_counts(
+        BloqExample(
+            lambda: bloq,
+            name=bloq.__class__.__name__,
+            bloq_cls=bloq.__class__,
+            generalizer=generalizer,
+        )
+    )
+
+
 def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent bloq counts.
 
@@ -490,7 +546,23 @@ def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqChec
     return BloqCheckResult.PASS, ''
 
 
-def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
+    """Assert that the BloqExample has consistent serialization.
+
+    This function asserts that the given bloq can be serialized to a proto format and the
+    corresponding proto can be deserialized back to a bloq which is equal to the original
+    bloq.
+
+    If the given Bloq cannot be serialized / deserialized OR if the deserialized Bloq is not
+    equal to the given Bloq, then the result is `FAIL`. If the roundtrip succeeds, the result
+    is `PASS`.
+
+    Returns:
+        None if the assertions are satisfied.
+
+    Raises:
+        BloqCheckException if any assertions are violated.
+    """
     from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
 
     bloq = bloq_ex.make()
@@ -510,9 +582,10 @@ def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
         raise BloqCheckException.fail(
             f'Roundtrip equality failed.\n{bloq=}\n{bloq_roundtrip=}\n'
         ) from e
+    return None
 
 
-def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_serializes(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent serialization.
 
     This function checks that the given bloq can be serialized to a proto format and the
@@ -528,7 +601,83 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         msg: A message providing details from the check.
     """
     try:
-        assert_bloq_example_serialize(bloq_ex)
+        assert_bloq_example_serializes(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Assert that the bloq example has valid quantum data types throughout its decomposition.
+
+    If the bloq has no decomposition, this check is not applicable. Otherwise: we check the
+    `connections` in the decomposed bloq with increasing levels of type checking severity.
+    First, we check loose type checking (allowing conversions between numeric types). A
+    failure here is raised as a FAIL.
+
+    Then `QDTypeCheckingSeverity.ANY` checking (allowing just conversions to and from QAny) and
+    finally strict checking are performed. Currently, these are coded as an UNVERIFIED bloq
+    check result.
+
+    Returns:
+        None if the assertions are satisfied.
+
+    Raises:
+        BloqCheckException if any assertions are violated.
+    """
+    bloq = bloq_ex.make()
+    # First check for the presence of a decomposition
+    try:
+        cbloq = bloq.decompose_bloq()
+    except (DecomposeTypeError, DecomposeNotImplementedError) as e:
+        raise BloqCheckException.na(
+            r"QDType checking is only applicable for bloqs with decompositions"
+        ) from e
+
+    try:
+        assert_connections_consistent_qdtypes(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.LOOSE
+        )
+    except Exception as e:
+        raise BloqCheckException.fail('Loose type checking failed.\n' + str(e)) from e
+
+    try:
+        assert_connections_consistent_qdtypes(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.ANY
+        )
+    except Exception as e:
+        raise BloqCheckException.unverified('QAny and QBit type checking failed.\n' + str(e)) from e
+
+    try:
+        assert_connections_consistent_qdtypes(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.STRICT
+        )
+    except Exception as e:
+        raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
+    return BloqCheckResult.PASS, ''
+
+
+def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the bloq example has valid quantum data types throughout its decomposition.
+
+    If the bloq has no decomposition, this check is not applicable. Otherwise: we check the
+    `connections` in the decomposed bloq with increasing levels of type checking severity.
+    First, we check loose type checking (allowing conversions between numeric types). A
+    failure here is returned as a FAIL.
+
+    Then `QDTypeCheckingSeverity.ANY` checking (allowing just conversions to and from QAny) and
+    finally strict checking are performed. Currently, these are coded as an UNVERIFIED bloq
+    check result.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_qtyping(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
     except Exception as e:  # pylint: disable=broad-except

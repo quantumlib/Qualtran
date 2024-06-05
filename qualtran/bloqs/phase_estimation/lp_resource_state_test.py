@@ -14,15 +14,19 @@
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.phase_estimation.lp_resource_state import (
     _lp_resource_state_small,
+    _lp_resource_state_symbolic,
     _lprs_interim_prep,
     LPResourceState,
     LPRSInterimPrep,
 )
-from qualtran.cirq_interop.testing import (
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
+from qualtran.cirq_interop.testing import GateHelper
+from qualtran.resource_counting.generalizers import (
+    generalize_rotation_angle,
+    ignore_alloc_free,
+    ignore_split_join,
 )
 
 
@@ -32,6 +36,11 @@ def test_lprs_interim_auto(bloq_autotester):
 
 def test_lp_resource_state_auto(bloq_autotester):
     bloq_autotester(_lp_resource_state_small)
+
+
+def test_lp_resource_state_symb():
+    bloq = _lp_resource_state_symbolic.make()
+    assert bloq.t_complexity().t == 4 * bloq.bitsize
 
 
 def get_interim_resource_state(m: int) -> np.ndarray:
@@ -64,5 +73,7 @@ def test_prepares_resource_state(n):
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
 def test_t_complexity(n):
     bloq = LPResourceState(n)
-    assert_decompose_is_consistent_with_t_complexity(bloq)
-    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6 + 3 * (n == 1)
+    qlt_testing.assert_equivalent_bloq_counts(
+        bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
+    )
+    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6

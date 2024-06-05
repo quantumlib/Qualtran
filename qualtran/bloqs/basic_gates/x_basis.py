@@ -16,28 +16,29 @@ from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
     AddControlledT,
     Bloq,
+    bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CtrlSpec,
     QBit,
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.drawing import WireSymbol
     from qualtran.simulation.classical_sim import ClassicalValT
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
@@ -73,22 +74,26 @@ class _XVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_MINUS if self.bit else _PLUS, inds=(side['q'],), tags=[self.short_name(), tag]
+                data=_MINUS if self.bit else _PLUS,
+                inds=(side['q'],),
+                tags=[self.pretty_name(), tag],
             )
         )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -104,11 +109,16 @@ class _XVector(Bloq):
         return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = '-' if self.bit else '+'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def short_name(self) -> str:
-        return '-' if self.bit else '+'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        s = '-' if self.bit else '+'
+        return directional_text_box(s, side=reg.side)
 
 
 def _hide_base_fields(cls, fields):
@@ -129,6 +139,15 @@ class PlusState(_XVector):
         return PlusEffect()
 
 
+@bloq_example
+def _plus_state() -> PlusState:
+    plus_state = PlusState()
+    return plus_state
+
+
+_PLUS_STATE_DOC = BloqDocSpec(bloq_cls=PlusState, examples=[_plus_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class PlusEffect(_XVector):
     """The effect <+|"""
@@ -138,6 +157,15 @@ class PlusEffect(_XVector):
 
     def adjoint(self) -> 'Bloq':
         return PlusState()
+
+
+@bloq_example
+def _plus_effect() -> PlusEffect:
+    plus_effect = PlusEffect()
+    return plus_effect
+
+
+_PLUS_EFFECT_DOC = BloqDocSpec(bloq_cls=PlusEffect, examples=[_plus_effect])
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -151,6 +179,15 @@ class MinusState(_XVector):
         return MinusEffect()
 
 
+@bloq_example
+def _minus_state() -> MinusState:
+    minus_state = MinusState()
+    return minus_state
+
+
+_MINUS_STATE_DOC = BloqDocSpec(bloq_cls=MinusState, examples=[_minus_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class MinusEffect(_XVector):
     """The effect <-|"""
@@ -160,6 +197,15 @@ class MinusEffect(_XVector):
 
     def adjoint(self) -> 'Bloq':
         return MinusState()
+
+
+@bloq_example
+def _minus_effect() -> MinusEffect:
+    minus_effect = MinusEffect()
+    return minus_effect
+
+
+_MINUS_EFFECT_DOC = BloqDocSpec(bloq_cls=MinusEffect, examples=[_minus_effect])
 
 
 @frozen
@@ -178,15 +224,17 @@ class XGate(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         tn.add(
             qtn.Tensor(
-                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
             )
         )
 
@@ -196,7 +244,7 @@ class XGate(Bloq):
         from qualtran.bloqs.basic_gates import CNOT, Toffoli
 
         if ctrl_spec is None or ctrl_spec == CtrlSpec():
-            bloq = CNOT()
+            bloq: 'Bloq' = CNOT()
         elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
             bloq = Toffoli()
         else:
@@ -211,24 +259,26 @@ class XGate(Bloq):
 
         return bloq, add_controlled
 
-    def short_name(self) -> str:
-        return 'X'
-
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
+        q = cirq_quregs.pop('q')
+
         (q,) = q
-        return cirq.X(q), {'q': [q]}
+        return cirq.X(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self):
         return TComplexity(clifford=1)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import ModPlus
+
+        if reg is None:
+            return Text('X')
 
         return ModPlus()

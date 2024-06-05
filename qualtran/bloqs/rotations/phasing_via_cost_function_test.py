@@ -59,9 +59,13 @@ class TestHammingWeightPhasing(GateWithRegisters):
         )
 
     @property
+    def phase_gradient_oracle(self) -> QvrPhaseGradient:
+        return QvrPhaseGradient(self.cost_reg, self.exponent / 2, self.eps)
+
+    @property
     def phase_oracle(self) -> QvrInterface:
         if self.use_phase_gradient:
-            return QvrPhaseGradient(self.cost_reg, self.exponent / 2, self.eps)
+            return self.phase_gradient_oracle
         else:
             return QvrZPow(self.cost_reg, self.exponent / 2, self.eps)
 
@@ -132,9 +136,13 @@ class TestSquarePhasing(GateWithRegisters):
         )
 
     @property
+    def phase_gradient_oracle(self) -> QvrPhaseGradient:
+        return QvrPhaseGradient(self.cost_reg, self.gamma, self.eps)
+
+    @property
     def phase_oracle(self) -> QvrInterface:
         if self.use_phase_gradient:
-            return QvrPhaseGradient(self.cost_reg, self.gamma, self.eps)
+            return self.phase_gradient_oracle
         else:
             return QvrZPow(self.cost_reg, self.gamma, self.eps)
 

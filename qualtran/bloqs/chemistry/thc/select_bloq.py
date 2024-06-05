@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -30,9 +31,10 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
-from qualtran.bloqs.select_and_prepare import SelectOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -58,7 +60,7 @@ class THCRotations(Bloq):
         kr2: block sizes for QROM erasure for outputting rotation angles. This
             is for the second QROM (eq 35)
         two_body_only: Whether to only apply the two body Hamiltonian. This reduces the QROM size.
-        adjoint: Whether to dagger this bloq or not.
+        is_adjoint: Whether to dagger this bloq or not.
 
     References:
         [Even more efficient quantum computations of chemistry through
@@ -73,7 +75,7 @@ class THCRotations(Bloq):
     kr1: int = 1
     kr2: int = 1
     two_body_only: bool = False
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -86,14 +88,17 @@ class THCRotations(Bloq):
             ]
         )
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
-        if self.adjoint:
+        if self.is_adjoint:
             if self.two_body_only:
                 toff_cost_qrom = (
                     int(np.ceil(self.num_mu / self.kr1))
@@ -115,7 +120,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SelectOracle):
+class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""SELECT for THC Hamiltonian.
 
     Args:
@@ -187,23 +192,19 @@ class SelectTHC(SelectOracle):
             Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        succ: SoquetT,
-        nu_eq_mp1: SoquetT,
-        mu: SoquetT,
-        nu: SoquetT,
-        plus_mn: SoquetT,
-        plus_a: SoquetT,
-        plus_b: SoquetT,
-        sigma: SoquetT,
-        rot: SoquetT,
-        sys_a: SoquetT,
-        sys_b: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        succ = soqs['succ']
+        nu_eq_mp1 = soqs['nu_eq_mp1']
+        mu = soqs['mu']
+        nu = soqs['nu']
+        plus_mn = soqs['plus_mn']
+        plus_a = soqs['plus_a']
+        plus_b = soqs['plus_b']
+        sigma = soqs['sigma']
+        rot = soqs['rot']
+        sys_a = soqs['sys_a']
+        sys_b = soqs['sys_b']
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
-
         # Rotations
         data = bb.allocate(self.num_bits_theta)
         nu_eq_mp1, data, mu, sys_a = bb.add(
@@ -221,7 +222,9 @@ class SelectTHC(SelectOracle):
         )
         # Controlled Z_0
         (succ,), sys_b = bb.add(
-            ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2), ctrls=(succ,), system=sys_b
+            ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2),
+            ctrls=np.asarray([succ]),
+            system=sys_b,
         )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(
@@ -231,7 +234,7 @@ class SelectTHC(SelectOracle):
                 num_bits_theta=self.num_bits_theta,
                 kr1=self.kr1,
                 kr2=self.kr2,
-                adjoint=True,
+                is_adjoint=True,
             ),
             nu_eq_mp1=nu_eq_mp1,
             data=data,
@@ -281,7 +284,7 @@ class SelectTHC(SelectOracle):
                 kr1=self.kr1,
                 kr2=self.kr2,
                 two_body_only=True,
-                adjoint=True,
+                is_adjoint=True,
             ),
             nu_eq_mp1=nu_eq_mp1,
             data=data,
@@ -294,7 +297,7 @@ class SelectTHC(SelectOracle):
 
         # Undo the mu-nu swaps
         bb.free(data)
-        return {
+        out_soqs = {
             'succ': succ,
             'nu_eq_mp1': nu_eq_mp1,
             'mu': mu,
@@ -307,6 +310,10 @@ class SelectTHC(SelectOracle):
             'sys_a': sys_a,
             'sys_b': sys_b,
         }
+        if self.control_val is not None:
+            out_soqs['control'] = soqs['control']
+
+        return out_soqs
 
 
 @bloq_example

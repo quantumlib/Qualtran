@@ -36,18 +36,18 @@ DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 class CtrlSpec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    QDTYPE_FIELD_NUMBER: builtins.int
+    QDTYPES_FIELD_NUMBER: builtins.int
     CVS_FIELD_NUMBER: builtins.int
     @property
-    def qdtype(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.data_types_pb2.QDataType]: ...
+    def qdtypes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.data_types_pb2.QDataType]: ...
     @property
     def cvs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.NDArray]: ...
     def __init__(
         self,
         *,
-        qdtype: collections.abc.Iterable[qualtran.protos.data_types_pb2.QDataType] | None = ...,
+        qdtypes: collections.abc.Iterable[qualtran.protos.data_types_pb2.QDataType] | None = ...,
         cvs: collections.abc.Iterable[qualtran.protos.args_pb2.NDArray] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cvs", b"cvs", "qdtype", b"qdtype"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cvs", b"cvs", "qdtypes", b"qdtypes"]) -> None: ...
 
 global___CtrlSpec = CtrlSpec

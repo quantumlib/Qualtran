@@ -46,13 +46,16 @@ def test_run_returns_string_output():
 
 def test_run_with_command_logging():
     catch_stderr = io.StringIO()
-    kw = {"stdout": subprocess.DEVNULL}
     with contextlib.redirect_stderr(catch_stderr):
-        shell_tools.run(["echo", "-n", "a", "b"], **kw)
+        shell_tools.run(["echo", "-n", "a", "b"], stdout=subprocess.DEVNULL)
     assert catch_stderr.getvalue() == "run: ('echo', '-n', 'a', 'b')\n"
     catch_stderr = io.StringIO()
     with contextlib.redirect_stderr(catch_stderr):
-        shell_tools.run(["echo", "-n", "a", "b"], abbreviate_non_option_arguments=True, **kw)
+        shell_tools.run(
+            ["echo", "-n", "a", "b"],
+            abbreviate_non_option_arguments=True,
+            stdout=subprocess.DEVNULL,
+        )
     assert catch_stderr.getvalue() == "run: ('echo', '-n', '[...]')\n"
 
 
@@ -64,5 +67,5 @@ def test_output_of():
     assert shell_tools.output_of(["echo", "test"]) == "test"
     # filtering of the None arguments was removed.  check this now fails
     with pytest.raises(TypeError):
-        _ = shell_tools.output_of(["echo", "test", None, "duck"])
+        _ = shell_tools.output_of(["echo", "test", None, "duck"])  # type: ignore[list-item]
     assert shell_tools.output_of("pwd", cwd="/tmp") in ["/tmp", "/private/tmp"]

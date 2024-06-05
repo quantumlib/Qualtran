@@ -15,7 +15,7 @@ r"""Bloqs for preparing the $\nu$ state for the first quantized chemistry Hamilt
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
@@ -62,7 +62,7 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
     """
     bitsize_n: int
     bitsize_p: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     def __attrs_post_init__(self):
         if self.bitsize_n < self.bitsize_p:
@@ -74,8 +74,11 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
             [Register("mu", QAny(self.bitsize_n)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             return {(Toffoli(), (self.bitsize_n - 1) + 1)}
         else:
             return {(Toffoli(), (self.bitsize_n - 1) + (self.bitsize_n - self.bitsize_p - 1) + 1)}
@@ -115,7 +118,6 @@ class PrepareNuStateWithProj(Bloq):
     num_bits_p: int
     num_bits_n: int
     m_param: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -133,22 +135,15 @@ class PrepareNuStateWithProj(Bloq):
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, flag_mu = bb.add(
-            PrepareMuUnaryEncodedOneHotWithProj(
-                self.num_bits_n, self.num_bits_p, adjoint=self.adjoint
-            ),
-            mu=mu,
+            PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), mu=mu
         )
-        mu, nu = bb.add(
-            PrepareNuSuperPositionState(self.num_bits_n, adjoint=self.adjoint), mu=mu, nu=nu
-        )
-        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_n, adjoint=self.adjoint), nu=nu)
-        mu, nu, flag_nu_lt_mu = bb.add(
-            TestNuLessThanMu(self.num_bits_n, adjoint=self.adjoint), mu=mu, nu=nu
-        )
+        mu, nu = bb.add(PrepareNuSuperPositionState(self.num_bits_n), mu=mu, nu=nu)
+        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_n), nu=nu)
+        mu, nu, flag_nu_lt_mu = bb.add(TestNuLessThanMu(self.num_bits_n), mu=mu, nu=nu)
         n_m = (self.m_param - 1).bit_length()
         m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
         mu, nu, m, flag_nu = bb.add(
-            TestNuInequality(self.num_bits_n, n_m, adjoint=self.adjoint),
+            TestNuInequality(self.num_bits_n, n_m),
             mu=mu,
             nu=nu,
             m=m,
@@ -161,22 +156,17 @@ class PrepareNuStateWithProj(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare unary encoded superposition state (Eq 77)
-        cost_1 = (
-            PrepareMuUnaryEncodedOneHotWithProj(
-                self.num_bits_n, self.num_bits_p, adjoint=self.adjoint
-            ),
-            1,
-        )
+        cost_1 = (PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
         # 2. Prepare mu-nu superposition (Eq 78)
         cost_2 = (PrepareNuSuperPositionState(self.num_bits_n), 1)
         # 3. Remove minus zero
-        cost_3 = (FlagZeroAsFailure(self.num_bits_n, adjoint=self.adjoint), 1)
+        cost_3 = (FlagZeroAsFailure(self.num_bits_n), 1)
         # 4. Test $\nu < 2^{\mu-2}$
-        cost_4 = (TestNuLessThanMu(self.num_bits_n, adjoint=self.adjoint), 1)
+        cost_4 = (TestNuLessThanMu(self.num_bits_n), 1)
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
-        cost_6 = (TestNuInequality(self.num_bits_n, n_m, adjoint=self.adjoint), 1)
+        cost_6 = (TestNuInequality(self.num_bits_n, n_m), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_6}
 
 

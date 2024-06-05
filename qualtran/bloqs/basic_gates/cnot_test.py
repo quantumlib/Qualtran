@@ -26,12 +26,6 @@ from qualtran.simulation.classical_sim import (
 )
 
 
-def _make_CNOT():
-    from qualtran.bloqs.basic_gates import CNOT
-
-    return CNOT()
-
-
 def test_cnot_tensor():
     bloq = CNOT()
     matrix = bloq.tensor_contract()
