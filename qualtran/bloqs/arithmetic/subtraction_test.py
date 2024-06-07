@@ -21,15 +21,20 @@ from qualtran.bloqs.arithmetic import Subtract
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 
-def test_subtract_bloq_decomposition():
-    gate = Subtract(QInt(3), QInt(5))
+@pytest.mark.parametrize(
+    ['a_bits', 'b_bits'], [(a, b) for a in range(1, 6) for b in range(a, 6) if a + b <= 10]
+)
+def test_subtract_bloq_decomposition(a_bits, b_bits):
+    gate = Subtract(QInt(a_bits), QInt(b_bits))
     qlt_testing.assert_valid_bloq_decomposition(gate)
 
-    want = np.zeros((256, 256))
-    for a_b in range(256):
-        a, b = a_b >> 5, a_b & 31
-        c = (a - b) % 32
-        want[(a << 5) | c][a_b] = 1
+    tot = 1 << (a_bits + b_bits)
+    want = np.zeros((tot, tot))
+    max_b = 1 << b_bits
+    for a_b in range(tot):
+        a, b = a_b >> b_bits, a_b & (max_b - 1)
+        c = (a - b) % max_b
+        want[(a << b_bits) | c][a_b] = 1
     got = gate.tensor_contract()
     np.testing.assert_equal(got, want)
 
@@ -45,3 +50,10 @@ def test_subtract_bloq_consitant_counts():
     qlt_testing.assert_equivalent_bloq_counts(
         Subtract(QInt(3), QInt(4)), generalizer=ignore_split_join
     )
+
+
+@pytest.mark.parametrize('n_bits', range(1, 10))
+def test_t_complexity(n_bits):
+    complexity = Subtract(n_bits).t_complexity()
+    assert complexity.t == 4 * (n_bits - 1)
+    assert complexity.rotations == 0

@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -31,8 +32,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import Add, AddK
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.basic_gates import OnEach, XGate
+from qualtran.bloqs.bookkeeping import Allocate, Free
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -61,7 +63,9 @@ class Subtract(Bloq):
         b: A b_dtype.bitsize-sized input/output register (register b above).
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field(
+        converter=lambda k: QUInt(k) if isinstance(k, int) else k
+    )
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
     @b_dtype.default
@@ -118,32 +122,38 @@ class Subtract(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
+        delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         return {
-            (XGate(), self.b_dtype.bitsize),
-            (AddK(self.b_dtype.bitsize, k=1), 1),
-            (Add(a_dtype, b_dtype), 1),
-        }
+            (OnEach(self.b_dtype.bitsize, XGate()), 3),
+            (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
+        }.union(
+            [
+                (Allocate(QAny(self.b_dtype.bitsize - self.a_dtype.bitsize)), 1),
+                (Free(QAny(self.b_dtype.bitsize - self.a_dtype.bitsize)), 1),
+            ]
+            if delta
+            else []
+        )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
-        b = bb.add(
-            AddK(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
-        )  # 2s complement of b.
-
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
-
-        a, b = bb.add(Add(a_dtype, b_dtype), a=a, b=b)  # a - b
+        delta = self.b_dtype.bitsize - self.a_dtype.bitsize
+        n_bits = self.b_dtype.bitsize
+        a = bb.split(a)
+        b = bb.split(b)
+        if delta:
+            # Add a zero prefix to `a`
+            a = np.concatenate([bb.split(bb.allocate(delta)), a])
+        a = bb.join(a, QUInt(n_bits))
+        b = bb.join(b, QUInt(n_bits))
+        a = bb.add(OnEach(n_bits, XGate()), q=a)
+        a, b = bb.add(Add(QUInt(n_bits), QUInt(n_bits)), a=a, b=b)  # a - b
+        b = bb.add(OnEach(n_bits, XGate()), q=b)
+        a = bb.add(OnEach(n_bits, XGate()), q=a)
+        b = bb.join(bb.split(b), self.b_dtype)
+        a = bb.split(a)
+        if delta:
+            bb.free(bb.join(a[:delta]))
+        a = bb.join(a[delta:], self.a_dtype)
         return {'a': a, 'b': b}
 
 
