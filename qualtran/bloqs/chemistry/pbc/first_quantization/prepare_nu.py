@@ -58,7 +58,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
+        return r'PREP √(2^μ)|μ⟩'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.num_bits_p - 1))}
@@ -104,7 +104,7 @@ class PrepareNuSuperPositionState(Bloq):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def pretty_name(self) -> str:
-        return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
+        return r'PREP (2^-μ)|μ⟩|ν⟩'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -141,7 +141,7 @@ class FlagZeroAsFailure(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'$\nu\ne -0$'
+        return r'ν≠−0'
 
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
@@ -190,7 +190,7 @@ class TestNuLessThanMu(Bloq):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def pretty_name(self) -> str:
-        return r'$\nu < 2^{\mu-2}$'
+        return r'ν<2^(μ−2)'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.is_adjoint:
@@ -258,7 +258,7 @@ class TestNuInequality(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
+        return r'(2^(μ-2))^2 M > m ν^2'
 
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
@@ -340,7 +340,7 @@ class PrepareNuState(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
+        return r"PREP 1/‖ν‖ ∣ν⟩"
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT

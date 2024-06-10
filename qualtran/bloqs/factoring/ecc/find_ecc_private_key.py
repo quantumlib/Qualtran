@@ -20,7 +20,7 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signature, SoquetT
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.bloqs.util_bloqs import Free
+from qualtran.bloqs.bookkeeping import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
 
@@ -109,9 +109,6 @@ class FindECCPrivateKey(Bloq):
         generic_point = ECPoint(Rx, Ry, mod=self.mod, curve_a=self.curve_a)
 
         return {(ECPhaseEstimateR(n=self.n, point=generic_point), 2)}
-
-    def __str__(self):
-        return 'FindECCPrivateKey'
 
     def cost_attrs(self):
         return [('n', self.n)]

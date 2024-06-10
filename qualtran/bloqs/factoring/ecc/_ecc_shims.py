@@ -41,8 +41,5 @@ class MeasureQFT(Bloq):
             return RarrowTextBox('MeasQFT')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return 'MeasureQFT'
-
     def cost_attrs(self):
         return [('n', self.n)]

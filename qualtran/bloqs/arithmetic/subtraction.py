@@ -31,7 +31,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs import util_bloqs
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.drawing import Text
@@ -129,8 +128,6 @@ class Subtract(Bloq):
             (XGate(), self.b_dtype.bitsize),
             (AddK(self.b_dtype.bitsize, k=1), 1),
             (Add(a_dtype, b_dtype), 1),
-            (util_bloqs.Split(self.b_dtype), 1),
-            (util_bloqs.Join(self.b_dtype), 1),
         }
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:

@@ -14,7 +14,7 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 from functools import cached_property
-from typing import cast, Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 import attrs
 import sympy
@@ -51,11 +51,6 @@ class OnEach(Bloq):
         reg = Register('q', QAny(bitsize=self.n))
         return Signature([reg])
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
-        if reg is None:
-            return Text(rf'{self.gate.wire_symbol(reg=None)}⨂{self.n}')
-        return TextBox(cast(Text, self.gate.wire_symbol(reg=None)).text)
-
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise ValueError(f'Symbolic n not allowed {self.n}')
@@ -66,3 +61,19 @@ class OnEach(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(self.gate, self.n)}
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        one_reg = self.gate.wire_symbol(reg=reg, idx=idx)
+        if isinstance(one_reg, TextBox):
+            new_text = f'{one_reg.text}⨂{self.n}'
+            return TextBox(new_text)
+        if isinstance(one_reg, Text):
+            if one_reg.text == '':
+                return Text('')
+            new_text = f'{one_reg.text}⨂{self.n}'
+            return Text(new_text)
+
+        return super().wire_symbol(reg, idx)
+
+    def __str__(self):
+        return f'{self.gate}⨂{self.n}'

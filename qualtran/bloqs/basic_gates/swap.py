@@ -33,7 +33,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
