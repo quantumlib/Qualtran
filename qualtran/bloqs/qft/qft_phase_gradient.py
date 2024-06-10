@@ -18,13 +18,13 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
 
 @attrs.frozen
 class QFTPhaseGradient(GateWithRegisters):
-    r"""QFT implemented using phase gradient trick. Uses O(n**2) T-gates for an n-bit register.
+    r"""QFT implemented using coherent addition into a phase gradient register as opposed to controlled rotations. Uses O(n**2) T-gates for an n-bit register.
 
     Given an n-bit phase gradient state $|\phi\rangle$ prepared as
 
@@ -75,3 +75,12 @@ class QFTPhaseGradient(GateWithRegisters):
         if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
+
+
+@bloq_example
+def _qft_phase_gradient_small() -> QFTPhaseGradient:
+    qft_phase_gradient_small = QFTPhaseGradient(3)
+    return qft_phase_gradient_small
+
+
+_QFT_PHASE_GRADIENT_DOC = BloqDocSpec(bloq_cls=QFTPhaseGradient, examples=(_qft_phase_gradient_small,))

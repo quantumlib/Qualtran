@@ -451,6 +451,11 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qft.qft_text_book,
         bloq_specs=[qualtran.bloqs.qft.qft_text_book._QFT_TEXT_BOOK_DOC],
     ),
+    NotebookSpecV2(
+        title='Phase Gradient QFT',
+        module=qualtran.bloqs.qft.qft_phase_gradient,
+        bloq_spect=[qualtran.bloqs.qft.qft_phase_gradient._QFT_PHASE_GRADIENT_DOC],
+    ),
     # --------------------------------------------------------------------------
     # -----   Phase Estimation          ----------------------------------------
     # --------------------------------------------------------------------------

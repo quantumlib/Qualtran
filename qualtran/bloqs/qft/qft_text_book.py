@@ -20,8 +20,7 @@ import cirq
 from numpy.typing import NDArray
 from sympy import Expr
 
-from qualtran import BloqDocSpec, GateWithRegisters, QUInt, Signature
-from qualtran import bloq_example
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Signature
 from qualtran._infra.bloq import Bloq
 from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.swap import TwoBitSwap
@@ -46,6 +45,10 @@ class QFTTextBook(GateWithRegisters):
     to be provided but utilizes controlled addition instead of rotations, which leads to reduced T-gate complexity.
     - `TwoBitFFFT` if you need to implement a two-qubit fermionic Fourier transform.
 
+    References:
+        [Quantum Computation and Quantum Information: 10th Anniversary Edition,
+            Nielsen & Chuang](https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview)
+            Chapter 5.1
     Args:
         bitsize: Size of the input register to apply QFT on.
         with_reverse: Whether or not to include the swaps at the end
@@ -67,6 +70,9 @@ class QFTTextBook(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         yield cirq.H(q[0])
+        if self.bitsize == 1:
+            yield cirq.H(q[0])
+            return
         for i in range(1, len(q)):
             yield PhaseGradientUnitary(i, exponent=0.5, is_controlled=True).on_registers(
                 ctrl=q[i], phase_grad=q[:i][::-1]
@@ -79,7 +85,7 @@ class QFTTextBook(GateWithRegisters):
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
         ret = {
             (Hadamard(), self.bitsize),
-            (PhaseGradientUnitary(self.bitsize, exponent=0.5, is_controlled=True)),
+            (PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True)),
         }
 
         if self.with_reverse:
