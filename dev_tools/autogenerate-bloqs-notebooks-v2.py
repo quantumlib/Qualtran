@@ -91,6 +91,8 @@ import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qft.qft_phase_gradient
+import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
@@ -454,7 +456,7 @@ ROT_QFT_PE = [
     NotebookSpecV2(
         title='Phase Gradient QFT',
         module=qualtran.bloqs.qft.qft_phase_gradient,
-        bloq_spect=[qualtran.bloqs.qft.qft_phase_gradient._QFT_PHASE_GRADIENT_DOC],
+        bloq_specs=[qualtran.bloqs.qft.qft_phase_gradient._QFT_PHASE_GRADIENT_DOC],
     ),
     # --------------------------------------------------------------------------
     # -----   Phase Estimation          ----------------------------------------
