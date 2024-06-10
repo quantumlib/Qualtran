@@ -11,21 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import defaultdict
 from functools import cached_property
-from typing import Iterator
+from typing import Iterator, Set
 
 import attrs
 import cirq
 from numpy.typing import NDArray
+from sympy import Expr
 
-from qualtran import GateWithRegisters, QUInt, Signature
+from qualtran import BloqDocSpec, GateWithRegisters, QUInt, Signature
+from qualtran import bloq_example
+from qualtran._infra.bloq import Bloq
+from qualtran.bloqs.basic_gates.hadamard import Hadamard
+from qualtran.bloqs.basic_gates.swap import TwoBitSwap
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics.types import is_symbolic
 
 
 @attrs.frozen
 class QFTTextBook(GateWithRegisters):
-    r"""Textbook version of QFT using $\frac{N (N + 1)}{2}$ controlled rotations.
+    r"""Quantum Fourier Transform as presented in Chapter 5.1 of Nielsen and
+    Chuang
+
+    Performs the standard QFT on a register of `bitsize` qubits utilizing
+    `bitsize` Hadamards and `bitsize` * (`bitsize` - 1) / 2 controlled Z
+    rotations, along with a reversal of qubit ordering specified via
+    `with_reverse` which defaults to `True`. `bitsize` can be provided numerically or symbolically. More specific QFT implementations
+    can be found:
+    - `ApproximateQFT` does not apply as small phases as standard QFT and relies on a specified rotation accuracy cutoff.
+    - `QFTPhaseGradient` requires an additional input phase gradient register
+    to be provided but utilizes controlled addition instead of rotations, which leads to reduced T-gate complexity.
+    - `TwoBitFFFT` if you need to implement a two-qubit fermionic Fourier transform.
 
     Args:
         bitsize: Size of the input register to apply QFT on.
@@ -56,3 +75,22 @@ class QFTTextBook(GateWithRegisters):
         if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+        ret = {
+            (Hadamard(), self.bitsize),
+            (PhaseGradientUnitary(self.bitsize, exponent=0.5, is_controlled=True)),
+        }
+
+        if self.with_reverse:
+            ret |= {(TwoBitSwap(), self.bitsize // 2)}
+        return ret
+
+
+@bloq_example
+def _qft_text_book() -> QFTTextBook:
+    qft_text_book = QFTTextBook(3)
+    return qft_text_book
+
+
+_QFT_TEXT_BOOK_DOC = BloqDocSpec(bloq_cls=QFTTextBook, examples=(_qft_text_book,))

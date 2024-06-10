@@ -83,6 +83,7 @@ Bloqs Library
     rotations/phasing_via_cost_function.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
+    qft/qft_text_book.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization/qubitization_walk_operator.ipynb
