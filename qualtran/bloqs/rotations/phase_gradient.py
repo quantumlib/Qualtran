@@ -27,6 +27,7 @@ from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -93,6 +94,16 @@ class PhaseGradientUnitary(GateWithRegisters):
             self.bitsize, self.exponent * power, self.is_controlled, self.eps
         )
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        exp, eps = self.exponent / (2 ** (self.bitsize - 1)), self.eps / self.bitsize
+        rot_bloq = (CZPowGate if self.controlled else ZPowGate)(exponent=exp, eps=eps)
+        if is_symbolic(self.bitsize):
+            return {(rot_bloq, self.bitsize)}
+        else:
+            return {
+                (attrs.evolve(rot_bloq, exponent=exp * (2**i)), 1) for i in range(self.bitsize)
+            }
+
 
 @attrs.frozen
 class PhaseGradientState(GateWithRegisters):
@@ -133,10 +144,17 @@ class PhaseGradientState(GateWithRegisters):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
+
         yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
         yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps).on_registers(
             phase_grad=phase_grad
         )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (Hadamard(), self.bitsize),
+            (PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps), 1),
+        }
 
 
 @attrs.frozen

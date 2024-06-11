@@ -19,6 +19,7 @@ import cirq
 import numpy as np
 import sympy
 from attrs import frozen
+from numpy._typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
 from qualtran.cirq_interop import CirqGateAsBloqBase
@@ -109,6 +110,7 @@ def _z_pow() -> ZPowGate:
 _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 
 
+
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
@@ -133,6 +135,27 @@ class CZPowGate(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'CZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+
+@frozen
+class ZZPowGate(CirqGateAsBloqBase):
+    exponent: float = 1.0
+    global_shift: float = 0
+    eps: float = 1e-11
+
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        q = quregs.get('q').flatten().tolist()
+        yield ZPowGate(exponent=self.exponent, eps=self.eps / 3)(q[0])
+        yield ZPowGate(exponent=self.exponent, eps=self.eps / 3)(q[1])
+        yield CZPowGate(
+            exponent=-2 * self.exponent, global_shift=-self.global_shift / 2, eps=self.eps / 3
+        )(*q)
 
 
 @frozen
