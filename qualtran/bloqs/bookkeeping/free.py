@@ -12,14 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Bloqs for virtual operations and register reshaping."""
 from functools import cached_property
 from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
+import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QDType, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QDType,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
@@ -31,14 +43,17 @@ if TYPE_CHECKING:
 
 @frozen
 class Free(_BookkeepingBloq):
-    """Free (i.e. de-allocate) an `n` bit register.
+    """Free (i.e. de-allocate) a register.
 
-    The tensor decomposition assumes the `n` bit register is uncomputed and is in the $|0^{n}>$
+    The tensor decomposition assumes the register is uncomputed and is in the zero
     state before getting freed. To verify that is the case, one can compute the resulting state
     vector after freeing qubits and make sure it is normalized.
 
-    Attributes:
+    Args:
         dtype: The quantum data type of the register to be freed.
+
+    Registers:
+        reg [left]: The register to free.
     """
 
     dtype: QDType
@@ -46,6 +61,9 @@ class Free(_BookkeepingBloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('reg', self.dtype, side=Side.LEFT)])
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic.')
 
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.allocate import Allocate
@@ -76,3 +94,13 @@ class Free(_BookkeepingBloq):
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
+
+
+@bloq_example
+def _free() -> Free:
+    n = sympy.Symbol('n')
+    free = Free(QUInt(n))
+    return free
+
+
+_FREE_DOC = BloqDocSpec(bloq_cls=Free, examples=[_free])

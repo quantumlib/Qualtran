@@ -15,9 +15,22 @@ from functools import cached_property
 from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 
-from qualtran import Bloq, QBit, QDType, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QBit,
+    QDType,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints
@@ -31,13 +44,17 @@ if TYPE_CHECKING:
 
 @frozen
 class Join(_BookkeepingBloq):
-    """Join a length-`n` array-register into one register of bitsize `n`.
+    """Join an array of `QBit`s into one register of type `dtype`.
 
-    Attributes:
-        dtype: The quantum data type of the right register.
+    Args:
+        dtype: The quantum data type of the right (joined) register.
+
+    Registers:
+        reg: The register to be joined. On its left, it is an array of qubits. On the right, it is a register
+            of the given data type.
     """
 
-    dtype: QDType
+    dtype: QDType = field()
 
     @cached_property
     def signature(self) -> Signature:
@@ -47,6 +64,14 @@ class Join(_BookkeepingBloq):
                 Register('reg', self.dtype, shape=tuple(), side=Side.RIGHT),
             ]
         )
+
+    @dtype.validator
+    def _validate_dtype(self, attribute, value):
+        if value.is_symbolic():
+            raise ValueError(f"{self} cannot have a symbolic data type.")
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic')
 
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.split import Split
@@ -88,3 +113,12 @@ class Join(_BookkeepingBloq):
             text = f'[{", ".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
         return directional_text_box(' ', side=reg.side)
+
+
+@bloq_example
+def _join() -> Join:
+    join = Join(dtype=QUInt(4))
+    return join
+
+
+_JOIN_DOC = BloqDocSpec(bloq_cls=Join, examples=[_join], call_graph_example=None)

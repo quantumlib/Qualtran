@@ -18,7 +18,18 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, QDType, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    QDType,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
 if TYPE_CHECKING:
@@ -32,6 +43,7 @@ if TYPE_CHECKING:
 class Cast(_BookkeepingBloq):
     """Cast a register from one n-bit QDType to another QDType.
 
+    This re-interprets the register's data type from `inp_dtype` to `out_dtype`.
 
     Args:
         inp_dtype: Input QDType to cast from.
@@ -54,8 +66,8 @@ class Cast(_BookkeepingBloq):
             if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
                 raise ValueError("Casting only permitted between same sized registers.")
 
-    def adjoint(self) -> 'Bloq':
-        return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f'{self} is atomic')
 
     @cached_property
     def signature(self) -> Signature:
@@ -65,6 +77,9 @@ class Cast(_BookkeepingBloq):
                 Register('reg', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
             ]
         )
+
+    def adjoint(self) -> 'Bloq':
+        return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
     def add_my_tensors(
         self,
@@ -90,3 +105,14 @@ class Cast(_BookkeepingBloq):
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
+
+
+@bloq_example
+def _cast() -> Cast:
+    from qualtran import QFxp, QInt
+
+    cast = Cast(QInt(32), QFxp(32, 32))
+    return cast
+
+
+_CAST_DOC = BloqDocSpec(bloq_cls=Cast, examples=[_cast], call_graph_example=None)
