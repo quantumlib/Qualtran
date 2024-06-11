@@ -37,12 +37,13 @@ from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
-from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.symbolics.math_funcs import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -313,10 +314,10 @@ class PrepareSparse(PrepareOracle):
             (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
         )
         if self.qroam_block_size is None:
-            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
+            log_block_sizes = find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
         else:
-            block_size = self.qroam_block_size
-        qrom = SelectSwapQROM(
+            log_block_sizes = ceil(log2(self.qroam_block_size))
+        qrom = SelectSwapQROM.build_from_data(
             self.ind_pqrs[0],
             self.ind_pqrs[1],
             self.ind_pqrs[2],
@@ -331,7 +332,7 @@ class PrepareSparse(PrepareOracle):
             self.alt_one_body,
             self.keep,
             target_bitsizes=target_bitsizes,
-            block_size=block_size,
+            log_block_sizes=log_block_sizes,
         )
         return qrom
 

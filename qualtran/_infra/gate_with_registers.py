@@ -315,7 +315,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(self.pretty_name())
+            return Text(str(self))
 
         return _wire_symbol_from_gate(self, self.signature, reg, idx)
 
@@ -368,7 +368,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         if abs(power) == 1:
             return bloq
         if all(reg.side == Side.THRU for reg in self.signature):
-            from qualtran.bloqs.util_bloqs import Power
+            from qualtran.bloqs.basic_gates import Power
 
             return Power(bloq, abs(power))
         raise NotImplementedError(f"{self} does not implemented __pow__ for {power=}.")

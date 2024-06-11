@@ -14,7 +14,7 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import acos, is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -161,12 +161,14 @@ class LPResourceState(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         flag_angle = acos(1 / (1 + 2**self.bitsize))
-
+        cvs: Union[HasLength, Tuple[int, ...]] = (
+            HasLength(self.bitsize + 1) if is_symbolic(self.bitsize) else (0,) * (self.bitsize + 1)
+        )
         return {
             (LPRSInterimPrep(self.bitsize), 2),
             (LPRSInterimPrep(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
+            (MultiControlPauli(cvs, target_gate=cirq.Z), 1),
             (XGate(), 4),
             (GlobalPhase(1j), 1),
             (CZPowGate(), 1),
@@ -195,9 +197,6 @@ def _lp_resource_state_small() -> LPResourceState:
 @bloq_example
 def _lp_resource_state_symbolic() -> LPResourceState:
     import sympy
-
-    # Note: Symbolic callgraphs currently don't work due to
-    # https://github.com/quantumlib/Qualtran/issues/786
 
     lp_resource_state_symbolic = LPResourceState(sympy.Symbol('n'))
     return lp_resource_state_symbolic

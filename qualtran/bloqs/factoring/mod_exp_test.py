@@ -20,9 +20,9 @@ import pytest
 import sympy
 
 from qualtran import Bloq
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
-from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook

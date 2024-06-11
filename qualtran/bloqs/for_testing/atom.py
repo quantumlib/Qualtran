@@ -73,6 +73,9 @@ class TestAtom(Bloq):
         else:
             return 'TestAtom()'
 
+    def __str__(self):
+        return repr(self)
+
     def pretty_name(self) -> str:
         if self.tag:
             return self.tag

@@ -549,3 +549,6 @@ class Bloq(metaclass=abc.ABCMeta):
             pretty_str = label
 
         return directional_text_box(text=pretty_str, side=reg.side)
+
+    def __str__(self):
+        return self.__class__.__name__

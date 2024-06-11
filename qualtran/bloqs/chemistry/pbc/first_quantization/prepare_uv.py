@@ -82,7 +82,7 @@ class PrepareUVFirstQuantization(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return r'PREP $UV$'
+        return r'PREP UV'
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT

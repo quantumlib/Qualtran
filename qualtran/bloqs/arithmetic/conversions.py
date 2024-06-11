@@ -89,11 +89,11 @@ class ToContiguousIndex(Bloq):
         if reg is None:
             return Text('')
         if reg.name == 'mu':
-            return TextBox(r'$\mu$')
+            return TextBox('μ')
         elif reg.name == 'nu':
-            return TextBox(r'$\mu$')
+            return TextBox(r'ν')
         else:
-            text = r'$\oplus\nu(\nu-1)/2+\mu$'
+            text = r'⊕ν(ν-1)/2+μ'
             return TextBox(text)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

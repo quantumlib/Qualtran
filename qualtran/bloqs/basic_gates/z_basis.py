@@ -36,8 +36,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
@@ -45,7 +46,6 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -134,6 +134,14 @@ class _ZVector(Bloq):
     def pretty_name(self) -> str:
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        s = '1' if self.bit else '0'
+        return directional_text_box(s, side=reg.side)
 
 
 def _hide_base_fields(cls, fields):
@@ -379,10 +387,8 @@ class _IntVector(Bloq):
         return f'|{s}>' if self.state else f'<{s}|'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box, Text
-
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('')
 
         return directional_text_box(text=f'{self.val}', side=reg.side)
 

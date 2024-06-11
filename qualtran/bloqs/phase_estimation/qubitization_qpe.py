@@ -21,7 +21,7 @@ import numpy as np
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -161,16 +161,18 @@ class QubitizationQPE(GateWithRegisters):
 def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     import numpy as np
 
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 2, 2, 2
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps
@@ -182,16 +184,18 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
 def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     import numpy as np
 
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 20, 20, 20
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps

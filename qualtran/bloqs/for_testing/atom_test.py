@@ -39,7 +39,7 @@ def test_test_two_bit_op():
 
 def test_test_gwr_atom():
     ta = TestGWRAtom()
-    assert cast(Text, ta.wire_symbol(reg=None)).text == 'GWRAtom'
+    assert cast(Text, ta.wire_symbol(reg=None)).text == 'TestGWRAtom'
     with pytest.raises(DecomposeTypeError):
         ta.decompose_bloq()
     assert ta.adjoint() == TestGWRAtom(is_adjoint=True)
