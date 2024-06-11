@@ -117,7 +117,7 @@ class CNOT(Bloq):
                 (c1, c2), target = bb.add(
                     bloq, ctrl=np.array([in_soqs['ctrl'], c2]), target=in_soqs['target']
                 )
-                return (c1,), (c2, target)
+                return (c2,), (c1, target)
 
             return bloq, add_controlled
 
