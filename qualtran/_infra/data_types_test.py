@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
+import random
+
 import numpy as np
 import pytest
 import sympy
@@ -293,11 +296,15 @@ def test_to_and_from_bits():
     assert list(qfxp_4_3.to_bits(0.625)) == [0, 1, 0, 1]
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(+0.625)).get_val() == +0.625
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.625)).get_val() == -0.625
-    assert list(QFxp(4, 3, True).to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(0.375)).get_val() == 0.375
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.375)).get_val() == -0.375
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(0.1)
+    assert list(qfxp_4_3.to_bits(0.7, require_exact=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(0.7, require_exact=False, complement=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False)) == [1, 0, 1, 1]
+    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False, complement=False)) == [1, 1, 0, 1]
 
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(1.5)
@@ -313,3 +320,50 @@ def test_to_and_from_bits():
 
     assert list(QFxp(7, 3, True).to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
     assert list(QFxp(7, 3, True).to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
+
+
+def test_iter_bits():
+    assert QUInt(2).to_bits(0) == [0, 0]
+    assert QUInt(2).to_bits(1) == [0, 1]
+    assert QUInt(2).to_bits(2) == [1, 0]
+    assert QUInt(2).to_bits(3) == [1, 1]
+
+
+def test_iter_bits_twos():
+    assert QInt(4).to_bits(0) == [0, 0, 0, 0]
+    assert QInt(4).to_bits(1) == [0, 0, 0, 1]
+    assert QInt(4).to_bits(-2) == [1, 1, 1, 0]
+    assert QInt(4).to_bits(-3) == [1, 1, 0, 1]
+    with pytest.raises(ValueError):
+        _ = QInt(2).to_bits(100)
+
+
+random.seed(1234)
+
+
+@pytest.mark.parametrize('val', [random.uniform(-1, 1) for _ in range(10)])
+@pytest.mark.parametrize('width', [*range(2, 20, 2)])
+@pytest.mark.parametrize('signed', [True, False])
+def test_fixed_point(val, width, signed):
+    if (val < 0) and not signed:
+        with pytest.raises(ValueError):
+            _ = QFxp(width + int(signed), width, signed=signed).to_bits(
+                val, require_exact=False, complement=False
+            )
+    else:
+        bits = QFxp(width + int(signed), width, signed=signed).to_bits(
+            val, require_exact=False, complement=False
+        )
+        if signed:
+            sign, bits = bits[0], bits[1:]
+            assert sign == (1 if val < 0 else 0)
+        val = abs(val)
+        approx_val = math.fsum([b * (1 / 2 ** (1 + i)) for i, b in enumerate(bits)])
+        assert math.isclose(val, approx_val, abs_tol=1 / 2**width), (
+            f'{val}:{approx_val}:{width}',
+            bits,
+        )
+        with pytest.raises(ValueError):
+            _ = QFxp(width, width).to_fixed_width_int(-val)
+        bits_from_int = QUInt(width).to_bits(QFxp(width, width).to_fixed_width_int(val))
+        assert bits == bits_from_int

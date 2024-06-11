@@ -492,17 +492,43 @@ class QFxp(QDType):
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize, self.num_frac)
 
-    def to_bits(self, x: Union[float, Fxp]) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
-        self._assert_valid_classical_val(x)
+    def to_bits(
+        self, x: Union[float, Fxp], require_exact: bool = True, complement: bool = True
+    ) -> List[int]:
+        """Yields individual bits corresponding to binary representation of `x`.
+
+        Args:
+            x: The value to encode.
+            require_exact: Raise `ValueError` if `x` cannot be exactly represented.
+            complement: Use twos-complement rather than sign-magnitude representation of negative values.
+
+        Raises:
+            ValueError: If `x` is negative but this `QFxp` is not signed.
+        """
+        if require_exact:
+            self._assert_valid_classical_val(x)
+        if x < 0 and not self.signed:
+            raise ValueError(f"unsigned QFxp cannot represent {x}.")
+        if self.signed and not complement:
+            sign = int(x < 0)
+            x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
-        return [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        if self.signed and not complement:
+            bits[0] = sign
+        return bits
 
     def from_bits(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
         return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
+
+    def to_fixed_width_int(self, x: Union[float, Fxp]) -> int:
+        """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
+        if x < 0:
+            raise ValueError("x must be >= 0.")
+        return int(''.join(str(b) for b in self.to_bits(x, require_exact=False)), 2)
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):

@@ -17,10 +17,10 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian, get_1d_ising_lcu_coeffs
 from qualtran.bloqs.multiplexers.select_pauli_lcu import _select_pauli_lcu, SelectPauliLCU
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -69,7 +69,7 @@ def test_ising_zero_bitflip_select(control_val):
         # turn on control bit to activate circuit
         qubit_vals = {x: int(control_val) if x == control else 0 for x in all_qubits}
         # Initialize selection bits appropriately
-        qubit_vals.update(zip(selection, iter_bits(selection_integer, selection_bitsize)))
+        qubit_vals.update(zip(selection, QUInt(selection_bitsize).to_bits(selection_integer)))
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         for i, pauli_val in enumerate(dense_pauli_string_hamiltonian[selection_integer]):
@@ -119,7 +119,7 @@ def test_ising_one_bitflip_select():
         # turn on control bit to activate circuit
         qubit_vals = {x: int(x == control) for x in all_qubits}
         # Initialize selection bits appropriately
-        qubit_vals.update(zip(selection, iter_bits(selection_integer, selection_bitsize)))
+        qubit_vals.update(zip(selection, QUInt(selection_bitsize).to_bits(selection_integer)))
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         for i, pauli_val in enumerate(dense_pauli_string_hamiltonian[selection_integer]):
