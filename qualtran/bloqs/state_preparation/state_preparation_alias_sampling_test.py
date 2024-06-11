@@ -15,10 +15,12 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _state_prep_alias,
+    _state_prep_alias_symb,
     StatePreparationAliasSampling,
 )
 from qualtran.cirq_interop.testing import GateHelper
@@ -27,6 +29,30 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+
+
+def test_state_prep_alias_sampling_symb():
+    bloq = _state_prep_alias_symb.make()
+    L, logL, log_eps_inv = bloq.n_coeff, bloq.selection_bitsize, bloq.mu
+    # Scales as 4l + O(logL) + O(log(1 / eps))
+    expected_t_count_expr = 4 * L + 8 * log_eps_inv + 19 * logL - 8
+    assert isinstance(expected_t_count_expr, sympy.Expr)
+    assert bloq.t_complexity().t == expected_t_count_expr
+    # Compare bloq counts via expression to actual bloq counts and make sure they
+    # are "close enough".
+    # The discrepency here comes from the fact that symbolic counts of
+    # `PrepareUniformSuperposition` assume worst case and cannot compute the remainder
+    # of dividing `n` by the highest power of `2` at resolution time.
+    N, epsilon = 2**16 - 1, 1e-4
+    random_state = cirq.value.parse_random_state(1234)
+    lcu_coefficients = random_state.randn(N).astype(float)
+    bloq_concrete = StatePreparationAliasSampling.from_lcu_probs(
+        lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+    )
+    concrete_t_counts = bloq_concrete.t_complexity().t
+    # Symbolic T-counts
+    symb_t_counts = int(expected_t_count_expr.subs({L: N, sympy.Symbol(r"\epsilon"): epsilon}))
+    np.testing.assert_allclose(concrete_t_counts, symb_t_counts, rtol=1e-4)
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):

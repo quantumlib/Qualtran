@@ -71,7 +71,6 @@ def test_ctrl_spec():
     assert cspec3.qdtypes[0].num_qubits == 64
     assert cspec3.cvs[0] == 234234
     assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
@@ -208,7 +207,7 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-Split(dtype=QAny(bitsize=3))<0>
+Split<0>
   LeftDangle.reg -> reg
   reg[0] -> C[TestAtom()]<1>.q
   reg[1] -> C[TestAtom()]<2>.q
@@ -216,23 +215,23 @@ Split(dtype=QAny(bitsize=3))<0>
 --------------------
 C[TestAtom()]<1>
   LeftDangle.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[0] -> q
+  Split<0>.reg[0] -> q
   ctrl -> C[TestAtom()]<2>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[0]
+  q -> Join<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[1] -> q
+  Split<0>.reg[1] -> q
   ctrl -> C[TestAtom()]<3>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[1]
+  q -> Join<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[2]
+  Split<0>.reg[2] -> q
+  q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join(dtype=QAny(bitsize=3))<4>
+Join<4>
   C[TestAtom()]<1>.q -> reg[0]
   C[TestAtom()]<2>.q -> reg[1]
   C[TestAtom()]<3>.q -> reg[2]

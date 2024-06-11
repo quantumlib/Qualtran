@@ -14,11 +14,24 @@
 import subprocess
 
 import numpy as np
+import pytest
+import sympy
 
-from qualtran import BloqBuilder, QAny
+from qualtran import BloqBuilder, QAny, QUInt
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.bookkeeping import Split
+from qualtran.bloqs.bookkeeping.split import _split
 from qualtran.simulation.classical_sim import call_cbloq_classically
+
+
+def test_split(bloq_autotester):
+    bloq_autotester(_split)
+
+
+def test_no_symbolic():
+    n = sympy.Symbol('n')
+    with pytest.raises(ValueError, match=r'.*cannot have a symbolic data type\.'):
+        Split(QUInt(n))
 
 
 def test_classical_sim():
