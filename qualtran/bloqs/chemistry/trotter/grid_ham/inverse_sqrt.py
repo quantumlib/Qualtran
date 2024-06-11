@@ -19,9 +19,8 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QInt, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QFxp, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
-from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -93,22 +92,22 @@ def build_qrom_data_for_poly_fit(
     for i, (a, b) in enumerate(zip(poly_coeffs_a, poly_coeffs_b)):
         # In practice we should set x = 0 to some large constant, but we will just skip for now.
         # x = 1
-        _, coeff = float_as_fixed_width_int(a, target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a)
         data[i, 1] = coeff
         # x = 2
-        _, coeff = float_as_fixed_width_int(b, target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(b)
         data[i, 2] = coeff
         # x = 3
-        _, coeff = float_as_fixed_width_int(a / 2 ** (1 / 2), target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a / 2 ** (1 / 2))
         data[i, 3] = coeff
         start = 4
         for k in range(2, selection_bitsize):
-            _, coeff = float_as_fixed_width_int(a / 2 ** (k / 2), target_bitsize)
+            coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a / 2 ** (k / 2))
             # Number of time to repeat the data.
             data_size = max(1, 2 ** (k - 1))
             end = start + data_size
             data[i, start:end] = coeff
-            _, coeff = float_as_fixed_width_int(b / 2 ** (k / 2), target_bitsize)
+            coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(b / 2 ** (k / 2))
             start += data_size
             end += data_size
             data[i, start:end] = coeff

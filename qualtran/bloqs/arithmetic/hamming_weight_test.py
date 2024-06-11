@@ -15,9 +15,9 @@
 import cirq
 import pytest
 
+from qualtran import QUInt
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
@@ -50,7 +50,7 @@ def test_hamming_weight_compute(bitsize: int):
     circuit_with_inv = circuit + cirq.Circuit(cirq.decompose_once(op**-1))  # type: ignore[operator]
     qubit_order = sorted(circuit_with_inv.all_qubits())
     for inp in range(2**bitsize):
-        input_state = [0] * (junk_bitsize + out_bitsize) + list(iter_bits(inp, bitsize))
+        input_state = [0] * (junk_bitsize + out_bitsize) + QUInt(bitsize).to_bits(inp)
         result = sim.simulate(circuit, initial_state=input_state).dirac_notation()
         actual_bits = result[1 + junk_bitsize : 1 + junk_bitsize + out_bitsize]
         assert actual_bits == f'{inp.bit_count():0{out_bitsize}b}'
