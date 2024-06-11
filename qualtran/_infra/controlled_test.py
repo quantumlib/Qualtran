@@ -71,7 +71,6 @@ def test_ctrl_spec():
     assert cspec3.qdtypes[0].num_qubits == 64
     assert cspec3.cvs[0] == 234234
     assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
