@@ -98,6 +98,8 @@ def test_add_into_phase_grad():
     assert len(basis_map) == len(set(basis_map.values()))
     circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
+    ((toffoli, n),) = bloq.bloq_counts().items()
+    assert bloq.t_complexity() == n * toffoli.t_complexity()
 
 
 @pytest.mark.parametrize('controlled', [0, 1])
@@ -163,3 +165,5 @@ def test_add_scaled_val_into_phase_reg(bloq):
     circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
     decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
     np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
+    ((add_into_phase, n),) = bloq.bloq_counts().items()
+    assert bloq.t_complexity() == n * add_into_phase.t_complexity()

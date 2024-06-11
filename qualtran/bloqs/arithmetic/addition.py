@@ -60,7 +60,6 @@ from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, Text
 
 if TYPE_CHECKING:
@@ -341,12 +340,6 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             for i in range(self.bitsize)
         ]
         return cirq.inverse(optree) if self.is_adjoint else optree
-
-    def _t_complexity_(self) -> TComplexity:
-        and_t = And(uncompute=self.is_adjoint).t_complexity()
-        num_clifford = self.bitsize * (5 + and_t.clifford)
-        num_t = self.bitsize * and_t.t
-        return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
