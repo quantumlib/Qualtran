@@ -17,10 +17,9 @@ import random
 import cirq
 import pytest
 
-from qualtran import BoundedQUInt, Register
+from qualtran import BoundedQUInt, QUInt, Register
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.swap_network.multiplexed_cswap import _multiplexed_cswap, MultiplexedCSwap
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -41,14 +40,14 @@ def test_cswap_lth_reg(selection_bitsize, iteration_length, target_bitsize):
         # Initial qubit values
         qubit_vals = {q: 0 for q in g.all_qubits}
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         # swap the nth register (x{n}) with the ancilla (y)
         # put some non-zero numbers in the registers for comparison.
-        qubit_vals.update(zip(g.quregs['targets'][n], iter_bits(n + 1, target_bitsize)))
+        qubit_vals.update(zip(g.quregs['targets'][n], QUInt(target_bitsize).to_bits(n + 1)))
         initial_state = [qubit_vals[x] for x in g.all_qubits]
         qubit_vals.update(zip(g.quregs['targets'][n], [0] * len(g.quregs['targets'][n])))
-        qubit_vals.update(zip(g.quregs['output'], iter_bits(n + 1, target_bitsize)))
+        qubit_vals.update(zip(g.quregs['output'], QUInt(target_bitsize).to_bits(n + 1)))
         final_state = [qubit_vals[x] for x in g.all_qubits]
         assert_circuit_inp_out_cirqsim(
             g.decomposed_circuit, g.all_qubits, initial_state, final_state

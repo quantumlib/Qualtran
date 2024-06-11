@@ -22,7 +22,6 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
 from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
@@ -48,11 +47,11 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     circuit0 = cirq.Circuit(op)
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
-    initial_state[:num_bits] = list(iter_bits(a, num_bits))
-    initial_state[num_bits : 2 * num_bits] = list(iter_bits(b, num_bits))
+    initial_state[:num_bits] = QUInt(num_bits).to_bits(a)
+    initial_state[num_bits : 2 * num_bits] = QUInt(num_bits).to_bits(b)
     final_state = [0] * (2 * num_bits + num_anc)
-    final_state[:num_bits] = list(iter_bits(a, num_bits))
-    final_state[num_bits : 2 * num_bits] = list(iter_bits(a + b, num_bits))
+    final_state[:num_bits] = QUInt(num_bits).to_bits(a)
+    final_state[num_bits : 2 * num_bits] = QUInt(num_bits).to_bits(a + b)
     assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
     assert_circuit_inp_out_cirqsim(
         circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
@@ -77,11 +76,11 @@ def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
     circuit0 = cirq.Circuit(op)
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (num_bits_a + num_bits_b + num_anc)
-    initial_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
-    initial_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(b, num_bits_b))
+    initial_state[:num_bits_a] = QUInt(num_bits_a).to_bits(a)
+    initial_state[num_bits_a : num_bits_a + num_bits_b] = QUInt(num_bits_b).to_bits(b)
     final_state = [0] * (num_bits_a + num_bits_b + num_anc)
-    final_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
-    final_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(a + b, num_bits_b))
+    final_state[:num_bits_a] = QUInt(num_bits_a).to_bits(a)
+    final_state[num_bits_a : num_bits_a + num_bits_b] = QUInt(num_bits_b).to_bits(a + b)
     assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
     assert_circuit_inp_out_cirqsim(
         circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
@@ -149,11 +148,11 @@ def test_subtract(a, b, num_bits):
     circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
-    initial_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))
-    initial_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(-b, num_bits))
+    initial_state[:num_bits] = QInt(num_bits).to_bits(a)
+    initial_state[num_bits : 2 * num_bits] = QInt(num_bits).to_bits(-b)
     final_state = [0] * (2 * num_bits + num_bits - 1)
-    final_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))
-    final_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(a - b, num_bits))
+    final_state[:num_bits] = QInt(num_bits).to_bits(a)
+    final_state[num_bits : 2 * num_bits] = QInt(num_bits).to_bits(a - b)
     all_qubits = qubits + ancillas
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
@@ -265,7 +264,7 @@ def test_out_of_place_adder():
     qubit_order = op.qubits
     circuit = cirq.Circuit(cirq.decompose_once(op), cirq.decompose_once(op_inv))
     for x in range(2**6):
-        bits = [*iter_bits(x, 10)][::-1]
+        bits = QUInt(10).to_bits(x)[::-1]
         assert_circuit_inp_out_cirqsim(circuit, qubit_order, bits, bits)
     assert gate.t_complexity().t == 3 * 4
     assert (gate**-1).t_complexity().t == 0
