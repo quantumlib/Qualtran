@@ -109,10 +109,6 @@ class And(GateWithRegisters):
 
         return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.uncompute else ''
-        return f'And{dag}'
-
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
     ) -> Dict[str, ClassicalValT]:
@@ -162,15 +158,23 @@ class And(GateWithRegisters):
             )
         )
 
+    def pretty_name(self) -> str:
+        dag = '†' if self.uncompute else ''
+        return f'And{dag}'
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text('And')
+            return Text('')
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
 
         (c_idx,) = idx
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
         return Circle(filled)
+
+    def __str__(self):
+        dag = '†' if self.uncompute else ''
+        return f'And{dag}'
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
@@ -340,7 +344,7 @@ class MultiAnd(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text('And')
+            return Text('')
         if reg.name == 'ctrl':
             return Circle(filled=self.concrete_cvs[idx[0]] == 1)
         if reg.name == 'target':
@@ -350,6 +354,9 @@ class MultiAnd(Bloq):
         else:
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
+
+    def __str__(self):
+        return f'MultiAnd(n={self.n_ctrls})'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         pre_post_cliffords = set()

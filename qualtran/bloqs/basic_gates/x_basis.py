@@ -32,7 +32,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Text, WireSymbol
+from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -116,8 +116,9 @@ class _XVector(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text('-' if self.bit else '+')
-        return super().wire_symbol(reg, idx)
+            return Text('')
+        s = '-' if self.bit else '+'
+        return directional_text_box(s, side=reg.side)
 
 
 def _hide_base_fields(cls, fields):

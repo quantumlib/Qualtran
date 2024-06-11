@@ -16,6 +16,7 @@ Bloqs Library
     arithmetic/error_analysis_for_fxp_arithmetic.ipynb
     phase_estimation/phase_estimation_of_quantum_walk.ipynb
     chemistry/trotter/grid_ham/trotter_costs.ipynb
+    chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
@@ -35,6 +36,7 @@ Bloqs Library
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
+    bookkeeping/bookkeeping.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -62,16 +64,16 @@ Bloqs Library
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
-    factoring/mod_exp.ipynb
-    factoring/mod_mul.ipynb
-    factoring/ecc/ecc.ipynb
-    factoring/ecc/ec_add.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Modular Arithmetic:
 
     mod_arithmetic/mod_addition.ipynb
+    factoring/mod_mul.ipynb
+    factoring/mod_exp.ipynb
+    factoring/ecc/ec_add.ipynb
+    factoring/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
