@@ -51,7 +51,6 @@ from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -141,7 +140,9 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
         ancilla = context.qubit_manager.qalloc(int(self.bitsize))
-        for b, q, a in zip(iter_bits(int(self.less_than_val), int(self.bitsize)), qubits, ancilla):
+        for b, q, a in zip(
+            QUInt(int(self.bitsize)).to_bits(int(self.less_than_val)), qubits, ancilla
+        ):
             if b:
                 yield cirq.X(q)
                 adjoint.append(cirq.X(q))
