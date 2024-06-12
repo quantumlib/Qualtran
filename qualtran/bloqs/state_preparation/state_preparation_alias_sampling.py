@@ -45,7 +45,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.symbolics import bit_length, Shaped, SymbolicFloat, SymbolicInt, slen
+from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -288,7 +288,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     @classmethod
     def from_lcu_probs(
         cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
-    ) -> 'StatePreparationAliasSampling':
+    ) -> 'SparseStatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
         Args:
@@ -308,7 +308,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         alt = np.array(alt)[is_nonzero]
         keep = np.array(keep)[is_nonzero]
 
-        return StatePreparationAliasSampling(
+        return cls(
             selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             index=index,
             alt=alt,
@@ -325,7 +325,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         sum_of_lcu_coeffs: SymbolicFloat,
         *,
         probability_epsilon: SymbolicFloat = 1.0e-5,
-    ) -> 'StatePreparationAliasSampling':
+    ) -> 'SparseStatePreparationAliasSampling':
         """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
 
         Args:
@@ -339,7 +339,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         """
         mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
         selection_bitsize = bit_length(n_coeff - 1)
-        return StatePreparationAliasSampling(
+        return cls(
             selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
             index=Shaped((n_nonzero_coeff,)),
             alt=Shaped((n_nonzero_coeff,)),
@@ -350,6 +350,10 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @property
     def n_coeff(self) -> SymbolicInt:
+        return self.selection_registers[0].dtype.iteration_length_or_zero()
+
+    @property
+    def n_nonzero_coeff(self) -> SymbolicInt:
         return self.selection_registers[0].dtype.iteration_length_or_zero()
 
     @cached_property
