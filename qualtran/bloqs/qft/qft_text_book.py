@@ -32,17 +32,17 @@ from qualtran.symbolics.types import is_symbolic
 
 @attrs.frozen
 class QFTTextBook(GateWithRegisters):
-    r"""Quantum Fourier Transform as presented in Chapter 5.1 of Nielsen and
-    Chuang
+    r"""Standard Quantum Fourier Transform from Nielsen and Chuang
 
-    Performs the standard QFT on a register of `bitsize` qubits utilizing
+    Performs the QFT on a register of `bitsize` qubits utilizing
     `bitsize` Hadamards and `bitsize` * (`bitsize` - 1) / 2 controlled Z
     rotations, along with a reversal of qubit ordering specified via
-    `with_reverse` which defaults to `True`. `bitsize` can be provided numerically or symbolically. More specific QFT implementations
-    can be found:
+    `with_reverse` which defaults to `True`. `bitsize` can be provided numerically or symbolically.
+    More specific QFT implementations can be found:
     - `ApproximateQFT` does not apply as small phases as standard QFT and relies on a specified rotation accuracy cutoff.
     - `QFTPhaseGradient` requires an additional input phase gradient register
-    to be provided but utilizes controlled addition instead of rotations, which leads to reduced T-gate complexity.
+    to be provided but utilizes controlled addition instead of rotations, which leads to reduced
+    T-gate complexity.
     - `TwoBitFFFT` if you need to implement a two-qubit fermionic Fourier transform.
 
     References:
@@ -85,7 +85,10 @@ class QFTTextBook(GateWithRegisters):
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
         ret = {
             (Hadamard(), self.bitsize),
-            (PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True)),
+            (
+                PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True),
+                self.bitsize - 1,
+            ),
         }
 
         if self.with_reverse:
