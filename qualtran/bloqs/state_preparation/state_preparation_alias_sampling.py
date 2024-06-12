@@ -51,7 +51,12 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-@cirq.value_equality()
+def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
+    return (
+        tuple(data_or_shape.flatten()) if isinstance(data_or_shape, np.ndarray) else data_or_shape
+    )
+
+
 @attrs.frozen
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
@@ -99,8 +104,8 @@ class StatePreparationAliasSampling(PrepareOracle):
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    alt: Union[Shaped, NDArray[np.int_]]
-    keep: Union[Shaped, NDArray[np.int_]]
+    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_lcu_coeffs: SymbolicFloat
 
@@ -193,14 +198,6 @@ class StatePreparationAliasSampling(PrepareOracle):
             )
         )
 
-    def _value_equality_values_(self):
-        return (
-            self.selection_registers,
-            self.alt if isinstance(self.alt, Shaped) else tuple(self.alt.ravel()),
-            self.keep if isinstance(self.keep, Shaped) else tuple(self.keep.ravel()),
-            self.mu,
-        )
-
     @cached_property
     def qrom_bloq(self) -> QROM:
         return QROM(
@@ -235,7 +232,6 @@ class StatePreparationAliasSampling(PrepareOracle):
         }
 
 
-@cirq.value_equality()
 @attrs.frozen
 class SparseStatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique non-zero coefficients using coherent alias sampling.
@@ -283,9 +279,9 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    index: Union[Shaped, NDArray[np.int_]]
-    alt: Union[Shaped, NDArray[np.int_]]
-    keep: Union[Shaped, NDArray[np.int_]]
+    index: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_lcu_coeffs: SymbolicFloat
 
@@ -390,15 +386,6 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
                 keep=self.keep_bitsize,
                 less_than_equal=1,
             )
-        )
-
-    def _value_equality_values_(self):
-        return (
-            self.selection_registers,
-            self.index if isinstance(self.index, Shaped) else tuple(self.index.ravel()),
-            self.alt if isinstance(self.alt, Shaped) else tuple(self.alt.ravel()),
-            self.keep if isinstance(self.keep, Shaped) else tuple(self.keep.ravel()),
-            self.mu,
         )
 
     @cached_property
