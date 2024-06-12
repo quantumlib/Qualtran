@@ -70,9 +70,6 @@ class QFTTextBook(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         yield cirq.H(q[0])
-        if self.bitsize == 1:
-            yield cirq.H(q[0])
-            return
         for i in range(1, len(q)):
             yield PhaseGradientUnitary(i, exponent=0.5, is_controlled=True).on_registers(
                 ctrl=q[i], phase_grad=q[:i][::-1]
