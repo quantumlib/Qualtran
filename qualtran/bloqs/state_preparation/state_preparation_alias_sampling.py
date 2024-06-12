@@ -53,7 +53,9 @@ if TYPE_CHECKING:
 
 def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
     return (
-        tuple(data_or_shape.flatten()) if isinstance(data_or_shape, np.ndarray) else data_or_shape
+        tuple(data_or_shape.flatten())
+        if isinstance(data_or_shape, np.ndarray)
+        else (data_or_shape,)
     )
 
 
@@ -239,20 +241,23 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     In particular, we take the zero state to:
 
     $$
-    \sum_{\ell=0}^{L-1} \sqrt{p_\ell} |\ell\rangle |\mathrm{temp}_\ell\rangle
+    \sum_{l=0}^{L-1} \sqrt{p_l} |\mathrm{ind}_l\rangle |\mathrm{temp}_\ell\rangle
     $$
 
-    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
+    where $\mathrm{ind}_l$ is the index of the $l$-th non-zero coefficient,
+    and the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
     where the temporary register must be treated with care, see the details in Section III.D. of
-    the reference.
+    the reference [2].
 
     The preparation is equivalent to [classical alias sampling]
     (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
-    selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
+    selecting `l` uniformly at random and then returning `ind[l]` with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
+    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except that this loads the
+    non-zero coefficient indices as well from the QROM.
 
     Signature:
-        selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
+        selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
             coefficient state is prepared.
         temp: Work space comprised of sub signature:
             - sigma: A mu-sized register containing uniform probabilities for comparison against
@@ -262,7 +267,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             - one bit for the result of the comparison.
 
     This gate corresponds to the following operations:
-     - UNIFORM_L on the selection register
+     - UNIFORM_L on the sparse_index register
      - H^mu on the sigma register
      - QROM addressed by the selection register into the alt and keep signature.
      - LessThanEqualGate comparing the keep and sigma signature.
@@ -273,8 +278,10 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.D. and Figure 11.
+        [1] [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/pdf/1902.02134#page=15.30)
+        Berry et al. (2019). Section 5, Eqs. 43, 44.
+        [2] [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et al. (2018). Section III.D. and Figure 11.
     """
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
@@ -354,7 +361,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @property
     def n_nonzero_coeff(self) -> SymbolicInt:
-        return self.selection_registers[0].dtype.iteration_length_or_zero()
+        return slen(self.index)
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
@@ -366,7 +373,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def sparse_index_bitsize(self) -> SymbolicInt:
-        return bit_length(slen(self.index))
+        return bit_length(self.n_nonzero_coeff)
 
     @cached_property
     def alternates_bitsize(self) -> SymbolicInt:
@@ -406,13 +413,16 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
-        yield PrepareUniformSuperposition(self.n).on(*quregs['selection'])
+        sparse_index = quregs['sparse_index']
+        yield PrepareUniformSuperposition(self.n_nonzero_coeff).on(*sparse_index)
         if self.mu == 0:
             return
         selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
         sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
         yield cirq.H.on_each(*sigma_mu)
-        yield self.qrom_bloq.on_registers(selection=selection, target0_=alt, target1_=keep)
+        yield self.qrom_bloq.on_registers(
+            selection=sparse_index, target0_=selection, target1_=alt, target2_=keep
+        )
         yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
 
@@ -445,6 +455,16 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
         n_coeffs, sum_coeff, probability_epsilon=eps
     )
     return state_prep_alias_symb
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
+    coeffs = [1.0, 0, 0, 1, 0, 3, 0, 2, 0]
+    mu = 3
+    state_prep_alias = SparseStatePreparationAliasSampling.from_lcu_probs(
+        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    )
+    return state_prep_alias
 
 
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(

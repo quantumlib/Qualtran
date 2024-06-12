@@ -22,6 +22,7 @@ from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _state_prep_alias,
     _state_prep_alias_symb,
     StatePreparationAliasSampling,
+    _sparse_state_prep_alias,
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -29,6 +30,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+    bloq_autotester(_sparse_state_prep_alias)
 
 
 def test_state_prep_alias_sampling_symb():
