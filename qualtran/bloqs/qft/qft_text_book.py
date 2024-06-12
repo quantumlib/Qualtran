@@ -83,14 +83,17 @@ class QFTTextBook(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
-        ret = {
-            (Hadamard(), self.bitsize),
-            (
-                PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True),
-                self.bitsize - 1,
-            ),
-        }
-
+        ret = {(Hadamard(), self.bitsize)}
+        if is_symbolic(self.bitsize):
+            ret |= {
+                (
+                    PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True),
+                    self.bitsize,
+                )
+            }
+        else:
+            for i in range(1, len(self.bitsize)):
+                ret |= {(PhaseGradientUnitary(i, exponent=0.5, is_controlled=True), 1)}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}
         return ret
