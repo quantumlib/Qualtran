@@ -376,9 +376,6 @@ class _IntVector(Bloq):
         assert val == self.val, val
         return {}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(ArbitraryClifford(self.bitsize), 1)}
 

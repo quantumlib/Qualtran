@@ -25,7 +25,7 @@ import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import Circle, get_musical_score_data
 from qualtran.symbolics.types import HasLength
 
@@ -260,6 +260,16 @@ def test_multiand_diagram():
 3: ───junk[0]───
       │
 4: ───∧─────────""",
+    )
+
+
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_and_t_complexity(cv1: int, cv2: int):
+    pre_post_cliffords = 2 - cv1 - cv2
+    assert t_complexity(And(cv1, cv2)) == TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
+    assert t_complexity(And(cv1, cv2, uncompute=True)) == TComplexity(
+        clifford=4 + 2 * pre_post_cliffords
     )
 
 

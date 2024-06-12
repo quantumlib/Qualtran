@@ -20,13 +20,12 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from qualtran import Register, Signature
+from qualtran import QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -106,7 +105,7 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
         qubit_vals.update(
             zip(
                 g.quregs['selection'],
-                iter_bits(selection_integer, g.r.get_left('selection').total_bits()),
+                QUInt(g.r.get_left('selection').total_bits()).to_bits(selection_integer),
             )
         )
         initial_state = [qubit_vals[x] for x in g.all_qubits]
