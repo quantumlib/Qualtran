@@ -20,7 +20,7 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -30,7 +30,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
@@ -48,6 +48,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -373,7 +374,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def sparse_index_bitsize(self) -> SymbolicInt:
-        return bit_length(self.n_nonzero_coeff)
+        return bit_length(self.n_nonzero_coeff - 1)
 
     @cached_property
     def alternates_bitsize(self) -> SymbolicInt:
@@ -407,32 +408,48 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize, self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def decompose_from_registers(
+    def build_composite_bloq(
         self,
-        *,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        sparse_index = quregs['sparse_index']
-        yield PrepareUniformSuperposition(self.n_nonzero_coeff).on(*sparse_index)
-        if self.mu == 0:
-            return
-        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
-        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
-        yield cirq.H.on_each(*sigma_mu)
-        yield self.qrom_bloq.on_registers(
-            selection=sparse_index, target0_=selection, target1_=alt, target2_=keep
+        bb: 'BloqBuilder',
+        selection: 'SoquetT',
+        sparse_index: 'SoquetT',
+        alt: 'SoquetT',
+        keep: 'SoquetT',
+        sigma_mu: 'SoquetT',
+        less_than_equal: 'SoquetT',
+    ) -> Dict[str, 'SoquetT']:
+        sparse_index = bb.add(
+            PrepareUniformSuperposition(self.n_nonzero_coeff), target=sparse_index
         )
-        yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
-        yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
+        if self.mu == 0:
+            sparse_index, selection = bb.add(
+                QROM((self.index,), (self.sparse_index_bitsize,), (self.selection_bitsize,)),
+                selection=sparse_index,
+                target0_=selection,
+            )
+        else:
+            sigma_mu = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=sigma_mu)
+            sparse_index, selection, alt, keep = bb.add_t(
+                self.qrom_bloq,
+                selection=sparse_index,
+                target0_=selection,
+                target1_=alt,
+                target2_=keep,
+            )
+            keep, sigma_mu, less_than_equal = bb.add_t(
+                LessThanEqual(self.mu, self.mu), x=keep, y=sigma_mu, target=less_than_equal
+            )
+            less_than_equal, alt, selection = bb.add_t(
+                CSwap(self.selection_bitsize), ctrl=less_than_equal, x=alt, y=selection
+            )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (PrepareUniformSuperposition(self.n_coeff), 1),
-            (self.qrom_bloq, 1),
-            (LessThanEqual(self.mu, self.mu), 1),
-            (CSwap(self.selection_bitsize), 1),
-            (Hadamard(), self.mu),
+            'selection': selection,
+            'sparse_index': sparse_index,
+            'alt': alt,
+            'keep': keep,
+            'sigma_mu': sigma_mu,
+            'less_than_equal': less_than_equal,
         }
 
 

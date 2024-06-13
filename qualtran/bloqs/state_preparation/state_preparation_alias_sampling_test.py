@@ -19,10 +19,11 @@ import sympy
 
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+    _sparse_state_prep_alias,
     _state_prep_alias,
     _state_prep_alias_symb,
+    SparseStatePreparationAliasSampling,
     StatePreparationAliasSampling,
-    _sparse_state_prep_alias,
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -30,6 +31,9 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+
+
+def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_sparse_state_prep_alias)
 
 
@@ -57,10 +61,17 @@ def test_state_prep_alias_sampling_symb():
     np.testing.assert_allclose(concrete_t_counts, symb_t_counts, rtol=1e-4)
 
 
-def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
-    gate = StatePreparationAliasSampling.from_lcu_probs(
-        lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
-    )
+def assert_state_preparation_valid_for_coefficient(
+    lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False
+):
+    if sparse:
+        gate = SparseStatePreparationAliasSampling.from_lcu_probs(
+            lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+        )
+    else:
+        gate = StatePreparationAliasSampling.from_lcu_probs(
+            lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+        )
 
     assert_valid_bloq_decomposition(gate)
     _ = gate.call_graph()
@@ -141,6 +152,15 @@ less_than_equal: ─────────────────────
 ''',
         qubit_order=qubit_order,
     )
+
+
+def test_sparse_state_preparation_via_coherent_alias_for_0_mu():
+    one_shot_coeffs = np.zeros(16)
+    one_shot_coeffs[0] = 1
+    assert_state_preparation_valid_for_coefficient(one_shot_coeffs, 2e-1, sparse=True)
+
+    lcu_coefficients = np.array([1 / 8 if j < 8 else 0.0 for j in range(16)])
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
 
 
 @pytest.mark.notebook
