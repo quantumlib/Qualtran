@@ -118,8 +118,7 @@ def _phase_gradient_unitary() -> PhaseGradientUnitary:
 
 
 _PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
-    bloq_cls=PhaseGradientUnitary,
-    examples=(_phase_gradient_unitary,),
+    bloq_cls=PhaseGradientUnitary, examples=(_phase_gradient_unitary,)
 )
 
 
@@ -175,8 +174,7 @@ def _phase_gradient_state() -> PhaseGradientState:
 
 
 _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
-    bloq_cls=PhaseGradientState,
-    examples=(_phase_gradient_state,),
+    bloq_cls=PhaseGradientState, examples=(_phase_gradient_state,)
 )
 
 
@@ -326,10 +324,7 @@ def _add_into_phase_grad() -> AddIntoPhaseGrad:
     return add_into_phase_grad
 
 
-_ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(
-    bloq_cls=AddIntoPhaseGrad,
-    examples=(_add_into_phase_grad,),
-)
+_ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(bloq_cls=AddIntoPhaseGrad, examples=(_add_into_phase_grad,))
 
 
 def _fxp(x: float, n: 'SymbolicInt') -> Fxp:
@@ -532,6 +527,5 @@ def _add_scaled_val_into_phase_reg() -> AddScaledValIntoPhaseReg:
 
 
 _ADD_SCALED_VAL_INTO_PHASE_REG_DOC = BloqDocSpec(
-    bloq_cls=AddScaledValIntoPhaseReg,
-    examples=(_add_scaled_val_into_phase_reg,),
+    bloq_cls=AddScaledValIntoPhaseReg, examples=(_add_scaled_val_into_phase_reg,)
 )

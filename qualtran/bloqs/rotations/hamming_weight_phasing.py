@@ -35,17 +35,17 @@ class HammingWeightPhasing(GateWithRegisters):
 
     The goal of Hamming Weight Phasing is to reduce the number of rotations needed to
     apply a single qubit rotation $Z^{\texttt{exponent}}$
-    to every qubit of an input register `x` of size `bitsize` from `bitsize` to $O(\log (\texttt{bitsize}))$. 
+    to every qubit of an input register `x` of size `bitsize` from `bitsize` to $O(\log (\texttt{bitsize}))$.
     Naively this would take exactly `bitsize` rotations to be synthesized. The number of rotations synthesized is
     reduced by taking advantage of the insight that the resulting phase that is applied to
     an input state only depends on the Hamming weight of the state. Since each `1` that is present in the input register
     accumulates a phase of $(-1)^{\texttt{exponenet}}$, the total accumulated
-    phase of an input basis state is $(-1)^{\text{exponent} * HW(x)}$, where 
+    phase of an input basis state is $(-1)^{\text{exponent} * HW(x)}$, where
     $HW(x)$ is the Hamming weight of $x$. The overall procedure is done in 3 steps:
-    
+
     1. Compute the input register Hamming weight coherently using (at-most) $\texttt{bitsize}-1$ ancilla
         and Toffolis, storing the result in a newly allocated output
-        register of size $\log_2(\texttt{bitsize})$. $HW|x\rangle \mapsto |x\rangle |HW(x)\rangle$. 
+        register of size $\log_2(\texttt{bitsize})$. $HW|x\rangle \mapsto |x\rangle |HW(x)\rangle$.
         See `HammingWeightCompute` for implementation details of this step.
     2. Apply $Z^{2^{k}\text{exponent}}$ to the k'th qubit of newly allocated Hamming weight
          register.
@@ -53,7 +53,7 @@ class HammingWeightPhasing(GateWithRegisters):
         cost.
 
     Since the size of the Hamming weight register is $\log_2(\texttt{bitsize})$, as the maximum
-    Hamming weight is $\texttt{bitsize}$ and we only need $\log_2$ bits to store that as an integer, we 
+    Hamming weight is $\texttt{bitsize}$ and we only need $\log_2$ bits to store that as an integer, we
     have reduced the number of costly rotations to be synthesized from $\texttt{bitsize}$
     to $\log_2(\texttt{bitsize})$. This procedure uses $\texttt{bitsize} - HW(\texttt{bitsize})$
     Toffoli's and $\texttt{bitsize} - HW(\texttt{bitsize}) + \log_2(\texttt{bitsize})$
@@ -115,8 +115,7 @@ def _hamming_weight_phasing() -> HammingWeightPhasing:
 
 
 _HAMMING_WEIGHT_PHASING_DOC = BloqDocSpec(
-    bloq_cls=HammingWeightPhasing,
-    examples=(_hamming_weight_phasing,),
+    bloq_cls=HammingWeightPhasing, examples=(_hamming_weight_phasing,)
 )
 
 
