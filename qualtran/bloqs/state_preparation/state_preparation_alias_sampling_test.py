@@ -160,6 +160,9 @@ def test_sparse_state_preparation_via_coherent_alias_for_0_mu():
     lcu_coefficients = np.array([1 / 8 if j < 8 else 0.0 for j in range(16)])
     assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
 
+    lcu_coefficients = np.array([1 if j < 6 else 0.0 for j in range(10)])
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
+
 
 @pytest.mark.notebook
 def test_notebook():
