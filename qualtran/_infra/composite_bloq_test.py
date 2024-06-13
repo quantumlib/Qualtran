@@ -30,7 +30,6 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
-    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -504,12 +503,14 @@ def test_flatten():
     cbloq2 = cbloq.flatten_once(lambda binst: True)
     assert len(cbloq2.bloq_instances) == 5 * 2
 
-    with pytest.raises(DecomposeTypeError):
-        # Will keep trying to flatten non-decomposable things
-        cbloq.flatten(lambda x: True)
-
-    cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    cbloq3 = cbloq.flatten(lambda binst: True)
     assert len(cbloq3.bloq_instances) == 5 * 2
+
+    cbloq4 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    assert len(cbloq4.bloq_instances) == 5 * 2
+
+    cbloq5 = cbloq.flatten()
+    assert len(cbloq5.bloq_instances) == 5 * 2
 
 
 def test_type_error():

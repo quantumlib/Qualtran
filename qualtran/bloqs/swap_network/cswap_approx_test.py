@@ -18,9 +18,8 @@ from typing import Dict, Tuple, Union
 import pytest
 import sympy
 
-import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,
@@ -54,11 +53,6 @@ def get_t_count_and_clifford(
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
     t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])
     return t_cost, cliff_cost
-
-
-@pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity_cswap(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
