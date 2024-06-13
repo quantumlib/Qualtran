@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran import Bloq
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _sparse_state_prep_alias,
@@ -64,6 +65,7 @@ def test_state_prep_alias_sampling_symb():
 def assert_state_preparation_valid_for_coefficient(
     lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False
 ):
+    gate: Bloq
     if sparse:
         gate = SparseStatePreparationAliasSampling.from_lcu_probs(
             lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
