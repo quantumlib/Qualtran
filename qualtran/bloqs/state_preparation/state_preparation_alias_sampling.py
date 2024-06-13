@@ -295,7 +295,11 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @classmethod
     def from_lcu_probs(
-        cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
+        cls,
+        lcu_probabilities: Sequence[float],
+        *,
+        probability_epsilon: float = 1.0e-5,
+        nonzero_epsilon: float = 1e-6,
     ) -> 'SparseStatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
@@ -305,13 +309,14 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
                 for more information.
+            nonzero_epsilon: minimum value for a probability entry to be considered non-zero.
         """
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
             lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
         )
         N = len(lcu_probabilities)
 
-        is_nonzero = ~np.isclose(lcu_probabilities, 0)
+        is_nonzero = ~np.isclose(lcu_probabilities, 0, atol=nonzero_epsilon)
         index = np.arange(N)[is_nonzero]
         alt = np.array(alt)[is_nonzero]
         keep = np.array(keep)[is_nonzero]
