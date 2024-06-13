@@ -247,15 +247,15 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     where $\mathrm{ind}_l$ is the index of the $l$-th non-zero coefficient,
     and the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
-    where the temporary register must be treated with care, see the details in Section III.D. of
-    the reference [2].
+    where the temporary register must be treated with care, see the details in Section 5 of
+    reference [1] and Section III.D. of the reference [2].
 
     The preparation is equivalent to [classical alias sampling]
     (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
     selecting `l` uniformly at random and then returning `ind[l]` with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
-    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except that this loads the
-    non-zero coefficient indices as well from the QROM.
+    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except that this loads
+    the non-zero coefficient indices as well from the QROM.
 
     Signature:
         selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
