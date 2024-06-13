@@ -63,7 +63,7 @@ def test_state_prep_alias_sampling_symb():
 
 
 def assert_state_preparation_valid_for_coefficient(
-    lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False
+    lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False, atol: float = 1e-6
 ):
     gate: Bloq
     if sparse:
@@ -90,14 +90,14 @@ def assert_state_preparation_valid_for_coefficient(
     L, logL = len(lcu_coefficients), len(g.quregs['selection'])
     qlambda = sum(abs(lcu_coefficients))
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
-    num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
-    prepared_state = state_vector.sum(axis=1)
-    assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
-    assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
-    prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
+    prepared_state = np.linalg.norm(state_vector, axis=1)
+
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
-    np.testing.assert_allclose(lcu_coefficients / qlambda, abs(prepared_state) ** 2, atol=epsilon)
+    np.testing.assert_allclose(
+        abs(prepared_state[:L]) ** 2, lcu_coefficients / qlambda, atol=epsilon
+    )
+    np.testing.assert_allclose(np.abs(prepared_state[L:]), 0, atol=epsilon)
 
 
 def test_state_preparation_via_coherent_alias_sampling_quick():

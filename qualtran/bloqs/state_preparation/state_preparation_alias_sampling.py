@@ -427,7 +427,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
                 target1_=soqs['alt'],
                 target2_=soqs['keep'],
             )
-            soqs['keep'], soqs['sigma_mu'], less_than_equal = bb.add_t(
+            soqs['keep'], soqs['sigma_mu'], soqs['less_than_equal'] = bb.add_t(
                 LessThanEqual(self.mu, self.mu),
                 x=soqs['keep'],
                 y=soqs['sigma_mu'],
