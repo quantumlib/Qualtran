@@ -408,49 +408,39 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize, self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        selection: 'SoquetT',
-        sparse_index: 'SoquetT',
-        alt: 'SoquetT',
-        keep: 'SoquetT',
-        sigma_mu: 'SoquetT',
-        less_than_equal: 'SoquetT',
-    ) -> Dict[str, 'SoquetT']:
-        sparse_index = bb.add(
-            PrepareUniformSuperposition(self.n_nonzero_coeff), target=sparse_index
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        soqs['sparse_index'] = bb.add(
+            PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )
         if self.mu == 0:
-            sparse_index, selection = bb.add(
+            soqs['sparse_index'], soqs['selection'] = bb.add(
                 QROM((self.index,), (self.sparse_index_bitsize,), (self.selection_bitsize,)),
-                selection=sparse_index,
-                target0_=selection,
+                selection=soqs['sparse_index'],
+                target0_=soqs['selection'],
             )
         else:
-            sigma_mu = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=sigma_mu)
-            sparse_index, selection, alt, keep = bb.add_t(
+            soqs['sigma_mu'] = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=soqs['sigma_mu'])
+            soqs['sparse_index'], soqs['selection'], soqs['alt'], soqs['keep'] = bb.add_t(
                 self.qrom_bloq,
-                selection=sparse_index,
-                target0_=selection,
-                target1_=alt,
-                target2_=keep,
+                selection=soqs['sparse_index'],
+                target0_=soqs['selection'],
+                target1_=soqs['alt'],
+                target2_=soqs['keep'],
             )
-            keep, sigma_mu, less_than_equal = bb.add_t(
-                LessThanEqual(self.mu, self.mu), x=keep, y=sigma_mu, target=less_than_equal
+            soqs['keep'], soqs['sigma_mu'], less_than_equal = bb.add_t(
+                LessThanEqual(self.mu, self.mu),
+                x=soqs['keep'],
+                y=soqs['sigma_mu'],
+                target=soqs['less_than_equal'],
             )
-            less_than_equal, alt, selection = bb.add_t(
-                CSwap(self.selection_bitsize), ctrl=less_than_equal, x=alt, y=selection
+            soqs['less_than_equal'], soqs['alt'], soqs['selection'] = bb.add_t(
+                CSwap(self.selection_bitsize),
+                ctrl=soqs['less_than_equal'],
+                x=soqs['alt'],
+                y=soqs['selection'],
             )
 
-        return {
-            'selection': selection,
-            'sparse_index': sparse_index,
-            'alt': alt,
-            'keep': keep,
-            'sigma_mu': sigma_mu,
-            'less_than_equal': less_than_equal,
-        }
+        return soqs
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
