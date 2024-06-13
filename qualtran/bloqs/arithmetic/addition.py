@@ -60,8 +60,6 @@ from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, Text
 
 if TYPE_CHECKING:
@@ -343,12 +341,6 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         ]
         return cirq.inverse(optree) if self.is_adjoint else optree
 
-    def _t_complexity_(self) -> TComplexity:
-        and_t = And(uncompute=self.is_adjoint).t_complexity()
-        num_clifford = self.bitsize * (5 + and_t.clifford)
-        num_t = self.bitsize * and_t.t
-        return TComplexity(t=num_t, clifford=num_clifford)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
             (And(uncompute=self.is_adjoint), self.bitsize),
@@ -468,9 +460,9 @@ class AddK(Bloq):
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
         if self.signed:
-            binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
+            binary_rep = QInt(self.bitsize).to_bits(self.k)
         else:
-            binary_rep = list(iter_bits(self.k, self.bitsize))
+            binary_rep = QUInt(self.bitsize).to_bits(self.k)
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.

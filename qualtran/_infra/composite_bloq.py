@@ -40,7 +40,7 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
-from .bloq import Bloq, DecomposeTypeError
+from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import check_dtypes_consistent, QAny, QBit, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
@@ -316,7 +316,9 @@ class CompositeBloq(Bloq):
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
-    def flatten_once(self, pred: Callable[[BloqInstance], bool]) -> 'CompositeBloq':
+    def flatten_once(
+        self, pred: Callable[[BloqInstance], bool] = lambda binst: True
+    ) -> 'CompositeBloq':
         """Decompose and flatten each subbloq that satisfies `pred`.
 
         This will only flatten "once". That is, we will go through the bloq instances
@@ -326,16 +328,17 @@ class CompositeBloq(Bloq):
         Args:
             pred: A predicate that takes a bloq instance and returns True if it should
                 be decomposed and flattened or False if it should remain undecomposed.
-                All bloqs for which this callable returns True must support decomposition.
+                If the bloq does not have a decomposition, it will remain undecomposed.
+                By default, flatten everything.
 
         Returns:
             A new composite bloq where subbloqs matching `pred` have been decomposed and
             flattened.
 
         Raises:
-            NotImplementedError: If `pred` returns True but the underlying bloq does not
-                support `decompose_bloq()`.
-            DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
+            DidNotFlattenAnythingError: If the operation did not actually flatten anything.
+                This could be because none of the bloq instances satisfied `pred` or none of
+                the bloqs have decompositions.
 
         """
         bb, _ = BloqBuilder.from_signature(self.signature)
@@ -348,13 +351,16 @@ class CompositeBloq(Bloq):
         bb._i = max(binst.i for binst in self.bloq_instances) + 1
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
+        new_out_soqs: Tuple[SoquetT, ...]
         did_work = False
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
-
             if pred(binst):
-                new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
-                did_work = True
+                try:
+                    new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
+                    did_work = True
+                except (DecomposeTypeError, DecomposeNotImplementedError):
+                    new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
             else:
                 # Since we took care to not re-use existing `binst.i` values for flattened
                 # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
@@ -371,18 +377,8 @@ class CompositeBloq(Bloq):
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
-    def adjoint(self) -> 'CompositeBloq':
-        """Get a composite bloq which is the adjoint of this composite bloq.
-
-        The adjoint of a composite bloq is another composite bloq where the order of
-        operations is reversed and each subbloq is replaced with its adjoint.
-        """
-        from .adjoint import _adjoint_cbloq
-
-        return _adjoint_cbloq(self)
-
     def flatten(
-        self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
+        self, pred: Callable[[BloqInstance], bool] = lambda binst: True, max_depth: int = 1_000
     ) -> 'CompositeBloq':
         """Recursively decompose and flatten subbloqs until none satisfy `pred`.
 
@@ -392,16 +388,13 @@ class CompositeBloq(Bloq):
         Args:
             pred: A predicate that takes a bloq instance and returns True if it should
                 be decomposed and flattened or False if it should remain undecomposed.
-                All bloqs for which this callable returns True must support decomposition.
+                If the bloq does not have a decomposition, it will remain undecomposed.
+                By default, flatten as much as possible.
             max_depth: To avoid infinite recursion, give up after this many recursive steps.
 
         Returns:
             A new composite bloq where all recursive subbloqs matching `pred` have been
             decomposed and flattened.
-
-        Raises:
-            NotImplementedError: If `pred` returns True but the underlying bloq does not
-                support `decompose_bloq()`.
         """
         cbloq = self
         for _ in range(max_depth):
@@ -413,6 +406,16 @@ class CompositeBloq(Bloq):
             raise ValueError("Max recursion depth exceeded in `flatten`.")
 
         return cbloq
+
+    def adjoint(self) -> 'CompositeBloq':
+        """Get a composite bloq which is the adjoint of this composite bloq.
+
+        The adjoint of a composite bloq is another composite bloq where the order of
+        operations is reversed and each subbloq is replaced with its adjoint.
+        """
+        from .adjoint import _adjoint_cbloq
+
+        return _adjoint_cbloq(self)
 
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
@@ -453,6 +456,9 @@ class CompositeBloq(Bloq):
 
         delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
         return delimited_gens
+
+    def __str__(self):
+        return f'CompositeBloq([{len(self.bloq_instances)} subbloqs...])'
 
 
 def _create_binst_graph(
