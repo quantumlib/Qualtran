@@ -219,7 +219,7 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
 @bloq_example
 def _programmable_rotation_gate_array() -> ProgrammableRotationGateArray:
     programmable_rotation_gate_array = ProgrammableRotationGateArray(
-        [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], kappa=2, rotation_gate=cirq.Z
+        [1, 2, 3, 4], kappa=2, rotation_gate=cirq.Z
     )
     return programmable_rotation_gate_array
 
