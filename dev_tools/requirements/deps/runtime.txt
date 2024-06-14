@@ -12,6 +12,7 @@ nbconvert
 nbformat
 
 # drawing
+notebook
 pydot
 ipython
 matplotlib

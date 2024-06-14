@@ -14,7 +14,7 @@
 from typing import Sequence, Union
 
 import numpy as np
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 from scipy.optimize import minimize
 
 

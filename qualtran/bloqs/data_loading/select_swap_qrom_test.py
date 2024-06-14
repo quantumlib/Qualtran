@@ -16,10 +16,15 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BoundedQUInt, QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
-from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
-from qualtran.cirq_interop.bit_tools import iter_bits
+from qualtran.bloqs.data_loading import QROM
+from qualtran.bloqs.data_loading.select_swap_qrom import (
+    _qroam_multi_data,
+    _qroam_multi_dim,
+    find_optimal_log_block_size,
+    SelectSwapQROM,
+)
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
@@ -76,8 +81,8 @@ def test_select_swap_qrom(data, block_size):
     dtype = qrom.selection_registers[0].dtype
     assert isinstance(dtype, BoundedQUInt)
     for selection_integer in range(int(dtype.iteration_length)):
-        svals_q = list(iter_bits(selection_integer // qrom.block_sizes[0], len(selection_q)))
-        svals_r = list(iter_bits(selection_integer % qrom.block_sizes[0], len(selection_r)))
+        svals_q = QUInt(len(selection_q)).to_bits(selection_integer // qrom.block_sizes[0])
+        svals_r = QUInt(len(selection_r)).to_bits(selection_integer % qrom.block_sizes[0])
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection_q, svals_q)})
         qubit_vals.update({s: sval for s, sval in zip(selection_r, svals_r)})
@@ -87,7 +92,7 @@ def test_select_swap_qrom(data, block_size):
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         for target, d in zip(targets, data):
-            for q, b in zip(target, iter_bits(d[selection_integer], len(target))):
+            for q, b in zip(target, QUInt(len(target)).to_bits(d[selection_integer])):
                 qubit_vals[q] = b
         final_state = [qubit_vals[x] for x in all_qubits]
         assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
@@ -129,12 +134,12 @@ def test_qroam_hashable():
     assert t_complexity(qrom) == TComplexity(32, 160, 0)
 
 
-def test_qrom_t_complexity():
-    qrom = SelectSwapQROM.build_from_data(
+def test_qroam_t_complexity():
+    qroam = SelectSwapQROM.build_from_data(
         [1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), log_block_sizes=(2,)
     )
-    _, sigma = qrom.call_graph()
-    assert t_counts_from_sigma(sigma) == qrom.t_complexity().t == 192
+    _, sigma = qroam.call_graph()
+    assert t_counts_from_sigma(sigma) == qroam.t_complexity().t == 192
 
 
 def test_qroam_many_registers():
@@ -158,3 +163,22 @@ def test_qroam_many_registers():
         log_block_sizes=(log_block_size,),
     )
     qrom.call_graph()
+
+
+def test_qroam_multi_data_autotest(bloq_autotester):
+    bloq_autotester(_qroam_multi_data)
+
+
+def test_qroam_multi_dim_autotest(bloq_autotester):
+    bloq_autotester(_qroam_multi_dim)
+
+
+@pytest.mark.parametrize('use_dirty_ancilla', [True, False])
+def test_tensor_contraction(use_dirty_ancilla: bool):
+    data = np.array([[0, 1, 0, 1]] * 8)
+    log_block_sizes = (2, 1)
+    qroam = SelectSwapQROM.build_from_data(
+        data, use_dirty_ancilla=use_dirty_ancilla, log_block_sizes=log_block_sizes
+    )
+    qrom = QROM.build_from_data(data)
+    np.testing.assert_allclose(qrom.tensor_contract(), qroam.tensor_contract(), atol=1e-8)
