@@ -97,6 +97,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'tensor_product_block_encoding',
         'tensor_product_block_encoding_override',
         'tensor_product_block_encoding_symb',
+        'sparse_permutation',
+        'permutation_cycle_symb',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 

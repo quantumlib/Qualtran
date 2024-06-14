@@ -14,6 +14,7 @@
 import math
 from functools import cached_property
 from typing import (
+    cast,
     Dict,
     Iterable,
     Iterator,
@@ -44,6 +45,7 @@ from qualtran import (
     DecomposeTypeError,
     GateWithRegisters,
     QBit,
+    QDType,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -59,12 +61,12 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -360,6 +362,63 @@ def _cvs_converter(vv):
 
 
 @frozen
+class XorK(Bloq):
+    r"""Maps |x> to |x \oplus k> for a constant k.
+
+    Args:
+        dtype: Data type of the input register `x`.
+        k: The classical integer value to be XOR-ed to x.
+        cvs: A tuple of control values. Each entry specifies whether that control line is a
+            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
+
+    Registers:
+        x: A quantum register of type `self.dtype` (see above).
+        ctrls: A sequence of control qubits (only when `cvs` is non-empty).
+    """
+    dtype: QDType
+    k: SymbolicInt
+    cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            ((Register('ctrls', QBit(), shape=(len(self.cvs),)),) if len(self.cvs) > 0 else ())
+            + (Register('x', self.dtype),)
+        )
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.dtype.num_qubits
+
+    def is_symbolic(self):
+        return is_symbolic(self.k, self.dtype)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if self.is_symbolic():
+            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+
+        xs = bb.split(cast(Soquet, soqs.pop('x')))
+        ctrls = soqs.pop('ctrls', None)
+
+        for i, bit in enumerate(self.dtype.to_bits(self.k)):
+            if bit == 1:
+                if len(self.cvs) > 0 and ctrls is not None:
+                    ctrls, xs[i] = bb.add(MultiControlX(cvs=self.cvs), ctrls=ctrls, x=xs[i])
+                else:
+                    xs[i] = bb.add(XGate(), q=xs[i])
+
+        soqs['x'] = bb.join(xs)
+        if ctrls is not None:
+            soqs['ctrls'] = ctrls
+        return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        bit_flip_bloq = MultiControlX(cvs=self.cvs) if len(self.cvs) > 0 else XGate()
+        num_flips = self.bitsize if self.is_symbolic() else sum(self.dtype.to_bits(self.k))
+        return {(bit_flip_bloq, num_flips)}
+
+
+@frozen
 class AddK(Bloq):
     r"""Takes |x> to |x + k> for a classical integer `k`.
 
@@ -431,46 +490,23 @@ class AddK(Bloq):
             ctrls = None
         k = bb.allocate(dtype=x.reg.dtype)
 
-        # Get binary representation of k and split k into separate wires.
-        k_split = bb.split(k)
-        if self.signed:
-            binary_rep = QInt(self.bitsize).to_bits(self.k)
+        xor_k_bloq = XorK(x.reg.dtype, self.k, self.cvs)
+        if ctrls is not None:
+            ctrls, k = bb.add(xor_k_bloq, ctrls=ctrls, x=k)
         else:
-            binary_rep = QUInt(self.bitsize).to_bits(self.k)
+            k = bb.add(xor_k_bloq, x=k)
 
-        # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
-        # controlled.
-        for i in range(self.bitsize):
-            if binary_rep[i] == 1:
-                if len(self.cvs) > 0 and ctrls is not None:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
-                    )
-                else:
-                    k_split[i] = bb.add(XGate(), q=k_split[i])
-
-        # Rejoin the qubits representing k for in-place addition.
-        k = bb.join(k_split, dtype=x.reg.dtype)
         if not isinstance(x.reg.dtype, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError(
                 "Only QInt, QUInt and QMontgomerUInt types are supported for composite addition."
             )
         k, x = bb.add(Add(x.reg.dtype, x.reg.dtype), a=k, b=x)
 
-        # Resplit the k qubits in order to undo the original bit flips to go from the binary
-        # representation back to the zero state.
-        k_split = bb.split(k)
-        for i in range(self.bitsize):
-            if binary_rep[i] == 1:
-                if len(self.cvs) > 0 and ctrls is not None:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
-                    )
-                else:
-                    k_split[i] = bb.add(XGate(), q=k_split[i])
-
+        if ctrls is not None:
+            ctrls, k = bb.add(xor_k_bloq, ctrls=ctrls, x=k)
+        else:
+            k = bb.add(xor_k_bloq, x=k)
         # Free the ancilla qubits.
-        k = bb.join(k_split, dtype=x.reg.dtype)
         bb.free(k)
 
         # Return the output registers.
