@@ -15,7 +15,6 @@ import math
 from typing import Sequence, Union
 
 import numpy as np
-from numpy.typing import NDArray
 
 
 def _get_r(delta: float, d: int) -> float:
@@ -40,7 +39,7 @@ def _get_N(epsilon0: float, d: int) -> int:
     return _get_N0(epsilon, delta, d)
 
 
-def _get_scale_factor(epsilon):
+def _get_scale_factor(epsilon: float) -> float:
     return 1 - (epsilon / 4)
 
 
@@ -52,7 +51,7 @@ def _get_modes(the_log: np.ndarray, N: int) -> np.ndarray:
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-5
+    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4
 ):
     """
     Computes the Q polynomial given P
@@ -71,6 +70,7 @@ def fft_complementary_polynomial(
     [Complementary polynomials in quantum signal processing](https://arxiv.org/abs/2406.04246)
         Berntson and Sunderhauf. (2024). Figure 1.
     """
+    # Scale P
     P = np.array(P)
     scaled_P = (1 - tolerance / 4) * P
 
@@ -84,7 +84,6 @@ def fft_complementary_polynomial(
     # Compute log(1-|P(omega)|^2) at roots of unity omega
     the_log = lambda x: np.log(1 - (np.abs(p_eval(x))) ** 2)
     # Apply Fourier multiplier in Fourier space
-
     modes = lambda x: np.fft.ifft(_get_modes(the_log(x), N), norm="forward")
     # Compute coefficients of Q
     calculate_coeff = lambda x: np.fft.fft(np.exp(modes(x)), norm="forward")[: P.shape[0]]
