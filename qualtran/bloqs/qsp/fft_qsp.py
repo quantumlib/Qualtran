@@ -37,9 +37,9 @@ def _get_N(epsilon0: float, d: int) -> int:
     delta = epsilon0 / (5 * (d + 1))
 
     result = _get_N0(epsilon, delta, d)
-    if result%2 == 0:
+    if result % 2 == 0:
         return result
-    return result+1
+    return result + 1
 
 
 def _get_scale_factor(epsilon: float) -> float:
@@ -93,4 +93,3 @@ def fft_complementary_polynomial(
 
     result = calculate_coeff(scaled_P)
     return result
-
