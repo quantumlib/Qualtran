@@ -16,8 +16,8 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import QFxp
 from qualtran.bloqs.mean_estimation.arctan import ArcTan
-from qualtran.cirq_interop.bit_tools import iter_bits_fixed_point
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 
@@ -29,7 +29,9 @@ def test_arctan(selection_bitsize, target_bitsize):
     for x in range(2**selection_bitsize):
         inp = f'0b_{x:0{selection_bitsize}b}_0_{0:0{target_bitsize}b}'
         y = -2 * np.arctan(x) / np.pi
-        bits = [*iter_bits_fixed_point(y, target_bitsize + 1, signed=True)]
+        bits = QFxp(target_bitsize + 1, target_bitsize, True).to_bits(
+            y, require_exact=False, complement=False
+        )
         sign, y_bin = bits[0], bits[1:]
         y_bin_str = ''.join(str(b) for b in y_bin)
         out = f'0b_{x:0{selection_bitsize}b}_{sign}_{y_bin_str}'

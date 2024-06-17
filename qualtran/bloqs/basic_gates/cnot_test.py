@@ -96,3 +96,23 @@ def test_cnot_musical_score():
 
 def test_cnot(bloq_autotester):
     bloq_autotester(_cnot)
+
+
+def test_cnot_ctrl_system():
+    ccnot = CNOT().as_composite_bloq().controlled()
+    np.testing.assert_allclose(ccnot.tensor_contract(), cirq.unitary(cirq.TOFFOLI))
+
+    ccnot_decomp = CNOT().as_composite_bloq().controlled().decompose_bloq()
+    np.testing.assert_allclose(ccnot_decomp.tensor_contract(), cirq.unitary(cirq.TOFFOLI))
+
+    assert (
+        ccnot_decomp.debug_text()
+        == """\
+Toffoli<0>
+  LeftDangle.ctrl2 -> ctrl[0]
+  LeftDangle.ctrl -> ctrl[1]
+  LeftDangle.target -> target
+  ctrl[0] -> RightDangle.ctrl2
+  ctrl[1] -> RightDangle.ctrl
+  target -> RightDangle.target"""
+    )

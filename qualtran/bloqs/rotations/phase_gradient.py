@@ -26,7 +26,6 @@ from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -248,10 +247,6 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         return {(Toffoli(), num_toffoli)}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        ((toffoli, n),) = self.bloq_counts().items()
-        return n * toffoli.t_complexity()
-
     def adjoint(self) -> 'Bloq':
         return AddIntoPhaseGrad(
             self.x_bitsize,
@@ -458,10 +453,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)
         return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
-
-    def _t_complexity_(self):
-        ((add_into_phase, n),) = self.bloq_counts().items()
-        return n * add_into_phase.t_complexity()
 
     def add_my_tensors(
         self,

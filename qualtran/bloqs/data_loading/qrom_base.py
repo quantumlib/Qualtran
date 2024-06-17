@@ -19,7 +19,6 @@ from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
-import cirq
 import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
@@ -31,7 +30,10 @@ from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicI
 QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
-@cirq.value_equality(distinct_child_types=True)
+def _data_or_shape_to_tuple(data_or_shape: Tuple[Union[NDArray, Shaped], ...]) -> Tuple:
+    return tuple(tuple(d.flatten()) if isinstance(d, np.ndarray) else d for d in data_or_shape)
+
+
 @attrs.frozen
 class QROMBase(metaclass=abc.ABCMeta):
     r"""Interface for Bloqs to load `data[l]` when the selection register stores index `l`.
@@ -149,7 +151,8 @@ class QROMBase(metaclass=abc.ABCMeta):
     """
 
     data_or_shape: Tuple[Union[NDArray, Shaped], ...] = attrs.field(
-        converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x)
+        converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x),
+        eq=_data_or_shape_to_tuple,
     )
     selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
@@ -161,6 +164,15 @@ class QROMBase(metaclass=abc.ABCMeta):
         converter=lambda x: tuple(tuple(y) for y in x)
     )
     num_controls: SymbolicInt = 0
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(
+            self.num_controls,
+            *self.data_or_shape,
+            *self.selection_bitsizes,
+            *self.target_bitsizes,
+            *[sh for target_shape in self.target_shapes for sh in target_shape],
+        )
 
     @target_shapes.default
     def _default_target_shapes(self):
@@ -310,12 +322,6 @@ class QROMBase(metaclass=abc.ABCMeta):
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
         targets = {k: v ^ vals[k] for k, v in targets.items()}
         return controls | selections | targets
-
-    def _value_equality_values_(self):
-        data_tuple = (
-            tuple(tuple(d.flatten()) for d in self.data) if self.has_data() else self.data_or_shape
-        )
-        return (self.selection_registers, self.target_registers, self.control_registers, data_tuple)
 
     def __pow__(self, power: int):
         if power in [1, -1]:

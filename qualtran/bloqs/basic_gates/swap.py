@@ -326,9 +326,6 @@ class CSwap(GateWithRegisters):
         else:
             return Circle(filled=True)
 
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
-
     def adjoint(self) -> 'Bloq':
         return self
 

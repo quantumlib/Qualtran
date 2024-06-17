@@ -60,7 +60,6 @@ def find_optimal_log_block_size(
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
-@cirq.value_equality(distinct_child_types=True)
 @attrs.frozen
 class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     """Gate to load data[l] in the target register when the selection register stores integer l.
@@ -124,6 +123,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             prod(*shape) for shape in self.target_shapes
         )
         return tuple(find_optimal_log_block_size(ilen, target_bitsize) for ilen in self.data_shape)
+
+    def is_symbolic(self) -> bool:
+        return super().is_symbolic() or is_symbolic(*self.log_block_sizes)
 
     @classmethod
     def build_from_data(
@@ -212,13 +214,14 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @cached_property
     def qrom_bloq(self) -> QROM:
-        return QROM.build_from_bitsize(
+        qrom = QROM.build_from_bitsize(
             self.batched_qrom_shape,
             self.target_bitsizes,
             target_shapes=(self.block_sizes,) * len(self.target_bitsizes),
             selection_bitsizes=self.batched_qrom_selection_bitsizes,
             num_controls=self.num_controls,
         )
+        return qrom if is_symbolic(self) else qrom.with_data(*self.batched_data)
 
     @cached_property
     def swap_with_zero_bloqs(self) -> List[SwapWithZero]:
@@ -260,7 +263,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
         # 1. Construct QROM to load the batched data.
-        qrom = self.qrom_bloq.with_data(*self.batched_data)
+        qrom = self.qrom_bloq
         qrom_ctrls = {reg.name: quregs[reg.name] for reg in qrom.control_registers}
         qrom_selection = {
             qrom_reg.name: quregs[sel_reg.name][: qrom_reg.bitsize]
@@ -284,9 +287,11 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             swz_ops.append(swz.on_registers(**swz_selection, targets=targets))
         # 3. Construct CNOTs from 0th borrowed register to clean target registers.
         cnot_ops = []
-        for qrom_batched_target, target_reg in zip(qrom_targets.values(), self.target_registers):
+        for qrom_reg, target_reg in zip(qrom.target_registers, self.target_registers):
+            qrom_batched_target = qrom_targets[qrom_reg.name]
+            idx = (0,) * len(qrom_reg.shape)
             cnot_ops += [
-                [cirq.CNOT(a, b) for a, b in zip(qrom_batched_target[0], quregs[target_reg.name])]
+                [cirq.CNOT(a, b) for a, b in zip(qrom_batched_target[idx], quregs[target_reg.name])]
             ]
 
         # Yield the operations in correct order.
@@ -329,9 +334,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unknown register name {name}')
-
-    def _value_equality_values_(self):
-        return self.log_block_sizes, *super()._value_equality_values_()
 
 
 @bloq_example

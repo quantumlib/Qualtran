@@ -47,7 +47,6 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
@@ -220,13 +219,6 @@ class And(GateWithRegisters):
 
     def _has_unitary_(self) -> bool:
         return not self.uncompute
-
-    def _t_complexity_(self) -> TComplexity:
-        pre_post_cliffords = 2 - self.cv1 - self.cv2  # number of zeros in self.cv
-        if self.uncompute:
-            return TComplexity(clifford=4 + 2 * pre_post_cliffords)
-        else:
-            return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
 
 @bloq_example(
