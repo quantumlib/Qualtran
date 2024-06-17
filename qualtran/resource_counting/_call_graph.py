@@ -16,7 +16,7 @@
 
 import collections.abc
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import networkx as nx
 import sympy
@@ -76,19 +76,19 @@ def _generalize_callees(
     This calls `generalizer` on each of the callees returned from that function,
     and filters out cases where `generalizer` returns `None`.
     """
-    callee_counts: List[BloqCountT] = []
+    callee_counts: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     for callee, n in raw_callee_counts:
         generalized_callee = generalizer(callee)
         if generalized_callee is None:
             # Signifies that this callee should be ignored.
             continue
-        callee_counts.append((generalized_callee, n))
-    return callee_counts
+        callee_counts[generalized_callee] += n
+    return list(callee_counts.items())
 
 
 def get_bloq_callee_counts(
     bloq: 'Bloq',
-    generalizer: Optional['GeneralizerT'] = None,
+    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
     ssa: Optional[SympySymbolAllocator] = None,
 ) -> List[BloqCountT]:
     """Get the direct callees of a bloq and the number of times they are called.
@@ -115,7 +115,7 @@ def get_bloq_callee_counts(
         ssa = SympySymbolAllocator()
 
     try:
-        return _generalize_callees(bloq.build_call_graph(ssa), generalizer)
+        return _generalize_callees(bloq.build_call_graph(ssa), cast(GeneralizerT, generalizer))
     except (DecomposeNotImplementedError, DecomposeTypeError):
         return []
 

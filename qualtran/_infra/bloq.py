@@ -360,8 +360,9 @@ class Bloq(metaclass=abc.ABCMeta):
         Returns:
             A dictionary mapping subbloq to the number of times they appear in the decomposition.
         """
-        _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
-        return sigma
+        from qualtran.resource_counting import get_bloq_callee_counts
+
+        return dict(get_bloq_callee_counts(self, generalizer=generalizer))
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
