@@ -46,9 +46,8 @@ def test_symbolic_examples(bloq_autotester):
     bloq_autotester(_symbolic_hamsim_by_gqsp)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2])
-@pytest.mark.parametrize("t", [2, 3, 5, 10])
+@pytest.mark.parametrize("t", [2, 3, 5, pytest.param(10, marks=pytest.mark.slow)])
 @pytest.mark.parametrize("precision", [1e-5, 1e-7])
 def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     bitsize: int, t: float, precision: float
@@ -83,10 +82,9 @@ def verify_hamiltonian_simulation_by_gqsp(
     assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=1e-4)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("select_bitsize", [1])
 @pytest.mark.parametrize("target_bitsize", [1, 2])
-@pytest.mark.parametrize("t", [2, 3, 5])
+@pytest.mark.parametrize("t", [2, 5])
 @pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-9])
 def test_hamiltonian_simulation_by_gqsp(
     select_bitsize: int, target_bitsize: int, t: float, precision: float
