@@ -25,15 +25,16 @@ from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.linalg.polynomial.qsp_util import (
+    assert_is_qsp_polynomial,
     check_polynomial_pair_on_random_points_on_unit_circle,
     evaluate_polynomial_of_matrix,
     random_qsp_polynomial,
+    scale_down_to_qsp_polynomial,
 )
 from qualtran.bloqs.qsp.generalized_qsp import (
     _gqsp,
     _gqsp_with_large_negative_power,
     _gqsp_with_negative_power,
-    assert_is_qsp_polynomial,
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,

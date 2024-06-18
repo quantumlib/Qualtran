@@ -22,6 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.linalg.polynomial.qsp_util import assert_is_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
 
 if TYPE_CHECKING:
@@ -196,69 +197,6 @@ def qsp_phase_factors(
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
-
-
-def _polynomial_max_abs_value_on_unit_circle(
-    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points=2**17
-):
-    r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
-
-    For a polynomial $P$, this function computes
-
-    $$
-        \max_{k = 0}^{N - 1} |P(e^{2 \pi i k/N})|
-    $$
-
-    TODO(#860) Figure out a more efficient and always correct way to do this.
-
-    Args:
-        P: complex polynomial
-        n_points: number of points $N$ to evaluate
-    """
-    from scipy.fft import fft
-
-    P = np.asarray(P)
-    poly = np.zeros(n_points, dtype=P.dtype)
-    poly[: len(P)] = P
-
-    values = fft(poly)
-
-    return np.max(np.abs(values))
-
-
-def scale_down_to_qsp_polynomial(
-    P: Sequence[complex], *, n_points: int = 2**17
-) -> NDArray[np.complex_]:
-    r"""Scale down the polynomial to be a valid QSP Polynomial
-
-    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
-
-    If the input polynomial is not a valid QSP polynomial, this function attempts to compute
-    the maximum absolute value on the unit circle, and scale it down by that factor.
-    Otherwise returns the input as-is.
-
-    Args:
-        P: input polynomial to scale if needed
-        n_points: number of points to sample on the unit circle to evaluate the polynomial
-    """
-    P = np.asarray(P)
-    max_value = _polynomial_max_abs_value_on_unit_circle(list(P), n_points=n_points)
-    if max_value > 1:
-        P = P / max_value
-    return P
-
-
-def assert_is_qsp_polynomial(
-    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points: int = 2**17
-):
-    r"""Check if the given polynomial is a valid QSP polynomial.
-
-    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
-    """
-    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
-    assert (
-        max_value <= 1
-    ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
 def _to_tuple(x: Union[Iterable[complex], Shaped]) -> Union[Tuple[complex, ...], Shaped]:

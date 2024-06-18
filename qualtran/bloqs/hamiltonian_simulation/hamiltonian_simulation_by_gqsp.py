@@ -19,12 +19,13 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
-from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
+from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.polynomial.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
+from qualtran.linalg.polynomial.qsp_util import scale_down_to_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
