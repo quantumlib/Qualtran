@@ -298,29 +298,21 @@ class GeneralizedQSP(GateWithRegisters):
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
-    def _qsp_phases(self) -> Tuple[NDArray[np.floating], NDArray[np.floating], int]:
+    def _qsp_phases(self) -> Tuple[NDArray[np.floating], NDArray[np.floating], float]:
         if isinstance(self.P, Shaped) or isinstance(self.Q, Shaped):
-            raise ValueError('Phases not allowed for shaped P and Q')
+            raise ValueError(
+                'Cannot compute phases for symbolic GQSP polynomials {self.P=}, {self.Q=}'
+            )
         return qsp_phase_factors(self.P, self.Q)
 
     @cached_property
-    def _theta(self) -> NDArray[np.floating]:
-        return self._qsp_phases[0]
-
-    @cached_property
-    def _phi(self) -> NDArray[np.floating]:
-        return self._qsp_phases[1]
-
-    @cached_property
-    def _lambda(self) -> float:
-        return self._qsp_phases[2]
-
-    @cached_property
     def signal_rotations(self) -> NDArray[SU2RotationGate]:  # type: ignore[type-var]
+        thetas, phis, lambd = self._qsp_phases
+
         return np.array(
             [
-                SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
-                for i, (theta, phi) in enumerate(zip(self._theta, self._phi))
+                SU2RotationGate(theta, phi, lambd if i == 0 else 0)
+                for i, (theta, phi) in enumerate(zip(thetas, phis))
             ]
         )
 
