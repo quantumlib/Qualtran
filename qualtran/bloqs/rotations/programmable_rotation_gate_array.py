@@ -21,10 +21,9 @@ import numpy as np
 from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
-from qualtran.cirq_interop.bit_tools import iter_bits
 
 
 class ProgrammableRotationGateArrayBase(GateWithRegisters):
@@ -148,7 +147,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         for i, thetas in enumerate(self.angles):
             bit_width = max(thetas).bit_length()
             st, en = en, en + bit_width
-            angles_bits[:, st:en] = [[*iter_bits(t, bit_width)] for t in thetas]
+            angles_bits[:, st:en] = [QUInt(bit_width).to_bits(t) for t in thetas]
             angles_bit_pow[st:en] = [*range(bit_width)][::-1]
             angles_idx[st:en] = i
         assert en == num_bits

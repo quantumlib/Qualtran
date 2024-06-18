@@ -30,7 +30,6 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import TGate, Toffoli
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import smax
 
 if TYPE_CHECKING:
@@ -77,10 +76,6 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # TODO: The T-complexity here is approximate.
-        return TComplexity(t=8 * max(self.a_bitsize, self.b_bitsize) ** 2)
-
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
@@ -110,6 +105,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # TODO: The T-complexity here is approximate.
         return {(TGate(), 8 * smax(self.a_bitsize, self.b_bitsize) ** 2)}
 
 
@@ -166,14 +162,10 @@ class Square(Bloq):
     def pretty_name(self) -> str:
         return "a^2"
 
-    def _t_complexity_(self):
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_toff = self.bitsize * (self.bitsize - 1)
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = self.bitsize * (self.bitsize - 1)
         return {(Toffoli(), num_toff)}
 
@@ -253,15 +245,6 @@ class SumOfSquares(Bloq):
     def pretty_name(self) -> str:
         return "SOS"
 
-    def _t_complexity_(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_toff = self.k * self.bitsize**2 - self.bitsize
-        if self.k % 3 == 0:
-            num_toff -= 1
-        return TComplexity(t=4 * num_toff)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
@@ -316,14 +299,10 @@ class Product(Bloq):
     def pretty_name(self) -> str:
         return "a*b"
 
-    def _t_complexity_(self):
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return {(Toffoli(), num_toff)}
 
@@ -381,12 +360,6 @@ class ScaleIntByReal(Bloq):
     def pretty_name(self) -> str:
         return "r*i"
 
-    def _t_complexity_(self):
-        # Eq. D8, we are assuming dA and dB there are assumed as inputs and the
-        # user has ensured these are large enough for their desired precision.
-        num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
-        return TComplexity(t=4 * num_toff)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
         # the user has ensured these are large enough for their desired
@@ -443,11 +416,6 @@ class MultiplyTwoReals(Bloq):
 
     def pretty_name(self) -> str:
         return "a*b"
-
-    def _t_complexity_(self):
-        # Eq. D13, there it is suggested keeping both registers the same size is optimal.
-        num_toff = self.bitsize**2 - self.bitsize - 1
-        return TComplexity(t=4 * num_toff)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
@@ -507,10 +475,6 @@ class SquareRealNumber(Bloq):
 
     def pretty_name(self) -> str:
         return "a^2"
-
-    def _t_complexity_(self):
-        num_toff = self.bitsize**2 // 2 - 4
-        return TComplexity(t=4 * num_toff)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Bottom of page 74

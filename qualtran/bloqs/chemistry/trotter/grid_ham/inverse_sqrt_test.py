@@ -15,6 +15,8 @@
 import numpy as np
 import pytest
 
+from qualtran import QFxp, QInt, QUInt
+from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     _nr_inv_sqrt,
@@ -24,7 +26,6 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     NewtonRaphsonApproxInverseSquareRoot,
     PolynmomialEvaluationInverseSquareRoot,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
 
 
 def test_newton_raphson_inverse_sqrt(bloq_autotester):
@@ -46,16 +47,25 @@ def test_newton_raphson_inverse_sqrt_bloq_counts():
     cost_mult = 2 * (target_bitsize**2 - target_bitsize - 1)
     cost_add = target_bitsize - 1
     assert counts[TGate()] == 4 * (cost_square + cost_scale + cost_mult + cost_add)
+    cost = (
+        SquareRealNumber(poly_bitsize).t_complexity()
+        + ScaleIntByReal(poly_bitsize, int_bitsize).t_complexity()
+        + 2 * MultiplyTwoReals(target_bitsize).t_complexity()
+        + Add(QInt(target_bitsize)).t_complexity()
+    )
+    assert bloq.t_complexity() == cost
 
 
 def test_poly_eval_inverse_sqrt_bloq_counts():
     bloq = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
     _, counts = bloq.call_graph()
     assert counts[TGate()] == 744
+    cost = 3 * (Add(QInt(8)).t_complexity() + MultiplyTwoReals(8).t_complexity())
+    assert bloq.t_complexity() == cost
 
 
 def fixed_point_to_float(x: int, width: int) -> float:
-    bits = iter_bits(int(x), width)
+    bits = QUInt(width).to_bits(int(x))
     approx_val = np.sum([b * (1 / 2 ** (1 + i)) for i, b in enumerate(bits)])
     return approx_val
 
@@ -106,7 +116,7 @@ def test_multiply_float_int():
     float_width = 24
     int_width = 8
     val = np.random.random()
-    fp_bits = iter_bits_fixed_point(val, float_width)
+    fp_bits = QFxp(float_width, float_width).to_bits(val, require_exact=False)
     fp_int = int(''.join(str(b) for b in fp_bits), 2)
     int_val = np.random.randint(0, 2**int_width - 1)
     result = multiply_fixed_point_float_by_int(fp_int, int_val, float_width, int_width)
@@ -119,9 +129,9 @@ def test_multiply_floats():
     float_width = 24
     a = np.random.random()
     b = np.random.random()
-    bits = iter_bits_fixed_point(a, float_width)
+    bits = QFxp(float_width, float_width).to_bits(a, require_exact=False)
     fp_a = int(''.join(str(b) for b in bits), 2)
-    bits = iter_bits_fixed_point(b, float_width)
+    bits = QFxp(float_width, float_width).to_bits(b, require_exact=False)
     fp_b = int(''.join(str(b) for b in bits), 2)
     result = multiply_fixed_point_floats(fp_a, fp_b, float_width)
     assert abs(result / 2**float_width - a * b) <= (float_width + 1) / 2**float_width
