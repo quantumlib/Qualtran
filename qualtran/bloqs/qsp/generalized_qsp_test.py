@@ -24,13 +24,6 @@ from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.linalg.polynomial.qsp_util import (
-    assert_is_qsp_polynomial,
-    check_polynomial_pair_on_random_points_on_unit_circle,
-    evaluate_polynomial_of_matrix,
-    random_qsp_polynomial,
-    scale_down_to_qsp_polynomial,
-)
 from qualtran.bloqs.qsp.generalized_qsp import (
     _gqsp,
     _gqsp_with_large_negative_power,
@@ -42,6 +35,14 @@ from qualtran.bloqs.qsp.generalized_qsp import (
 from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
     get_walk_operator_for_1d_ising_model,
 )
+from qualtran.linalg.polynomial.qsp_util import (
+    assert_is_qsp_polynomial,
+    check_polynomial_pair_on_random_points_on_unit_circle,
+    evaluate_polynomial_of_matrix,
+    random_qsp_polynomial,
+    scale_down_to_qsp_polynomial,
+)
+from qualtran.linalg.testing import assert_matrices_almost_equal
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import Shaped
 
