@@ -30,7 +30,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
@@ -209,21 +209,31 @@ class StatePreparationAliasSampling(PrepareOracle):
             (self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def decompose_from_registers(
-        self,
-        *,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        yield PrepareUniformSuperposition(self.n_coeff).on(*quregs['selection'])
+    def build_composite_bloq(self, bb, **soqs):
+        soqs['selection'] = bb.add(
+            PrepareUniformSuperposition(self.n_coeff), target=soqs['selection']
+        )
         if self.mu == 0:
-            return
-        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
-        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
-        yield cirq.H.on_each(*sigma_mu)
-        yield self.qrom_bloq.on_registers(selection=selection, target0_=alt, target1_=keep)
-        yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
-        yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
+            return soqs
+        selection, less_than_equal = soqs['selection'], soqs['less_than_equal']
+        sigma_mu, alt, keep = soqs['sigma_mu'], soqs['alt'], soqs['keep']
+        sigma_mu = bb.add(OnEach(self.mu, Hadamard()), q=sigma_mu)
+        selection, alt, keep = bb.add(
+            self.qrom_bloq, selection=selection, target0_=alt, target1_=keep
+        )
+        keep, sigma_mu, less_than_equal = bb.add(
+            LessThanEqual(self.mu, self.mu), x=keep, y=sigma_mu, target=less_than_equal
+        )
+        less_than_equal, alt, selection = bb.add(
+            CSwap(self.selection_bitsize), ctrl=less_than_equal, x=alt, y=selection
+        )
+        return {
+            'selection': selection,
+            'less_than_equal': less_than_equal,
+            'sigma_mu': sigma_mu,
+            'alt': alt,
+            'keep': keep,
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
