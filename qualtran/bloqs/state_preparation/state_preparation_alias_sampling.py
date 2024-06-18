@@ -20,7 +20,7 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
