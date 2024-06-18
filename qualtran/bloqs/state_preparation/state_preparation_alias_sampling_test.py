@@ -54,7 +54,7 @@ def test_state_prep_alias_sampling_symb():
     symb_t_counts = int(expected_t_count_expr.subs({L: N, sympy.Symbol(r"\epsilon"): epsilon}))
     np.testing.assert_allclose(concrete_t_counts, symb_t_counts, rtol=1e-4)
     # Ensure the symbolic bloq can decomposes into a composite bloq
-    _ = bloq.decompose_bloq()
+    assert_valid_bloq_decomposition(bloq)
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
