@@ -16,12 +16,13 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.qsp.fast_qsp import fast_complementary_polynomial
-from qualtran.bloqs.qsp.generalized_qsp_test import (
+from qualtran.linalg.polynomial.qsp_util import (
     check_polynomial_pair_on_random_points_on_unit_circle,
     random_qsp_polynomial,
-    verify_generalized_qsp,
 )
+
+from .fast_qsp import fast_complementary_polynomial
+from .generalized_qsp_test import verify_generalized_qsp
 
 
 @pytest.mark.parametrize(
