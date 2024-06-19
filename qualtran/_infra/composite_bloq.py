@@ -66,6 +66,11 @@ permissive about the types they accept. Under-the-hood, such functions will
 canonicalize and return `SoquetT`.
 """
 
+_ConnectionType = TypeVar('_ConnectionType', bound=np.generic)
+
+ConnectionT = Union[Connection, NDArray[_ConnectionType]]
+"""A `Connection` or array of connections."""
+
 
 def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
     """mypy-compatible attrs converter for CompositeBloq.connections"""
@@ -341,6 +346,9 @@ class CompositeBloq(Bloq):
                 the bloqs have decompositions.
 
         """
+        if len(self.bloq_instances) == 0:
+            raise DidNotFlattenAnythingError()
+
         bb, _ = BloqBuilder.from_signature(self.signature)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
@@ -513,7 +521,7 @@ def _cxn_to_soq_dict(
         get_me: A function that says which soquet is used to derive keys for the returned
             dictionary. Generally: if `cxns` is predecessor connections, this will return the
             `right` element of the connection and opposite of successor connections.
-        get_assign: A function that says which soquet is used to dervice the values for the
+        get_assign: A function that says which soquet is used to derive the values for the
             returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
             do something fancier in `cbloq_to_quimb`.
     """
@@ -538,7 +546,39 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-def _get_dangling_soquets(signature: Signature, right=True) -> Dict[str, SoquetT]:
+def _cxn_to_cxn_dict(
+    regs: Iterable[Register], cxns: Iterable[Connection], get_me: Callable[[Connection], Soquet]
+) -> Dict[str, ConnectionT]:
+    """Helper function to get a dictionary of connections keyed by register name.
+
+    Args:
+        regs: Left or right registers (used as a reference to initialize multidimensional
+            registers correctly).
+        cxns: Predecessor or successor connections from which we get the soquets of interest.
+        get_me: A function that says which soquet is used to derive keys for the returned
+            dictionary. Generally: if `cxns` is predecessor connections, this will return the
+            `right` element of the connection (opposite for successor connections).
+    """
+    cxndict: Dict[str, ConnectionT] = {}
+
+    # Initialize multi-dimensional dictionary values.
+    for reg in regs:
+        if reg.shape:
+            cxndict[reg.name] = np.empty(reg.shape, dtype=object)
+
+    # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
+    # keys and handle multi-dimensional registers.
+    for cxn in cxns:
+        me = get_me(cxn)
+        if me.reg.shape:
+            cxndict[me.reg.name][me.idx] = cxn  # type: ignore[index]
+        else:
+            cxndict[me.reg.name] = cxn
+
+    return cxndict
+
+
+def _get_dangling_soquets(signature: Signature, right: bool = True) -> Dict[str, SoquetT]:
     """Get instantiated dangling soquets from a `Signature`.
 
     Args:
