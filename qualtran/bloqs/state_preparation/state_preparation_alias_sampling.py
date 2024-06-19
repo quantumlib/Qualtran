@@ -37,7 +37,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import (
-    preprocess_lcu_coefficients_for_reversible_sampling,
+    preprocess_coefficients_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 from qualtran.resource_counting.generalizers import (
@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 @cirq.value_equality()
 @attrs.frozen
 class StatePreparationAliasSampling(PrepareOracle):
-    r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
+    r"""Initialize a state with $L$ coefficients using coherent alias sampling.
 
     In particular, we take the zero state to:
 
@@ -96,6 +96,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
+
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
@@ -105,28 +106,28 @@ class StatePreparationAliasSampling(PrepareOracle):
     sum_of_lcu_coeffs: SymbolicFloat
 
     @classmethod
-    def from_lcu_probs(
-        cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
+    def from_coefficients(
+        cls, coefficients: Sequence[float], *, probability_epsilon: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
         Args:
-            lcu_probabilities: The LCU coefficients.
+            coefficients: The LCU coefficients.
             probability_epsilon: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
                 for more information.
         """
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
+        alt, keep, mu = preprocess_coefficients_for_reversible_sampling(
+            coefficients=coefficients, epsilon=probability_epsilon
         )
-        N = len(lcu_probabilities)
+        N = len(coefficients)
         return StatePreparationAliasSampling(
             selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_lcu_coeffs=sum(abs(x) for x in lcu_probabilities),
+            sum_of_lcu_coeffs=sum(abs(x) for x in coefficients),
         )
 
     @classmethod
@@ -239,7 +240,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 def _state_prep_alias() -> StatePreparationAliasSampling:
     coeffs = [1.0, 1, 3, 2]
     mu = 3
-    state_prep_alias = StatePreparationAliasSampling.from_lcu_probs(
+    state_prep_alias = StatePreparationAliasSampling.from_coefficients(
         coeffs, probability_epsilon=2**-mu / len(coeffs)
     )
     return state_prep_alias

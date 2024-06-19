@@ -17,7 +17,7 @@
 import math
 from typing import Optional, overload, Sequence
 
-from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, log2, smax, SymbolicFloat, SymbolicInt
 
 
 def _partial_sums(vals):
@@ -47,15 +47,13 @@ def _discretize_probability_distribution(unnormalized_probabilities, sub_bit_pre
         unnormalized_probabilities: A list of non-negative floats proportional
             to probabilities from a probability distribution. The numbers may
             not be normalized (they do not have to add up to 1).
-        epsilon: The absolute error tolerance.
+        sub_bit_precision: The exponent mu such that denominator = n * 2**mu
+            where n = len(unnormalized_probabilities).
 
     Returns:
         numerators (list[int]): A list of numerators for each probability.
         denominator (int): The common denominator to divide numerators by to
             get probabilities.
-        sub_bit_precision (int): The exponent mu such that
-            denominator = n * 2**mu
-            where n = len(unnormalized_probabilities).
 
         It is guaranteed that numerators[i] / denominator is within epsilon of
         the i'th input probability (after normalization).
@@ -67,7 +65,7 @@ def _discretize_probability_distribution(unnormalized_probabilities, sub_bit_pre
     total = cumulative[-1]
     discretized_cumulative = [int(math.floor(c / total * bin_count + 0.5)) for c in cumulative]
     discretized = list(_differences(discretized_cumulative))
-    return discretized, bin_count, sub_bit_precision
+    return discretized, bin_count
 
 
 def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
@@ -148,47 +146,68 @@ def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
 
 
 @overload
-def sub_bit_prec_from_epsilon(n: int, epsilon: float) -> int:
+def sub_bit_prec_from_epsilon(
+    number_of_coefficients: int, sum_of_coefficients: float, precision: float
+) -> int:
     ...
 
 
 @overload
-def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> SymbolicInt:
+def sub_bit_prec_from_epsilon(
+    number_of_coefficients: SymbolicInt,
+    sum_of_coefficients: SymbolicFloat,
+    precision: SymbolicFloat,
+) -> SymbolicInt:
     ...
 
 
-def sub_bit_prec_from_epsilon(n: SymbolicInt, epsilon: SymbolicFloat) -> SymbolicInt:
-    ret = ceil(log2(1 / (epsilon * n)))
-    return ret if is_symbolic(ret) else max(0, ret)
+def sub_bit_prec_from_epsilon(
+    number_of_coefficients: SymbolicInt,
+    sum_of_coefficients: SymbolicFloat,
+    precision: SymbolicFloat,
+) -> SymbolicInt:
+    return smax(0, ceil(log2(sum_of_coefficients / (precision * number_of_coefficients))))
 
 
-def preprocess_lcu_coefficients_for_reversible_sampling(
-    lcu_coefficients: Sequence[float],
+def preprocess_coefficients_for_reversible_sampling(
+    coefficients: Sequence[float],
     epsilon: Optional[float] = None,
-    sub_bit_prec: Optional[float] = None,
-):
-    """Prepares data used to perform efficient reversible roulette selection.
+    sub_bit_precision: Optional[float] = None,
+) -> tuple[list[int], list[int], int]:
+    r"""Prepares data used to perform efficient reversible roulette selection.
+
+    Given a sequence of $L$ positive coefficients $\{w_0, w_1, \ldots w_{L-1}\}$,
+    this method treats them as probabilities in order to decompose them into
+    a list of alternate and keep numerators allowing for an efficient preparation
+    method of a state where the computational basis state :math:`|k>` has an
+    amplitude proportional to `coefficients[k]`.
+
+    Sampling process:
+
+        1. Uniformly sample an index i from [0, L - 1].
+        2. With probability `keep_numerators[i] / keep_denom`, return i,
+           otherwise return alternates[i].
+
+    Using the above sampling process, it is guaranteed that each index `k` is sampled
+    with probability $\tilde{p}_k$ satisfying
+
+        $$
+        \abs{\frac{w_k}{\lambda} - \tilde{p}_k} \le \epsilon.
+        $$
+
+    That is, index $k$ is sampled with a probability within `epsilon` of
+    `coefficients[k] / sum(coefficients)`.
 
     Treats the coefficients of unitaries in the linear combination of
     unitaries decomposition of the Hamiltonian as probabilities in order to
-    decompose them into a list of alternate and keep numerators allowing for
-    an efficient preparation method of a state where the computational basis
-    state :math. `|k>` has an amplitude proportional to the coefficient.
-
-    It is guaranteed that following the following sampling process will
-    sample each index k with a probability within epsilon of
-    lcu_coefficients[k] / sum(lcu_coefficients) and also,
-    1. Uniformly sample an index i from [0, len(lcu_coefficients) - 1].
-    2. With probability keep_numers[i] / by keep_denom, return i.
-    3. Otherwise return alternates[i].
 
     Args:
-        lcu_coefficients: A list of non-negative floats, with the i'th float
+        coefficients: A list of non-negative floats, with the i'th float
             corresponding to the i'th coefficient of an LCU decomposition
             of the Hamiltonian (in an ordering determined by the caller).
-        epsilon: Epsilon is the absolute error tolerance. Exactly one of
-            epsilon or sub_bit_prec must be provided.
-        sub_bit_prec: sub_bit_prec is the number of bits of precision.
+        epsilon: the absolute error tolerance $\epsilon$.
+            Exactly one of epsilon or sub_bit_prec must be provided.
+        sub_bit_precision: the number of bits of precision $\mu$.
             Exactly one of epsilon or sub_bit_prec must be provided.
 
     Returns:
@@ -196,21 +215,20 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
             indices that may be switched to after generating a uniform index.
             The int at offset k is the alternate to use when the initial index
             is k.
-        keep_numers (list[int]): A python list of ints indicating the
+        keep_numerators (list[int]): A python list of ints indicating the
             numerators of the probability that the alternative index should be
             used instead of the initial index.
         sub_bit_precision (int): A python int indicating the exponent of the
-            denominator to divide the items in keep_numers by in order to get
+            denominator to divide the items in keep_numerators by in order to get
             a probability. The actual denominator is 2**sub_bit_precision.
     """
-    if not ((epsilon is None) ^ (sub_bit_prec is None)):
+    if not ((epsilon is None) ^ (sub_bit_precision is None)):
         raise ValueError("Exactly one of epsilon or sub_bit_prec must be provided")
-    if sub_bit_prec is None:
-        assert epsilon is not None  # make mypy happpy
-        sub_bit_prec = sub_bit_prec_from_epsilon(len(lcu_coefficients), epsilon)
-    numers, denom, sub_bit_precision = _discretize_probability_distribution(
-        lcu_coefficients, sub_bit_prec
-    )
-    assert denom == 2**sub_bit_precision * len(numers)
-    alternates, keep_numers = _preprocess_for_efficient_roulette_selection(numers)
-    return alternates, keep_numers, sub_bit_precision
+    if sub_bit_precision is None:
+        assert epsilon is not None  # make mypy happy
+        sub_bit_precision = sub_bit_prec_from_epsilon(len(coefficients), sum(coefficients), epsilon)
+
+    numerators, denominator = _discretize_probability_distribution(coefficients, sub_bit_precision)
+    assert denominator == 2**sub_bit_precision * len(numerators)
+    alternates, keep_numerators = _preprocess_for_efficient_roulette_selection(numerators)
+    return alternates, keep_numerators, sub_bit_precision

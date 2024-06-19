@@ -100,7 +100,7 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
 @pytest.mark.parametrize('global_phase', [+1, -1j])
 def test_reflection_using_prepare(num_ones, eps, global_phase):
     data = [1] * num_ones
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    prepare_gate = StatePreparationAliasSampling.from_coefficients(data, probability_epsilon=eps)
 
     gate = ReflectionUsingPrepare(prepare_gate, global_phase=global_phase)
     assert_valid_bloq_decomposition(gate)
@@ -125,7 +125,7 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
 def test_reflection_using_prepare_diagram():
     data = [1, 2, 3, 4, 5, 6]
     eps = 0.1
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    prepare_gate = StatePreparationAliasSampling.from_coefficients(data, probability_epsilon=eps)
     # No control
     gate = ReflectionUsingPrepare(prepare_gate, control_val=None)
     # op = gate.on_registers(**get_named_qubits(gate.signature))
@@ -215,7 +215,7 @@ selection2: ────selection^-1──────────────�
 
 
 def test_reflection_using_prepare_consistent_protocols_and_controlled():
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(
+    prepare_gate = StatePreparationAliasSampling.from_coefficients(
         [1, 2, 3, 4], probability_epsilon=0.1
     )
     # No control
@@ -259,7 +259,7 @@ def test_reflection_around_zero():
 def test_call_graph_matches_decomp(global_phase, control_val):
     data = [1] * 5
     eps = 1e-11
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=0.01)
+    prepare_gate = StatePreparationAliasSampling.from_coefficients(data, probability_epsilon=0.01)
 
     def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
         # Hack to catch the fact that cirq special cases some ZPowGates

@@ -20,7 +20,7 @@ import unittest
 from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
-    preprocess_lcu_coefficients_for_reversible_sampling,
+    preprocess_coefficients_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 
@@ -28,8 +28,10 @@ from qualtran.linalg.lcu_util import (
 class DiscretizeDistributionTest(unittest.TestCase):
     def assertGetDiscretizedDistribution(self, probabilities, epsilon):
         total_probability = sum(probabilities)
-        sub_bit_prec = sub_bit_prec_from_epsilon(len(probabilities), epsilon)
-        numers, denom, mu = _discretize_probability_distribution(probabilities, sub_bit_prec)
+        mu = sub_bit_prec_from_epsilon(
+            len(probabilities), total_probability, epsilon * total_probability
+        )
+        numers, denom = _discretize_probability_distribution(probabilities, mu)
         self.assertEqual(sum(numers), denom)
         self.assertEqual(len(numers), len(probabilities))
         self.assertEqual(len(probabilities) * 2**mu, denom)
@@ -128,7 +130,7 @@ class PreprocessForEfficientRouletteSelectionTest(unittest.TestCase):
 
 class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
     def assertPreprocess(self, lcu_coefs, epsilon):
-        alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
+        alternates, keep_numers, mu = preprocess_coefficients_for_reversible_sampling(
             lcu_coefs, epsilon=epsilon
         )
 
