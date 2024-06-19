@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Iterator, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -38,8 +38,6 @@ from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, is_symbol
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
-
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -215,20 +213,6 @@ class MultiControlPauli(GateWithRegisters):
             else self.target_gate
         )
         return cirq.apply_unitary(cpauli, args)
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
 
     def _has_unitary_(self) -> bool:
         return not is_symbolic(self.n_ctrls)

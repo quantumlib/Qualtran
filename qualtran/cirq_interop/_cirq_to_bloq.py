@@ -28,6 +28,7 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     CompositeBloq,
+    ConnectionT,
     Controlled,
     CtrlSpec,
     DecomposeNotImplementedError,
@@ -102,22 +103,11 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         except TypeError as e:
             raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        _add_my_tensors_from_gate(
-            self.cirq_gate,
-            self.signature,
-            str(self.cirq_gate),
-            tn=tn,
-            tag=tag,
-            incoming=incoming,
-            outgoing=outgoing,
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        return _my_tensors_from_gate(
+            self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -237,6 +227,39 @@ def _add_my_tensors_from_gate(
         )
     ]
     tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
+
+
+def _my_tensors_from_gate(
+    gate: cirq.Gate,
+    signature: Signature,
+    *,
+    incoming: Dict[str, 'ConnectionT'],
+    outgoing: Dict[str, 'ConnectionT'],
+) -> List['qtn.Tensor']:
+    import quimb.tensor as qtn
+
+    from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+
+    if not cirq.has_unitary(gate):
+        raise NotImplementedError(
+            f"CirqGateAsBloq.my_tensors is only supported for unitary gates. " f"Found {gate}."
+        )
+
+    if any(reg.side != Side.THRU for reg in signature):
+        raise ValueError(
+            f"CirqGateAsBloq.my_tensors is only supported for "
+            f"gates with thru registers. Found {gate}."
+        )
+
+    if not signature:
+        raise ValueError(
+            f"CirqGateAsBloq.my_tensors requires a non-trivial signature. " f"Found {gate}."
+        )
+
+    n = cirq.num_qubits(gate)
+    unitary = cirq.unitary(gate).reshape((2,) * (2 * n))
+    inds = _order_incoming_outgoing_indices(signature, incoming, outgoing)
+    return [qtn.Tensor(data=unitary, inds=inds, tags=str(gate))]
 
 
 @frozen(eq=False)

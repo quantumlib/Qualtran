@@ -31,7 +31,7 @@ def test_subtract_bloq_decomposition():
         c = (a - b) % 32
         want[(a << 5) | c][a_b] = 1
     got = gate.tensor_contract()
-    np.testing.assert_equal(got, want)
+    np.testing.assert_allclose(got, want)
 
 
 def test_subtract_bloq_validation():

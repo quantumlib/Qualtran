@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -23,12 +23,12 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QDType,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
@@ -81,23 +81,17 @@ class Cast(_BookkeepingBloq):
     def adjoint(self) -> 'Bloq':
         return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(
+        return [
             qtn.Tensor(
-                data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
-                inds=[outgoing['reg']] + [incoming['reg']],
-                tags=['Cast', tag],
+                data=np.eye(2), inds=[(outgoing['reg'], j), (incoming['reg'], j)], tags=[str(self)]
             )
-        )
+            for j in range(self.inp_dtype.num_qubits)
+        ]
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
