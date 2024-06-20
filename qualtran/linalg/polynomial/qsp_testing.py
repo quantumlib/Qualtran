@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 from qualtran.symbolics import Shaped
 
 
-def check_polynomial_pair_on_random_points_on_unit_circle(
+def check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
     P: Union[Sequence[complex], Polynomial, Shaped],
     Q: Union[Sequence[complex], Polynomial, Shaped],
     *,
@@ -28,17 +28,28 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
     rtol: float = 1e-7,
     n_points: int = 1000,
 ):
+    r"""Checks that two GQSP polynomials are consistent on random points.
+
+    Given a pair of GQSP polynomials $P, Q$, this function checks that $|P(z)|^2 + |Q(z)|^2 = 1$
+    for random $z$ on the complex unit circle (i.e. $|z| = 1$).
+    """
     P = Polynomial(P)
     Q = Polynomial(Q)
 
-    for _ in range(n_points):
-        z = np.exp(random_state.random() * np.pi * 2j)
-        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
+    z = np.exp(random_state.random(size=n_points) * np.pi * 2j)
+    np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
 
 
 def random_qsp_polynomial(
-    degree: int, *, random_state: np.random.RandomState, only_real_coeffs=False
+    degree: int, *, random_state: np.random.RandomState, only_real_coeffs: bool = False
 ) -> Sequence[complex]:
+    r"""Generates a random complex polynomial $P$ s.t. $|P(e^{ix})| \le 1$ for every $x$.
+
+    Args:
+        degree: the degree of the generated polynomial
+        random_state: np.random.RandomState
+        only_real_coeffs: if True, generate polynomial with real coefficients.
+    """
     poly = random_state.random(size=degree) / degree
     if not only_real_coeffs:
         poly = poly * np.exp(random_state.random(size=degree) * np.pi * 2j)
