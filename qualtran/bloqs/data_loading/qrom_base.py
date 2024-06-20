@@ -323,12 +323,6 @@ class QROMBase(metaclass=abc.ABCMeta):
         targets = {k: v ^ vals[k] for k, v in targets.items()}
         return controls | selections | targets
 
-    def _value_equality_values_(self):
-        data_tuple = (
-            tuple(tuple(d.flatten()) for d in self.data) if self.has_data() else self.data_or_shape
-        )
-        return (self.selection_registers, self.target_registers, self.control_registers, data_tuple)
-
     def __pow__(self, power: int):
         if power in [1, -1]:
             return self

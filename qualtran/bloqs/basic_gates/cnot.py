@@ -113,11 +113,11 @@ class CNOT(Bloq):
             def add_controlled(
                 bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
             ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                (c2,) = ctrl_soqs
-                (c1, c2), target = bb.add(
-                    bloq, ctrl=np.array([in_soqs['ctrl'], c2]), target=in_soqs['target']
+                (new_ctrl,) = ctrl_soqs
+                (new_ctrl, existing_ctrl), target = bb.add(
+                    bloq, ctrl=np.array([new_ctrl, in_soqs['ctrl']]), target=in_soqs['target']
                 )
-                return (c1,), (c2, target)
+                return (new_ctrl,), (existing_ctrl, target)
 
             return bloq, add_controlled
 

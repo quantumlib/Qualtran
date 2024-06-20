@@ -21,7 +21,6 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QFxp, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -168,14 +167,6 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     def pretty_name(self) -> str:
         return 'y = x^{-1/2}'
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return (
-            SquareRealNumber(self.poly_bitsize).t_complexity()
-            + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
-            + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
-            + Add(QInt(self.target_bitsize)).t_complexity()
-        )
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
@@ -226,15 +217,6 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
 
     def pretty_name(self) -> str:
         return 'y ~ x^{-1/2}'
-
-    def _t_complexity_(self) -> 'TComplexity':
-        # There are 3 multiplications and subtractions, the shifts (-1, -3/2)
-        # are not included in Fusion estimates as these can be achieved with
-        # Clifford gates only.
-        return 3 * (
-            Add(QInt(self.poly_bitsize)).t_complexity()
-            + MultiplyTwoReals(self.poly_bitsize).t_complexity()
-        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
