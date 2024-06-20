@@ -16,7 +16,7 @@ from typing import Any, Dict, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import (
     bloq_example,
@@ -55,7 +55,7 @@ class Partition(_BookkeepingBloq):
     """
 
     n: int
-    regs: Sequence[Register]
+    regs: Sequence[Register] = field(converter=tuple)
     partition: bool = True
 
     @cached_property

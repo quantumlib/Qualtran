@@ -969,7 +969,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partition: Mapping[str, Sequence[Register]],
+        partition: Sequence[Tuple[str, Sequence[Register]]],
         partition_output: bool = True,
         **in_soqs: SoquetInT,
     ) -> Dict[str, SoquetT]:
@@ -978,38 +978,19 @@ class BloqBuilder:
 
         Args:
             bloq: The bloq representing the operation to add.
-            partition: A mapping from each input soquet name to a sequence of registers from
-                `bloq.signature.lefts()` that concatenate to form that input soquet.
+            partition: A sequence of pairs specifying each register that the wrapped bloq should
+            accept and the registers from `bloq.signature.lefts()` that concatenate to form it.
             partition_output: If True, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
-                `Soquet`s or an array thereof. This is likely the output soquets from a prior
-                operation.
+                `Soquet`s. This is likely the output soquets from a prior operation.
 
         Returns:
             A dictionary mapping right (output) register names to SoquetT.
         """
-        from qualtran.bloqs.bookkeeping.partition import Partition
+        from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 
-        parts: Dict[str, Partition] = dict()
-        in_regs: Dict[str, SoquetT] = dict()
-        for soq_name, soq in in_soqs.items():
-            bloq_regs = partition[soq_name]
-            part = Partition(sum(r.bitsize for r in bloq_regs), regs=bloq_regs)
-            parts[soq_name] = part
-            in_regs |= self.add_d(part, x=soq)
-        bloq_out_regs = self.add_d(bloq, **in_regs)
-        if not partition_output:
-            return bloq_out_regs
-
-        out_regs = {}
-        for soq_name in in_soqs.keys():
-            bloq_regs = partition[soq_name]
-            out_regs[soq_name] = self.add(
-                parts[soq_name].adjoint(),
-                **{reg.name: bloq_out_regs[reg.name] for reg in parts[soq_name].signature.rights()},
-            )
-        return out_regs
+        return self.add_d(AutoPartition(bloq, partition, partition_output), **in_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.
