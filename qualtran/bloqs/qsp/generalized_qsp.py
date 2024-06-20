@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.linalg.polynomial.qsp_util import assert_is_qsp_polynomial
+from qualtran.linalg.polynomial.qsp_testing import assert_is_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
 
 if TYPE_CHECKING:

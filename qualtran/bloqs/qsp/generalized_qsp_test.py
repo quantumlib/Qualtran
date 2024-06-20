@@ -36,9 +36,9 @@ from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
     get_walk_operator_for_1d_ising_model,
 )
 from qualtran.linalg.polynomial.basic import evaluate_polynomial_of_unitary_matrix
-from qualtran.linalg.polynomial.qsp_util import (
+from qualtran.linalg.polynomial.qsp_testing import (
     assert_is_qsp_polynomial,
-    check_polynomial_pair_on_random_points_on_unit_circle,
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle,
     random_qsp_polynomial,
     scale_down_to_qsp_polynomial,
 )
@@ -60,7 +60,7 @@ def test_complementary_polynomial(degree: int):
     for _ in range(5):
         P = random_qsp_polynomial(degree, random_state=random_state)
         Q = qsp_complementary_polynomial(P, verify=True)
-        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
@@ -249,7 +249,7 @@ class SymbolicGQSP:
         return float(sum(abs(c) for c in sympy.Poly(M, U).coeffs()))
 
     def verify(self):
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             self.P, self.Q, random_state=np.random.RandomState(42)
         )
         U = sympy.symbols('U')
@@ -303,7 +303,7 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     assert_is_qsp_polynomial(list(P))
 
     Q = qsp_complementary_polynomial(list(P), verify=True, verify_precision=1e-5)
-    check_polynomial_pair_on_random_points_on_unit_circle(
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
         list(P), Q, random_state=random_state, rtol=precision
     )
     verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)

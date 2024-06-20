@@ -18,8 +18,8 @@ import pytest
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qsp.fast_qsp import fast_complementary_polynomial
 from qualtran.bloqs.qsp.generalized_qsp_test import verify_generalized_qsp
-from qualtran.linalg.polynomial.qsp_util import (
-    check_polynomial_pair_on_random_points_on_unit_circle,
+from qualtran.linalg.polynomial.qsp_testing import (
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle,
     random_qsp_polynomial,
 )
 
@@ -40,7 +40,7 @@ def test_complementary_polynomial(degree: int, num_tests: int):
     for _ in range(num_tests):
         P = random_qsp_polynomial(degree, random_state=random_state)
         Q = fast_complementary_polynomial(P, random_state=random_state)
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=precision
         )
 
@@ -75,7 +75,7 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int, precisio
         Q = fast_complementary_polynomial(P, random_state=random_state, only_reals=True)
 
         np.testing.assert_allclose(np.imag(Q), 0, atol=precision)
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=precision
         )
 

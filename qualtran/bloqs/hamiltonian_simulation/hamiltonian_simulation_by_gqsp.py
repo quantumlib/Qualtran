@@ -25,7 +25,7 @@ from qualtran.linalg.polynomial.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
-from qualtran.linalg.polynomial.qsp_util import scale_down_to_qsp_polynomial
+from qualtran.linalg.polynomial.qsp_testing import scale_down_to_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
