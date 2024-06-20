@@ -16,6 +16,8 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.arithmetic.sorting import _bitonic_sort, _cmp_symb, BitonicSort, Comparator
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.symbolics import ceil, log2
 
 
 def test_cmp_symb(bloq_autotester):
@@ -27,16 +29,20 @@ def test_bitonic_sort(bloq_autotester):
 
 
 def test_comparator_manual():
-    bloq = Comparator(4)
-    assert bloq.t_complexity().t == 88 - 4
-    with pytest.raises(NotImplementedError):
-        bloq.decompose_bloq()
+    bloq = Comparator(2**4)
+    assert bloq.t_complexity().t == 88 - 4 - 7 * 4
+
+
+def test_comparator_symbolic_t_complexity():
+    bloq = _cmp_symb.make()
+    bitsize = ceil(log2(bloq.L - 1))
+    assert bloq.t_complexity() == TComplexity(t=15 * bitsize + 4, clifford=56 * bitsize + 24)
 
 
 def test_bitonic_sort_manual():
     bitsize = 4
     k = 8
-    bloq = BitonicSort(bitsize, k)
+    bloq = BitonicSort(2**bitsize, k)
     assert bloq.t_complexity().t == 8 * 9 * (88 - 4)
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()

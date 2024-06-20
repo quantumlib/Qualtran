@@ -11,32 +11,46 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Dict
 
 import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BoundedQUInt,
+    QBit,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic import GreaterThan
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import SymbolicInt
+from qualtran.bloqs.basic_gates import CSwap
+from qualtran.symbolics import bit_length, SymbolicInt
 
 
 @frozen
 class Comparator(Bloq):
-    r"""Compare and potentially swaps two n-bit numbers.
+    r"""Compare and potentially swaps two numbers in {0, ... L - 1}.
 
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow |\min(a,b)\rangle|\max(a,b)\rangle|a>b\rangle$,
 
     where $a$ and $b$ are n-qubit quantum registers. On output a and b are
     swapped if a > b. Forms the base primitive for sorting.
+    The numbers are represented using $n = \ceil{\log L}$ bits.
 
     Args:
-        bitsize: Number of bits used to represent each integer.
+        L: Upper-bound (excluded) on the input numbers.
 
     Registers:
-        a: A nbit-sized input register (register a above).
-        b: A nbit-sized input register (register b above).
+        a: A n-bit-sized input register (register a above).
+        b: A n-bit-sized input register (register b above).
         out: A single bit output register which will store the result of the comparator.
 
     References:
@@ -44,34 +58,40 @@ class Comparator(Bloq):
         Fig. 1. in main text.
     """
 
-    bitsize: SymbolicInt
+    L: SymbolicInt
 
     @property
     def signature(self):
+        input_dtype = BoundedQUInt(self.bitsize, self.L)
         return Signature(
             [
-                Register('a', QAny(self.bitsize)),
-                Register('b', QAny(self.bitsize)),
+                Register('a', input_dtype),
+                Register('b', input_dtype),
                 Register('out', QBit(), side=Side.RIGHT),
             ]
         )
 
+    @property
+    def bitsize(self):
+        """number of bits to represent the inputs"""
+        return bit_length(self.L - 1)
+
     def pretty_name(self) -> str:
         return "Cmprtr"
 
-    def _t_complexity_(self):
-        # complexity is from less than on two n qubit numbers + controlled swap
-        # Hard code for now until CSwap-Bloq is merged.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        t_complexity = GreaterThan(self.bitsize, self.bitsize).t_complexity()
-        t_complexity += TComplexity(t=14 * self.bitsize)
-        return t_complexity
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        out = bb.allocate(dtype=QBit())
+        a, b, out = bb.add(GreaterThan(self.bitsize, self.bitsize), a=a, b=b, target=out)
+        out, a, b = bb.add(CSwap(self.bitsize), ctrl=out, x=a, y=b)
+        return {'a': a, 'b': b, 'out': out}
 
 
 @bloq_example
 def _cmp_symb() -> Comparator:
-    n = sympy.Symbol('n')
-    cmp_symb = Comparator(bitsize=n)
+    L = sympy.Symbol('L')
+    cmp_symb = Comparator(L=L)
     return cmp_symb
 
 
@@ -80,13 +100,13 @@ _COMPARATOR_DOC = BloqDocSpec(bloq_cls=Comparator, examples=[_cmp_symb])
 
 @frozen
 class BitonicSort(Bloq):
-    r"""Sort k n-bit numbers.
+    r"""Sort k numbers in the range {0, ..., L-1}.
 
     TODO: actually implement the algorithm using comparitor. Hiding ancilla cost
         for the moment. Issue #219
 
     Args:
-        bitsize: Number of bits used to represent each integer.
+        L: Upper-bound (excluded) on the input integers.
         k: Number of integers to sort.
 
     Registers:
@@ -97,12 +117,16 @@ class BitonicSort(Bloq):
         Supporting Information Sec. II.
     """
 
-    bitsize: SymbolicInt
-    k: int
+    L: SymbolicInt
+    k: SymbolicInt
 
     @property
     def signature(self):
-        return Signature([Register("input", QAny(self.bitsize), shape=(self.k,))])
+        return Signature([Register("input", BoundedQUInt(self.bitsize, self.L), shape=(self.k,))])
+
+    @property
+    def bitsize(self) -> SymbolicInt:
+        return bit_length(self.L - 1)
 
     def pretty_name(self) -> str:
         return "BSort"
@@ -121,8 +145,8 @@ class BitonicSort(Bloq):
 
 @bloq_example
 def _bitonic_sort() -> BitonicSort:
-    n = sympy.Symbol('n')
-    bitonic_sort = BitonicSort(bitsize=n, k=3)
+    L = sympy.Symbol('L')
+    bitonic_sort = BitonicSort(L=2**L + 1, k=3)
     return bitonic_sort
 
 
