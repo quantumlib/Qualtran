@@ -16,5 +16,9 @@ from numpy.typing import NDArray
 
 
 def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
+    r"""Asserts that two matrices are close to each other by bounding the matrix norm of their difference.
+
+    Asserts that $\|A - B\| \le \mathrm{atol}$.
+    """
     assert A.shape == B.shape
     assert np.linalg.norm(A - B) <= atol
