@@ -35,10 +35,10 @@ from qualtran.bloqs.qsp.generalized_qsp import (
 from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
     get_walk_operator_for_1d_ising_model,
 )
+from qualtran.linalg.polynomial.basic import evaluate_polynomial_of_unitary_matrix
 from qualtran.linalg.polynomial.qsp_util import (
     assert_is_qsp_polynomial,
     check_polynomial_pair_on_random_points_on_unit_circle,
-    evaluate_polynomial_of_matrix,
     random_qsp_polynomial,
     scale_down_to_qsp_polynomial,
 )
@@ -92,15 +92,15 @@ def verify_generalized_qsp(
         gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
 
-    expected_top_left = evaluate_polynomial_of_matrix(
-        P, input_unitary, negative_power=negative_power
+    expected_top_left = evaluate_polynomial_of_unitary_matrix(
+        P, input_unitary, offset=-negative_power
     )
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=tolerance)
 
     assert not isinstance(gqsp_U.Q, Shaped)
-    expected_bottom_left = evaluate_polynomial_of_matrix(
-        gqsp_U.Q, input_unitary, negative_power=negative_power
+    expected_bottom_left = evaluate_polynomial_of_unitary_matrix(
+        gqsp_U.Q, input_unitary, offset=-negative_power
     )
     actual_bottom_left = result_unitary[N:, :N]
     assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left, atol=tolerance)

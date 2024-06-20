@@ -45,21 +45,6 @@ def random_qsp_polynomial(
     return list(poly)
 
 
-def evaluate_polynomial_of_matrix(
-    P: Sequence[complex], U: NDArray, *, negative_power: int = 0
-) -> NDArray:
-    assert U.ndim == 2 and U.shape[0] == U.shape[1]
-
-    pow_U = np.linalg.matrix_power(U.conj().T, negative_power)
-    result = np.zeros(U.shape, dtype=U.dtype)
-
-    for c in P:
-        result += pow_U * c
-        pow_U = pow_U @ U
-
-    return result
-
-
 def _polynomial_max_abs_value_on_unit_circle(
     P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points=2**17
 ):
