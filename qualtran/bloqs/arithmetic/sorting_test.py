@@ -63,8 +63,21 @@ def test_bitonic_sort_classical_sim():
     L = 8
     xs = np.array([4, 2, 7, 1])
     bloq = BitonicSort(L, len(xs))
-    sorted_xs, anc = bloq.call_classically(xs=xs)
+    sorted_xs, _ = bloq.call_classically(xs=xs)
     assert np.all(sorted_xs == sorted(xs))
+
+
+@pytest.mark.parametrize("k", [1, 2, 4, 8, 16])
+def test_bitonic_sort_classical_sim_on_random_lists(k: int):
+    rng = np.random.default_rng(1024)
+
+    L = 8
+    bloq = BitonicSort(L, k)
+
+    for _ in range(5):
+        xs = rng.integers(0, L, size=k)
+        sorted_xs, _ = bloq.call_classically(xs=xs)
+        assert np.all(sorted_xs == sorted(xs))
 
 
 @pytest.mark.notebook

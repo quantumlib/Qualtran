@@ -150,7 +150,7 @@ class ParallelComparators(Bloq):
                 xs[i], xs[j], anc = bb.add(comp, a=xs[i], b=xs[j])
                 junk.append(anc)
 
-        assert len(junk) == self.num_comparisons, f"{len(junk)=}, {self.num_comparisons=}"
+        assert len(junk) == self.num_comparisons
 
         return {'xs': xs, 'junk': np.array(junk)}
 
@@ -198,7 +198,7 @@ class BitonicMerge(Bloq):
 
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
-        return 2 * self.k * bit_length(self.k - 1)
+        return self.k * (bit_length(self.k - 1) + 1)
 
     def is_symbolic(self):
         return is_symbolic(self.L, self.k)
@@ -227,7 +227,7 @@ class BitonicMerge(Bloq):
             all_junks.append(ancs)
 
         junk = np.concatenate(all_junks)
-        assert len(junk) == self.num_comparisons, f"{len(junk)=}, {self.num_comparisons=}"
+        assert len(junk) == self.num_comparisons
 
         return {'result': result, 'junk': np.array(junk)}
 
@@ -298,10 +298,7 @@ class BitonicSort(Bloq):
         xs, junk_merge = bb.add(BitonicMerge(self.L, self.k // 2), xs=xs_left, ys=xs_right)
 
         junk = np.concatenate([junk_left, junk_right, junk_merge])
-        assert len(junk) == self.num_comparisons, (
-            f"{self.k=}, {len(junk)=}, {self.num_comparisons=}, "
-            f"{len(junk_left)=}, {len(junk_right)=}, {len(junk_merge)=}"
-        )
+        assert len(junk) == self.num_comparisons
 
         return {'xs': xs, 'junk': junk}
 
