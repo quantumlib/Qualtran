@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import collections.abc
 import google.protobuf.descriptor
@@ -27,16 +28,11 @@ import qualtran.protos.ctrl_spec_pb2
 import qualtran.protos.data_types_pb2
 import qualtran.protos.registers_pb2
 import qualtran.protos.sympy_pb2
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class BloqArg(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -57,28 +53,34 @@ class BloqArg(google.protobuf.message.Message):
     int_val: builtins.int
     float_val: builtins.float
     string_val: builtins.str
-    @property
-    def sympy_expr(self) -> qualtran.protos.sympy_pb2.Term:
-        """Sympy expression generated using str(expr)."""
-    @property
-    def ndarray(self) -> qualtran.protos.args_pb2.NDArray:
-        """N-dimensional numpy array stored as bytes."""
     subbloq: builtins.int
     """Integer reference of a subbloq. Assumes access to a BloqLibrary."""
     cirq_json_gzip: builtins.bytes
     """Gzipped JSON corresponding to a Cirq object."""
     @property
+    def sympy_expr(self) -> qualtran.protos.sympy_pb2.Term:
+        """Sympy expression generated using str(expr)."""
+
+    @property
+    def ndarray(self) -> qualtran.protos.args_pb2.NDArray:
+        """N-dimensional numpy array stored as bytes."""
+
+    @property
     def qdata_type(self) -> qualtran.protos.data_types_pb2.QDataType:
         """data type"""
+
     @property
     def register(self) -> qualtran.protos.registers_pb2.Register:
         """A Register object, accepted as an argument."""
+
     @property
     def registers(self) -> qualtran.protos.registers_pb2.Registers:
         """A repeated list of one or more registers, accepted as arguments."""
+
     @property
     def ctrl_spec(self) -> qualtran.protos.ctrl_spec_pb2.CtrlSpec:
         """Ctrl Spec for controlled bloqs"""
+
     @property
     def complex_val(self) -> qualtran.protos.args_pb2.Complex: ...
     def __init__(
@@ -98,13 +100,13 @@ class BloqArg(google.protobuf.message.Message):
         ctrl_spec: qualtran.protos.ctrl_spec_pb2.CtrlSpec | None = ...,
         complex_val: qualtran.protos.args_pb2.Complex | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "register", "registers", "ctrl_spec", "complex_val"] | None: ...
+    def HasField(self, field_name: typing.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["val", b"val"]) -> typing.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "register", "registers", "ctrl_spec", "complex_val"] | None: ...
 
 global___BloqArg = BloqArg
 
-@typing_extensions.final
+@typing.final
 class BloqLibrary(google.protobuf.message.Message):
     """A library of Bloqs. BloqLibrary should be used to represent both primitive Bloqs and
     composite Bloqs; i.e. Bloqs consisting of other subbloqs, like `CompositeBloq`,
@@ -113,13 +115,13 @@ class BloqLibrary(google.protobuf.message.Message):
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
+    @typing.final
     class BloqWithDecomposition(google.protobuf.message.Message):
         """Decompositions are specified using integer IDs referencing other Bloqs within this library."""
 
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-        @typing_extensions.final
+        @typing.final
         class BloqCountsEntry(google.protobuf.message.Message):
             DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -134,8 +136,8 @@ class BloqLibrary(google.protobuf.message.Message):
                 key: builtins.int = ...,
                 value: qualtran.protos.args_pb2.IntOrSympy | None = ...,
             ) -> None: ...
-            def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-            def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+            def HasField(self, field_name: typing.Literal["value", b"value"]) -> builtins.bool: ...
+            def ClearField(self, field_name: typing.Literal["key", b"key", "value", b"value"]) -> None: ...
 
         BLOQ_ID_FIELD_NUMBER: builtins.int
         DECOMPOSITION_FIELD_NUMBER: builtins.int
@@ -146,12 +148,15 @@ class BloqLibrary(google.protobuf.message.Message):
         @property
         def decomposition(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Connection]:
             """Decomposition of the Bloq as an edge-list."""
+
         @property
         def bloq_counts(self) -> google.protobuf.internal.containers.MessageMap[builtins.int, qualtran.protos.args_pb2.IntOrSympy]:
             """Rough decomposition of the Bloq as bloq-counts."""
+
         @property
         def bloq(self) -> global___Bloq:
             """The Bloq itself."""
+
         def __init__(
             self,
             *,
@@ -160,8 +165,8 @@ class BloqLibrary(google.protobuf.message.Message):
             bloq_counts: collections.abc.Mapping[builtins.int, qualtran.protos.args_pb2.IntOrSympy] | None = ...,
             bloq: global___Bloq | None = ...,
         ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["bloq", b"bloq"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["bloq", b"bloq", "bloq_counts", b"bloq_counts", "bloq_id", b"bloq_id", "decomposition", b"decomposition"]) -> None: ...
+        def HasField(self, field_name: typing.Literal["bloq", b"bloq"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing.Literal["bloq", b"bloq", "bloq_counts", b"bloq_counts", "bloq_id", b"bloq_id", "decomposition", b"decomposition"]) -> None: ...
 
     NAME_FIELD_NUMBER: builtins.int
     TABLE_FIELD_NUMBER: builtins.int
@@ -175,11 +180,11 @@ class BloqLibrary(google.protobuf.message.Message):
         name: builtins.str = ...,
         table: collections.abc.Iterable[global___BloqLibrary.BloqWithDecomposition] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "table", b"table"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["name", b"name", "table", b"table"]) -> None: ...
 
 global___BloqLibrary = BloqLibrary
 
-@typing_extensions.final
+@typing.final
 class Bloq(google.protobuf.message.Message):
     """Messages to enable efficient description of a BloqLibrary, including Bloq decompositions in
     terms of other simpler bloqs.
@@ -198,12 +203,15 @@ class Bloq(google.protobuf.message.Message):
     @property
     def args(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BloqArg]:
         """`Args` are used to construct the Bloq."""
+
     @property
     def registers(self) -> qualtran.protos.registers_pb2.Registers:
         """`Registers` specify the signature of the Bloq and are often derived using `args`."""
+
     @property
     def t_complexity(self) -> qualtran.protos.annotations_pb2.TComplexity:
         """Other useful annotations."""
+
     def __init__(
         self,
         *,
@@ -212,12 +220,12 @@ class Bloq(google.protobuf.message.Message):
         registers: qualtran.protos.registers_pb2.Registers | None = ...,
         t_complexity: qualtran.protos.annotations_pb2.TComplexity | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["registers", b"registers", "t_complexity", b"t_complexity"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["args", b"args", "name", b"name", "registers", b"registers", "t_complexity", b"t_complexity"]) -> None: ...
+    def HasField(self, field_name: typing.Literal["registers", b"registers", "t_complexity", b"t_complexity"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["args", b"args", "name", b"name", "registers", b"registers", "t_complexity", b"t_complexity"]) -> None: ...
 
 global___Bloq = Bloq
 
-@typing_extensions.final
+@typing.final
 class BloqInstance(google.protobuf.message.Message):
     """Specific instance of a Bloq."""
 
@@ -233,11 +241,11 @@ class BloqInstance(google.protobuf.message.Message):
         instance_id: builtins.int = ...,
         bloq_id: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloq_id", b"bloq_id", "instance_id", b"instance_id"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["bloq_id", b"bloq_id", "instance_id", b"instance_id"]) -> None: ...
 
 global___BloqInstance = BloqInstance
 
-@typing_extensions.final
+@typing.final
 class Soquet(google.protobuf.message.Message):
     """One half of a connection."""
 
@@ -247,9 +255,9 @@ class Soquet(google.protobuf.message.Message):
     DANGLING_T_FIELD_NUMBER: builtins.int
     REGISTER_FIELD_NUMBER: builtins.int
     INDEX_FIELD_NUMBER: builtins.int
+    dangling_t: builtins.str
     @property
     def bloq_instance(self) -> global___BloqInstance: ...
-    dangling_t: builtins.str
     @property
     def register(self) -> qualtran.protos.registers_pb2.Register: ...
     @property
@@ -262,13 +270,13 @@ class Soquet(google.protobuf.message.Message):
         register: qualtran.protos.registers_pb2.Register | None = ...,
         index: collections.abc.Iterable[builtins.int] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binst", b"binst", "bloq_instance", b"bloq_instance", "dangling_t", b"dangling_t", "register", b"register"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binst", b"binst", "bloq_instance", b"bloq_instance", "dangling_t", b"dangling_t", "index", b"index", "register", b"register"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["binst", b"binst"]) -> typing_extensions.Literal["bloq_instance", "dangling_t"] | None: ...
+    def HasField(self, field_name: typing.Literal["binst", b"binst", "bloq_instance", b"bloq_instance", "dangling_t", b"dangling_t", "register", b"register"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["binst", b"binst", "bloq_instance", b"bloq_instance", "dangling_t", b"dangling_t", "index", b"index", "register", b"register"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["binst", b"binst"]) -> typing.Literal["bloq_instance", "dangling_t"] | None: ...
 
 global___Soquet = Soquet
 
-@typing_extensions.final
+@typing.final
 class Connection(google.protobuf.message.Message):
     """A connection between two Soquets. Quantum compute graph can be represented as a list of
     connections.
@@ -288,7 +296,7 @@ class Connection(google.protobuf.message.Message):
         left: global___Soquet | None = ...,
         right: global___Soquet | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["left", b"left", "right", b"right"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["left", b"left", "right", b"right"]) -> None: ...
+    def HasField(self, field_name: typing.Literal["left", b"left", "right", b"right"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["left", b"left", "right", b"right"]) -> None: ...
 
 global___Connection = Connection
