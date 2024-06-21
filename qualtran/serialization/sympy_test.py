@@ -14,6 +14,7 @@
 
 import pytest
 import sympy
+from sympy.codegen.cfunctions import log2
 
 from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
 
@@ -40,6 +41,7 @@ sympy_parameters_to_test = [
 ]
 sympy_exprs_to_test = [
     5 * a + sympy.sqrt(a),
+    log2(x),
     # Complex Fractions
     sympy.Rational("1/10") * sympy.I + 5,
     # Basic operations
