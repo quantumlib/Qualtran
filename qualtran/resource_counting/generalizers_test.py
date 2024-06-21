@@ -45,8 +45,8 @@ _BLOQS_TO_FILTER = [
     Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     CirqGateAsBloq(cirq.S),
     AutoPartition(
-        AutoPartition(Rx(0.123), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-        [(Register('q', QAny(1)), [Register('q', QBit())])],
+        AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+        [(Register('q', QAny(1)), ['q'])],
     ),
 ]
 
@@ -88,8 +88,8 @@ def test_ignore_alloc_free():
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
         AutoPartition(
-            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-            [(Register('q', QAny(1)), [Register('q', QBit())])],
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
         ),
     ]
 
@@ -111,8 +111,8 @@ def test_generalize_rotation_angle():
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
         AutoPartition(
-            AutoPartition(Rx(PHI), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-            [(Register('q', QAny(1)), [Register('q', QBit())])],
+            AutoPartition(Rx(PHI), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
         ),
     ]
 
@@ -134,8 +134,8 @@ def test_generalize_cvs():
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
         AutoPartition(
-            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-            [(Register('q', QAny(1)), [Register('q', QBit())])],
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
         ),
     ]
 
@@ -157,8 +157,8 @@ def test_ignore_cliffords():
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
         AutoPartition(
-            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-            [(Register('q', QAny(1)), [Register('q', QBit())])],
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
         ),
     ]
 
@@ -181,8 +181,8 @@ def test_ignore_cliffords_with_cirq():
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         None,  # cirq.S,
         AutoPartition(
-            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), [Register('q', QBit())])]),
-            [(Register('q', QAny(1)), [Register('q', QBit())])],
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
         ),
     ]
 
