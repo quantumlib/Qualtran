@@ -49,6 +49,9 @@ def test_comparator_classical_sim(L: int):
         for b in range(L):
             res_a, res_b, anc = bloq.call_classically(a=a, b=b)
             assert res_a <= res_b
+            assert res_a == min(a, b)
+            assert res_b == max(a, b)
+            assert anc == (a > b)
 
 
 def test_bitonic_sort_manual():
