@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Sequence, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
-from attrs import field, frozen
+from attrs import frozen
 
 from qualtran import (
     bloq_example,
@@ -55,7 +55,7 @@ class Partition(_BookkeepingBloq):
     """
 
     n: int
-    regs: Sequence[Register] = field(converter=tuple)
+    regs: Tuple[Register, ...]
     partition: bool = True
 
     @cached_property

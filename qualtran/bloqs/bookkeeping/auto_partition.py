@@ -74,7 +74,7 @@ class AutoPartition(Bloq):
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
         for out_reg, (_, bloq_regs) in zip(self.signature.lefts(), self.partition):
-            part = Partition(out_reg.bitsize, regs=bloq_regs)
+            part = Partition(out_reg.bitsize, regs=tuple(bloq_regs))
             parts[out_reg.name] = part
             in_regs |= bb.add_d(part, x=soqs[out_reg.name])
         bloq_out_regs = bb.add_d(self.bloq, **in_regs)
