@@ -139,6 +139,11 @@ class ParallelComparators(Bloq):
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
+        # make mypy happy
+        assert not isinstance(self.k, sympy.Expr)
+        assert not isinstance(self.offset, sympy.Expr)
+        assert isinstance(xs, np.ndarray)
+
         comp = Comparator(self.L)
 
         junk = []
@@ -172,6 +177,7 @@ class BitonicMerge(Bloq):
     def __attrs_post_init__(self):
         k = self.k
         if not is_symbolic(k):
+            assert not isinstance(k, sympy.Expr)
             assert k >= 1, "length of input lists must be positive"
             # TODO support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, "length of input lists must be a power of 2"
@@ -203,12 +209,16 @@ class BitonicMerge(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.L, self.k)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', xs: 'SoquetT', ys: 'SoquetT'
+    ) -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        k = self.k
-        xs, ys = soqs['xs'], soqs['ys']
+        assert isinstance(xs, np.ndarray)
+        assert isinstance(ys, np.ndarray)
+
+        k = int(self.k)
 
         first_round_junk = []
         for i in range(k):
@@ -216,7 +226,7 @@ class BitonicMerge(Bloq):
             first_round_junk.append(anc)
 
         result = np.concatenate([xs, ys])
-        logk = bit_length(k - 1)
+        logk = int(bit_length(k - 1))
         assert 2**logk == k
 
         all_junks = [first_round_junk]
@@ -254,6 +264,7 @@ class BitonicSort(Bloq):
     def __attrs_post_init__(self):
         k = self.k
         if not is_symbolic(k):
+            assert not isinstance(k, sympy.Expr)
             assert k >= 1, "length of input list must be positive"
             # TODO support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, "length of input list must be a power of 2"
@@ -285,6 +296,8 @@ class BitonicSort(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
+        assert isinstance(xs, np.ndarray)
 
         if self.k == 1:
             return {'xs': xs, 'junk': np.array([])}
