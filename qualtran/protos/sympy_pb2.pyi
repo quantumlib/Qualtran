@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import collections.abc
 import google.protobuf.descriptor
@@ -54,6 +55,7 @@ class _FunctionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumT
     Sin: _Function.ValueType  # 10
     Cos: _Function.ValueType  # 11
     Tan: _Function.ValueType  # 12
+    Log2: _Function.ValueType  # 13
 
 class Function(_Function, metaclass=_FunctionEnumTypeWrapper):
     """A function sympy expression."""
@@ -74,6 +76,7 @@ Min: Function.ValueType  # 9
 Sin: Function.ValueType  # 10
 Cos: Function.ValueType  # 11
 Tan: Function.ValueType  # 12
+Log2: Function.ValueType  # 13
 global___Function = Function
 
 class _ConstSymbol:
@@ -97,7 +100,7 @@ Infinity: ConstSymbol.ValueType  # 3
 ImaginaryUnit: ConstSymbol.ValueType  # 4
 global___ConstSymbol = ConstSymbol
 
-@typing_extensions.final
+@typing.final
 class Rational(google.protobuf.message.Message):
     """Represents a constant, rational number."""
 
@@ -115,12 +118,12 @@ class Rational(google.protobuf.message.Message):
         numerator: global___Parameter | None = ...,
         denominator: global___Parameter | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
+    def HasField(self, field_name: typing.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
 
 global___Rational = Rational
 
-@typing_extensions.final
+@typing.final
 class Parameter(google.protobuf.message.Message):
     """A single parameter of a sympy expression."""
 
@@ -133,10 +136,10 @@ class Parameter(google.protobuf.message.Message):
     CONST_SYMBOL_FIELD_NUMBER: builtins.int
     const_int: builtins.int
     symbol: builtins.str
-    @property
-    def const_rat(self) -> global___Rational: ...
     const_float: builtins.float
     const_symbol: global___ConstSymbol.ValueType
+    @property
+    def const_rat(self) -> global___Rational: ...
     def __init__(
         self,
         *,
@@ -146,13 +149,13 @@ class Parameter(google.protobuf.message.Message):
         const_float: builtins.float = ...,
         const_symbol: global___ConstSymbol.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["parameter", b"parameter"]) -> typing_extensions.Literal["const_int", "symbol", "const_rat", "const_float", "const_symbol"] | None: ...
+    def HasField(self, field_name: typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["parameter", b"parameter"]) -> typing.Literal["const_int", "symbol", "const_rat", "const_float", "const_symbol"] | None: ...
 
 global___Parameter = Parameter
 
-@typing_extensions.final
+@typing.final
 class Operand(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -168,13 +171,13 @@ class Operand(google.protobuf.message.Message):
         term: global___Term | None = ...,
         parameter: global___Parameter | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["operand", b"operand"]) -> typing_extensions.Literal["term", "parameter"] | None: ...
+    def HasField(self, field_name: typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["operand", b"operand"]) -> typing.Literal["term", "parameter"] | None: ...
 
 global___Operand = Operand
 
-@typing_extensions.final
+@typing.final
 class Term(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -189,6 +192,6 @@ class Term(google.protobuf.message.Message):
         function: global___Function.ValueType = ...,
         operands: collections.abc.Iterable[global___Operand] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["function", b"function", "operands", b"operands"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["function", b"function", "operands", b"operands"]) -> None: ...
 
 global___Term = Term
