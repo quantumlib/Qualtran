@@ -53,7 +53,7 @@ class Comparator(Bloq):
     Registers:
         a: A n-bit-sized input register (register a above).
         b: A n-bit-sized input register (register b above).
-        out: A single bit output register which will store the result of the comparator.
+        out (RIGHT): A single bit output register which will store the result of the comparator.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
@@ -103,7 +103,12 @@ _COMPARATOR_DOC = BloqDocSpec(bloq_cls=Comparator, examples=[_comparator, _compa
 
 @frozen
 class ParallelComparators(Bloq):
-    """Given k n-bit numbers, compare every pair that is `offset` apart.
+    """Given k n-bit numbers, for each pair that is `offset` apart, compare and swap if needed to make them ordered.
+
+    For each block of `2 * offset` numbers, apply a `Comparator` between each pair that is `offset` apart.
+    Uses up to $k / 2$ Comparators.
+
+    This is used by `BitonicMerge` to apply parallel merges with offsets 1, 2, 4 and so on.
 
     Args:
         k: size of the input list.
@@ -133,7 +138,13 @@ class ParallelComparators(Bloq):
 
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
-        return self.k // 2
+        """Number of `Comparator` gates used in the decomposition"""
+        if is_symbolic(self.k, self.offset):
+            return self.k // 2  # upper bound
+
+        full = (self.k // (2 * self.offset)) * self.offset
+        rest = self.k % (2 * self.offset)
+        return full + max(rest - self.offset, 0)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if self.is_symbolic():
@@ -161,6 +172,12 @@ class ParallelComparators(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Comparator(self.bitsize), self.num_comparisons)}
+
+
+@bloq_example
+def _parallel_compare() -> ParallelComparators:
+    parallel_compare = ParallelComparators(7, 2, bitsize=3)
+    return parallel_compare
 
 
 @frozen
@@ -197,6 +214,7 @@ class BitonicMerge(Bloq):
 
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
+        """Number of `Comparator` gates used in the decomposition"""
         return self.half_length * (bit_length(self.half_length - 1) + 1)
 
     def is_symbolic(self):
@@ -272,6 +290,7 @@ class BitonicSort(Bloq):
 
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
+        """Number of `Comparator` gates used in the decomposition"""
         logk = bit_length(self.k - 1)
         return (self.k // 2) * ((logk * (logk + 1)) // 2)
 

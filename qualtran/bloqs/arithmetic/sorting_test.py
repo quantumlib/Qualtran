@@ -22,21 +22,19 @@ from qualtran.bloqs.arithmetic.sorting import (
     _bitonic_sort,
     _bitonic_sort_symb,
     _comparator,
+    _parallel_compare,
     _comparator_symb,
     BitonicSort,
     Comparator,
+    ParallelComparators,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_comparator_examples(bloq_autotester):
     bloq_autotester(_comparator)
     bloq_autotester(_comparator_symb)
-
-
-def test_bitonic_sort_examples(bloq_autotester):
-    bloq_autotester(_bitonic_sort)
-    bloq_autotester(_bitonic_sort_symb)
 
 
 def test_comparator_manual():
@@ -61,6 +59,24 @@ def test_comparator_classical_sim(L: int):
             assert res_a == min(a, b)
             assert res_b == max(a, b)
             assert anc == (a > b)
+
+
+def test_parallel_compare_example(bloq_autotester):
+    bloq_autotester(_parallel_compare)
+
+
+@pytest.mark.parametrize("k", [*range(1, 10)])
+@pytest.mark.parametrize("offset", [*range(1, 10)])
+def test_parallel_compare_decompose(k: int, offset: int):
+    bitsize = 3
+
+    bloq = ParallelComparators(k=k, offset=offset, bitsize=bitsize)
+    assert_valid_bloq_decomposition(bloq)
+
+
+def test_bitonic_sort_examples(bloq_autotester):
+    bloq_autotester(_bitonic_sort)
+    bloq_autotester(_bitonic_sort_symb)
 
 
 def test_bitonic_sort_manual():
