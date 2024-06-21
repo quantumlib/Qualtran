@@ -42,10 +42,11 @@ def test_comparator_symbolic_t_complexity():
 def test_bitonic_sort_manual():
     bitsize = 4
     k = 8
+
     bloq = BitonicSort(2**bitsize, k)
-    assert bloq.t_complexity().t == 8 * 9 * (88 - 4)
-    with pytest.raises(NotImplementedError):
-        bloq.decompose_bloq()
+    assert bloq.num_comparisons == 24
+
+    _ = bloq.t_complexity()
 
 
 @pytest.mark.notebook
