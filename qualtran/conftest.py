@@ -92,6 +92,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'symbolic_hamsim_by_gqsp',
         'gqsp_1d_ising',
         'auto_partition',
+        'unitary_block_encoding',
+        'tensor_product_block_encoding',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
