@@ -41,7 +41,7 @@ sympy_parameters_to_test = [
 ]
 sympy_exprs_to_test = [
     5 * a + sympy.sqrt(a),
-    log2(x),
+    log2(a),
     # Complex Fractions
     sympy.Rational("1/10") * sympy.I + 5,
     # Basic operations
