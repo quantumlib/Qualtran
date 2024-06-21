@@ -147,21 +147,21 @@ class ParallelComparators(Bloq):
         return full + max(rest - self.offset, 0)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.k, self.offset):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         # make mypy happy
-        assert not isinstance(self.k, sympy.Expr)
-        assert not isinstance(self.offset, sympy.Expr)
+        k = int(self.k)
+        offset = int(self.offset)
         assert isinstance(xs, np.ndarray)
 
         comp = Comparator(self.bitsize)
 
         junk = []
-        for start in range(0, self.k, 2 * self.offset):
-            for step in range(self.offset):
-                i, j = start + step, start + step + self.offset
-                if j >= self.k:
+        for start in range(0, k, 2 * offset):
+            for step in range(offset):
+                i, j = start + step, start + step + offset
+                if j >= k:
                     break
                 xs[i], xs[j], anc = bb.add(comp, a=xs[i], b=xs[j])
                 junk.append(anc)
@@ -244,7 +244,7 @@ class BitonicMerge(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', xs: 'SoquetT', ys: 'SoquetT'
     ) -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.half_length):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         assert isinstance(xs, np.ndarray)
@@ -353,7 +353,7 @@ class BitonicSort(Bloq):
         return is_symbolic(self.bitsize, self.k)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         assert isinstance(xs, np.ndarray)
