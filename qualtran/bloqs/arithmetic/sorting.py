@@ -255,7 +255,20 @@ class BitonicMerge(Bloq):
 
 @frozen
 class BitonicSort(Bloq):
-    r"""Sort k n-bit integers.
+    r"""Sort k n-bit integers in-place using a Bitonic sorting network.
+
+    For a given input list $x_1, x_2, \ldots, x_k$, applies the transform
+
+        $$ |x_1, x_2, \ldots, x_k\rangle \mapsto |y_1, y_2, \ldots, y_k\rangle|\mathsf{junk}\rangle $$
+
+    where $y_1, y_2, \ldots, y_k = \mathrm{sorted}(x_1, x_2, \ldots, x_k$, and the junk register
+    stores the result of comparisons done during the sorting. Note that the junk register will
+    be entangled with the input list register.
+
+    Currently only supports $k$ being a power of two (#1090).
+
+    The bitonic sorting network requires $\frac{k}{2} \frac{\log{k} (\log{k} + 1)}{2}$ total comparisons,
+    and has depth $\frac{\log{k} (\log{k} + 1)}{2}$, when $k$ is a power of 2.
 
     Args:
         k: Number of integers to sort.
@@ -263,6 +276,7 @@ class BitonicSort(Bloq):
 
     Registers:
         xs: List of k integers we want to sort.
+        junk (RIGHT): the generated ancilla qubits of each comparison in the sorting network.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
