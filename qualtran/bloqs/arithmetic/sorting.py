@@ -124,12 +124,16 @@ class ParallelComparators(Bloq):
         return Signature(
             [
                 Register("xs", BoundedQUInt(bit_length(self.L - 1), self.L), shape=(self.k,)),
-                Register("junk", QBit(), shape=(self.k // 2,), side=Side.RIGHT),
+                Register("junk", QBit(), shape=(self.num_comparisons,), side=Side.RIGHT),
             ]
         )
 
     def is_symbolic(self):
         return is_symbolic(self.L, self.k, self.offset)
+
+    @cached_property
+    def num_comparisons(self) -> SymbolicInt:
+        return self.k // 2
 
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if self.is_symbolic():
@@ -146,10 +150,12 @@ class ParallelComparators(Bloq):
                 xs[i], xs[j], anc = bb.add(comp, a=xs[i], b=xs[j])
                 junk.append(anc)
 
+        assert len(junk) == self.num_comparisons, f"{len(junk)=}, {self.num_comparisons=}"
+
         return {'xs': xs, 'junk': np.array(junk)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Comparator(self.L), self.k // 2)}
+        return {(Comparator(self.L), self.num_comparisons)}
 
 
 @frozen
@@ -192,7 +198,7 @@ class BitonicMerge(Bloq):
 
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
-        raise 2 * self.k * bit_length(self.k - 1)
+        return 2 * self.k * bit_length(self.k - 1)
 
     def is_symbolic(self):
         return is_symbolic(self.L, self.k)
@@ -203,22 +209,27 @@ class BitonicMerge(Bloq):
 
         k = self.k
         xs, ys = soqs['xs'], soqs['ys']
-        junk = []
 
+        first_round_junk = []
         for i in range(k):
             xs[i], ys[k - 1 - i], anc = bb.add(Comparator(self.L), a=xs[i], b=ys[k - 1 - i])
-            junk.append(anc)
+            first_round_junk.append(anc)
 
         result = np.concatenate([xs, ys])
         logk = bit_length(k - 1)
         assert 2**logk == k
-        for log_offset in reversed(range(1, logk)):
-            result, anc = bb.add(
+
+        all_junks = [first_round_junk]
+        for log_offset in reversed(range(logk)):
+            result, ancs = bb.add(
                 ParallelComparators(self.L, self.k * 2, 2**log_offset), xs=result
             )
-            junk += anc
+            all_junks.append(ancs)
 
-        return {'xs': xs, 'ys': ys, 'junk': np.array(junk)}
+        junk = np.concatenate(all_junks)
+        assert len(junk) == self.num_comparisons, f"{len(junk)=}, {self.num_comparisons=}"
+
+        return {'result': result, 'junk': np.array(junk)}
 
 
 @frozen
@@ -278,11 +289,21 @@ class BitonicSort(Bloq):
         if self.k == 1:
             return {'xs': xs, 'junk': np.array([])}
 
-        xs_left, junk_left = bb.add(BitonicSort(self.L, self.k / 2), xs=xs[: self.k / 2])
-        xs_right, junk_right = bb.add(BitonicSort(self.L, self.k / 2), xs=xs[self.k / 2 :])
-        xs, junk_merge = bb.add(BitonicMerge(self.L, self.k / 2), xs=xs_left, ys=xs_right)
+        if self.k == 2:
+            xs[0], xs[1], anc = bb.add(Comparator(self.L), a=xs[0], b=xs[1])
+            return {'xs': xs, 'junk': np.array([anc])}
 
-        return {'xs': xs, 'junk': np.concatenate([junk_left, junk_right, junk_merge])}
+        xs_left, junk_left = bb.add(BitonicSort(self.L, self.k // 2), xs=xs[: self.k // 2])
+        xs_right, junk_right = bb.add(BitonicSort(self.L, self.k // 2), xs=xs[self.k // 2 :])
+        xs, junk_merge = bb.add(BitonicMerge(self.L, self.k // 2), xs=xs_left, ys=xs_right)
+
+        junk = np.concatenate([junk_left, junk_right, junk_merge])
+        assert len(junk) == self.num_comparisons, (
+            f"{self.k=}, {len(junk)=}, {self.num_comparisons=}, "
+            f"{len(junk_left)=}, {len(junk_right)=}, {len(junk_merge)=}"
+        )
+
+        return {'xs': xs, 'junk': junk}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         return {(Comparator(self.L), self.num_comparisons)}

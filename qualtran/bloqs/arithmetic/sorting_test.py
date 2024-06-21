@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
@@ -39,6 +40,15 @@ def test_comparator_symbolic_t_complexity():
     assert bloq.t_complexity() == TComplexity(t=15 * bitsize + 4, clifford=56 * bitsize + 24)
 
 
+@pytest.mark.parametrize("L", [5, 8, 12])
+def test_comparator_classical_sim(L: int):
+    bloq = Comparator(L)
+    for a in range(L):
+        for b in range(L):
+            res_a, res_b, anc = bloq.call_classically(a=a, b=b)
+            assert res_a <= res_b
+
+
 def test_bitonic_sort_manual():
     bitsize = 4
     k = 8
@@ -47,6 +57,14 @@ def test_bitonic_sort_manual():
     assert bloq.num_comparisons == 24
 
     _ = bloq.t_complexity()
+
+
+def test_bitonic_sort_classical_sim():
+    L = 8
+    xs = np.array([4, 2, 7, 1])
+    bloq = BitonicSort(L, len(xs))
+    sorted_xs, anc = bloq.call_classically(xs=xs)
+    assert np.all(sorted_xs == sorted(xs))
 
 
 @pytest.mark.notebook
