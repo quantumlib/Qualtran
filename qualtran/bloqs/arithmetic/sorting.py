@@ -305,7 +305,8 @@ class BitonicSort(Bloq):
     Currently only supports $k$ being a power of two (#1090).
 
     The bitonic sorting network requires $\frac{k}{2} \frac{\log{k} (\log{k} + 1)}{2}$ total comparisons,
-    and has depth $\frac{\log{k} (\log{k} + 1)}{2}$, when $k$ is a power of 2.
+    and has depth $\frac{\log{k} (\log{k} + 1)}{2}$, when $k$ is a power of 2. Each comparison generates
+    one ancilla qubit, so the total size of junk register equals the number of comparisons.
 
     Args:
         k: Number of integers to sort.
