@@ -179,7 +179,7 @@ class BitonicMerge(Bloq):
         if not is_symbolic(k):
             assert not isinstance(k, sympy.Expr)
             assert k >= 1, "length of input lists must be positive"
-            # TODO support non-power-of-two input lengths
+            # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, "length of input lists must be a power of 2"
 
     @cached_property
@@ -258,7 +258,7 @@ class BitonicSort(Bloq):
         if not is_symbolic(k):
             assert not isinstance(k, sympy.Expr)
             assert k >= 1, f"length of input list must be positive, got {k=}"
-            # TODO support non-power-of-two input lengths
+            # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, f"length of input list must be a power of 2, got {k=}"
 
     @property
