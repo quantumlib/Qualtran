@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from collections import Counter
 from functools import cached_property
 from itertools import chain
 from typing import Dict, Sequence, Tuple
@@ -40,7 +39,7 @@ class AutoPartition(Bloq):
     Args:
         bloq: The bloq to wrap.
         partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
-            and the registers from `bloq.signature.lefts()` that concatenate to form it.
+            and the names of registers from `bloq.signature.lefts()` that concatenate to form it.
         partition_output: If True, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
 
@@ -49,15 +48,15 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partitions: Sequence[Tuple[Register, Sequence[Register]]] = field(
+    partitions: Sequence[Tuple[Register, Sequence[str]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     partition_output: bool = True
 
     def __attrs_post_init__(self):
-        assert Counter(self.bloq.signature.lefts()) == Counter(
-            r for _, rs in self.partitions for r in rs
-        )
+        regs = {r.name for r in self.bloq.signature.lefts()}
+        assert len(regs) == len(self.bloq.signature)
+        assert regs == {r for _, rs in self.partitions for r in rs}
 
     @cached_property
     def signature(self) -> Signature:
@@ -78,7 +77,9 @@ class AutoPartition(Bloq):
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
         for out_reg, bloq_regs in self.partitions:
-            part = Partition(out_reg.bitsize, regs=tuple(bloq_regs))
+            part = Partition(
+                out_reg.bitsize, regs=tuple(self.bloq.signature.get_left(r) for r in bloq_regs)
+            )
             parts[out_reg.name] = part
             in_regs |= bb.add_d(part, x=soqs[out_reg.name])
         bloq_out_regs = bb.add_d(self.bloq, **in_regs)
@@ -100,9 +101,8 @@ def _auto_partition() -> AutoPartition:
     from qualtran.bloqs.basic_gates import Swap
 
     bloq = Controlled(Swap(1), CtrlSpec())
-    ctrl, x, y = bloq.signature.lefts()
     auto_partition = AutoPartition(
-        bloq, [(Register('x', QAny(2)), [ctrl, x]), (Register('y', QAny(1)), [y])]
+        bloq, [(Register('x', QAny(2)), ['ctrl', 'x']), (Register('y', QAny(1)), ['y'])]
     )
     return auto_partition
 

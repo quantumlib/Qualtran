@@ -969,7 +969,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[Register]]],
+        partitions: Sequence[Tuple[Register, Sequence[str]]],
         partition_output: bool = True,
         **in_soqs: SoquetInT,
     ):
@@ -979,7 +979,7 @@ class BloqBuilder:
         Args:
             bloq: The bloq representing the operation to add.
             partitions: A sequence of pairs specifying each register that the wrapped bloq should
-            accept and the registers from `bloq.signature.lefts()` that concatenate to form it.
+            accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
             partition_output: If True, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input

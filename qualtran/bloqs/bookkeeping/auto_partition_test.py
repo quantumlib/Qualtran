@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
 import subprocess
 
+import pytest
 from attrs import evolve
 
 from qualtran.bloqs.bookkeeping.auto_partition import _auto_partition, AutoPartition
@@ -76,8 +76,9 @@ def test_auto_partition_valid():
 
     with pytest.raises(AssertionError):
         bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
-        _, x, y = bloq.signature.lefts()
-        bloq = AutoPartition(bloq, [(Register('a', QAny(3)), [y]), (Register('b', QAny(3)), [x])])
+        bloq = AutoPartition(
+            bloq, [(Register('a', QAny(3)), ['y']), (Register('b', QAny(3)), ['x'])]
+        )
 
 
 def test_auto_partition_big():
@@ -85,8 +86,9 @@ def test_auto_partition_big():
     from qualtran.bloqs.basic_gates import Swap
 
     bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
-    ctrl, x, y = bloq.signature.lefts()
-    bloq = AutoPartition(bloq, [(Register('a', QAny(7)), [y, ctrl]), (Register('b', QAny(3)), [x])])
+    bloq = AutoPartition(
+        bloq, [(Register('a', QAny(7)), ['y', 'ctrl']), (Register('b', QAny(3)), ['x'])]
+    )
 
     assert tuple(bloq.signature.lefts()) == (
         Register('a', dtype=QAny(7)),

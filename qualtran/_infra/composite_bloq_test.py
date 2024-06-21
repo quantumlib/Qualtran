@@ -566,9 +566,8 @@ def test_add_and_partition():
     b = bb.add_register_from_dtype('b', QAny(3))
     assert a is not None
     assert b is not None
-    ctrl_r, x_r, y_r = bloq.signature.lefts()
     a, b = bb.add_and_partition(
-        bloq, [(Register('a', QAny(7)), [y_r, ctrl_r]), (Register('b', QAny(3)), [x_r])], a=a, b=b
+        bloq, [(Register('a', QAny(7)), ['y', 'ctrl']), (Register('b', QAny(3)), ['x'])], a=a, b=b
     )
     cbloq = bb.finalize(a=a, b=b)
     assert isinstance(cbloq, CompositeBloq)
