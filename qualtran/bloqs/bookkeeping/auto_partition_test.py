@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import subprocess
+
 from attrs import evolve
 
 from qualtran.bloqs.bookkeeping.auto_partition import _auto_partition, AutoPartition
@@ -22,7 +23,7 @@ def test_auto_partition(bloq_autotester):
 
 
 def test_auto_partition_input():
-    from qualtran import Register, QAny, QBit, Side
+    from qualtran import QAny, QBit, Register, Side
 
     bloq = _auto_partition()
 
@@ -69,13 +70,12 @@ def test_auto_partition_input():
 
 
 def test_auto_partition_big():
-    from qualtran import Controlled, CtrlSpec
+    from qualtran import Controlled, CtrlSpec, QAny, QUInt, Register, Side
     from qualtran.bloqs.basic_gates import Swap
-    from qualtran import Register, QAny, Side, QUInt
 
     bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))  # type: ignore
     ctrl, x, y = bloq.signature.lefts()
-    bloq = AutoPartition(bloq, [('a', [y, ctrl]), ('b', [x])])
+    bloq = AutoPartition(bloq, [(Register('a', QAny(7)), [y, ctrl]), (Register('b', QAny(3)), [x])])
 
     assert tuple(bloq.signature.lefts()) == (
         Register('a', dtype=QAny(7)),

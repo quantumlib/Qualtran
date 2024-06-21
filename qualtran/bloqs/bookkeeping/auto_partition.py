@@ -18,8 +18,8 @@ from typing import Dict, Sequence, Set, Tuple
 from attrs import evolve, field, frozen
 
 from qualtran import (
-    bloq_example,
     Bloq,
+    bloq_example,
     BloqBuilder,
     BloqDocSpec,
     QAny,
@@ -50,27 +50,22 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partition: Sequence[Tuple[str, Sequence[Register]]] = field(
+    partition: Sequence[Tuple[Register, Sequence[Register]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     partition_output: bool = True
 
     @cached_property
     def signature(self) -> Signature:
-        lefts = (
-            Register(
-                out_reg,
-                dtype=QAny(sum(r.bitsize for r in bloq_regs)),
-                side=Side.THRU if self.partition_output else Side.LEFT,
+        if self.partition_output:
+            return Signature(r for r, _ in self.partition)
+        else:
+            return Signature(
+                chain(
+                    (evolve(r, side=Side.LEFT) for r, _ in self.partition),
+                    (evolve(r, side=Side.RIGHT) for r in self.bloq.signature.rights()),
+                )
             )
-            for out_reg, bloq_regs in self.partition
-        )
-        rights = (
-            ()
-            if self.partition_output
-            else (evolve(r, side=Side.RIGHT) for r in self.bloq.signature.rights())
-        )
-        return Signature(chain(lefts, rights))
 
     def pretty_name(self) -> str:
         return self.bloq.pretty_name()
@@ -108,7 +103,9 @@ def _auto_partition() -> AutoPartition:
 
     bloq = Controlled(Swap(1), CtrlSpec())
     ctrl, x, y = bloq.signature.lefts()
-    auto_partition = AutoPartition(bloq, [('x', [ctrl, x]), ('y', [y])])
+    auto_partition = AutoPartition(
+        bloq, [(Register('x', QAny(2)), [ctrl, x]), (Register('y', QAny(1)), [y])]
+    )
     return auto_partition
 
 

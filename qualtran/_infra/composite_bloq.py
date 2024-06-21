@@ -969,12 +969,12 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partition: Sequence[Tuple[str, Sequence[Register]]],
+        partition: Sequence[Tuple[Register, Sequence[Register]]],
         partition_output: bool = True,
         **in_soqs: SoquetInT,
-    ) -> Dict[str, SoquetT]:
+    ):
         """Add a new bloq instance to the compute graph by partitioning input and output soquets to
-        fit the signature of the bloq, and return new soquets as a dictionary.
+        fit the signature of the bloq.
 
         Args:
             bloq: The bloq representing the operation to add.
@@ -986,11 +986,12 @@ class BloqBuilder:
                 `Soquet`s. This is likely the output soquets from a prior operation.
 
         Returns:
-            A dictionary mapping right (output) register names to SoquetT.
+            A `Soquet` or an array thereof for each right (output) register ordered according to
+                `bloq.signature` or `partition`.
         """
         from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 
-        return self.add_d(AutoPartition(bloq, partition, partition_output), **in_soqs)
+        return self.add(AutoPartition(bloq, partition, partition_output), **in_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.

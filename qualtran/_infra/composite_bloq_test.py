@@ -565,8 +565,10 @@ def test_add_and_partition():
     a = bb.add_register_from_dtype('a', QAny(7))
     b = bb.add_register_from_dtype('b', QAny(3))
     ctrl_r, x_r, y_r = bloq.signature.lefts()
-    soqs = bb.add_and_partition(bloq, [('a', [y_r, ctrl_r]), ('b', [x_r])], a=a, b=b)
-    cbloq = bb.finalize(a=soqs['a'], b=soqs['b'])
+    a, b = bb.add_and_partition(
+        bloq, [(Register('a', QAny(7)), [y_r, ctrl_r]), (Register('b', QAny(3)), [x_r])], a=a, b=b
+    )
+    cbloq = bb.finalize(a=a, b=b)
     assert isinstance(cbloq, CompositeBloq)
     assert len(cbloq.bloq_instances) == 1
 
