@@ -118,7 +118,9 @@ def _phase_gradient_unitary() -> PhaseGradientUnitary:
 
 
 _PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
-    bloq_cls=PhaseGradientUnitary, examples=(_phase_gradient_unitary,)
+    bloq_cls=PhaseGradientUnitary,
+    import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary',
+    examples=(_phase_gradient_unitary,),
 )
 
 
@@ -169,6 +171,8 @@ class PhaseGradientState(GateWithRegisters):
 
 @bloq_example
 def _phase_gradient_state() -> PhaseGradientState:
+    from qualtran import QFxp
+
     phase_gradient_state = PhaseGradientState(4)
     return phase_gradient_state
 
