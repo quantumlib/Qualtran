@@ -13,7 +13,7 @@
 #  limitations under the License.
 import cirq
 
-from qualtran import Adjoint, QAny, QBit, Register
+from qualtran import Adjoint, QAny, Register
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
 from qualtran.bloqs.bookkeeping import Allocate, AutoPartition, Free, Join, Partition, Split
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
