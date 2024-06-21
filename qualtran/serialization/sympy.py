@@ -25,6 +25,8 @@ def _get_sympy_function_type(expr: sympy.Basic) -> int:
 
     This method converts a sympy function to its sympy_pb2.Function enum representation.
     """
+    import sympy.codegen.cfunctions
+
     if isinstance(expr, sympy.core.mul.Mul):
         return sympy_pb2.Function.Mul
     elif isinstance(expr, sympy.core.add.Add):
@@ -62,6 +64,8 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
     Sympy functions are represented as a sympy_pb2.Function enum. This method converts
     this int enum.
     """
+    import sympy.codegen.cfunctions
+
     enum_to_sympy: Dict[int, Any] = {
         sympy_pb2.Function.Mul: sympy.core.mul.Mul,
         sympy_pb2.Function.Add: sympy.core.add.Add,
