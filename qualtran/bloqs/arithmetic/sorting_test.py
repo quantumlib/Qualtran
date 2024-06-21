@@ -18,28 +18,37 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.arithmetic.sorting import _bitonic_sort, _cmp_symb, BitonicSort, Comparator
+from qualtran.bloqs.arithmetic.sorting import (
+    _bitonic_sort,
+    _bitonic_sort_symb,
+    _comparator,
+    _comparator_symb,
+    BitonicSort,
+    Comparator,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import ceil, log2
 
 
-def test_cmp_symb(bloq_autotester):
-    bloq_autotester(_cmp_symb)
+def test_comparator_examples(bloq_autotester):
+    bloq_autotester(_comparator)
+    bloq_autotester(_comparator_symb)
 
 
-def test_bitonic_sort(bloq_autotester):
+def test_bitonic_sort_examples(bloq_autotester):
     bloq_autotester(_bitonic_sort)
+    bloq_autotester(_bitonic_sort_symb)
 
 
 def test_comparator_manual():
-    bloq = Comparator(2**4)
+    bloq = Comparator(4)
     assert bloq.t_complexity().t == 88 - 4 - 7 * 4
 
 
 def test_comparator_symbolic_t_complexity():
-    bloq = _cmp_symb.make()
-    bitsize = ceil(log2(bloq.L - 1))
-    assert bloq.t_complexity() == TComplexity(t=15 * bitsize + 4, clifford=56 * bitsize + 24)
+    bloq = _comparator_symb.make()
+    assert bloq.t_complexity() == TComplexity(
+        t=15 * bloq.bitsize + 4, clifford=56 * bloq.bitsize + 24
+    )
 
 
 @pytest.mark.parametrize("L", [5, 8, 12])
@@ -58,16 +67,16 @@ def test_bitonic_sort_manual():
     bitsize = 4
     k = 8
 
-    bloq = BitonicSort(2**bitsize, k)
+    bloq = BitonicSort(k, bitsize)
     assert bloq.num_comparisons == 24
 
     _ = bloq.t_complexity()
 
 
 def test_bitonic_sort_classical_sim():
-    L = 8
+    bitsize = 3
     xs = np.array([4, 2, 7, 1])
-    bloq = BitonicSort(L, len(xs))
+    bloq = BitonicSort(len(xs), bitsize)
     sorted_xs, _ = bloq.call_classically(xs=xs)
     assert np.all(sorted_xs == sorted(xs))
 
@@ -76,11 +85,11 @@ def test_bitonic_sort_classical_sim():
 def test_bitonic_sort_classical_sim_on_random_lists(k: int):
     rng = np.random.default_rng(1024)
 
-    L = 8
-    bloq = BitonicSort(L, k)
+    bitsize = 3
+    bloq = BitonicSort(k, bitsize)
 
     for _ in range(5):
-        xs = rng.integers(0, L, size=k)
+        xs = rng.integers(0, 2**bitsize, size=k)
         sorted_xs, _ = bloq.call_classically(xs=xs)
         assert np.all(sorted_xs == sorted(xs))
 
