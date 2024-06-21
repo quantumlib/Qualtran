@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from itertools import permutations
+
 import numpy as np
 import pytest
 
@@ -77,6 +79,14 @@ def test_bitonic_sort_classical_sim_on_random_lists(k: int):
     for _ in range(5):
         xs = rng.integers(0, L, size=k)
         sorted_xs, _ = bloq.call_classically(xs=xs)
+        assert np.all(sorted_xs == sorted(xs))
+
+
+def test_bitonic_sort_classical_sim_on_all_permutations():
+    k = 4
+    bloq = BitonicSort(k, k)
+    for xs in permutations(range(k)):
+        sorted_xs, _ = bloq.call_classically(xs=np.array(xs))
         assert np.all(sorted_xs == sorted(xs))
 
 
