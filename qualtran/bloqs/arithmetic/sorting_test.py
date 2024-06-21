@@ -19,11 +19,13 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.arithmetic.sorting import (
+    _bitonic_merge,
     _bitonic_sort,
     _bitonic_sort_symb,
     _comparator,
-    _parallel_compare,
     _comparator_symb,
+    _parallel_compare,
+    BitonicMerge,
     BitonicSort,
     Comparator,
     ParallelComparators,
@@ -72,6 +74,24 @@ def test_parallel_compare_decompose(k: int, offset: int):
 
     bloq = ParallelComparators(k=k, offset=offset, bitsize=bitsize)
     assert_valid_bloq_decomposition(bloq)
+
+
+def test_bitonic_merge_example(bloq_autotester):
+    bloq_autotester(_bitonic_merge)
+
+
+@pytest.mark.parametrize("k", [2, 4, 8, 16])
+def test_bitonic_merge_classical_sim_on_random_lists(k: int):
+    rng = np.random.default_rng(1024)
+
+    bitsize = 3
+
+    for _ in range(5):
+        xs, ys = rng.integers(0, 2**bitsize, size=(2, k))
+        xs = np.sort(xs)
+        ys = np.sort(ys)
+        result, _ = BitonicMerge(k, bitsize).call_classically(xs=xs, ys=ys)
+        assert np.all(result == sorted([*xs, *ys]))
 
 
 def test_bitonic_sort_examples(bloq_autotester):
