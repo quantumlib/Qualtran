@@ -34,6 +34,7 @@ enum Function {
     Sin = 10;
     Cos = 11;
     Tan = 12;
+    Log2 = 13;
 }
 
 // Represents a constant, rational number.
