@@ -180,6 +180,13 @@ def _parallel_compare() -> ParallelComparators:
     return parallel_compare
 
 
+_PARALLEL_COMPARATORS_DOC = BloqDocSpec(
+    bloq_cls=ParallelComparators,
+    examples=[_parallel_compare],
+    import_line="from qualtran.bloqs.arithmetic.sorting import ParallelComparators",
+)
+
+
 @frozen
 class BitonicMerge(Bloq):
     r"""Merge two sorted sequences of n-bit integers.
@@ -274,6 +281,13 @@ class BitonicMerge(Bloq):
 def _bitonic_merge() -> BitonicMerge:
     bitonic_merge = BitonicMerge(4, 7)
     return bitonic_merge
+
+
+_BITONIC_MERGE_DOC = BloqDocSpec(
+    bloq_cls=BitonicMerge,
+    examples=[_bitonic_merge],
+    import_line="from qualtran.bloqs.arithmetic.sorting import BitonicMerge",
+)
 
 
 @frozen
