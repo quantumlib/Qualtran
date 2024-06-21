@@ -113,5 +113,4 @@ _AUTO_PARTITION_DOC = BloqDocSpec(
     bloq_cls=AutoPartition,
     import_line="from qualtran.bloqs.bookkeeping import AutoPartition",
     examples=[_auto_partition],
-    call_graph_example=None,
 )
