@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from itertools import chain
-from typing import Dict, Sequence, Set, Tuple
+from typing import Dict, Sequence, Tuple
 
 from attrs import evolve, field, frozen
 
@@ -29,8 +30,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -40,7 +39,7 @@ class AutoPartition(Bloq):
 
     Args:
         bloq: The bloq to wrap.
-        partition: A sequence of pairs specifying each register that the wrapped bloq should accept
+        partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
             and the registers from `bloq.signature.lefts()` that concatenate to form it.
         partition_output: If True, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
@@ -50,19 +49,24 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partition: Sequence[Tuple[Register, Sequence[Register]]] = field(
+    partitions: Sequence[Tuple[Register, Sequence[Register]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     partition_output: bool = True
 
+    def __attrs_post_init__(self):
+        assert Counter(self.bloq.signature.lefts()) == Counter(
+            r for _, rs in self.partitions for r in rs
+        )
+
     @cached_property
     def signature(self) -> Signature:
         if self.partition_output:
-            return Signature(r for r, _ in self.partition)
+            return Signature(r for r, _ in self.partitions)
         else:
             return Signature(
                 chain(
-                    (evolve(r, side=Side.LEFT) for r, _ in self.partition),
+                    (evolve(r, side=Side.LEFT) for r, _ in self.partitions),
                     (evolve(r, side=Side.RIGHT) for r in self.bloq.signature.rights()),
                 )
             )
@@ -73,7 +77,7 @@ class AutoPartition(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
-        for out_reg, (_, bloq_regs) in zip(self.signature.lefts(), self.partition):
+        for out_reg, bloq_regs in self.partitions:
             part = Partition(out_reg.bitsize, regs=tuple(bloq_regs))
             parts[out_reg.name] = part
             in_regs |= bb.add_d(part, x=soqs[out_reg.name])
@@ -88,12 +92,6 @@ class AutoPartition(Bloq):
                 **{reg.name: bloq_out_regs[reg.name] for reg in parts[soq_name].signature.rights()},
             )
         return out_regs
-
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return self.bloq.build_call_graph(ssa)
-
-    def _t_complexity_(self) -> TComplexity:
-        return self.bloq._t_complexity_()
 
 
 @bloq_example

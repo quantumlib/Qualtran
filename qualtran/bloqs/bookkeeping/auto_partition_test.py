@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 import subprocess
 
 from attrs import evolve
@@ -69,11 +70,21 @@ def test_auto_partition_input():
     assert y == 0b0
 
 
+def test_auto_partition_valid():
+    from qualtran import Controlled, CtrlSpec, QAny, QUInt, Register
+    from qualtran.bloqs.basic_gates import Swap
+
+    with pytest.raises(AssertionError):
+        bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
+        _, x, y = bloq.signature.lefts()
+        bloq = AutoPartition(bloq, [(Register('a', QAny(3)), [y]), (Register('b', QAny(3)), [x])])
+
+
 def test_auto_partition_big():
     from qualtran import Controlled, CtrlSpec, QAny, QUInt, Register, Side
     from qualtran.bloqs.basic_gates import Swap
 
-    bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))  # type: ignore
+    bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
     ctrl, x, y = bloq.signature.lefts()
     bloq = AutoPartition(bloq, [(Register('a', QAny(7)), [y, ctrl]), (Register('b', QAny(3)), [x])])
 
