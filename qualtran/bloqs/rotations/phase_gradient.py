@@ -168,7 +168,7 @@ class PhaseGradientState(GateWithRegisters):
             phase_grad=phase_grad
         )
 
-
+# pylint:  disable=unused-import
 @bloq_example
 def _phase_gradient_state() -> PhaseGradientState:
     from qualtran import QFxp
