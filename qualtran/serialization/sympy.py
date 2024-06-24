@@ -35,6 +35,8 @@ def _get_sympy_function_type(expr: sympy.Basic) -> int:
         return sympy_pb2.Function.Mod
     elif isinstance(expr, sympy.functions.elementary.exponential.log):
         return sympy_pb2.Function.Log
+    elif isinstance(expr, sympy.codegen.cfunctions.log2):
+        return sympy_pb2.Function.Log2
     elif isinstance(expr, sympy.functions.elementary.integers.floor):
         return sympy_pb2.Function.Floor
     elif isinstance(expr, sympy.functions.elementary.integers.ceiling):
@@ -66,6 +68,7 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
         sympy_pb2.Function.Pow: sympy.core.power.Pow,
         sympy_pb2.Function.Mod: sympy.core.Mod,
         sympy_pb2.Function.Log: sympy.functions.elementary.exponential.log,
+        sympy_pb2.Function.Log2: sympy.codegen.cfunctions.log2,
         sympy_pb2.Function.Floor: sympy.functions.elementary.integers.floor,
         sympy_pb2.Function.Ceiling: sympy.functions.elementary.integers.ceiling,
         sympy_pb2.Function.Max: sympy.functions.elementary.miscellaneous.Max,
