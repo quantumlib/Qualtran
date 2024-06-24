@@ -103,10 +103,18 @@ _COMPARATOR_DOC = BloqDocSpec(bloq_cls=Comparator, examples=[_comparator, _compa
 
 @frozen
 class ParallelComparators(Bloq):
-    """Given k n-bit numbers, for each pair that is `offset` apart, compare and swap if needed to make them ordered.
+    r"""Given k n-bit numbers, for each pair that is `offset` apart, compare and swap if needed to order them.
 
     For each block of `2 * offset` numbers, apply a `Comparator` between each pair that is `offset` apart.
-    Uses up to $k / 2$ Comparators.
+    For an offset of $\delta$, this requires
+
+    $$
+        \delta \left\lfloor \frac{k}{2\delta} \right\rfloor
+        + \max((k\mod 2\delta) - \delta, 0)
+    $$
+
+    The above expression is at most $k / 2$.
+    Each comparison generates one ancilla qubit, which are aggregated into the `junk` register.
 
     This is used by `BitonicMerge` to apply parallel merges with offsets 1, 2, 4 and so on.
 
@@ -196,8 +204,9 @@ class BitonicMerge(Bloq):
 
     Currently only supports `half_length` equal to a power of two (#1090).
 
-    If each half has length $k$, then the merge network uses $k * (\log{k} + 1)$ comparisons
+    If each half has length $k$, then the merge network uses $k (1+\log{k})$ comparisons
     when $k$ is a power of 2.
+    Each comparison generates one ancilla qubit, which are aggregated into the `junk` register.
 
     Args:
         half_length: Number of integers in each half
@@ -296,16 +305,18 @@ class BitonicSort(Bloq):
 
     For a given input list $x_1, x_2, \ldots, x_k$, applies the transform
 
-        $$ |x_1, x_2, \ldots, x_k\rangle \mapsto |y_1, y_2, \ldots, y_k\rangle|\mathsf{junk}\rangle $$
+    $$
+        |x_1, x_2, \ldots, x_k\rangle \mapsto |y_1, y_2, \ldots, y_k\rangle|\mathsf{junk}\rangle
+    $$
 
-    where $y_1, y_2, \ldots, y_k = \mathrm{sorted}(x_1, x_2, \ldots, x_k$, and the junk register
+    where $y_1, y_2, \ldots, y_k = \mathrm{sorted}(x_1, x_2, \ldots, x_k)$, and the junk register
     stores the result of comparisons done during the sorting. Note that the junk register will
     be entangled with the input list register.
 
     Currently only supports $k$ being a power of two (#1090).
 
-    The bitonic sorting network requires $\frac{k}{2} \frac{\log{k} (\log{k} + 1)}{2}$ total comparisons,
-    and has depth $\frac{\log{k} (\log{k} + 1)}{2}$, when $k$ is a power of 2. Each comparison generates
+    The bitonic sorting network requires $\frac{k}{2} \frac{\log{k} (1+\log{k})}{2}$ total comparisons,
+    and has depth $\frac{\log{k} (1+\log{k})}{2}$, when $k$ is a power of 2. Each comparison generates
     one ancilla qubit, so the total size of junk register equals the number of comparisons.
 
     Args:
