@@ -29,7 +29,7 @@ from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import
 )
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
-    check_polynomial_pair_on_random_points_on_unit_circle,
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle,
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -60,7 +60,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
         gqsp = HamiltonianSimulationByGQSP(W, t=t, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=2 * precision
         )
         assert not isinstance(U, Shaped)
