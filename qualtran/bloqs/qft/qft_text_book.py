@@ -11,17 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from collections import defaultdict
 from functools import cached_property
-from typing import Iterator, Set
+from typing import cast, Iterator, Set
 
 import attrs
 import cirq
 from numpy.typing import NDArray
-from sympy import Expr
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Signature
-from qualtran._infra.bloq import Bloq
 from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.swap import TwoBitSwap
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
@@ -80,7 +77,7 @@ class QFTTextBook(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
-        ret = {(Hadamard(), self.bitsize)}
+        ret: Set['BloqCountT'] = {(Hadamard(), self.bitsize)}
         if is_symbolic(self.bitsize):
             ret |= {
                 (
@@ -89,7 +86,7 @@ class QFTTextBook(GateWithRegisters):
                 )
             }
         else:
-            for i in range(1, len(self.bitsize)):
+            for i in range(1, cast(int, self.bitsize)):
                 ret |= {(PhaseGradientUnitary(i, exponent=0.5, is_controlled=True), 1)}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}
