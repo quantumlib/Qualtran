@@ -285,7 +285,7 @@ class PrepareSparse(PrepareOracle):
         )
         num_non_zero = len(integrals)
         alt, keep, _ = preprocess_coefficients_for_reversible_sampling(
-            np.abs(integrals), epsilon=2**-num_bits_state_prep / num_non_zero
+            np.abs(integrals), sub_bit_precision=num_bits_state_prep
         )
         theta = (1 - np.sign(integrals)) // 2
         num_lt = num_spin_orb // 2 * (num_spin_orb // 2 + 1)

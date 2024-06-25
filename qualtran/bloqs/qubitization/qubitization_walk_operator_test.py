@@ -47,10 +47,14 @@ def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
 
 
 def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
+    # TODO define what `eps` is
     q = sorted(ham.qubits)
     ham_dps = [ps.dense(q) for ps in ham]
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    prepare = StatePreparationAliasSampling.from_coefficients(ham_coeff, probability_epsilon=eps)
+    # TODO compute precision correctly
+    prepare = StatePreparationAliasSampling.from_coefficients(
+        ham_coeff, precision=eps * sum(ham_coeff)
+    )
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
     )
@@ -58,6 +62,7 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
 
 
 def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
+    # TODO define what `eps` is
     ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
     return walk_operator_for_pauli_hamiltonian(ham, eps)
 

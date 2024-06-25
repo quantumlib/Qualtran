@@ -103,23 +103,23 @@ class StatePreparationAliasSampling(PrepareOracle):
     alt: Union[Shaped, NDArray[np.int_]]
     keep: Union[Shaped, NDArray[np.int_]]
     mu: SymbolicInt
-    sum_of_lcu_coeffs: SymbolicFloat
+    sum_of_coefficients: SymbolicFloat
 
     @classmethod
     def from_coefficients(
-        cls, coefficients: Sequence[float], *, probability_epsilon: float = 1.0e-5
+        cls, coefficients: Sequence[float], *, precision: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
         Args:
             coefficients: The LCU coefficients.
-            probability_epsilon: The desired accuracy to represent each probability
+            precision: The desired accuracy to represent each coefficient
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_coefficients_for_reversible_sampling`
                 for more information.
         """
         alt, keep, mu = preprocess_coefficients_for_reversible_sampling(
-            coefficients=coefficients, epsilon=probability_epsilon
+            coefficients=coefficients, epsilon=precision
         )
         N = len(coefficients)
         return StatePreparationAliasSampling(
@@ -127,28 +127,28 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_lcu_coeffs=sum(abs(x) for x in coefficients),
+            sum_of_coefficients=sum(abs(x) for x in coefficients),
         )
 
     @classmethod
     def from_n_coeff(
         cls,
         n_coeff: SymbolicInt,
-        sum_of_lcu_coeffs: SymbolicFloat,
+        sum_of_coefficients: SymbolicFloat,
         *,
-        probability_epsilon: SymbolicFloat = 1.0e-5,
+        precision: SymbolicFloat = 1.0e-5,
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
 
         Args:
             n_coeff: Symbolic number of LCU coefficients in the prepared state.
-            sum_of_lcu_coeffs: Sum of absolute values of coefficients of the prepared state.
-            probability_epsilon: The desired accuracy to represent each probability
+            sum_of_coefficients: Sum of absolute values of coefficients of the prepared state.
+            precision: The desired accuracy to represent each coefficient
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_coefficients_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
+        mu = sub_bit_prec_from_epsilon(n_coeff, sum_of_coefficients, precision)
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
@@ -156,7 +156,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            sum_of_lcu_coeffs=sum_of_lcu_coeffs,
+            sum_of_coefficients=sum_of_coefficients,
         )
 
     @property
@@ -165,7 +165,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
-        return self.sum_of_lcu_coeffs
+        return self.sum_of_coefficients
 
     @cached_property
     def sigma_mu_bitsize(self) -> SymbolicInt:
@@ -241,7 +241,7 @@ def _state_prep_alias() -> StatePreparationAliasSampling:
     coeffs = [1.0, 1, 3, 2]
     mu = 3
     state_prep_alias = StatePreparationAliasSampling.from_coefficients(
-        coeffs, probability_epsilon=2**-mu / len(coeffs)
+        coeffs, precision=2**-mu / (len(coeffs) * sum(coeffs))
     )
     return state_prep_alias
 
@@ -252,7 +252,7 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
 
     n_coeffs, sum_coeff, eps = sympy.symbols(r"L S \epsilon")
     state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
-        n_coeffs, sum_coeff, probability_epsilon=eps
+        n_coeffs, sum_coeff, precision=eps * sum_coeff
     )
     return state_prep_alias_symb
 

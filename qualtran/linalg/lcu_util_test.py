@@ -160,8 +160,8 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
             self.assertPreprocess(weights, 2 ** -random.randint(1, 20))
 
     def test_known(self):
-        self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01), ([1, 1], [43, 0], 64))
+        self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01 * 3), ([1, 1], [43, 0], 64))
 
         self.assertEqual(
-            self.assertPreprocess([1, 2, 3], epsilon=0.01), ([2, 1, 2], [32, 0, 0], 64)
+            self.assertPreprocess([1, 2, 3], epsilon=0.01 * 6), ([2, 1, 2], [32, 0, 0], 64)
         )
