@@ -361,6 +361,8 @@ ARITHMETIC = [
         module=qualtran.bloqs.arithmetic.sorting,
         bloq_specs=[
             qualtran.bloqs.arithmetic.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.arithmetic.sorting._PARALLEL_COMPARATORS_DOC,
+            qualtran.bloqs.arithmetic.sorting._BITONIC_MERGE_DOC,
             qualtran.bloqs.arithmetic.sorting._BITONIC_SORT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
