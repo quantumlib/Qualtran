@@ -40,7 +40,9 @@ def _differences(weights):
         have_previous_weight = True
 
 
-def _discretize_probability_distribution(unnormalized_probabilities, sub_bit_precision):
+def _discretize_probability_distribution(
+    unnormalized_probabilities: Sequence[float], sub_bit_precision: int
+) -> tuple[list[int], int]:
     """Approximates probabilities with integers over a common denominator.
 
     Args:
@@ -68,7 +70,9 @@ def _discretize_probability_distribution(unnormalized_probabilities, sub_bit_pre
     return discretized, bin_count
 
 
-def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
+def _preprocess_for_efficient_roulette_selection(
+    discretized_probabilities: Sequence[int],
+) -> tuple[list[int], list[int]]:
     """Prepares data for performing efficient roulette selection.
 
     The output is a tuple (alternates, keep_weights). The output is guaranteed
@@ -172,7 +176,7 @@ def sub_bit_prec_from_epsilon(
 def preprocess_coefficients_for_reversible_sampling(
     coefficients: Sequence[float],
     epsilon: Optional[float] = None,
-    sub_bit_precision: Optional[float] = None,
+    sub_bit_precision: Optional[int] = None,
 ) -> tuple[list[int], list[int], int]:
     r"""Prepares data used to perform efficient reversible roulette selection.
 

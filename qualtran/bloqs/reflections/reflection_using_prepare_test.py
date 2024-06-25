@@ -28,7 +28,11 @@ from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
-from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.reflections.reflection_using_prepare import (
+    _refl_around_zero,
+    _refl_using_prep,
+    ReflectionUsingPrepare,
+)
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
@@ -52,6 +56,11 @@ gateset_to_keep = cirq.Gateset(
     cirq.ControlledGate,
     cirq.AnyUnitaryGateFamily(1),
 )
+
+
+def test_reflection_using_prepare_examples(bloq_autotester):
+    bloq_autotester(_refl_using_prep)
+    bloq_autotester(_refl_around_zero)
 
 
 def keep(op: cirq.Operation):
