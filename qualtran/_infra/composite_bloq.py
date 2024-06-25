@@ -970,7 +970,7 @@ class BloqBuilder:
         self,
         bloq: Bloq,
         partitions: Sequence[Tuple[Register, Sequence[str]]],
-        partition_output: bool = True,
+        left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
         """Add a new bloq instance to the compute graph by partitioning input and output soquets to
@@ -980,8 +980,10 @@ class BloqBuilder:
             bloq: The bloq representing the operation to add.
             partitions: A sequence of pairs specifying each register that the wrapped bloq should
             accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
-            partition_output: If True, the output soquets will also follow `partition`.
+            left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
+                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
+                as is required for the bloq to be fully wrapped on the left and right.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
                 `Soquet`s. This is likely the output soquets from a prior operation.
 
@@ -991,7 +993,7 @@ class BloqBuilder:
         """
         from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 
-        return self.add(AutoPartition(bloq, partitions, partition_output), **in_soqs)
+        return self.add(AutoPartition(bloq, partitions, left_only), **in_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.

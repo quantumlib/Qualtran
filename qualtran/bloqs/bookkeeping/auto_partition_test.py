@@ -46,7 +46,7 @@ def test_auto_partition_input():
     assert x == 0b01
     assert y == 0b0
 
-    bloq = evolve(bloq, partition_output=False)
+    bloq = evolve(bloq, left_only=True)
 
     assert tuple(bloq.signature.lefts()) == (
         Register('x', dtype=QAny(2), side=Side.LEFT),
@@ -108,7 +108,7 @@ def test_auto_partition_big():
     assert a == 0b1010111
     assert b == 0b010
 
-    bloq = evolve(bloq, partition_output=False)
+    bloq = evolve(bloq, left_only=True)
 
     assert tuple(bloq.signature.lefts()) == (
         Register('a', dtype=QAny(7), side=Side.LEFT),

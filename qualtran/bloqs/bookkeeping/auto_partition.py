@@ -40,8 +40,10 @@ class AutoPartition(Bloq):
         bloq: The bloq to wrap.
         partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
             and the names of registers from `bloq.signature.lefts()` that concatenate to form it.
-        partition_output: If True, the output registers will also follow `partition`.
+        left_only: If False, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
+            This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
+            as is required for the bloq to be fully wrapped on the left and right.
 
     Registers:
         [user_spec]: The output registers of the wrapped bloq.
@@ -51,7 +53,7 @@ class AutoPartition(Bloq):
     partitions: Sequence[Tuple[Register, Sequence[str]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
-    partition_output: bool = True
+    left_only: bool = False
 
     def __attrs_post_init__(self):
         regs = {r.name for r in self.bloq.signature.lefts()}
@@ -60,15 +62,15 @@ class AutoPartition(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        if self.partition_output:
-            return Signature(r for r, _ in self.partitions)
-        else:
+        if self.left_only:
             return Signature(
                 chain(
                     (evolve(r, side=Side.LEFT) for r, _ in self.partitions),
                     (evolve(r, side=Side.RIGHT) for r in self.bloq.signature.rights()),
                 )
             )
+        else:
+            return Signature(r for r, _ in self.partitions)
 
     def pretty_name(self) -> str:
         return self.bloq.pretty_name()
@@ -83,7 +85,7 @@ class AutoPartition(Bloq):
             parts[out_reg.name] = part
             in_regs |= bb.add_d(part, x=soqs[out_reg.name])
         bloq_out_regs = bb.add_d(self.bloq, **in_regs)
-        if not self.partition_output:
+        if self.left_only:
             return bloq_out_regs
 
         out_regs = {}
