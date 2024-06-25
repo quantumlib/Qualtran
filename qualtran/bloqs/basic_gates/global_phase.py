@@ -12,16 +12,28 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import TYPE_CHECKING
+from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
+import numpy as np
 from attrs import frozen
 
-from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    CtrlSpec,
+    DecomposeTypeError,
+    SoquetT,
+)
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import sconj, SymbolicComplex
+
+from .rotation import ZPowGate
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
@@ -57,6 +69,26 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+
+        # Default logic for more than one control.
+        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        exponent: float = np.real_if_close(np.log(self.coefficient) / (np.pi * 1.0j)).item()  # type: ignore
+        bloq = ZPowGate(exponent=exponent, eps=self.eps)
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            ctrl = bb.add(bloq, q=ctrl)
+            return [ctrl], []
+
+        return bloq, _add_ctrled
 
 
 @bloq_example

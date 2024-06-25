@@ -48,7 +48,7 @@ from qualtran._infra.gate_with_registers import (
     split_qubits,
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -121,7 +121,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         )
 
     def _t_complexity_(self) -> 'TComplexity':
-        return t_complexity(self.cirq_gate)
+        return _from_directly_countable_cirq(self.cirq_gate)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
@@ -379,9 +379,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return Adjoint(_cirq_gate_to_bloq(gate._original))
 
     if isinstance(gate, cirq.ControlledGate):
-        return Controlled(
-            _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
-        )
+        inner = _cirq_gate_to_bloq(gate.sub_gate)
+        return inner.controlled(ctrl_spec=CtrlSpec.from_cirq_cv(gate.control_values))
 
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {

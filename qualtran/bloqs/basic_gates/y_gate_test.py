@@ -16,6 +16,15 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import MinusState, PlusState, YGate
+from qualtran.bloqs.basic_gates.y_gate import _cy_gate, _y_gate
+
+
+def test_y_gate(bloq_autotester):
+    bloq_autotester(_y_gate)
+
+
+def test_cy_gate(bloq_autotester):
+    bloq_autotester(_cy_gate)
 
 
 def test_to_cirq():

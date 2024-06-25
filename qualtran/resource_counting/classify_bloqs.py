@@ -17,7 +17,7 @@ from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import sympy
 
-from qualtran import Adjoint, Bloq
+from qualtran import Adjoint, Bloq, Controlled
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
@@ -108,7 +108,7 @@ def classify_t_count_by_bloq_type(
 
 
 def bloq_is_clifford(b: Bloq):
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.basic_gates import CNOT, CYGate, Hadamard, SGate, TwoBitSwap, XGate, ZGate
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 
@@ -116,14 +116,35 @@ def bloq_is_clifford(b: Bloq):
         b = b.subbloq
 
     if isinstance(
-        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT, SGate)
+        b,
+        (
+            TwoBitSwap,
+            Hadamard,
+            XGate,
+            ZGate,
+            ArbitraryClifford,
+            CNOT,
+            MultiTargetCNOT,
+            SGate,
+            CYGate,
+        ),
     ):
+        return True
+
+    if isinstance(b, Controlled) and isinstance(b.subbloq, ZGate):
+        # TODO: https://github.com/quantumlib/Qualtran/issues/878
         return True
 
     return False
 
 
 def bloq_is_rotation(b: Bloq):
+    from qualtran import Controlled
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+
+    if isinstance(b, Controlled):
+        # TODO https://github.com/quantumlib/Qualtran/issues/878
+        #      explicit representation of all two-qubit rotations.
+        b = b.subbloq
 
     return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))
