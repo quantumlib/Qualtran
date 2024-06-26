@@ -154,7 +154,8 @@ class Subtract(Bloq):
             for i in range(delta):
                 a[delta], a[i] = bb.add(CNOT(), ctrl=a[delta], target=a[i])
         bb.free(bb.join(a[:delta]))
-        a = bb.join(a[delta:], self.a_dtype)
+        a = bb.join(a[delta:], QUInt(self.a_dtype.bitsize))
+        a = bb.add(Cast(QUInt(self.a_dtype.bitsize), self.a_dtype), reg=a)
         return {'a': a, 'b': b}
 
 

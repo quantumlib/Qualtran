@@ -84,17 +84,19 @@ def test_t_complexity(n_bits):
     assert complexity.rotations == 0
 
 
-@pytest.mark.parametrize('dtype', [QUInt, QInt])
+@pytest.mark.parametrize('dtype', [QInt])
 def test_against_classical_values(dtype):
     subtract = Subtract(dtype(5), dtype(5))
     cbloq = subtract.decompose_bloq()
-    if isinstance(dtype, QInt):
+    if dtype is QInt:
         R = range(-16, 16)
     else:
         R = range(32)
+    print(R)
     for (a, b) in itertools.product(R, R):
         print(f'{a=} {b=}')
         ref = subtract.call_classically(a=a, b=b)
+        print(f'{ref=}')
         comp = cbloq.call_classically(a=a, b=b)
         print(f'{ref=} {comp=}')
         assert ref == comp

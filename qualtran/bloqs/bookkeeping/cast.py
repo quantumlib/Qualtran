@@ -100,8 +100,7 @@ class Cast(_BookkeepingBloq):
         )
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
-        return {'reg': reg}
+        return {'reg': self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
