@@ -1,0 +1,101 @@
+#  Copyright 2024 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+import cirq
+import numpy as np
+
+from qualtran._infra.gate_with_registers import total_bits
+from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
+from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+
+
+def get_prepare_precision_from_eigenphase_precision(
+    num_terms: int, eps_eigenphase: float, qlambda: float, hamiltonian_l2_norm: float
+):
+    """
+
+    Eq A9 of [1]
+
+    Args:
+        num_terms:
+        eps_eigenphase:
+        qlambda:
+        hamiltonian_l2_norm:
+
+    References:
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et. al. (2018). Eq (A9).
+    """
+    return (eps_eigenphase / ((1 + eps_eigenphase**2) * num_terms)) * (
+        np.sqrt(qlambda**2 * (1 + eps_eigenphase**2) - hamiltonian_l2_norm**2)
+        - eps_eigenphase * hamiltonian_l2_norm
+    )
+
+
+def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
+    r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
+
+    For a Hamiltonian $H = \sum_{l=0}^{L-1} w_l H_l$, this returns a
+    $(\lambda, \cdot, \epsilon)$-block-encoding of it, where $\lambda = \sum_l w_l$.
+
+    Uses :class:`StatePreparationAliasSampling` to implement an approximate prepare for $w_l$s.
+    For the overall block-encoding to have precision $\epsilon$, it requires approximating
+    $w_l$ to a precision of $\delta$ such that
+
+    $$
+        \delta = \frac{\epsilon}{(1 + \epsilon^2)L}
+        \left( 1 - \frac{\norm{H}^2}{\lambda^2} \right)
+    $$
+
+    as described in Eq. A9 of [1].
+
+
+    Args:
+        ham: Hamiltonian described as a sum of Pauli terms.
+        eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
+
+    References:
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et. al. (2018). Eq (A9).
+    """
+    q = sorted(ham.qubits)
+    ham_dps = [ps.dense(q) for ps in ham]
+    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
+
+    prepare = StatePreparationAliasSampling.from_coefficients(
+        ham_coeff,
+        precision=get_prepare_precision_from_eigenphase_precision(
+            len(ham_coeff), eps, sum(ham_coeff), np.linalg.norm(ham.matrix(), ord=2)
+        ),
+    )
+
+    select = SelectPauliLCU(
+        total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
+    )
+
+    return QubitizationWalkOperator(select=select, prepare=prepare)
+
+
+def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
+    r"""Get the QubitizationWalkOperator for a 1d Ising Hamiltonian on n sites.
+
+    Returns an $(\lambda, \cdot, \epsilon)$-block-encoding of the 1d Ising Hamiltonian.
+
+    Args:
+        num_sites: number of spins $n$.
+        eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
+    """
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    return walk_operator_for_pauli_hamiltonian(ham, eps)

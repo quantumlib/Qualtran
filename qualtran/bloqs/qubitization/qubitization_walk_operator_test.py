@@ -17,15 +17,18 @@ import numpy as np
 import pytest
 
 from qualtran import Adjoint
-from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
+from qualtran.bloqs.chemistry.ising.walk_operator import (
+    get_walk_operator_for_1d_ising_model,
+    walk_operator_for_pauli_hamiltonian,
+)
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import (
     _thc_walk_op,
     _walk_op,
     _walk_op_chem_sparse,
-    QubitizationWalkOperator,
 )
 from qualtran.bloqs.reflections.reflection_using_prepare_test import (
     construct_gate_helper_and_qubit_order,
@@ -44,27 +47,6 @@ def test_qubitization_walk_operator_chem_thc_autotest(bloq_autotester):
 
 def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
     bloq_autotester(_walk_op_chem_sparse)
-
-
-def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
-    # TODO define what `eps` is
-    q = sorted(ham.qubits)
-    ham_dps = [ps.dense(q) for ps in ham]
-    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    # TODO compute precision correctly
-    prepare = StatePreparationAliasSampling.from_coefficients(
-        ham_coeff, precision=eps * sum(ham_coeff)
-    )
-    select = SelectPauliLCU(
-        total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
-    )
-    return QubitizationWalkOperator(select=select, prepare=prepare)
-
-
-def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
-    # TODO define what `eps` is
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    return walk_operator_for_pauli_hamiltonian(ham, eps)
 
 
 @pytest.mark.parametrize('num_sites,eps', [(4, 2e-1), (3, 1e-1)])
