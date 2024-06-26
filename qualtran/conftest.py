@@ -79,12 +79,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     if bloq_ex.name in [
         'prep_sparse',
         'thc_prep',
-        'modmul_symb',
         'modexp',
-        'modexp_small',
-        'modexp_symb',
         'apply_z_to_odd',
-        'lp_resource_state_symbolic',
         'select_pauli_lcu',
         'sel_hubb',
         'walk_op',
@@ -93,7 +89,6 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'walk_op_chem_sparse',
         'qubitization_qpe_sparse_chem',  # too slow
         'trott_unitary',
-        'hubbard_time_evolution_by_gqsp',
         'symbolic_hamsim_by_gqsp',
         'gqsp_1d_ising',
     ]:
