@@ -42,7 +42,7 @@ from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.linalg.lcu_util import preprocess_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics.math_funcs import ceil, log2
 
 if TYPE_CHECKING:
@@ -284,7 +284,7 @@ class PrepareSparse(PrepareOracle):
             tpq_prime, eris, drop_element_thresh=drop_element_thresh
         )
         num_non_zero = len(integrals)
-        alt, keep, _ = preprocess_coefficients_for_reversible_sampling(
+        alt, keep, _ = preprocess_probabilities_for_reversible_sampling(
             np.abs(integrals), sub_bit_precision=num_bits_state_prep
         )
         theta = (1 - np.sign(integrals)) // 2

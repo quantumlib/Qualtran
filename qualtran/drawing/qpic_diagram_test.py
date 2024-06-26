@@ -26,7 +26,7 @@ def _assert_bloq_has_qpic_diagram(bloq: Bloq, expected_qpic_data: str):
 
 def test_qpic_data_for_reflect_using_prepare():
     coeff = [0.1, 0.2, 0.3, 0.4]
-    prepare = StatePreparationAliasSampling.from_coefficients(coeff, precision=0.1)
+    prepare = StatePreparationAliasSampling.from_probabilities(coeff, precision=0.1)
     bloq = ReflectionUsingPrepare(prepare, global_phase=-1j)
     _assert_bloq_has_qpic_diagram(
         bloq,

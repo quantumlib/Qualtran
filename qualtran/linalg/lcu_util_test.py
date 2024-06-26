@@ -20,7 +20,7 @@ import unittest
 from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
-    preprocess_coefficients_for_reversible_sampling,
+    preprocess_probabilities_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 
@@ -130,7 +130,7 @@ class PreprocessForEfficientRouletteSelectionTest(unittest.TestCase):
 
 class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
     def assertPreprocess(self, lcu_coefs, epsilon):
-        alternates, keep_numers, mu = preprocess_coefficients_for_reversible_sampling(
+        alternates, keep_numers, mu = preprocess_probabilities_for_reversible_sampling(
             lcu_coefs, epsilon=epsilon
         )
 

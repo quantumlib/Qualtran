@@ -24,7 +24,7 @@ from qualtran.bloqs.chemistry.thc.prepare import (
     UniformSuperpositionTHC,
 )
 from qualtran.drawing.musical_score import get_musical_score_data, MusicalScoreData
-from qualtran.linalg.lcu_util import preprocess_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
 
@@ -53,7 +53,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     enlarged_matrix[:num_spat, num_mu] = np.abs(t_l)
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
     eps = 2**-mu / len(flat_data)
-    alternates, keep_numers, mu = preprocess_coefficients_for_reversible_sampling(
+    alternates, keep_numers, mu = preprocess_probabilities_for_reversible_sampling(
         flat_data, epsilon=eps
     )
     keep_denom = 2**mu

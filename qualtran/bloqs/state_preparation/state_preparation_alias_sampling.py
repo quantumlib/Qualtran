@@ -37,7 +37,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import (
-    preprocess_coefficients_for_reversible_sampling,
+    preprocess_probabilities_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 from qualtran.resource_counting.generalizers import (
@@ -106,28 +106,28 @@ class StatePreparationAliasSampling(PrepareOracle):
     sum_of_coefficients: SymbolicFloat
 
     @classmethod
-    def from_coefficients(
-        cls, coefficients: Sequence[float], *, precision: float = 1.0e-5
+    def from_probabilities(
+        cls, unnormalized_probabilities: Sequence[float], *, precision: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
         Args:
-            coefficients: The LCU coefficients.
+            unnormalized_probabilities: The LCU coefficients.
             precision: The desired accuracy to represent each coefficient
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_coefficients_for_reversible_sampling`
                 for more information.
         """
-        alt, keep, mu = preprocess_coefficients_for_reversible_sampling(
-            coefficients=coefficients, epsilon=precision
+        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            unnormalized_probabilities=unnormalized_probabilities, epsilon=precision
         )
-        N = len(coefficients)
+        N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
             selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_coefficients=sum(abs(x) for x in coefficients),
+            sum_of_coefficients=sum(abs(x) for x in unnormalized_probabilities),
         )
 
     @classmethod

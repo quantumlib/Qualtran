@@ -191,7 +191,7 @@ def _refl_using_prep() -> ReflectionUsingPrepare:
 
     data = [1] * 5
     eps = 1e-2
-    prepare_gate = StatePreparationAliasSampling.from_coefficients(data, precision=eps)
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
 
     refl_using_prep = ReflectionUsingPrepare(prepare_gate)
     return refl_using_prep

@@ -74,7 +74,7 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
     ham_dps = [ps.dense(q) for ps in ham]
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
 
-    prepare = StatePreparationAliasSampling.from_coefficients(
+    prepare = StatePreparationAliasSampling.from_probabilities(
         ham_coeff,
         precision=get_prepare_precision_from_eigenphase_precision(
             len(ham_coeff), eps, sum(ham_coeff), np.linalg.norm(ham.matrix(), ord=2)

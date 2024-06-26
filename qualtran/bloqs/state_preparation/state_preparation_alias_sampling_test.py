@@ -46,8 +46,9 @@ def test_state_prep_alias_sampling_symb():
     N, epsilon = 2**16 - 1, 1e-4
     random_state = cirq.value.parse_random_state(1234)
     lcu_coefficients = random_state.randn(N).astype(float)
-    bloq_concrete = StatePreparationAliasSampling.from_coefficients(
-        coefficients=lcu_coefficients.tolist(), precision=epsilon * np.sum(np.abs(lcu_coefficients))
+    bloq_concrete = StatePreparationAliasSampling.from_probabilities(
+        unnormalized_probabilities=lcu_coefficients.tolist(),
+        precision=epsilon * np.sum(np.abs(lcu_coefficients)),
     )
     concrete_t_counts = bloq_concrete.t_complexity().t
     # Symbolic T-counts
@@ -56,8 +57,9 @@ def test_state_prep_alias_sampling_symb():
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
-    gate = StatePreparationAliasSampling.from_coefficients(
-        coefficients=lcu_coefficients.tolist(), precision=epsilon * np.sum(np.abs(lcu_coefficients))
+    gate = StatePreparationAliasSampling.from_probabilities(
+        unnormalized_probabilities=lcu_coefficients.tolist(),
+        precision=epsilon * np.sum(np.abs(lcu_coefficients)),
     )
 
     assert_valid_bloq_decomposition(gate)
@@ -105,8 +107,8 @@ def test_state_preparation_via_coherent_alias_for_0_mu():
 
 def test_state_preparation_via_coherent_alias_sampling_diagram():
     data = np.asarray(range(1, 5)) / np.sum(range(1, 5))
-    gate = StatePreparationAliasSampling.from_coefficients(
-        coefficients=data.tolist(), precision=0.05
+    gate = StatePreparationAliasSampling.from_probabilities(
+        unnormalized_probabilities=data.tolist(), precision=0.05
     )
     g = GateHelper(gate)
     qubit_order = g.operation.qubits

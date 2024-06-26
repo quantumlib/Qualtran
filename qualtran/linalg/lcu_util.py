@@ -173,14 +173,14 @@ def sub_bit_prec_from_epsilon(
     return smax(0, ceil(log2(sum_of_coefficients / (precision * number_of_coefficients))))
 
 
-def preprocess_coefficients_for_reversible_sampling(
-    coefficients: Sequence[float],
+def preprocess_probabilities_for_reversible_sampling(
+    unnormalized_probabilities: Sequence[float],
     epsilon: Optional[float] = None,
     sub_bit_precision: Optional[int] = None,
 ) -> tuple[list[int], list[int], int]:
     r"""Prepares data used to perform efficient reversible roulette selection.
 
-    Given a sequence of $L$ positive coefficients $\{w_0, w_1, \ldots w_{L-1}\}$,
+    Given a sequence of $L$ positive numbers $\{w_0, w_1, \ldots w_{L-1}\}$,
     this method treats them as probabilities in order to decompose them into
     a list of alternate and keep numerators allowing for an efficient preparation
     method of a state where the computational basis state :math:`|k>` has an
@@ -200,13 +200,13 @@ def preprocess_coefficients_for_reversible_sampling(
         $$
 
     That is, index $k$ is sampled with a probability within `epsilon` of
-    `coefficients[k] / sum(coefficients)`.
+    `unnormalized_probabilities[k] / sum(unnormalized_probabilities)`.
 
     Treats the coefficients of unitaries in the linear combination of
     unitaries decomposition of the Hamiltonian as probabilities in order to
 
     Args:
-        coefficients: A list of non-negative floats, with the i'th float
+        unnormalized_probabilities: A list of non-negative floats, with the i'th float
             corresponding to the i'th coefficient of an LCU decomposition
             of the Hamiltonian (in an ordering determined by the caller).
         epsilon: the absolute error tolerance $\epsilon$.
@@ -230,9 +230,13 @@ def preprocess_coefficients_for_reversible_sampling(
         raise ValueError("Exactly one of epsilon or sub_bit_prec must be provided")
     if sub_bit_precision is None:
         assert epsilon is not None  # make mypy happy
-        sub_bit_precision = sub_bit_prec_from_epsilon(len(coefficients), sum(coefficients), epsilon)
+        sub_bit_precision = sub_bit_prec_from_epsilon(
+            len(unnormalized_probabilities), sum(unnormalized_probabilities), epsilon
+        )
 
-    numerators, denominator = _discretize_probability_distribution(coefficients, sub_bit_precision)
+    numerators, denominator = _discretize_probability_distribution(
+        unnormalized_probabilities, sub_bit_precision
+    )
     assert denominator == 2**sub_bit_precision * len(numerators)
     alternates, keep_numerators = _preprocess_for_efficient_roulette_selection(numerators)
     return alternates, keep_numerators, sub_bit_precision
