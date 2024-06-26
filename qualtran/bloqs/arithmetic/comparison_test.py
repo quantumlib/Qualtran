@@ -230,7 +230,9 @@ def test_greater_than_manual():
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
     )
-    assert cbloq.t_complexity() == t_complexity(LessThanEqual(bitsize, bitsize))
+    assert cbloq.t_complexity() == (
+        t_complexity(LessThanEqual(bitsize, bitsize)) + TComplexity(clifford=1)
+    )
 
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])

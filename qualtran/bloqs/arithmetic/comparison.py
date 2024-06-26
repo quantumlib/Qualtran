@@ -45,9 +45,9 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
-from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
@@ -671,8 +671,17 @@ class GreaterThan(Bloq):
             return TextBox("⨁(a > b)")
         raise ValueError(f'Unknown register name {reg.name}')
 
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        a, b, target = bb.add(
+            LessThanEqual(self.a_bitsize, self.b_bitsize), x=a, y=b, target=target
+        )
+        target = bb.add(XGate(), q=target)
+        return {'a': a, 'b': b, 'target': target}
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(LessThanEqual(self.a_bitsize, self.b_bitsize), 1)}
+        return {(LessThanEqual(self.a_bitsize, self.b_bitsize), 1), (XGate(), 1)}
 
 
 @bloq_example
