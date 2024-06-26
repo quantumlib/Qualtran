@@ -157,8 +157,11 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a + b, N))}
+        N = 2**b_bitsize
+        if unsigned:
+            return {'a': a, 'b': int((a+b)%N)}
+        hN = N >> 1
+        return {'a': a, 'b': (a+b+hN)%N + hN}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)

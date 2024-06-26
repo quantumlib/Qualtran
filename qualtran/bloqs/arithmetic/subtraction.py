@@ -33,8 +33,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add
-from qualtran.bloqs.basic_gates import OnEach, XGate
-from qualtran.bloqs.bookkeeping import Allocate, Free
+from qualtran.bloqs.basic_gates import OnEach, XGate, CNOT
+from qualtran.bloqs.bookkeeping import Allocate, Free, Cast
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -47,10 +47,9 @@ if TYPE_CHECKING:
 class Subtract(Bloq):
     r"""An n-bit subtraction gate.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4$ T gates.
 
-    This construction uses `XGate` and `AddK` to compute the twos-compliment of `b` before
-    doing a standard `Add`.
+    This construction uses the relation `a - b = ~(~a + b)` to turn the operation into addition.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -63,9 +62,7 @@ class Subtract(Bloq):
         b: A b_dtype.bitsize-sized input/output register (register b above).
     """
 
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field(
-        converter=lambda k: QUInt(k) if isinstance(k, int) else k
-    )
+    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
     @b_dtype.default
@@ -104,8 +101,11 @@ class Subtract(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a - b, N))}
+        N = 2**b_bitsize
+        if unsigned:
+            return {'a': a, 'b': int((a - b)% N)}
+        hN = N >> 1
+        return {'a': a, 'b': int((a - b + hN)%N) - hN}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -126,13 +126,10 @@ class Subtract(Bloq):
         return {
             (OnEach(self.b_dtype.bitsize, XGate()), 3),
             (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
+            (Allocate(QAny(delta)), 1),
+            (Free(QAny(delta)), 1),
         }.union(
-            [
-                (Allocate(QAny(self.b_dtype.bitsize - self.a_dtype.bitsize)), 1),
-                (Free(QAny(self.b_dtype.bitsize - self.a_dtype.bitsize)), 1),
-            ]
-            if delta
-            else []
+            [(CNOT(), 2*delta)] if isinstance(self.a_dtype, QInt) else []
         )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
@@ -140,19 +137,23 @@ class Subtract(Bloq):
         n_bits = self.b_dtype.bitsize
         a = bb.split(a)
         b = bb.split(b)
-        if delta:
-            # Add a zero prefix to `a`
-            a = np.concatenate([bb.split(bb.allocate(delta)), a])
+        prefix = bb.split(bb.allocate(delta))
+        if isinstance(self.a_dtype, QInt):
+            for i in range(delta):
+                a[0], prefix[i] = bb.add(CNOT(), ctrl=a[0], target=prefix[i])
+        a = np.concatenate([prefix, a])
         a = bb.join(a, QUInt(n_bits))
         b = bb.join(b, QUInt(n_bits))
         a = bb.add(OnEach(n_bits, XGate()), q=a)
-        a, b = bb.add(Add(QUInt(n_bits), QUInt(n_bits)), a=a, b=b)  # a - b
+        a, b = bb.add(Add(QUInt(n_bits)), a=a, b=b)
         b = bb.add(OnEach(n_bits, XGate()), q=b)
         a = bb.add(OnEach(n_bits, XGate()), q=a)
-        b = bb.join(bb.split(b), self.b_dtype)
+        b = bb.add(Cast(QUInt(n_bits), QInt(n_bits)), reg=b)
         a = bb.split(a)
-        if delta:
-            bb.free(bb.join(a[:delta]))
+        if isinstance(self.a_dtype, QInt):
+            for i in range(delta):
+                a[delta], a[i] = bb.add(CNOT(), ctrl=a[delta], target=a[i])
+        bb.free(bb.join(a[:delta]))
         a = bb.join(a[delta:], self.a_dtype)
         return {'a': a, 'b': b}
 
