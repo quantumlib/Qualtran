@@ -159,7 +159,7 @@ class Add(Bloq):
         if unsigned:
             return {'a': a, 'b': int((a + b) % N)}
         hN = N >> 1
-        return {'a': a, 'b': (a + b + hN) % N + hN}
+        return {'a': a, 'b': (a + b + hN) % N - hN}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
