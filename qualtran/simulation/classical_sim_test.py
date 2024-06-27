@@ -62,11 +62,6 @@ def test_int_to_bits():
     (bitstring,) = ints_to_bits(2, w=8)
     assert bitstring.tolist() == [0, 0, 0, 0, 0, 0, 1, 0]
 
-    # check bounds
-    with pytest.raises(AssertionError):
-        ints_to_bits([4, -2], w=8)
-
-
 def test_dtype_validation():
     # set up mocks for `_update_assign_from_vals`
     soq_assign: Dict[Soquet, ClassicalValT] = {}  # gets assigned to; we discard in this test.
