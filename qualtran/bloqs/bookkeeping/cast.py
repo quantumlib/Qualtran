@@ -29,6 +29,7 @@ from qualtran import (
     Side,
     Signature,
     SoquetT,
+    QFxp,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
@@ -99,8 +100,14 @@ class Cast(_BookkeepingBloq):
             )
         )
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))}
+    def on_classical_vals(self, reg: int | float) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.out_dtype, QFxp):
+            res = reg
+        elif isinstance(self.inp_dtype, QFxp):
+            res = int(reg)
+        else:
+            res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
+        return {'reg': res}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
