@@ -40,6 +40,11 @@ def _order_incoming_outgoing_indices(
     """
 
     inds: List[Tuple[Connection, int]] = []
+
+    # Nested for loops:
+    #   reg: each register in the signature
+    #   idx: each index into a shaped register, or () for a non-shaped register
+    #   j:   each qubit (sub-)index for a given data type
     for reg in signature.rights():
         for idx in reg.all_idxs():
             for j in range(reg.dtype.num_qubits):
