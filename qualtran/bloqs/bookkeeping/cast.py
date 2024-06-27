@@ -30,7 +30,6 @@ from qualtran import (
     Side,
     Signature,
     SoquetT,
-    QFxp,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 

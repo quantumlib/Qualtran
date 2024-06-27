@@ -54,6 +54,10 @@ def test_int_to_bits():
     bitstrings = ints_to_bits(nums, w=23)
     assert bitstrings.shape == (100, 23)
 
+    nums = rs.randint(-(2**22), 2**22, size=(100,), dtype=np.int64)
+    bitstrings = ints_to_bits(nums, w=23)
+    assert bitstrings.shape == (100, 23)
+
     for num, bs in zip(nums, bitstrings):
         ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
         np.testing.assert_array_equal(ref_bs, bs)
@@ -61,6 +65,10 @@ def test_int_to_bits():
     # check one input int
     (bitstring,) = ints_to_bits(2, w=8)
     assert bitstring.tolist() == [0, 0, 0, 0, 0, 0, 1, 0]
+
+    bitstring = ints_to_bits([31, -1], w=6)
+    assert bitstring.tolist() == [[0, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1]]
+
 
 def test_dtype_validation():
     # set up mocks for `_update_assign_from_vals`
