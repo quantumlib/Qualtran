@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
+
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -31,8 +32,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import Add, AddK
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
+from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -45,10 +47,9 @@ if TYPE_CHECKING:
 class Subtract(Bloq):
     r"""An n-bit subtraction gate.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4$ T gates.
 
-    This construction uses `XGate` and `AddK` to compute the twos-compliment of `b` before
-    doing a standard `Add`.
+    This construction uses the relation `a - b = ~(~a + b)` to turn the operation into addition.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -100,8 +101,11 @@ class Subtract(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a - b, N))}
+        N = 2**b_bitsize
+        if unsigned:
+            return {'a': a, 'b': int((a - b) % N)}
+        hN = N >> 1
+        return {'a': a, 'b': int((a - b + hN) % N) - hN}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -118,32 +122,38 @@ class Subtract(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
+        delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         return {
-            (XGate(), self.b_dtype.bitsize),
-            (AddK(self.b_dtype.bitsize, k=1), 1),
-            (Add(a_dtype, b_dtype), 1),
-        }
+            (OnEach(self.b_dtype.bitsize, XGate()), 3),
+            (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
+            (Allocate(QAny(delta)), 1),
+            (Free(QAny(delta)), 1),
+        }.union([(CNOT(), 2 * delta)] if isinstance(self.a_dtype, QInt) else [])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
-        b = bb.add(
-            AddK(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
-        )  # 2s complement of b.
-
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
-
-        a, b = bb.add(Add(a_dtype, b_dtype), a=a, b=b)  # a - b
+        delta = self.b_dtype.bitsize - self.a_dtype.bitsize
+        n_bits = self.b_dtype.bitsize
+        a = bb.split(a)
+        b = bb.split(b)
+        prefix = bb.split(bb.allocate(delta))
+        if isinstance(self.a_dtype, QInt):
+            for i in range(delta):
+                a[0], prefix[i] = bb.add(CNOT(), ctrl=a[0], target=prefix[i])
+        a = np.concatenate([prefix, a])
+        a = bb.join(a, QUInt(n_bits))
+        b = bb.join(b, QUInt(n_bits))
+        a = bb.add(OnEach(n_bits, XGate()), q=a)
+        a, b = bb.add(Add(QUInt(n_bits)), a=a, b=b)
+        b = bb.add(OnEach(n_bits, XGate()), q=b)
+        a = bb.add(OnEach(n_bits, XGate()), q=a)
+        b = bb.add(Cast(QUInt(n_bits), QInt(n_bits)), reg=b)
+        a = bb.split(a)
+        if isinstance(self.a_dtype, QInt):
+            for i in range(delta):
+                a[delta], a[i] = bb.add(CNOT(), ctrl=a[delta], target=a[i])
+        bb.free(bb.join(a[:delta]))
+        a = bb.join(a[delta:], QUInt(self.a_dtype.bitsize))
+        a = bb.add(Cast(QUInt(self.a_dtype.bitsize), self.a_dtype), reg=a)
         return {'a': a, 'b': b}
 
 
