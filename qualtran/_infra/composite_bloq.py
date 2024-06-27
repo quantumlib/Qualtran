@@ -285,7 +285,7 @@ class CompositeBloq(Bloq):
         """
 
         for binst, preds, succs in self.iter_bloqnections():
-            in_soqs = _cxn_to_soq_dict(
+            in_soqs = _cxns_to_soq_dict(
                 binst.bloq.signature.lefts(),
                 preds,
                 get_me=lambda x: x.right,
@@ -302,7 +302,7 @@ class CompositeBloq(Bloq):
         if RightDangle not in self._binst_graph:
             return {}
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
-        return _cxn_to_soq_dict(
+        return _cxns_to_soq_dict(
             self.signature.rights(),
             final_preds,
             get_me=lambda x: x.right,
@@ -506,13 +506,13 @@ def _binst_to_cxns(
     return pred_cxns, succ_cxns
 
 
-def _cxn_to_soq_dict(
+def _cxns_to_soq_dict(
     regs: Iterable[Register],
     cxns: Iterable[Connection],
     get_me: Callable[[Connection], Soquet],
     get_assign: Callable[[Connection], Soquet],
 ) -> Dict[str, SoquetT]:
-    """Helper function to get a dictionary of incoming or outgoing soquets from a connection.
+    """Helper function to get a dictionary of soquets from a list of connections.
 
     Args:
         regs: Left or right registers (used as a reference to initialize multidimensional
@@ -524,6 +524,9 @@ def _cxn_to_soq_dict(
         get_assign: A function that says which soquet is used to derive the values for the
             returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
             do something fancier in `cbloq_to_quimb`.
+
+    Returns:
+        soqdict: A dictionary mapping register name to the selected soquets.
     """
     soqdict: Dict[str, SoquetT] = {}
 
@@ -546,18 +549,21 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-def _cxn_to_cxn_dict(
+def _cxns_to_cxn_dict(
     regs: Iterable[Register], cxns: Iterable[Connection], get_me: Callable[[Connection], Soquet]
 ) -> Dict[str, ConnectionT]:
-    """Helper function to get a dictionary of connections keyed by register name.
+    """Helper function to get a dictionary of connections from a list of connections
 
     Args:
         regs: Left or right registers (used as a reference to initialize multidimensional
             registers correctly).
-        cxns: Predecessor or successor connections from which we get the soquets of interest.
+        cxns: Predecessor or successor connections from which we get the connections of interest.
         get_me: A function that says which soquet is used to derive keys for the returned
             dictionary. Generally: if `cxns` is predecessor connections, this will return the
             `right` element of the connection (opposite for successor connections).
+
+    Returns:
+        cxndict: A dictionary mapping register name to the selected connections.
     """
     cxndict: Dict[str, ConnectionT] = {}
 

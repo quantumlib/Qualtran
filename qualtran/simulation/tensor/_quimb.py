@@ -28,7 +28,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.composite_bloq import _cxn_to_cxn_dict, BloqBuilder
+from qualtran._infra.composite_bloq import _cxns_to_cxn_dict, BloqBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,8 @@ def cbloq_to_quimb(cbloq: CompositeBloq) -> qtn.TensorNetwork:
         bloq = binst.bloq
         assert isinstance(bloq, Bloq)
 
-        inc_d = _cxn_to_cxn_dict(bloq.signature.lefts(), pred_cxns, get_me=lambda cxn: cxn.right)
-        out_d = _cxn_to_cxn_dict(bloq.signature.rights(), succ_cxns, get_me=lambda cxn: cxn.left)
+        inc_d = _cxns_to_cxn_dict(bloq.signature.lefts(), pred_cxns, get_me=lambda cxn: cxn.right)
+        out_d = _cxns_to_cxn_dict(bloq.signature.rights(), succ_cxns, get_me=lambda cxn: cxn.left)
 
         for tensor in bloq.my_tensors(inc_d, out_d):
             tn.add(tensor)
