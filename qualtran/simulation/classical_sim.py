@@ -62,14 +62,21 @@ def ints_to_bits(
         w: The bit width of the returned bitstrings.
     """
     x = np.atleast_1d(x)
+    signed = [False]*len(x)
     if not np.issubdtype(x.dtype, np.uint):
-        assert np.all(x >= 0)
         assert np.iinfo(x.dtype).bits <= 64
-        x = x.astype(np.uint64)
+        signed = [v < 0 for v in x]
+        x = np.abs(x)
     assert w <= np.iinfo(x.dtype).bits
     mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
-    return (x & mask).astype(bool).astype(np.uint8).T
-
+    bits = (x & mask).astype(bool).astype(np.uint8).T
+    for j in range(len(signed)):
+        if not signed[j]: continue
+        bits[j] = 1 - bits[j]
+        for i in range(w-1, -1, -1):
+            bits[j, i] ^= 1
+            if bits[j, i] == 1: break
+    return bits
 
 def _get_in_vals(
     binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
