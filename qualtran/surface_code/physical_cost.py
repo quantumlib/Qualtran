@@ -12,7 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Optional, TYPE_CHECKING
+
 from attrs import frozen
+
+if TYPE_CHECKING:
+    from qualtran.surface_code import DataBlock, MagicStateFactory
 
 
 @frozen
@@ -29,6 +34,10 @@ class PhysicalCost:
 
     duration_hr: float
     """Total time in hours to run algorithm."""
+
+    code_distance: Optional[int] = None
+    magic_state_factory: Optional['MagicStateFactory'] = None
+    data_block: Optional['DataBlock'] = None
 
     @property
     def qubit_hours(self) -> float:
