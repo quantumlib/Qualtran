@@ -18,24 +18,23 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
 
 @attrs.frozen
 class QFTPhaseGradient(GateWithRegisters):
-    r"""QFT implemented using phase gradient trick. Uses O(n**2) T-gates for an n-bit register.
+    r"""QFT implemented using coherent addition into a phase gradient register
 
-    Given an n-bit phase gradient state $|\phi\rangle$ prepared as
-
+     A variant of the Quantum Fourier Transform (QFT) that utilizes an additional register provided in a phase gradient state to switch controlled rotations to coherent additions. Given an ancilla register prepared in the state
     $$
-        |\phi\rangle = \frac{1}{\sqrt{2^{n}}} \sum_{k=0}^{2^{n} - 1} \omega_{n}^{-k} |k\rangle
+        \frac{1}{\sqrt{2^{n}}} \sum_{k=0}^{2^{n} - 1} \omega_{n}^{-k} |k\rangle,
     $$
+    then coherent addition from the system into the ancilla applies the same phase that the controlled rotation in textbook QFT does. This reduces the number of T-gates to O(`bitsize`^2) and requires no additional arbitrary rotations beyond the one time ancilla preparation cost.
 
-    Phase gradient rotations can be synthesized via additions into the phase gradient register.
-    This leads to significant reductions in T/Toffoli complexity and requires 0 arbitrary
-    rotations (given a one-time cost to prepare the gradient register). See the linked reference
-    for more details.
+    The size of the ancilla register is important, if the ancilla has less
+    qubits than the system register then the accuracy of the QFT applied will be
+    reduced. This implementation assumes an ancilla with `bitsize` qubits. See `ApproximateQFT` for an implementation or the linked reference for details.
 
     Args:
         bitsize: Size of input register to apply QFT on.
@@ -75,3 +74,14 @@ class QFTPhaseGradient(GateWithRegisters):
         if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
+
+
+@bloq_example
+def _qft_phase_gradient_small() -> QFTPhaseGradient:
+    qft_phase_gradient_small = QFTPhaseGradient(3)
+    return qft_phase_gradient_small
+
+
+_QFT_PHASE_GRADIENT_DOC = BloqDocSpec(
+    bloq_cls=QFTPhaseGradient, examples=(_qft_phase_gradient_small,)
+)
