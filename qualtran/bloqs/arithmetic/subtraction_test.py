@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import itertools
+
 import numpy as np
 import pytest
 
@@ -41,9 +42,10 @@ def test_subtract_bloq_decomposition_unsigned(a_bits, b_bits):
 
 
 def _to_signed_binary(x: int, bits: int):
-    if x >= 0: 
+    if x >= 0:
         return x
-    return (~(-x) + 1)%(2 << bits)
+    return (~(-x) + 1) % (2 << bits)
+
 
 @pytest.mark.parametrize(
     ['a_bits', 'b_bits'], [(a, b) for a in range(1, 6) for b in range(a, 6) if a + b <= 10]

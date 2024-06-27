@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
+
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
@@ -33,8 +33,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add
-from qualtran.bloqs.basic_gates import OnEach, XGate, CNOT
-from qualtran.bloqs.bookkeeping import Allocate, Free, Cast
+from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
+from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -103,9 +103,9 @@ class Subtract(Bloq):
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize
         if unsigned:
-            return {'a': a, 'b': int((a - b)% N)}
+            return {'a': a, 'b': int((a - b) % N)}
         hN = N >> 1
-        return {'a': a, 'b': int((a - b + hN)%N) - hN}
+        return {'a': a, 'b': int((a - b + hN) % N) - hN}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -128,9 +128,7 @@ class Subtract(Bloq):
             (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
             (Allocate(QAny(delta)), 1),
             (Free(QAny(delta)), 1),
-        }.union(
-            [(CNOT(), 2*delta)] if isinstance(self.a_dtype, QInt) else []
-        )
+        }.union([(CNOT(), 2 * delta)] if isinstance(self.a_dtype, QInt) else [])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
