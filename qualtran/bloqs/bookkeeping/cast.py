@@ -25,11 +25,11 @@ from qualtran import (
     CompositeBloq,
     DecomposeTypeError,
     QDType,
+    QFxp,
     Register,
     Side,
     Signature,
     SoquetT,
-    QFxp,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
@@ -100,7 +100,7 @@ class Cast(_BookkeepingBloq):
             )
         )
 
-    def on_classical_vals(self, reg: int | float) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         if isinstance(self.out_dtype, QFxp):
             res = reg
         elif isinstance(self.inp_dtype, QFxp):
