@@ -87,7 +87,7 @@ class TestQvrPhaseGradient(GateWithRegisters):
         x = quregs[self.cost_reg.name]
         phase_grad = context.qubit_manager.qalloc(int(self.qvr.b_grad))
         yield cirq.H.on_each(*phase_grad)
-        yield PhaseGradientUnitary(int(self.qvr.b_grad), -1).on(*phase_grad)
+        yield PhaseGradientUnitary(int(self.qvr.b_grad), exponent=-1).on(*phase_grad)
         yield self.qvr.on_registers(x=x, phase_grad=phase_grad)
         yield PhaseGradientUnitary(int(self.qvr.b_grad), +1).on(*phase_grad)
         yield cirq.H.on_each(*phase_grad)
