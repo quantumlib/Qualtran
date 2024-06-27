@@ -41,7 +41,6 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT,
 )
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
@@ -194,41 +193,6 @@ def _wire_symbol_from_gate(
     return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, wire_reg.side)
 
 
-def _add_my_tensors_from_gate(
-    gate: cirq.Gate,
-    signature: Signature,
-    short_name: str,
-    tn: 'qtn.TensorNetwork',
-    tag: Any,
-    *,
-    incoming: Dict[str, 'SoquetT'],
-    outgoing: Dict[str, 'SoquetT'],
-):
-    import quimb.tensor as qtn
-
-    from qualtran.simulation.tensor._tensor_data_manipulation import (
-        tensor_data_from_unitary_and_signature,
-    )
-
-    if not cirq.has_unitary(gate):
-        raise NotImplementedError(
-            f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
-            f"Found {gate}."
-        )
-    unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
-    incoming_list = [
-        *itertools.chain.from_iterable(
-            [np.array(incoming[reg.name]).flatten() for reg in signature.lefts()]
-        )
-    ]
-    outgoing_list = [
-        *itertools.chain.from_iterable(
-            [np.array(outgoing[reg.name]).flatten() for reg in signature.rights()]
-        )
-    ]
-    tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
-
-
 def _my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
@@ -242,7 +206,7 @@ def _my_tensors_from_gate(
 
     if not cirq.has_unitary(gate):
         raise NotImplementedError(
-            f"CirqGateAsBloq.my_tensors is only supported for unitary gates. " f"Found {gate}."
+            f"CirqGateAsBloq.my_tensors is only supported for unitary gates, not {gate}."
         )
 
     if any(reg.side != Side.THRU for reg in signature):
@@ -253,7 +217,7 @@ def _my_tensors_from_gate(
 
     if not signature:
         raise ValueError(
-            f"CirqGateAsBloq.my_tensors requires a non-trivial signature. " f"Found {gate}."
+            f"CirqGateAsBloq.my_tensors requires a non-trivial signature. Gate: {gate!r}."
         )
 
     n = cirq.num_qubits(gate)
