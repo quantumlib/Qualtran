@@ -119,6 +119,11 @@ class SU2RotationGate(GateWithRegisters):
             )
         ]
 
+    def _unitary_(self):
+        if self.is_symbolic():
+            return None
+        return self.rotation_matrix
+
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         pi = sympy.pi if self.is_symbolic() else np.pi
         exp = sympy.exp if self.is_symbolic() else np.exp

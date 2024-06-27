@@ -410,15 +410,27 @@ class Controlled(GateWithRegisters):
         # Create an identity tensor corresponding to the signature of current Bloq
         data = eye_tensor_for_signature(self.signature)
         # Figure out the ctrl indexes for which the ctrl is "active"
-        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
-        # Put the subbloq tensor at indices where ctrl is active.
         subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
-        data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
+        subbloq_tensor = self.subbloq.tensor_contract()
+        if subbloq_shape:
+            subbloq_tensor = subbloq_tensor.reshape(subbloq_shape)
+        # Put the subbloq tensor at indices where ctrl is active.
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
+        data[active_idx] = subbloq_tensor
         return data
 
     def _unitary_(self):
-        n = self.signature.n_qubits()
-        return self._tensor_data().reshape(2**n, 2**n)
+        if isinstance(self.subbloq, GateWithRegisters):
+            # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
+            return cirq.unitary(
+                cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+            )
+        if all(reg.side == Side.THRU for reg in self.subbloq.signature):
+            # subbloq has only THRU registers, so the tensor contraction corresponds
+            # to a unitary matrix.
+            return self.tensor_contract()
+        # Unable to determine the unitary effect.
+        return NotImplemented
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
