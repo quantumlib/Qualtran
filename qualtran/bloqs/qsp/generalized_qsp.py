@@ -20,7 +20,15 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    DecomposeTypeError,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.linalg.polynomial.qsp_testing import assert_is_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
@@ -319,11 +327,12 @@ class GeneralizedQSP(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
     ) -> Iterator['cirq.OP_TREE']:
+        if self.is_symbolic():
+            raise DecomposeTypeError(f'Cannot decompose symbolic {self=}')
+
         (signal_qubit,) = signal
 
-        num_inverse_applications = self.negative_power
-        if not isinstance(num_inverse_applications, int):
-            raise ValueError(f'Symbolic negative power {self.negative_power} not allowed')
+        num_inverse_applications = int(self.negative_power)
 
         yield self.signal_rotations[0].on(signal_qubit)
         for signal_rotation in self.signal_rotations[1:]:

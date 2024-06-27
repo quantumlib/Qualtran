@@ -15,6 +15,7 @@
 from typing import Any, cast, Dict, Union
 
 import sympy
+import sympy.codegen.cfunctions
 
 from qualtran.protos import sympy_pb2
 
