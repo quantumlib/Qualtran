@@ -19,38 +19,17 @@ from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 def get_prepare_precision_from_eigenphase_precision(
-    num_terms: int, eps_eigenphase: float, qlambda: float, hamiltonian_l2_norm: float
-):
-    """
+    eps_eigenphase: SymbolicFloat,
+    num_coeffs: SymbolicInt,
+    sum_of_coeffs: SymbolicFloat,
+    hamiltonian_l2_norm: SymbolicFloat,
+) -> SymbolicFloat:
+    r"""Precision of LCU coefficients to get an `eps_eigenphase` approx. of eigenphases.
 
-    Eq A9 of [1]
-
-    Args:
-        num_terms:
-        eps_eigenphase:
-        qlambda:
-        hamiltonian_l2_norm:
-
-    References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Eq (A9).
-    """
-    return (eps_eigenphase / ((1 + eps_eigenphase**2) * num_terms)) * (
-        np.sqrt(qlambda**2 * (1 + eps_eigenphase**2) - hamiltonian_l2_norm**2)
-        - eps_eigenphase * hamiltonian_l2_norm
-    )
-
-
-def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
-    r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
-
-    For a Hamiltonian $H = \sum_{l=0}^{L-1} w_l H_l$, this returns a
-    $(\lambda, \cdot, \epsilon)$-block-encoding of it, where $\lambda = \sum_l w_l$.
-
-    Uses :class:`StatePreparationAliasSampling` to implement an approximate prepare for $w_l$s.
     For the overall block-encoding to have precision $\epsilon$, it requires approximating
     $w_l$ to a precision of $\delta$ such that
 
@@ -61,10 +40,38 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
 
     as described in Eq. A9 of [1].
 
+    Args:
+        num_coeffs: number of LCU coefficients $L$.
+        eps_eigenphase: precision to approximate the eigenphases $\epsilon$.
+        sum_of_coeffs: sum of LCU coefficients $\lambda$.
+        hamiltonian_l2_norm: upper bound on $\norm{H}$.
+
+    References:
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et. al. (2018). Eq (A9).
+    """
+    return ((eps_eigenphase * sum_of_coeffs) / ((1 + eps_eigenphase**2) * num_coeffs)) * (
+        1 - (hamiltonian_l2_norm / sum_of_coeffs) ** 2
+    )
+
+
+def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
+    r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
+
+    For a Hamiltonian $H = \sum_{l=0}^{L-1} w_l H_l$, this returns a qubitized walk operator
+    with eigenphases approximated to a precision of `eps` ($\epsilon$). I.e. this guarantees
+
+    $$
+        \norm{
+            e^{i\arccos(H/\lambda)} - e^{i\arccos(\tilde{H}/\lambda)}
+        } \le \epsilon
+    $$
+
+    Uses :class:`StatePreparationAliasSampling` to implement an approximate prepare for $w_l$s.
 
     Args:
         ham: Hamiltonian described as a sum of Pauli terms.
-        eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
+        eps: precision $\epsilon$ of the eigenphases of the walk operator.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
@@ -76,8 +83,13 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
 
     prepare = StatePreparationAliasSampling.from_probabilities(
         ham_coeff,
-        precision=get_prepare_precision_from_eigenphase_precision(
-            len(ham_coeff), eps, sum(ham_coeff), np.linalg.norm(ham.matrix(), ord=2)
+        precision=float(
+            get_prepare_precision_from_eigenphase_precision(
+                eps,
+                len(ham_coeff),
+                sum(ham_coeff),
+                float(np.linalg.norm(ham.matrix(), ord=2)),  # TODO do not use linalg.norm
+            )
         ),
     )
 

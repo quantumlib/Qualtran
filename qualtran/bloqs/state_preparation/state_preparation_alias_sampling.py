@@ -240,7 +240,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 def _state_prep_alias() -> StatePreparationAliasSampling:
     coeffs = [1.0, 1, 3, 2]
     mu = 3
-    state_prep_alias = StatePreparationAliasSampling.from_coefficients(
+    state_prep_alias = StatePreparationAliasSampling.from_probabilities(
         coeffs, precision=2**-mu / (len(coeffs) * sum(coeffs))
     )
     return state_prep_alias
