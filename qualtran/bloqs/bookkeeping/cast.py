@@ -25,6 +25,7 @@ from qualtran import (
     CompositeBloq,
     DecomposeTypeError,
     QDType,
+    QFxp,
     Register,
     Side,
     Signature,
@@ -101,10 +102,13 @@ class Cast(_BookkeepingBloq):
         )
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        if isinstance(self.inp_dtype, QFxp) or isinstance(self.out_dtype, QFxp):
-            # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
-            return {'reg': reg} 
-        return {'reg': self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))}
+        if isinstance(self.out_dtype, QFxp):
+            res = reg
+        elif isinstance(self.inp_dtype, QFxp):
+            res = int(reg)
+        else:
+            res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
+        return {'reg': res}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}

@@ -15,7 +15,7 @@ import cirq
 
 from qualtran import Adjoint, QAny, Register
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
-from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Partition, Split
+from qualtran.bloqs.bookkeeping import Allocate, AutoPartition, Free, Join, Partition, Split
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._generalization import _make_composite_generalizer
@@ -44,6 +44,10 @@ _BLOQS_TO_FILTER = [
     Adjoint(TwoBitSwap()),
     Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     CirqGateAsBloq(cirq.S),
+    AutoPartition(
+        AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+        [(Register('q', QAny(1)), ['q'])],
+    ),
 ]
 
 
@@ -63,6 +67,7 @@ def test_ignore_split_join():
         Adjoint(TwoBitSwap()),
         None,  # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
         CirqGateAsBloq(cirq.S),
+        Rx(0.123),
     ]
 
 
@@ -82,6 +87,10 @@ def test_ignore_alloc_free():
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
+        AutoPartition(
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
+        ),
     ]
 
 
@@ -101,6 +110,10 @@ def test_generalize_rotation_angle():
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
+        AutoPartition(
+            AutoPartition(Rx(PHI), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
+        ),
     ]
 
 
@@ -120,6 +133,10 @@ def test_generalize_cvs():
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
+        AutoPartition(
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
+        ),
     ]
 
 
@@ -139,6 +156,10 @@ def test_ignore_cliffords():
         None,  # Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         CirqGateAsBloq(cirq.S),
+        AutoPartition(
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
+        ),
     ]
 
 
@@ -159,6 +180,10 @@ def test_ignore_cliffords_with_cirq():
         None,  # Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
         None,  # cirq.S,
+        AutoPartition(
+            AutoPartition(Rx(0.123), [(Register('q', QAny(1)), ['q'])]),
+            [(Register('q', QAny(1)), ['q'])],
+        ),
     ]
 
 
@@ -187,4 +212,5 @@ def test_many_generalizers():
         # Adjoint(TwoBitSwap()),
         # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
         # cirq.S,
+        Rx(PHI),
     ]

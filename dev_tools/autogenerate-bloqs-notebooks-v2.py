@@ -192,6 +192,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.split._SPLIT_DOC,
             qualtran.bloqs.bookkeeping.join._JOIN_DOC,
             qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
+            qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
         ],
     ),
@@ -447,6 +448,31 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    NotebookSpecV2(
+        title='Rotations via Phase Gradients',
+        module=qualtran.bloqs.rotations.phase_gradient,
+        bloq_specs=[
+            qualtran.bloqs.rotations.phase_gradient._PHASE_GRADIENT_UNITARY_DOC,
+            qualtran.bloqs.rotations.phase_gradient._PHASE_GRADIENT_STATE_DOC,
+            qualtran.bloqs.rotations.phase_gradient._ADD_INTO_PHASE_GRAD_DOC,
+            qualtran.bloqs.rotations.phase_gradient._ADD_SCALED_VAL_INTO_PHASE_REG_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Z Rotations via Hamming Weight Phasing',
+        module=qualtran.bloqs.rotations.hamming_weight_phasing,
+        bloq_specs=[
+            qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC,
+            qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Programmable Rotation Gate Array',
+        module=qualtran.bloqs.rotations.programmable_rotation_gate_array,
+        bloq_specs=[
+            qualtran.bloqs.rotations.programmable_rotation_gate_array._PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC
+        ],
     ),
     # --------------------------------------------------------------------------
     # -----   QFT          -----------------------------------------------------

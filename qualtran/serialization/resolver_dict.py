@@ -190,6 +190,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
+    "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
     "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
     "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
