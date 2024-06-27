@@ -82,6 +82,7 @@ import qualtran.bloqs.for_testing.many_registers
 import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mean_estimation.arctan
@@ -144,8 +145,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.multiplication.Square": qualtran.bloqs.arithmetic.multiplication.Square,
     "qualtran.bloqs.arithmetic.multiplication.SquareRealNumber": qualtran.bloqs.arithmetic.multiplication.SquareRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.SumOfSquares": qualtran.bloqs.arithmetic.multiplication.SumOfSquares,
+    "qualtran.bloqs.arithmetic.sorting.BitonicMerge": qualtran.bloqs.arithmetic.sorting.BitonicMerge,
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
+    "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
     "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
@@ -281,6 +284,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
+    "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP": qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
     _eq_k,
     _greater_than,
@@ -35,7 +35,6 @@ from qualtran.bloqs.arithmetic.comparison import (
     LinearDepthGreaterThan,
     SingleQubitCompare,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
@@ -102,7 +101,7 @@ def test_less_than_gate():
 @pytest.mark.parametrize("bits", [*range(8)])
 @pytest.mark.parametrize("val", [3, 5, 7, 8, 9])
 def test_decompose_less_than_gate(bits: int, val: int):
-    qubit_states = list(iter_bits(bits, 3))
+    qubit_states = QUInt(3).to_bits(bits)
     circuit = cirq.Circuit(
         cirq.decompose_once(
             LessThanConstant(3, val).on_registers(x=cirq.LineQubit.range(3), target=cirq.q(4))
@@ -231,7 +230,9 @@ def test_greater_than_manual():
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
     )
-    assert cbloq.t_complexity() == t_complexity(LessThanEqual(bitsize, bitsize))
+    assert cbloq.t_complexity() == (
+        t_complexity(LessThanEqual(bitsize, bitsize)) + TComplexity(clifford=1)
+    )
 
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])

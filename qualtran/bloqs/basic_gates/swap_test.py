@@ -191,6 +191,7 @@ def test_cswap_bloq_counts():
     assert counts1 == counts2
 
     assert t_complexity(CSwap(1)) == TComplexity(t=7, clifford=10)
+    assert t_complexity(CSwap(10)) == TComplexity(t=70, clifford=100)
     assert t_complexity(TwoBitCSwap()) == TComplexity(t=7, clifford=10)
 
 

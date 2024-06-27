@@ -95,7 +95,10 @@ class LPRSInterimPrep(GateWithRegisters):
         return ret
 
     def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=self.bitsize + 1, clifford=2 + self.bitsize)
+        # Uses self.bitsize controlled-Rz rotations which decomposes into
+        # 2 single-qubit rotations and 3 cliffords
+        # TODO: Once a CRz exists, this can be updated.
+        return TComplexity(rotations=2 * self.bitsize + 1, clifford=2 + 3 * self.bitsize)
 
 
 @attrs.frozen

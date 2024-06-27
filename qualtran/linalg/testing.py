@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,17 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
-
-from qualtran.bloqs.basic_gates import Rz
-from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr, QuantumVariableRotation
+import numpy as np
+from numpy.typing import NDArray
 
 
-def test_kinetic_energy(bloq_autotester):
-    bloq_autotester(_qvr)
+def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
+    r"""Asserts that two matrices are close to each other by bounding the matrix norm of their difference.
 
-
-@pytest.mark.parametrize('bitsize', [8, 16, 32])
-def test_qvr_t_complexity(bitsize: int):
-    bloq = QuantumVariableRotation(bitsize)
-    assert bloq.t_complexity() == bitsize * Rz(0.0).t_complexity()
+    Asserts that $\|A - B\| \le \mathrm{atol}$.
+    """
+    assert A.shape == B.shape
+    assert np.linalg.norm(A - B) <= atol

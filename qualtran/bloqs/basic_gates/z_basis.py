@@ -336,7 +336,7 @@ class _IntVector(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
+            raise DecomposeTypeError(f'Symbolic bitsize {self.bitsize} not supported')
         bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
         if self.state:
             assert not val
@@ -375,9 +375,6 @@ class _IntVector(Bloq):
 
         assert val == self.val, val
         return {}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(ArbitraryClifford(self.bitsize), 1)}

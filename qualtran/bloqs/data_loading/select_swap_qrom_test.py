@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BoundedQUInt, QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
 from qualtran.bloqs.data_loading import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import (
@@ -25,14 +25,12 @@ from qualtran.bloqs.data_loading.select_swap_qrom import (
     find_optimal_log_block_size,
     SelectSwapQROM,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "data,block_size",
     [
@@ -40,7 +38,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
             data,
             block_size,
             id=f"{block_size}-data{didx}",
-            marks=pytest.mark.slow if block_size == 2 and didx == 0 else (),
+            marks=pytest.mark.slow if block_size == 1 and didx == 1 else (),
         )
         for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]], [[1], [2], [3]]])
         for block_size in [None, 0, 1]
@@ -82,8 +80,8 @@ def test_select_swap_qrom(data, block_size):
     dtype = qrom.selection_registers[0].dtype
     assert isinstance(dtype, BoundedQUInt)
     for selection_integer in range(int(dtype.iteration_length)):
-        svals_q = list(iter_bits(selection_integer // qrom.block_sizes[0], len(selection_q)))
-        svals_r = list(iter_bits(selection_integer % qrom.block_sizes[0], len(selection_r)))
+        svals_q = QUInt(len(selection_q)).to_bits(selection_integer // qrom.block_sizes[0])
+        svals_r = QUInt(len(selection_r)).to_bits(selection_integer % qrom.block_sizes[0])
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection_q, svals_q)})
         qubit_vals.update({s: sval for s, sval in zip(selection_r, svals_r)})
@@ -93,7 +91,7 @@ def test_select_swap_qrom(data, block_size):
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         for target, d in zip(targets, data):
-            for q, b in zip(target, iter_bits(d[selection_integer], len(target))):
+            for q, b in zip(target, QUInt(len(target)).to_bits(d[selection_integer])):
                 qubit_vals[q] = b
         final_state = [qubit_vals[x] for x in all_qubits]
         assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
