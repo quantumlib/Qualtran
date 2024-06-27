@@ -13,7 +13,7 @@
 #  limitations under the License.
 import subprocess
 
-from qualtran import QFxp, QInt
+from qualtran import QFxp, QInt, QUInt
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.bookkeeping.cast import _cast
 from qualtran.bloqs.for_testing import TestCastToFrom
@@ -39,6 +39,17 @@ def test_cast_classical_sim():
     (a, b) = bloq.call_classically(a=7, b=2)
     assert a == 7
     assert b == 9
+
+    c = Cast(QFxp(8, 8), QUInt(8))
+    assert c.call_classically(reg=1.2) == (1,)  # type: ignore
+
+
+def test_cast_unsiged_signed():
+    c = Cast(QUInt(5), QInt(5))
+    assert c.call_classically(reg=31) == (-1,)
+
+    c = Cast(QInt(5), QUInt(5))
+    assert c.call_classically(reg=-1) == (31,)
 
 
 def test_no_circular_import():
