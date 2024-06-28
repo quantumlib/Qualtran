@@ -115,7 +115,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             unnormalized_probabilities: The LCU coefficients.
             precision: The desired accuracy to represent each coefficient
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
@@ -145,7 +145,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             sum_of_coefficients: Sum of absolute values of coefficients of the prepared state.
             precision: The desired accuracy to represent each coefficient
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
         mu = sub_bit_prec_from_epsilon(n_coeff, sum_of_coefficients, precision)
