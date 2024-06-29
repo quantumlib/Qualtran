@@ -20,7 +20,7 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -30,7 +30,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
@@ -45,13 +45,21 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.symbolics import bit_length, Shaped, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-@cirq.value_equality()
+def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
+    return (
+        tuple(data_or_shape.flatten())
+        if isinstance(data_or_shape, np.ndarray)
+        else (data_or_shape,)
+    )
+
+
 @attrs.frozen
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
@@ -99,8 +107,8 @@ class StatePreparationAliasSampling(PrepareOracle):
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    alt: Union[Shaped, NDArray[np.int_]]
-    keep: Union[Shaped, NDArray[np.int_]]
+    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_lcu_coeffs: SymbolicFloat
 
@@ -193,14 +201,6 @@ class StatePreparationAliasSampling(PrepareOracle):
             )
         )
 
-    def _value_equality_values_(self):
-        return (
-            self.selection_registers,
-            self.alt if isinstance(self.alt, Shaped) else tuple(self.alt.ravel()),
-            self.keep if isinstance(self.keep, Shaped) else tuple(self.keep.ravel()),
-            self.mu,
-        )
-
     @cached_property
     def qrom_bloq(self) -> QROM:
         return QROM(
@@ -235,6 +235,219 @@ class StatePreparationAliasSampling(PrepareOracle):
         }
 
 
+@attrs.frozen
+class SparseStatePreparationAliasSampling(PrepareOracle):
+    r"""Initialize a state with $L$ unique non-zero coefficients using coherent alias sampling.
+
+    In particular, we take the zero state to:
+
+    $$
+    \sum_{l=0}^{L-1} \sqrt{p_l} |\mathrm{ind}_l\rangle |\mathrm{temp}_\ell\rangle
+    $$
+
+    where $\mathrm{ind}_l$ is the index of the $l$-th non-zero coefficient,
+    and the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
+    where the temporary register must be treated with care, see the details in Section 5 of
+    reference [1] and Section III.D. of the reference [2].
+
+    The preparation is equivalent to [classical alias sampling]
+    (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
+    selecting `l` uniformly at random and then returning `ind[l]` with probability `keep[l] / 2**mu`;
+    otherwise returning `alt[l]`.
+    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except that this loads
+    the non-zero coefficient indices as well from the QROM.
+
+    Signature:
+        selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
+            coefficient state is prepared.
+        temp: Work space comprised of sub signature:
+            - sigma: A mu-sized register containing uniform probabilities for comparison against
+                `keep`.
+            - alt: A lg(L)-sized register of alternate indices
+            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
+            - one bit for the result of the comparison.
+
+    This gate corresponds to the following operations:
+     - UNIFORM_L on the sparse_index register
+     - H^mu on the sigma register
+     - QROM addressed by the selection register into the alt and keep signature.
+     - LessThanEqualGate comparing the keep and sigma signature.
+     - Coherent swap between the selection register and alt register if the comparison
+       returns True.
+
+    Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
+    The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
+
+    References:
+        [1] [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/pdf/1902.02134#page=15.30)
+        Berry et al. (2019). Section 5, Eqs. 43, 44.
+        [2] [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et al. (2018). Section III.D. and Figure 11.
+    """
+    selection_registers: Tuple[Register, ...] = attrs.field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
+    )
+    index: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
+    mu: SymbolicInt
+    sum_of_lcu_coeffs: SymbolicFloat
+
+    @classmethod
+    def from_lcu_probs(
+        cls,
+        lcu_probabilities: Sequence[float],
+        *,
+        probability_epsilon: float = 1.0e-5,
+        nonzero_epsilon: float = 1e-6,
+    ) -> 'SparseStatePreparationAliasSampling':
+        """Factory to construct the state preparation gate for a given set of LCU coefficients.
+
+        Args:
+            lcu_probabilities: The LCU coefficients.
+            probability_epsilon: The desired accuracy to represent each probability
+                (which sets mu size and keep/alt integers).
+                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                for more information.
+            nonzero_epsilon: minimum value for a probability entry to be considered non-zero.
+        """
+        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
+            lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
+        )
+        N = len(lcu_probabilities)
+
+        is_nonzero = ~np.isclose(lcu_probabilities, 0, atol=nonzero_epsilon)
+        index = np.arange(N)[is_nonzero]
+        alt = np.array(alt)[is_nonzero]
+        keep = np.array(keep)[is_nonzero]
+
+        return cls(
+            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            index=index,
+            alt=alt,
+            keep=keep,
+            mu=mu,
+            sum_of_lcu_coeffs=sum(abs(x) for x in lcu_probabilities),
+        )
+
+    @classmethod
+    def from_n_coeff(
+        cls,
+        n_coeff: SymbolicInt,
+        n_nonzero_coeff: SymbolicInt,
+        sum_of_lcu_coeffs: SymbolicFloat,
+        *,
+        probability_epsilon: SymbolicFloat = 1.0e-5,
+    ) -> 'SparseStatePreparationAliasSampling':
+        """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+
+        Args:
+            n_coeff: Symbolic number of LCU coefficients in the prepared state.
+            n_nonzero_coeff: Symbolic number of non-zero LCU coefficients in the prepared state.
+            sum_of_lcu_coeffs: Sum of absolute values of coefficients of the prepared state.
+            probability_epsilon: The desired accuracy to represent each probability
+                (which sets mu size and keep/alt integers).
+                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                for more information.
+        """
+        mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
+        selection_bitsize = bit_length(n_coeff - 1)
+        return cls(
+            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            index=Shaped((n_nonzero_coeff,)),
+            alt=Shaped((n_nonzero_coeff,)),
+            keep=Shaped((n_nonzero_coeff,)),
+            mu=mu,
+            sum_of_lcu_coeffs=sum_of_lcu_coeffs,
+        )
+
+    @property
+    def n_coeff(self) -> SymbolicInt:
+        return self.selection_registers[0].dtype.iteration_length_or_zero()
+
+    @property
+    def n_nonzero_coeff(self) -> SymbolicInt:
+        return slen(self.index)
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+        return self.sum_of_lcu_coeffs
+
+    @cached_property
+    def sigma_mu_bitsize(self) -> SymbolicInt:
+        return self.mu
+
+    @cached_property
+    def sparse_index_bitsize(self) -> SymbolicInt:
+        return bit_length(self.n_nonzero_coeff - 1)
+
+    @cached_property
+    def alternates_bitsize(self) -> SymbolicInt:
+        return total_bits(self.selection_registers)
+
+    @cached_property
+    def keep_bitsize(self) -> SymbolicInt:
+        return self.mu
+
+    @cached_property
+    def selection_bitsize(self) -> SymbolicInt:
+        return total_bits(self.selection_registers)
+
+    @cached_property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return tuple(
+            Signature.build(
+                sigma_mu=self.sigma_mu_bitsize,
+                sparse_index=self.sparse_index_bitsize,
+                alt=self.alternates_bitsize,
+                keep=self.keep_bitsize,
+                less_than_equal=1,
+            )
+        )
+
+    @cached_property
+    def qrom_bloq(self) -> QROM:
+        return QROM(
+            (self.index, self.alt, self.keep),
+            (self.sparse_index_bitsize,),
+            (self.selection_bitsize, self.alternates_bitsize, self.keep_bitsize),
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        soqs['sparse_index'] = bb.add(
+            PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
+        )
+        if self.mu == 0:
+            soqs['sparse_index'], soqs['selection'] = bb.add(
+                QROM((self.index,), (self.sparse_index_bitsize,), (self.selection_bitsize,)),
+                selection=soqs['sparse_index'],
+                target0_=soqs['selection'],
+            )
+        else:
+            soqs['sigma_mu'] = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=soqs['sigma_mu'])
+            soqs['sparse_index'], soqs['selection'], soqs['alt'], soqs['keep'] = bb.add_t(
+                self.qrom_bloq,
+                selection=soqs['sparse_index'],
+                target0_=soqs['selection'],
+                target1_=soqs['alt'],
+                target2_=soqs['keep'],
+            )
+            soqs['keep'], soqs['sigma_mu'], soqs['less_than_equal'] = bb.add_t(
+                LessThanEqual(self.mu, self.mu),
+                x=soqs['keep'],
+                y=soqs['sigma_mu'],
+                target=soqs['less_than_equal'],
+            )
+            soqs['less_than_equal'], soqs['alt'], soqs['selection'] = bb.add_t(
+                CSwap(self.selection_bitsize),
+                ctrl=soqs['less_than_equal'],
+                x=soqs['alt'],
+                y=soqs['selection'],
+            )
+
+        return soqs
+
+
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _state_prep_alias() -> StatePreparationAliasSampling:
     coeffs = [1.0, 1, 3, 2]
@@ -254,6 +467,16 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
         n_coeffs, sum_coeff, probability_epsilon=eps
     )
     return state_prep_alias_symb
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
+    coeffs = [1.0, 0, 0, 1, 0, 3, 0, 2, 0]
+    mu = 3
+    state_prep_alias = SparseStatePreparationAliasSampling.from_lcu_probs(
+        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    )
+    return state_prep_alias
 
 
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(
