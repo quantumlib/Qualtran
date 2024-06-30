@@ -21,9 +21,9 @@ import numpy as np
 from qualtran import Bloq, BloqBuilder, BoundedQUInt, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, ZGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     StatePreparationViaRotations,
 )
@@ -55,7 +55,7 @@ class SynthesizeGateViaHR(Bloq):
             increase the accuracy of the results.
         gate_cols: tuple that contains, for each entry, a pair where the first element is the
             index of the column and the second a tuple that contains the complex values of each
-            column. For example, for the gate [[a,b,],[c,d]] it would be ((0,(a,c)), (1,(b,d))).
+            column. For example, for the gate [[a,b],[c,d]] it would be ((0,(a,c)), (1,(b,d))).
         uncompute: wether to implement U or U^t. Either case the gate_cols to be provided are those
             of U.
         internal_phase_grad: a phase gradient state is needed for the decomposition. It can be
