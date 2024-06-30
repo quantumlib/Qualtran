@@ -44,7 +44,9 @@ def _priority(node: 'BloqInstance') -> int:
 
 
 @attrs.frozen(order=True)
-class PrioritizedItem:
+class _PrioritizedItem:
+    """Helper dataclass to insert items in a heap as part of `greedy_topological_sort`."""
+
     item: 'BloqInstance' = attrs.field(eq=_priority, order=_priority)
     priority: int
 
@@ -78,14 +80,14 @@ def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']
         goal to minimize qubit allocations and deallocations by pushing allocations to the
         right and de-allocations to the left.
     """
-    heap: List[PrioritizedItem] = []
+    heap: List[_PrioritizedItem] = []
     idx: int = 0
     in_degree: Dict[BloqInstance, int] = Counter()
 
     for x in binst_graph.nodes():
         in_degree[x] = binst_graph.in_degree(x)
         if not in_degree[x]:
-            heapq.heappush(heap, PrioritizedItem(x, idx))
+            heapq.heappush(heap, _PrioritizedItem(x, idx))
             idx = idx + 1
 
     while heap:
@@ -94,5 +96,5 @@ def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']
         for y in binst_graph.neighbors(x):
             in_degree[y] -= 1
             if not in_degree[y]:
-                heapq.heappush(heap, PrioritizedItem(y, idx))
+                heapq.heappush(heap, _PrioritizedItem(y, idx))
                 idx = idx + 1
