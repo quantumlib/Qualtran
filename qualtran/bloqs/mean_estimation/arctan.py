@@ -19,13 +19,12 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import GateWithRegisters, Signature
-from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
+from qualtran import GateWithRegisters, QFxp, Signature
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 @attrs.frozen
-class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
+class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
     Args:
@@ -52,7 +51,10 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):
         input_val, target_sign, target_val = register_values
         output_val = -2 * np.arctan(input_val, dtype=np.double) / np.pi
         assert -1 <= output_val <= 1
-        output_sign, output_bin = float_as_fixed_width_int(output_val, 1 + self.target_bitsize)
+        output_sign = int(output_val < 0)
+        output_bin = QFxp(self.target_bitsize, self.target_bitsize).to_fixed_width_int(
+            abs(output_val)
+        )
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
     def _t_complexity_(self) -> TComplexity:

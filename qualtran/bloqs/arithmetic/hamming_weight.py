@@ -13,16 +13,15 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import List, Set, TYPE_CHECKING
+from typing import Iterator, List, Set, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -64,7 +63,7 @@ class HammingWeightCompute(GateWithRegisters):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "out = x.bit_count()"
 
     def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
@@ -76,7 +75,7 @@ class HammingWeightCompute(GateWithRegisters):
 
     def _decompose_using_three_to_two_adders(
         self, x: List[cirq.Qid], junk: List[cirq.Qid], out: List[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         for out_idx in range(len(out)):
             y = []
             for in_idx in range(0, len(x) - 2, 2):
@@ -93,21 +92,14 @@ class HammingWeightCompute(GateWithRegisters):
             x = [*y]
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         # Qubit order needs to be reversed because the registers store Big Endian representation
         # of integers.
         x: List[cirq.Qid] = [*quregs['x'][::-1]]
         junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
         yield self._decompose_using_three_to_two_adders(x, junk, out)
-
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        and_t = And(uncompute=adjoint).t_complexity()
-        junk_bitsize = self.bitsize - self.bitsize.bit_count()
-        num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
-        num_t = junk_bitsize * and_t.t
-        return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_and = self.bitsize - self.bitsize.bit_count()

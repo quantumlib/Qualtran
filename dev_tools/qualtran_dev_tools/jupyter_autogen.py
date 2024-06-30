@@ -72,7 +72,9 @@ class NotebookSpecV2:
 
     @directory.default
     def _default_directory(self) -> str:
-        return str(Path(self.module.__file__).parent)
+        path = self.module.__file__
+        assert path is not None
+        return str(Path(path).parent)
 
     @property
     def path_stem(self):
@@ -156,7 +158,7 @@ class _PyCell(_Cell):
     cell_id: str
 
 
-def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_MarkdownCell]:
+def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
     """Cells introducing the `bloq_cls`"""
 
     md_doc: str = '\n'.join(get_markdown_docstring_lines(bloqdoc.bloq_cls))
@@ -230,7 +232,7 @@ def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
 
 
 def get_cells(bloqdoc: BloqDocSpec) -> List[_Cell]:
-    cells = []
+    cells: List[_Cell] = []
     cid_prefix = f'{bloqdoc.bloq_cls.__name__}'
     cells += get_bloq_doc_cells(bloqdoc, cid_prefix)
     cells += get_example_instances_cells(bloqdoc, cid_prefix)

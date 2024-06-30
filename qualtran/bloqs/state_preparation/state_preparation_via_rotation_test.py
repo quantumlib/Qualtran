@@ -11,17 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Tuple
 
+import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _state_prep_via_rotation,
+    _state_prep_via_rotation_symb,
+    PRGAViaPhaseGradient,
     StatePreparationViaRotations,
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -33,6 +36,41 @@ def accuracy(state1, state2):
 
 def test_state_prep_via_rotation(bloq_autotester):
     bloq_autotester(_state_prep_via_rotation)
+
+
+def test_state_prep_via_rotation_symb():
+    bloq = _state_prep_via_rotation_symb.make()
+    L, phase = bloq.n_coeff, bloq.phase_bitsize
+    expected_t_count_expr = 16 * L + 8 * phase - 32
+    assert isinstance(expected_t_count_expr, sympy.Expr)
+    assert bloq.t_complexity().t == expected_t_count_expr
+
+    # Compare bloq counts via expression to actual bloq counts and make sure they
+    # are "close enough"
+
+    # The discrepency comes from the fact that in the concrete case, prga_prepare_amplitude
+    # calls PRGA for selection bitsizes `0 + 1 + 2 + 3 + ... + n - 1`  (where n is size of selection
+    # register) and corresponding rom_values of length `2**0 + 2**1 + 2**2 + ...  + 2**(n - 1)`
+    # When n is symbolic, we can't simulate this in the build_call_graph so we instead return a
+    # single call to PRGA with bitsize `n` and rom_values of size `2**n`. The constant factor of
+    # the dominant cost of QROM scales as 4 * L and sum of `2**0 + 2**1 + 2**2 + ...  + 2**(n-1)`
+    # is `2**n` so dominant cost matches. But the smaller costs like addition into phase gradient
+    # register scale with selection bitsize; and so `0 + 1 + 2 + 3 + ... + n - 1` > `n` -- this
+    # is where the discrepancy comes from.
+    # Note that if we replace `QROM` with `SelectSwapQROM` the discrepency would increase because
+    # sum of `2**(i // 2)` would not be equal to `2**(n // 2)` and thus our current symbolic
+    # strategy would not work.
+    N, phase_bitsize = 2**16, 10
+    state_coefs = cirq.testing.random_superposition(N, random_state=1234)
+    bloq_concrete = StatePreparationViaRotations(
+        state_coefficients=state_coefs, phase_bitsize=phase_bitsize
+    )
+    concrete_t_counts = bloq_concrete.t_complexity().t
+    # Symbolic T-counts
+    symb_t_counts = int(expected_t_count_expr.subs({L: N, phase: phase_bitsize}))
+
+    # assert they are "close enough"
+    np.testing.assert_allclose(symb_t_counts, concrete_t_counts, rtol=1e-3)
 
 
 # these states can be prepared exactly with the given phase_bitsize
@@ -63,8 +101,9 @@ def test_state_prep_via_rotation(bloq_autotester):
     ],
 )
 def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
+    # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -101,11 +140,12 @@ def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[c
 def test_state_prep_via_rotation_adjoint(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ) -> None:
+    # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     qsp_adj = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), uncompute=True
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, uncompute=True  # type: ignore[arg-type]
     )
 
     bb = BloqBuilder()
@@ -144,7 +184,7 @@ def test_state_prep_via_rotation_adjoint(
 )
 def test_approximate_state_prep_via_rotation(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -175,7 +215,7 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -199,7 +239,7 @@ def test_state_preparation_via_rotation_superposition_ctrl(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -226,7 +266,7 @@ def test_state_preparation_via_rotation_multi_qubit_ctrl(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=2
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=2  # type: ignore[arg-type]
     )
     state_bitsize = (len(state_coefs) - 1).bit_length()
     assert_valid_bloq_decomposition(qsp)
@@ -248,9 +288,35 @@ def test_state_preparation_via_rotation_multi_qubit_ctrl(
     assert np.allclose(result, correct)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook("state_preparation_via_rotation")
 
 
+@pytest.mark.notebook
 def test_notebook_tutorial():
     execute_notebook("state_preparation_via_rotation_tutorial")
+
+
+@pytest.mark.parametrize("phase_bitsize, rom_vals", [[3, (6, 0, 5, 2)]])
+def test_PRGAViaPhaseGradient(phase_bitsize, rom_vals):
+    sel_bitsize = (len(rom_vals) - 1).bit_length()
+    prga = PRGAViaPhaseGradient(sel_bitsize, phase_bitsize, rom_vals, 1)
+    assert_valid_bloq_decomposition(prga)
+    bb = BloqBuilder()
+    control = bb.add(PlusState())
+    sel = bb.join(np.array([bb.add(PlusState()) for _ in range(sel_bitsize)]))
+    pg = bb.add(PhaseGradientState(phase_bitsize))
+    control, sel, pg = bb.add(prga, control=control, selection=sel, phase_gradient=pg)
+    bb.add(PhaseGradientState(phase_bitsize).adjoint(), phase_grad=pg)
+    circuit = bb.finalize(control=control, sel=sel)
+    result = circuit.tensor_contract()
+    # get the angles that correspond to each rom value loaded
+    angles = [2 * np.pi * rv / 2**phase_bitsize for rv in rom_vals]
+    # make a vector corresponding to the state 1/sqrt(2)(|0> + |1>)|+...+>
+    # with registers (|control, selection>)
+    correct_state = [np.power(2.0, -(sel_bitsize + 1) / 2)] * (2 ** (sel_bitsize + 1))
+    # give the |1>|+...+> term the corresponding rotations
+    for i, ang in enumerate(angles):
+        correct_state[i + 2**sel_bitsize] *= np.power(np.e, 1j * ang)
+    assert np.allclose(correct_state, result)

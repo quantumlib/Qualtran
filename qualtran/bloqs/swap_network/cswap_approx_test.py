@@ -13,20 +13,21 @@
 #  limitations under the License.
 
 import random
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import pytest
+import sympy
 
-import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,
     _approx_cswap_small,
     _approx_cswap_symb,
     CSwapApprox,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
@@ -45,7 +46,9 @@ def test_approx_cswap_t_count(n):
     assert cswap.t_complexity() == cswap_d.t_complexity()
 
 
-def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
+def get_t_count_and_clifford(
+    bc: Dict[Bloq, Union[int, sympy.Expr]]
+) -> Tuple[Union[int, sympy.Expr], Union[int, sympy.Expr]]:
     """Get the t count and clifford cost from bloq count."""
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
     t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])
@@ -53,13 +56,9 @@ def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity_cswap(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
-
-
-@pytest.mark.parametrize("n", [*range(1, 6)])
 def test_t_complexity_cswap_approx(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
+    actual = t_complexity(CSwapApprox(n))
+    assert actual == TComplexity(t=4 * n, clifford=22 * n - 1)
 
 
 @pytest.mark.parametrize("n", [*range(2, 6)])

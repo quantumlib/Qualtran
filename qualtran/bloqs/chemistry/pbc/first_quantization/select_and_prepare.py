@@ -13,10 +13,11 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -28,18 +29,20 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
+    from qualtran import Soquet
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -50,9 +53,6 @@ class PrepareTUVSuperpositions(Bloq):
     This will produce 3 qubits for flagging which term to apply. xx0 -> T, x0x -> U or V, 0xx -> V.
 
     Note in reality this involves some state preparation and inequality testing.
-
-    Args:
-        adjoint: whether to dagger the bloq or not.
 
     Registers:
         tuv: a single qubit rotated to appropriately weight T and U or V.
@@ -66,13 +66,12 @@ class PrepareTUVSuperpositions(Bloq):
     eta: int
     lambda_zeta: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'PREP TUV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -90,7 +89,6 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
-        adjoint: whether to dagger the bloq or not.
 
     Registers:
         i: a n_eta bit register for unary encoding of eta numbers.
@@ -102,7 +100,6 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
     """
     eta: int
     num_bits_rot_aa: int
-    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -136,7 +133,7 @@ class MultiplexedCSwap3D(Bloq):
     @staticmethod
     def _reshape_reg(
         bb: BloqBuilder, in_reg: SoquetT, out_shape: Tuple[int, ...], bitsize: int
-    ) -> SoquetT:
+    ) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Reshape registers allocated as a big register.
 
         Example:
@@ -160,15 +157,18 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'sel':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(self.pretty_name())
+        if reg.name == 'sel':
             return TextBox('In')
-        elif soq.reg.name == 'targets':
+        elif reg.name == 'targets':
             return TextBox('×(x)')
-        elif soq.reg.name == 'junk':
+        elif reg.name == 'junk':
             return TextBox('×(y)')
+        raise ValueError(f'Unknown name: {reg.name}')
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'MultiSwap'
 
     def build_composite_bloq(
@@ -205,7 +205,6 @@ class PrepareFirstQuantization(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -237,7 +236,6 @@ class PrepareFirstQuantization(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -271,7 +269,7 @@ class PrepareFirstQuantization(PrepareOracle):
     def junk_registers(self) -> Tuple[Register, ...]:
         return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP'
 
     def build_composite_bloq(
@@ -286,37 +284,27 @@ class PrepareFirstQuantization(PrepareOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         tuv, uv = bb.add(
             PrepareTUVSuperpositions(
-                self.num_bits_t,
-                self.eta,
-                self.lambda_zeta,
-                self.num_bits_rot_aa,
-                adjoint=self.adjoint,
+                self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
             ),
             tuv=tuv,
             uv=uv,
         )
         i, j = bb.add(
-            UniformSuperpostionIJFirstQuantization(
-                self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
-            ),
-            i=i,
-            j=j,
+            UniformSuperpostionIJFirstQuantization(self.eta, self.num_bits_rot_aa), i=i, j=j
         )
         # # |+>
         # plus_t = bb.add(Hadamard(), q=plus_t)
         w, r, s = bb.add(
-            PrepareTFirstQuantization(
-                self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
-            ),
+            PrepareTFirstQuantization(self.num_bits_p, self.eta, self.num_bits_rot_aa),
             w=w,
             r=r,
             s=s,
@@ -329,7 +317,6 @@ class PrepareFirstQuantization(PrepareOracle):
                 self.m_param,
                 self.lambda_zeta,
                 self.num_bits_nuc_pos,
-                adjoint=self.adjoint,
             ),
             mu=mu,
             nu=[nu_x, nu_y, nu_z],
@@ -372,7 +359,6 @@ class SelectFirstQuantization(SelectOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -408,7 +394,6 @@ class SelectFirstQuantization(SelectOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -449,7 +434,7 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'SELECT'
 
     def build_composite_bloq(
@@ -465,9 +450,9 @@ class SelectFirstQuantization(SelectOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
@@ -510,8 +495,10 @@ class SelectFirstQuantization(SelectOracle):
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        _ = [bb.free(pi) for pi in p]
-        _ = [bb.free(qi) for qi in q]
+        for pi in p:
+            bb.free(pi)
+        for qi in q:
+            bb.free(qi)
         bb.free(rl)
         return {
             'tuv': tuv,

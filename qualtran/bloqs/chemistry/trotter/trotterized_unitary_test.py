@@ -36,7 +36,7 @@ def test_construction_checks(bloq_autotester):
 
     with pytest.raises(ValueError, match=r'Bloq must be an attrs.*'):
         TrotterizedUnitary(
-            bloqs=(NotAnAttrsClass(0.1, 2.0), NotAnAttrsClass(0.2, 2.0)),
+            bloqs=(NotAnAttrsClass(0.1, 2), NotAnAttrsClass(0.2, 2)),
             indices=(0, 1),
             coeffs=(0.55, 0.2),
             timestep=0.1,

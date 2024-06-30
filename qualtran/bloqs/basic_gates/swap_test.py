@@ -65,7 +65,9 @@ def test_two_bit_swap_unitary_vs_cirq():
 def test_two_bit_swap_as_cirq_op():
     q = cirq.LineQubit.range(2)
     expected_circuit = cirq.Circuit(cirq.SWAP(*q))
-    cbloq_to_circuit, quregs = TwoBitSwap().as_composite_bloq().to_cirq_circuit(x=[q[0]], y=[q[1]])
+    cbloq_to_circuit = (
+        TwoBitSwap().as_composite_bloq().to_cirq_circuit(cirq_quregs={'x': [q[0]], 'y': [q[1]]})
+    )
     cirq.testing.assert_same_circuits(expected_circuit, cbloq_to_circuit)
 
 
@@ -116,8 +118,8 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
 
     bb = BloqBuilder()
     q0 = bb.add(states[ctrl_bit])
-    q1 = bb.add_register('q1', bloq.bitsize)
-    q2 = bb.add_register('q2', bloq.bitsize)
+    q1 = bb.add_register('q1', int(bloq.bitsize))
+    q2 = bb.add_register('q2', int(bloq.bitsize))
     q0, q1, q2 = bb.add(bloq, ctrl=q0, x=q1, y=q2)
     bb.add(effs[ctrl_bit], q=q0)
     return bb.finalize(q1=q1, q2=q2)
@@ -189,6 +191,7 @@ def test_cswap_bloq_counts():
     assert counts1 == counts2
 
     assert t_complexity(CSwap(1)) == TComplexity(t=7, clifford=10)
+    assert t_complexity(CSwap(10)) == TComplexity(t=70, clifford=100)
     assert t_complexity(TwoBitCSwap()) == TComplexity(t=7, clifford=10)
 
 

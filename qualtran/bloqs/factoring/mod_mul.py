@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import attrs
 import numpy as np
@@ -31,10 +31,10 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
+from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
-from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -78,7 +78,10 @@ class CtrlModMul(Bloq):
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         k = self.k
-        neg_k_inv = -pow(k, -1, mod=self.mod)
+        if isinstance(self.mod, sympy.Expr) or isinstance(k, sympy.Expr):
+            neg_k_inv = sympy.Mod(sympy.Pow(k, -1), self.mod)
+        else:
+            neg_k_inv = -pow(k, -1, mod=self.mod)
 
         # We store the result of the CtrlScaleModAdd into this new register
         # and then clear the original `x` register by multiplying in the inverse.
@@ -108,14 +111,14 @@ class CtrlModMul(Bloq):
         assert ctrl == 1, ctrl
         return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
-    def short_name(self) -> str:
-        return f'x *= {self.k} % {self.mod}'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x *= {self.k} % {self.mod}')
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        if soq.reg.name == 'x':
-            return directional_text_box(f'*={self.k}', side=soq.reg.side)
+        if reg.name == 'x':
+            return directional_text_box(f'*={self.k}', side=reg.side)
+        raise ValueError(f"Unknown register name: {reg.name}")
 
 
 @frozen
@@ -147,8 +150,7 @@ class MontgomeryModDbl(Bloq):
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'x': (2 * x) % self.p}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
-
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -156,25 +158,23 @@ class MontgomeryModDbl(Bloq):
         # Convert x to an n + 2-bit integer by attaching two |0⟩ qubits as the least and most
         # significant bits.
         x_split = bb.split(x)
-        x = bb.join(np.concatenate([[sign], x_split, [lower_bit]]))
+        x = bb.join(
+            np.concatenate([[sign], x_split, [lower_bit]]), dtype=QMontgomeryUInt(self.bitsize + 2)
+        )
 
         # Add constant -p to the x register.
-        x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x
-        )
+        x = bb.add(AddK(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x)
 
         # Split the three bit pieces again so that we can use the sign to control our constant
         # addition circuit.
         x_split = bb.split(x)
         sign = x_split[0]
-        x = bb.join(x_split[1:])
+        x = bb.join(x_split[1:], dtype=QMontgomeryUInt(self.bitsize + 1))
 
         # Add constant p to the x register if the result of the last modular reduction is negative.
         sign_split = bb.split(sign)
         sign_split, x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
-            ctrls=sign_split,
-            x=x,
+            AddK(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)), ctrls=sign_split, x=x
         )
         sign = bb.join(sign_split)
 
@@ -187,7 +187,9 @@ class MontgomeryModDbl(Bloq):
         lower_bit = bb.add(XGate(), q=lower_bit)
 
         free_bit = x_split[0]
-        x = bb.join(np.concatenate([x_split[1:-1], [lower_bit]]))
+        x = bb.join(
+            np.concatenate([x_split[1:-1], [lower_bit]]), dtype=QMontgomeryUInt(self.bitsize)
+        )
 
         # Free the ancilla bits.
         bb.free(free_bit)
@@ -196,8 +198,12 @@ class MontgomeryModDbl(Bloq):
         # Return the output registers.
         return {'x': x}
 
-    def short_name(self) -> str:
-        return f'x = 2 * x mod {self.p}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x = 2 * x mod {self.p}')
+        return super().wire_symbol(reg, idx)
 
 
 _K = sympy.Symbol('k_mul')

@@ -15,11 +15,13 @@
 import numpy as np
 
 from qualtran.surface_code.ccz2t_cost_model import (
+    CCZ2TFactory,
     get_ccz2t_costs_from_error_budget,
     get_ccz2t_costs_from_grid_search,
     iter_ccz2t_factories,
 )
 from qualtran.surface_code.magic_count import MagicCount
+from qualtran.surface_code.multi_factory import MultiFactory
 
 
 def test_vs_spreadsheet():
@@ -44,6 +46,7 @@ def test_grid_search_runs():
         error_budget=0.1,
         cycle_time_us=1,
     )
+    assert isinstance(factory, CCZ2TFactory)
     assert factory.distillation_l1_d == 15
     assert factory.distillation_l2_d == 23
     assert db.data_d == 25
@@ -62,6 +65,9 @@ def test_grid_search_against_thc():
     assert best_cost.failure_prob == 0.007725395132201774
     assert best_cost.footprint == 2933032
     assert best_cost.duration_hr == 89.1034375
-    assert best_factory.base_factory.distillation_l1_d == 17
-    assert best_factory.base_factory.distillation_l2_d == 29
+    assert isinstance(best_factory, MultiFactory)
+    base_factory = best_factory.base_factory
+    assert isinstance(base_factory, CCZ2TFactory)
+    assert base_factory.distillation_l1_d == 17
+    assert base_factory.distillation_l2_d == 29
     assert best_data_block.data_d == 33

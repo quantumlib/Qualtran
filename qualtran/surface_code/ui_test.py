@@ -106,3 +106,21 @@ def test_update_bad_input():
             magic_count=1,
             rotaion_model_name='BeverlandEtAlRotationCost',
         )
+
+
+@pytest.mark.parametrize(
+    ['duration', 'desired'],
+    [
+        (25000, ("ms", 25)),
+        (9, ("us", 9)),
+        (1009, ("ms", 1)),
+        (7001009, ("s", 7)),
+        (300700190, ("min", 5)),
+        (24300700100, ("hours", 7)),
+        (7443007001009, ("days", 86)),
+    ],
+)
+def test_formatting(duration: int, desired: str):
+    unit, (final_duration,) = ui.format_duration([duration])
+    assert unit == desired[0]
+    assert round(final_duration) == desired[1]

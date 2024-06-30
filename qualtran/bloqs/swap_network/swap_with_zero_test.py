@@ -23,8 +23,8 @@ import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.swap_with_zero import _swz, _swz_small, SwapWithZero
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition
@@ -32,14 +32,8 @@ from qualtran.testing import assert_valid_bloq_decomposition
 random.seed(12345)
 
 
-def _make_SwapWithZero():
-    from qualtran.bloqs.swap_network import SwapWithZero
-
-    return SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
-
-
 def test_swap_with_zero_decomp():
-    swz = SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
+    swz = SwapWithZero(selection_bitsizes=3, target_bitsize=64, n_target_registers=5)
     assert_valid_bloq_decomposition(swz)
 
 
@@ -107,12 +101,53 @@ targets[3][1]: ───swap_3───────────────×(y)
     )
 
 
+def test_swap_with_zero_cirq_gate_diagram_multi_dim():
+    gate = SwapWithZero((2, 1), 2, (3, 2))
+    gh = cq_testing.GateHelper(gate)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(gh.operation, cirq.decompose_once(gh.operation)),
+        """
+                                                        ┌──────────────────┐
+selection0_0: ───────@(r⇋0)────────────────────────────────────────────────────@(approx)───
+                     │                                                         │
+selection0_1: ───────@(r⇋0)──────────────────────────────@(approx)─────────────┼───────────
+                     │                                   │                     │
+selection1_: ────────@(r⇋0)─────@(approx)───@(approx)────┼────────@(approx)────┼───────────
+                     │          │           │            │        │            │
+targets[0, 0][0]: ───swap_0_0───×(x)────────┼────────────×(x)─────┼────────────×(x)────────
+                     │          │           │            │        │            │
+targets[0, 0][1]: ───swap_0_0───×(x)────────┼────────────×(x)─────┼────────────×(x)────────
+                     │          │           │            │        │            │
+targets[0, 1][0]: ───swap_0_1───×(y)────────┼────────────┼────────┼────────────┼───────────
+                     │          │           │            │        │            │
+targets[0, 1][1]: ───swap_0_1───×(y)────────┼────────────┼────────┼────────────┼───────────
+                     │                      │            │        │            │
+targets[1, 0][0]: ───swap_1_0───────────────×(x)─────────×(y)─────┼────────────┼───────────
+                     │                      │            │        │            │
+targets[1, 0][1]: ───swap_1_0───────────────×(x)─────────×(y)─────┼────────────┼───────────
+                     │                      │                     │            │
+targets[1, 1][0]: ───swap_1_1───────────────×(y)──────────────────┼────────────┼───────────
+                     │                      │                     │            │
+targets[1, 1][1]: ───swap_1_1───────────────×(y)──────────────────┼────────────┼───────────
+                     │                                            │            │
+targets[2, 0][0]: ───swap_2_0─────────────────────────────────────×(x)─────────×(y)────────
+                     │                                            │            │
+targets[2, 0][1]: ───swap_2_0─────────────────────────────────────×(x)─────────×(y)────────
+                     │                                            │
+targets[2, 1][0]: ───swap_2_1─────────────────────────────────────×(y)─────────────────────
+                     │                                            │
+targets[2, 1][1]: ───swap_2_1─────────────────────────────────────×(y)─────────────────────
+                                                        └──────────────────┘
+""",
+    )
+
+
 def test_swap_with_zero_classically():
     data = np.array([131, 255, 92, 2])
-    swz = SwapWithZero(selection_bitsize=2, target_bitsize=8, n_target_registers=4)
+    swz = SwapWithZero(selection_bitsizes=2, target_bitsize=8, n_target_registers=4)
 
     for sel in range(2**2):
-        sel, out_data = swz.call_classically(selection=sel, targets=data)
+        sel, out_data = swz.call_classically(selection=sel, targets=data)  # type: ignore[assignment]
         print(sel, out_data)
 
 
@@ -140,6 +175,26 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
 
     assert sigma[TGate()] == want.t
     assert sigma[ArbitraryClifford(n)] == want.clifford
+
+
+def test_t_complexiy_for_multi_dimensional_swap_with_zero():
+    np.random.seed(10)
+    selection_bitsize = np.array([*range(2, 5)])
+    n_target_registers = np.random.randint(1, 2**selection_bitsize - 1)
+    target_bitsize = 3
+    bloq = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
+    assert bloq.decompose_bloq().t_complexity() == bloq.t_complexity()
+
+
+def test_bloq_counts_symbolic():
+    (p, q, r) = sympy.symbols("p q r")
+    b = sympy.Symbol("b")
+    P, Q, R = sympy.symbols("P Q R")
+    swz_multi_symbolic = SwapWithZero(
+        selection_bitsizes=(p, q, r), target_bitsize=b, n_target_registers=(P, Q, R)
+    )
+    g, sigma = swz_multi_symbolic.call_graph()
+    assert sigma[TGate()] == 4 * b * (P * Q * R - 1)
 
 
 @pytest.mark.parametrize(

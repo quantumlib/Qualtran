@@ -16,13 +16,12 @@ import cirq
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BoundedQUInt, QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import (
     _apply_z_to_odd,
     ApplyGateToLthQubit,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 
 
@@ -54,7 +53,7 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
         # All controls 'on' to activate circuit
         qubit_vals.update({c: 1 for c in g.quregs['control']})
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         initial_state = [qubit_vals[x] for x in g.all_qubits]
         qubit_vals[g.quregs['target'][n]] = 1
@@ -108,10 +107,13 @@ def test_apply_gate_to_lth_qubit_make_on():
     )
     op = gate.on_registers(**get_named_qubits(gate.signature))
     op2 = ApplyGateToLthQubit.make_on(
-        nth_gate=lambda n: cirq.Z if n & 1 else cirq.I, **get_named_qubits(gate.signature)
+        nth_gate=lambda n: cirq.Z if n & 1 else cirq.I,
+        **get_named_qubits(gate.signature),  # type: ignore[arg-type]
     )
     # Note: ApplyGateToLthQubit doesn't support value equality.
     assert op.qubits == op2.qubits
+    assert isinstance(op.gate, ApplyGateToLthQubit)
+    assert isinstance(op2.gate, ApplyGateToLthQubit)
     assert op.gate.selection_regs == op2.gate.selection_regs
     assert op.gate.control_regs == op2.gate.control_regs
 

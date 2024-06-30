@@ -20,7 +20,7 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
     if isinstance(data, QBit):
         return data_types_pb2.QDataType(qbit=data_types_pb2.QBit())
 
-    bitsize = int_or_sympy_to_proto(data.bitsize)
+    bitsize = int_or_sympy_to_proto(data.bitsize)  # type: ignore[attr-defined]
     if isinstance(data, QAny):
         return data_types_pb2.QDataType(qany=data_types_pb2.QAny(bitsize=bitsize))
     elif isinstance(data, QInt):

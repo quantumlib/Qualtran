@@ -26,7 +26,8 @@ from functools import cached_property
 from typing import Dict, Iterable, Set, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -37,24 +38,28 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class SingleFactorizationOneBody(Bloq):
+class SingleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of single factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -69,7 +74,7 @@ class SingleFactorizationOneBody(Bloq):
             sampling. Called $\aleph$ in the reference.
         num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called $b_r$ in the reference.
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
+        is_adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
             Defaults to 1 (i.e. QROM).
         kp1: QROAM blocking factor for data prepared over pq indicies. Defaults to 1 (i.e.) QROM.
@@ -92,11 +97,12 @@ class SingleFactorizationOneBody(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig. 15 page 43.
     """
+
     num_aux: int
     num_spin_orb: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
     kp1: int = 1
     kp2: int = 1
     kp1_inv: int = 1
@@ -109,6 +115,9 @@ class SingleFactorizationOneBody(Bloq):
             Register("l_ne_zero", QBit()),
             Register('succ_pq', QBit()),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -143,6 +152,10 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return ()
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        return PrepareIdentity(self.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
@@ -244,7 +257,7 @@ class SingleFactorizationOneBody(Bloq):
 
 
 @frozen
-class SingleFactorizationBlockEncoding(Bloq):
+class SingleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of single factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -279,6 +292,7 @@ class SingleFactorizationBlockEncoding(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig 15, page 43.
     """
+
     num_spin_orb: int
     num_aux: int
     num_bits_state_prep: int
@@ -322,14 +336,18 @@ class SingleFactorizationBlockEncoding(Bloq):
             ]
         )
 
+    @property
+    def signal_state(self) -> PrepareOracle:
+        return PrepareIdentity(self.selection_registers)
+
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
         *,
-        ctrl: SoquetT,
+        ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
-        pq: SoquetT,
-        rot_aa: SoquetT,
+        pq: NDArray[Soquet],  # type: ignore[type-var]
+        rot_aa: NDArray[Soquet],  # type: ignore[type-var]
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
@@ -370,14 +388,16 @@ class SingleFactorizationBlockEncoding(Bloq):
         )
         # reflect about the inner state preparation registers, controlled on succ_l and l_ne_zero.
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        succ_l, l_ne_zero, p, q, swap_pq, spin = bb.add(
-            Reflection((1, 1, n_n, n_n, 1, 1), cvs=(1, 1, 0, 0, 0, 0)),
-            reg0=succ_l,
-            reg1=l_ne_zero,
-            reg2=p,
-            reg3=q,
-            reg4=swap_pq,
-            reg5=spin,
+        # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+        succ_l, p, q, swap_pq, spin = bb.add(
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(n_n, n_n, 1, 1), control_val=1, global_phase=-1
+            ),
+            control=succ_l,
+            reg0_=p,
+            reg1_=q,
+            reg2_=swap_pq,
+            reg3_=spin,
         )
         # apply one-body again
         succ_l, l_ne_zero, succ_pq, l, p, q, swap_pq, spin, rot_aa[1], sys = bb.add(
@@ -425,7 +445,7 @@ def _sf_one_body() -> SingleFactorizationOneBody:
         num_spin_orb=num_spin_orb,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=False,
+        is_adjoint=False,
     )
     return sf_one_body
 

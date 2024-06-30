@@ -13,12 +13,15 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet
 from qualtran.bloqs.for_testing.atom import TestAtom
+
+if TYPE_CHECKING:
+    from qualtran import SoquetT
 
 
 @frozen
@@ -29,7 +32,7 @@ class TestSerialCombo(Bloq):
     def signature(self) -> Signature:
         return Signature.build(reg=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'SoquetT']:
         for i in range(3):
             reg = bb.add(TestAtom(tag=f'atom{i}'), q=reg)
         return {'reg': reg}
@@ -43,7 +46,8 @@ class TestParallelCombo(Bloq):
     def signature(self) -> Signature:
         return Signature.build(reg=3)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'SoquetT']:
+        assert isinstance(reg, Soquet)
         reg = bb.split(reg)
         for i in range(len(reg)):
             reg[i] = bb.add(TestAtom(), q=reg[i])
@@ -59,7 +63,7 @@ class TestIndependentParallelCombo(Bloq):
     def signature(self) -> Signature:
         return Signature.build()
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         for _ in range(3):
             reg = bb.allocate(1)
             reg = bb.add(TestAtom(), q=reg)

@@ -76,7 +76,7 @@ def _manually_make_test_cbloq_cxns():
 def _manually_make_test_cbloq_typed_cxns(dtype_a: QDType, dtype_b: QDType):
     signature = Signature.build_from_dtypes(q1=dtype_a, q2=dtype_b)
     q1, q2 = signature
-    add = Add(dtype=QInt(4))
+    add = Add(QInt(4))
     a, b = add.signature
     binst1 = BloqInstance(add, 1)
     binst2 = BloqInstance(add, 2)
@@ -142,8 +142,8 @@ def test_assert_soquets_used_exactly_once():
 
 def test_check_bloq_example_make():
     @bloq_example
-    def _my_cnot() -> CNOT:
-        return 'CNOT 0 1'
+    def _my_cnot() -> Bloq:
+        return 'CNOT 0 1'  # type: ignore[return-value]
 
     res, msg = check_bloq_example_make(_my_cnot)
     assert res is BloqCheckResult.FAIL, msg

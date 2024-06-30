@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Iterator
+
 import cirq
 import numpy as np
 import pytest
 
 from qualtran import QBit, Register, Side, Signature
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.cirq_interop import testing
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -47,7 +49,7 @@ def test_gate_helper():
     expected_quregs = {
         'ctrl': np.array([[cirq.q(f'ctrl[{i}]')] for i in range(4)]),
         'junk': np.array([[cirq.q(f'junk[{i}]')] for i in range(2)]),
-        'target': [cirq.NamedQubit('target')],
+        'target': np.array([cirq.NamedQubit('target')]),
     }
     for key in expected_quregs:
         assert np.array_equal(g.quregs[key], expected_quregs[key])
@@ -67,11 +69,26 @@ class DoesNotDecompose(cirq.Operation):
         pass
 
 
+class ConsistentDecompostion(cirq.Operation):
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(clifford=1)
+
+    def _decompose_(self) -> Iterator[cirq.OP_TREE]:
+        yield cirq.X(self.qubits[0])
+
+    @property
+    def qubits(self):
+        return tuple(cirq.LineQubit(3).range(3))
+
+    def with_qubits(self, _):
+        pass
+
+
 class InconsistentDecompostion(cirq.Operation):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=1)
 
-    def _decompose_(self) -> cirq.OP_TREE:
+    def _decompose_(self) -> Iterator[cirq.OP_TREE]:
         yield cirq.X(self.qubits[0])
 
     @property
@@ -83,7 +100,7 @@ class InconsistentDecompostion(cirq.Operation):
 
 
 def test_assert_decompose_is_consistent_with_t_complexity():
-    testing.assert_decompose_is_consistent_with_t_complexity(And())
+    testing.assert_decompose_is_consistent_with_t_complexity(ConsistentDecompostion())
 
 
 def test_assert_decompose_is_consistent_with_t_complexity_raises():

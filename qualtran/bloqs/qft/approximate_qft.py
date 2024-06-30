@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import defaultdict
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -25,13 +25,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.bloqs.rotations import AddIntoPhaseGrad
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -113,8 +107,8 @@ class ApproximateQFT(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         if self.bitsize == 1:
             yield cirq.H(*quregs['q'])
             return
@@ -128,7 +122,7 @@ class ApproximateQFT(GateWithRegisters):
             a, b = q[addition_start_index:i], phase_grad[: addition_bitsize + 1]
 
             yield AddIntoPhaseGrad(
-                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=1
+                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled_by=1
             ).on_registers(ctrl=q[i], x=a[::-1], phase_grad=b)
             yield cirq.H(q[i])
 
@@ -137,15 +131,17 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        phase_dict = defaultdict(int)
+        phase_dict: Dict[AddIntoPhaseGrad, SymbolicInt] = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
             phase_dict[
-                AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize, controlled=True)
+                AddIntoPhaseGrad(
+                    self.phase_bitsize, self.phase_bitsize, right_shift=1, controlled_by=1
+                )
             ] = self.bitsize
         else:
-            for i in range(1, self.bitsize):
+            for i in range(1, int(self.bitsize)):
                 b = min(i, self.phase_bitsize - 1)
-                phase_dict[AddIntoPhaseGrad(b, b + 1, controlled=True)] += 1
+                phase_dict[AddIntoPhaseGrad(b, b + 1, right_shift=1, controlled_by=1)] += 1
         ret = {(Hadamard(), self.bitsize), *phase_dict.items()}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}

@@ -22,10 +22,12 @@ import pytest
 from attrs import frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
-from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, And, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, _multi_and_symb, And, MultiAnd
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import Circle, get_musical_score_data
+from qualtran.symbolics.types import HasLength
 
 
 def test_and_bloq(bloq_autotester):
@@ -34,6 +36,12 @@ def test_and_bloq(bloq_autotester):
 
 def test_multi_and(bloq_autotester):
     bloq_autotester(_multi_and)
+
+
+def test_multi_and_symb():
+    # bloq-autotester will fail since `shape` cannot be symbolic right now.
+    bloq = _multi_and_symb.make()
+    assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):
@@ -103,6 +111,8 @@ def test_inverse():
     bb = BloqBuilder()
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
+    assert isinstance(q0, Soquet)
+    assert isinstance(q1, Soquet)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
     qs = bb.add(And(uncompute=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
@@ -127,6 +137,7 @@ def test_multi_truth_table():
             ctrl_qs = [bb.add(state[c]) for c in ctrl_string]
 
             ctrl_qs, junk, res = bb.add_from(MultiAnd(cvs), ctrl=ctrl_qs)
+            assert isinstance(ctrl_qs, np.ndarray)
 
             for c, q in zip(ctrl_string, ctrl_qs):
                 bb.add(eff[c], q=q)
@@ -186,6 +197,8 @@ class AndIdentity(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        assert isinstance(q0, Soquet)
+        assert isinstance(q1, Soquet)
         qs, trg = bb.add(And(), ctrl=[q0, q1])
         q0, q1 = bb.add(And(uncompute=True), ctrl=qs, target=trg)
         return {'q0': q0, 'q1': q1}
@@ -219,6 +232,9 @@ def test_multiand_adjoint():
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     q2 = bb.add_register('q2', 1)
+    assert isinstance(q0, Soquet)
+    assert isinstance(q1, Soquet)
+    assert isinstance(q2, Soquet)
 
     qs, junk, trg = bb.add(MultiAnd((1, 1, 1)), ctrl=[q0, q1, q2])
     qs = bb.add(MultiAnd((1, 1, 1)).adjoint(), ctrl=qs, target=trg, junk=junk)
@@ -245,3 +261,32 @@ def test_multiand_diagram():
       │
 4: ───∧─────────""",
     )
+
+
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_and_t_complexity(cv1: int, cv2: int):
+    pre_post_cliffords = 2 - cv1 - cv2
+    assert t_complexity(And(cv1, cv2)) == TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
+    assert t_complexity(And(cv1, cv2, uncompute=True)) == TComplexity(
+        clifford=4 + 2 * pre_post_cliffords
+    )
+
+
+@pytest.mark.parametrize(
+    'gate', [MultiAnd(cvs=[0] * 10), MultiAnd(cvs=[1, 0] * 10), MultiAnd(cvs=HasLength(10))]
+)
+def test_multi_and_t_complexity(gate):
+    def expected_complexity(gate: MultiAnd, adjoint: bool = False) -> TComplexity:
+        pre_post_cliffords = len(gate.concrete_cvs) - sum(
+            gate.concrete_cvs
+        )  # number of zeros in self.cv
+        num_single_and = len(gate.concrete_cvs) - 1
+        if adjoint:
+            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
+        return TComplexity(
+            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+        )
+
+    assert gate.t_complexity() == expected_complexity(gate)
+    assert gate.adjoint().t_complexity() == expected_complexity(gate, adjoint=True)

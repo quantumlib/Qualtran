@@ -13,20 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
+from typing import Iterator, Tuple
 
 import cirq
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from qualtran import Register, Signature
+from qualtran import QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -94,7 +93,7 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
     # Build circuit.
     simulator = cirq.Simulator(dtype=np.complex128)
 
-    def rotation_ops(theta: int) -> cirq.OP_TREE:
+    def rotation_ops(theta: int) -> Iterator[cirq.OP_TREE]:
         # OP-TREE to apply rotation, by integer-approximated angle `theta`, on the target register.
         for i, b in enumerate(bin(theta)[2:][::-1]):
             if b == '1':
@@ -106,7 +105,7 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
         qubit_vals.update(
             zip(
                 g.quregs['selection'],
-                iter_bits(selection_integer, g.r.get_left('selection').total_bits()),
+                QUInt(g.r.get_left('selection').total_bits()).to_bits(selection_integer),
             )
         )
         initial_state = [qubit_vals[x] for x in g.all_qubits]
@@ -145,6 +144,7 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
             qid_shape=(2,) * len(ancilla_indices),
             dtype=np.complex128,
         ).state_vector()
+        assert expected_ancilla_state_vector is not None
         cirq.testing.assert_allclose_up_to_global_phase(
             ancilla_state_vector, expected_ancilla_state_vector, atol=1e-8
         )

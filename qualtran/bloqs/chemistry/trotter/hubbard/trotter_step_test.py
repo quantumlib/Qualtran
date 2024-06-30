@@ -11,19 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
+
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.trotter.hubbard.trotter_step import (
     build_plaq_unitary_second_order_suzuki,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
+from qualtran.testing import execute_notebook
 
 
 def catch_rotations(bloq) -> Bloq:
     if isinstance(bloq, Rz):
-        if abs(bloq.angle) < 1e-12:
+        if isinstance(bloq.angle, float) and abs(bloq.angle) < 1e-12:
             return ArbitraryClifford(1)
         else:
             return Rz(angle=PHI)
@@ -40,3 +43,8 @@ def test_second_order_suzuki_costs():
     assert sigma[TGate()] == (3 * length**2 // 2) * 8
     # 3 hopping unitaries and 2 interaction unitaries
     assert sigma[Rz(PHI)] == (3 * length**2 + 2 * length**2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('qpe_cost_optimization')

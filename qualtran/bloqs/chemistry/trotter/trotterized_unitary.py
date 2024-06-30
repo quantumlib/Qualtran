@@ -14,12 +14,12 @@
 """Bloq for building a Trotterized unitary"""
 
 from functools import cached_property
-from typing import Dict, Iterable, Union
+from typing import Dict, Sequence, Union
 
 import attrs
-import sympy
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
+from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
@@ -81,10 +81,10 @@ class TrotterizedUnitary(Bloq):
             https://arxiv.org/abs/2306.10603) see github repo for software to produce splittings.
     """
 
-    bloqs: Iterable[Bloq]
-    indices: Iterable[int]
-    coeffs: Iterable[Union[float, sympy.Expr]]
-    timestep: Union[float, sympy.Expr]
+    bloqs: Sequence[Bloq]
+    indices: Sequence[int]
+    coeffs: Sequence[Union[SymbolicFloat]]
+    timestep: Union[SymbolicFloat]
 
     def __attrs_post_init__(self):
         ref_sig = self.bloqs[0].signature
@@ -102,9 +102,11 @@ class TrotterizedUnitary(Bloq):
     def signature(self) -> Signature:
         return self.bloqs[0].signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         for i, a in zip(self.indices, self.coeffs):
-            soqs |= bb.add_d(attrs.evolve(self.bloqs[i], angle=2 * a * self.timestep), **soqs)
+            # Bloqs passed in are supposed to be attrs dataclasses per docs
+            # It would be nice to somehow specify that self.bloqs are both bloqs and AttrsInstance
+            soqs |= bb.add_d(attrs.evolve(self.bloqs[i], angle=2 * a * self.timestep), **soqs)  # type: ignore[misc]
         return soqs
 
 

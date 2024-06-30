@@ -19,6 +19,12 @@ from qualtran.surface_code.ccz2t_cost_model import (
     get_ccz2t_costs_from_error_budget,
     get_ccz2t_costs_from_grid_search,
 )
+from qualtran.surface_code.data_block import (
+    CompactDataBlock,
+    FastDataBlock,
+    IntermediateDataBlock,
+    SimpleDataBlock,
+)
 from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.multi_factory import MultiFactory
@@ -39,5 +45,3 @@ from qualtran.surface_code.rotation_cost_model import (
     RotationLogarithmicModel,
     SevenDigitsOfPrecisionConstantCost,
 )
-
-# from qualtran.surface_code.data_block import DataBlock

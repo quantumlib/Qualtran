@@ -14,23 +14,23 @@
 
 import itertools
 from functools import cached_property
-from typing import Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
 
-from qualtran import BoundedQUInt, QAny, Register, Signature
+from qualtran import BoundedQUInt, QAny, QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import unary_iteration, UnaryIterationGate
-from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.resource_counting.generalizers import cirq_to_bloqs
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 if TYPE_CHECKING:
     from qualtran import Bloq
+    from qualtran.resource_counting import BloqCountT
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -80,7 +80,7 @@ def test_unary_iteration_gate(selection_bitsize, target_bitsize, control_bitsize
         # All controls 'on' to activate circuit
         qubit_vals.update({c: 1 for c in g.quregs['control']})
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         initial_state = [qubit_vals[x] for x in g.operation.qubits]
         qubit_vals[g.quregs['target'][-(n + 1)]] = 1
@@ -124,7 +124,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         t1: Sequence[cirq.Qid],
         t2: Sequence[cirq.Qid],
         t3: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
 
     def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
@@ -146,9 +146,9 @@ def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, in
     for i, j, k in itertools.product(range(max_i), range(max_j), range(max_k)):
         qubit_vals = {x: 0 for x in g.operation.qubits}
         # Initialize selection bits appropriately:
-        qubit_vals.update(zip(g.quregs['i'], iter_bits(i, i_len)))
-        qubit_vals.update(zip(g.quregs['j'], iter_bits(j, j_len)))
-        qubit_vals.update(zip(g.quregs['k'], iter_bits(k, k_len)))
+        qubit_vals.update(zip(g.quregs['i'], QUInt(i_len).to_bits(i)))
+        qubit_vals.update(zip(g.quregs['j'], QUInt(j_len).to_bits(j)))
+        qubit_vals.update(zip(g.quregs['k'], QUInt(k_len).to_bits(k)))
         # Construct initial state
         initial_state = [qubit_vals[x] for x in g.operation.qubits]
         # Build correct statevector with selection_integer bit flipped in the target register:
@@ -165,15 +165,15 @@ def test_unary_iteration_loop():
     target = {(n, m): cirq.q(f't({n}, {m})') for n in range(*n_range) for m in range(*m_range)}
     qm = cirq.GreedyQubitManager("ancilla", maximize_reuse=True)
     circuit = cirq.Circuit()
-    i_ops = []
+    i_ops: List[cirq.Operation] = []
     # Build the unary iteration circuit
     for i_optree, i_ctrl, i in unary_iteration(
-        n_range[0], n_range[1], i_ops, [], selection['n'], qm
+        n_range[0], n_range[1], i_ops, [], list(selection['n']), qm
     ):
         circuit.append(i_optree)
-        j_ops = []
+        j_ops: List[cirq.Operation] = []
         for j_optree, j_ctrl, j in unary_iteration(
-            m_range[0], m_range[1], j_ops, [i_ctrl], selection['m'], qm
+            m_range[0], m_range[1], j_ops, [i_ctrl], list(selection['m']), qm
         ):
             circuit.append(j_optree)
             # Conditionally perform operations on target register using `j_ctrl`, `i` & `j`.
@@ -186,8 +186,8 @@ def test_unary_iteration_loop():
     for i, j in itertools.product(range(*n_range), range(*m_range)):
         qubit_vals = {x: 0 for x in all_qubits}
         # Initialize selection bits appropriately:
-        qubit_vals.update(zip(selection['n'], iter_bits(i, i_len)))
-        qubit_vals.update(zip(selection['m'], iter_bits(j, j_len)))
+        qubit_vals.update(zip(selection['n'], QUInt(i_len).to_bits(i)))
+        qubit_vals.update(zip(selection['m'], QUInt(j_len).to_bits(j)))
         # Construct initial state
         initial_state = [qubit_vals[x] for x in all_qubits]
         # Build correct statevector with selection_integer bit flipped in the target register:

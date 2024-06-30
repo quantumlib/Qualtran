@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import cirq
 import pytest
 
+from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.magic_count import MagicCount
 
@@ -22,12 +24,12 @@ def test_mul():
     assert AlgorithmSummary(t_gates=9) == 3 * AlgorithmSummary(t_gates=3)
 
     with pytest.raises(TypeError):
-        _ = complex(1, 0) * AlgorithmSummary(rotation_gates=1)
+        _ = complex(1, 0) * AlgorithmSummary(rotation_gates=1)  # type: ignore[operator]
 
 
 def test_addition():
     with pytest.raises(TypeError):
-        _ = AlgorithmSummary() + 5
+        _ = AlgorithmSummary() + 5  # type: ignore[operator]
 
     a = AlgorithmSummary(
         algorithm_qubits=7,
@@ -57,7 +59,7 @@ def test_addition():
 
 def test_subtraction():
     with pytest.raises(TypeError):
-        _ = AlgorithmSummary() - 5
+        _ = AlgorithmSummary() - 5  # type: ignore[operator]
 
     a = AlgorithmSummary(
         algorithm_qubits=7,
@@ -90,3 +92,32 @@ def test_subtraction():
 
     with pytest.raises(ValueError):
         _ = AlgorithmSummary(rotation_gates=1).to_magic_count()
+
+
+@pytest.mark.parametrize(
+    ['bloq', 'summary'],
+    [
+        [basic_gates.TGate(is_adjoint=False), AlgorithmSummary(algorithm_qubits=1, t_gates=1)],
+        [basic_gates.Toffoli(), AlgorithmSummary(algorithm_qubits=3, toffoli_gates=1)],
+        [basic_gates.TwoBitCSwap(), AlgorithmSummary(algorithm_qubits=3, toffoli_gates=1)],
+        [mcmt.And(), AlgorithmSummary(algorithm_qubits=3, toffoli_gates=1)],
+        [
+            basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
+            AlgorithmSummary(algorithm_qubits=1, rotation_gates=1),
+        ],
+        [
+            rotations.phase_gradient.PhaseGradientUnitary(
+                bitsize=10, exponent=1, is_controlled=False, eps=1e-10
+            ),
+            AlgorithmSummary(algorithm_qubits=10, rotation_gates=10, rotation_circuit_depth=1),
+        ],
+        [
+            mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            AlgorithmSummary(
+                algorithm_qubits=6, toffoli_gates=2, rotation_circuit_depth=2, measurements=2
+            ),
+        ],
+    ],
+)
+def test_summary_from_bloq(bloq, summary):
+    assert AlgorithmSummary.from_bloq(bloq) == summary
