@@ -37,7 +37,7 @@ class SynthesizeGateViaHR(Bloq):
     unitary operator $U$ with a reflection ancilla as
 
     $$
-        |0\rangle\langle 1| U + |1\rangle\langle 0| U^\dagger$,
+        |0\rangle\langle 1| U + |1\rangle\langle 0| U^\dagger
     $$
 
     even though for the purpose of making this bloq simpler to work with, the gate actually
