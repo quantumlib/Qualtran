@@ -16,6 +16,7 @@
 import enum
 import itertools
 from collections import defaultdict
+from functools import cached_property
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
@@ -99,6 +100,10 @@ class Register:
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
+        return self._total_bits
+
+    @cached_property
+    def _total_bits(self) -> int:
         return self.bitsize * int(np.prod(self.shape))
 
     def adjoint(self) -> 'Register':
