@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union
+from typing import TypeVar, Union
 
 import sympy
 from attrs import field, frozen, validators
@@ -25,6 +25,9 @@ document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
 SymbolicComplex = Union[complex, sympy.Expr]
 document(SymbolicComplex, """A complex value or a sympy expression.""")
+
+AnySymbolic = TypeVar('AnySymbolic', SymbolicInt, SymbolicFloat)
+document(AnySymbolic, """A type variable that can be either SymbolicInt or SymbolicFloat.""")
 
 
 @frozen

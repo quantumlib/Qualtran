@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, overload, Sized, Tuple, Union
+from typing import cast, Iterable, overload, Sized, Tuple, Union
 
 import numpy as np
 import sympy
 
 from qualtran.symbolics.types import (
+    AnySymbolic,
     HasLength,
     is_symbolic,
     Shaped,
@@ -82,8 +83,8 @@ def smin(*args):
     return min(*args)
 
 
-def prod(*args: SymbolicInt) -> SymbolicInt:
-    ret: SymbolicInt = 1
+def prod(args: Iterable[AnySymbolic]) -> AnySymbolic:
+    ret: AnySymbolic = 1
     for arg in args:
         ret = ret * arg
     return ret
