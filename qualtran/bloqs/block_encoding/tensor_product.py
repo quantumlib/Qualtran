@@ -13,20 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property, reduce
-from typing import Dict, Sequence, Tuple
+from typing import Dict, Tuple
 
 from attrs import evolve, field, frozen, validators
 
-from qualtran import (
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    QAny,
-    QDType,
-    Register,
-    Signature,
-    SoquetT,
-)
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, SoquetT
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import Partition
@@ -58,38 +49,40 @@ class TensorProduct(BlockEncoding):
         [Quantum algorithms: A survey of applications and end-to-end complexities](https://arxiv.org/abs/2310.03011). Dalzell et al. (2023). Ch. 10.2.
     """
 
-    U: Sequence[BlockEncoding] = field(
+    block_encodings: Tuple[BlockEncoding, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
-            system=self.dtype, ancilla=QAny(self.num_ancillas), resource=QAny(self.num_resource)
+            system=QAny(self.system_bitsize),
+            ancilla=QAny(self.num_ancillas),
+            resource=QAny(self.num_resource),
         )
 
     @cached_property
-    def dtype(self) -> QDType:
-        return QAny(bitsize=sum(u.dtype.num_qubits for u in self.U))
+    def system_bitsize(self) -> int:
+        return sum(u.system_bitsize for u in self.block_encodings)
 
     def pretty_name(self) -> str:
-        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.U)}]"
+        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return reduce(lambda a, b: a * b.alpha, self.U, 1.0)
+        return reduce(lambda a, b: a * b.alpha, self.block_encodings, 1.0)
 
     @cached_property
     def num_ancillas(self) -> int:
-        return sum(u.num_ancillas for u in self.U)
+        return sum(u.num_ancillas for u in self.block_encodings)
 
     @cached_property
     def num_resource(self) -> int:
-        return sum(u.num_resource for u in self.U)
+        return sum(u.num_resource for u in self.block_encodings)
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
-        return sum(u.alpha * u.epsilon for u in self.U)
+        return sum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -105,23 +98,25 @@ class TensorProduct(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
+        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
         raise NotImplementedError
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT
     ) -> Dict[str, SoquetT]:
-        transpose = lambda x: zip(*x)
-        sys_regs, anc_regs, res_regs = transpose(
-            [evolve(r, name=f"{r.name}{i}") for r in u.signature.lefts()]
-            for i, u in enumerate(self.U)
+        sys_regs, anc_regs, res_regs = zip(
+            *(
+                [evolve(r, name=f"_{r.name}{i}") for r in u.signature]
+                for i, u in enumerate(self.block_encodings)
+            )
         )
-        sys_part = Partition(self.dtype.num_qubits, regs=sys_regs)
+        sys_part = Partition(self.system_bitsize, regs=sys_regs)
         anc_part = Partition(self.num_ancillas, regs=anc_regs)
         res_part = Partition(self.num_resource, regs=res_regs)
         sys_out_regs = list(bb.add_t(sys_part, x=system))
         anc_out_regs = list(bb.add_t(anc_part, x=ancilla))
         res_out_regs = list(bb.add_t(res_part, x=resource))
-        for i, u in enumerate(self.U):
+        for i, u in enumerate(self.block_encodings):
             sys_out_regs[i], anc_out_regs[i], res_out_regs[i] = bb.add_t(
                 u, system=sys_out_regs[i], ancilla=anc_out_regs[i], resource=res_out_regs[i]
             )
@@ -137,13 +132,10 @@ class TensorProduct(BlockEncoding):
 
 @bloq_example
 def _tensor_product_block_encoding() -> TensorProduct:
-    from qualtran import QBit
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    tensor_product_block_encoding = TensorProduct(
-        [Unitary(TGate(), dtype=QBit()), Unitary(Hadamard(), dtype=QBit())]
-    )
+    tensor_product_block_encoding = TensorProduct((Unitary(TGate()), Unitary(Hadamard())))
     return tensor_product_block_encoding
 
 

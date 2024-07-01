@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from attrs import evolve
 
-from qualtran import QAny, QBit, Register, Signature
+from qualtran import QAny, Register, Signature
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
 from qualtran.bloqs.block_encoding.tensor_product import (
     _tensor_product_block_encoding,
@@ -34,18 +34,14 @@ def test_tensor_product_signature():
         [Register("system", QAny(2)), Register("ancilla", QAny(0)), Register("resource", QAny(0))]
     )
     with pytest.raises(ValueError):
-        _ = TensorProduct([])
+        _ = TensorProduct(())
 
 
 def test_tensor_product_params():
-    u1 = evolve(
-        Unitary(TGate(), dtype=QBit()), alpha=0.5, num_ancillas=2, num_resource=1, epsilon=0.01
-    )
-    u2 = evolve(
-        Unitary(CNOT(), dtype=QAny(2)), alpha=0.5, num_ancillas=1, num_resource=1, epsilon=0.1
-    )
-    bloq = TensorProduct([u1, u2])
-    assert bloq.dtype == QAny(1 + 2)
+    u1 = evolve(Unitary(TGate()), alpha=0.5, num_ancillas=2, num_resource=1, epsilon=0.01)
+    u2 = evolve(Unitary(CNOT()), alpha=0.5, num_ancillas=1, num_resource=1, epsilon=0.1)
+    bloq = TensorProduct((u1, u2))
+    assert bloq.system_bitsize == 1 + 2
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
     assert bloq.num_ancillas == 2 + 1
@@ -58,5 +54,5 @@ def test_tensor_product_tensors():
     np.testing.assert_allclose(from_gate, from_tensors)
 
     from_gate = TGate().tensor_contract()
-    from_tensors = TensorProduct([Unitary(TGate(), dtype=QBit())]).tensor_contract()
+    from_tensors = TensorProduct((Unitary(TGate()),)).tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)

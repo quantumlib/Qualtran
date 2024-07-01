@@ -23,8 +23,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     QAny,
-    QDType,
     Register,
+    Side,
     Signature,
     SoquetT,
 )
@@ -54,19 +54,26 @@ class Unitary(BlockEncoding):
     """
 
     U: Bloq
-    dtype: QDType
     alpha: SymbolicFloat = 1
     num_ancillas: int = 0
     num_resource: int = 0
     epsilon: SymbolicFloat = 0
 
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.bitsize for r in self.U.signature)
+
     def __attrs_post_init__(self):
-        assert self.U.signature == self.U.signature.adjoint()
-        assert self.dtype.num_qubits == sum(r.bitsize for r in self.U.signature.rights())
+        if not all(r.side == Side.THRU for r in self.U.signature):
+            raise ValueError("Block encoded unitary must have all THRU registers.")
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(system=self.dtype, ancilla=QAny(0), resource=QAny(0))
+        return Signature.build_from_dtypes(
+            system=QAny(self.system_bitsize),
+            ancilla=QAny(self.num_ancillas),
+            resource=QAny(self.num_resource),
+        )
 
     def pretty_name(self) -> str:
         return f"B[{self.U.pretty_name()}]"
@@ -75,11 +82,17 @@ class Unitary(BlockEncoding):
     def target_registers(self) -> Tuple[Register, ...]:
         return tuple(self.signature.rights())
 
-    junk_registers: Tuple[Register, ...] = ()
-    selection_registers: Tuple[Register, ...] = ()
+    @property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return ()
+
+    @property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return ()
 
     @property
     def signal_state(self) -> PrepareOracle:
+        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
         raise NotImplementedError
 
     def build_composite_bloq(
@@ -97,10 +110,9 @@ class Unitary(BlockEncoding):
 
 @bloq_example
 def _unitary_block_encoding() -> Unitary:
-    from qualtran import QBit
     from qualtran.bloqs.basic_gates import TGate
 
-    unitary_block_encoding = Unitary(TGate(), dtype=QBit())
+    unitary_block_encoding = Unitary(TGate())
     return unitary_block_encoding
 
 

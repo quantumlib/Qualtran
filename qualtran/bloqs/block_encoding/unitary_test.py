@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from qualtran import QAny, QBit, Register, Signature
+from qualtran import QAny, Register, Signature
 from qualtran.bloqs.basic_gates import IntState, TGate
 from qualtran.bloqs.block_encoding.unitary import _unitary_block_encoding, Unitary
 
@@ -26,12 +26,10 @@ def test_unitary(bloq_autotester):
 
 def test_unitary_signature():
     assert _unitary_block_encoding().signature == Signature(
-        [Register("system", QBit()), Register("ancilla", QAny(0)), Register("resource", QAny(0))]
+        [Register("system", QAny(1)), Register("ancilla", QAny(0)), Register("resource", QAny(0))]
     )
-    with pytest.raises(AssertionError):
-        _ = Unitary(TGate(), dtype=QAny(2))
-    with pytest.raises(AssertionError):
-        _ = Unitary(IntState(55, bitsize=8), dtype=QAny(8))
+    with pytest.raises(ValueError):
+        _ = Unitary(IntState(55, bitsize=8))
 
 
 def test_unitary_params():

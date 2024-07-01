@@ -14,7 +14,7 @@
 import abc
 from typing import Tuple
 
-from qualtran import Bloq, BloqDocSpec, QDType, Register
+from qualtran import Bloq, BloqDocSpec, Register
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.symbolics import SymbolicFloat
 
@@ -69,13 +69,13 @@ class BlockEncoding(Bloq):
         return 'B[H]'
 
     @property
-    def dtype(self) -> QDType:
-        """The type of the system being block encoded."""
+    def alpha(self) -> SymbolicFloat:
+        """The normalization constant."""
         raise NotImplementedError
 
     @property
-    def alpha(self) -> SymbolicFloat:
-        """The normalization constant."""
+    def system_bitsize(self) -> int:
+        """The number of qubits that represent the system being block encoded."""
         raise NotImplementedError
 
     @property
