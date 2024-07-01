@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
 import cirq
 import numpy as np
 
@@ -55,7 +57,52 @@ def get_prepare_precision_from_eigenphase_precision(
     )
 
 
-def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
+def upper_bound_norm_for_pauli_hamiltonian(ham: cirq.PauliSum) -> float:
+    r"""Compute a weak upper-bound of the norm of a PauliSum Hamiltonian.
+
+    Given a Pauli Hamiltonian $H = \sum_{l = 0}^{L-1} w_l H_l$, where each $H_l$
+    is a PauliString, compute an upper bound on $\norm{H}$ which is slightly
+    better than $\lambda = \sum_l w_l$, if possible.
+
+    If all the terms commute, this just returns $\lambda$.
+
+    Proof:
+
+    As all the $H_l$ are Pauli strings, we know
+    - $H_l^2 = I$
+    - $H_l H_{l'} = \pm H_{l'} H_l$ (i.e. they either commute/anti-commute)
+
+    $$
+        H^2
+        = \sum_{l, l'} w_l w_{l'} H_l H_{l'}
+        = \sum_{l} w_l^2 I + \sum_{l < l'; [H_l, H_{l'}] = 0} 2 w_l w_{l'} H_l H_{l'}
+    $$
+
+    $$
+        \norm{H^2}
+        \le \sum_{l} w_l^2 + \sum_{l < l'; [H_l, H_{l'}] = 0} 2 w_l w_{l'}
+        = \lambda^2 - \sum_{l < l'; [H_l, H_{l'}] \ne 0} 2 w_l w_{l'}
+    $$
+
+    Notes:
+        Takes time $L^2 n$, for $L$ terms and each PauliString acting on $n$ qubits.
+    """
+    L = len(ham)
+    ham_ps = [ps for ps in ham]
+    qlambda = sum(ps.coefficient for ps in ham)
+
+    anticommute_sum = 0
+    for i in range(L):
+        for j in range(i):
+            if not cirq.commutes(ham_ps[i], ham_ps[j]):
+                anticommute_sum += np.abs(ham_ps[i].coefficient * ham_ps[j].coefficient)
+
+    return np.sqrt(qlambda**2 - 2 * anticommute_sum)
+
+
+def walk_operator_for_pauli_hamiltonian(
+    ham: cirq.PauliSum, eps: float, *, ham_norm_upper_bound: Optional[float] = None
+) -> QubitizationWalkOperator:
     r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
 
     For a Hamiltonian $H = \sum_{l=0}^{L-1} w_l H_l$, this returns a qubitized walk operator
@@ -72,6 +119,8 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
     Args:
         ham: Hamiltonian described as a sum of Pauli terms.
         eps: precision $\epsilon$ of the eigenphases of the walk operator.
+        ham_norm_upper_bound: an upper bound on $\norm{H}$. If not provided,
+            it is computed using :meth:`upper_bound_norm_for_pauli_hamiltonian`
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
@@ -81,14 +130,13 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
     ham_dps = [ps.dense(q) for ps in ham]
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
 
+    if ham_norm_upper_bound is None:
+        ham_norm_upper_bound = upper_bound_norm_for_pauli_hamiltonian(ham)
     prepare = StatePreparationAliasSampling.from_probabilities(
         ham_coeff,
         precision=float(
             get_prepare_precision_from_eigenphase_precision(
-                eps,
-                len(ham_coeff),
-                sum(ham_coeff),
-                float(np.linalg.norm(ham.matrix(), ord=2)),  # TODO do not use linalg.norm
+                eps, len(ham_coeff), sum(ham_coeff), ham_norm_upper_bound
             )
         ),
     )
@@ -109,5 +157,10 @@ def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> Qubitiza
         num_sites: number of spins $n$.
         eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
     """
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    return walk_operator_for_pauli_hamiltonian(ham, eps)
+    J, gamma = 1, 1
+    ham = get_1d_ising_hamiltonian(
+        cirq.LineQubit.range(num_sites), j_zz_strength=J, gamma_x_strength=gamma
+    )
+    return walk_operator_for_pauli_hamiltonian(
+        ham, eps, ham_norm_upper_bound=num_sites * np.sqrt(J**2 + gamma**2)
+    )
