@@ -156,7 +156,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
 def _walk_op() -> QubitizationWalkOperator:
     from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 
-    walk_op = get_walk_operator_for_1d_ising_model(4, 2e-1)
+    walk_op, _ = get_walk_operator_for_1d_ising_model(4, 2e-1)
     return walk_op
 
 

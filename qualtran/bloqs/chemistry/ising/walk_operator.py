@@ -132,13 +132,11 @@ def walk_operator_for_pauli_hamiltonian(
 
     if ham_norm_upper_bound is None:
         ham_norm_upper_bound = upper_bound_norm_for_pauli_hamiltonian(ham)
+    eps_prepare = get_prepare_precision_from_eigenphase_precision(
+        eps, len(ham_coeff), sum(ham_coeff), ham_norm_upper_bound
+    )
     prepare = StatePreparationAliasSampling.from_probabilities(
-        ham_coeff,
-        precision=float(
-            get_prepare_precision_from_eigenphase_precision(
-                eps, len(ham_coeff), sum(ham_coeff), ham_norm_upper_bound
-            )
-        ),
+        ham_coeff, precision=float(eps_prepare)
     )
 
     select = SelectPauliLCU(
@@ -148,7 +146,9 @@ def walk_operator_for_pauli_hamiltonian(
     return QubitizationWalkOperator(select=select, prepare=prepare)
 
 
-def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
+def get_walk_operator_for_1d_ising_model(
+    num_sites: int, eps: float
+) -> tuple[QubitizationWalkOperator, cirq.PauliSum]:
     r"""Get the QubitizationWalkOperator for a 1d Ising Hamiltonian on n sites.
 
     Returns an $(\lambda, \cdot, \epsilon)$-block-encoding of the 1d Ising Hamiltonian.
@@ -156,11 +156,15 @@ def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> Qubitiza
     Args:
         num_sites: number of spins $n$.
         eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
+
+    Returns:
+        The walk operator $W$ and the hamiltonian $H$.
     """
-    J, gamma = 1, 1
+    J, gamma = 1, -1
     ham = get_1d_ising_hamiltonian(
         cirq.LineQubit.range(num_sites), j_zz_strength=J, gamma_x_strength=gamma
     )
-    return walk_operator_for_pauli_hamiltonian(
+    walk = walk_operator_for_pauli_hamiltonian(
         ham, eps, ham_norm_upper_bound=num_sites * np.sqrt(J**2 + gamma**2)
     )
+    return walk, ham

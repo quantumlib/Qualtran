@@ -172,7 +172,7 @@ def test_call_graph(negative_power: int):
 
 @bloq_example
 def _gqsp_1d_ising() -> GeneralizedQSP:
-    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    W, _ = get_walk_operator_for_1d_ising_model(2, 1e-4)
     gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
     return gqsp_1d_ising
 

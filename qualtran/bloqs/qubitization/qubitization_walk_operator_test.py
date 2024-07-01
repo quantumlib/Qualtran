@@ -18,11 +18,7 @@ import pytest
 
 from qualtran import Adjoint
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
-from qualtran.bloqs.chemistry.ising.walk_operator import (
-    get_walk_operator_for_1d_ising_model,
-    walk_operator_for_pauli_hamiltonian,
-)
+from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import (
@@ -50,16 +46,15 @@ def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
 
 
 @pytest.mark.parametrize(
-    'num_sites,eps', [pytest.param(4, 2e-1, marks=pytest.mark.slow), (3, 1e-1)]
+    'num_sites,eps', [(3, 1e-1), pytest.param(4, 2e-1, marks=pytest.mark.slow)]
 )
 def test_qubitization_walk_operator(num_sites: int, eps: float):
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk, ham = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert_valid_bloq_decomposition(walk)
 
+    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
     qubitization_lambda = walk.sum_of_lcu_coefficients
+    np.testing.assert_allclose(qubitization_lambda, sum(ham_coeff))
 
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk)
 
@@ -95,8 +90,7 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
 
 def test_qubitization_walk_operator_adjoint():
     num_sites, eps = 4, 2e-1
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     walk_inv_tensor = walk.adjoint().tensor_contract()
     walk_adj_tensor = Adjoint(walk).tensor_contract()
     np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor)
@@ -104,14 +98,13 @@ def test_qubitization_walk_operator_adjoint():
 
 def test_t_complexity_for_controlled_and_adjoint():
     num_sites, eps = 4, 2e-1
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert walk.controlled().adjoint().t_complexity() == walk.adjoint().controlled().t_complexity()
 
 
 def test_qubitization_walk_operator_diagrams():
     num_sites, eps = 4, 1e-1
-    walk = get_walk_operator_for_1d_ising_model(num_sites, eps)
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     # 1. Diagram for $W = SELECT.R_{L}$
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk, decompose_once=True)
     cirq.testing.assert_has_diagram(
@@ -254,7 +247,7 @@ target3: ──────SelectPauliLCU─────────────
 
 
 def test_qubitization_walk_operator_consistent_protocols_and_controlled():
-    gate = get_walk_operator_for_1d_ising_model(4, 1e-1)
+    gate, _ = get_walk_operator_for_1d_ising_model(4, 1e-1)
     op = gate.on_registers(**get_named_qubits(gate.signature))
     # Build controlled gate
     equals_tester = cirq.testing.EqualsTester()
