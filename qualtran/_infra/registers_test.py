@@ -139,8 +139,13 @@ def test_signature_build():
     assert sig1 == sig2
     assert sig1.n_qubits() == 7
 
-    sig1 = Signature([Register("r1", QAny(0)), Register("r2", QAny(2))])
+    sig1 = Signature([Register("r2", QAny(2))])
     sig2 = Signature.build(r1=0, r2=2)
+    assert sig1 == sig2
+    assert sig1.n_qubits() == 2
+
+    sig1 = Signature([Register("r1", QAny(0)), Register("r2", QAny(2))])
+    sig2 = Signature.build(ignore_zero=False, r1=0, r2=2)
     assert sig1 == sig2
     assert sig1.n_qubits() == 2
 
