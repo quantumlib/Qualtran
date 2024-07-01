@@ -15,7 +15,7 @@
 from functools import cached_property, reduce
 from typing import Dict, Sequence, Tuple
 
-from attrs import evolve, field, frozen
+from attrs import evolve, field, frozen, validators
 
 from qualtran import (
     bloq_example,
@@ -58,7 +58,9 @@ class TensorProduct(BlockEncoding):
         [Quantum algorithms: A survey of applications and end-to-end complexities](https://arxiv.org/abs/2310.03011). Dalzell et al. (2023). Ch. 10.2.
     """
 
-    U: Sequence[BlockEncoding] = field(converter=lambda x: x if isinstance(x, tuple) else tuple(x))
+    U: Sequence[BlockEncoding] = field(
+        converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
+    )
 
     @cached_property
     def signature(self) -> Signature:

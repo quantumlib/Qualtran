@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import numpy as np
+import pytest
 from attrs import evolve
 
 from qualtran import QAny, QBit, Register, Signature
@@ -32,6 +33,8 @@ def test_tensor_product_signature():
     assert _tensor_product_block_encoding().signature == Signature(
         [Register("system", QAny(2)), Register("ancilla", QAny(0)), Register("resource", QAny(0))]
     )
+    with pytest.raises(ValueError):
+        _ = TensorProduct([])
 
 
 def test_tensor_product_params():
@@ -52,4 +55,8 @@ def test_tensor_product_params():
 def test_tensor_product_tensors():
     from_gate = np.kron(TGate().tensor_contract(), Hadamard().tensor_contract())
     from_tensors = _tensor_product_block_encoding().tensor_contract()
+    np.testing.assert_allclose(from_gate, from_tensors)
+
+    from_gate = TGate().tensor_contract()
+    from_tensors = TensorProduct([Unitary(TGate(), dtype=QBit())]).tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
