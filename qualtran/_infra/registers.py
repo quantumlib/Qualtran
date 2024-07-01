@@ -151,7 +151,7 @@ class Signature:
                 will be 0-dimensional and THRU.
         """
         return cls(
-            Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items() if v
+            Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items()
         )
 
     @classmethod
