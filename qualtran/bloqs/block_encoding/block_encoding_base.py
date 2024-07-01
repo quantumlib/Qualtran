@@ -16,7 +16,7 @@ from typing import Tuple
 
 from qualtran import Bloq, BloqDocSpec, Register
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 class BlockEncoding(Bloq):
@@ -74,17 +74,17 @@ class BlockEncoding(Bloq):
         raise NotImplementedError
 
     @property
-    def system_bitsize(self) -> int:
+    def system_bitsize(self) -> SymbolicInt:
         """The number of qubits that represent the system being block encoded."""
         raise NotImplementedError
 
     @property
-    def ancilla_bitsize(self) -> int:
+    def ancilla_bitsize(self) -> SymbolicInt:
         """The number of ancilla qubits."""
         raise NotImplementedError
 
     @property
-    def resource_bitsize(self) -> int:
+    def resource_bitsize(self) -> SymbolicInt:
         """The number of resource qubits not counted in ancillas."""
         raise NotImplementedError
 

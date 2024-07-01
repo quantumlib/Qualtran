@@ -20,6 +20,7 @@ from qualtran import QAny, Register, Signature
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
 from qualtran.bloqs.block_encoding.tensor_product import (
     _tensor_product_block_encoding,
+    _tensor_product_block_encoding_symb,
     TensorProduct,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
@@ -27,6 +28,7 @@ from qualtran.bloqs.block_encoding.unitary import Unitary
 
 def test_tensor_product(bloq_autotester):
     bloq_autotester(_tensor_product_block_encoding)
+    bloq_autotester(_tensor_product_block_encoding_symb)
 
 
 def test_tensor_product_signature():

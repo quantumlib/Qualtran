@@ -13,16 +13,25 @@
 #  limitations under the License.
 
 from functools import cached_property, reduce
-from typing import Dict, Set, Tuple
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 from attrs import evolve, field, frozen, validators
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, SoquetT
+from qualtran import (
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    DecomposeTypeError,
+    QAny,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -63,7 +72,7 @@ class TensorProduct(BlockEncoding):
         )
 
     @cached_property
-    def system_bitsize(self) -> int:
+    def system_bitsize(self) -> SymbolicInt:
         return sum(u.system_bitsize for u in self.block_encodings)
 
     def pretty_name(self) -> str:
@@ -74,11 +83,11 @@ class TensorProduct(BlockEncoding):
         return reduce(lambda a, b: a * b.alpha, self.block_encodings, 1.0)
 
     @cached_property
-    def ancilla_bitsize(self) -> int:
+    def ancilla_bitsize(self) -> SymbolicInt:
         return sum(u.ancilla_bitsize for u in self.block_encodings)
 
     @cached_property
-    def resource_bitsize(self) -> int:
+    def resource_bitsize(self) -> SymbolicInt:
         return sum(u.resource_bitsize for u in self.block_encodings)
 
     @cached_property
@@ -108,6 +117,17 @@ class TensorProduct(BlockEncoding):
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT
     ) -> Dict[str, SoquetT]:
+        if (
+            is_symbolic(self.system_bitsize)
+            or is_symbolic(self.ancilla_bitsize)
+            or is_symbolic(self.resource_bitsize)
+        ):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        if TYPE_CHECKING:
+            assert isinstance(self.system_bitsize, int)
+            assert isinstance(self.ancilla_bitsize, int)
+            assert isinstance(self.resource_bitsize, int)
+
         sys_regs, anc_regs, res_regs = zip(
             *(
                 [evolve(r, name=f"{r.name}{i}_") for r in u.signature]
@@ -143,8 +163,30 @@ def _tensor_product_block_encoding() -> TensorProduct:
     return tensor_product_block_encoding
 
 
+@bloq_example
+def _tensor_product_block_encoding_symb() -> TensorProduct:
+    import sympy
+
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    alpha1 = sympy.Symbol('alpha1')
+    a1 = sympy.Symbol('a1')
+    eps1 = sympy.Symbol('eps1')
+    alpha2 = sympy.Symbol('alpha2')
+    a2 = sympy.Symbol('a2')
+    eps2 = sympy.Symbol('eps2')
+    tensor_product_block_encoding_symb = TensorProduct(
+        (
+            Unitary(TGate(), alpha=alpha1, ancilla_bitsize=a1, epsilon=eps1),
+            Unitary(Hadamard(), alpha=alpha2, ancilla_bitsize=a2, epsilon=eps2),
+        )
+    )
+    return tensor_product_block_encoding_symb
+
+
 _TENSOR_PRODUCT_DOC = BloqDocSpec(
     bloq_cls=TensorProduct,
     import_line="from qualtran.bloqs.block_encoding import TensorProduct",
-    examples=[_tensor_product_block_encoding],
+    examples=[_tensor_product_block_encoding, _tensor_product_block_encoding_symb],
 )

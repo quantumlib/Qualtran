@@ -31,7 +31,7 @@ from qualtran import (
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -56,12 +56,12 @@ class Unitary(BlockEncoding):
 
     U: Bloq
     alpha: SymbolicFloat = 1
-    ancilla_bitsize: int = 0
-    resource_bitsize: int = 0
+    ancilla_bitsize: SymbolicInt = 0
+    resource_bitsize: SymbolicInt = 0
     epsilon: SymbolicFloat = 0
 
     @cached_property
-    def system_bitsize(self) -> int:
+    def system_bitsize(self) -> SymbolicInt:
         return sum(r.bitsize for r in self.U.signature)
 
     def __attrs_post_init__(self):
