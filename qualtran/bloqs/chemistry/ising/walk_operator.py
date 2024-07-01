@@ -132,12 +132,10 @@ def walk_operator_for_pauli_hamiltonian(
 
     if ham_norm_upper_bound is None:
         ham_norm_upper_bound = upper_bound_norm_for_pauli_hamiltonian(ham)
-    eps_prepare = get_prepare_precision_from_eigenphase_precision(
+    delta = get_prepare_precision_from_eigenphase_precision(
         eps, len(ham_coeff), sum(ham_coeff), ham_norm_upper_bound
     )
-    prepare = StatePreparationAliasSampling.from_probabilities(
-        ham_coeff, precision=float(eps_prepare)
-    )
+    prepare = StatePreparationAliasSampling.from_probabilities(ham_coeff, precision=float(delta))
 
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
