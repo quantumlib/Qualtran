@@ -11,13 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Iterable, overload, Sized, Tuple, Union
+from typing import cast, Iterable, overload, Sized, Tuple, TypeVar, Union
 
 import numpy as np
 import sympy
 
 from qualtran.symbolics.types import (
-    AnySymbolic,
     HasLength,
     is_symbolic,
     Shaped,
@@ -81,6 +80,14 @@ def smin(*args):
     if is_symbolic(*args):
         return sympy.Min(*args)
     return min(*args)
+
+
+# This is only used in the type signature of functions that should be generic over different
+# symbolic types, in situations where Union and @overload are not sufficient.
+# The user should not need to invoke it directly. Rather, the user can use a function that
+# takes AnySymbolic by calling it with e.g. a SymbolicInt. Correspondingly, if the type signature
+# of the function returns AnySymbolic, then this call will then return a SymbolicInt.
+AnySymbolic = TypeVar('AnySymbolic', SymbolicInt, SymbolicFloat, SymbolicComplex)
 
 
 def prod(args: Iterable[AnySymbolic]) -> AnySymbolic:
