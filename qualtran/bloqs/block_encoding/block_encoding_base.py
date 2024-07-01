@@ -79,12 +79,12 @@ class BlockEncoding(Bloq):
         raise NotImplementedError
 
     @property
-    def num_ancillas(self) -> int:
+    def ancilla_bitsize(self) -> int:
         """The number of ancilla qubits."""
         raise NotImplementedError
 
     @property
-    def num_resource(self) -> int:
+    def resource_bitsize(self) -> int:
         """The number of resource qubits not counted in ancillas."""
         raise NotImplementedError
 

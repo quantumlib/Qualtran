@@ -38,14 +38,14 @@ def test_tensor_product_signature():
 
 
 def test_tensor_product_params():
-    u1 = evolve(Unitary(TGate()), alpha=0.5, num_ancillas=2, num_resource=1, epsilon=0.01)
-    u2 = evolve(Unitary(CNOT()), alpha=0.5, num_ancillas=1, num_resource=1, epsilon=0.1)
+    u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
+    u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
     bloq = TensorProduct((u1, u2))
     assert bloq.system_bitsize == 1 + 2
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
-    assert bloq.num_ancillas == 2 + 1
-    assert bloq.num_resource == 1 + 1
+    assert bloq.ancilla_bitsize == 2 + 1
+    assert bloq.resource_bitsize == 1 + 1
 
 
 def test_tensor_product_tensors():

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple
 
 from attrs import frozen
 
@@ -30,6 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat
 
 
@@ -55,8 +56,8 @@ class Unitary(BlockEncoding):
 
     U: Bloq
     alpha: SymbolicFloat = 1
-    num_ancillas: int = 0
-    num_resource: int = 0
+    ancilla_bitsize: int = 0
+    resource_bitsize: int = 0
     epsilon: SymbolicFloat = 0
 
     @cached_property
@@ -71,8 +72,8 @@ class Unitary(BlockEncoding):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             system=QAny(self.system_bitsize),
-            ancilla=QAny(self.num_ancillas),
-            resource=QAny(self.num_resource),
+            ancilla=QAny(self.ancilla_bitsize),
+            resource=QAny(self.resource_bitsize),
         )
 
     def pretty_name(self) -> str:
@@ -94,6 +95,9 @@ class Unitary(BlockEncoding):
     def signal_state(self) -> PrepareOracle:
         """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
         raise NotImplementedError
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+        return {(self.U, 1)}
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT

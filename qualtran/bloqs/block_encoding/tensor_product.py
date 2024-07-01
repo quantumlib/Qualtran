@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property, reduce
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
 
@@ -21,6 +21,7 @@ from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Sig
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import Partition
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat
 
 
@@ -57,8 +58,8 @@ class TensorProduct(BlockEncoding):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             system=QAny(self.system_bitsize),
-            ancilla=QAny(self.num_ancillas),
-            resource=QAny(self.num_resource),
+            ancilla=QAny(self.ancilla_bitsize),
+            resource=QAny(self.resource_bitsize),
         )
 
     @cached_property
@@ -73,12 +74,12 @@ class TensorProduct(BlockEncoding):
         return reduce(lambda a, b: a * b.alpha, self.block_encodings, 1.0)
 
     @cached_property
-    def num_ancillas(self) -> int:
-        return sum(u.num_ancillas for u in self.block_encodings)
+    def ancilla_bitsize(self) -> int:
+        return sum(u.ancilla_bitsize for u in self.block_encodings)
 
     @cached_property
-    def num_resource(self) -> int:
-        return sum(u.num_resource for u in self.block_encodings)
+    def resource_bitsize(self) -> int:
+        return sum(u.resource_bitsize for u in self.block_encodings)
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
@@ -101,18 +102,21 @@ class TensorProduct(BlockEncoding):
         """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
         raise NotImplementedError
 
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+        return {(bloq, 1) for bloq in self.block_encodings}
+
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT
     ) -> Dict[str, SoquetT]:
         sys_regs, anc_regs, res_regs = zip(
             *(
-                [evolve(r, name=f"_{r.name}{i}") for r in u.signature]
+                [evolve(r, name=f"{r.name}{i}_") for r in u.signature]
                 for i, u in enumerate(self.block_encodings)
             )
         )
         sys_part = Partition(self.system_bitsize, regs=sys_regs)
-        anc_part = Partition(self.num_ancillas, regs=anc_regs)
-        res_part = Partition(self.num_resource, regs=res_regs)
+        anc_part = Partition(self.ancilla_bitsize, regs=anc_regs)
+        res_part = Partition(self.resource_bitsize, regs=res_regs)
         sys_out_regs = list(bb.add_t(sys_part, x=system))
         anc_out_regs = list(bb.add_t(anc_part, x=ancilla))
         res_out_regs = list(bb.add_t(res_part, x=resource))

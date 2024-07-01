@@ -36,8 +36,8 @@ def test_unitary_params():
     bloq = _unitary_block_encoding()
     assert bloq.alpha == 1
     assert bloq.epsilon == 0
-    assert bloq.num_ancillas == 0
-    assert bloq.num_resource == 0
+    assert bloq.ancilla_bitsize == 0
+    assert bloq.resource_bitsize == 0
 
 
 def test_unitary_tensors():
