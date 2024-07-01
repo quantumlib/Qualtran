@@ -12,17 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import heapq
-from collections import Counter
-from typing import Dict, Iterator, List, TYPE_CHECKING
+from typing import Iterator, TYPE_CHECKING
 
-import attrs
 import networkx as nx
 
 if TYPE_CHECKING:
     from qualtran import BloqInstance
 
-_INFINITY: int = int(1e18)
+_INFINITY: int = int(1e16)
 
 
 def _priority(node: 'BloqInstance') -> int:
@@ -43,16 +40,8 @@ def _priority(node: 'BloqInstance') -> int:
     return total_bits(signature.rights()) - total_bits(signature.lefts())
 
 
-@attrs.frozen(order=True)
-class _PrioritizedItem:
-    """Helper dataclass to insert items in a heap as part of `greedy_topological_sort`."""
-
-    item: 'BloqInstance' = attrs.field(eq=_priority, order=_priority)
-    priority: int
-
-
 def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']:
-    """Stable greedy topological sorting for the bloq instance graph.
+    """Stable greedy topological sorting for the bloq instance graph to minimize qubit counts.
 
     Topological sorting for the Bloq Instances graph which maintains a priority queue
     instead of a queue. Priority for each bloq is a tuple of the form
@@ -69,7 +58,8 @@ def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']
 
     The stability condition guarantees that two networkx graphs constructed with
     identical ordering of Graph.nodes and Graph.edges will have the same topological
-    sorting.
+    sorting. The method delegates to `networkx.lexicographical_topological_sort` with
+    the `_priority` function used as a key.
 
     Args:
         binst_graph: A networkx DiGraph with `BloqInstances` as nodes. Usually obtained
@@ -80,21 +70,4 @@ def greedy_topological_sort(binst_graph: nx.DiGraph) -> Iterator['BloqInstance']
         goal to minimize qubit allocations and deallocations by pushing allocations to the
         right and de-allocations to the left.
     """
-    heap: List[_PrioritizedItem] = []
-    idx: int = 0
-    in_degree: Dict[BloqInstance, int] = Counter()
-
-    for x in binst_graph.nodes():
-        in_degree[x] = binst_graph.in_degree(x)
-        if not in_degree[x]:
-            heapq.heappush(heap, _PrioritizedItem(x, idx))
-            idx = idx + 1
-
-    while heap:
-        x = heapq.heappop(heap).item
-        yield x
-        for y in binst_graph.neighbors(x):
-            in_degree[y] -= 1
-            if not in_degree[y]:
-                heapq.heappush(heap, _PrioritizedItem(y, idx))
-                idx = idx + 1
+    yield from nx.lexicographical_topological_sort(binst_graph, key=_priority)
