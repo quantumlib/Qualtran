@@ -85,13 +85,13 @@ def smin(*args):
 # This is only used in the type signature of functions that should be generic over different
 # symbolic types, in situations where Union and @overload are not sufficient.
 # The user should not need to invoke it directly. Rather, the user can use a function that
-# takes AnySymbolic by calling it with e.g. a SymbolicInt. Correspondingly, if the type signature
-# of the function returns AnySymbolic, then this call will then return a SymbolicInt.
-AnySymbolic = TypeVar('AnySymbolic', SymbolicInt, SymbolicFloat, SymbolicComplex)
+# takes SymbolicT by calling it with e.g. a SymbolicInt. Correspondingly, if the type signature
+# of the function returns SymbolicT, then this call will then return a SymbolicInt.
+SymbolicT = TypeVar('SymbolicT', SymbolicInt, SymbolicFloat, SymbolicComplex)
 
 
-def prod(args: Iterable[AnySymbolic]) -> AnySymbolic:
-    ret: AnySymbolic = 1
+def prod(args: Iterable[SymbolicT]) -> SymbolicT:
+    ret: SymbolicT = 1
     for arg in args:
         ret = ret * arg
     return ret
