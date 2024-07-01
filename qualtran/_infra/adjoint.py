@@ -17,7 +17,6 @@ from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
-from numpy.typing import NDArray
 
 from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
@@ -141,13 +140,6 @@ class Adjoint(GateWithRegisters):
     def decompose_bloq(self) -> 'CompositeBloq':
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
-
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
-        if isinstance(self.subbloq, GateWithRegisters):
-            return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
-        return super().decompose_from_registers(context=context, **quregs)
 
     def _circuit_diagram_info_(
         self, args: 'cirq.CircuitDiagramInfoArgs'
