@@ -52,7 +52,8 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
     assert_valid_bloq_decomposition(walk)
 
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    qubitization_lambda = walk.sum_of_lcu_coefficients
+    assert walk.sum_of_lcu_coefficients is not None
+    qubitization_lambda = float(walk.sum_of_lcu_coefficients)
     np.testing.assert_allclose(qubitization_lambda, sum(ham_coeff))
 
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk)
