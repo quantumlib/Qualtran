@@ -26,7 +26,6 @@ from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.swap_with_zero import _swz, _swz_small, SwapWithZero
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition
 
 random.seed(12345)
@@ -57,8 +56,7 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
             trgs.append(trg)
         sel, trgs = bb.add(swz, selection=sel, targets=np.array(trgs))
         circuit = bb.finalize(sel=sel, trgs=trgs)
-        flat_circuit = flatten_for_tensor_contraction(circuit)
-        full_state_vector = flat_circuit.tensor_contract()
+        full_state_vector = circuit.tensor_contract()
         result_state_vector = cirq.sub_state_vector(
             full_state_vector,
             keep_indices=list(range(selection_bitsize, selection_bitsize + target_bitsize)),

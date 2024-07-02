@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, Register, Signature
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
 
@@ -57,22 +57,15 @@ class SGate(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         data = _SMATRIX.conj().T if self.is_adjoint else _SMATRIX
-        tn.add(
-            qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
-            )
-        )
+        return [
+            qtn.Tensor(data=data, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)])
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type:ignore[type-var]

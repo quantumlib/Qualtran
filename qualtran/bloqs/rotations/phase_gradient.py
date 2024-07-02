@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -25,6 +25,7 @@ from numpy.typing import NDArray
 from qualtran import (
     bloq_example,
     BloqDocSpec,
+    ConnectionT,
     GateWithRegisters,
     QBit,
     QFxp,
@@ -39,7 +40,7 @@ from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq, SoquetT
+    from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
@@ -308,19 +309,12 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             return self.adjoint()
         raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
+        return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
 
 @bloq_example
@@ -507,20 +501,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)
         return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
 
 
 @bloq_example

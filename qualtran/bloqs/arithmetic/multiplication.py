@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -22,6 +22,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    ConnectionT,
     GateWithRegisters,
     QFxp,
     QUInt,
@@ -35,7 +36,6 @@ from qualtran.symbolics import smax
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -90,19 +90,12 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             )
         raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
+        return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO: The T-complexity here is approximate.
@@ -169,25 +162,25 @@ class Square(Bloq):
         num_toff = self.bitsize * (self.bitsize - 1)
         return {(Toffoli(), num_toff)}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
+        n = self.bitsize
         N = 2**self.bitsize
         data = np.zeros((N, N, N**2), dtype=np.complex128)
         for x in range(N):
             data[x, x, x**2] = 1
 
         trg = incoming['result'] if self.uncompute else outgoing['result']
-        tn.add(
-            qtn.Tensor(data=data, inds=(incoming['a'], outgoing['a'], trg), tags=['Square', tag])
+        inds = (
+            [(incoming['a'], j) for j in range(n)]
+            + [(outgoing['a'], j) for j in range(n)]
+            + [(trg, j) for j in range(2 * n)]
         )
+        data = data.reshape((2,) * (4 * n))
+        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
     def adjoint(self) -> 'Bloq':
         return Square(self.bitsize, not self.uncompute)

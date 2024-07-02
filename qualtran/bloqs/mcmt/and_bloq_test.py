@@ -66,9 +66,9 @@ def test_truth_table(cv1, cv2):
     for cbloq, a, b in _iter_and_truth_table(cv1, cv2):
         vec = cbloq.tensor_contract()
         if (a == cv1) and (b == cv2):
-            np.testing.assert_allclose([0, 1], vec)
+            np.testing.assert_allclose([0, 1], vec, atol=1e-8)
         else:
-            np.testing.assert_allclose([1, 0], vec)
+            np.testing.assert_allclose([1, 0], vec, atol=1e-8)
 
 
 @pytest.mark.parametrize('cv2', [0, 1])
