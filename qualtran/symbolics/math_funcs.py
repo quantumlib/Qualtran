@@ -71,12 +71,34 @@ def bit_length(x: SymbolicFloat) -> SymbolicInt:
 
 
 def smax(*args):
-    if any(isinstance(arg, sympy.Basic) for arg in args):
+    if len(args) == 0:
+        raise ValueError("smax expected at least 1 argument, got 0")
+    if len(args) == 1:
+        (it,) = args
+        if isinstance(it, Iterable):
+            args = tuple(arg for arg in it)
+        if len(args) == 0:
+            raise ValueError("smax() arg is an empty sequence")
+    if len(args) == 1:
+        (arg,) = args
+        return arg
+    if is_symbolic(*args):
         return sympy.Max(*args)
     return max(*args)
 
 
 def smin(*args):
+    if len(args) == 0:
+        raise ValueError("smin expected at least 1 argument, got 0")
+    if len(args) == 1:
+        (it,) = args
+        if isinstance(it, Iterable):
+            args = tuple(arg for arg in it)
+        if len(args) == 0:
+            raise ValueError("smin() arg is an empty sequence")
+    if len(args) == 1:
+        (arg,) = args
+        return arg
     if is_symbolic(*args):
         return sympy.Min(*args)
     return min(*args)
