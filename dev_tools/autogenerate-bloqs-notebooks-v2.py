@@ -570,6 +570,8 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
+            qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
+            qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
