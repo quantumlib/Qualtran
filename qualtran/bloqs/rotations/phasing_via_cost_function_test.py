@@ -18,14 +18,17 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, BloqError, GateWithRegisters, Register, Signature, SoquetT
 from qualtran._infra.data_types import QFxp
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import Square
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction
+from qualtran.bloqs.rotations.phasing_via_cost_function import (
+    _square_via_zpow_phasing,
+    PhasingViaCostFunction,
+)
 from qualtran.bloqs.rotations.quantum_variable_rotation import (
     QvrInterface,
     QvrPhaseGradient,
@@ -33,6 +36,10 @@ from qualtran.bloqs.rotations.quantum_variable_rotation import (
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
+
+
+def test_square_via_zpow_phasing(bloq_autotester):
+    bloq_autotester(_square_via_zpow_phasing)
 
 
 @attrs.frozen
@@ -191,5 +198,9 @@ def test_square_phasing_via_phase_gradient(
         a = bb.add(OnEach(n, Hadamard()), q=a)
         a = bb.add(test_bloq, a=a)
         cbloq = bb.finalize(a=a)
-        hw_final_state = cbloq.tensor_contract()
+        try:
+            flat_cbloq = cbloq.flatten()
+        except BloqError:
+            pytest.xfail("https://github.com/quantumlib/Qualtran/issues/1069")
+        hw_final_state = flat_cbloq.tensor_contract()
         np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)

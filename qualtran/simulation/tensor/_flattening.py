@@ -16,23 +16,28 @@ from qualtran import Bloq, CompositeBloq
 
 
 def bloq_has_custom_tensors(bloq: Bloq) -> bool:
-    """Whether this bloq declares custom tensors by overriding `.add_my_tensors(...)`.
+    """Whether this bloq declares custom tensors by overriding `.my_tensors(...)`.
 
-    This is a heuristic that checks that the method is overriden. This is used as the
-    flattening predicate in `flatten_for_tensor_contraction`.
+    This is a heuristic that checks that the method is overriden. This is used as
+    an optional predicate in `flatten_for_tensor_contraction`.
     """
-    return not bloq.add_my_tensors.__qualname__.startswith(
+    return not bloq.my_tensors.__qualname__.startswith(
         'Bloq.'
-    ) and not bloq.add_my_tensors.__qualname__.startswith('GateWithRegisters.')
+    ) and not bloq.my_tensors.__qualname__.startswith('GateWithRegisters.')
 
 
-def flatten_for_tensor_contraction(bloq: Bloq, max_depth: int = 1_000) -> CompositeBloq:
+def flatten_for_tensor_contraction(bloq: Bloq, full_flatten: bool = True) -> CompositeBloq:
     """Flatten a (composite) bloq as much as possible to enable efficient tensor contraction.
 
-    Without this function, bloqs without custom tensors will be contracted to a dense tensor using
-    their decomposition and then that dense tensor will be used in the enclosing tensor network.
-    To allow a more efficient contraction ordering, use this function to decompose-and-flatten
-    as much as possible before starting the tensor contraction.
+    Args:
+        bloq: The bloq to flatten.
+        full_flatten: Whether to completely flatten the bloq into the smallest possible
+            bloqs. Otherwise, stop flattening if custom tensors are encountered.
     """
     cbloq = bloq.as_composite_bloq()
-    return cbloq.flatten(lambda binst: not bloq_has_custom_tensors(binst.bloq), max_depth=max_depth)
+    if full_flatten:
+        pred = lambda b: True
+    else:
+        pred = lambda binst: not bloq_has_custom_tensors(binst.bloq)
+
+    return cbloq.flatten(pred)

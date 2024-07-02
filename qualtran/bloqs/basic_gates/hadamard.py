@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,10 +23,10 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     Register,
     Signature,
-    SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
@@ -65,17 +65,16 @@ class Hadamard(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(qtn.Tensor(data=_HADAMARD, inds=(outgoing['q'], incoming['q']), tags=["H", tag]))
+        return [
+            qtn.Tensor(
+                data=_HADAMARD, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)]
+            )
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]

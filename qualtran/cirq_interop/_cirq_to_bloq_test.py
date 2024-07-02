@@ -89,7 +89,7 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     state_vector = cbloq.tensor_contract()
     assert np.isclose(state_vector[7], 1)
 
-    with pytest.raises(NotImplementedError, match="supported only for unitary gates"):
+    with pytest.raises(NotImplementedError, match=r".*only supported for unitary gates.*"):
         _ = CirqGateAsBloq(And(uncompute=True)).as_composite_bloq().tensor_contract()
 
 

@@ -11,11 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import itertools
 import math
 from functools import cached_property
 from typing import (
-    Any,
     Dict,
     Iterable,
     Iterator,
@@ -63,8 +61,6 @@ from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
-
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -124,28 +120,6 @@ class Add(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
-            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N_a = 2**self.a_dtype.bitsize
-        N_b = 2**self.b_dtype.bitsize
-        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
-        # TODO: Add a value-to-index method on dtype to make this easier.
-        for a, b in itertools.product(range(N_a), range(N_b)):
-            unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
-
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.pretty_name(), tag]))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)

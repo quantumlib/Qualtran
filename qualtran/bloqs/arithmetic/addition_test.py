@@ -171,7 +171,7 @@ def test_addition_gate_counts(n: int):
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
-def test_add_no_decompose(a, b):
+def test_add_tensor_contract(a, b):
     num_bits = 5
     bloq = Add(QUInt(num_bits))
 
@@ -184,7 +184,7 @@ def test_add_no_decompose(a, b):
     assert true_out_int == int(out_bin, 2)
 
     unitary = bloq.tensor_contract()
-    assert unitary[output_int, input_int] == 1
+    np.testing.assert_allclose(unitary[output_int, input_int], 1)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))

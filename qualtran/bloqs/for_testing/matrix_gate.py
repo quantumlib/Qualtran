@@ -11,12 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Tuple
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import ConnectionT, GateWithRegisters, Signature
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -53,6 +56,21 @@ class MatrixGate(GateWithRegisters):
 
         matrix = random_unitary(2**bitsize, random_state=random_state)
         return cls(bitsize, matrix)
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        data = np.array(self.matrix).reshape((2,) * (self.bitsize * 2))
+        return [
+            qtn.Tensor(
+                data=data,
+                inds=[(outgoing['q'], j) for j in range(self.bitsize)]
+                + [(incoming['q'], j) for j in range(self.bitsize)],
+                tags=[str(self)],
+            )
+        ]
 
     def _unitary_(self):
         return np.array(self.matrix)

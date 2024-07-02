@@ -35,10 +35,12 @@ from qualtran import (
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
+    GlobalPhase,
     IntEffect,
     IntState,
     OneState,
     Swap,
+    TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
@@ -50,6 +52,7 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -340,7 +343,7 @@ def test_notebook():
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     cbloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
-    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 interesting_ctrl_specs = [
@@ -360,6 +363,26 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
     _verify_ctrl_tensor_for_unitary(ctrl_spec, ZGate(), cirq.Z)
     # Test multi-qubit unitaries with non-trivial signature
     _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
+
+
+def test_controlled_tensor_without_decompose():
+    ctrl_spec = CtrlSpec()
+    bloq = TwoBitCSwap()
+    cbloq = Controlled(bloq, ctrl_spec)
+    cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
+
+    tn = cbloq_to_quimb(cbloq.as_composite_bloq())
+    # pylint: disable=unbalanced-tuple-unpacking
+    right, left = get_right_and_left_inds(tn, cbloq.signature)
+    # pylint: enable=unbalanced-tuple-unpacking
+    np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+
+
+def test_controlled_global_phase_tensor():
+    bloq = GlobalPhase(1.0j).controlled()
+    should_be = np.diag([1, 1.0j])
+    np.testing.assert_allclose(bloq.tensor_contract(), should_be)
 
 
 @attrs.frozen

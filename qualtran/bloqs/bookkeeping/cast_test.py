@@ -26,9 +26,8 @@ def test_cast(bloq_autotester):
 
 def test_cast_tensor_contraction():
     bloq = TestCastToFrom()
-    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
-    assert len(tn.tensors) == 3
-    assert tn.shape == (2**4,) * 4
+    tn = cbloq_to_quimb(bloq.as_composite_bloq().flatten())
+    assert tn.shape == (2,) * 4 * 4
 
 
 def test_cast_classical_sim():
