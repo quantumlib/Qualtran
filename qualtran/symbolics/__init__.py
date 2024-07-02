@@ -27,6 +27,7 @@ from qualtran.symbolics.math_funcs import (
     slen,
     smax,
     smin,
+    ssum,
 )
 from qualtran.symbolics.types import (
     HasLength,

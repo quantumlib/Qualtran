@@ -97,6 +97,13 @@ def prod(args: Iterable[SymbolicT]) -> SymbolicT:
     return ret
 
 
+def ssum(args: Iterable[SymbolicT]) -> SymbolicT:
+    ret: SymbolicT = 0
+    for arg in args:
+        ret = ret + arg
+    return ret
+
+
 def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.arccos(x)

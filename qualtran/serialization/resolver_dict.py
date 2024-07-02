@@ -34,6 +34,8 @@ import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.tensor_product
+import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -188,6 +190,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
+    "qualtran.bloqs.block_encoding.unitary.Unitary": qualtran.bloqs.block_encoding.unitary.Unitary,
+    "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
