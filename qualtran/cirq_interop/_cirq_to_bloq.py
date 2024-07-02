@@ -203,27 +203,17 @@ def _my_tensors_from_gate(
     import quimb.tensor as qtn
 
     from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+    from qualtran.simulation.tensor._tensor_data_manipulation import (
+        tensor_data_from_unitary_and_signature,
+    )
 
     if not cirq.has_unitary(gate):
-        raise NotImplementedError(
-            f"CirqGateAsBloq.my_tensors is only supported for unitary gates, not {gate}."
-        )
+        raise NotImplementedError(f"Tensors are only supported for unitary gates, not {gate}.")
 
-    if any(reg.side != Side.THRU for reg in signature):
-        raise ValueError(
-            f"CirqGateAsBloq.my_tensors is only supported for "
-            f"gates with thru registers. Found {gate}."
-        )
-
-    if not signature:
-        raise ValueError(
-            f"CirqGateAsBloq.my_tensors requires a non-trivial signature. Gate: {gate!r}."
-        )
-
-    n = cirq.num_qubits(gate)
-    unitary = cirq.unitary(gate).reshape((2,) * (2 * n))
-    inds = _order_incoming_outgoing_indices(signature, incoming, outgoing)
-    return [qtn.Tensor(data=unitary, inds=inds, tags=str(gate))]
+    unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
+    inds = _order_incoming_outgoing_indices(signature, incoming=incoming, outgoing=outgoing)
+    unitary = unitary.reshape((2,) * len(inds))
+    return [qtn.Tensor(data=unitary, inds=inds, tags=[str(gate)])]
 
 
 @frozen(eq=False)
