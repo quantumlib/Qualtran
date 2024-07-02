@@ -17,7 +17,7 @@
 import math
 from typing import Optional, overload, Sequence
 
-from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, log2, smax, SymbolicFloat, SymbolicInt
 
 
 def _partial_sums(vals):
@@ -116,7 +116,7 @@ def _preprocess_for_efficient_roulette_selection(
     n = len(weights)
     target_weight = sum(weights) // n
     if sum(weights) != n * target_weight:
-        raise ValueError('sum(weights) must be a multiple of len(weights).')
+        raise ValueError(f'{sum(weights)=} must be a multiple of {len(weights)=}.')
 
     # Initially, every item's alternative is itself.
     alternates = list(range(n))
@@ -184,7 +184,7 @@ def sub_bit_prec_from_epsilon(
         precision: precision $|epsilon$ to approximate the unnormalized input
                    probabilities $w_l$ in alias sampling.
     """
-    return ceil(log2(sum_of_coefficients / (precision * number_of_coefficients)))
+    return smax(0, ceil(log2(sum_of_coefficients / (precision * number_of_coefficients))))
 
 
 def preprocess_probabilities_for_reversible_sampling(

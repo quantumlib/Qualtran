@@ -250,9 +250,9 @@ def _state_prep_alias() -> StatePreparationAliasSampling:
 def _state_prep_alias_symb() -> StatePreparationAliasSampling:
     import sympy
 
-    n_coeffs, sum_coeff, eps = sympy.symbols(r"L S \epsilon")
+    n_coeffs, sum_coeff, eps = sympy.symbols(r"L \lambda \epsilon")
     state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
-        n_coeffs, sum_coeff, precision=eps * sum_coeff
+        n_coeffs, sum_coeff, precision=eps
     )
     return state_prep_alias_symb
 
