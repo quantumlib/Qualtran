@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, Register, Signature
 from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -74,22 +74,15 @@ class TGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         data = _TMATRIX.conj().T if self.is_adjoint else _TMATRIX
-        tn.add(
-            qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
-            )
-        )
+        return [
+            qtn.Tensor(data=data, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)])
+        ]
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)

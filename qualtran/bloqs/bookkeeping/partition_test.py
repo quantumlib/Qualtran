@@ -66,9 +66,12 @@ def test_partition_wrapper():
 
 def test_partition_wrapper_tensor_contract():
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
-    assert len(tn.tensors) == 3
-    assert tn.shape == (4096, 4096)
+    tn = cbloq_to_quimb(bloq.as_composite_bloq().flatten())
+    assert tn.shape == (2,) * (2 * int(np.log2(4096)))
+
+    tn = tn.rank_simplify()
+    for tensor in tn.tensors:
+        assert np.prod(tensor.shape) <= 2**4
 
 
 def test_partition_wrapper_as_cirq_op():
