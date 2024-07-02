@@ -28,9 +28,7 @@ from qualtran.linalg.lcu_util import (
 class DiscretizeDistributionTest(unittest.TestCase):
     def assertGetDiscretizedDistribution(self, probabilities, epsilon):
         total_probability = sum(probabilities)
-        mu = sub_bit_prec_from_epsilon(
-            len(probabilities), total_probability, epsilon * total_probability
-        )
+        mu = sub_bit_prec_from_epsilon(len(probabilities), epsilon)
         numers, denom = _discretize_probability_distribution(probabilities, mu)
         self.assertEqual(sum(numers), denom)
         self.assertEqual(len(numers), len(probabilities))
@@ -160,8 +158,8 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
             self.assertPreprocess(weights, 2 ** -random.randint(1, 20))
 
     def test_known(self):
-        self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01 * 3), ([1, 1], [43, 0], 64))
+        self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01), ([1, 1], [43, 0], 64))
 
         self.assertEqual(
-            self.assertPreprocess([1, 2, 3], epsilon=0.01 * 6), ([2, 1, 2], [32, 0, 0], 64)
+            self.assertPreprocess([1, 2, 3], epsilon=0.01), ([2, 1, 2], [32, 0, 0], 64)
         )

@@ -150,25 +150,19 @@ def _preprocess_for_efficient_roulette_selection(
 
 
 @overload
-def sub_bit_prec_from_epsilon(
-    number_of_coefficients: int, sum_of_coefficients: float, precision: float
-) -> int:
+def sub_bit_prec_from_epsilon(number_of_coefficients: int, precision: float) -> int:
     ...
 
 
 @overload
 def sub_bit_prec_from_epsilon(
-    number_of_coefficients: SymbolicInt,
-    sum_of_coefficients: SymbolicFloat,
-    precision: SymbolicFloat,
+    number_of_coefficients: SymbolicInt, precision: SymbolicFloat
 ) -> SymbolicInt:
     ...
 
 
 def sub_bit_prec_from_epsilon(
-    number_of_coefficients: SymbolicInt,
-    sum_of_coefficients: SymbolicFloat,
-    precision: SymbolicFloat,
+    number_of_coefficients: SymbolicInt, precision: SymbolicFloat
 ) -> SymbolicInt:
     r"""Number of bits to approximate the probabilities.
 
@@ -180,11 +174,10 @@ def sub_bit_prec_from_epsilon(
 
     Args:
         number_of_coefficients: number of probabilities $L$.
-        sum_of_coefficients: sum of unnormalized probabilities $\lambda$.
         precision: precision $|epsilon$ to approximate the unnormalized input
                    probabilities $w_l$ in alias sampling.
     """
-    return smax(0, ceil(log2(sum_of_coefficients / (precision * number_of_coefficients))))
+    return smax(0, ceil(log2(1.0 / (precision * number_of_coefficients))))
 
 
 def preprocess_probabilities_for_reversible_sampling(
@@ -244,9 +237,7 @@ def preprocess_probabilities_for_reversible_sampling(
         raise ValueError("Exactly one of epsilon or sub_bit_prec must be provided")
     if sub_bit_precision is None:
         assert epsilon is not None  # make mypy happy
-        sub_bit_precision = sub_bit_prec_from_epsilon(
-            len(unnormalized_probabilities), sum(unnormalized_probabilities), epsilon
-        )
+        sub_bit_precision = sub_bit_prec_from_epsilon(len(unnormalized_probabilities), epsilon)
 
     numerators, denominator = _discretize_probability_distribution(
         unnormalized_probabilities, sub_bit_precision

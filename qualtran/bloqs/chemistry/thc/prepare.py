@@ -291,7 +291,7 @@ class PrepareTHC(PrepareOracle):
         flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            flat_data, epsilon=2**-num_bits_state_prep / len(flat_data)
+            flat_data, sub_bit_precision=num_bits_state_prep
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []

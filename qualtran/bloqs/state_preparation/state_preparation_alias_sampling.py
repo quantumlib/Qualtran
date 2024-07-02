@@ -118,8 +118,10 @@ class StatePreparationAliasSampling(PrepareOracle):
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
+        sum_of_coefficients = sum(abs(x) for x in unnormalized_probabilities)
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=unnormalized_probabilities, epsilon=precision
+            unnormalized_probabilities=unnormalized_probabilities,
+            epsilon=precision / sum_of_coefficients,
         )
         N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
@@ -127,7 +129,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_coefficients=sum(abs(x) for x in unnormalized_probabilities),
+            sum_of_coefficients=sum_of_coefficients,
         )
 
     @classmethod
@@ -148,7 +150,7 @@ class StatePreparationAliasSampling(PrepareOracle):
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, sum_of_coefficients, precision)
+        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_coefficients)
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
