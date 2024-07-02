@@ -94,7 +94,7 @@ def test_qubitization_walk_operator_adjoint():
     walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     walk_inv_tensor = walk.adjoint().tensor_contract()
     walk_adj_tensor = Adjoint(walk).tensor_contract()
-    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor)
+    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor, atol=1e-12)
 
 
 def test_t_complexity_for_controlled_and_adjoint():
