@@ -19,6 +19,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, Connection, ConnectionT, LeftDangle, RightDangle, Signature, Soquet
 
+from ._flattening import flatten_for_tensor_contraction
 from ._quimb import cbloq_to_quimb
 
 if TYPE_CHECKING:
@@ -130,7 +131,7 @@ def quimb_to_dense(tn: 'qtn.TensorNetwork', signature: Signature) -> NDArray:
     return data
 
 
-def bloq_to_dense(bloq: Bloq) -> NDArray:
+def bloq_to_dense(bloq: Bloq, full_flatten: bool = True) -> NDArray:
     """Return a contracted, dense ndarray representing the composite bloq.
 
     This function is also available as the `Bloq.tensor_contract()` method.
@@ -145,8 +146,13 @@ def bloq_to_dense(bloq: Bloq) -> NDArray:
 
     For fine-grained control over the tensor contraction, use
     `cbloq_to_quimb` and `TensorNetwork.to_dense` directly.
+
+    Args:
+        bloq: The bloq
+        full_flatten: Whether to completely flatten the bloq into the smallest possible
+            bloqs. Otherwise, stop flattening if custom tensors are encountered.
     """
     logging.info("bloq_to_dense() on %s", bloq)
-    flat_cbloq = bloq.as_composite_bloq().flatten()
+    flat_cbloq = flatten_for_tensor_contraction(bloq, full_flatten=full_flatten)
     tn = cbloq_to_quimb(flat_cbloq)
     return quimb_to_dense(tn, bloq.signature)

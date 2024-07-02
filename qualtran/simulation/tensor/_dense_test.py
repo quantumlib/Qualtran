@@ -158,3 +158,49 @@ def test_bloq_with_non_trivial_inds():
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
     np.testing.assert_allclose(cirq_unitary, bloq.decompose_bloq().tensor_contract())
     np.testing.assert_allclose(cirq_unitary, bloq.tensor_contract())
+
+
+class BloqWithTensorsAndDecomp(Bloq):
+    def __init__(self):
+        self.called_build_composite_bloq = False
+        self.called_my_tensors = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(a=1, b=1)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+        self.called_build_composite_bloq = True
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        return {'a': a, 'b': b}
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        self.called_my_tensors = True
+        return [
+            qtn.Tensor(
+                data=np.eye(4).reshape((2, 2, 2, 2)),
+                inds=[
+                    (outgoing['a'], 0),
+                    (outgoing['b'], 0),
+                    (incoming['a'], 0),
+                    (incoming['b'], 0),
+                ],
+            )
+        ]
+
+
+def test_bloq_stop_flattening():
+    bloq = BloqWithTensorsAndDecomp()
+    u2 = bloq_to_dense(bloq, full_flatten=True)
+    assert bloq.called_build_composite_bloq
+    assert not bloq.called_my_tensors
+
+    bloq = BloqWithTensorsAndDecomp()
+    u1 = bloq_to_dense(bloq, full_flatten=False)
+    assert not bloq.called_build_composite_bloq
+    assert bloq.called_my_tensors
+
+    np.testing.assert_allclose(u1, u2)
