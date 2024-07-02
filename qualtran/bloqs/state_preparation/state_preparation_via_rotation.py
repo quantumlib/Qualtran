@@ -181,17 +181,20 @@ class StatePreparationViaRotations(GateWithRegisters):
         if is_symbolic(self.state_coefficients):
             return [
                 PRGAViaPhaseGradient(
-                    self.state_bitsize,
-                    self.phase_bitsize,
-                    Shaped((slen(self.state_coefficients),)),
-                    self.control_bitsize + 1,
+                    selection_bitsize=self.state_bitsize,
+                    phase_bitsize=self.phase_bitsize,
+                    rom_values=Shaped((slen(self.state_coefficients),)),
+                    control_bitsize=self.control_bitsize + 1,
                 )
             ]
         ret = []
         ampl_rv, _ = self.rotation_tree.get_rom_vals()
         for qi in range(int(self.state_bitsize)):
             ctrl_rot_q = PRGAViaPhaseGradient(
-                qi, self.phase_bitsize, tuple(ampl_rv[qi]), self.control_bitsize + 1
+                selection_bitsize=qi,
+                phase_bitsize=self.phase_bitsize,
+                rom_values=tuple(ampl_rv[qi]),
+                control_bitsize=self.control_bitsize + 1,
             )
             ret.append(ctrl_rot_q)
         return ret
@@ -204,7 +207,10 @@ class StatePreparationViaRotations(GateWithRegisters):
             else tuple(self.rotation_tree.get_rom_vals()[1])
         )
         return PRGAViaPhaseGradient(
-            self.state_bitsize, self.phase_bitsize, data_or_shape, self.control_bitsize + 1
+            selection_bitsize=self.state_bitsize,
+            phase_bitsize=self.phase_bitsize,
+            rom_values=data_or_shape,
+            control_bitsize=self.control_bitsize + 1,
         )
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
