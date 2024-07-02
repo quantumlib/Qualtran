@@ -162,7 +162,7 @@ def get_walk_operator_for_1d_ising_model(
     ham = get_1d_ising_hamiltonian(
         cirq.LineQubit.range(num_sites), j_zz_strength=J, gamma_x_strength=gamma
     )
-    walk = walk_operator_for_pauli_hamiltonian(
-        ham, eps, ham_norm_upper_bound=num_sites * np.sqrt(J**2 + gamma**2)
-    )
+    qlambda = num_sites * (abs(J) + abs(gamma))
+    ham_norm_upper_bound = (qlambda**2 - 4 * num_sites * abs(J) * abs(gamma)) ** 0.5
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps, ham_norm_upper_bound=ham_norm_upper_bound)
     return walk, ham

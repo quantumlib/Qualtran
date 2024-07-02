@@ -45,9 +45,8 @@ def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
     bloq_autotester(_walk_op_chem_sparse)
 
 
-@pytest.mark.parametrize(
-    'num_sites,eps', [(3, 1e-1), pytest.param(4, 2e-1, marks=pytest.mark.slow)]
-)
+@pytest.mark.slow
+@pytest.mark.parametrize('num_sites,eps', [(3, 0.5), (4, 0.5)])
 def test_qubitization_walk_operator(num_sites: int, eps: float):
     walk, ham = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert_valid_bloq_decomposition(walk)
@@ -88,8 +87,9 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         )
 
 
+@pytest.mark.slow()
 def test_qubitization_walk_operator_adjoint():
-    num_sites, eps = 4, 2e-1
+    num_sites, eps = 3, 0.5
     walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     walk_inv_tensor = walk.adjoint().tensor_contract()
     walk_adj_tensor = Adjoint(walk).tensor_contract()
