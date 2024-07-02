@@ -56,15 +56,16 @@ if TYPE_CHECKING:
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ coefficients using coherent alias sampling.
 
-    In particular, we take the zero state to:
+    In particular, given coefficients $w_\ell$, we take the zero state to:
 
     $$
     \sum_{\ell=0}^{L-1} \sqrt{p_\ell} |\ell\rangle |\mathrm{temp}_\ell\rangle
     $$
 
-    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
-    where the temporary register must be treated with care, see the details in Section III.D. of
-    the reference.
+    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values
+    $w_\ell / \lambda$ (where $\lambda = \sum_\ell w_\ell$).
+    Note that the temporary register must be treated with care, see the details in Section III.D.
+    of the reference.
 
     The preparation is equivalent to [classical alias sampling]
     (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
@@ -109,11 +110,20 @@ class StatePreparationAliasSampling(PrepareOracle):
     def from_probabilities(
         cls, unnormalized_probabilities: Sequence[float], *, precision: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for a given set of LCU coefficients.
+        r"""Factory to construct the state preparation gate for a given set of LCU coefficients.
+
+        Given input `unnormalized_probabilities` $w_l$, with sum $\lambda = \sum_l w_l$, this prepares
+        a state s.t. $p_l = \tilde{w_l} / \lambda$ such that the input `precision` $\epsilon$ satisfies:
+
+            $$
+                |w_l - \tilde{w}_l| \le \epsilon
+            $$
+
+        That is, the value `precision` is the absolute error in approximating the input values.
 
         Args:
-            unnormalized_probabilities: The LCU coefficients.
-            precision: The desired accuracy to represent each coefficient
+            unnormalized_probabilities: The LCU coefficients $w_l$.
+            precision: The desired accuracy $\epsilon$ to represent each input value
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
@@ -134,23 +144,21 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @classmethod
     def from_n_coeff(
-        cls,
-        n_coeff: SymbolicInt,
-        sum_of_coefficients: SymbolicFloat,
-        *,
-        precision: SymbolicFloat = 1.0e-5,
+        cls, n_coeff: SymbolicInt, sum_of_terms: SymbolicFloat, *, precision: SymbolicFloat = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+        r"""Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+
+        See docstring for :meth:`StatePreparationAliasSampling.from_probabilities` for details
 
         Args:
             n_coeff: Symbolic number of LCU coefficients in the prepared state.
-            sum_of_coefficients: Sum of absolute values of coefficients of the prepared state.
-            precision: The desired accuracy to represent each coefficient
+            sum_of_terms: Sum of absolute values of coefficients of the prepared state.
+            precision: The desired accuracy $\epsilon$ to represent each input value
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_coefficients)
+        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_terms)
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
@@ -158,7 +166,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            sum_of_coefficients=sum_of_coefficients,
+            sum_of_coefficients=sum_of_terms,
         )
 
     @property
