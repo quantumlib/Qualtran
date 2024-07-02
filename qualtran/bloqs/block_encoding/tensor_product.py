@@ -31,7 +31,7 @@ from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import is_symbolic, prod, sum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, ssum, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -73,7 +73,7 @@ class TensorProduct(BlockEncoding):
 
     @cached_property
     def system_bitsize(self) -> SymbolicInt:
-        return sum(u.system_bitsize for u in self.block_encodings)
+        return ssum(u.system_bitsize for u in self.block_encodings)
 
     def pretty_name(self) -> str:
         return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
@@ -84,15 +84,15 @@ class TensorProduct(BlockEncoding):
 
     @cached_property
     def ancilla_bitsize(self) -> SymbolicInt:
-        return sum(u.ancilla_bitsize for u in self.block_encodings)
+        return ssum(u.ancilla_bitsize for u in self.block_encodings)
 
     @cached_property
     def resource_bitsize(self) -> SymbolicInt:
-        return sum(u.resource_bitsize for u in self.block_encodings)
+        return ssum(u.resource_bitsize for u in self.block_encodings)
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
-        return sum(u.alpha * u.epsilon for u in self.block_encodings)
+        return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:

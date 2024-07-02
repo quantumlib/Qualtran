@@ -97,7 +97,7 @@ def prod(args: Iterable[SymbolicT]) -> SymbolicT:
     return ret
 
 
-def sum(args: Iterable[SymbolicT]) -> SymbolicT:
+def ssum(args: Iterable[SymbolicT]) -> SymbolicT:
     ret: SymbolicT = 0
     for arg in args:
         ret = ret + arg
