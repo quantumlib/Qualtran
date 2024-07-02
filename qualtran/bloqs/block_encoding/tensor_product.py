@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from functools import cached_property, reduce
+from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 from attrs import evolve, field, frozen, validators
@@ -31,7 +31,7 @@ from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, sum, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -80,7 +80,7 @@ class TensorProduct(BlockEncoding):
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return reduce(lambda a, b: a * b.alpha, self.block_encodings, 1.0)
+        return prod(u.alpha for u in self.block_encodings)
 
     @cached_property
     def ancilla_bitsize(self) -> SymbolicInt:
