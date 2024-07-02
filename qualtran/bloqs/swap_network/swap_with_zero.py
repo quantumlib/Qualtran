@@ -152,7 +152,7 @@ class SwapWithZero(GateWithRegisters):
         return sel | {'targets': targets}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_swaps = prod(*[x for x in self.n_target_registers]) - 1
+        num_swaps = prod(x for x in self.n_target_registers) - 1
         return {(CSwapApprox(self.target_bitsize), num_swaps)}
 
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
