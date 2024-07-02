@@ -14,12 +14,13 @@
 
 from typing import cast
 
+import cirq
 import numpy as np
 import pytest
 import sympy
 
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, XGate, ZeroEffect, ZeroState
 from qualtran.bloqs.block_encoding.tensor_product import (
     _tensor_product_block_encoding,
     _tensor_product_block_encoding_override,
@@ -27,6 +28,7 @@ from qualtran.bloqs.block_encoding.tensor_product import (
     TensorProduct,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 
 def test_tensor_product(bloq_autotester):
@@ -101,3 +103,21 @@ def test_tensor_product_override_tensors():
     from_gate = np.kron(TGate().tensor_contract(), CNOT().tensor_contract())
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+def test_tensor_product_cirq():
+    qubits = cirq.LineQubit.range(4)
+    op = TensorProduct(
+        (TensorProduct((Unitary(XGate()), Unitary(XGate()))), Unitary(CNOT()))
+    ).on_registers(system=qubits)
+    circuit = cirq.Circuit(
+        cirq.decompose_once(
+            op,
+            context=cirq.DecompositionContext(
+                cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+            ),
+        )
+    )
+    initial_state = [0, 1, 1, 1]
+    final_state = [1, 0, 1, 0]
+    assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
