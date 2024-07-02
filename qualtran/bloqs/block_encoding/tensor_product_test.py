@@ -12,14 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import cast
+
 import numpy as np
 import pytest
-from attrs import evolve
+import sympy
 
-from qualtran import QAny, Register, Signature
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
+from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, ZeroEffect, ZeroState
 from qualtran.bloqs.block_encoding.tensor_product import (
     _tensor_product_block_encoding,
+    _tensor_product_block_encoding_override,
     _tensor_product_block_encoding_symb,
     TensorProduct,
 )
@@ -32,29 +35,69 @@ def test_tensor_product(bloq_autotester):
 
 
 def test_tensor_product_signature():
-    assert _tensor_product_block_encoding().signature == Signature(
-        [Register("system", QAny(2)), Register("ancilla", QAny(0)), Register("resource", QAny(0))]
+    assert _tensor_product_block_encoding().signature == Signature([Register("system", QAny(2))])
+    assert _tensor_product_block_encoding_override().signature == Signature(
+        [Register("system", QAny(3)), Register("ancilla", QAny(3)), Register("resource", QAny(2))]
+    )
+    assert _tensor_product_block_encoding_symb().signature == Signature(
+        [
+            Register("system", QAny(2)),
+            Register("ancilla", QAny(sympy.Symbol('a1') + sympy.Symbol('a2'))),
+        ]
     )
     with pytest.raises(ValueError):
         _ = TensorProduct(())
 
 
 def test_tensor_product_params():
-    u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
-    u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
-    bloq = TensorProduct((u1, u2))
+    bloq = _tensor_product_block_encoding()
+    assert bloq.system_bitsize == 1 + 1
+    assert bloq.alpha == 1
+    assert bloq.epsilon == 0
+    assert bloq.ancilla_bitsize == 0
+    assert bloq.resource_bitsize == 0
+
+    bloq = _tensor_product_block_encoding_override()
     assert bloq.system_bitsize == 1 + 2
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
     assert bloq.ancilla_bitsize == 2 + 1
     assert bloq.resource_bitsize == 1 + 1
 
+    bloq = _tensor_product_block_encoding_symb()
+    assert bloq.system_bitsize == 2
+    assert bloq.alpha == sympy.Symbol('alpha1') * sympy.Symbol('alpha2')
+    assert bloq.epsilon == sympy.Symbol('alpha1') * sympy.Symbol('eps1') + sympy.Symbol(
+        'alpha2'
+    ) * sympy.Symbol('eps2')
+    assert bloq.ancilla_bitsize == sympy.Symbol('a1') + sympy.Symbol('a2')
+    assert bloq.resource_bitsize == 0
+
 
 def test_tensor_product_tensors():
+    from_gate = TGate().tensor_contract()
+    from_tensors = TensorProduct((Unitary(TGate()),)).tensor_contract()
+    np.testing.assert_allclose(from_gate, from_tensors)
+
     from_gate = np.kron(TGate().tensor_contract(), Hadamard().tensor_contract())
     from_tensors = _tensor_product_block_encoding().tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
 
-    from_gate = TGate().tensor_contract()
-    from_tensors = TensorProduct((Unitary(TGate()),)).tensor_contract()
+
+def test_tensor_product_override_tensors():
+    bb = BloqBuilder()
+    system = bb.add_register("system", 3)
+    ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState()), bb.add(ZeroState())]))
+    resource = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
+    system, ancilla, resource = bb.add_t(
+        _tensor_product_block_encoding_override(), system=system, ancilla=ancilla, resource=resource
+    )
+    for q in bb.split(cast(Soquet, ancilla)):
+        bb.add(ZeroEffect(), q=q)
+    for q in bb.split(cast(Soquet, resource)):
+        bb.add(ZeroEffect(), q=q)
+    bloq = bb.finalize(system=system)
+
+    from_gate = np.kron(TGate().tensor_contract(), CNOT().tensor_contract())
+    from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)

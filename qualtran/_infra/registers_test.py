@@ -33,17 +33,6 @@ def test_register():
     assert r == r.adjoint()
 
 
-def test_zero_register():
-    r = Register("my_reg", QAny(0))
-    assert r.name == "my_reg"
-    assert r.bitsize == 0
-    assert r.shape == tuple()
-    assert r.side == Side.THRU
-    assert r.total_bits() == 0
-
-    assert r == r.adjoint()
-
-
 def test_multidim_register():
     r = Register("my_reg", QBit(), shape=(2, 3), side=Side.RIGHT)
     idxs = list(r.all_idxs())
@@ -138,21 +127,10 @@ def test_signature_build():
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
     assert sig1.n_qubits() == 7
-
-    sig1 = Signature([Register("r2", QAny(2))])
-    sig2 = Signature.build(r1=0, r2=2)
-    assert sig1 == sig2
-    assert sig1.n_qubits() == 2
-
-    sig1 = Signature([Register("r1", QAny(0)), Register("r2", QAny(2))])
-    sig2 = Signature.build(ignore_zero=False, r1=0, r2=2)
-    assert sig1 == sig2
-    assert sig1.n_qubits() == 2
-
     sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
     assert sig1 == sig2
-    sig1 = Signature([Register("r1", QInt(7)), Register("r2", QAny(0))])
+    sig1 = Signature([Register("r1", QInt(7))])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QAny(0))
     assert sig1 == sig2
 

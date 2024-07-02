@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import Counter
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import cast, Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
 
@@ -48,12 +49,12 @@ class TensorProduct(BlockEncoding):
     encoding of $U_1 ⊗ \cdots ⊗ U_n$.
 
     Args:
-        U: A sequence of block encodings.
+        block_encodings: A sequence of block encodings.
 
     Registers:
         system: The system register.
-        ancilla: The ancilla register.
-        resource: The resource register.
+        ancilla: The ancilla register (present only if bitsize > 0).
+        resource: The resource register (present only if bitsize > 0).
 
     References:
         [Quantum algorithms: A survey of applications and end-to-end complexities](https://arxiv.org/abs/2310.03011). Dalzell et al. (2023). Ch. 10.2.
@@ -67,8 +68,8 @@ class TensorProduct(BlockEncoding):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             system=QAny(self.system_bitsize),
-            ancilla=QAny(self.ancilla_bitsize),
-            resource=QAny(self.resource_bitsize),
+            ancilla=QAny(self.ancilla_bitsize),  # if ancilla_bitsize is 0, not present
+            resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
     @cached_property
@@ -100,11 +101,11 @@ class TensorProduct(BlockEncoding):
 
     @property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
+        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
+        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
     def signal_state(self) -> PrepareOracle:
@@ -112,10 +113,10 @@ class TensorProduct(BlockEncoding):
         raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return {(bloq, 1) for bloq in self.block_encodings}
+        return set(Counter(self.block_encodings).items())
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT
+        self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
         if (
             is_symbolic(self.system_bitsize)
@@ -123,35 +124,62 @@ class TensorProduct(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        if TYPE_CHECKING:
-            assert isinstance(self.system_bitsize, int)
-            assert isinstance(self.ancilla_bitsize, int)
-            assert isinstance(self.resource_bitsize, int)
 
-        sys_regs, anc_regs, res_regs = zip(
-            *(
-                [evolve(r, name=f"{r.name}{i}_") for r in u.signature]
-                for i, u in enumerate(self.block_encodings)
-            )
+        sys_regs = tuple(
+            evolve(u.signature.get_left("system"), name=f"system{i}_")
+            for i, u in enumerate(self.block_encodings)
         )
-        sys_part = Partition(self.system_bitsize, regs=sys_regs)
-        anc_part = Partition(self.ancilla_bitsize, regs=anc_regs)
-        res_part = Partition(self.resource_bitsize, regs=res_regs)
+        anc_regs = tuple(
+            evolve(u.signature.get_left("ancilla"), name=f"ancilla{i}_")
+            for i, u in enumerate(self.block_encodings)
+            if "ancilla" in u.signature._lefts
+        )
+        res_regs = tuple(
+            evolve(u.signature.get_left("resource"), name=f"resource{i}_")
+            for i, u in enumerate(self.block_encodings)
+            if "resource" in u.signature._lefts
+        )
+
+        sys_part = Partition(cast(int, self.system_bitsize), regs=sys_regs)
         sys_out_regs = list(bb.add_t(sys_part, x=system))
-        anc_out_regs = list(bb.add_t(anc_part, x=ancilla))
-        res_out_regs = list(bb.add_t(res_part, x=resource))
-        for i, u in enumerate(self.block_encodings):
-            sys_out_regs[i], anc_out_regs[i], res_out_regs[i] = bb.add_t(
-                u, system=sys_out_regs[i], ancilla=anc_out_regs[i], resource=res_out_regs[i]
+        if len(anc_regs) > 0:
+            anc_part = Partition(cast(int, self.ancilla_bitsize), regs=anc_regs)
+            anc_out_regs = list(bb.add_t(anc_part, x=soqs["ancilla"]))
+        if len(res_regs) > 0:
+            res_part = Partition(cast(int, self.resource_bitsize), regs=res_regs)
+            res_out_regs = list(bb.add_t(res_part, x=soqs["resource"]))
+        sys_i = 0
+        anc_i = 0
+        res_i = 0
+        for u in self.block_encodings:
+            u_soqs = dict()
+            u_soqs["system"] = sys_out_regs[sys_i]
+            if "ancilla" in u.signature._lefts:
+                u_soqs["ancilla"] = anc_out_regs[anc_i]
+            if "resource" in u.signature._lefts:
+                u_soqs["resource"] = res_out_regs[res_i]
+            u_soqs_out = bb.add_d(u, **u_soqs)
+            sys_out_regs[sys_i] = u_soqs_out["system"]
+            sys_i += 1
+            if "ancilla" in u.signature._lefts:
+                anc_out_regs[anc_i] = u_soqs_out["ancilla"]
+                anc_i += 1
+            if "resource" in u.signature._lefts:
+                res_out_regs[res_i] = u_soqs_out["resource"]
+                res_i += 1
+        soqs_out = dict()
+        soqs_out["system"] = bb.add(
+            sys_part.adjoint(), **{r.name: sp for r, sp in zip(sys_regs, sys_out_regs)}
+        )
+        if len(anc_regs) > 0:
+            soqs_out["ancilla"] = bb.add(
+                anc_part.adjoint(), **{r.name: ap for r, ap in zip(anc_regs, anc_out_regs)}
             )
-        system = bb.add(sys_part.adjoint(), **{r.name: sp for r, sp in zip(sys_regs, sys_out_regs)})
-        ancilla = bb.add(
-            anc_part.adjoint(), **{r.name: ap for r, ap in zip(anc_regs, anc_out_regs)}
-        )
-        resource = bb.add(
-            res_part.adjoint(), **{r.name: ap for r, ap in zip(res_regs, res_out_regs)}
-        )
-        return {"system": system, "ancilla": ancilla, "resource": resource}
+        if len(res_regs) > 0:
+            soqs_out["resource"] = bb.add(
+                res_part.adjoint(), **{r.name: ap for r, ap in zip(res_regs, res_out_regs)}
+            )
+        return soqs_out
 
 
 @bloq_example
@@ -161,6 +189,19 @@ def _tensor_product_block_encoding() -> TensorProduct:
 
     tensor_product_block_encoding = TensorProduct((Unitary(TGate()), Unitary(Hadamard())))
     return tensor_product_block_encoding
+
+
+@bloq_example
+def _tensor_product_block_encoding_override() -> TensorProduct:
+    from attrs import evolve
+
+    from qualtran.bloqs.basic_gates import CNOT, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
+    u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
+    tensor_product_block_encoding_override = TensorProduct((u1, u2))
+    return tensor_product_block_encoding_override
 
 
 @bloq_example
@@ -188,5 +229,9 @@ def _tensor_product_block_encoding_symb() -> TensorProduct:
 _TENSOR_PRODUCT_DOC = BloqDocSpec(
     bloq_cls=TensorProduct,
     import_line="from qualtran.bloqs.block_encoding import TensorProduct",
-    examples=[_tensor_product_block_encoding, _tensor_product_block_encoding_symb],
+    examples=[
+        _tensor_product_block_encoding,
+        _tensor_product_block_encoding_override,
+        _tensor_product_block_encoding_symb,
+    ],
 )

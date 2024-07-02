@@ -143,18 +143,15 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, ignore_zero: bool = True, **registers: Union[int, sympy.Expr]) -> 'Signature':
+    def build(cls, **registers: Union[int, sympy.Expr]) -> 'Signature':
         """Construct a Signature comprised of simple thru registers given the register bitsizes.
 
         Args:
-            ignore_zero: if True, registers with bitsize of zero will be ignored.
             registers: keyword arguments mapping register name to bitsize. All registers
                 will be 0-dimensional and THRU.
         """
         return cls(
-            Register(name=k, dtype=QBit() if v == 1 else QAny(v))
-            for k, v in registers.items()
-            if v or not ignore_zero
+            Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items() if v
         )
 
     @classmethod
@@ -163,9 +160,9 @@ class Signature:
 
         Args:
             registers: keyword arguments mapping register name to QDType. All registers
-                will be 0-dimensional and THRU. Registers with bitsize of zero are not ignored.
+                will be 0-dimensional and THRU.
         """
-        return cls(Register(name=k, dtype=v) for k, v in registers.items())
+        return cls(Register(name=k, dtype=v) for k, v in registers.items() if v.num_qubits)
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""

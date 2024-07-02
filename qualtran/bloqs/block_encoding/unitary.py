@@ -46,12 +46,15 @@ class Unitary(BlockEncoding):
 
     Args:
         U: The unitary operator to block-encode.
-        dtype: The quantum data type of the system `U` operates over.
+        alpha: The normalization factor (default 1).
+        ancilla_bitsize: The number of ancilla bits (default 0).
+        resource_bitsize: The number of resource bits (default 0).
+        epsilon: The precision parameter (default 0).
 
     Registers:
         system: The system register.
-        ancilla: The ancilla register (size 0).
-        resource: The resource register (size 0).
+        ancilla: The ancilla register (present only if bitsize > 0).
+        resource: The resource register (present only if bitsize > 0).
     """
 
     U: Bloq
@@ -72,8 +75,8 @@ class Unitary(BlockEncoding):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             system=QAny(self.system_bitsize),
-            ancilla=QAny(self.ancilla_bitsize),
-            resource=QAny(self.resource_bitsize),
+            ancilla=QAny(self.ancilla_bitsize),  # if ancilla_bitsize is 0, not present
+            resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
     def pretty_name(self) -> str:
@@ -85,11 +88,11 @@ class Unitary(BlockEncoding):
 
     @property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return ()
+        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return ()
+        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
     def signal_state(self) -> PrepareOracle:
@@ -100,15 +103,12 @@ class Unitary(BlockEncoding):
         return {(self.U, 1)}
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, resource: SoquetT
+        self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
-        partitions = [
-            (self.signature.get_left("system"), tuple(r.name for r in self.U.signature.lefts()))
-        ]
+        partitions = [(self.signature.get_left("system"), tuple(r.name for r in self.U.signature))]
         return {
             "system": bb.add_and_partition(self.U, partitions=partitions, system=system),
-            "ancilla": ancilla,
-            "resource": resource,
+            **soqs,
         }
 
 
@@ -120,8 +120,20 @@ def _unitary_block_encoding() -> Unitary:
     return unitary_block_encoding
 
 
+@bloq_example
+def _unitary_block_encoding_override() -> Unitary:
+    from attrs import evolve
+
+    from qualtran.bloqs.basic_gates import TGate
+
+    unitary_block_encoding_override = evolve(
+        Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01
+    )
+    return unitary_block_encoding_override
+
+
 _UNITARY_DOC = BloqDocSpec(
     bloq_cls=Unitary,
     import_line="from qualtran.bloqs.block_encoding import Unitary",
-    examples=[_unitary_block_encoding],
+    examples=[_unitary_block_encoding, _unitary_block_encoding_override],
 )

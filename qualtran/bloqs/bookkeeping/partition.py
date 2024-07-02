@@ -14,9 +14,8 @@
 from functools import cached_property
 from typing import Any, Dict, Tuple, TYPE_CHECKING
 
-import attrs
 import numpy as np
-from attrs import frozen
+from attrs import evolve, field, frozen, validators
 
 from qualtran import (
     bloq_example,
@@ -55,7 +54,9 @@ class Partition(_BookkeepingBloq):
     """
 
     n: int
-    regs: Tuple[Register, ...]
+    regs: Tuple[Register, ...] = field(
+        converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
+    )
     partition: bool = True
 
     @cached_property
@@ -65,14 +66,14 @@ class Partition(_BookkeepingBloq):
 
         return Signature(
             [Register('x', QAny(bitsize=self.n), side=lumped)]
-            + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
+            + [evolve(reg, side=partitioned) for reg in self.regs]
         )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f'{self} is atomic')
 
     def adjoint(self):
-        return attrs.evolve(self, partition=not self.partition)
+        return evolve(self, partition=not self.partition)
 
     def as_cirq_op(self, qubit_manager, **cirq_quregs) -> Tuple[None, Dict[str, 'CirqQuregT']]:
         if self.partition:
