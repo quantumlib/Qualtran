@@ -34,6 +34,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
@@ -266,23 +267,18 @@ def _cbloq_to_cirq_circuit(
         for reg in signature.lefts()
         for idx in reg.all_idxs()
     }
-    moments: List[cirq.Moment] = []
-    for binsts in nx.topological_generations(binst_graph):
-        moment: List[cirq.Operation] = []
+    ops: List[cirq.Operation] = []
+    for binst in greedy_topological_sort(binst_graph):
+        if binst is LeftDangle:
+            continue
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
+        if binst is RightDangle:
+            _track_soq_name_changes(pred_cxns, qvar_to_qreg)
+            continue
 
-        for binst in binsts:
-            if binst is LeftDangle:
-                continue
-            pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-            if binst is RightDangle:
-                _track_soq_name_changes(pred_cxns, qvar_to_qreg)
-                continue
-
-            op = _bloq_to_cirq_op(binst.bloq, pred_cxns, succ_cxns, qvar_to_qreg, qubit_manager)
-            if op is not None:
-                moment.append(op)
-        if moment:
-            moments.append(cirq.Moment(moment))
+        op = _bloq_to_cirq_op(binst.bloq, pred_cxns, succ_cxns, qvar_to_qreg, qubit_manager)
+        if op is not None:
+            ops.append(op)
 
     # Find output Cirq quregs using `qvar_to_qreg` mapping for registers in `signature.rights()`.
     def _f_quregs(reg: Register) -> CirqQuregT:
@@ -294,7 +290,7 @@ def _cbloq_to_cirq_circuit(
 
     out_quregs = {reg.name: _f_quregs(reg) for reg in signature.rights()}
 
-    return cirq.FrozenCircuit(moments), out_quregs
+    return cirq.FrozenCircuit(ops), out_quregs
 
 
 def _wire_symbol_to_cirq_diagram_info(
