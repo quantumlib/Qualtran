@@ -13,23 +13,27 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
+    CtrlSpec,
     DecomposeTypeError,
     Register,
     Signature,
+    SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Text, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -76,6 +80,23 @@ class Hadamard(Bloq):
             )
         ]
 
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        bloq = CHadamard()
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            ctrl, q = bb.add(bloq, ctrl=ctrl, q=in_soqs['q'])
+            return ((ctrl,), (q,))
+
+        return bloq, _add_ctrled
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
@@ -102,8 +123,76 @@ def _hadamard() -> Hadamard:
     return hadamard
 
 
-_HADAMARD_DOC = BloqDocSpec(
-    bloq_cls=Hadamard,
-    import_line='from qualtran.bloqs.basic_gates import Hadamard',
-    examples=[_hadamard],
-)
+_HADAMARD_DOC = BloqDocSpec(bloq_cls=Hadamard, examples=[_hadamard], call_graph_example=None)
+
+
+@frozen
+class CHadamard(Bloq):
+    r"""The controlled Hadamard gate
+
+    Registers:
+        ctrl: The control qubit.
+        q: The target qubit.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(ctrl=1, q=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        unitary = np.eye(4, dtype=np.complex128).reshape((2, 2, 2, 2))
+        # Use these inds orderings to set the block where ctrl=1 to the desired gate.
+        inds = [
+            (outgoing['ctrl'], 0),
+            (outgoing['q'], 0),
+            (incoming['ctrl'], 0),
+            (incoming['q'], 0),
+        ]
+        unitary[1, :, 1, :] = _HADAMARD
+
+        return [qtn.Tensor(data=unitary, inds=inds, tags=[str(self)])]
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', q: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (ctrl,) = ctrl
+        (q,) = q
+        return cirq.H.on(q).controlled_by(ctrl), {'ctrl': np.array([ctrl]), 'q': np.array([q])}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
+        # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
+        # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
+        # The other two are considered 'rotations'.
+        return TComplexity(rotations=2, clifford=4)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
+            return Circle()
+        if reg.name == 'q':
+            return TextBox('H')
+        raise ValueError(f"Unknown register {reg}")
+
+
+@bloq_example
+def _chadamard() -> CHadamard:
+    chadamard = Hadamard().controlled()
+    assert isinstance(chadamard, CHadamard)
+    return chadamard
+
+
+_CHADAMARD_DOC = BloqDocSpec(bloq_cls=CHadamard, examples=[_chadamard], call_graph_example=None)

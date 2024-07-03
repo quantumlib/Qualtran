@@ -155,6 +155,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
+    "qualtran.bloqs.basic_gates.hadamard.CHadamard": qualtran.bloqs.basic_gates.hadamard.CHadamard,
     "qualtran.bloqs.basic_gates.on_each.OnEach": qualtran.bloqs.basic_gates.on_each.OnEach,
     "qualtran.bloqs.basic_gates.rotation.CZPowGate": qualtran.bloqs.basic_gates.rotation.CZPowGate,
     "qualtran.bloqs.basic_gates.rotation.Rx": qualtran.bloqs.basic_gates.rotation.Rx,
