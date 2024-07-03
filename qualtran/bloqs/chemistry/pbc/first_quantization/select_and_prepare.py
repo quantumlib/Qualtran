@@ -33,11 +33,11 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Text, TextBox, WireSymbol
 

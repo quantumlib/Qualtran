@@ -20,9 +20,17 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BoundedQUInt,
+    GateWithRegisters,
+    QAny,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import CSwap
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.bloqs.mod_arithmetic import ModAddK
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
@@ -35,7 +43,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class PrepareHubbard(PrepareOracle):
+class PrepareHubbard(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""The PREPARE operation optimized for the 2D Hubbard model.
 
     In contrast to PREPARE for an arbitrary chemistry Hamiltonian, we:

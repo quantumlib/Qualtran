@@ -42,8 +42,8 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.cirq_interop import CirqGateAsBloq

@@ -20,13 +20,13 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import BoundedQUInt, QAny, QBit, QUInt, Register
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, QBit, QUInt, Register
 from qualtran._infra.gate_with_registers import (
     get_named_qubits,
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -35,7 +35,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @frozen
-class BernoulliSynthesizer(PrepareOracle):
+class BernoulliSynthesizer(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Synthesizes the state $sqrt(1 - p)|00..00> + sqrt(p)|11..11>$"""
 
     p: float
@@ -54,7 +54,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -176,7 +176,7 @@ def test_mean_estimation_bernoulli(
 
 
 @frozen
-class GroverSynthesizer(PrepareOracle):
+class GroverSynthesizer(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Prepare a uniform superposition over the first $2^n$ elements."""
 
     n: int
@@ -197,7 +197,7 @@ class GroverSynthesizer(PrepareOracle):
 
 
 @frozen
-class GroverEncoder(SelectOracle):
+class GroverEncoder(SelectOracle, GateWithRegisters):  # type: ignore[misc]
     """Enc|marked_item>|0> --> |marked_item>|marked_val>"""
 
     n: int

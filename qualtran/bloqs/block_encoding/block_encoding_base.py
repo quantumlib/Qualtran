@@ -15,7 +15,7 @@ import abc
 from typing import Tuple
 
 from qualtran import Bloq, BloqDocSpec, Register
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 

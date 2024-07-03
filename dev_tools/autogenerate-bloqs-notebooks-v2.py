@@ -59,7 +59,6 @@ import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
-import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
@@ -85,6 +84,7 @@ import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
+import qualtran.bloqs.interfaces.lcu_select_and_prepare
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -510,8 +510,8 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qubitization.qubitization_walk_operator,
         bloq_specs=[
             qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
+            qualtran.bloqs.interfaces.lcu_select_and_prepare._SELECT_ORACLE_DOC,
+            qualtran.bloqs.interfaces.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
         ],
     ),
     NotebookSpecV2(

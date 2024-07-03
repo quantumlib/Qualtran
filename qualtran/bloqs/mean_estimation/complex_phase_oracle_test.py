@@ -21,15 +21,15 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import QAny, QBit, QFxp, Register
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
+from qualtran import GateWithRegisters, QAny, QBit, QFxp, Register
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.cirq_interop import testing as cq_testing
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @frozen
-class ExampleSelect(SelectOracle):
+class ExampleSelect(SelectOracle, GateWithRegisters):  # type: ignore[misc]
     bitsize: int
     control_val: Optional[int] = None
 

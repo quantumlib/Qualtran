@@ -30,8 +30,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.symbolics import SymbolicFloat
 
 

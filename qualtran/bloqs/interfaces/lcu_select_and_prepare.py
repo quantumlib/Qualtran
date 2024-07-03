@@ -16,13 +16,13 @@ import abc
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
+from qualtran import Bloq, BloqDocSpec, Register, Signature
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
 
 
-class SelectOracle(GateWithRegisters):
+class SelectOracle(Bloq):
     r"""Abstract base class that defines the interface for a SELECT Oracle.
 
     The action of a SELECT oracle on a selection register $|l\rangle$ and target register
@@ -64,12 +64,12 @@ class SelectOracle(GateWithRegisters):
 
 _SELECT_ORACLE_DOC = BloqDocSpec(
     bloq_cls=SelectOracle,
-    import_line='from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle',
+    import_line='from qualtran.bloqs.interfaces.lcu_select_and_prepare import SelectOracle',
     examples=[],
 )
 
 
-class PrepareOracle(GateWithRegisters):
+class PrepareOracle(Bloq):
     r"""Abstract base class that defines the API for a PREPARE Oracle.
 
     Given a set of coefficients $\{c_0, c_1, ..., c_{N - 1}\}$, the PREPARE oracle is used to encode
@@ -109,6 +109,6 @@ class PrepareOracle(GateWithRegisters):
 
 _PREPARE_ORACLE_DOC = BloqDocSpec(
     bloq_cls=PrepareOracle,
-    import_line='from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle',
+    import_line='from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle',
     examples=[],
 )

@@ -27,12 +27,12 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 
 @cirq.value_equality()
 @attrs.frozen
-class StatePreparationAliasSampling(PrepareOracle):
+class StatePreparationAliasSampling(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
     In particular, we take the zero state to:

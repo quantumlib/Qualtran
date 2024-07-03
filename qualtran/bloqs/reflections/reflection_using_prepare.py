@@ -29,7 +29,7 @@ from qualtran._infra.gate_with_registers import (
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt

@@ -45,12 +45,12 @@ from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 

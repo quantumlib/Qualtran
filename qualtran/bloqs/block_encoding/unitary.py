@@ -29,7 +29,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
