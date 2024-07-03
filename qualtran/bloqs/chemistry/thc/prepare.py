@@ -33,6 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.gate_with_registers import GateWithRegisters
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -212,7 +213,7 @@ class UniformSuperpositionTHC(Bloq):
 
 
 @frozen
-class PrepareTHC(PrepareOracle):
+class PrepareTHC(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""State Preparation for THC Hamilontian.
 
     Prepares the state

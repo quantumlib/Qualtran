@@ -19,7 +19,7 @@ import cirq
 import scipy
 from numpy.typing import NDArray
 
-from qualtran import Signature
+from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -28,7 +28,7 @@ from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
-class PrepareUniformSuperpositionTest(PrepareOracle):
+class PrepareUniformSuperpositionTest(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     n: int
     cvs: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()

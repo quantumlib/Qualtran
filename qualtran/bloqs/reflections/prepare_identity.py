@@ -17,7 +17,7 @@ from typing import Dict, Iterable, Sequence, Tuple, TYPE_CHECKING
 
 from attrs import field, frozen
 
-from qualtran import bloq_example, BloqDocSpec, QAny, Register, Soquet
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QAny, Register, Soquet
 from qualtran.bloqs.basic_gates import Identity
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.block_encoding.lcu_block_encoding import PrepareOracle
@@ -34,7 +34,7 @@ def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
 
 
 @frozen
-class PrepareIdentity(PrepareOracle):
+class PrepareIdentity(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     """An identity PrepareOracle.
 
     This is helpful for creating a reflection about zero and as a signal state for block encodings.

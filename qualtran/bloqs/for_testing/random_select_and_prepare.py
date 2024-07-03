@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
+from qualtran import BloqBuilder, BoundedQUInt, GateWithRegisters, QBit, Register, SoquetT
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.interfaces.lcu_select_and_prepare import PrepareOracle, SelectOracle
@@ -27,7 +27,7 @@ from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationW
 
 
 @frozen
-class TestPrepareOracle(PrepareOracle):
+class TestPrepareOracle(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Gate that prepares a fixed state with real amplitudes using a MatrixGate.
 
     It is an $n$-qubit unitary $U$ such that

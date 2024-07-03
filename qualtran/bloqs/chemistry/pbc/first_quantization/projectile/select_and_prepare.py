@@ -25,6 +25,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    GateWithRegisters,
     QAny,
     QBit,
     Register,
@@ -187,7 +188,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
 
 
 @frozen
-class PrepareFirstQuantizationWithProj(PrepareOracle):
+class PrepareFirstQuantizationWithProj(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""State preparation for the first quantized chemistry Hamiltonian with a quntum projectile.
 
     Args:
@@ -364,7 +365,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
 
 
 @frozen
-class SelectFirstQuantizationWithProj(SelectOracle):
+class SelectFirstQuantizationWithProj(SelectOracle, GateWithRegisters):  # type: ignore[misc]
     r"""SELECT operation for the first quantized chemistry Hamiltonian.
 
     Args:

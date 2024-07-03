@@ -33,6 +33,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import GateWithRegisters
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
@@ -115,7 +116,7 @@ def get_sparse_inputs_from_integrals(
 
 
 @attrs.frozen
-class PrepareSparse(PrepareOracle):
+class PrepareSparse(PrepareOracle, GateWithRegisters):  # type: ignore[misc]
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
     Prepare the state:
