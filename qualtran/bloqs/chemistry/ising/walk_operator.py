@@ -18,6 +18,7 @@ import numpy as np
 
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
+from qualtran.bloqs.chemistry.ising.hamiltonian import get_1d_ising_hamiltonian_norm_upper_bound
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
@@ -145,7 +146,7 @@ def walk_operator_for_pauli_hamiltonian(
 
 
 def get_walk_operator_for_1d_ising_model(
-    num_sites: int, eps: float
+    num_sites: int, eps: float, *, j_zz_strength: float = 1, gamma_x_strength: float = -1
 ) -> tuple[QubitizationWalkOperator, cirq.PauliSum]:
     r"""Get the QubitizationWalkOperator for a 1d Ising Hamiltonian on n sites.
 
@@ -154,15 +155,17 @@ def get_walk_operator_for_1d_ising_model(
     Args:
         num_sites: number of spins $n$.
         eps: precision $\epsilon$ of the block-encoding of the hamiltonian.
+        j_zz_strength: The two-body ZZ potential strength, $J$.
+        gamma_x_strength: The one-body X potential strength, $\Gamma$.
 
     Returns:
         The walk operator $W$ and the hamiltonian $H$.
     """
-    J, gamma = 1, -1
-    ham = get_1d_ising_hamiltonian(
-        cirq.LineQubit.range(num_sites), j_zz_strength=J, gamma_x_strength=gamma
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites), j_zz_strength, gamma_x_strength)
+    ham_norm_upper_bound = get_1d_ising_hamiltonian_norm_upper_bound(
+        num_sites, j_zz_strength, gamma_x_strength
     )
-    qlambda = num_sites * (abs(J) + abs(gamma))
-    ham_norm_upper_bound = (qlambda**2 - 4 * num_sites * abs(J) * abs(gamma)) ** 0.5
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps, ham_norm_upper_bound=ham_norm_upper_bound)
+    walk = walk_operator_for_pauli_hamiltonian(
+        ham, eps, ham_norm_upper_bound=float(ham_norm_upper_bound)
+    )
     return walk, ham
