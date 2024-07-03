@@ -40,6 +40,7 @@ from ._infra.composite_bloq import (
     BloqBuilder,
     DidNotFlattenAnythingError,
     SoquetT,
+    ConnectionT,
 )
 
 from ._infra.data_types import (

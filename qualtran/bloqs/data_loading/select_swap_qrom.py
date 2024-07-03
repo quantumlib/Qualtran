@@ -120,7 +120,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     @log_block_sizes.default
     def _default_block_sizes(self) -> Tuple[SymbolicInt, ...]:
         target_bitsize = sum(self.target_bitsizes) * sum(
-            prod(*shape) for shape in self.target_shapes
+            prod(shape) for shape in self.target_shapes
         )
         return tuple(find_optimal_log_block_size(ilen, target_bitsize) for ilen in self.data_shape)
 

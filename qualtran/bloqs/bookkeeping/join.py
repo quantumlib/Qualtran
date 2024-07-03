@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QBit,
     QDType,
@@ -29,7 +30,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
@@ -81,27 +81,18 @@ class Join(_BookkeepingBloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        if not isinstance(incoming['reg'], np.ndarray):
-            raise ValueError('Incoming register must be a numpy array')
-        tn.add(
-            qtn.Tensor(
-                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
-                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
-                ),
-                inds=incoming['reg'].tolist() + [outgoing['reg']],
-                tags=['Join', tag],
-            )
-        )
+        eye = np.eye(2)
+        incoming = cast('NDArray', incoming['reg'])
+        outgoing = outgoing['reg']
+        return [
+            qtn.Tensor(data=eye, inds=[(outgoing, i), (incoming[i], 0)], tags=[str(self)])
+            for i in range(self.dtype.num_qubits)
+        ]
 
     def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}

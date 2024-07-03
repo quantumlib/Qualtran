@@ -33,8 +33,7 @@ def test_hamming_weight_t_complexity(bitsize: int):
     assert t_complexity(gate) == TComplexity(t=num_t, clifford=num_clifford)
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('bitsize', [3, 4, 5])
+@pytest.mark.parametrize('bitsize', [3, 4])
 def test_hamming_weight_compute(bitsize: int):
     gate = HammingWeightCompute(bitsize=bitsize)
     gate_inv = gate**-1

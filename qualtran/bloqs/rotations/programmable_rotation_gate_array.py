@@ -21,7 +21,16 @@ import numpy as np
 from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, QUInt, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BoundedQUInt,
+    GateWithRegisters,
+    QAny,
+    QUInt,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
 
@@ -205,3 +214,18 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
     @cached_property
     def interleaved_unitary_target(self) -> Tuple[Register, ...]:
         return ()
+
+
+@bloq_example
+def _programmable_rotation_gate_array() -> ProgrammableRotationGateArray:
+    programmable_rotation_gate_array = ProgrammableRotationGateArray(
+        [1, 2, 3, 4], kappa=2, rotation_gate=cirq.Z
+    )
+    return programmable_rotation_gate_array
+
+
+_PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC = BloqDocSpec(
+    bloq_cls=ProgrammableRotationGateArray,
+    import_line='from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArray',
+    examples=(_programmable_rotation_gate_array,),
+)

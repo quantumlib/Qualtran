@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import collections.abc
 import google.protobuf.descriptor
@@ -23,16 +24,11 @@ import google.protobuf.internal.containers
 import google.protobuf.message
 import qualtran.protos.args_pb2
 import qualtran.protos.data_types_pb2
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class CtrlSpec(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -48,6 +44,6 @@ class CtrlSpec(google.protobuf.message.Message):
         qdtypes: collections.abc.Iterable[qualtran.protos.data_types_pb2.QDataType] | None = ...,
         cvs: collections.abc.Iterable[qualtran.protos.args_pb2.NDArray] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cvs", b"cvs", "qdtypes", b"qdtypes"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["cvs", b"cvs", "qdtypes", b"qdtypes"]) -> None: ...
 
 global___CtrlSpec = CtrlSpec

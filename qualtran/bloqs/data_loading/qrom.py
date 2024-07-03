@@ -219,8 +219,8 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
-        n_and = prod(*self.data_shape) - 2 + self.num_controls
-        n_cnot = prod(*self.target_bitsizes, *self.data_shape)
+        n_and = prod(self.data_shape) - 2 + self.num_controls
+        n_cnot = prod(self.target_bitsizes) * prod(self.data_shape)
         return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
 
 
