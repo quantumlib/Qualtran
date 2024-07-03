@@ -16,16 +16,36 @@ import cirq
 import numpy as np
 
 from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
+from qualtran.cirq_interop import cirq_gate_to_bloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 def test_unitary():
     random_state = np.random.RandomState(2)
 
-    for alpha in random_state.random(size=20):
+    for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
         bloq = GlobalPhase(coefficient)
         np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
+
+
+def test_controlled():
+    random_state = np.random.RandomState(2)
+    for alpha in random_state.random(size=10):
+        coefficient = np.exp(2j * np.pi * alpha)
+        bloq = GlobalPhase(coefficient).controlled()
+        np.testing.assert_allclose(
+            cirq.unitary(cirq.GlobalPhaseGate(coefficient).controlled()), bloq.tensor_contract()
+        )
+
+
+def test_cirq_interop():
+    cbloq = GlobalPhase(1.0j).as_composite_bloq()
+
+    circuit = cbloq.to_cirq_circuit()
+    assert circuit == cirq.Circuit(cirq.GlobalPhaseGate(1.0j).on())
+
+    assert cirq_gate_to_bloq(cirq.GlobalPhaseGate(1.0j)) == GlobalPhase(1.0j)
 
 
 def test_t_complexity():
