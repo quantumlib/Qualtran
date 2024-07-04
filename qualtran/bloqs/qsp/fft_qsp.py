@@ -17,7 +17,7 @@ import numpy as np
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes=500
+    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: int = 500
 ):
     """Computes the Q polynomial given P
 
@@ -37,9 +37,7 @@ def fft_complementary_polynomial(
     [Complementary polynomials in quantum signal processing](https://arxiv.org/abs/2406.04246)
         Berntson and Sunderhauf. (2024). Figure 1.
     """
-    # Scale P
     P = np.array(P)
-
     N = num_modes
 
     def _scale(x):
@@ -71,7 +69,7 @@ def fft_complementary_polynomial(
         """Apply Fourier multiplier in Fourier space"""
         return np.fft.ifft(_fourier_multiplier(_get_log(x), N), norm="forward")
 
-    def calculate_coeff(poly):
+    def calculate_coeff(poly: np.ndarray) -> np.ndarray:
         """Compute coefficients of Q
 
         This runs the entire process calling the other intermediate methods.
@@ -81,6 +79,6 @@ def fft_complementary_polynomial(
         Returns:
             The complementary polynomial, Q.
         """
-        return np.fft.fft(np.exp(_get_modes(poly)), norm="forward")[: P.shape[0]]
+        return np.fft.fft(np.exp(_get_modes(poly)), norm="forward")[: poly.shape[0]]
 
     return calculate_coeff(P)
