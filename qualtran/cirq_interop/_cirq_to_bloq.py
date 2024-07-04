@@ -324,6 +324,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     from qualtran.bloqs.basic_gates import (
         CNOT,
         CSwap,
+        CZ,
         CZPowGate,
         GlobalPhase,
         Hadamard,
@@ -372,6 +373,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.X: XGate(),
         cirq.Y: YGate(),
         cirq.Z: ZGate(),
+        cirq.CZ: CZ(),
         cirq.SWAP: TwoBitSwap(),
         cirq.CSWAP: CSwap(1),
     }

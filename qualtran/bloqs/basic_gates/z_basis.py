@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -22,12 +22,14 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
+    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -39,7 +41,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import directional_text_box, Text, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
@@ -237,7 +239,7 @@ class ZGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def decompose_bloq(self) -> CompositeBloq:
+    def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
@@ -251,6 +253,25 @@ class ZGate(Bloq):
             )
         ]
 
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+
+        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+            # Delegate to the general superclass behavior
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        bloq = CZ()
+
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl_soq,) = ctrl_soqs
+            ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
+            return (ctrl_soq,), (q2,)
+
+        return bloq, add_controlled
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
@@ -262,11 +283,65 @@ class ZGate(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+
+        return TextBox('Z')
+
 
 @bloq_example
 def _zgate() -> ZGate:
     zgate = ZGate()
     return zgate
+
+
+@frozen
+class CZ(Bloq):
+    """Two-qubit controlled-Z gate.
+
+    Registers:
+        ctrl: One-bit control register.
+        target: One-bit target register.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(q1=1, q2=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        unitary = np.diag(np.array([1, 1, 1, -1], dtype=np.complex128)).reshape((2, 2, 2, 2))
+        inds = [(outgoing['q1'], 0), (outgoing['q2'], 0), (incoming['q1'], 0), (incoming['q2'], 0)]
+
+        return [qtn.Tensor(data=unitary, inds=inds, tags=[str(self)])]
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', q1: 'CirqQuregT', q2: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (q1,) = q1
+        (q2,) = q2
+        return cirq.CZ(q1, q2), {'q1': np.array([q1]), 'q2': np.array([q2])}
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'q1' or reg.name == 'q2':
+            return Circle()
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
 
 @frozen
