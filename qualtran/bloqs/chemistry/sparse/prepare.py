@@ -36,7 +36,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.basic_gates.z_basis import ZGate
+from qualtran.bloqs.basic_gates.z_basis import CZ, ZGate
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
@@ -398,7 +398,7 @@ class PrepareSparse(PrepareOracle):
         # prepare uniform superposition over sigma
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
-        less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
+        less_than, theta[1] = bb.add(CZ(), q1=less_than, q2=theta[1])
         ctrl_spec = CtrlSpec(QBit(), 0b0)
         less_than, theta[0] = bb.add(ZGate().controlled(ctrl_spec), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
