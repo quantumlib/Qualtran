@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -27,6 +27,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -82,24 +83,15 @@ class _ZVector(Bloq):
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         side = outgoing if self.state else incoming
-        tn.add(
-            qtn.Tensor(
-                data=_ONE if self.bit else _ZERO,
-                inds=(side['q'],),
-                tags=['1' if self.bit else '0', tag],
-            )
-        )
+        return [
+            qtn.Tensor(data=_ONE if self.bit else _ZERO, inds=[(side['q'], 0)], tags=[str(self)])
+        ]
 
     def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
@@ -248,17 +240,16 @@ class ZGate(Bloq):
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(qtn.Tensor(data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=["Z", tag]))
+        return [
+            qtn.Tensor(
+                data=_PAULIZ, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)]
+            )
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -344,30 +335,6 @@ class _IntVector(Bloq):
         else:
             return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
-        bitstring = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
-        data[tuple(bitstring)] = 1
-        data = data.reshape(-1)
-
-        if self.state:
-            inds = (outgoing['val'],)
-        else:
-            inds = (incoming['val'],)
-
-        tn.add(qtn.Tensor(data=data, inds=inds, tags=[f'{self.val}', tag]))
-
     def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
@@ -405,6 +372,9 @@ class IntState(_IntVector):
     def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
+    def __str__(self):
+        return f'IntState({self.val})'
+
 
 @bloq_example
 def _int_state() -> IntState:
@@ -429,6 +399,9 @@ class IntEffect(_IntVector):
 
     def __init__(self, val: int, bitsize: int):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
+
+    def __str__(self):
+        return f'IntEffect({self.val})'
 
 
 @bloq_example

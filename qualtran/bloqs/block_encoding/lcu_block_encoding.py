@@ -354,7 +354,6 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         def _extract_soqs(bloq: Bloq) -> Dict[str, 'SoquetT']:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
-        print('xxxx')
         soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
         soqs |= bb.add_d(self.select, **_extract_soqs(self.select))
         soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))
