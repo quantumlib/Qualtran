@@ -11,61 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
 from typing import Sequence, Union
 
 import numpy as np
 
 
-def _get_r(delta: float, d: int) -> float:
-    return (1 / (1 - delta)) ** (1 / d)
-
-
-def _get_N0(epsilon: float, delta: float, d: int) -> int:
-    r = _get_r(delta, d)
-    first_term = 2 / (np.log(r))
-
-    second_term_num = 8 * np.log(1 / delta)
-    second_term_den = epsilon * (r - 1)
-
-    return math.ceil(first_term * np.log(second_term_num / second_term_den))
-
-
-def _get_N(epsilon0: float, d: int) -> int:
-
-    epsilon = epsilon0 / 4
-    delta = epsilon0 / (5 * (d + 1))
-
-    result = _get_N0(epsilon, delta, d)
-    if result % 2 == 0:
-        return result
-    return result + 1
-
-
-def _get_scale_factor(epsilon: float) -> float:
-    return 1 - (epsilon / 4)
-
-
-def _get_modes(the_log: np.ndarray, N: int) -> np.ndarray:
-    modes = np.fft.fft(the_log, norm="forward")
-    modes[0] *= 1 / 2  # Note modes are ordered differently in the text
-    modes[N // 2 + 1 :] = 0
-    return modes
-
-
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4
+    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes=500
 ):
-    """
-    Computes the Q polynomial given P
+    """Computes the Q polynomial given P
 
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying
         $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
 
     Args:
           P: Co-efficients of a complex QSP polynomial
-          tolerance: The maximum allowable amount that the sum of the squares can be off from the unit circle. Note that
-            a high tolerance will require more memory and computation time. This scales roughly as O(1/tolerance).
+          num_modes: The number of modes used in the FFT operation. The more modes, the more accurate the result.
+          tolerance: The maximum allowable amount that the sum of the squares can be off from the unit circle. This is
+            mainly used for scaling and does not directly affect the speed of the calculation.
+
     Returns:
         The complementary polynomial, Q.
 
@@ -75,21 +39,48 @@ def fft_complementary_polynomial(
     """
     # Scale P
     P = np.array(P)
-    scaled_P = (1 - tolerance / 4) * P
 
-    d = P.shape[0]
-    N = _get_N(tolerance, d)
+    N = num_modes
 
-    # Pad P to FFT dimension N
-    padded_poly = lambda x: np.pad(scaled_P, (0, N - 1))
-    # Evaluate P(omega) at roots of unity omega
-    p_eval = lambda x: np.fft.ifft(padded_poly(x), norm="forward")
-    # Compute log(1-|P(omega)|^2) at roots of unity omega
-    the_log = lambda x: np.log(1 - (np.abs(p_eval(x))) ** 2)
-    # Apply Fourier multiplier in Fourier space
-    modes = lambda x: np.fft.ifft(_get_modes(the_log(x), N), norm="forward")
-    # Compute coefficients of Q
-    calculate_coeff = lambda x: np.fft.fft(np.exp(modes(x)), norm="forward")[: P.shape[0]]
+    def _scale(x):
+        """Scale input according to tolerance."""
+        return (1 - tolerance / 4) * x
 
-    result = calculate_coeff(scaled_P)
-    return result
+    def _pad_poly(x):
+        """Pad P to FFT dimension N"""
+        return np.pad(_scale(x), (0, N - 1))
+
+    def _p_eval(x):
+        """Evaluate P(omega) at roots of unity omega"""
+        return np.fft.ifft(_pad_poly(x), norm="forward")
+
+    def _get_log(x):
+        """Compute log(1-|P(omega)|^2) at roots of unity omega"""
+        return np.log(1 - (np.abs(_p_eval(x))) ** 2)
+
+    def _fourier_multiplier(the_log: np.ndarray, N: int) -> np.ndarray:
+        """
+        Applies the Fourier multiplier after applying the fft (Eq. 1.7)
+        """
+        modes = np.fft.fft(the_log, norm="forward")
+        modes[0] *= 1 / 2  # Note modes are ordered differently in the text
+        modes[N // 2 + 1 :] = 0
+        return modes
+
+    def _get_modes(x):
+        """Apply Fourier multiplier in Fourier space"""
+        return np.fft.ifft(_fourier_multiplier(_get_log(x), N), norm="forward")
+
+    def calculate_coeff(poly):
+        """Compute coefficients of Q
+
+        This runs the entire process calling the other intermediate methods.
+
+        Args:
+            poly: The input polynomial, P.
+        Returns:
+            The complementary polynomial, Q.
+        """
+        return np.fft.fft(np.exp(_get_modes(poly)), norm="forward")[: P.shape[0]]
+
+    return calculate_coeff(P)
