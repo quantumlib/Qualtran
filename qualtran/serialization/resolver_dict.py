@@ -177,6 +177,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.x_basis.PlusState": qualtran.bloqs.basic_gates.x_basis.PlusState,
     "qualtran.bloqs.basic_gates.x_basis.XGate": qualtran.bloqs.basic_gates.x_basis.XGate,
     "qualtran.bloqs.basic_gates.y_gate.YGate": qualtran.bloqs.basic_gates.y_gate.YGate,
+    "qualtran.bloqs.basic_gates.y_gate.CYGate": qualtran.bloqs.basic_gates.y_gate.CYGate,
     "qualtran.bloqs.basic_gates.z_basis.IntEffect": qualtran.bloqs.basic_gates.z_basis.IntEffect,
     "qualtran.bloqs.basic_gates.z_basis.IntState": qualtran.bloqs.basic_gates.z_basis.IntState,
     "qualtran.bloqs.basic_gates.z_basis.OneEffect": qualtran.bloqs.basic_gates.z_basis.OneEffect,
