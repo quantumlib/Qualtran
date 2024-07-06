@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import random
 from typing import Dict, Tuple, Union
 
+import cirq
+import numpy as np
 import pytest
 import sympy
 
@@ -36,6 +37,17 @@ random.seed(12345)
 def test_cswap_approx_decomp():
     csa = CSwapApprox(10)
     assert_valid_bloq_decomposition(csa)
+
+
+def test_cswap_approx_decomposition():
+    csa = CSwapApprox(4)
+    circuit = (
+        csa.as_composite_bloq().to_cirq_circuit()
+        + csa.adjoint().as_composite_bloq().to_cirq_circuit()
+    )
+    initial_state = cirq.testing.random_superposition(2**9, random_state=1234)
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit, initial_state=initial_state)
+    np.testing.assert_allclose(result.final_state_vector, initial_state)
 
 
 @pytest.mark.parametrize('n', [5, 32])
