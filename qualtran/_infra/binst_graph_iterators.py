@@ -19,7 +19,10 @@ import networkx as nx
 if TYPE_CHECKING:
     from qualtran import BloqInstance
 
-_INFINITY: int = int(1e16)
+_ALLOCATION_PRIORITY: int = int(1e16)
+"""A large constant value to ensure that allocations are performed as late as possible
+and de-allocations (with -_ALLOCATION_PRIORITY priority) are performed as early as possible.
+To determine ordering among allocations, we may add a priority to this base value."""
 
 
 def _priority(node: 'BloqInstance') -> int:
@@ -31,10 +34,10 @@ def _priority(node: 'BloqInstance') -> int:
         return 0
 
     if node.bloq_is(Allocate):
-        return _INFINITY
+        return _ALLOCATION_PRIORITY
 
     if node.bloq_is(Free):
-        return -_INFINITY
+        return -_ALLOCATION_PRIORITY
 
     signature = node.bloq.signature
     return total_bits(signature.rights()) - total_bits(signature.lefts())
