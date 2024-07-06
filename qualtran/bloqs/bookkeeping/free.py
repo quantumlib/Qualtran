@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple, Union, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen

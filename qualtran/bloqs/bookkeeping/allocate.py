@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Tuple, Union, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING, Union
 
+import numpy as np
 import sympy
 from attrs import frozen
-import numpy as np
 
 from qualtran import (
     Bloq,
