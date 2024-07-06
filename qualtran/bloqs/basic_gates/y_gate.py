@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature, SoquetT
+from qualtran import Bloq, ConnectionT, Signature
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -44,17 +44,16 @@ class YGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(qtn.Tensor(data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=["Y", tag]))
+        return [
+            qtn.Tensor(
+                data=_PAULIY, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)]
+            )
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'

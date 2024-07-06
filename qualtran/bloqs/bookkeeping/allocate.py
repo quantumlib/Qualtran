@@ -12,24 +12,24 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Tuple, Union, TYPE_CHECKING
 
-import numpy as np
 import sympy
 from attrs import frozen
+import numpy as np
 
 from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QDType,
     QUInt,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
@@ -69,19 +69,17 @@ class Allocate(_BookkeepingBloq):
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        data = np.zeros(1 << self.dtype.num_qubits)
-        data[0] = 1
-        tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
+        from qualtran.bloqs.basic_gates.z_basis import _ZERO
+
+        return [
+            qtn.Tensor(data=_ZERO, inds=[(outgoing['reg'], i)], tags=[str(self)])
+            for i in range(self.dtype.num_qubits)
+        ]
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

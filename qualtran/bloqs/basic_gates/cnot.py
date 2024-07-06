@@ -14,7 +14,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -26,6 +26,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
     Register,
@@ -69,35 +70,27 @@ class CNOT(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        """Append tensors to `tn` that represent this operation.
-
-        This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
-        by an internal index.
-
-        References:
-            [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
-        """
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        # This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
+        # by an internal index.
+        # [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
         import quimb.tensor as qtn
 
         internal = qtn.rand_uuid()
-        tn.add(
+        return [
             qtn.Tensor(
-                data=COPY, inds=(incoming['ctrl'], outgoing['ctrl'], internal), tags=['COPY', tag]
-            )
-        )
-        tn.add(
+                data=COPY,
+                inds=[(incoming['ctrl'], 0), (outgoing['ctrl'], 0), internal],
+                tags=['COPY'],
+            ),
             qtn.Tensor(
-                data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
-            )
-        )
+                data=XOR,
+                inds=[(incoming['target'], 0), (outgoing['target'], 0), internal],
+                tags=['XOR'],
+            ),
+        ]
 
     def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}

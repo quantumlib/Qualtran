@@ -16,6 +16,7 @@ from typing import Tuple
 
 from qualtran import Bloq, BloqDocSpec, Register
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 class BlockEncoding(Bloq):
@@ -66,6 +67,31 @@ class BlockEncoding(Bloq):
 
     def pretty_name(self) -> str:
         return 'B[H]'
+
+    @property
+    def alpha(self) -> SymbolicFloat:
+        """The normalization constant."""
+        raise NotImplementedError
+
+    @property
+    def system_bitsize(self) -> SymbolicInt:
+        """The number of qubits that represent the system being block encoded."""
+        raise NotImplementedError
+
+    @property
+    def ancilla_bitsize(self) -> SymbolicInt:
+        """The number of ancilla qubits."""
+        raise NotImplementedError
+
+    @property
+    def resource_bitsize(self) -> SymbolicInt:
+        """The number of resource qubits not counted in ancillas."""
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> SymbolicFloat:
+        """The precision to which the block encoding is to be prepared."""
+        raise NotImplementedError
 
     @property
     @abc.abstractmethod

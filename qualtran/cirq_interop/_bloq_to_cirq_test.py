@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, ConnectionT, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
@@ -45,17 +45,12 @@ class SwapTwoBitsTest(Bloq):
         (y,) = y
         return cirq.SWAP(x, y), {'x': np.array([x]), 'y': np.array([y])}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         from qualtran.bloqs.basic_gates import TwoBitSwap
 
-        TwoBitSwap().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+        return TwoBitSwap().my_tensors(incoming=incoming, outgoing=outgoing)
 
 
 def test_swap_two_bits_to_cirq():
@@ -95,15 +90,19 @@ class SwapTestWithOnlyTensorData(Bloq):
     def signature(self):
         return Signature.build(x=self.n, y=self.n)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        SwapTest(self.n).add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+
+        inds = _order_incoming_outgoing_indices(
+            self.signature, incoming=incoming, outgoing=outgoing
+        )
+        data = SwapTest(self.n).tensor_contract().reshape((2,) * len(inds))
+
+        return [qtn.Tensor(data=data, inds=inds)]
 
 
 @pytest.mark.parametrize('n', [1, 2, 3, 4])

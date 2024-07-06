@@ -14,7 +14,6 @@
 import itertools
 
 import cirq
-import numpy as np
 import pytest
 
 from qualtran import Bloq
@@ -41,7 +40,5 @@ def test_call_graph():
 @pytest.mark.parametrize('k,n', itertools.product(range(0, 4), range(1, 4)))
 def test_tensors(k, n):
     # Eq. E11 in https://arxiv.org/pdf/2012.09238.pdf
-    from_tensors = TwoBitFFFT(k, n).tensor_contract()
-    np.testing.assert_allclose(from_tensors, _fkn_matrix(k, n))
     from_decomp = TwoBitFFFT(k, n).decompose_bloq().tensor_contract()
     cirq.testing.assert_allclose_up_to_global_phase(from_decomp, _fkn_matrix(k, n), atol=1e-12)

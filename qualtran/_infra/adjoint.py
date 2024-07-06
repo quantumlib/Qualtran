@@ -18,7 +18,7 @@ from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 import cirq
 from attrs import frozen
 
-from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
+from .composite_bloq import _binst_to_cxns, _cxns_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
@@ -34,7 +34,7 @@ def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dic
     if LeftDangle not in cbloq._binst_graph:
         return {}
     _, init_succs = _binst_to_cxns(LeftDangle, binst_graph=cbloq._binst_graph)
-    return _cxn_to_soq_dict(
+    return _cxns_to_soq_dict(
         new_signature.rights(), init_succs, get_me=lambda x: x.left, get_assign=lambda x: x.right
     )
 
@@ -67,7 +67,7 @@ def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
     for binst, preds, succs in bloqnections:
         # Instead of get_me returning the right element of a predecessor connection,
         # it's the left element of a successor connection.
-        soqs = _cxn_to_soq_dict(
+        soqs = _cxns_to_soq_dict(
             binst.bloq.signature.rights(),
             succs,
             get_me=lambda x: x.left,
