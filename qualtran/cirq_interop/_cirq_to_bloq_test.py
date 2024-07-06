@@ -162,9 +162,11 @@ def test_cirq_optree_to_cbloq():
     cbloq = cirq_optree_to_cbloq(circuit)
     assert cbloq.signature == qualtran.Signature([qualtran.Register('qubits', QBit(), shape=(28,))])
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
-    assert all(bloq_instances[i].bloq == Join(QAny(2)) for i in range(14))
-    assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
-    assert bloq_instances[14].bloq.signature == qualtran.Signature(
+    # Greedy iteration of iter_bloqnections first joins only qubits needed
+    # for the first gate.
+    assert all(bloq_instances[i].bloq == Join(QAny(2)) for i in range(12))
+    assert bloq_instances[12].bloq == CirqGateWithRegisters(reg1)
+    assert bloq_instances[12].bloq.signature == qualtran.Signature(
         [qualtran.Register('x', QAny(bitsize=2), shape=(3, 4))]
     )
     assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
