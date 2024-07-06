@@ -148,6 +148,7 @@ def test_swap_with_zero_classically():
     for sel_in in range(2**2):
         sel_out, out_data = swz.call_classically(selection=sel_in, targets=data)  # type: ignore[assignment]
         assert sel_in == sel_out
+        assert isinstance(out_data, np.ndarray)
         assert out_data[0] == data[sel_in]
 
 
