@@ -199,6 +199,9 @@ class Add(Bloq):
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
+        if self.b_dtype.bitsize == 1:
+            yield CNOT().on(input_bits[0], output_bits[0])
+            return
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])

@@ -38,7 +38,7 @@ def test_subtract_bloq_decomposition_unsigned(a_bits, b_bits):
         c = (a - b) % max_b
         want[(a << b_bits) | c][a_b] = 1
     got = gate.tensor_contract()
-    np.testing.assert_equal(got, want)
+    np.testing.assert_allclose(got, want)
 
 
 def _to_signed_binary(x: int, bits: int):
