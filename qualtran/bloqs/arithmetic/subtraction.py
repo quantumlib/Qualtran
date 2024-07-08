@@ -32,6 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import OnEach, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
@@ -210,6 +211,14 @@ def _sub_diff_size_regs() -> Subtract:
     return sub_diff_size_regs
 
 
+@bloq_example
+def _sub_symp_decomposition() -> CompositeBloq:
+    n = sympy.Symbol('n')
+    sub_symp_decomposition = Subtract(QInt(bitsize=n)).decompose_bloq()
+    return sub_symp_decomposition
+
+
 _SUB_DOC = BloqDocSpec(
-    bloq_cls=Subtract, examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs]
+    bloq_cls=Subtract,
+    examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs, _sub_symp_decomposition],
 )
