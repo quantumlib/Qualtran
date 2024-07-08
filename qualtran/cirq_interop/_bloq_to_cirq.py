@@ -230,7 +230,6 @@ def _bloq_to_cirq_op(
             del qvar_to_qreg[soq]
 
     op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **in_quregs)
-
     # 2. Update the mappings based on output soquets and `out_quregs`.
     for cxn in succ_cxns:
         soq = cxn.left

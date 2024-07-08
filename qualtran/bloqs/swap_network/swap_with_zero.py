@@ -153,7 +153,7 @@ class SwapWithZero(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = prod(x for x in self.n_target_registers) - 1
-        return {(CSwapApprox(self.target_bitsize), num_swaps)}
+        return {(self.cswap_n, num_swaps)}
 
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info

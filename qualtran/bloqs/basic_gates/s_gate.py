@@ -73,7 +73,8 @@ class SGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.S(q), {'q': np.array([q])}
+        p = -1 if self.is_adjoint else 1
+        return cirq.S(q) ** p, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
         maybe_dag = '†' if self.is_adjoint else ''
