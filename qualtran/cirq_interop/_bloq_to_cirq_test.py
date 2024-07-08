@@ -23,6 +23,7 @@ from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
@@ -145,6 +146,27 @@ def test_multi_and_allocates():
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()
     )
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
+
+
+def test_flat_cbloq_to_cirq_circuit_minimizes_qubit_allocation():
+    bloq = PrepareUniformSuperposition(n=3, cvs=(1,))
+    qm = cirq.GreedyQubitManager(prefix='anc', maximize_reuse=True)
+    cbloq = bloq.as_composite_bloq()
+    assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 3
+    cbloq = bloq.decompose_bloq()
+    assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 5
+    cbloq = bloq.decompose_bloq().flatten_once()
+    assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 7
+    qm = cirq.GreedyQubitManager(prefix='anc', maximize_reuse=True)
+    # Note: This should also be 7 but to work correctly, it relies on
+    # `greedy_topological_sort` iterating on allocation nodes in insertion order.
+    # `cbloq.flatten()` preserves this now because cbloq.iter_bloqnections is also
+    #  updated to use `greedy_topological_sort` instead of `nx.topological_sort`.
+    #  In general, we should have a more stable way to preserve this property,
+    #  potentially by maintaing a sorted order in `binst.i`;
+    #  xref: https://github.com/quantumlib/Qualtran/issues/1098
+    cbloq = bloq.decompose_bloq().flatten()
+    assert len(cbloq.to_cirq_circuit(qubit_manager=qm).all_qubits()) == 7
 
 
 def test_contruct_op_from_gate():
