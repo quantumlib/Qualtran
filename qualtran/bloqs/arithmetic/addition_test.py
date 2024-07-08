@@ -316,6 +316,13 @@ def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
     assert bloq_classical[-1] == result
 
 
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_classical_add_signed_overflow(bitsize):
+    bloq = Add(QInt(bitsize))
+    mx = 2 ** (bitsize - 1) - 1
+    assert bloq.call_classically(a=mx, b=mx) == (mx, -2)
+
+
 # TODO: write tests for signed integer addition (subtraction)
 # https://github.com/quantumlib/Qualtran/issues/606
 @pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])

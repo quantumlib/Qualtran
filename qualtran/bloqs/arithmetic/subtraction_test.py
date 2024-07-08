@@ -86,7 +86,7 @@ def test_t_complexity(n_bits):
     assert complexity.rotations == 0
 
 
-@pytest.mark.parametrize('dtype', [QInt])
+@pytest.mark.parametrize('dtype', [QInt, QUInt])
 def test_against_classical_values(dtype):
     subtract = Subtract(dtype(3), dtype(5))
     cbloq = subtract.decompose_bloq()
@@ -100,3 +100,12 @@ def test_against_classical_values(dtype):
         ref = subtract.call_classically(a=a, b=b)
         comp = cbloq.call_classically(a=a, b=b)
         assert ref == comp
+
+
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_classical_add_signed_overflow(bitsize):
+    bloq = Subtract(QInt(bitsize))
+    cbloq = bloq.decompose_bloq()
+    mn = -(2 ** (bitsize - 1))
+    assert bloq.call_classically(a=0, b=mn) == (0, mn)
+    assert cbloq.call_classically(a=0, b=mn) == (0, mn)

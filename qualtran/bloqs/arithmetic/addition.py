@@ -158,8 +158,16 @@ class Add(Bloq):
         N = 2**b_bitsize
         if unsigned:
             return {'a': a, 'b': int((a + b) % N)}
-        hN = N >> 1
-        return {'a': a, 'b': int(a + b + hN) % N - hN}
+
+        # Addition of signed integers can result in overflow. In most classical programming languages (e.g. C++)
+        # what happens when an overflow happens is left as an implementation detail for compiler designers.
+        # However for quantum subtraction the operation shoudl be unitary and that means that the unitary of
+        # the bloq should be a permutation matrix.
+        # If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
+        # by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
+        # by the same amount modulu $N$. that is add N/2 before addition and then remove it.
+        half_n = N >> 1
+        return {'a': a, 'b': int(a + b + half_n) % N - half_n}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
