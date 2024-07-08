@@ -31,7 +31,6 @@ from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "data,block_size",
     [
@@ -39,7 +38,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
             data,
             block_size,
             id=f"{block_size}-data{didx}",
-            marks=pytest.mark.slow if block_size == 2 and didx == 0 else (),
+            marks=pytest.mark.slow if block_size == 1 and didx == 1 else (),
         )
         for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]], [[1], [2], [3]]])
         for block_size in [None, 0, 1]
@@ -63,9 +62,9 @@ def test_select_swap_qrom(data, block_size):
         cirq.decompose_once(qrom.on_registers(**qubit_regs), context=context)
     )
 
-    dirty_target_ancilla = [
-        q for q in qrom_circuit.all_qubits() if isinstance(q, cirq.ops.BorrowableQubit)
-    ]
+    dirty_target_ancilla = sorted(
+        qrom_circuit.all_qubits() - set(q for qs in qubit_regs.values() for q in qs.flatten())
+    )
 
     circuit = cirq.Circuit(
         # Prepare dirty ancillas in an arbitrary state.

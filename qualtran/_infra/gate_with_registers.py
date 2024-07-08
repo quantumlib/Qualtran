@@ -14,7 +14,6 @@
 
 import abc
 from typing import (
-    Any,
     cast,
     Collection,
     Dict,
@@ -40,7 +39,7 @@ from qualtran._infra.registers import Register, Side
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
+    from qualtran import AddControlledT, BloqBuilder, ConnectionT, CtrlSpec, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
@@ -507,22 +506,15 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _unitary_(self):
         return NotImplemented
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: 'Any',
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         if not self._unitary_.__qualname__.startswith('GateWithRegisters.'):
-            from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+            from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-            _add_my_tensors_from_gate(
-                self, self.signature, str(self), tn, tag, incoming=incoming, outgoing=outgoing
-            )
+            return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
         else:
-            return super().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+            return super().my_tensors(incoming=incoming, outgoing=outgoing)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.

@@ -16,19 +16,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class TComplexity(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -45,6 +41,6 @@ class TComplexity(google.protobuf.message.Message):
         rotations: builtins.int = ...,
         t: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["clifford", b"clifford", "rotations", b"rotations", "t", b"t"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["clifford", b"clifford", "rotations", b"rotations", "t", b"t"]) -> None: ...
 
 global___TComplexity = TComplexity
