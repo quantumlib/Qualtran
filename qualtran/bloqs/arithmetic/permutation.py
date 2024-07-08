@@ -72,7 +72,7 @@ class PermutationCycle(Bloq):
         cycle: the permutation cycle to apply.
 
     Registers:
-        q: integer register storing a value in [0, ..., N - 1]
+        x: integer register storing a value in [0, ..., N - 1]
 
     References:
         [A simple quantum algorithm to efficiently prepare sparse states](https://arxiv.org/abs/2310.19309v1)
@@ -84,7 +84,7 @@ class PermutationCycle(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(q=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):
@@ -93,7 +93,7 @@ class PermutationCycle(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.N, self.cycle)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
         assert not isinstance(self.cycle, Shaped)
@@ -101,16 +101,16 @@ class PermutationCycle(Bloq):
         a: 'SoquetT' = bb.allocate(dtype=QBit())
 
         for k, x_k in enumerate(self.cycle):
-            q, a = bb.add_t(EqualsAConstant(self.bitsize, x_k), x=q, target=a)
+            x, a = bb.add_t(EqualsAConstant(self.bitsize, x_k), x=x, target=a)
 
             delta = x_k ^ self.cycle[(k + 1) % len(self.cycle)]
-            a, q = bb.add_t(XorK(QUInt(self.bitsize), delta).controlled(), ctrl=a, x=q)
+            a, x = bb.add_t(XorK(QUInt(self.bitsize), delta).controlled(), ctrl=a, x=x)
 
-        q, a = bb.add_t(EqualsAConstant(self.bitsize, self.cycle[0]), x=q, target=a)
+        x, a = bb.add_t(EqualsAConstant(self.bitsize, self.cycle[0]), x=x, target=a)
 
         bb.free(cast(Soquet, a))
 
-        return {'q': q}
+        return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.is_symbolic():
@@ -158,7 +158,7 @@ class Permutation(Bloq):
         cycles: a sequence of permutation cycles that form the permutation.
 
     Registers:
-        q: integer register storing a value in [0, ..., N - 1]
+        x: integer register storing a value in [0, ..., N - 1]
 
     References:
         [A simple quantum algorithm to efficiently prepare sparse states](https://arxiv.org/abs/2310.19309v1)
@@ -170,7 +170,7 @@ class Permutation(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(q=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):
@@ -197,15 +197,15 @@ class Permutation(Bloq):
         cycles = tuple(Shaped((cycle_len,)) for cycle_len in cycle_lengths)
         return cls(N, cycles)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'Soquet') -> dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
         assert not isinstance(self.cycles, Shaped)
         for cycle in self.cycles:
-            q = bb.add(PermutationCycle(self.N, cycle), q=q)
+            x = bb.add(PermutationCycle(self.N, cycle), x=x)
 
-        return {'q': q}
+        return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.is_symbolic():

@@ -966,6 +966,7 @@ class EqualsAConstant(Bloq):
         bits_k = x.reg.dtype.to_bits(self.val)
 
         if self.bitsize == 1:
+            # Note: when self.val = 0, this is just a negative-control CNOT.
             if self.val == 0:
                 x = bb.add(XGate(), q=x)
             x, target = bb.add(CNOT(), ctrl=x, target=target)
@@ -991,24 +992,24 @@ class EqualsAConstant(Bloq):
         return {'x': x, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
-            op: Bloq
-            if not is_symbolic(self.bitsize) and self.bitsize <= 2:
-                if self.bitsize == 1:
-                    op = XGate()
-                else:
-                    cv = ssa.new_symbol('cv')
-                    op = And(cv, cv)
+        if not self.is_symbolic():
+            return super().build_call_graph(ssa)
+
+        op: Bloq
+        if not is_symbolic(self.bitsize) and self.bitsize <= 2:
+            if self.bitsize == 1:
+                op = XGate()
             else:
-                op = MultiAnd(HasLength(self.bitsize))
+                cv = ssa.new_symbol('cv')
+                op = And(cv, cv)
+        else:
+            op = MultiAnd(HasLength(self.bitsize))
 
-            bloq_counts: dict[Bloq, int] = defaultdict(lambda: 0)
-            bloq_counts[op] += 1
-            bloq_counts[op.adjoint()] += 1
-            bloq_counts[CNOT()] += 1
-            return set(bloq_counts.items())
-
-        return super().build_call_graph(ssa)
+        bloq_counts: dict[Bloq, int] = defaultdict(lambda: 0)
+        bloq_counts[op] += 1
+        bloq_counts[op.adjoint()] += 1
+        bloq_counts[CNOT()] += 1
+        return set(bloq_counts.items())
 
 
 def _make_equals_a_constant():

@@ -122,7 +122,7 @@ def test_sparse_permutation_classical_sim():
     assert bloq.cycles == ((0, 1, 20), (2, 30), (3, 40))
 
     for i, x in enumerate(prefix):
-        assert bloq.call_classically(q=i) == (x,)
+        assert bloq.call_classically(x=i) == (x,)
 
 
 def test_permutation_symbolic_call_graph():
