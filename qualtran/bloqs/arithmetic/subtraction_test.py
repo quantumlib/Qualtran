@@ -63,7 +63,7 @@ def test_subtract_bloq_decomposition_signed(a_bits, b_bits):
             c_binary = _to_signed_binary(a - b, b_bits)
             want[(a_binary << b_bits << 1) | c_binary, (a_binary << b_bits << 1) | b_binary] = 1
     got = gate.tensor_contract()
-    np.testing.assert_equal(got, want)
+    np.testing.assert_allclose(got, want)
 
 
 def test_subtract_bloq_validation():

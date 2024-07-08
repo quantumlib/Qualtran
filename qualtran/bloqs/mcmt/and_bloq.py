@@ -23,7 +23,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 """
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -37,12 +37,12 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     GateWithRegisters,
     QBit,
     Register,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
@@ -119,14 +119,9 @@ class And(GateWithRegisters):
         assert target == out
         return {'ctrl': ctrl}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
-        outgoing: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         # Fill in our tensor using "and" logic.
@@ -137,25 +132,24 @@ class And(GateWithRegisters):
             else:
                 data[c1, c2, c1, c2, 0] = 1
 
-        # Here: uncompute just switches the direction of the target index.
-        if self.uncompute:
-            trg = incoming['target']
-        else:
-            trg = outgoing['target']
+        # uncompute just switches the direction of the target index.
+        trg = incoming['target'] if self.uncompute else outgoing['target']
 
-        tn.add(
+        in_ctrls = cast(NDArray, incoming['ctrl'])
+        out_ctrls = cast(NDArray, outgoing['ctrl'])
+        return [
             qtn.Tensor(
                 data=data,
-                inds=(
-                    incoming['ctrl'][0],
-                    incoming['ctrl'][1],
-                    outgoing['ctrl'][0],
-                    outgoing['ctrl'][1],
-                    trg,
-                ),
-                tags=['And', tag],
+                inds=[
+                    (in_ctrls[0], 0),
+                    (in_ctrls[1], 0),
+                    (out_ctrls[0], 0),
+                    (out_ctrls[1], 0),
+                    (trg, 0),
+                ],
+                tags=[str(self)],
             )
-        )
+        ]
 
     def pretty_name(self) -> str:
         dag = '†' if self.uncompute else ''

@@ -29,12 +29,12 @@ from qualtran._infra.gate_with_registers import (
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -77,7 +77,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             Babbush et. al. (2018). Figure 1.
     """
 
-    prepare_gate: PrepareOracle
+    prepare_gate: 'PrepareOracle'
     control_val: Optional[int] = None
     global_phase: complex = 1
     eps: float = 1e-11

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
@@ -21,12 +21,12 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QAny,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
@@ -88,38 +88,28 @@ class Partition(_BookkeepingBloq):
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        unitary_shape = []
-        soquets = []
-        _incoming = incoming if self.partition else outgoing
-        _outgoing = outgoing if self.partition else incoming
-        for reg in self.regs:
-            for i in range(int(np.prod(reg.shape))):
-                unitary_shape.append(2**reg.bitsize)
-                outgoing_reg = _outgoing[reg.name]
-                if isinstance(outgoing_reg, np.ndarray):
-                    soquets.append(outgoing_reg.ravel()[i])
-                else:
-                    soquets.append(outgoing_reg)
+        grouped = incoming['x'] if self.partition else outgoing['x']
+        partitioned = outgoing if self.partition else incoming
 
-        tn.add(
-            qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape(
-                    tuple(unitary_shape) + (2**self.n,)
-                ),
-                inds=soquets + [_incoming['x']],
-                tags=['Partition', tag],
-            )
-        )
+        partitioned_inds = []
+        for reg in self.regs:
+            part_ind = partitioned[reg.name]
+            for idx in reg.all_idxs():
+                for j in range(reg.bitsize):
+                    if isinstance(part_ind, np.ndarray):
+                        partitioned_inds.append((part_ind[idx], j))
+                    else:
+                        partitioned_inds.append((part_ind, j))
+
+        return [
+            qtn.Tensor(data=np.eye(2), inds=[partitioned_inds[j], (grouped, j)], tags=[str(self)])
+            for j in range(self.n)
+        ]
 
     def _classical_partition(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         out_vals = {}

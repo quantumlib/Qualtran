@@ -12,18 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 import attrs
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError
+from qualtran import bloq_example, BloqDocSpec, ConnectionT, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import sconj, SymbolicComplex
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import CompositeBloq
 
 
@@ -48,6 +50,13 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'GlobalPhase':
         return attrs.evolve(self, coefficient=sconj(self.coefficient))
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        return [qtn.Tensor(data=self.coefficient, inds=[], tags=[str(self)])]
 
     def pretty_name(self) -> str:
         return 'GPhase'

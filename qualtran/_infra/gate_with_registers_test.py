@@ -141,11 +141,11 @@ def test_gate_with_registers_decompose_from_context_auto_generated():
     cirq.testing.assert_has_diagram(
         circuit,
         """
-l: ───BloqWithDecompose───X───────free───
+l: ───BloqWithDecompose───X───
       │
-r: ───r───────────────────alloc───Z──────
+r: ───r───────────────────Z───
       │
-t: ───t───────────────────Y──────────────
+t: ───t───────────────────Y───
 """,
     )
 
