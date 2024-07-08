@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence, Set, Tuple
 
 import cirq
 from attrs import field, frozen, validators
@@ -21,6 +21,7 @@ from attrs import field, frozen, validators
 from qualtran import Bloq, bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Side
 from qualtran._infra.gate_with_registers import merge_qubits, SpecializedSingleQubitControlledGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, log2
 
 
@@ -70,6 +71,9 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return tuple(self.ops[0].signature)
+
+    def nth_operation_callgraph(self, ssa: SympySymbolAllocator, selection: int) -> Set[BloqCountT]:
+        return self.ops[selection].controlled().build_call_graph(ssa)
 
     def nth_operation(
         self,

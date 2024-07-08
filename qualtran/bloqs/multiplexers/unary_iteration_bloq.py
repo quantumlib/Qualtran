@@ -586,7 +586,9 @@ class UnaryIterationGate(GateWithRegisters):
         wire_symbols += [self.__class__.__name__] * total_bits(self.target_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+    def nth_operation_callgraph(
+        self, ssa: 'SympySymbolAllocator', **selection_regs_name_to_val
+    ) -> Set['BloqCountT']:
         raise NotImplementedError(
             f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
         )
@@ -603,7 +605,7 @@ class UnaryIterationGate(GateWithRegisters):
             nested_depth: int, selection_reg_name_to_val: Dict[str, int], num_controls: int
         ) -> None:
             if nested_depth == num_loops:
-                for bloq, count in self.nth_operation_callgraph(**selection_reg_name_to_val):
+                for bloq, count in self.nth_operation_callgraph(ssa, **selection_reg_name_to_val):
                     bloq_counts[bloq] += count
                 return
             # Use recursion to cost out `num_loops` nested loops using _unary_iteration_callgraph()

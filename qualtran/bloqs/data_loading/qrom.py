@@ -205,7 +205,9 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             return Circle()
         raise ValueError(f'Unrecognized register name {name}')
 
-    def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
+    def nth_operation_callgraph(
+        self, ssa: 'SympySymbolAllocator', **kwargs: int
+    ) -> Set['BloqCountT']:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         ret = 0
         for i, d in enumerate(self.data):
