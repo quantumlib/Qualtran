@@ -13,18 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import cirq
-import numpy as np
 from attrs import field, frozen, validators
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Side
+from qualtran._infra.gate_with_registers import merge_qubits, SpecializedSingleQubitControlledGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.symbolics import ceil, log2
 
 
 @frozen
-class ApplyLthBloq(UnaryIterationGate):
+class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
     r"""A SELECT operation that executes one of a list of bloqs $U_l$ based on a quantum index:
 
     $$
@@ -35,7 +36,7 @@ class ApplyLthBloq(UnaryIterationGate):
 
     Args:
         ops: List of bloqs to select from, each with identical registers that are all THRU.
-        control: If True, a singly controlled gate is constructed.
+        control_val: If provided, a singly controlled gate is constructed.
 
     Registers:
         selection: The index of the bloq in `ops` to execute.
@@ -50,7 +51,7 @@ class ApplyLthBloq(UnaryIterationGate):
     ops: Tuple[Bloq, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
-    control: bool = False
+    control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
         if not all(u.signature == self.ops[0].signature for u in self.ops):
@@ -60,15 +61,11 @@ class ApplyLthBloq(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register('control', QBit()),) if self.control else ()
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                'selection', BoundedQUInt(int(np.ceil(np.log2(len(self.ops)))), len(self.ops))
-            ),
-        )
+        return (Register('selection', BoundedQUInt(int(ceil(log2(len(self.ops)))), len(self.ops))),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -81,7 +78,9 @@ class ApplyLthBloq(UnaryIterationGate):
         selection: int,
         **targets: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-        return self.ops[selection].on_registers(**targets).controlled_by(control)
+        bloq = self.ops[selection]
+        target_qubits = merge_qubits(bloq.signature, **targets)
+        return bloq.controlled().on(control, *target_qubits)
 
 
 @bloq_example
@@ -89,7 +88,7 @@ def _apply_lth_bloq() -> ApplyLthBloq:
     from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, ZGate
 
     ops = (TGate(), Hadamard(), ZGate(), XGate())
-    apply_lth_bloq = ApplyLthBloq(ops=ops, control=True)
+    apply_lth_bloq = ApplyLthBloq(ops=ops, control_val=1)
     return apply_lth_bloq
 
 
