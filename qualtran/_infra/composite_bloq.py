@@ -40,6 +40,7 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
+from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import check_dtypes_consistent, QAny, QBit, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
@@ -253,7 +254,7 @@ class CompositeBloq(Bloq):
             a predecessor and again as a successor.
         """
         g = self._binst_graph
-        for binst in nx.topological_sort(g):
+        for binst in greedy_topological_sort(g):
             if isinstance(binst, DanglingT):
                 continue
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
