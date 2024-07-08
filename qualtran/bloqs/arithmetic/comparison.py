@@ -611,6 +611,9 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
     def _has_unitary_(self):
         return True
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @bloq_example
 def _leq_symb() -> LessThanEqual:
