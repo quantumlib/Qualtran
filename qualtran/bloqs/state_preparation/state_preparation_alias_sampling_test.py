@@ -67,8 +67,8 @@ def assert_state_preparation_valid_for_coefficient(
 ):
     gate: Bloq
     if sparse:
-        gate = SparseStatePreparationAliasSampling.from_lcu_probs(
-            lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+        gate = SparseStatePreparationAliasSampling.from_dense_probabilities(
+            unnormalized_probabilities=lcu_coefficients.tolist(), precision=epsilon
         )
     else:
         gate = StatePreparationAliasSampling.from_lcu_probs(

@@ -20,7 +20,7 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Dict, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -237,25 +237,25 @@ class StatePreparationAliasSampling(PrepareOracle):
 
 @attrs.frozen
 class SparseStatePreparationAliasSampling(PrepareOracle):
-    r"""Initialize a state with $L$ unique non-zero coefficients using coherent alias sampling.
+    r"""Initialize a $d$-sparse state over $L$ indices using coherent alias sampling.
 
     In particular, we take the zero state to:
 
     $$
-    \sum_{l=0}^{L-1} \sqrt{p_l} |\mathrm{ind}_l\rangle |\mathrm{temp}_\ell\rangle
+        \sum_{j=0}^{d-1} \sqrt{p_{\mathrm{ind}_j}} |\mathrm{ind}_j\rangle |\mathrm{temp}_j\rangle
     $$
 
-    where $\mathrm{ind}_l$ is the index of the $l$-th non-zero coefficient,
-    and the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
-    where the temporary register must be treated with care, see the details in Section 5 of
-    reference [1] and Section III.D. of the reference [2].
+    where $\mathrm{ind}_j \in [0, L)$ is the index of the $j$-th non-zero coefficient,
+    and the probabilities $p_l$ are $\mu$-bit binary approximations to the true values,
+    and the register $|\mathrm{temp}_j\rangle$ may be entangled with the index register.
 
-    The preparation is equivalent to [classical alias sampling]
-    (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
-    selecting `l` uniformly at random and then returning `ind[l]` with probability `keep[l] / 2**mu`;
-    otherwise returning `alt[l]`.
-    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except that this loads
-    the non-zero coefficient indices as well from the QROM.
+    This bloq is nearly identical to :class:`StatePreparationByAliasSampling`, except
+    that it loads the non-zero indices from the QROM and prepares a dense state on them.
+    In comparison, this uses $\lceil \log d \rceil$ extra ancilla qubits, and reduces
+    the iteration length to $d$ from $L$.
+
+    See :class:`StatePreparationAliasSampling` for an exposition on alias sampling.
+
 
     Signature:
         selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
@@ -263,20 +263,19 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         temp: Work space comprised of sub signature:
             - sigma: A mu-sized register containing uniform probabilities for comparison against
                 `keep`.
+            - sparse_index: A lg(d)-sized register storing the sparse index $j \in [0, d)$.
             - alt: A lg(L)-sized register of alternate indices
             - keep: a mu-sized register of probabilities of keeping the initially sampled index.
             - one bit for the result of the comparison.
 
     This gate corresponds to the following operations:
-     - UNIFORM_L on the sparse_index register
-     - H^mu on the sigma register
-     - QROM addressed by the selection register into the alt and keep signature.
-     - LessThanEqualGate comparing the keep and sigma signature.
-     - Coherent swap between the selection register and alt register if the comparison
-       returns True.
+     - UNIFORM_d on the `sparse_index` register.
+     - H^mu on the `sigma` register.
+     - QROM addressed by the `sparse_index` register into the `selection`, `alt`, and `keep` signature.
+     - LessThanEqualGate comparing the `keep` and `sigma` registers.
+     - Coherent swap between the `selection` and `alt` registers if the comparison returns True.
 
-    Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
-    The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
+    Total space will be $(2 \log(L) + \log(d) + 2 \mu + 1)$ work qubits + $log(L)$ ancillas for QROM.
 
     References:
         [1] [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/pdf/1902.02134#page=15.30)
@@ -291,32 +290,44 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
-    sum_of_lcu_coeffs: SymbolicFloat
+    sum_of_unnormalized_probabilities: SymbolicFloat
+
+    @cached_property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return tuple(
+            Signature.build(
+                sigma_mu=self.sigma_mu_bitsize,
+                sparse_index=self.sparse_index_bitsize,
+                alt=self.alternates_bitsize,
+                keep=self.keep_bitsize,
+                less_than_equal=1,
+            )
+        )
 
     @classmethod
-    def from_lcu_probs(
+    def from_dense_probabilities(
         cls,
-        lcu_probabilities: Sequence[float],
+        unnormalized_probabilities: Sequence[float],
         *,
-        probability_epsilon: float = 1.0e-5,
-        nonzero_epsilon: float = 1e-6,
+        precision: float = 1.0e-5,
+        nonzero_threshold: float = 1e-6,
     ) -> 'SparseStatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for a given set of LCU coefficients.
+        """Factory to construct the state preparation gate for a given set of probability coefficients.
 
         Args:
-            lcu_probabilities: The LCU coefficients.
-            probability_epsilon: The desired accuracy to represent each probability
+            unnormalized_probabilities: A dense list of all probabilities (i.e. including 0s)
+            precision: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
                 for more information.
-            nonzero_epsilon: minimum value for a probability entry to be considered non-zero.
+            nonzero_threshold: minimum value for a probability entry to be considered non-zero.
         """
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
+            lcu_coefficients=unnormalized_probabilities, epsilon=precision
         )
-        N = len(lcu_probabilities)
+        N = len(unnormalized_probabilities)
 
-        is_nonzero = ~np.isclose(lcu_probabilities, 0, atol=nonzero_epsilon)
+        is_nonzero = ~np.isclose(unnormalized_probabilities, 0, atol=nonzero_threshold)
         index = np.arange(N)[is_nonzero]
         alt = np.array(alt)[is_nonzero]
         keep = np.array(keep)[is_nonzero]
@@ -327,7 +338,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            sum_of_lcu_coeffs=sum(abs(x) for x in lcu_probabilities),
+            sum_of_unnormalized_probabilities=sum(abs(x) for x in unnormalized_probabilities),
         )
 
     @classmethod
@@ -335,22 +346,22 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         cls,
         n_coeff: SymbolicInt,
         n_nonzero_coeff: SymbolicInt,
-        sum_of_lcu_coeffs: SymbolicFloat,
+        sum_of_terms: SymbolicFloat,
         *,
-        probability_epsilon: SymbolicFloat = 1.0e-5,
+        precision: SymbolicFloat = 1.0e-5,
     ) -> 'SparseStatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+        """Factory to construct sparse state preparation for symbolic number of input probabilities.
 
         Args:
             n_coeff: Symbolic number of LCU coefficients in the prepared state.
             n_nonzero_coeff: Symbolic number of non-zero LCU coefficients in the prepared state.
-            sum_of_lcu_coeffs: Sum of absolute values of coefficients of the prepared state.
-            probability_epsilon: The desired accuracy to represent each probability
+            sum_of_terms: Sum of absolute values of the input probabilities.
+            precision: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
+        mu = sub_bit_prec_from_epsilon(n_coeff, precision)
         selection_bitsize = bit_length(n_coeff - 1)
         return cls(
             selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
@@ -358,7 +369,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             alt=Shaped((n_nonzero_coeff,)),
             keep=Shaped((n_nonzero_coeff,)),
             mu=mu,
-            sum_of_lcu_coeffs=sum_of_lcu_coeffs,
+            sum_of_unnormalized_probabilities=sum_of_terms,
         )
 
     @property
@@ -371,7 +382,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
-        return self.sum_of_lcu_coeffs
+        return self.sum_of_unnormalized_probabilities
 
     @cached_property
     def sigma_mu_bitsize(self) -> SymbolicInt:
@@ -394,18 +405,6 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         return total_bits(self.selection_registers)
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return tuple(
-            Signature.build(
-                sigma_mu=self.sigma_mu_bitsize,
-                sparse_index=self.sparse_index_bitsize,
-                alt=self.alternates_bitsize,
-                keep=self.keep_bitsize,
-                less_than_equal=1,
-            )
-        )
-
-    @cached_property
     def qrom_bloq(self) -> QROM:
         return QROM(
             (self.index, self.alt, self.keep),
@@ -413,7 +412,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize, self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         soqs['sparse_index'] = bb.add(
             PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )
@@ -473,8 +472,8 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
 def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
     coeffs = [1.0, 0, 0, 1, 0, 3, 0, 2, 0]
     mu = 3
-    state_prep_alias = SparseStatePreparationAliasSampling.from_lcu_probs(
-        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    state_prep_alias = SparseStatePreparationAliasSampling.from_dense_probabilities(
+        coeffs, precision=2**-mu / len(coeffs)
     )
     return state_prep_alias
 
