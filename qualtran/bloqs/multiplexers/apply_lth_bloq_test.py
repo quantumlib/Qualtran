@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 from qualtran import (
+    Bloq,
     BloqBuilder,
     BoundedQUInt,
     Controlled,
@@ -61,7 +62,11 @@ def test_signature():
     )
 
     with pytest.raises(ValueError):
-        _ = ApplyLthBloq(())
+
+        def f(_):
+            assert False
+
+        _ = ApplyLthBloq(f, (0,))
 
 
 def test_bloq_has_consistent_decomposition():
@@ -93,5 +98,45 @@ def test_tensors(i, ctrl):
     bloq = bb.finalize(q=q)
 
     from_gate = ((TGate, Hadamard, ZGate, XGate)[i] if ctrl else Identity)().tensor_contract()
+    from_tensors = bloq.tensor_contract()
+    np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.parametrize("i", range(2))
+@pytest.mark.parametrize("j", range(2))
+@pytest.mark.parametrize("ctrl", [True, False])
+def test_ndim(i, j, ctrl):
+    bb = BloqBuilder()
+    control = bb.add(OneState() if ctrl else ZeroState())
+    selection1 = bb.add(IntState(i, 1))
+    selection2 = bb.add(IntState(j, 1))
+    q = bb.add_register("q", 1)
+
+    ops = np.array([[TGate(), Hadamard()], [ZGate(), XGate()]])
+
+    def f(x: int, y: int) -> Bloq:
+        return ops[x, y]
+
+    bloq = ApplyLthBloq(
+        f,
+        (2, 2),
+        control_val=1,
+        selection_regs=(Register('s1', BoundedQUInt(1, 2)), Register('s2', BoundedQUInt(1, 2))),
+    )
+    control, selection1, selection2, q = bb.add_t(
+        bloq,
+        control=cast(Soquet, control),
+        s1=cast(Soquet, selection1),
+        s2=cast(Soquet, selection2),
+        q=q,
+    )
+    bb.add(OneEffect() if ctrl else ZeroEffect(), q=control)
+    bb.add(IntEffect(i, 1), val=selection1)
+    bb.add(IntEffect(j, 1), val=selection2)
+    bloq = bb.finalize(q=q)
+
+    from_gate = (
+        (TGate, Hadamard, ZGate, XGate)[i * 2 + j] if ctrl else Identity
+    )().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)

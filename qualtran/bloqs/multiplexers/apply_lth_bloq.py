@@ -13,16 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Sequence, Set, Tuple
+from typing import Callable, cast, Optional, Sequence, Set, Tuple, Union
 
 import cirq
-from attrs import field, frozen, validators
+import numpy as np
+from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Side
 from qualtran._infra.gate_with_registers import merge_qubits, SpecializedSingleQubitControlledGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import ceil, log2
+from qualtran.symbolics import ceil, log2, prod
 
 
 @frozen
@@ -36,7 +38,9 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
     This bloq uses the unary iteration scheme to apply `ops[selection]` controlled on an optional single-bit `control` register.
 
     Args:
-        ops: List of bloqs to select from, each with identical registers that are all THRU.
+        ops: Callable that returns the (i, j, ...)-th bloq to select from, when given (i, j, ...).
+             Each bloq must have identical registers that are all THRU.
+        selection_regs: List of selection registers, 1D selection index inferred if not provided.
         control_val: If provided, a singly controlled gate is constructed.
 
     Registers:
@@ -49,15 +53,21 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
         Babbush et. al. (2018). Section III.A. and Figure 7.
     """
 
-    ops: Tuple[Bloq, ...] = field(
-        converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
-    )
+    ops: Callable[..., Bloq]
+    n: Tuple[int, ...]
+    selection_regs: Optional[Tuple[Register, ...]] = None
     control_val: Optional[int] = None
 
+    @cached_property
+    def _ops(self) -> NDArray[Bloq]:  # type: ignore[type-var]
+        return np.fromfunction(np.vectorize(self.ops), self.n, dtype=object)
+
     def __attrs_post_init__(self):
-        if not all(u.signature == self.ops[0].signature for u in self.ops):
+        if prod(self._ops.shape) == 0:
+            raise ValueError("Must have at least one operation.")
+        if not all(u.signature == self._ops.flat[0].signature for u in self._ops.flat):
             raise ValueError("All ops must have the same signature.")
-        if not all(r.side == Side.THRU for u in self.ops for r in u.signature):
+        if not all(r.side == Side.THRU for u in self._ops.flat for r in u.signature):
             raise ValueError("All ops must have only THRU registers.")
 
     @cached_property
@@ -66,23 +76,33 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(int(ceil(log2(len(self.ops)))), len(self.ops))),)
+        if self.selection_regs is None:
+            return (
+                Register(
+                    'selection',
+                    BoundedQUInt(int(ceil(log2(len(self._ops.flat)))), len(self._ops.flat)),
+                ),
+            )
+        return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.ops[0].signature)
+        return tuple(self._ops.flat[0].signature)
 
-    def nth_operation_callgraph(self, ssa: SympySymbolAllocator, selection: int) -> Set[BloqCountT]:
-        return self.ops[selection].controlled().build_call_graph(ssa)
+    def nth_operation_callgraph(self, ssa: SympySymbolAllocator, **kwargs: int) -> Set[BloqCountT]:
+        return self._ops[tuple(kwargs.values())].controlled().build_call_graph(ssa)
 
     def nth_operation(
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,
-        selection: int,
-        **targets: Sequence[cirq.Qid],
+        **kwargs: Union[int, Sequence[cirq.Qid]],
     ) -> cirq.OP_TREE:
-        bloq = self.ops[selection]
+        sel_regs = {r.name for r in self.selection_registers}
+        selection_indices = list(cast(int, v) for k, v in kwargs.items() if k in sel_regs)
+        tgt_regs = {r.name for r in self.target_registers}
+        targets = {k: cast(Sequence[cirq.Qid], v) for k, v in kwargs.items() if k in tgt_regs}
+        bloq = self._ops[tuple(selection_indices)]
         target_qubits = merge_qubits(bloq.signature, **targets)
         return bloq.controlled().on(control, *target_qubits)
 
@@ -91,8 +111,12 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
 def _apply_lth_bloq() -> ApplyLthBloq:
     from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, ZGate
 
-    ops = (TGate(), Hadamard(), ZGate(), XGate())
-    apply_lth_bloq = ApplyLthBloq(ops=ops, control_val=1)
+    ops = np.array((TGate(), Hadamard(), ZGate(), XGate()))
+
+    def f(x: int) -> Bloq:
+        return ops[x]
+
+    apply_lth_bloq = ApplyLthBloq(f, (len(ops),), control_val=1)
     return apply_lth_bloq
 
 
