@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from qualtran import Bloq
+from qualtran import Adjoint, Bloq
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
 from qualtran.bloqs.basic_gates import ZPowGate
@@ -34,6 +34,7 @@ from qualtran.bloqs.reflections.reflection_using_prepare import (
     ReflectionUsingPrepare,
 )
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
@@ -67,6 +68,13 @@ def keep(op: cirq.Operation):
     ret = op in gateset_to_keep
     if op.gate is not None and isinstance(op.gate, cirq.ops.raw_types._InverseCompositeGate):
         ret |= op.gate._original in gateset_to_keep
+    if op.gate is not None and isinstance(op.gate, Adjoint):
+        subgate = (
+            op.gate.subbloq
+            if isinstance(op.gate.subbloq, cirq.Gate)
+            else BloqAsCirqGate(op.gate.subbloq)
+        )
+        ret |= subgate in gateset_to_keep
     return ret
 
 
@@ -82,7 +90,7 @@ def construct_gate_helper_and_qubit_order(gate, decompose_once: bool = False):
         )
     ordered_input = list(itertools.chain(*g.quregs.values()))
     qubit_order = cirq.QubitOrder.explicit(ordered_input, fallback=cirq.QubitOrder.DEFAULT)
-    assert len(circuit.all_qubits()) < 30
+    assert len(circuit.all_qubits()) < 24
     return g, qubit_order, circuit
 
 
