@@ -33,8 +33,9 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add
-from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
+from qualtran.bloqs.basic_gates import OnEach, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -141,35 +142,45 @@ class Subtract(Bloq):
                 (OnEach(self.b_dtype.bitsize, XGate()), 3),
                 (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
             }
-            .union([(CNOT(), 2 * delta)] if isinstance(self.a_dtype, QInt) else [])
+            .union([(MultiTargetCNOT(delta), 2)] if isinstance(self.a_dtype, QInt) else [])
             .union([(Allocate(QAny(delta)), 1), (Free(QAny(delta)), 1)] if delta else [])
         )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
         n_bits = self.b_dtype.bitsize
-        a = bb.split(a)
-        b = bb.split(b)
         if delta:
-            prefix = bb.split(bb.allocate(delta))
+            if not isinstance(delta, int):
+                raise ValueError(
+                    'Symbolic decomposition not supported when a_dtype != b_dtype'
+                )  # pragma: no cover
+            a_split = bb.split(a)
+            prefix = bb.allocate(delta)
             if isinstance(self.a_dtype, QInt):
-                for i in range(delta):
-                    a[0], prefix[i] = bb.add(CNOT(), ctrl=a[0], target=prefix[i])
-            a = np.concatenate([prefix, a])
-        a = bb.join(a, QUInt(n_bits))
-        b = bb.join(b, QUInt(n_bits))
+                a_split[0], prefix = bb.add(
+                    MultiTargetCNOT(delta), control=a_split[0], targets=prefix
+                )
+            prefix_split = bb.split(prefix)
+            a_split = np.concatenate([prefix_split, a_split])
+            a = bb.join(a_split, QUInt(n_bits))
+        else:
+            a = bb.add(Cast(self.a_dtype, QUInt(n_bits)), reg=a)
+        b = bb.add(Cast(self.b_dtype, QUInt(n_bits)), reg=b)
         a = bb.add(OnEach(n_bits, XGate()), q=a)
         a, b = bb.add(Add(QUInt(n_bits)), a=a, b=b)
         b = bb.add(OnEach(n_bits, XGate()), q=b)
         a = bb.add(OnEach(n_bits, XGate()), q=a)
         b = bb.add(Cast(QUInt(n_bits), self.b_dtype), reg=b)
-        a = bb.split(a)
         if delta:
+            a_split = bb.split(a)
+            prefix = bb.join(a_split[:delta])
             if isinstance(self.a_dtype, QInt):
-                for i in range(delta):
-                    a[delta], a[i] = bb.add(CNOT(), ctrl=a[delta], target=a[i])
-            bb.free(bb.join(a[:delta]))
-        a = bb.join(a[delta:], QUInt(self.a_dtype.bitsize))
+                a_split[delta], prefix = bb.add(
+                    MultiTargetCNOT(delta), control=a_split[delta], targets=prefix
+                )
+            prefix = bb.add(Cast(prefix.reg.dtype, QAny(delta)), reg=prefix)
+            bb.free(prefix)
+            a = bb.join(a_split[delta:], QUInt(self.a_dtype.bitsize))
         a = bb.add(Cast(QUInt(self.a_dtype.bitsize), self.a_dtype), reg=a)
         return {'a': a, 'b': b}
 
