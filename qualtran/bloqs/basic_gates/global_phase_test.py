@@ -25,7 +25,7 @@ def test_unitary():
 
     for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
-        bloq = GlobalPhase(coefficient)
+        bloq = GlobalPhase(exponent=2 * alpha)
         np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
 
 
@@ -33,23 +33,24 @@ def test_controlled():
     random_state = np.random.RandomState(2)
     for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
-        bloq = GlobalPhase(coefficient).controlled()
+        bloq = GlobalPhase(exponent=2 * alpha).controlled()
         np.testing.assert_allclose(
             cirq.unitary(cirq.GlobalPhaseGate(coefficient).controlled()), bloq.tensor_contract()
         )
 
 
 def test_cirq_interop():
-    cbloq = GlobalPhase(1.0j).as_composite_bloq()
+    bloq = GlobalPhase.from_coefficient(1.0j)
+    gate = cirq.GlobalPhaseGate(1.0j)
 
-    circuit = cbloq.to_cirq_circuit()
-    assert circuit == cirq.Circuit(cirq.GlobalPhaseGate(1.0j).on())
+    circuit = bloq.as_composite_bloq().to_cirq_circuit()
+    assert circuit == cirq.Circuit(gate.on())
 
-    assert cirq_gate_to_bloq(cirq.GlobalPhaseGate(1.0j)) == GlobalPhase(1.0j)
+    assert cirq_gate_to_bloq(gate) == bloq
 
 
 def test_t_complexity():
-    assert GlobalPhase(1j).t_complexity() == TComplexity()
+    assert GlobalPhase(exponent=0.5).t_complexity() == TComplexity()
 
 
 def test_global_phase(bloq_autotester):

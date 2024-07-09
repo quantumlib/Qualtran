@@ -281,15 +281,15 @@ def test_call_graph_matches_decomp(global_phase, control_val):
     gate = ReflectionUsingPrepare(
         prepare_gate, global_phase=global_phase, eps=eps, control_val=control_val
     )
-    cost_decomp = gate.decompose_bloq().call_graph(
+    _, cost_decomp = gate.decompose_bloq().call_graph(
         generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
-    )[1]
-    cost_call = gate.call_graph(
+    )
+    _, cost_call = gate.call_graph(
         generalizer=[
             ignore_split_join,
             ignore_alloc_free,
             ignore_cliffords,
             catch_zpow_bloq_s_gate_inv,
         ]
-    )[1]
+    )
     assert cost_decomp == cost_call
