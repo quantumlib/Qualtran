@@ -22,6 +22,7 @@ from ._cirq_to_bloq import (
     CirqGateAsBloq,
     CirqGateAsBloqBase,
     cirq_optree_to_cbloq,
+    cirq_gate_to_bloq,
     decompose_from_cirq_style_method,
 )
 

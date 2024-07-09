@@ -187,9 +187,9 @@ class MultiControlPauli(GateWithRegisters):
         return {'controls': controls, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+        from qualtran.cirq_interop import cirq_gate_to_bloq
 
-        ret = {(_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
+        ret = {(cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
 
         if is_symbolic(self.n_ctrls):
             return ret | {(MultiAnd(self.cvs), 1), (MultiAnd(self.cvs).adjoint(), 1)}
@@ -204,7 +204,7 @@ class MultiControlPauli(GateWithRegisters):
             return ret | {(and_gate, 1), (and_gate.adjoint(), 1)}
         n_pre_post_x = 2 * (len(self.concrete_cvs) - sum(self.concrete_cvs))
         pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
-        return {(_cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
+        return {(cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (
