@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 from qualtran import (
-    Bloq,
     BloqBuilder,
     BoundedQUInt,
     Controlled,
@@ -62,11 +61,7 @@ def test_signature():
     )
 
     with pytest.raises(ValueError):
-
-        def f(_):
-            assert False
-
-        _ = ApplyLthBloq(f, (0,))
+        _ = ApplyLthBloq(np.array([]))
 
 
 def test_bloq_has_consistent_decomposition():
@@ -113,11 +108,7 @@ def test_ndim(i, j, ctrl):
     q = bb.add_register("q", 1)
 
     ops = np.array([[TGate(), Hadamard()], [ZGate(), XGate()]])
-
-    def f(x: int, y: int) -> Bloq:
-        return ops[x, y]
-
-    bloq = ApplyLthBloq(f, (2, 2), control_val=1)
+    bloq = ApplyLthBloq(ops, control_val=1)
 
     assert bloq.signature == Signature(
         [
