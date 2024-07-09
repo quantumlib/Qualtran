@@ -271,9 +271,7 @@ def test_call_graph_matches_decomp(global_phase, control_val):
 
     def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
         # Hack to catch the fact that cirq special cases some ZPowGates
-        if isinstance(bloq, ZPowGate) and np.isclose(
-            float(bloq.exponent), np.angle(global_phase) / np.pi
-        ):
+        if isinstance(bloq, ZPowGate) and np.any(np.isclose(float(bloq.exponent), [0.5, -0.5])):
             # we're already ignoring cliffords
             return None
         return bloq
