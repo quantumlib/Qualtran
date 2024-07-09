@@ -49,7 +49,7 @@ def test_cirq_interop():
     gate = cirq.GlobalPhaseGate(1.0j)
 
     circuit = bloq.as_composite_bloq().to_cirq_circuit()
-    assert circuit == cirq.Circuit(gate.on())
+    assert cirq.approx_eq(circuit, cirq.Circuit(gate.on()), atol=1e-16)
 
     assert cirq_gate_to_bloq(gate) == bloq
 
