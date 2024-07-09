@@ -77,11 +77,12 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         if self.selection_regs is None:
-            return (
+            return tuple(
                 Register(
-                    'selection',
-                    BoundedQUInt(int(ceil(log2(len(self._ops.flat)))), len(self._ops.flat)),
-                ),
+                    "selection" if len(self._ops.shape) == 1 else f"selection{i + 1}",
+                    BoundedQUInt(ceil(log2(k)), k),
+                )
+                for i, k in enumerate(self._ops.shape)
             )
         return self.selection_regs
 

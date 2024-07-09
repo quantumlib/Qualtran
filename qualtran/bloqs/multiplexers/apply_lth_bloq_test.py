@@ -117,17 +117,22 @@ def test_ndim(i, j, ctrl):
     def f(x: int, y: int) -> Bloq:
         return ops[x, y]
 
-    bloq = ApplyLthBloq(
-        f,
-        (2, 2),
-        control_val=1,
-        selection_regs=(Register('s1', BoundedQUInt(1, 2)), Register('s2', BoundedQUInt(1, 2))),
+    bloq = ApplyLthBloq(f, (2, 2), control_val=1)
+
+    assert bloq.signature == Signature(
+        [
+            Register("control", QBit()),
+            Register("selection1", BoundedQUInt(1, 2)),
+            Register("selection2", BoundedQUInt(1, 2)),
+            Register("q", QBit()),
+        ]
     )
+
     control, selection1, selection2, q = bb.add_t(
         bloq,
         control=cast(Soquet, control),
-        s1=cast(Soquet, selection1),
-        s2=cast(Soquet, selection2),
+        selection1=cast(Soquet, selection1),
+        selection2=cast(Soquet, selection2),
         q=q,
     )
     bb.add(OneEffect() if ctrl else ZeroEffect(), q=control)
