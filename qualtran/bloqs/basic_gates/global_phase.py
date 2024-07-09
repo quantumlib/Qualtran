@@ -51,24 +51,27 @@ class GlobalPhase(CirqGateAsBloqBase):
     The global phase becomes important if the gate becomes controlled.
 
     Args:
-        exponent: the angle $t$ of the global phase $e^{i pi t}$ to apply.
+        exponent: the exponent $t$ of the global phase $e^{i pi t}$ to apply.
         eps: precision
     """
 
-    exponent: 'SymbolicFloat' = field(kw_only=True)
-    eps: float = 1e-11
+    exponent: SymbolicFloat = field(kw_only=True)
+    eps: SymbolicFloat = 1e-11
 
     @cached_property
     def coefficient(self) -> SymbolicComplex:
         return sexp(self.exponent * pi(self.exponent) * 1j)
 
     @classmethod
-    def from_coefficient(cls, coefficient, *, eps: float = 1e-11):
+    def from_coefficient(
+        cls, coefficient: SymbolicComplex, *, eps: SymbolicFloat = 1e-11
+    ) -> 'GlobalPhase':
+        """Applies a global phase of `coefficient`."""
         return cls(exponent=sarg(coefficient) / pi(coefficient), eps=eps)
 
     @property
     def cirq_gate(self) -> cirq.Gate:
-        return cirq.GlobalPhaseGate(self.coefficient, self.eps)
+        return cirq.GlobalPhaseGate(self.coefficient)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

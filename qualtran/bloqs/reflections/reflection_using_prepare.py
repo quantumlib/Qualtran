@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import (
     merge_qubits,
     SpecializedSingleQubitControlledGate,
@@ -175,9 +175,9 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
         if self.control_val is None:
             costs.add((XGate(), 2))
         if self.global_phase != 1:
-            phase_op = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
+            phase_op: Bloq = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
             if self.control_val is not None:
-                phase_op = phase_op.controlled(CtrlSpec(cvs=self.control_val))
+                phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
             costs.add((phase_op, 1))
         return costs
 
