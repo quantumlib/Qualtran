@@ -319,7 +319,12 @@ def _gather_input_soqs(
     return qvars_in
 
 
-def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+    """For a given Cirq gate, return an equivalent bloq.
+
+    This will try to find the idiomatically correct bloq to return. If there is no equivalent
+    Qualtran bloq for the given Cirq gate, we wrap it in the `CirqGateAsBloq` wrapper class.
+    """
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import (
         CNOT,
@@ -354,12 +359,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
 
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
         # Inverse of a cirq gate, delegate to Adjoint
-        return Adjoint(_cirq_gate_to_bloq(gate._original))
-
-    if isinstance(gate, cirq.ControlledGate):
-        return Controlled(
-            _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
-        )
+        return Adjoint(cirq_gate_to_bloq(gate._original))
 
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {
@@ -379,6 +379,11 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     }
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
+
+    if isinstance(gate, cirq.ControlledGate):
+        return Controlled(
+            cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
+        )
 
     # Check specific basic gates types.
     CIRQ_TYPE_TO_BLOQ_MAP = {
@@ -415,7 +420,7 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
     """
     if op.gate is None:
         raise ValueError(f"Only gate operations are supported, not {op}.")
-    return _cirq_gate_to_bloq(op.gate)
+    return cirq_gate_to_bloq(op.gate)
 
 
 def cirq_optree_to_cbloq(
