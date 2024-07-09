@@ -14,7 +14,9 @@
 
 import cirq
 import numpy as np
+import pytest
 
+from qualtran import CtrlSpec
 from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
 from qualtran.cirq_interop import cirq_gate_to_bloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -29,13 +31,16 @@ def test_unitary():
         np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
 
 
-def test_controlled():
+@pytest.mark.parametrize("cv", [0, 1])
+def test_controlled(cv: int):
+    ctrl_spec = CtrlSpec(cvs=cv)
     random_state = np.random.RandomState(2)
     for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
-        bloq = GlobalPhase(exponent=2 * alpha).controlled()
+        bloq = GlobalPhase(exponent=2 * alpha).controlled(ctrl_spec=ctrl_spec)
         np.testing.assert_allclose(
-            cirq.unitary(cirq.GlobalPhaseGate(coefficient).controlled()), bloq.tensor_contract()
+            cirq.unitary(cirq.GlobalPhaseGate(coefficient).controlled(control_values=[cv])),
+            bloq.tensor_contract(),
         )
 
 

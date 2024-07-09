@@ -92,11 +92,10 @@ class GlobalPhase(CirqGateAsBloqBase):
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         # Otherwise, it's a ZPowGate
-        bloq = ZPowGate(
-            exponent=self.exponent,
-            global_shift=-1 if ctrl_spec == CtrlSpec(cvs=0) else 0,
-            eps=self.eps,
-        )
+        if ctrl_spec == CtrlSpec(cvs=0):
+            bloq = ZPowGate(exponent=-self.exponent, global_shift=-1, eps=self.eps)
+        else:
+            bloq = ZPowGate(exponent=self.exponent, eps=self.eps)
 
         def _add_ctrled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
