@@ -63,6 +63,9 @@ def test_signature():
     with pytest.raises(ValueError):
         _ = ApplyLthBloq(np.array([]))
 
+    with pytest.raises(ValueError):
+        _ = ApplyLthBloq(np.array([TGate()]))
+
 
 def test_bloq_has_consistent_decomposition():
     assert_valid_bloq_decomposition(_apply_lth_bloq())
@@ -93,6 +96,44 @@ def test_tensors(i, ctrl):
     bloq = bb.finalize(q=q)
 
     from_gate = ((TGate, Hadamard, ZGate, XGate)[i] if ctrl else Identity)().tensor_contract()
+    from_tensors = bloq.tensor_contract()
+    np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.parametrize("i", range(2))
+@pytest.mark.parametrize("ctrl", [True, False])
+def test_two(i, ctrl):
+    bb = BloqBuilder()
+    control = cast(Soquet, bb.add(OneState() if ctrl else ZeroState()))
+    selection = cast(Soquet, bb.add(IntState(i, 1)))
+    q = bb.add_register("q", 1)
+    ops = np.array((TGate(), Hadamard()))
+    bloq = ApplyLthBloq(ops, control_val=1)
+    control, selection, q = bb.add_t(bloq, control=control, selection=selection, q=q)
+    bb.add(OneEffect() if ctrl else ZeroEffect(), q=control)
+    bb.add(IntEffect(i, 1), val=selection)
+    bloq = bb.finalize(q=q)
+
+    from_gate = ((TGate, Hadamard)[i] if ctrl else Identity)().tensor_contract()
+    from_tensors = bloq.tensor_contract()
+    np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.parametrize("i", range(3))
+@pytest.mark.parametrize("ctrl", [True, False])
+def test_three(i, ctrl):
+    bb = BloqBuilder()
+    control = cast(Soquet, bb.add(OneState() if ctrl else ZeroState()))
+    selection = cast(Soquet, bb.add(IntState(i, 2)))
+    q = bb.add_register("q", 1)
+    ops = np.array((TGate(), Hadamard(), ZGate()))
+    bloq = ApplyLthBloq(ops, control_val=1)
+    control, selection, q = bb.add_t(bloq, control=control, selection=selection, q=q)
+    bb.add(OneEffect() if ctrl else ZeroEffect(), q=control)
+    bb.add(IntEffect(i, 2), val=selection)
+    bloq = bb.finalize(q=q)
+
+    from_gate = ((TGate, Hadamard, ZGate)[i] if ctrl else Identity)().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
 

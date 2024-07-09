@@ -60,8 +60,8 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
     control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
-        if prod(self.ops.shape) == 0:
-            raise ValueError("Must have at least one operation.")
+        if cast(int, prod(self.ops.shape)) <= 1:
+            raise ValueError("Must have at least two operations.")
         if not all(tuple(u.signature) == self.target_registers for u in self.ops.flat):
             raise ValueError("All ops must have the same signature.")
         if not all(r.side == Side.THRU for u in self.ops.flat for r in u.signature):
