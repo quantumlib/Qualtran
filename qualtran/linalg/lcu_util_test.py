@@ -44,7 +44,8 @@ class DiscretizeDistributionTest(unittest.TestCase):
         for _ in range(100):
             n = random.randint(1, 50)
             weights = [random.random() for _ in range(n)]
-            self.assertGetDiscretizedDistribution(weights, 2 ** -random.randint(1, 20))
+            mu = random.randint(1, 20)
+            self.assertGetDiscretizedDistribution(weights, 2**-mu / n)
 
     def test_known_discretizations(self):
         self.assertEqual(self.assertGetDiscretizedDistribution([1], 0.25), ([4], 4))
@@ -155,7 +156,8 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
             n = random.randint(1, 50)
             weights = [random.randint(0, 100) for _ in range(n)]
             weights[-1] += n - sum(weights) % n  # Ensure multiple of length.
-            self.assertPreprocess(weights, 2 ** -random.randint(1, 20))
+            mu = random.randint(1, 20)
+            self.assertPreprocess(weights, 2**-mu / n)
 
     def test_known(self):
         self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01), ([1, 1], [43, 0], 64))
