@@ -148,6 +148,7 @@ def _auto_partition() -> AutoPartition:
 def _auto_partition_unused() -> AutoPartition:
     from qualtran import Controlled, CtrlSpec
     from qualtran.bloqs.basic_gates import Swap
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
 
     bloq = Controlled(Swap(1), CtrlSpec())
     auto_partition_unused = AutoPartition(
