@@ -22,7 +22,7 @@ from qualtran.bloqs.chemistry.ising.hamiltonian import get_1d_ising_hamiltonian_
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 
 def get_prepare_precision_from_eigenphase_precision(
@@ -102,7 +102,7 @@ def upper_bound_norm_for_pauli_hamiltonian(ham: cirq.PauliSum) -> float:
 
 
 def walk_operator_for_pauli_hamiltonian(
-    ham: cirq.PauliSum, eps: float, *, ham_norm_upper_bound: Optional[float] = None
+    ham: cirq.PauliSum, eps: SymbolicFloat, *, ham_norm_upper_bound: Optional[SymbolicFloat] = None
 ) -> QubitizationWalkOperator:
     r"""Get the QubitizationWalkOperator for a Hamiltonian with Pauli terms.
 
@@ -136,7 +136,14 @@ def walk_operator_for_pauli_hamiltonian(
     delta = get_prepare_precision_from_eigenphase_precision(
         eps, len(ham_coeff), sum(ham_coeff), ham_norm_upper_bound
     )
-    prepare = StatePreparationAliasSampling.from_probabilities(ham_coeff, precision=float(delta))
+    if is_symbolic(delta):
+        prepare = StatePreparationAliasSampling.from_n_coeff(
+            len(ham_coeff), sum(ham_coeff), precision=delta
+        )
+    else:
+        prepare = StatePreparationAliasSampling.from_probabilities(
+            ham_coeff, precision=float(delta)
+        )
 
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
