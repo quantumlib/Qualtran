@@ -71,6 +71,15 @@ def bit_length(x: SymbolicFloat) -> SymbolicInt:
 
 
 def smax(*args):
+    """Returns the maximum of the given arguments, which may be symbolic.
+
+    Args:
+        args: Either a pack of arguments or a single Iterable of arguments.
+              At least one argument must be provided in this pack or Iterable.
+
+    Returns:
+        The maximum of the given arguments.
+    """
     if len(args) == 0:
         raise ValueError("smax expected at least 1 argument, got 0")
     if len(args) == 1:
@@ -88,6 +97,15 @@ def smax(*args):
 
 
 def smin(*args):
+    """Returns the minimum of the given arguments, which may be symbolic.
+
+    Args:
+        args: Either a pack of arguments or a single Iterable of arguments.
+              At least one argument must be provided in this pack or Iterable.
+
+    Returns:
+        The minimum of the given arguments.
+    """
     if len(args) == 0:
         raise ValueError("smin expected at least 1 argument, got 0")
     if len(args) == 1:
