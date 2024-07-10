@@ -113,7 +113,9 @@ class Product(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
         raise NotImplementedError
 
     def build_composite_bloq(
@@ -221,14 +223,14 @@ def _product_block_encoding() -> Product:
 
 
 @bloq_example
-def _product_block_encoding_override() -> Product:
+def _product_block_encoding_properties() -> Product:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
-    u2 = evolve(Unitary(Hadamard()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
-    product_block_encoding_override = Product((u1, u2))
-    return product_block_encoding_override
+    u1 = Unitary(TGate(), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
+    u2 = Unitary(Hadamard(), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
+    product_block_encoding_properties = Product((u1, u2))
+    return product_block_encoding_properties
 
 
 @bloq_example
@@ -258,7 +260,7 @@ _PRODUCT_DOC = BloqDocSpec(
     import_line="from qualtran.bloqs.block_encoding import Product",
     examples=[
         _product_block_encoding,
-        _product_block_encoding_override,
+        _product_block_encoding_properties,
         _product_block_encoding_symb,
     ],
 )

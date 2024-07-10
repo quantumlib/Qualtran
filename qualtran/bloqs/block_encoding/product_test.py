@@ -23,7 +23,7 @@ from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, XGate, ZeroEffect, ZeroState
 from qualtran.bloqs.block_encoding.product import (
     _product_block_encoding,
-    _product_block_encoding_override,
+    _product_block_encoding_properties,
     _product_block_encoding_symb,
     Product,
 )
@@ -39,7 +39,7 @@ def test_product_signature():
     assert _product_block_encoding().signature == Signature(
         [Register("system", QAny(1)), Register("ancilla", QAny(1))]
     )
-    assert _product_block_encoding_override().signature == Signature(
+    assert _product_block_encoding_properties().signature == Signature(
         [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(2))]
     )
     assert _product_block_encoding_symb().signature == Signature(
@@ -65,7 +65,7 @@ def test_product_params():
     assert bloq.ancilla_bitsize == 1
     assert bloq.resource_bitsize == 0
 
-    bloq = _product_block_encoding_override()
+    bloq = _product_block_encoding_properties()
     assert bloq.system_bitsize == 1
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
@@ -106,13 +106,13 @@ def test_product_single_tensors():
     np.testing.assert_allclose(from_gate, from_tensors)
 
 
-def test_product_override_tensors():
+def test_product_properties_tensors():
     bb = BloqBuilder()
     system = bb.add_register("system", 1)
     ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState()), bb.add(ZeroState())]))
     resource = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
     system, ancilla, resource = bb.add_t(
-        _product_block_encoding_override(), system=system, ancilla=ancilla, resource=resource
+        _product_block_encoding_properties(), system=system, ancilla=ancilla, resource=resource
     )
     for q in bb.split(cast(Soquet, ancilla)):
         bb.add(ZeroEffect(), q=q)
