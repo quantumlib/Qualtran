@@ -15,6 +15,7 @@
 from functools import cached_property
 from typing import cast, Dict, Tuple
 
+import cirq
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
 
@@ -22,7 +23,6 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -35,6 +35,7 @@ from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 
 
@@ -194,12 +195,12 @@ class Product(BlockEncoding):
                     else:
                         # set corresponding flag if ancillas are all zero
                         ctrl, flag_bits_soq[i] = bb.add_t(
-                            XGate().controlled(CtrlSpec(qdtypes=(anc_used_soq.reg.dtype,), cvs=0)),
-                            ctrl=anc_used_soq,
-                            q=flag_bits_soq[i],
+                            MultiControlPauli(tuple([0] * anc_bits), cirq.X),
+                            controls=bb.split(anc_used_soq),
+                            target=flag_bits_soq[i],
                         )
                         flag_bits_soq[i] = bb.add(XGate(), q=flag_bits_soq[i])
-                        anc_part_soqs["anc_used"] = cast(Soquet, ctrl)
+                        anc_part_soqs["anc_used"] = bb.join(cast(NDArray, ctrl))
                 anc_part_soqs["flag_bits"] = flag_bits_soq
                 soqs["ancilla"] = cast(
                     Soquet, bb.add(evolve(anc_part, partition=False), **anc_part_soqs)
