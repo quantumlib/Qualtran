@@ -77,8 +77,8 @@ class StatePreparationAliasSampling(PrepareOracle):
         keep: The discretized `keep` probabilities for alias sampling.
         alt: The alternate/alias values to swap.
         mu: The number of bits to approximate the `keep` probabilities.
-        qlambda: The total of the input unnormalized probabilities.
-                 This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
+        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
+            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
 
     Signature:
         selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
@@ -112,7 +112,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     alt: Union[Shaped, NDArray[np.int_]]
     keep: Union[Shaped, NDArray[np.int_]]
     mu: SymbolicInt
-    qlambda: SymbolicFloat
+    sum_of_unnormalized_probabilities: SymbolicFloat
 
     @classmethod
     def from_probabilities(
@@ -149,7 +149,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            qlambda=qlambda,
+            sum_of_unnormalized_probabilities=qlambda,
         )
 
     @classmethod
@@ -180,7 +180,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            qlambda=sum_of_unnormalized_probabilites,
+            sum_of_unnormalized_probabilities=sum_of_unnormalized_probabilites,
         )
 
     @property
@@ -189,7 +189,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
-        return self.qlambda
+        return self.sum_of_unnormalized_probabilities
 
     @cached_property
     def sigma_mu_bitsize(self) -> SymbolicInt:
