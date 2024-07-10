@@ -49,6 +49,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -1016,7 +1017,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[str]]],
+        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
         left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
@@ -1026,11 +1027,14 @@ class BloqBuilder:
         Args:
             bloq: The bloq representing the operation to add.
             partitions: A sequence of pairs specifying each register that the wrapped bloq should
-            accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
+                accept and the register names from `bloq.signature.lefts()` that concatenate to
+                form it. If the bloq being wrapped does not use a portion of the register being
+                exposed, an instance of `Unused` may be used in place of a register name from the
+                bloq signature.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
-                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
-                as is required for the bloq to be fully wrapped on the left and right.
+                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT
+                registers, as is required for the bloq to be fully wrapped on the left and right.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
                 `Soquet`s. This is likely the output soquets from a prior operation.
 
@@ -1041,6 +1045,18 @@ class BloqBuilder:
         from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 
         return self.add(AutoPartition(bloq, partitions, left_only), **in_soqs)
+
+    def add_d_and_partition(
+        self,
+        bloq: Bloq,
+        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
+        left_only: bool = False,
+        **in_soqs: SoquetInT,
+    ) -> Dict[str, SoquetT]:
+        """Version of `add_and_partition` that returns a dictionary. See `BloqBuilder.add_d`."""
+        from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
+
+        return self.add_d(AutoPartition(bloq, partitions, left_only), **in_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.

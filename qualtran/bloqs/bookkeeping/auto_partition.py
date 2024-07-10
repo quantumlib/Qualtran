@@ -13,7 +13,7 @@
 #  limitations under the License.
 from functools import cached_property
 from itertools import chain
-from typing import Dict, Sequence, Tuple
+from typing import Dict, Sequence, Tuple, Union
 
 from attrs import evolve, field, frozen
 
@@ -29,6 +29,14 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.symbolics.types import SymbolicInt
+
+
+@frozen
+class Unused:
+    """Placeholder indicating that a portion of a register is unused in an AutoPartition."""
+
+    bitsize: SymbolicInt
 
 
 @frozen
@@ -40,6 +48,8 @@ class AutoPartition(Bloq):
         bloq: The bloq to wrap.
         partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
             and the names of registers from `bloq.signature.lefts()` that concatenate to form it.
+            If the bloq being wrapped does not use a portion of the register being exposed, an
+            instance of `Unused` may be used in place of a register name from the bloq signature.
         left_only: If False, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
             This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
@@ -50,15 +60,22 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partitions: Sequence[Tuple[Register, Sequence[str]]] = field(
+    partitions: Sequence[Tuple[Register, Sequence[Union[str, Unused]]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     left_only: bool = False
 
     def __attrs_post_init__(self):
         regs = {r.name for r in self.bloq.signature.lefts()}
-        assert len(regs) == len(self.bloq.signature)
-        assert regs == {r for _, rs in self.partitions for r in rs}
+        if len(regs) != len(self.bloq.signature):
+            raise ValueError("Length of regs and signature do not match")
+        if regs != {r for _, rs in self.partitions for r in rs if isinstance(r, str)}:
+            raise ValueError("Bloq registers do not match given partitions")
+        if self.left_only:
+            for _, rs in self.partitions:
+                for r in rs:
+                    if isinstance(r, Unused):
+                        raise ValueError("Cannot use left_only with unused registers")
 
     @cached_property
     def signature(self) -> Signature:
@@ -78,12 +95,27 @@ class AutoPartition(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
+        unused_regs: Dict[str, SoquetT] = dict()
         for out_reg, bloq_regs in self.partitions:
             part = Partition(
-                out_reg.bitsize, regs=tuple(self.bloq.signature.get_left(r) for r in bloq_regs)
+                out_reg.bitsize,
+                regs=tuple(
+                    (
+                        self.bloq.signature.get_left(r)
+                        if isinstance(r, str)
+                        else Register(f"_unused{i}", QAny(r.bitsize))
+                    )
+                    for i, r in enumerate(bloq_regs)
+                ),
             )
             parts[out_reg.name] = part
-            in_regs |= bb.add_d(part, x=soqs[out_reg.name])
+            part_regs = bb.add_d(part, x=soqs[out_reg.name])
+            for k, v in part_regs.items():
+                if k in self.bloq.signature._lefts:
+                    in_regs[k] = v
+                else:
+                    unused_regs[k] = v
+
         bloq_out_regs = bb.add_d(self.bloq, **in_regs)
         if self.left_only:
             return bloq_out_regs
@@ -92,7 +124,10 @@ class AutoPartition(Bloq):
         for soq_name in soqs.keys():
             out_regs[soq_name] = bb.add(
                 parts[soq_name].adjoint(),
-                **{reg.name: bloq_out_regs[reg.name] for reg in parts[soq_name].signature.rights()},
+                **{
+                    reg.name: (bloq_out_regs | unused_regs)[reg.name]
+                    for reg in parts[soq_name].signature.rights()
+                },
             )
         return out_regs
 
@@ -109,8 +144,25 @@ def _auto_partition() -> AutoPartition:
     return auto_partition
 
 
+@bloq_example
+def _auto_partition_unused() -> AutoPartition:
+    from qualtran import Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates import Swap
+
+    bloq = Controlled(Swap(1), CtrlSpec())
+    auto_partition_unused = AutoPartition(
+        bloq,
+        [
+            (Register('x', QAny(3)), ['ctrl', 'x', Unused(1)]),
+            (Register('y', QAny(1)), ['y']),
+            (Register('z', QAny(2)), [Unused(2)]),
+        ],
+    )
+    return auto_partition_unused
+
+
 _AUTO_PARTITION_DOC = BloqDocSpec(
     bloq_cls=AutoPartition,
     import_line="from qualtran.bloqs.bookkeeping import AutoPartition",
-    examples=[_auto_partition],
+    examples=[_auto_partition, _auto_partition_unused],
 )
