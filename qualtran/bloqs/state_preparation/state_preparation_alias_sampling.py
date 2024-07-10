@@ -128,10 +128,12 @@ class StatePreparationAliasSampling(PrepareOracle):
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        sum_of_coefficients = sum(abs(x) for x in unnormalized_probabilities)
+        if not all(x >= 0 for x in unnormalized_probabilities):
+            raise ValueError(f"{cls} expects only non-negative probabilities")
+
+        qlambda = sum(x for x in unnormalized_probabilities)
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=unnormalized_probabilities,
-            epsilon=precision / sum_of_coefficients,
+            unnormalized_probabilities=unnormalized_probabilities, epsilon=precision / qlambda
         )
         N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
@@ -139,7 +141,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_coefficients=sum_of_coefficients,
+            sum_of_coefficients=qlambda,
         )
 
     @classmethod
