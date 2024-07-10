@@ -53,7 +53,7 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  #
         https://arxiv.org/abs/1805.03662). Babbush et. al. (2018). Section III.A. and Figure 7.
     """
 
-    # type: ignore needed here for Bloq as NDArray parameter
+    # type ignore needed here for Bloq as NDArray parameter
     ops: NDArray[Bloq] = field(  # type: ignore[type-var]
         converter=lambda x: np.array(x) if isinstance(x, Iterable) else x,
         eq=lambda d: tuple(d.flat),
