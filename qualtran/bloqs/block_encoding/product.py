@@ -43,11 +43,27 @@ from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, Sym
 class Product(BlockEncoding):
     r"""Product of a sequence of block encodings.
 
-    Builds the block encoding $B[U_1 * U_2 * \cdots * U_n]$ given block encodings $B[U_1], \ldots, B[U_n]$.
+    Builds the block encoding $B[U_1 * U_2 * \cdots * U_n]$ given block encodings
+    $B[U_1], \ldots, B[U_n]$.
 
     When each $B[U_i]$ is a $(\alpha_i, a_i, \epsilon_i)$-block encoding of $U_i$, we have that
-    $B[U_1 * \cdots * U_n]$ is a $(\prod_i \alpha_i, n - 1 + \max_i a_i, \sum_i \alpha_i \epsilon_i)$-block
-    encoding of $U_1 * \cdots * U_n$.
+    $B[U_1 * \cdots * U_n]$ is a block encoding of $U_1 * \cdots * U_n$ with normalization
+    constant $\prod_i \alpha_i$, ancilla bitsize $n - 1 + \max_i a_i$, and precision
+    $\sum_i \alpha_i \epsilon_i$.
+
+    Following Fig. 2 in Dalzell et al. (2023), Ch. 10.2, the product is encoded by concatenating
+    each constituent block encoding, using a shared ancilla register and a set of flag qubits to
+    verify that the ancilla is left as zero after each use:
+    ```
+           ┌────────┐
+      |0> ─┤        ├─     |0> ───────────X──────X────
+           │        │                     │
+           │ U_(AB) │  =        ┌─────┐   │   ┌─────┐
+      |0> ─┤        ├─     |0> ─┤     ├──(0)──┤     ├─
+           │        │           │ U_B │       │ U_A │
+    |Psi> ─┤        ├─   |Psi> ─┤     ├───────┤     ├─
+           └────────┘           └─────┘       └─────┘
+    ```
 
     Args:
         block_encodings: A sequence of block encodings.
