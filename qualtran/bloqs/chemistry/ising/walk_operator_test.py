@@ -16,8 +16,11 @@ import sympy
 from qualtran.bloqs.chemistry.ising.hamiltonian import get_1d_ising_hamiltonian_norm_upper_bound
 from qualtran.bloqs.chemistry.ising.walk_operator import (
     get_prepare_precision_from_eigenphase_precision,
+    get_walk_operator_for_1d_ising_model,
 )
+from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.linalg.lcu_util import sub_bit_prec_from_epsilon
+from qualtran.symbolics import ceil, log2, smax
 
 
 def test_symbolic_precision_for_ising():
@@ -28,3 +31,18 @@ def test_symbolic_precision_for_ising():
     _ = sub_bit_prec_from_epsilon(L, delta / qlambda)
 
     assert sympy.simplify(delta - eps / (eps**2 + 1) * (2 * J * Gamma / (J + Gamma))) == 0
+
+
+def test_symbolic_1d_ising_walk_op():
+    n = 4
+    J, Gamma = 1, -1
+    eps = sympy.symbols(r"\epsilon", real=True, positive=True)
+    walk, ham = get_walk_operator_for_1d_ising_model(n, eps)
+    assert walk.sum_of_lcu_coefficients == n * (abs(J) + abs(Gamma))
+
+    # check expression for probability bitsize `mu`
+    assert isinstance(walk.prepare, StatePreparationAliasSampling)
+    mu = walk.prepare.mu
+    assert isinstance(mu, sympy.Expr)
+    # sympy limitation: unable to match exact expressions
+    assert str(mu.simplify()) == str(smax(0, ceil(log2(2.0 * eps + 2.0 / eps))))

@@ -153,7 +153,7 @@ def walk_operator_for_pauli_hamiltonian(
 
 
 def get_walk_operator_for_1d_ising_model(
-    num_sites: int, eps: float, *, j_zz_strength: float = 1, gamma_x_strength: float = -1
+    num_sites: int, eps: SymbolicFloat, *, j_zz_strength: float = 1, gamma_x_strength: float = -1
 ) -> tuple[QubitizationWalkOperator, cirq.PauliSum]:
     r"""Get the QubitizationWalkOperator for a 1d Ising Hamiltonian on n sites.
 
@@ -172,7 +172,5 @@ def get_walk_operator_for_1d_ising_model(
     ham_norm_upper_bound = get_1d_ising_hamiltonian_norm_upper_bound(
         num_sites, j_zz_strength, gamma_x_strength
     )
-    walk = walk_operator_for_pauli_hamiltonian(
-        ham, eps, ham_norm_upper_bound=float(ham_norm_upper_bound)
-    )
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps, ham_norm_upper_bound=ham_norm_upper_bound)
     return walk, ham
