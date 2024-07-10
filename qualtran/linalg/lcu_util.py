@@ -170,12 +170,16 @@ def sub_bit_prec_from_epsilon(
     probabilities $p_l = w_l / \lambda$. This method computes the number of
     bits $\mu$ to approximate the values $p_l$ such that the state prepared
     by alias sampling has probabilities $\tilde{w_l} / \lambda$ satisfying
-    $\abs{w_l - \tilde{w}_l} \le \epsilon$.
+    $\frac{\abs{w_l - \tilde{w}_l}}{\lambda} \le \epsilon$. This is given by
+
+    $$
+        \mu = \lceil \log(\frac{1}{L \epsilon}) \rceil
+    $$
 
     Args:
         number_of_coefficients: number of probabilities $L$.
-        precision: precision $|epsilon$ to approximate the unnormalized input
-                   probabilities $w_l$ in alias sampling.
+        precision: precision $\epsilon$ to approximate the normalized probabilities
+                   $w_l / \lambda$ in alias sampling.
     """
     return smax(0, ceil(log2(1.0 / (precision * number_of_coefficients))))
 
