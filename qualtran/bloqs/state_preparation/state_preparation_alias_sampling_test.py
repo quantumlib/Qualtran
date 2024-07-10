@@ -46,7 +46,7 @@ def test_state_prep_alias_sampling_symb():
     # of dividing `n` by the highest power of `2` at resolution time.
     N, epsilon = 2**16 - 1, 1e-4
     random_state = cirq.value.parse_random_state(1234)
-    lcu_coefficients = random_state.randn(N).astype(float)
+    lcu_coefficients = np.abs(random_state.randn(N).astype(float))
     bloq_concrete = StatePreparationAliasSampling.from_probabilities(
         unnormalized_probabilities=lcu_coefficients.tolist(), precision=epsilon
     )
