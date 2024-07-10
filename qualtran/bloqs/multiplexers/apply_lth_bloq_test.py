@@ -144,8 +144,8 @@ def test_three(i, ctrl):
 def test_ndim(i, j, ctrl):
     bb = BloqBuilder()
     control = bb.add(OneState() if ctrl else ZeroState())
-    selection1 = bb.add(IntState(i, 1))
-    selection2 = bb.add(IntState(j, 1))
+    selection0 = bb.add(IntState(i, 1))
+    selection1 = bb.add(IntState(j, 1))
     q = bb.add_register("q", 1)
 
     ops = np.array([[TGate(), Hadamard()], [ZGate(), XGate()]])
@@ -154,22 +154,22 @@ def test_ndim(i, j, ctrl):
     assert bloq.signature == Signature(
         [
             Register("control", QBit()),
+            Register("selection0", BoundedQUInt(1, 2)),
             Register("selection1", BoundedQUInt(1, 2)),
-            Register("selection2", BoundedQUInt(1, 2)),
             Register("q", QBit()),
         ]
     )
 
-    control, selection1, selection2, q = bb.add_t(
+    control, selection0, selection1, q = bb.add_t(
         bloq,
         control=cast(Soquet, control),
+        selection0=cast(Soquet, selection0),
         selection1=cast(Soquet, selection1),
-        selection2=cast(Soquet, selection2),
         q=q,
     )
     bb.add(OneEffect() if ctrl else ZeroEffect(), q=control)
-    bb.add(IntEffect(i, 1), val=selection1)
-    bb.add(IntEffect(j, 1), val=selection2)
+    bb.add(IntEffect(i, 1), val=selection0)
+    bb.add(IntEffect(j, 1), val=selection1)
     bloq = bb.finalize(q=q)
 
     from_gate = (

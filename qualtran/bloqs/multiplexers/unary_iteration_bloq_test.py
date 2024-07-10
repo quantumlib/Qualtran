@@ -30,7 +30,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 if TYPE_CHECKING:
     from qualtran import Bloq
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -60,9 +60,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
     ) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(selection + 1)])
 
-    def nth_operation_callgraph(
-        self, ssa: 'SympySymbolAllocator', **selection_regs_name_to_val
-    ) -> Set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
         return {(CNOT(), 1)}
 
 
@@ -129,9 +127,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
     ) -> Iterator[cirq.OP_TREE]:
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
 
-    def nth_operation_callgraph(
-        self, ssa: 'SympySymbolAllocator', **selection_regs_name_to_val
-    ) -> Set['BloqCountT']:
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
         return {(CNOT(), 3)}
 
 
