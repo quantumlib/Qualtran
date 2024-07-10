@@ -20,9 +20,12 @@ import numpy as np
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
-from qualtran.bloqs.basic_gates import ZPowGate
-from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
+from qualtran.bloqs.rotations.quantum_variable_rotation import (
+    QvrInterface,
+    QvrPhaseGradient,
+    QvrZPow,
+)
+from qualtran.symbolics import bit_length, SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -74,24 +77,38 @@ class HammingWeightPhasing(GateWithRegisters):
     bitsize: int
     exponent: float = 1
     eps: SymbolicFloat = 1e-10
+    phase_oracle: QvrInterface = attrs.field()
+
+    @phase_oracle.default
+    def _default_qvr(self):
+        return QvrZPow(self._hamming_weight_register, gamma=self.exponent / 2, eps=self.eps)
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(x=QUInt(self.bitsize))
+        return Signature([Register("x", QUInt(self.bitsize)), *self.phase_oracle.extra_registers])
+
+    @cached_property
+    def _hamming_weight_bitsize(self):
+        return bit_length(self.bitsize)
+
+    @cached_property
+    def _hamming_weight_register(self) -> Register:
+        return Register('out', QFxp(self._hamming_weight_bitsize, 0))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
-        out = bb.split(out)
-        for i in range(len(out)):
-            out[-(i + 1)] = bb.add(
-                ZPowGate(exponent=(2**i) * self.exponent, eps=self.eps / len(out)),
-                q=out[-(i + 1)],
-            )
-        out = bb.join(out, dtype=QUInt(self.bitsize.bit_length()))
-        soqs['x'] = bb.add(
-            HammingWeightCompute(self.bitsize).adjoint(), x=soqs['x'], junk=junk, out=out
-        )
-        return soqs
+        x = soqs.pop('x')
+        phase_oracle_regs = {
+            reg.name: soqs.pop(reg.name) for reg in self.phase_oracle.extra_registers
+        }
+
+        x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
+
+        phase_oracle_regs = bb.add_d(self.phase_oracle, out=out, **phase_oracle_regs)
+        out = phase_oracle_regs.pop('out')
+
+        x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
+
+        return {'x': x} | phase_oracle_regs
 
     def pretty_name(self) -> str:
         return f'HWP_{self.bitsize}(Z^{self.exponent})'
@@ -100,10 +117,7 @@ class HammingWeightPhasing(GateWithRegisters):
         return {
             (HammingWeightCompute(self.bitsize), 1),
             (HammingWeightCompute(self.bitsize).adjoint(), 1),
-            (
-                ZPowGate(exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()),
-                self.bitsize.bit_length(),
-            ),
+            (self.phase_oracle, 1),
         }
 
 
@@ -120,7 +134,7 @@ _HAMMING_WEIGHT_PHASING_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
+class HammingWeightPhasingViaPhaseGradient(HammingWeightPhasing):
     r"""Applies $Z^{\text{exponent}}$ to every qubit of an input register of size `bitsize`.
 
     See docstring of `HammingWeightPhasing` for more details about how hamming weight phasing works.
@@ -157,39 +171,15 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
     """
 
-    bitsize: int
-    exponent: float = 1
-    eps: float = 1e-10
+    phase_oracle: QvrInterface = attrs.field()
 
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            x=QUInt(self.bitsize), phase_grad=QFxp(self.b_grad, self.b_grad)
-        )
-
-    @cached_property
-    def phase_oracle(self) -> QvrPhaseGradient:
+    @phase_oracle.default
+    def _qvr_default(self) -> QvrPhaseGradient:
         return QvrPhaseGradient(
             Register('out', QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False)),
             self.exponent / 2,
             self.eps,
         )
-
-    @cached_property
-    def b_grad(self) -> 'SymbolicInt':
-        return self.phase_oracle.b_grad
-
-    @cached_property
-    def gamma_dtype(self) -> QFxp:
-        return self.phase_oracle.gamma_dtype
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
-        x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
-        out, phase_grad = bb.add(self.phase_oracle, out=out, phase_grad=phase_grad)
-        x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
-        return {'x': x, 'phase_grad': phase_grad}
 
     def pretty_name(self) -> str:
         return f'HWPG_{self.bitsize}(Z^{self.exponent})'

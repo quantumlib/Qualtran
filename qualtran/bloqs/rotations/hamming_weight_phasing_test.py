@@ -20,6 +20,7 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran import GateWithRegisters, Signature
+from qualtran.bloqs.rotations import QvrPhaseGradient
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
@@ -83,7 +84,11 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     @property
     def b_grad(self) -> SymbolicInt:
-        return HammingWeightPhasingViaPhaseGradient(self.bitsize, self.exponent, self.eps).b_grad
+        qvr_phase_grad = HammingWeightPhasingViaPhaseGradient(
+            self.bitsize, self.exponent, self.eps
+        ).phase_oracle
+        assert isinstance(qvr_phase_grad, QvrPhaseGradient)
+        return qvr_phase_grad.b_grad
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
         b_grad = self.b_grad
@@ -97,10 +102,16 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         return {'x': x}
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize('n', [2, 3])
 @pytest.mark.parametrize(
-    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-3), (1.20345, 1e-3), (-1.1934341, 1e-3)]
+    'theta, eps',
+    [
+        (1, 1e-1),
+        (0.5, 1e-2),
+        pytest.param(1 / 10, 1e-3, marks=pytest.mark.slow),
+        pytest.param(1.20345, 1e-3, marks=pytest.mark.slow),
+        (-1.1934341, 1e-3),
+    ],
 )
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)
