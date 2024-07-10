@@ -72,6 +72,14 @@ class StatePreparationAliasSampling(PrepareOracle):
     selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
 
+    Args:
+        selection_registers: The input/output registers to prepare the state on (see Signature).
+        keep: The discretized `keep` probabilities for alias sampling.
+        alt: The alternate/alias values to swap.
+        mu: The number of bits to approximate the `keep` probabilities.
+        qlambda: The total of the input unnormalized probabilities.
+                 This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
+
     Signature:
         selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
             coefficient state is prepared.
@@ -104,13 +112,13 @@ class StatePreparationAliasSampling(PrepareOracle):
     alt: Union[Shaped, NDArray[np.int_]]
     keep: Union[Shaped, NDArray[np.int_]]
     mu: SymbolicInt
-    sum_of_coefficients: SymbolicFloat
+    qlambda: SymbolicFloat
 
     @classmethod
     def from_probabilities(
         cls, unnormalized_probabilities: Sequence[float], *, precision: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
-        r"""Factory to construct the state preparation gate for a given set of LCU coefficients.
+        r"""Factory to construct the state preparation gate for a given set of unnormalized probabilities.
 
         Given input `unnormalized_probabilities` $w_l$, with sum $\lambda = \sum_l w_l$, this prepares
         a state s.t. $p_l = \tilde{w_l} / \lambda$ such that the input `precision` $\epsilon$ satisfies:
@@ -141,26 +149,30 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_coefficients=qlambda,
+            qlambda=qlambda,
         )
 
     @classmethod
     def from_n_coeff(
-        cls, n_coeff: SymbolicInt, sum_of_terms: SymbolicFloat, *, precision: SymbolicFloat = 1.0e-5
+        cls,
+        n_coeff: SymbolicInt,
+        sum_of_unnormalized_probabilites: SymbolicFloat,
+        *,
+        precision: SymbolicFloat = 1.0e-5,
     ) -> 'StatePreparationAliasSampling':
-        r"""Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+        r"""Factory to construct the state preparation gate for symbolic number of unnormalized probabilities.
 
         See docstring for :meth:`StatePreparationAliasSampling.from_probabilities` for details
 
         Args:
             n_coeff: Symbolic number of LCU coefficients in the prepared state.
-            sum_of_terms: Sum of absolute values of coefficients of the prepared state.
+            sum_of_unnormalized_probabilites: Sum of absolute values of input unnormalized probabilities.
             precision: The desired accuracy $\epsilon$ to represent each input value
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_terms)
+        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_unnormalized_probabilites)
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
@@ -168,7 +180,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            sum_of_coefficients=sum_of_terms,
+            qlambda=sum_of_unnormalized_probabilites,
         )
 
     @property
@@ -177,7 +189,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
-        return self.sum_of_coefficients
+        return self.qlambda
 
     @cached_property
     def sigma_mu_bitsize(self) -> SymbolicInt:
