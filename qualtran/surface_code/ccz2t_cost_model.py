@@ -13,9 +13,11 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, cast, Iterable, Iterator, Optional, Tuple
+from typing import Callable, cast, Iterable, Iterator, Optional, Tuple, Sequence, Union
 
+import attrs
 from attrs import frozen
+import numpy as np
 
 import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
@@ -23,7 +25,8 @@ from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.multi_factory import MultiFactory
 from qualtran.surface_code.physical_cost import PhysicalCost
-
+from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.workflow import PhysicalEstimationParameters, PhysicalResourceEstimationWorkflow
 
 @frozen
 class CCZ2TFactory(MagicStateFactory):
@@ -195,7 +198,7 @@ def get_ccz2t_costs(
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
     duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
-    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
+    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr, logical_qubits_contib=data_block.footprint(n_algo_qubits=n_algo_qubits), distillation_qubits_contrib=factory.footprint())
 
 
 def get_ccz2t_costs_from_error_budget(
@@ -366,3 +369,66 @@ def get_ccz2t_costs_from_grid_search(
 
 
 GidneyFowlerCCZ = CCZ2TFactory()
+
+
+class GidneyFowlerWorkflow(PhysicalResourceEstimationWorkflow):
+
+    def minimum_runtime(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> PhysicalCost:
+        return self.data_points(algorithm_summary, params)[-1]
+
+    def minimum_qubits(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> PhysicalCost:
+        return self.data_points(algorithm_summary, params)[0]
+
+    def data_points(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> Sequence[PhysicalCost]:
+        pnts = []
+        for rotation_error_budget in np.linspace(1e-12, params.error_budget, 10):
+            magic_count = algorithm_summary.to_magic_count(params.rotation_model, rotation_error_budget)
+            for factory in iter_ccz2t_factories():
+                for data_block in iter_simple_data_blocks():
+                    cost = get_ccz2t_costs(
+                        n_magic=magic_count,
+                        n_algo_qubits=algorithm_summary.algorithm_qubits,
+                        phys_err=params.physical_error_rate,
+                        cycle_time_us=params.qec.single_stabilizer_time_us,
+                        factory=factory,
+                        data_block=data_block,
+                    )
+
+                    if cost.failure_prob + rotation_error_budget > params.error_budget:
+                        continue
+                    pnts.append(
+                        attrs.evolve(cost, magic_state_factory=factory, data_block=data_block)
+                    )
+        pnts.sort(key=lambda p: (p.duration_hr, p.footprint), reverse=True)
+        ret = []
+        for p in pnts:
+            while len(ret) and p.footprint < ret[-1].footprint:
+                ret.pop()
+            ret.append(p)
+        return ret
+ 
+    def estimate(
+        self,
+        algorithm_summary: AlgorithmSummary,
+        params: PhysicalEstimationParameters,
+        objective: Callable[[PhysicalCost], float],
+    ) -> Sequence[PhysicalCost]:
+        return NotImplemented
+    
+    def supported_magic_state_factories(
+        self,
+    ) -> Sequence[Union[MagicStateFactory, type[MagicStateFactory]]]:
+        """Returns a list of magic state factories that are supported by this workflow."""
+        return [
+            CCZ2TFactory
+        ]
+
+    def supported_datablocks(self) -> Sequence[Union[DataBlock, type[DataBlock]]]:
+        """Returns a list of data blocks that are supported by this workflow."""
+        return [SimpleDataBlock]

@@ -12,15 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import attrs
+from typing import Sequence, Callable, Union
 import math
-
+import numpy as np
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.data_block import FastDataBlock
+from qualtran.surface_code.data_block import FastDataBlock, DataBlock
 from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     QuantumErrorCorrectionSchemeSummary,
 )
 from qualtran.surface_code.rotation_cost_model import RotationCostModel
-
+from qualtran.surface_code.workflow import PhysicalResourceEstimationWorkflow, PhysicalEstimationParameters
+from qualtran.surface_code.physical_cost import PhysicalCost
+from qualtran.surface_code.magic_state_factory import MagicStateFactory
+from qualtran.surface_code.multi_factory import MultiFactory
+from qualtran.surface_code.ccz2t_cost_model import GidneyFowlerCCZ
+from qualtran.surface_code.fifteen_to_one import FifteenToOne733, FifteenToOne933
 
 def minimum_time_steps(
     error_budget: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
@@ -107,3 +114,78 @@ def t_states(
     eps_syn = error_budget / 3
     total_magic = alg.to_magic_count(rotation_model=rotation_model, error_budget=eps_syn)
     return total_magic.n_t + 4 * total_magic.n_ccz
+
+
+def _cost_at_num_timesteps(t: float, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters) -> PhysicalCost:
+    cd = code_distance(
+        error_budget=params.error_budget,
+        time_steps=t,
+        alg=algorithm_summary,
+        qec=params.qec,
+        physical_error_rate=params.physical_error_rate,
+    )
+    runtime_seconds = params.qec.error_detection_circuit_time_us(cd) * 1e-6 * t
+    logical_qubits = FastDataBlock.grid_size(n_algo_qubits=algorithm_summary.algorithm_qubits)
+
+    return PhysicalCost(
+        data_block=params.data_block,
+        code_distance=cd,
+        duration_hr=runtime_seconds / 3600,
+        footprint=logical_qubits*params.qec.physical_qubits(cd) + 
+        params.magic_state_factory.footprint() * params.num_magic_factories,
+        distillation_qubits_contrib=params.magic_state_factory.footprint()*params.num_magic_factories,
+        logical_qubits_contib=logical_qubits*params.qec.physical_qubits(cd),
+        magic_state_factory=MultiFactory(params.magic_state_factory, params.num_magic_factories),
+        failure_prob=1e-6, # some value
+    )
+
+
+class AzureWorkflow(PhysicalResourceEstimationWorkflow):
+
+    def minimum_runtime(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> PhysicalCost:
+        return self.data_points(algorithm_summary, params)[-1]
+
+    def minimum_qubits(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> PhysicalCost:
+        return self.data_points(algorithm_summary, params)[0]
+
+    def data_points(
+        self, algorithm_summary: AlgorithmSummary, params: PhysicalEstimationParameters
+    ) -> Sequence[PhysicalCost]:
+        c_min = minimum_time_steps(params.error_budget, algorithm_summary, params.rotation_model)
+        factory = MultiFactory(params.magic_state_factory, params.num_magic_factories)
+        magic_count = algorithm_summary.to_magic_count(params.rotation_model, params.error_budget)
+        factory_cycles = factory.n_cycles(magic_count, params.physical_error_rate)
+        min_num_factories = int(np.ceil(factory_cycles / c_min))
+        magic_counts = list(
+            1 + np.random.choice(min_num_factories, replace=False, size=min(min_num_factories, 5))
+        )
+        magic_counts.sort(reverse=True)
+        magic_counts = np.array(magic_counts)
+        time_steps = np.ceil(factory_cycles / magic_counts)
+        magic_counts[0] = min_num_factories
+        time_steps[0] = c_min
+        return [_cost_at_num_timesteps(t, algorithm_summary, attrs.evolve(params, magic_state_factory=factory, num_magic_factories=c)) for t, c in zip(time_steps, magic_counts)]
+ 
+    def estimate(
+        self,
+        algorithm_summary: AlgorithmSummary,
+        params: PhysicalEstimationParameters,
+        objective: Callable[[PhysicalCost], float],
+    ) -> Sequence[PhysicalCost]:
+        return NotImplemented
+    
+    def supported_magic_state_factories(
+        self,
+    ) -> Sequence[Union[MagicStateFactory, type[MagicStateFactory]]]:
+        """Returns a list of magic state factories that are supported by this workflow."""
+        return [
+            GidneyFowlerCCZ, FifteenToOne733, FifteenToOne933
+        ]
+
+    def supported_datablocks(self) -> Sequence[Union[DataBlock, type[DataBlock]]]:
+        """Returns a list of data blocks that are supported by this workflow."""
+        return [FastDataBlock]

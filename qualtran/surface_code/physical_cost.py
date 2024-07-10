@@ -39,6 +39,9 @@ class PhysicalCost:
     magic_state_factory: Optional['MagicStateFactory'] = None
     data_block: Optional['DataBlock'] = None
 
+    logical_qubits_contib: Optional[float] = None
+    distillation_qubits_contrib: Optional[float] = None
+
     @property
     def qubit_hours(self) -> float:
         return self.footprint * self.duration_hr
