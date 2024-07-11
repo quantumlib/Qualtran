@@ -77,14 +77,16 @@ class ZPowGate(CirqGateAsBloqBase):
     """
 
     exponent: SymbolicFloat = 1.0
-    global_shift: float = 0.0
-    eps: float = 1e-11
+    global_shift: SymbolicFloat = 0.0
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
+        if isinstance(self.global_shift, sympy.Expr):
+            raise TypeError(f"cirq.ZPowGate does not support symbolic {self.global_shift=}")
         return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def __pow__(self, power):

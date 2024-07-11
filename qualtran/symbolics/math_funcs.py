@@ -38,6 +38,19 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
     return log2(x)
 
 
+def sexp(x: SymbolicComplex) -> SymbolicComplex:
+    if isinstance(x, sympy.Basic):
+        return sympy.exp(x)
+    return np.exp(x)
+
+
+def sarg(x: SymbolicComplex) -> SymbolicFloat:
+    r"""Argument $t$ of a complex number $r e^{i t}$"""
+    if isinstance(x, sympy.Basic):
+        return sympy.arg(x)
+    return float(np.angle(x))
+
+
 def sabs(x: SymbolicFloat) -> SymbolicFloat:
     return cast(SymbolicFloat, abs(x))
 
