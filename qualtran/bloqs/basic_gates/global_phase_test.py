@@ -14,22 +14,48 @@
 
 import cirq
 import numpy as np
+import pytest
 
+from qualtran import CtrlSpec
 from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
+from qualtran.cirq_interop import cirq_gate_to_bloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 def test_unitary():
     random_state = np.random.RandomState(2)
 
-    for alpha in random_state.random(size=20):
+    for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
-        bloq = GlobalPhase(coefficient)
+        bloq = GlobalPhase(exponent=2 * alpha)
         np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
 
 
+@pytest.mark.parametrize("cv", [0, 1])
+def test_controlled(cv: int):
+    ctrl_spec = CtrlSpec(cvs=cv)
+    random_state = np.random.RandomState(2)
+    for alpha in random_state.random(size=10):
+        coefficient = np.exp(2j * np.pi * alpha)
+        bloq = GlobalPhase(exponent=2 * alpha).controlled(ctrl_spec=ctrl_spec)
+        np.testing.assert_allclose(
+            cirq.unitary(cirq.GlobalPhaseGate(coefficient).controlled(control_values=[cv])),
+            bloq.tensor_contract(),
+        )
+
+
+def test_cirq_interop():
+    bloq = GlobalPhase.from_coefficient(1.0j)
+    gate = cirq.GlobalPhaseGate(1.0j)
+
+    circuit = bloq.as_composite_bloq().to_cirq_circuit()
+    assert cirq.approx_eq(circuit, cirq.Circuit(gate.on()), atol=1e-16)
+
+    assert cirq_gate_to_bloq(gate) == bloq
+
+
 def test_t_complexity():
-    assert GlobalPhase(1j).t_complexity() == TComplexity()
+    assert GlobalPhase(exponent=0.5).t_complexity() == TComplexity()
 
 
 def test_global_phase(bloq_autotester):

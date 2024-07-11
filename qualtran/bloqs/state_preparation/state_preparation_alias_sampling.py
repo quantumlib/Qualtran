@@ -67,8 +67,9 @@ class StatePreparationAliasSampling(PrepareOracle):
     Note that the temporary register must be treated with care, see the details in Section III.D.
     of the reference.
 
-    The preparation is equivalent to [classical alias sampling]
-    (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
+    This construction is designed to work specifically when you don't require specific phases,
+    and the problem is reduced to [classical alias sampling]
+    (https://en.wikipedia.org/wiki/Alias_method). We sample `l` with probability `p[l]` by first
     selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
 

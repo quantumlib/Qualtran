@@ -278,9 +278,7 @@ def test_call_graph_matches_decomp(global_phase, control_val):
 
     def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
         # Hack to catch the fact that cirq special cases some ZPowGates
-        if isinstance(bloq, ZPowGate) and np.isclose(
-            float(bloq.exponent), np.angle(global_phase) / np.pi
-        ):
+        if isinstance(bloq, ZPowGate) and np.any(np.isclose(float(bloq.exponent), [0.5, -0.5])):
             # we're already ignoring cliffords
             return None
         return bloq
@@ -288,15 +286,15 @@ def test_call_graph_matches_decomp(global_phase, control_val):
     gate = ReflectionUsingPrepare(
         prepare_gate, global_phase=global_phase, eps=eps, control_val=control_val
     )
-    cost_decomp = gate.decompose_bloq().call_graph(
+    _, cost_decomp = gate.decompose_bloq().call_graph(
         generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
-    )[1]
-    cost_call = gate.call_graph(
+    )
+    _, cost_call = gate.call_graph(
         generalizer=[
             ignore_split_join,
             ignore_alloc_free,
             ignore_cliffords,
             catch_zpow_bloq_s_gate_inv,
         ]
-    )[1]
+    )
     assert cost_decomp == cost_call
