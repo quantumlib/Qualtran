@@ -176,16 +176,18 @@ def sub_bit_prec_from_epsilon(
         \mu = \lceil \log(\frac{1}{L \epsilon}) \rceil
     $$
 
+    Note:
+        For Alias Sampling to work, we need to sample at least one bit to
+        compare against the `keep` values.
+
     Args:
         number_of_coefficients: number of probabilities $L$.
         precision: precision $\epsilon$ to approximate the normalized probabilities
                    $w_l / \lambda$ in alias sampling.
     """
     mu = ceil(log2(1 / (precision * number_of_coefficients)))
-    if not is_symbolic(mu) and mu < 0:
-        raise ValueError(
-            f"{precision=} is too low for alias sampling {number_of_coefficients} coeffs"
-        )
+    if not is_symbolic(mu) and mu < 1:
+        return 1
     return mu
 
 
@@ -247,6 +249,8 @@ def preprocess_probabilities_for_reversible_sampling(
     if sub_bit_precision is None:
         assert epsilon is not None  # make mypy happy
         sub_bit_precision = sub_bit_prec_from_epsilon(len(unnormalized_probabilities), epsilon)
+    if sub_bit_precision <= 0:
+        raise ValueError(f"{sub_bit_precision=} must be at least 1")
 
     numerators, denominator = _discretize_probability_distribution(
         unnormalized_probabilities, sub_bit_precision

@@ -17,6 +17,8 @@
 import random
 import unittest
 
+import pytest
+
 from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
@@ -165,3 +167,8 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
         self.assertEqual(
             self.assertPreprocess([1, 2, 3], epsilon=0.01), ([2, 1, 2], [32, 0, 0], 64)
         )
+
+
+def test_raises_on_mu_zero():
+    with pytest.raises(ValueError):
+        preprocess_probabilities_for_reversible_sampling([1, 2, 3, 4], sub_bit_precision=0)
