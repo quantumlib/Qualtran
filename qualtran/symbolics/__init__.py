@@ -29,6 +29,7 @@ from qualtran.symbolics.math_funcs import (
     slen,
     smax,
     smin,
+    ssqrt,
     ssum,
 )
 from qualtran.symbolics.types import (
