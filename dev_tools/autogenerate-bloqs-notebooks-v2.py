@@ -88,9 +88,12 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
+import qualtran.bloqs.qft.qft_phase_gradient
+import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
@@ -487,6 +490,16 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qft.approximate_qft,
         bloq_specs=[qualtran.bloqs.qft.approximate_qft._CC_AQFT_DOC],
     ),
+    NotebookSpecV2(
+        title='Textbook QFT',
+        module=qualtran.bloqs.qft.qft_text_book,
+        bloq_specs=[qualtran.bloqs.qft.qft_text_book._QFT_TEXT_BOOK_DOC],
+    ),
+    NotebookSpecV2(
+        title='Phase Gradient QFT',
+        module=qualtran.bloqs.qft.qft_phase_gradient,
+        bloq_specs=[qualtran.bloqs.qft.qft_phase_gradient._QFT_PHASE_GRADIENT_DOC],
+    ),
     # --------------------------------------------------------------------------
     # -----   Phase Estimation          ----------------------------------------
     # --------------------------------------------------------------------------
@@ -544,7 +557,12 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Apply to Lth Target',
         module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
-        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLY_TO_LTH_TARGET_DOC],
+    ),
+    NotebookSpecV2(
+        title='Apply Lth Bloq',
+        module=qualtran.bloqs.multiplexers.apply_lth_bloq,
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_lth_bloq._APPLY_LTH_BLOQ_DOC],
     ),
     NotebookSpecV2(
         title='QROM',
@@ -572,6 +590,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
             qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
             qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
+            qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),

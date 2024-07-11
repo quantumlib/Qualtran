@@ -38,13 +38,29 @@ def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_sparse_state_prep_alias)
 
 
+def test_mu_from_precision():
+    coeffs = [1.0, 1, 3, 2]
+    mu = 3
+    bloq = StatePreparationAliasSampling.from_probabilities(
+        coeffs, precision=2**-mu / len(coeffs) * sum(coeffs)
+    )
+    assert bloq.mu == mu
+
+
+def test_mu_from_symbolic_precision():
+    L, qlambda, mu = sympy.symbols(r"L \lambda \mu", integer=True)
+    bloq = StatePreparationAliasSampling.from_n_coeff(L, qlambda, precision=2**-mu / L * qlambda)
+    assert sympy.simplify(bloq.mu) == mu
+
+
 def test_state_prep_alias_sampling_symb():
     bloq = _state_prep_alias_symb.make()
     L, logL, log_eps_inv = bloq.n_coeff, bloq.selection_bitsize, bloq.mu
-    # Scales as 4l + O(logL) + O(log(1 / eps))
+    # Scales as 4L + O(logL) + O(log(1 / eps))
     expected_t_count_expr = 4 * L + 8 * log_eps_inv + 19 * logL - 8
     assert isinstance(expected_t_count_expr, sympy.Expr)
     assert bloq.t_complexity().t == expected_t_count_expr
+
     # Compare bloq counts via expression to actual bloq counts and make sure they
     # are "close enough".
     # The discrepency here comes from the fact that symbolic counts of
@@ -52,27 +68,36 @@ def test_state_prep_alias_sampling_symb():
     # of dividing `n` by the highest power of `2` at resolution time.
     N, epsilon = 2**16 - 1, 1e-4
     random_state = cirq.value.parse_random_state(1234)
-    lcu_coefficients = random_state.randn(N).astype(float)
-    bloq_concrete = StatePreparationAliasSampling.from_lcu_probs(
-        lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+    lcu_coefficients = np.abs(random_state.randn(N).astype(float))
+    bloq_concrete = StatePreparationAliasSampling.from_probabilities(
+        unnormalized_probabilities=lcu_coefficients.tolist(), precision=epsilon
     )
     concrete_t_counts = bloq_concrete.t_complexity().t
     # Symbolic T-counts
-    symb_t_counts = int(expected_t_count_expr.subs({L: N, sympy.Symbol(r"\epsilon"): epsilon}))
-    np.testing.assert_allclose(concrete_t_counts, symb_t_counts, rtol=1e-4)
+    symb_t_counts = int(
+        expected_t_count_expr.subs(
+            {
+                L: N,
+                sympy.Symbol(r"\lambda"): sum(abs(lcu_coefficients)),
+                sympy.Symbol(r"\epsilon"): epsilon,
+            }
+        )
+    )
+    np.testing.assert_allclose(concrete_t_counts, symb_t_counts, rtol=5e-4)
 
 
 def assert_state_preparation_valid_for_coefficient(
     lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False, atol: float = 1e-6
 ):
     gate: Bloq
+    coeff_precision = epsilon * np.sum(np.abs(lcu_coefficients))
     if sparse:
         gate = SparseStatePreparationAliasSampling.from_dense_probabilities(
-            unnormalized_probabilities=lcu_coefficients.tolist(), precision=epsilon
+            unnormalized_probabilities=lcu_coefficients.tolist(), precision=coeff_precision
         )
     else:
-        gate = StatePreparationAliasSampling.from_lcu_probs(
-            lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
+        gate = StatePreparationAliasSampling.from_probabilities(
+            unnormalized_probabilities=lcu_coefficients.tolist(), precision=coeff_precision
         )
 
     assert_valid_bloq_decomposition(gate)
@@ -120,8 +145,8 @@ def test_state_preparation_via_coherent_alias_for_0_mu():
 
 def test_state_preparation_via_coherent_alias_sampling_diagram():
     data = np.asarray(range(1, 5)) / np.sum(range(1, 5))
-    gate = StatePreparationAliasSampling.from_lcu_probs(
-        lcu_probabilities=data.tolist(), probability_epsilon=0.05
+    gate = StatePreparationAliasSampling.from_probabilities(
+        unnormalized_probabilities=data.tolist(), precision=0.05
     )
     g = GateHelper(gate)
     qubit_order = g.operation.qubits
