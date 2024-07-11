@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,16 @@ import pytest
 import sympy
 
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, XGate, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import (
+    CNOT,
+    Hadamard,
+    IntEffect,
+    IntState,
+    TGate,
+    XGate,
+    ZeroEffect,
+    ZeroState,
+)
 from qualtran.bloqs.block_encoding.product import (
     _product_block_encoding,
     _product_block_encoding_properties,
@@ -28,11 +37,14 @@ from qualtran.bloqs.block_encoding.product import (
     Product,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 
 def test_product(bloq_autotester):
     bloq_autotester(_product_block_encoding)
+    bloq_autotester(_product_block_encoding_properties)
+    bloq_autotester(_product_block_encoding_symb)
 
 
 def test_product_signature():
@@ -40,7 +52,7 @@ def test_product_signature():
         [Register("system", QAny(1)), Register("ancilla", QAny(1))]
     )
     assert _product_block_encoding_properties().signature == Signature(
-        [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(2))]
+        [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(1))]
     )
     assert _product_block_encoding_symb().signature == Signature(
         [
@@ -70,7 +82,7 @@ def test_product_params():
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
     assert bloq.ancilla_bitsize == max(2, 1) + 1
-    assert bloq.resource_bitsize == 1 + 1
+    assert bloq.resource_bitsize == max(1, 1)
 
     bloq = _product_block_encoding_symb()
     assert bloq.system_bitsize == 1
@@ -109,15 +121,13 @@ def test_product_single_tensors():
 def test_product_properties_tensors():
     bb = BloqBuilder()
     system = bb.add_register("system", 1)
-    ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState()), bb.add(ZeroState())]))
-    resource = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
+    ancilla = cast(Soquet, bb.add(IntState(0, 3)))
+    resource = cast(Soquet, bb.add(ZeroState()))
     system, ancilla, resource = bb.add_t(
         _product_block_encoding_properties(), system=system, ancilla=ancilla, resource=resource
     )
-    for q in bb.split(cast(Soquet, ancilla)):
-        bb.add(ZeroEffect(), q=q)
-    for q in bb.split(cast(Soquet, resource)):
-        bb.add(ZeroEffect(), q=q)
+    bb.add(ZeroEffect(), q=resource)
+    bb.add(IntEffect(0, 3), val=ancilla)
     bloq = bb.finalize(system=system)
 
     from_gate = np.matmul(TGate().tensor_contract(), Hadamard().tensor_contract())
@@ -141,3 +151,24 @@ def test_product_cirq():
     initial_state = [0, 0, 0]
     final_state = [1, 0, 0]
     assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
+
+
+def test_product_random():
+    random_state = np.random.RandomState(1234)
+
+    for _ in range(10):
+        n = random_state.randint(3, 6)
+        bitsize = random_state.randint(1, 3)
+        gates = [MatrixGate.random(bitsize, random_state=random_state) for _ in range(n)]
+
+        bloq = Product(tuple(Unitary(gate) for gate in gates))
+        bb = BloqBuilder()
+        system = bb.add_register("system", cast(int, bloq.system_bitsize))
+        ancilla = cast(Soquet, bb.add(IntState(0, bloq.ancilla_bitsize)))
+        system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+        bb.add(IntEffect(0, cast(int, bloq.ancilla_bitsize)), val=ancilla)
+        bloq = bb.finalize(system=system)
+
+        from_gate = np.linalg.multi_dot(tuple(gate.tensor_contract() for gate in gates))
+        from_tensors = bloq.tensor_contract()
+        np.testing.assert_allclose(from_gate, from_tensors)
