@@ -17,6 +17,7 @@ from typing import Dict
 
 import cirq
 import numpy as np
+import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
@@ -31,6 +32,15 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 def test_partition(bloq_autotester):
     bloq_autotester(_partition)
+
+
+def test_partition_check():
+    with pytest.raises(ValueError):
+        _ = Partition(n=0, regs=())
+    with pytest.raises(ValueError):
+        _ = Partition(n=1, regs=(Register('x', QAny(2)),))
+    with pytest.raises(ValueError):
+        _ = Partition(n=2, regs=(Register('x', QAny(1)), Register('x', QAny(3))))
 
 
 @frozen
