@@ -168,6 +168,18 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
             self.assertPreprocess([1, 2, 3], epsilon=0.01), ([2, 1, 2], [32, 0, 0], 64)
         )
 
+    def test_low_precision(self):
+        """Test for a high value of `epsilon` to verify that `mu` is at least `1`."""
+        n = 10
+        epsilon = 1 / n
+        expected_mu = 1
+        probabilities = [1 - 1 / n] + [1 / (n * (n - 1)) for _ in range(n - 1)]
+
+        self.assertEqual(
+            self.assertPreprocess(probabilities, epsilon=epsilon),
+            ([0 for _ in range(n)], [1 if i in [3, 7] else 0 for i in range(n)], 2**expected_mu),
+        )
+
 
 def test_raises_on_mu_zero():
     with pytest.raises(ValueError):
