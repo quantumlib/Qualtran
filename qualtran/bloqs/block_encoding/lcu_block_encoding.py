@@ -75,7 +75,7 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register(name='system', dtype=QAny(_total_bits(self.select.selection_registers))),)
+        return (Register(name='system', dtype=QAny(_total_bits(self.select.target_registers))),)
 
     @cached_property
     def signature(self) -> Signature:
