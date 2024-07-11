@@ -16,13 +16,39 @@ import pytest
 import sympy
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.symbolics import bit_length, ceil, is_symbolic, log2, Shaped, slen, smax, smin
+from qualtran.symbolics import (
+    bit_length,
+    ceil,
+    is_symbolic,
+    log2,
+    sarg,
+    sexp,
+    Shaped,
+    slen,
+    smax,
+    smin,
+)
 
 
 def test_log2():
     assert log2(sympy.Symbol('x')) == sympy_log2(sympy.Symbol('x'))
     assert log2(sympy.Number(10)) == sympy_log2(sympy.Number(10))
     assert log2(10) == np.log2(10)
+
+
+def test_sexp():
+    x = sympy.Symbol('x')
+    assert sexp(4) == np.exp(4)
+    assert sexp(x) == sympy.exp(x)
+    assert sexp(sympy.pi * sympy.I / 2) == sympy.I
+
+
+def test_sarg():
+    z = sympy.Symbol('z')
+    assert sarg(4) == 0
+    assert sarg(1j) == np.pi / 2
+    assert sarg(z) == sympy.arg(z)
+    assert sarg(sympy.I) == sympy.pi / 2
 
 
 def test_ceil():

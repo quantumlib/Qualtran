@@ -159,7 +159,7 @@ class LPResourceState(GateWithRegisters):
 
         # Reset ancilla to |0> state.
         yield [XGate().on(flag), XGate().on(anc)]
-        yield GlobalPhase(1j).on()
+        yield GlobalPhase(exponent=0.5).on()
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -173,7 +173,7 @@ class LPResourceState(GateWithRegisters):
             (Ry(angle=flag_angle), 3),
             (MultiControlPauli(cvs, target_gate=cirq.Z), 1),
             (XGate(), 4),
-            (GlobalPhase(1j), 1),
+            (GlobalPhase(exponent=0.5), 1),
             (CZPowGate(), 1),
         }
 

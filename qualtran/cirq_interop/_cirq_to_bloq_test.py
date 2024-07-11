@@ -228,4 +228,4 @@ def test_cirq_gate_as_bloq_decompose_raises():
 
 
 def test_cirq_gate_as_bloq_diagram_info():
-    assert cirq.circuit_diagram_info(GlobalPhase(1j)) is None
+    assert cirq.circuit_diagram_info(GlobalPhase(exponent=0.5)) is None
