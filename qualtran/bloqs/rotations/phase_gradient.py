@@ -82,8 +82,7 @@ class PhaseGradientUnitary(GateWithRegisters):
     Costs:
         qubits: 0 ancilla qubits are allocated.
         T-gates: Only uses 1 T gate explicitly but does rely on more costly Z rotations.
-        rotations: Uses $n$ rotations of varying angles. The least accurate rotation is
-            a single T gate (an angle of 1/2) and the most accurate rotation has an angle of $1/2^n$.
+        rotations: Uses $n$ rotations with angles varying from 1/2 (for a single T-gate) to 1/(2^n).
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
