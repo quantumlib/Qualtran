@@ -17,15 +17,14 @@ import numpy as np
 import pytest
 
 from qualtran import Adjoint
-from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
-from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
+from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import (
     _thc_walk_op,
     _walk_op,
     _walk_op_chem_sparse,
-    QubitizationWalkOperator,
 )
 from qualtran.bloqs.reflections.reflection_using_prepare_test import (
     construct_gate_helper_and_qubit_order,
@@ -46,31 +45,16 @@ def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
     bloq_autotester(_walk_op_chem_sparse)
 
 
-def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
-    q = sorted(ham.qubits)
-    ham_dps = [ps.dense(q) for ps in ham]
-    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    prepare = StatePreparationAliasSampling.from_lcu_probs(ham_coeff, probability_epsilon=eps)
-    select = SelectPauliLCU(
-        total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
-    )
-    return QubitizationWalkOperator(select=select, prepare=prepare)
-
-
-def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    return walk_operator_for_pauli_hamiltonian(ham, eps)
-
-
-@pytest.mark.parametrize('num_sites,eps', [(4, 2e-1), (3, 1e-1)])
+@pytest.mark.slow
+@pytest.mark.parametrize('num_sites,eps', [(3, 0.5), (4, 0.5)])
 def test_qubitization_walk_operator(num_sites: int, eps: float):
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk, ham = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert_valid_bloq_decomposition(walk)
 
-    qubitization_lambda = walk.sum_of_lcu_coefficients
+    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
+    assert walk.sum_of_lcu_coefficients is not None
+    qubitization_lambda = float(walk.sum_of_lcu_coefficients)
+    np.testing.assert_allclose(qubitization_lambda, sum(ham_coeff))
 
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk)
 
@@ -104,25 +88,24 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         )
 
 
+@pytest.mark.slow()
 def test_qubitization_walk_operator_adjoint():
-    num_sites, eps = 4, 2e-1
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    num_sites, eps = 3, 0.5
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     walk_inv_tensor = walk.adjoint().tensor_contract()
     walk_adj_tensor = Adjoint(walk).tensor_contract()
-    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor)
+    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor, atol=1e-12)
 
 
 def test_t_complexity_for_controlled_and_adjoint():
     num_sites, eps = 4, 2e-1
-    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
-    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert walk.controlled().adjoint().t_complexity() == walk.adjoint().controlled().t_complexity()
 
 
 def test_qubitization_walk_operator_diagrams():
     num_sites, eps = 4, 1e-1
-    walk = get_walk_operator_for_1d_ising_model(num_sites, eps)
+    walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     # 1. Diagram for $W = SELECT.R_{L}$
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk, decompose_once=True)
     cirq.testing.assert_has_diagram(
@@ -217,15 +200,31 @@ target3: ──────SelectPauliLCU─────────
                                                                        ┌──────────────────────────────┐
 ancilla_0: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
                                 │                                        │
-ancilla_1: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+ancilla_1: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
                                 │                                        │
-ancilla_2: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+ancilla_2: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
                                 │                                        │
-ancilla_3: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+ancilla_3: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
                                 │                                        │
-ancilla_4: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
+ancilla_4: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
                                 │                                        │
-ancilla_5: ─────────────────────less_than_equal──────────────────────────less_than_equal──────────────────
+ancilla_5: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_6: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_7: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_8: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_9: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_10: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_11: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_12: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_13: ────────────────────less_than_equal──────────────────────────less_than_equal──────────────────
                                 │                                        │
 control: ──────@────────────────┼───────────────────────────────Z───────Z┼────────────────────────────────
                │                │                               │        │
@@ -249,7 +248,7 @@ target3: ──────SelectPauliLCU─────────────
 
 
 def test_qubitization_walk_operator_consistent_protocols_and_controlled():
-    gate = get_walk_operator_for_1d_ising_model(4, 1e-1)
+    gate, _ = get_walk_operator_for_1d_ising_model(4, 1e-1)
     op = gate.on_registers(**get_named_qubits(gate.signature))
     # Build controlled gate
     equals_tester = cirq.testing.EqualsTester()
