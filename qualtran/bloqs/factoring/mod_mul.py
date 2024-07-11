@@ -113,7 +113,7 @@ class CtrlModMul(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(f'x *= {self.k} % {self.mod}')
+            return Text(f'mod {self.mod}')
         if reg.name == 'ctrl':
             return Circle(filled=True)
         if reg.name == 'x':
