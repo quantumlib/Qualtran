@@ -82,8 +82,8 @@ class PhaseGradientUnitary(GateWithRegisters):
     Costs:
         qubits: 0 ancilla qubits are allocated.
         T-gates: Only uses 1 T gate explicitly but does rely on more costly Z rotations.
-        rotations: Uses $n$ rotations of varying angles. The lowest accuracy rotation is
-            a single T gate and the most accurate rotation has an angle of $1/2^n$.
+        rotations: Uses $n$ rotations of varying angles. The least accurate rotation is
+            a single T gate (an angle of 1/2) and the most accurate rotation has an angle of $1/2^n$.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
@@ -111,10 +111,6 @@ class PhaseGradientUnitary(GateWithRegisters):
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
         for i, q in enumerate(quregs['phase_grad']):
-            print(
-                "[decompose_from_registers] gate: ",
-                gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize),
-            )
             yield gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize).on(*ctrl, q)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
