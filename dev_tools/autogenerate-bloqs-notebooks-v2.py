@@ -88,6 +88,7 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
@@ -544,7 +545,12 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Apply to Lth Target',
         module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
-        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLY_TO_LTH_TARGET_DOC],
+    ),
+    NotebookSpecV2(
+        title='Apply Lth Bloq',
+        module=qualtran.bloqs.multiplexers.apply_lth_bloq,
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_lth_bloq._APPLY_LTH_BLOQ_DOC],
     ),
     NotebookSpecV2(
         title='QROM',
