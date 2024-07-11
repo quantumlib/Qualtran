@@ -754,7 +754,7 @@ class LinearDepthGreaterThan(Bloq):
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = np.asarray([a, b])
-            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
+            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), controls=ctrls, target=target)
             a, b = ctrls
             # Return the output registers.
             return {'a': a, 'b': b, 'target': target}
