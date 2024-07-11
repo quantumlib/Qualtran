@@ -14,8 +14,9 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
-from qualtran.bloqs.qft.qft_text_book import QFTTextBook
+from qualtran.bloqs.qft.qft_text_book import _qft_text_book, _symbolic_qft, QFTTextBook
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -50,3 +51,19 @@ def test_qft_text_book_t_complexity(n: int):
     qft_t_complexity = qft_bloq.t_complexity()
     assert qft_t_complexity.rotations == (n * (n - 1)) // 2
     assert qft_t_complexity.t == 0
+
+
+def test_qft_text_book_t_complexity_symbolic():
+    n = sympy.symbols('n')
+    qft_bloq = QFTTextBook(bitsize=n)
+    qft_t_complexity = qft_bloq.t_complexity()
+    assert qft_t_complexity.rotations == (n - 1) * (n // 2)
+    assert qft_t_complexity.t == 0
+
+
+def test_qft_text_book_auto(bloq_autotester):
+    bloq_autotester(_qft_text_book)
+
+
+def test_symbolic_qft_auto(bloq_autotester):
+    bloq_autotester(_symbolic_qft)

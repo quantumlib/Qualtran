@@ -88,6 +88,8 @@ Bloqs Library
     rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
+    qft/qft_text_book.ipynb
+    qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization/qubitization_walk_operator.ipynb
