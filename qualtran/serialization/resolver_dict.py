@@ -93,6 +93,7 @@ import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
@@ -303,6 +304,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
+    "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq": qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq,
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
