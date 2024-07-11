@@ -14,9 +14,10 @@
 r"""High level bloqs for defining bloq encodings and operations on block encodings."""
 
 from functools import cached_property
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import attrs
+import cirq
 
 from qualtran import (
     Bloq,
@@ -24,18 +25,20 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     QAny,
+    QBit,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.symbolics import SymbolicFloat
 
 
-def _total_bits(registers: Tuple[Register, ...]) -> int:
+def _total_bits(registers: Union[Tuple[Register, ...], Signature]) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
 
@@ -66,6 +69,12 @@ class BlackBoxSelect(Bloq):
 
     def pretty_name(self) -> str:
         return 'SELECT'
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return (
+            () if len(self.select.control_registers) > 0 else Register(name='control', dtype=QBit())
+        )
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -188,7 +197,7 @@ class BlackBoxPrepare(Bloq):
 
 
 @attrs.frozen
-class LCUBlockEncoding(BlockEncoding):
+class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledGate):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the block encoding via
@@ -245,6 +254,11 @@ class LCUBlockEncoding(BlockEncoding):
     epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+    control_val: Optional[int] = None
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.select.control_registers
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -258,9 +272,19 @@ class LCUBlockEncoding(BlockEncoding):
     def target_registers(self) -> Tuple[Register, ...]:
         return self.select.target_registers
 
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
+        return Signature(
+            [
+                *self.control_registers,
+                *self.selection_registers,
+                *self.junk_registers,
+                *self.target_registers,
+            ]
+        )
 
     @cached_property
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
@@ -271,9 +295,16 @@ class LCUBlockEncoding(BlockEncoding):
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ['@' if self.control_val else '@(0)'] * _total_bits(self.control_registers)
+        wire_symbols += ['B[H]'] * (
+            _total_bits(self.signature) - _total_bits(self.control_registers)
+        )
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
 
 @attrs.frozen
-class LCUBlockEncodingZeroState(BlockEncoding):
+class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledGate):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the standard block encoding from an LCU as
@@ -329,6 +360,11 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+    control_val: Optional[int] = None
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.select.control_registers
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -344,7 +380,17 @@ class LCUBlockEncodingZeroState(BlockEncoding):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
+        return Signature(
+            [
+                *self.control_registers,
+                *self.selection_registers,
+                *self.junk_registers,
+                *self.target_registers,
+            ]
+        )
+
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
 
     @cached_property
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:

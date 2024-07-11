@@ -15,12 +15,14 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 from qualtran.bloqs.chemistry.thc import PrepareTHC, SelectTHC
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 
 
 def get_walk_operator_for_thc_ham(
     tpq: NDArray,
+    eta: NDArray,
     zeta: NDArray,
     num_bits_state_prep: int,
     num_bits_theta: int,
@@ -31,6 +33,7 @@ def get_walk_operator_for_thc_ham(
 
     Args:
         tpq: Modified one-body hamiltonian.
+        eta: THC leaf tensors.
         zeta: THC central tensor.
         num_bits_state_prep: The number of bits for the state prepared during alias sampling.
         num_bits_theta: Number of bits of precision for the rotations. Called
@@ -44,8 +47,16 @@ def get_walk_operator_for_thc_ham(
     """
     t_l, _ = np.linalg.eigh(tpq)
     prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep)
+    overlap = eta.dot(eta.T)
+    norm_fac = np.diag(np.diag(overlap))
+    zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
+    lambda_t = np.sum(np.abs(t_l))  # Eq. 19
+    lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
     num_mu = zeta.shape[-1]
     num_spin_orb = 2 * tpq.shape[-1]
     sel = SelectTHC(num_mu, num_spin_orb, num_bits_theta, prep.keep_bitsize, kr1=kr1, kr2=kr2)
-    walk_op = QubitizationWalkOperator(select=sel, prepare=prep)
+    block_encoding = LCUBlockEncoding(
+        alpha=lambda_t + lambda_z, epsilon=1e-3, select=sel, prepare=prep
+    )
+    walk_op = QubitizationWalkOperator(block_encoding=block_encoding)
     return walk_op

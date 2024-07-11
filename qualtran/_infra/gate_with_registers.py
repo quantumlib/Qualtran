@@ -529,7 +529,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-class SpecializedSingleQubitControlledGate(GateWithRegisters):
+class SpecializedSingleQubitControlledGate(Bloq):
     """Add a specialized single-qubit controlled version of a Bloq.
 
     `control_val` is an optional single-bit control. When `control_val` is provided,
@@ -571,7 +571,7 @@ class SpecializedSingleQubitControlledGate(GateWithRegisters):
             cbloq = self.get_single_qubit_controlled_bloq(control_val)
 
             if not hasattr(cbloq, 'control_registers'):
-                raise TypeError("{cbloq} should have attribute `control_registers`")
+                raise TypeError(f"{cbloq} should have attribute `control_registers`")
 
             (ctrl_reg,) = cbloq.control_registers
 
