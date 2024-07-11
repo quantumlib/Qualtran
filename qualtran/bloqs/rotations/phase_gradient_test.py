@@ -19,11 +19,11 @@ import pytest
 
 from qualtran import BloqBuilder, QFxp
 from qualtran.bloqs.rotations.phase_gradient import (
+    _phase_gradient_unitary_symbolic,
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
     PhaseGradientState,
     PhaseGradientUnitary,
-    _phase_gradient_unitary_symbolic,
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition

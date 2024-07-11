@@ -20,7 +20,7 @@ import pytest
 import sympy
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.qft.qft_phase_gradient import QFTPhaseGradient, _qft_phase_gradient_small
+from qualtran.bloqs.qft.qft_phase_gradient import _qft_phase_gradient_small, QFTPhaseGradient
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.symbolics.math_funcs import smax
 from qualtran.testing import assert_valid_bloq_decomposition

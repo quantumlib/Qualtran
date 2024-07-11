@@ -77,7 +77,7 @@ class PhaseGradientUnitary(GateWithRegisters):
         exponent: $t$ in the above expression for $\omega_{n, t}$, a multiplicative factor
             for the phases applied to each state. Defaults to 1.0.
         is_controlled: `bool` which determines if the unitary is controlled via a `ctrl` register.
-        eps: The precision for the underlying `ZPowGates`.
+        eps: The precision for the total unitary, each underlying rotation is synthesized to a precision of `eps` / `bitsize`.
 
     Costs:
         qubits: 0 ancilla qubits are allocated.
