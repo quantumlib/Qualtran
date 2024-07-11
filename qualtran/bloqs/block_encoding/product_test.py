@@ -33,6 +33,8 @@ from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 def test_product(bloq_autotester):
     bloq_autotester(_product_block_encoding)
+    bloq_autotester(_product_block_encoding_properties)
+    bloq_autotester(_product_block_encoding_symb)
 
 
 def test_product_signature():
