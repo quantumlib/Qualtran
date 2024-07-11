@@ -41,15 +41,25 @@ class Unused:
 
 @frozen
 class AutoPartition(Bloq):
-    """Wrap a bloq with `Partition` to fit an alternative set of input and output registers
-       such that splits / joins can be avoided in diagrams.
+    """Automatically adds and undoes `Partition` of registers to match the signature of a sub-bloq.
+
+    This tool enables using a bloq in a context expecting an alternative signature that combines
+    registers in the bloq's signature or operates over more registers than the bloq does.
+    For example, it can adapt a bloq exposing multiple selection registers to a quantum interface
+    that expects only one unified selection register.
+
+    Wrapping in `AutoPartition` also hides splits and joins behind a level of decomposition, which
+    can produce more helpful circuit diagrams compared to manually splitting and joining.
 
     Args:
-        bloq: The bloq to wrap.
-        partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
-            and the names of registers from `bloq.signature.lefts()` that concatenate to form it.
-            If the bloq being wrapped does not use a portion of the register being exposed, an
-            instance of `Unused(n)` may be used in place of a register name from the bloq signature.
+        bloq: The sub-bloq to wrap. Its register names are used within the second items in each
+            pair in the `partitions` argument below.
+        partitions: A sequence of pairs specifying each register that is exposed in the external
+            signature of the `AutoPartition` and its relationship to the registers of `bloq`. The
+            first element of each pair is a `Register` exposed externally. The second is a list of
+            register names of `bloq` that concatenate to form the externally exposed register.
+            If `bloq` does not operate on some portion (of `n` bits) of the externally exposed
+            register, the sentinel value `Unused(n)` can be used in place of a register name.
         left_only: If False, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
             This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,

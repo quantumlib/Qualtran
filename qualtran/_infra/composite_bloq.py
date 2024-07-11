@@ -1026,11 +1026,9 @@ class BloqBuilder:
 
         Args:
             bloq: The bloq representing the operation to add.
-            partitions: A sequence of pairs specifying each register that the wrapped bloq should
-                accept and the register names from `bloq.signature.lefts()` that concatenate to
-                form it. If the bloq being wrapped does not use a portion of the register being
-                exposed, an instance of `Unused(n)` may be used in place of a register name from the
-                bloq signature.
+            partitions: A sequence of pairs specifying each register that is exposed in the external
+                signature of the `AutoPartition` and the corresponding register names from `bloq`
+                that concatenate to form the externally exposed register. See `AutoPartition`.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
                 This flag must be set to True if `bloq` does not have the same LEFT and RIGHT
