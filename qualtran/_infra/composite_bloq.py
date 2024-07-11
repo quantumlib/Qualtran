@@ -1029,7 +1029,7 @@ class BloqBuilder:
             partitions: A sequence of pairs specifying each register that the wrapped bloq should
                 accept and the register names from `bloq.signature.lefts()` that concatenate to
                 form it. If the bloq being wrapped does not use a portion of the register being
-                exposed, an instance of `Unused` may be used in place of a register name from the
+                exposed, an instance of `Unused(n)` may be used in place of a register name from the
                 bloq signature.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
@@ -1045,18 +1045,6 @@ class BloqBuilder:
         from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 
         return self.add(AutoPartition(bloq, partitions, left_only), **in_soqs)
-
-    def add_d_and_partition(
-        self,
-        bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
-        left_only: bool = False,
-        **in_soqs: SoquetInT,
-    ) -> Dict[str, SoquetT]:
-        """Version of `add_and_partition` that returns a dictionary. See `BloqBuilder.add_d`."""
-        from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
-
-        return self.add_d(AutoPartition(bloq, partitions, left_only), **in_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.

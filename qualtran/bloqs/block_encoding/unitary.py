@@ -106,7 +106,10 @@ class Unitary(BlockEncoding):
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
         partitions = [(self.signature.get_left("system"), tuple(r.name for r in self.U.signature))]
-        return {**bb.add_d_and_partition(self.U, partitions=partitions, system=system), **soqs}
+        return {
+            "system": bb.add_and_partition(self.U, partitions=partitions, system=system),
+            **soqs,
+        }
 
 
 @bloq_example

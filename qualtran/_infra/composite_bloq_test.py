@@ -581,7 +581,7 @@ def test_add_and_partition():
     assert a is not None
     assert b is not None
     assert c is not None
-    out = bb.add_d_and_partition(
+    a, b, c = bb.add_and_partition(
         bloq,
         [
             (Register('a', QAny(8)), ['y', 'ctrl', Unused(1)]),
@@ -592,7 +592,7 @@ def test_add_and_partition():
         b=b,
         c=c,
     )
-    cbloq = bb.finalize(**out)
+    cbloq = bb.finalize(a=a, b=b, c=c)
     assert isinstance(cbloq, CompositeBloq)
     assert len(cbloq.bloq_instances) == 1
 

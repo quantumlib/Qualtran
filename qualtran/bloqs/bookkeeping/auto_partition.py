@@ -49,7 +49,7 @@ class AutoPartition(Bloq):
         partitions: A sequence of pairs specifying each register that the wrapped bloq should accept
             and the names of registers from `bloq.signature.lefts()` that concatenate to form it.
             If the bloq being wrapped does not use a portion of the register being exposed, an
-            instance of `Unused` may be used in place of a register name from the bloq signature.
+            instance of `Unused(n)` may be used in place of a register name from the bloq signature.
         left_only: If False, the output registers will also follow `partition`.
             Otherwise, the output registers will follow `bloq.signature.rights()`.
             This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
