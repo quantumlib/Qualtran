@@ -40,7 +40,7 @@ def test_partition_check():
     with pytest.raises(ValueError):
         _ = Partition(n=1, regs=(Register('x', QAny(2)),))
     with pytest.raises(ValueError):
-        _ = Partition(n=2, regs=(Register('x', QAny(1)), Register('x', QAny(3))))
+        _ = Partition(n=4, regs=(Register('x', QAny(1)), Register('x', QAny(3))))
 
 
 @frozen
