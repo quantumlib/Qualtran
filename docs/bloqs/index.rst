@@ -102,6 +102,7 @@ Bloqs Library
     state_preparation/prepare_uniform_superposition.ipynb
     chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
+    multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
     block_encoding/block_encoding.ipynb

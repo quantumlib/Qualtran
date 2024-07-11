@@ -21,5 +21,6 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     LCUBlockEncoding,
     LCUBlockEncodingZeroState,
 )
+from qualtran.bloqs.block_encoding.product import Product
 from qualtran.bloqs.block_encoding.tensor_product import TensorProduct
 from qualtran.bloqs.block_encoding.unitary import Unitary
