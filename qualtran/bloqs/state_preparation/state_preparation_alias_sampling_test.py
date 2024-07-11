@@ -31,6 +31,21 @@ def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
 
 
+def test_mu_from_precision():
+    coeffs = [1.0, 1, 3, 2]
+    mu = 3
+    bloq = StatePreparationAliasSampling.from_probabilities(
+        coeffs, precision=2**-mu / len(coeffs) * sum(coeffs)
+    )
+    assert bloq.mu == mu
+
+
+def test_mu_from_symbolic_precision():
+    L, qlambda, mu = sympy.symbols(r"L \lambda \mu", integer=True)
+    bloq = StatePreparationAliasSampling.from_n_coeff(L, qlambda, precision=2**-mu / L * qlambda)
+    assert bloq.mu.simplify() == mu
+
+
 def test_state_prep_alias_sampling_symb():
     bloq = _state_prep_alias_symb.make()
     L, logL, log_eps_inv = bloq.n_coeff, bloq.selection_bitsize, bloq.mu

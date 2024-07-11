@@ -17,7 +17,7 @@
 import math
 from typing import Optional, overload, Sequence
 
-from qualtran.symbolics import ceil, log2, smax, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 
 def _partial_sums(vals):
@@ -181,7 +181,12 @@ def sub_bit_prec_from_epsilon(
         precision: precision $\epsilon$ to approximate the normalized probabilities
                    $w_l / \lambda$ in alias sampling.
     """
-    return smax(0, ceil(log2(1.0 / (precision * number_of_coefficients))))
+    mu = ceil(log2(1 / (precision * number_of_coefficients)))
+    if not is_symbolic(mu) and mu < 0:
+        raise ValueError(
+            f"{precision=} is too low for alias sampling {number_of_coefficients} coeffs"
+        )
+    return mu
 
 
 def preprocess_probabilities_for_reversible_sampling(

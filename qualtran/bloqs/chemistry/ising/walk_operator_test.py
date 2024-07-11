@@ -20,7 +20,7 @@ from qualtran.bloqs.chemistry.ising.walk_operator import (
 )
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.linalg.lcu_util import sub_bit_prec_from_epsilon
-from qualtran.symbolics import ceil, log2, smax
+from qualtran.symbolics import ceil, log2
 
 
 def test_symbolic_precision_for_ising():
@@ -45,4 +45,4 @@ def test_symbolic_1d_ising_walk_op():
     mu = walk.prepare.mu
     assert isinstance(mu, sympy.Expr)
     # sympy limitation: unable to match exact expressions
-    assert str(mu.simplify()) == str(smax(0, ceil(log2(2.0 * eps + 2.0 / eps))))
+    assert str(mu.simplify()) == str(ceil(log2(2.0 * eps + 2.0 / eps)))
