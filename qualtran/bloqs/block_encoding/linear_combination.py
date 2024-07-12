@@ -35,9 +35,6 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, Bl
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
-    StatePreparationAliasSampling,
-)
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics import smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.types import is_symbolic
@@ -191,6 +188,13 @@ class LinearCombination(BlockEncoding):
             sub_bit_precision=cast(int, self.lambd_bits),
         )
         N = len(self.lambd)
+
+        # import here to avoid circular dependency of StatePreparationAliasSampling
+        # on PrepareOracle in qualtran.bloq.block_encoding
+        from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+            StatePreparationAliasSampling,
+        )
+
         # disable spurious pylint
         # pylint: disable=abstract-class-instantiated
         prep = StatePreparationAliasSampling(
@@ -240,7 +244,8 @@ class LinearCombination(BlockEncoding):
                 partitions.append((Register("resource", QAny(self.be_resource_bitsize)), regs))
             bloqs.append(AutoPartition(be, partitions, left_only=False))
 
-        # import here to avoid circular dependency of ApplyLthBloq on qualtran.bloqs.block_encoding
+        # import here to avoid circular dependency of ApplyLthBloq
+        # on SelectOracle in qualtran.bloqs.block_encoding
         from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
 
         return BlackBoxSelect(ApplyLthBloq(np.array(bloqs)))
