@@ -112,7 +112,7 @@ class Product(BlockEncoding):
 
     @cached_property
     def resource_bitsize(self) -> SymbolicInt:
-        return ssum(u.resource_bitsize for u in self.block_encodings)
+        return smax(u.resource_bitsize for u in self.block_encodings)
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
@@ -153,32 +153,22 @@ class Product(BlockEncoding):
         )
         n = len(self.block_encodings)
 
-        # partition ancilla into flag and individual ancilla
         if self.ancilla_bitsize > 0:
+            # partition ancilla into flag and inner ancilla
             anc_regs = []
             if n - 1 > 0:
-                flag_bits = Register("flag_bits", dtype=QBit(), shape=(n - 1,))  # type: ignore
-                anc_regs.append(flag_bits)
+                anc_regs.append(Register("flag_bits", dtype=QBit(), shape=(n - 1,)))
             anc_bits = self.ancilla_bitsize - (n - 1)
             if anc_bits > 0:
-                anc = Register("ancilla", dtype=QAny(anc_bits))
-                anc_regs.append(anc)
+                anc_regs.append(Register("ancilla", dtype=QAny(anc_bits)))
             anc_part = Partition(self.ancilla_bitsize, tuple(anc_regs))
             anc_part_soqs = bb.add_d(anc_part, x=soqs.pop("ancilla"))
             if n - 1 > 0:
                 flag_bits_soq = cast(NDArray, anc_part_soqs.pop("flag_bits"))
             if anc_bits > 0:
-                anc_soq = cast(Soquet, anc_part_soqs.pop("ancilla"))
-
-        # partition resource into individual resource
+                anc_soq = anc_part_soqs.pop("ancilla")
         if self.resource_bitsize > 0:
-            res_regs = tuple(
-                Register(f"resource{i}", dtype=QAny(u.resource_bitsize))
-                for i, u in enumerate(self.block_encodings)
-                if cast(int, u.resource_bitsize) > 0
-            )
-            res_part = Partition(self.resource_bitsize, res_regs)
-            res_soqs = bb.add_d(res_part, x=soqs.pop("resource"))
+            res_soq = soqs.pop("resource")
 
         # connect constituent bloqs
         for i, u in enumerate(reversed(self.block_encodings)):
@@ -195,20 +185,21 @@ class Product(BlockEncoding):
                     regs.append(Unused(anc_bits - u.ancilla_bitsize))
                 partition.append((Register("ancilla", dtype=QAny(anc_bits)), regs))
             if u.resource_bitsize > 0:
-                u_soqs["resource"] = res_soqs.pop(f"resource{i}")
-                partition.append(
-                    (Register("resource", dtype=QAny(u.resource_bitsize)), ["resource"])
-                )
+                u_soqs["resource"] = res_soq
+                regs = ["resource"]
+                if self.resource_bitsize > u.resource_bitsize:
+                    regs.append(Unused(self.resource_bitsize - u.resource_bitsize))
+                partition.append((Register("resource", dtype=QAny(u.resource_bitsize)), regs))
             u_out_soqs = bb.add_d(AutoPartition(u, partition, left_only=False), **u_soqs)
             system = u_out_soqs.pop("system")
             if u.ancilla_bitsize > 0:
-                anc_soq = cast(Soquet, u_out_soqs.pop("ancilla"))
+                anc_soq = u_out_soqs.pop("ancilla")
             if u.resource_bitsize > 0:
-                res_soqs[f"resource{i}"] = u_out_soqs.pop("resource")
+                res_soq = u_out_soqs.pop("resource")
 
             # set corresponding flag if ancillas are all zero
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
-                controls = bb.split(anc_soq)
+                controls = bb.split(cast(Soquet, anc_soq))
                 controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
                     MultiControlPauli(tuple([0] * u.ancilla_bitsize), cirq.X),
                     controls=controls[: u.ancilla_bitsize],
@@ -219,7 +210,7 @@ class Product(BlockEncoding):
 
         out = {"system": system}
         if self.resource_bitsize > 0:
-            out["resource"] = cast(Soquet, bb.add(evolve(res_part, partition=False), **res_soqs))
+            out["resource"] = res_soq
         if self.ancilla_bitsize > 0:
             anc_soqs: Dict[str, SoquetT] = dict()
             if n - 1 > 0:
