@@ -16,6 +16,7 @@ from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
+from numpy.typing import NDArray
 
 from qualtran import (
     bloq_example,
@@ -137,7 +138,7 @@ class Partition(_BookkeepingBloq):
             start += size
         return out_vals
 
-    def _classical_unpartition(self, **vals: 'ClassicalValT'):
+    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
         out_vals = []
         for reg in self.regs:
             reg_val = vals[reg.name]
@@ -145,14 +146,16 @@ class Partition(_BookkeepingBloq):
                 out_vals.append(ints_to_bits(reg_val.ravel(), reg.bitsize).ravel())
             else:
                 out_vals.append(ints_to_bits(reg_val, reg.bitsize)[0])
-        big_int = np.concatenate(out_vals)
-        return {'x': bits_to_ints(big_int)[0]}
+        big_int_bits = np.concatenate(out_vals)
+        return big_int_bits
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if self.partition:
             return self._classical_partition(vals['x'])
         else:
-            return self._classical_unpartition(**vals)
+            big_int_bits = self._classical_unpartition_to_bits(**vals)
+            (big_int,) = bits_to_ints(big_int_bits)
+            return {'x': big_int}
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
