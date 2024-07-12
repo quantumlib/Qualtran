@@ -33,6 +33,7 @@ from qualtran._infra.bloq import DecomposeTypeError
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, BlackBoxSelect
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
@@ -106,9 +107,10 @@ class LinearCombination(BlockEncoding):
     @cached_property
     def block_encodings(self):
         """Appropriately negated constituent block encodings."""
-        # TODO: This will be replaced with correct code once negation block encoding is available.
-        assert all(l >= 0 for l in self._lambd)
-        return self._block_encodings
+        return tuple(
+            Phase(be, phi=1, eps=0) if l < 0 else be
+            for l, be in zip(self._lambd, self._block_encodings)
+        )
 
     @cached_property
     def lambd(self):
@@ -334,10 +336,9 @@ def _linear_combination_block_encoding() -> LinearCombination:
     from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, ZGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    # TODO: remove absolute values once negation is supported
     linear_combination_block_encoding = LinearCombination(
         (Unitary(TGate()), Unitary(Hadamard()), Unitary(XGate()), Unitary(ZGate())),
-        lambd=(0.25, abs(-0.25), 0.25, abs(-0.25)),
+        lambd=(0.25, -0.25, 0.25, -0.25),
         lambd_bits=1,
     )
     return linear_combination_block_encoding
