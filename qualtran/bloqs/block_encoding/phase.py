@@ -30,7 +30,7 @@ class Phase(BlockEncoding):
     r"""Apply a phase to a block encoding.
 
     Given $B[A]$ as a $(\alpha, a, \epsilon)$-block encoding of $A$, produces a
-    $(\alpha, a, \epsilon)$-block encoding $B[\exp(i\pi\phi)A]$ of $\exp(i\pi\phi)A$.
+    $(\alpha, a, \epsilon)$-block encoding of $\exp(i\pi\phi)A$.
 
     Args:
         block_encoding: The block encoding to apply a phase to.
