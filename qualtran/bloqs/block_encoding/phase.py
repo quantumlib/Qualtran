@@ -13,46 +13,39 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, Set, Tuple
 
 from attrs import frozen
 
-from qualtran import (
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    QAny,
-    Register,
-    Signature,
-    Soquet,
-    SoquetT,
-)
-from qualtran.bloqs.basic_gates import XGate, ZGate
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, SoquetT
+from qualtran.bloqs.basic_gates import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
-from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @frozen
-class Negate(BlockEncoding):
-    r"""Negation of a block encoding.
+class Phase(BlockEncoding):
+    r"""Apply a phase to a block encoding.
 
     Given $B[A]$ as a $(\alpha, a, \epsilon)$-block encoding of $A$, produces a
-    $(\alpha, a, \epsilon)$-block encoding $B[-A]$ of $-A$.
-    This Bloq uses one resource qubit to induce a phase flip and restores the qubit to zero.
+    $(\alpha, a, \epsilon)$-block encoding $B[\exp(i\pi\phi)A]$ of $\exp(i\pi\phi)A$.
 
     Args:
-        block_encoding: The block encoding to negate.
+        block_encoding: The block encoding to apply a phase to.
+        phi: The phase angle.
+        eps: The precision of the phase angle.
 
     Registers:
         system: The system register.
         ancilla: The ancilla register (present only if bitsize > 0).
-        resource: The resource register.
+        resource: The resource register (present only if bitsize > 0).
     """
 
     block_encoding: BlockEncoding
+    phi: SymbolicFloat
+    eps: SymbolicFloat
 
     @property
     def alpha(self) -> SymbolicFloat:
@@ -68,22 +61,22 @@ class Negate(BlockEncoding):
 
     @property
     def resource_bitsize(self) -> SymbolicInt:
-        return self.block_encoding.resource_bitsize + 1
+        return self.block_encoding.resource_bitsize
 
     @property
     def epsilon(self) -> SymbolicFloat:
-        return self.block_encoding.epsilon
+        return self.block_encoding.epsilon + self.eps
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
             system=QAny(self.system_bitsize),
             ancilla=QAny(self.ancilla_bitsize),  # if ancilla_bitsize is 0, not present
-            resource=QAny(self.resource_bitsize),
+            resource=QAny(self.resource_bitsize),  # if ancilla_bitsize is 0, not present
         )
 
     def pretty_name(self) -> str:
-        return f"B[-{self.block_encoding.pretty_name()[2:-1]}]"
+        return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -91,7 +84,7 @@ class Negate(BlockEncoding):
 
     @property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
+        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -105,47 +98,25 @@ class Negate(BlockEncoding):
         raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return {(self.block_encoding, 1)}
+        return {(self.block_encoding, 1), (GlobalPhase(exponent=self.phi, eps=self.eps), 1)}
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, resource: Soquet, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
-        resource_bits = bb.split(resource)
-        resource_bits[0] = bb.add(XGate(), q=resource_bits[0])
-        resource_bits[0] = bb.add(ZGate(), q=resource_bits[0])
-        resource_bits[0] = bb.add(XGate(), q=resource_bits[0])
-        resource = bb.join(resource_bits)
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        bb.add(GlobalPhase(exponent=self.phi, eps=self.eps))
 
-        partition: List[Tuple[Register, List[Union[str, Unused]]]] = [
-            (self.signature.get_left("system"), ["system"])
-        ]
-        ancilla = self.signature._lefts.get("ancilla")
-        if ancilla is not None:
-            partition.append((ancilla, ["ancilla"]))
-        resource_regs: List[Union[str, Unused]] = [Unused(1)]
-        assert isinstance(self.block_encoding.resource_bitsize, int)
-        if self.block_encoding.resource_bitsize > 0:
-            resource_regs.append("resource")
-        partition.append((self.signature.get_left("resource"), resource_regs))
-
-        return bb.add_d(
-            AutoPartition(self.block_encoding, partition, left_only=False),
-            resource=resource,
-            **soqs,
-        )
+        return bb.add_d(self.block_encoding, **soqs)
 
 
 @bloq_example
-def _negate_block_encoding() -> Negate:
-    from qualtran.bloqs.basic_gates import TGate
+def _phase_block_encoding() -> Phase:
+    from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    negate_block_encoding = Negate(Unitary(TGate()))
-    return negate_block_encoding
+    phase_block_encoding = Phase(Unitary(Hadamard()), phi=0.25, eps=0)
+    return phase_block_encoding
 
 
-_NEGATE_DOC = BloqDocSpec(
-    bloq_cls=Negate,
-    import_line="from qualtran.bloqs.block_encoding import Negate",
-    examples=[_negate_block_encoding],
+_PHASE_DOC = BloqDocSpec(
+    bloq_cls=Phase,
+    import_line="from qualtran.bloqs.block_encoding import Phase",
+    examples=[_phase_block_encoding],
 )
