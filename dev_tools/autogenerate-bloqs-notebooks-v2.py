@@ -60,6 +60,7 @@ import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
@@ -591,6 +592,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
             qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
             qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
+            qualtran.bloqs.block_encoding.phase._PHASE_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
