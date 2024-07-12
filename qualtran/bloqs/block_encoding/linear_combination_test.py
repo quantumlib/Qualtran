@@ -103,7 +103,7 @@ def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
     np.testing.assert_allclose(from_gate, from_tensors, atol=atol)
 
 
-# all coefficients are fractional powers of 2 after normalization
+# all coefficients are multiples of small negative powers of 2 after normalization
 exact2 = [[0.0, 1.0], [1 / 3, 1 / 3], [0.5, 0.5], [0.25, 0.25], [2.0, 6.0], [1.0, 0.0]]
 exact3 = [
     [0.0, 0.0, 1.0],
@@ -142,7 +142,7 @@ def test_linear_combination5(lambd):
     run_gate_test([TGate(), Hadamard(), XGate(), ZGate(), Ry(angle=np.pi / 4.0)], lambd)
 
 
-# coefficients are not fractional powers of 2 after normalization
+# coefficients are not multiples of small negative powers of 2 after normalization
 approx2 = [
     [1 / 3, 2 / 3],
     [2 / 3, 1 / 3],
