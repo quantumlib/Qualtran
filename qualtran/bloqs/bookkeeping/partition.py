@@ -138,8 +138,8 @@ class Partition(_BookkeepingBloq):
             start += size
         return out_vals
 
-    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
-        out_vals = []
+    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint]:
+        out_vals: list[list[int]] = []
         for reg in self.regs:
             reg_val = vals[reg.name]
             if isinstance(reg_val, np.ndarray):

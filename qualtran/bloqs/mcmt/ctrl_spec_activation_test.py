@@ -11,10 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import numpy as np
 import pytest
 
-from qualtran import CtrlSpec, QBit
+from qualtran import CtrlSpec
 from qualtran.bloqs.mcmt.ctrl_spec_activation import (
     _ctrl_on_bits,
     _ctrl_on_int,
@@ -35,10 +34,3 @@ def test_examples(bloq_autotester, example):
 def test_raises_for_single_qubit_controls(ctrl_spec: CtrlSpec):
     with pytest.raises(ValueError):
         _ = CtrlSpecActivation(ctrl_spec)
-
-
-@pytest.mark.parametrize("cvs", [np.array(1), np.ones(1), np.ones(2), np.ones((2, 2))])
-def test_ctrl(cvs):
-    bloq = CtrlSpecActivation(CtrlSpec(QBit(), np.asarray(cvs, dtype=int)))
-    cbloq = bloq.decompose_bloq()
-    print(cbloq)

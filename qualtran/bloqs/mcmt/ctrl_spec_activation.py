@@ -125,6 +125,7 @@ class CtrlSpecActivation(Bloq):
 
         # Compute the single control qubit `target`
         if self.n_ctrl_qubits == 2:
+            assert isinstance(self._flat_cvs, tuple)
             cv1, cv2 = self._flat_cvs
             ctrl_qubits, target = bb.add(And(cv1, cv2), ctrl=ctrl_qubits)
             junk = None
@@ -161,7 +162,9 @@ class CtrlSpecActivation(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits == 2:
-            return {(And(*self._flat_cvs), 1)}
+            assert isinstance(self._flat_cvs, tuple)
+            cv1, cv2 = self._flat_cvs
+            return {(And(cv1, cv2), 1)}
 
         return {(MultiAnd(self._flat_cvs), 1)}
 
@@ -184,9 +187,11 @@ def _ctrl_on_bits() -> CtrlSpecActivation:
 
 @bloq_example(generalizer=ignore_split_join)
 def _ctrl_on_nd_bits() -> CtrlSpecActivation:
+    import numpy as np
+
     from qualtran import CtrlSpec, QBit
 
-    ctrl_on_nd_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=([[0, 1], [1, 0]],)))
+    ctrl_on_nd_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=np.array([[0, 1], [1, 0]])))
     return ctrl_on_nd_bits
 
 
