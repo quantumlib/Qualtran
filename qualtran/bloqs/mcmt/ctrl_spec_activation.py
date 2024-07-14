@@ -199,10 +199,10 @@ def _ctrl_on_nd_bits() -> CtrlSpecActivation:
 def _ctrl_on_multiple_values() -> CtrlSpecActivation:
     from qualtran import CtrlSpec, QInt, QUInt
 
-    ctrl_on_nd_bits = CtrlSpecActivation(
+    ctrl_on_multiple_values = CtrlSpecActivation(
         CtrlSpec(qdtypes=(QUInt(4), QInt(4)), cvs=([0b0101, 0b1100], [2, -2]))
     )
-    return ctrl_on_nd_bits
+    return ctrl_on_multiple_values
 
 
 _CTRLSPEC_ACTIVATION_DOC = BloqDocSpec(
