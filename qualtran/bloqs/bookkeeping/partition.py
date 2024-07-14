@@ -143,9 +143,9 @@ class Partition(_BookkeepingBloq):
         for reg in self.regs:
             reg_val = vals[reg.name]
             if isinstance(reg_val, np.ndarray):
-                out_vals.append(ints_to_bits(reg_val.ravel(), reg.bitsize).ravel())
+                out_vals.extend(reg.dtype.to_bits(val) for val in reg_val.ravel())
             else:
-                out_vals.append(ints_to_bits(reg_val, reg.bitsize)[0])
+                out_vals.append(reg.dtype.to_bits(reg_val))
         big_int_bits = np.concatenate(out_vals)
         return big_int_bits
 

@@ -32,6 +32,7 @@ from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -165,16 +166,42 @@ class CtrlSpecActivation(Bloq):
         return {(MultiAnd(self._flat_cvs), 1)}
 
 
-@bloq_example
-def _ctrl_int() -> CtrlSpecActivation:
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_int() -> CtrlSpecActivation:
     from qualtran import CtrlSpec, QUInt
 
-    ctrl_int = CtrlSpecActivation(CtrlSpec(qdtypes=QUInt(4), cvs=[0b0101]))
-    return ctrl_int
+    ctrl_on_int = CtrlSpecActivation(CtrlSpec(qdtypes=QUInt(4), cvs=[0b0101]))
+    return ctrl_on_int
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_bits() -> CtrlSpecActivation:
+    from qualtran import CtrlSpec, QBit
+
+    ctrl_on_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=[0, 1, 0, 1]))
+    return ctrl_on_bits
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_nd_bits() -> CtrlSpecActivation:
+    from qualtran import CtrlSpec, QBit
+
+    ctrl_on_nd_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=([[0, 1], [1, 0]],)))
+    return ctrl_on_nd_bits
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_multiple_values() -> CtrlSpecActivation:
+    from qualtran import CtrlSpec, QInt, QUInt
+
+    ctrl_on_nd_bits = CtrlSpecActivation(
+        CtrlSpec(qdtypes=(QUInt(4), QInt(4)), cvs=([0b0101, 0b1100], [2, -2]))
+    )
+    return ctrl_on_nd_bits
 
 
 _CTRLSPEC_ACTIVATION_DOC = BloqDocSpec(
     bloq_cls=CtrlSpecActivation,
     import_line='from qualtran.bloqs.mcmt.ctrl_spec_activation import CtrlSpecActivation',
-    examples=(_ctrl_int,),
+    examples=(_ctrl_on_int, _ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_multiple_values),
 )

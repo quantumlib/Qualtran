@@ -15,7 +15,20 @@ import numpy as np
 import pytest
 
 from qualtran import CtrlSpec, QBit
-from qualtran.bloqs.mcmt.ctrl_spec_activation import CtrlSpecActivation
+from qualtran.bloqs.mcmt.ctrl_spec_activation import (
+    _ctrl_on_bits,
+    _ctrl_on_int,
+    _ctrl_on_multiple_values,
+    _ctrl_on_nd_bits,
+    CtrlSpecActivation,
+)
+
+
+@pytest.mark.parametrize(
+    "example", [_ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_int, _ctrl_on_multiple_values]
+)
+def test_examples(bloq_autotester, example):
+    bloq_autotester(example)
 
 
 @pytest.mark.parametrize("ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=0), CtrlSpec(cvs=[0])])
