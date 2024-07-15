@@ -15,12 +15,12 @@ import numpy as np
 import pytest
 
 from qualtran import CtrlSpec, QUInt
-from qualtran.bloqs.mcmt.ctrl_spec_activation import (
+from qualtran.bloqs.mcmt.ctrl_spec_and import (
     _ctrl_on_bits,
     _ctrl_on_int,
     _ctrl_on_multiple_values,
     _ctrl_on_nd_bits,
-    CtrlSpecActivation,
+    CtrlSpecAnd,
 )
 from qualtran.simulation.classical_sim import get_classical_truth_table
 
@@ -35,7 +35,7 @@ def test_examples(bloq_autotester, example):
 @pytest.mark.parametrize("ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=0), CtrlSpec(cvs=[0])])
 def test_raises_for_single_qubit_controls(ctrl_spec: CtrlSpec):
     with pytest.raises(ValueError):
-        _ = CtrlSpecActivation(ctrl_spec)
+        _ = CtrlSpecAnd(ctrl_spec)
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_raises_for_single_qubit_controls(ctrl_spec: CtrlSpec):
     [CtrlSpec(QUInt(4), cvs=4), CtrlSpec((QUInt(4), QUInt(4)), cvs=(np.array(3), np.array(5)))],
 )
 def test_truth_table_using_classical_sim(ctrl_spec: CtrlSpec):
-    bloq = CtrlSpecActivation(ctrl_spec)
+    bloq = CtrlSpecAnd(ctrl_spec)
     _, _, tt = get_classical_truth_table(bloq)
     for in_vals, out_vals in tt:
         # check: control values not modified

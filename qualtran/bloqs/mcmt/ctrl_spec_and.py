@@ -40,16 +40,20 @@ if TYPE_CHECKING:
 
 
 @frozen
-class CtrlSpecActivation(Bloq):
-    """Computes a single qubit which is `1` iff the CtrlSpec is satisfied.
+class CtrlSpecAnd(Bloq):
+    """Computes a single qubit which is `1` iff the CtrlSpec of And clauses is satisfied.
 
-    This reduces an arbitrary control specification to a single qubit, which can be used
+    This reduces an arbitrary 'And' clause control spec to a single qubit, which can be used
     to then control a bloq. Therefore, a bloq author is only required to implement a
     single-controlled version of their bloq, and can be generalized to arbitrary controls.
 
     The control registers are passed through as-is. If the same control bit is required for
     multiple bloqs, the user can use the `target` qubit of this bloq multiple times, and only
     uncompute at the very end. For more custom strategies and trade-offs, see Ref. [1].
+
+    Note:
+        This only applies to CtrlSpec being a logical AND of all registers, and each register
+        being equal to a constant. See documentation for :class:`CtrlSpec` for more details.
 
     Args:
         ctrl_spec: The control specification.
@@ -170,43 +174,43 @@ class CtrlSpecActivation(Bloq):
 
 
 @bloq_example(generalizer=ignore_split_join)
-def _ctrl_on_int() -> CtrlSpecActivation:
+def _ctrl_on_int() -> CtrlSpecAnd:
     from qualtran import CtrlSpec, QUInt
 
-    ctrl_on_int = CtrlSpecActivation(CtrlSpec(qdtypes=QUInt(4), cvs=[0b0101]))
+    ctrl_on_int = CtrlSpecAnd(CtrlSpec(qdtypes=QUInt(4), cvs=[0b0101]))
     return ctrl_on_int
 
 
 @bloq_example(generalizer=ignore_split_join)
-def _ctrl_on_bits() -> CtrlSpecActivation:
+def _ctrl_on_bits() -> CtrlSpecAnd:
     from qualtran import CtrlSpec, QBit
 
-    ctrl_on_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=[0, 1, 0, 1]))
+    ctrl_on_bits = CtrlSpecAnd(CtrlSpec(qdtypes=QBit(), cvs=[0, 1, 0, 1]))
     return ctrl_on_bits
 
 
 @bloq_example(generalizer=ignore_split_join)
-def _ctrl_on_nd_bits() -> CtrlSpecActivation:
+def _ctrl_on_nd_bits() -> CtrlSpecAnd:
     import numpy as np
 
     from qualtran import CtrlSpec, QBit
 
-    ctrl_on_nd_bits = CtrlSpecActivation(CtrlSpec(qdtypes=QBit(), cvs=np.array([[0, 1], [1, 0]])))
+    ctrl_on_nd_bits = CtrlSpecAnd(CtrlSpec(qdtypes=QBit(), cvs=np.array([[0, 1], [1, 0]])))
     return ctrl_on_nd_bits
 
 
 @bloq_example(generalizer=ignore_split_join)
-def _ctrl_on_multiple_values() -> CtrlSpecActivation:
+def _ctrl_on_multiple_values() -> CtrlSpecAnd:
     from qualtran import CtrlSpec, QInt, QUInt
 
-    ctrl_on_multiple_values = CtrlSpecActivation(
+    ctrl_on_multiple_values = CtrlSpecAnd(
         CtrlSpec(qdtypes=(QUInt(4), QInt(4)), cvs=([0b0101, 0b1100], [2, -2]))
     )
     return ctrl_on_multiple_values
 
 
-_CTRLSPEC_ACTIVATION_DOC = BloqDocSpec(
-    bloq_cls=CtrlSpecActivation,
+_CTRLSPEC_AND_DOC = BloqDocSpec(
+    bloq_cls=CtrlSpecAnd,
     import_line='from qualtran.bloqs.mcmt.ctrl_spec_activation import CtrlSpecActivation',
     examples=(_ctrl_on_int, _ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_multiple_values),
 )
