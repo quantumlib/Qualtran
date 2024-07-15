@@ -375,7 +375,7 @@ class QUInt(QDType):
         if bitstrings.shape[1] > 64:
             raise NotImplementedError()
         basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-        return np.sum(basis * bitstrings, axis=1)
+        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
