@@ -340,9 +340,42 @@ class QUInt(QDType):
         self.assert_valid_classical_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
+    def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
+        """Returns the big-endian bitstrings specified by the given integers.
+
+        Args:
+            x_array: An integer or array of unsigned integers.
+        """
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
+
+        w = int(self.bitsize)
+        x = np.atleast_1d(x_array)
+        if not np.issubdtype(x.dtype, np.uint):
+            assert np.all(x >= 0)
+            assert np.iinfo(x.dtype).bits <= 64
+            x = x.astype(np.uint64)
+        assert w <= np.iinfo(x.dtype).bits
+        mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
+        return (x & mask).astype(bool).astype(np.uint8).T
+
     def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         return int("".join(str(x) for x in bits), 2)
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.integer]:
+        """Returns the integer specified by the given big-endian bitstrings.
+
+        Args:
+            bits_array: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
+        Returns:
+            An array of integers; one for each bitstring.
+        """
+        bitstrings = np.atleast_2d(bits_array)
+        if bitstrings.shape[1] > 64:
+            raise NotImplementedError()
+        basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
+        return np.sum(basis * bitstrings, axis=1)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
