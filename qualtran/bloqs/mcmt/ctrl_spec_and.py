@@ -211,6 +211,5 @@ def _ctrl_on_multiple_values() -> CtrlSpecAnd:
 
 _CTRLSPEC_AND_DOC = BloqDocSpec(
     bloq_cls=CtrlSpecAnd,
-    import_line='from qualtran.bloqs.mcmt.ctrl_spec_activation import CtrlSpecActivation',
     examples=(_ctrl_on_int, _ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_multiple_values),
 )
