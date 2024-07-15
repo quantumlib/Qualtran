@@ -77,9 +77,29 @@ class QDType(metaclass=abc.ABCMeta):
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
 
+    def to_bits_array(self, x_array: NDArray[Any]) -> NDArray[np.uint8]:
+        """Yields an NDArray of bits corresponding to binary representations of the input elements.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of values, and the output array satisfies
+        `output_shape = input_shape + (self.bitsize,)`.
+        """
+        return np.vectorize(
+            lambda x: np.asarray(self.to_bits(x), dtype=np.uint8), signature='()->(n)'
+        )(x_array)
+
     @abc.abstractmethod
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        """Combine individual bits to form classical values.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
+        and the output array satisfies `output_shape = input_shape[:-1]`.
+        """
+        return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
 
     @abc.abstractmethod
     def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
@@ -89,17 +109,6 @@ class QDType(metaclass=abc.ABCMeta):
             val: A classical value that should be in the domain of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
-
-    @abc.abstractmethod
-    def is_symbolic(self) -> bool:
-        """Returns True if this qdtype is parameterized with symbolic objects."""
-
-    def iteration_length_or_zero(self) -> SymbolicInt:
-        """Safe version of iteration length.
-
-        Returns the iteration_length if the type has it or else zero.
-        """
-        return getattr(self, 'iteration_length', 0)
 
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
         """Raises an exception if `val_array` is not a valid array of classical values
@@ -115,6 +124,17 @@ class QDType(metaclass=abc.ABCMeta):
         """
         for val in val_array.reshape(-1):
             self.assert_valid_classical_val(val)
+
+    @abc.abstractmethod
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return getattr(self, 'iteration_length', 0)
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_qubits})'
