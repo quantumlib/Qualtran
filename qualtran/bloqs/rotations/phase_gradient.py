@@ -222,6 +222,17 @@ _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
 )
 
 
+def _extract_raw_int_from_fxp(val: Fxp) -> int:
+    """extracts the bits of the Fxp as a binary number (ignoring the dot)"""
+    if isinstance(val, (int, np.integer)):
+        return int(val)
+    return int(val.bin(), 2)
+
+
+def _phase_int_to_fxp(val: int, frac_bitsize: int) -> Fxp:
+    return Fxp(val, raw=True, n_word=frac_bitsize, n_frac=frac_bitsize, signed=False)
+
+
 @attrs.frozen
 class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Quantum-quantum addition into a phase gradient register using $b_{phase} - 2$ Toffolis
@@ -309,8 +320,10 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
-        x, phase_grad = kwargs['x'], kwargs['phase_grad']
+    def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
+        x_fxp, phase_grad_fxp = kwargs['x'], kwargs['phase_grad']
+
+        x, phase_grad = _extract_raw_int_from_fxp(x_fxp), _extract_raw_int_from_fxp(phase_grad_fxp)
         if self.controlled_by is not None:
             ctrl = kwargs['ctrl']
             if ctrl == self.controlled_by:
@@ -319,10 +332,18 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 )
             else:
                 phase_grad_out = phase_grad
-            return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
+
+            return {
+                'ctrl': ctrl,
+                'x': x_fxp,
+                'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
+            }
 
         phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
-        return {'x': x, 'phase_grad': phase_grad_out}
+        return {
+            'x': kwargs['x'],
+            'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
@@ -523,9 +544,13 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
-        return {'x': x, 'phase_grad': phase_grad_out}
+    def on_classical_vals(self, x: Fxp, phase_grad: Fxp) -> Dict[str, Fxp]:
+        x_ = _extract_raw_int_from_fxp(x)
+        phase_grad_ = _extract_raw_int_from_fxp(phase_grad)
+
+        phase_grad_out = (phase_grad_ + self.scaled_val(x_)) % 2**self.phase_bitsize
+
+        return {'x': x, 'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize))}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_additions = (self.gamma_dtype.bitsize + 2) // 2

@@ -155,8 +155,8 @@ _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
 @pytest.mark.parametrize('bloq', _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES)
 def test_add_scaled_val_into_phase_reg_classical_sim(bloq):
     cbloq = bloq.decompose_bloq()
-    for x in range(2**bloq.x_dtype.bitsize):
-        for phase_grad in range(2**bloq.phase_bitsize):
+    for x in bloq.x_dtype.get_classical_domain():
+        for phase_grad in bloq.phase_dtype.get_classical_domain():
             d = {'x': x, 'phase_grad': phase_grad}
             c1 = bloq.on_classical_vals(**d)
             c2 = cbloq.on_classical_vals(**d)
