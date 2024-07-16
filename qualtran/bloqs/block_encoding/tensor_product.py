@@ -109,7 +109,9 @@ class TensorProduct(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
         raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
@@ -192,7 +194,7 @@ def _tensor_product_block_encoding() -> TensorProduct:
 
 
 @bloq_example
-def _tensor_product_block_encoding_override() -> TensorProduct:
+def _tensor_product_block_encoding_properties() -> TensorProduct:
     from attrs import evolve
 
     from qualtran.bloqs.basic_gates import CNOT, TGate
@@ -200,8 +202,8 @@ def _tensor_product_block_encoding_override() -> TensorProduct:
 
     u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
-    tensor_product_block_encoding_override = TensorProduct((u1, u2))
-    return tensor_product_block_encoding_override
+    tensor_product_block_encoding_properties = TensorProduct((u1, u2))
+    return tensor_product_block_encoding_properties
 
 
 @bloq_example
@@ -231,7 +233,7 @@ _TENSOR_PRODUCT_DOC = BloqDocSpec(
     import_line="from qualtran.bloqs.block_encoding import TensorProduct",
     examples=[
         _tensor_product_block_encoding,
-        _tensor_product_block_encoding_override,
+        _tensor_product_block_encoding_properties,
         _tensor_product_block_encoding_symb,
     ],
 )

@@ -19,6 +19,7 @@ import pytest
 
 from qualtran import BloqBuilder, QFxp
 from qualtran.bloqs.rotations.phase_gradient import (
+    _phase_gradient_unitary_symbolic,
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
     PhaseGradientState,
@@ -167,3 +168,7 @@ def test_add_scaled_val_into_phase_reg(bloq):
     np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
     ((add_into_phase, n),) = bloq.bloq_counts().items()
     assert bloq.t_complexity() == n * add_into_phase.t_complexity()
+
+
+def test_phase_gradient_unitary_symbolic_auto(bloq_autotester):
+    bloq_autotester(_phase_gradient_unitary_symbolic)

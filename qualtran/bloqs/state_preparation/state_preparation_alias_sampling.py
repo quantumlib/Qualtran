@@ -37,7 +37,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import (
-    preprocess_lcu_coefficients_for_reversible_sampling,
+    preprocess_probabilities_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 from qualtran.resource_counting.generalizers import (
@@ -54,22 +54,32 @@ if TYPE_CHECKING:
 @cirq.value_equality()
 @attrs.frozen
 class StatePreparationAliasSampling(PrepareOracle):
-    r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
+    r"""Initialize a state with $L$ coefficients using coherent alias sampling.
 
-    In particular, we take the zero state to:
+    In particular, given coefficients $w_\ell$, we take the zero state to:
 
     $$
     \sum_{\ell=0}^{L-1} \sqrt{p_\ell} |\ell\rangle |\mathrm{temp}_\ell\rangle
     $$
 
-    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
-    where the temporary register must be treated with care, see the details in Section III.D. of
-    the reference.
+    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values
+    $w_\ell / \lambda$ (where $\lambda = \sum_\ell w_\ell$).
+    Note that the temporary register must be treated with care, see the details in Section III.D.
+    of the reference.
 
-    The preparation is equivalent to [classical alias sampling]
-    (https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability `p[l]` by first
+    This construction is designed to work specifically when you don't require specific phases,
+    and the problem is reduced to [classical alias sampling]
+    (https://en.wikipedia.org/wiki/Alias_method). We sample `l` with probability `p[l]` by first
     selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
+
+    Args:
+        selection_registers: The input/output registers to prepare the state on (see Signature).
+        keep: The discretized `keep` probabilities for alias sampling.
+        alt: The alternate/alias values to swap.
+        mu: The number of bits to approximate the `keep` probabilities.
+        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
+            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
 
     Signature:
         selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
@@ -96,58 +106,74 @@ class StatePreparationAliasSampling(PrepareOracle):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
+
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     alt: Union[Shaped, NDArray[np.int_]]
     keep: Union[Shaped, NDArray[np.int_]]
     mu: SymbolicInt
-    sum_of_lcu_coeffs: SymbolicFloat
+    sum_of_unnormalized_probabilities: SymbolicFloat
 
     @classmethod
-    def from_lcu_probs(
-        cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
+    def from_probabilities(
+        cls, unnormalized_probabilities: Sequence[float], *, precision: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for a given set of LCU coefficients.
+        r"""Factory to construct the state preparation gate for a given set of unnormalized probabilities.
+
+        Given input `unnormalized_probabilities` $w_l$, with sum $\lambda = \sum_l w_l$, this prepares
+        a state s.t. $p_l = \tilde{w_l} / \lambda$ such that the input `precision` $\epsilon$ satisfies:
+
+            $$
+                |w_l - \tilde{w}_l| \le \epsilon
+            $$
+
+        That is, the value `precision` is the absolute error in approximating the input values.
 
         Args:
-            lcu_probabilities: The LCU coefficients.
-            probability_epsilon: The desired accuracy to represent each probability
+            unnormalized_probabilities: The LCU coefficients $w_l$.
+            precision: The desired accuracy $\epsilon$ to represent each input value
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
+        if not all(x >= 0 for x in unnormalized_probabilities):
+            raise ValueError(f"{cls} expects only non-negative probabilities")
+
+        qlambda = sum(x for x in unnormalized_probabilities)
+        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            unnormalized_probabilities=unnormalized_probabilities, epsilon=precision / qlambda
         )
-        N = len(lcu_probabilities)
+        N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
             selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
-            sum_of_lcu_coeffs=sum(abs(x) for x in lcu_probabilities),
+            sum_of_unnormalized_probabilities=qlambda,
         )
 
     @classmethod
     def from_n_coeff(
         cls,
         n_coeff: SymbolicInt,
-        sum_of_lcu_coeffs: SymbolicFloat,
+        sum_of_unnormalized_probabilites: SymbolicFloat,
         *,
-        probability_epsilon: SymbolicFloat = 1.0e-5,
+        precision: SymbolicFloat = 1.0e-5,
     ) -> 'StatePreparationAliasSampling':
-        """Factory to construct the state preparation gate for symbolic number of LCU coefficients.
+        r"""Factory to construct the state preparation gate for symbolic number of unnormalized probabilities.
+
+        See docstring for :meth:`StatePreparationAliasSampling.from_probabilities` for details
 
         Args:
             n_coeff: Symbolic number of LCU coefficients in the prepared state.
-            sum_of_lcu_coeffs: Sum of absolute values of coefficients of the prepared state.
-            probability_epsilon: The desired accuracy to represent each probability
+            sum_of_unnormalized_probabilites: Sum of absolute values of input unnormalized probabilities.
+            precision: The desired accuracy $\epsilon$ to represent each input value
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
-        mu = sub_bit_prec_from_epsilon(n_coeff, probability_epsilon)
+        mu = sub_bit_prec_from_epsilon(n_coeff, precision / sum_of_unnormalized_probabilites)
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
@@ -155,7 +181,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=alt,
             keep=keep,
             mu=mu,
-            sum_of_lcu_coeffs=sum_of_lcu_coeffs,
+            sum_of_unnormalized_probabilities=sum_of_unnormalized_probabilites,
         )
 
     @property
@@ -164,7 +190,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @cached_property
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
-        return self.sum_of_lcu_coeffs
+        return self.sum_of_unnormalized_probabilities
 
     @cached_property
     def sigma_mu_bitsize(self) -> SymbolicInt:
@@ -239,8 +265,8 @@ class StatePreparationAliasSampling(PrepareOracle):
 def _state_prep_alias() -> StatePreparationAliasSampling:
     coeffs = [1.0, 1, 3, 2]
     mu = 3
-    state_prep_alias = StatePreparationAliasSampling.from_lcu_probs(
-        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    state_prep_alias = StatePreparationAliasSampling.from_probabilities(
+        coeffs, precision=2**-mu / len(coeffs) * sum(coeffs)
     )
     return state_prep_alias
 
@@ -249,9 +275,9 @@ def _state_prep_alias() -> StatePreparationAliasSampling:
 def _state_prep_alias_symb() -> StatePreparationAliasSampling:
     import sympy
 
-    n_coeffs, sum_coeff, eps = sympy.symbols(r"L S \epsilon")
+    n_coeffs, sum_coeff, eps = sympy.symbols(r"L \lambda \epsilon")
     state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
-        n_coeffs, sum_coeff, probability_epsilon=eps
+        n_coeffs, sum_coeff, precision=eps
     )
     return state_prep_alias_symb
 
