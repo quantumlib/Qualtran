@@ -311,16 +311,14 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     See :class:`StatePreparationAliasSampling` for an exposition on alias sampling.
 
 
-    Signature:
+    Registers:
         selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
             coefficient state is prepared.
-        temp: Work space comprised of sub signature:
-            - sigma: A mu-sized register containing uniform probabilities for comparison against
-                `keep`.
-            - sparse_index: A lg(d)-sized register storing the sparse index $j \in [0, d)$.
-            - alt: A lg(L)-sized register of alternate indices
-            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
-            - one bit for the result of the comparison.
+        sigma_mu: A mu-sized register containing uniform probabilities for comparison against `keep`.
+        sparse_index: A lg(d)-sized register storing the sparse index $j \in [0, d)$.
+        alt: A lg(L)-sized register of alternate indices
+        keep: a mu-sized register of probabilities of keeping the initially sampled index.
+        less_than_equal: one bit for the result of the comparison.
 
     This gate corresponds to the following operations:
      - UNIFORM_d on the `sparse_index` register.
@@ -516,10 +514,10 @@ def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
     coeff_map = {0: 1.0, 3: 1.0, 5: 3.0, 7: 2.0}
     N = 9
     mu = 3
-    state_prep_alias = SparseStatePreparationAliasSampling.from_sparse_dict(
+    sparse_state_prep_alias = SparseStatePreparationAliasSampling.from_sparse_dict(
         coeff_map, N, precision=2**-mu / len(coeff_map)
     )
-    return state_prep_alias
+    return sparse_state_prep_alias
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

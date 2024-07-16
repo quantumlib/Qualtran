@@ -623,7 +623,8 @@ OTHER: List[NotebookSpecV2] = [
         title='State Preparation via Alias Sampling',
         module=qualtran.bloqs.state_preparation.state_preparation_alias_sampling,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC,
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._SPARSE_STATE_PREP_ALIAS_DOC,
         ],
     ),
     NotebookSpecV2(
