@@ -22,13 +22,14 @@ from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _sparse_state_prep_alias,
     _sparse_state_prep_alias_from_list,
+    _sparse_state_prep_alias_symb,
     _state_prep_alias,
     _state_prep_alias_symb,
-    _sparse_state_prep_alias_symb,
     SparseStatePreparationAliasSampling,
     StatePreparationAliasSampling,
 )
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.symbolics import ceil, log2
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -193,6 +194,21 @@ def test_sparse_state_preparation_via_coherent_alias():
 
     lcu_coefficients = np.array([1 if j < 6 else 0.0 for j in range(10)])
     assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
+
+
+def test_symbolic_sparse_state_prep_t_complexity():
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+    N, d, qlambda, eps = sympy.symbols(r"N d \lambda \epsilon")
+    logN = ceil(log2(N - 1))
+    logd = ceil(log2(d - 1))
+    mu = ceil(log2(1 / (N * eps)))
+    bloq = SparseStatePreparationAliasSampling.from_n_coeff(N, d, qlambda, precision=eps)
+    assert bloq.t_complexity() == TComplexity(
+        t=4 * d + 8 * mu + 7 * logN + 12 * logd - 8,
+        clifford=d * mu * logN**2 + 13 * d + 47 * mu + 10 * logN + 52 * logd - 12,
+        rotations=2,
+    )
 
 
 @pytest.mark.notebook
