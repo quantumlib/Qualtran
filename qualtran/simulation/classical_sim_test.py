@@ -14,7 +14,6 @@
 
 from typing import Dict
 
-import cirq
 import numpy as np
 import pytest
 from attrs import frozen
@@ -24,47 +23,10 @@ from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, S
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
-    bits_to_ints,
     call_cbloq_classically,
     ClassicalValT,
-    ints_to_bits,
 )
 from qualtran.testing import execute_notebook
-
-
-def test_bits_to_int():
-    rs = np.random.RandomState(52)
-    bitstrings = rs.choice([0, 1], size=(100, 23))
-
-    nums = bits_to_ints(bitstrings)
-    assert nums.shape == (100,)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
-        assert num == ref_num
-
-    # check one input bitstring instead of array of input bitstrings.
-    (num,) = bits_to_ints([1, 0])
-    assert num == 2
-
-
-def test_int_to_bits():
-    rs = np.random.RandomState(52)
-    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
-    bitstrings = ints_to_bits(nums, w=23)
-    assert bitstrings.shape == (100, 23)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
-        np.testing.assert_array_equal(ref_bs, bs)
-
-    # check one input int
-    (bitstring,) = ints_to_bits(2, w=8)
-    assert bitstring.tolist() == [0, 0, 0, 0, 0, 0, 1, 0]
-
-    # check bounds
-    with pytest.raises(AssertionError):
-        ints_to_bits([4, -2], w=8)
 
 
 def test_dtype_validation():

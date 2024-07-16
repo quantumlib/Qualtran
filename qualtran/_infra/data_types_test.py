@@ -15,6 +15,7 @@ import math
 import random
 from typing import Any, Sequence, Union
 
+import cirq
 import numpy as np
 import pytest
 import sympy
@@ -276,6 +277,37 @@ def test_quint_to_and_from_bits():
         quint4.to_bits(-1)
 
     assert_to_and_from_bits_array_consistent(quint4, range(0, 16))
+
+
+def test_bits_to_int():
+    rs = np.random.RandomState(52)
+    bitstrings = rs.choice([0, 1], size=(100, 23))
+
+    nums = QUInt(23).from_bits_array(bitstrings)
+    assert nums.shape == (100,)
+
+    for num, bs in zip(nums, bitstrings):
+        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
+        assert num == ref_num
+
+    # check one input bitstring instead of array of input bitstrings.
+    (num,) = QUInt(23).from_bits_array(np.array([1, 0]))
+    assert num == 2
+
+
+def test_int_to_bits():
+    rs = np.random.RandomState(52)
+    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
+    bitstrings = QUInt(23).to_bits_array(nums)
+    assert bitstrings.shape == (100, 23)
+
+    for num, bs in zip(nums, bitstrings):
+        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
+        np.testing.assert_array_equal(ref_bs, bs)
+
+    # check bounds
+    with pytest.raises(AssertionError):
+        QUInt(8).to_bits_array(np.array([4, -2]))
 
 
 def test_bounded_quint_to_and_from_bits():
