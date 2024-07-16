@@ -14,16 +14,22 @@
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
+import numpy as np
 from attrs import frozen
 
 from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    BoundedQUInt,
     CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
+    QInt,
+    QIntOnesComp,
+    QMontgomeryUInt,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -74,6 +80,11 @@ class CtrlSpecAnd(Bloq):
     def __attrs_post_init__(self):
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits <= 1:
             raise ValueError(f"Expected at least 2 controls, got {self.n_ctrl_qubits}")
+        for qdtype in self.ctrl_spec.qdtypes:
+            if not isinstance(
+                qdtype, (QBit, QInt, QUInt, BoundedQUInt, QIntOnesComp, QMontgomeryUInt)
+            ):
+                raise NotImplementedError("CtrlSpecAnd currently only supports integer types")
 
     @cached_property
     def signature(self) -> Signature:
@@ -111,11 +122,11 @@ class CtrlSpecAnd(Bloq):
         if is_symbolic(self.ctrl_spec):
             return HasLength(self.n_ctrl_qubits)
 
-        return tuple(
-            self._ctrl_partition_bloq._classical_unpartition_to_bits(
-                **{reg.name: cv for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs)}
-            )
-        )
+        # TODO use QDType features once https://github.com/quantumlib/Qualtran/pull/1142 is merged
+        flat_cvs = []
+        for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
+            flat_cvs.extend([reg.dtype.to_bits(c) for c in cv.reshape(-1)])
+        return tuple(np.concatenate(flat_cvs).tolist())
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.n_ctrl_qubits):
