@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,16 @@ import pytest
 import sympy
 
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, XGate, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import (
+    CNOT,
+    Hadamard,
+    IntEffect,
+    IntState,
+    TGate,
+    XGate,
+    ZeroEffect,
+    ZeroState,
+)
 from qualtran.bloqs.block_encoding.product import (
     _product_block_encoding,
     _product_block_encoding_properties,
@@ -33,6 +42,8 @@ from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 def test_product(bloq_autotester):
     bloq_autotester(_product_block_encoding)
+    bloq_autotester(_product_block_encoding_properties)
+    bloq_autotester(_product_block_encoding_symb)
 
 
 def test_product_signature():
@@ -40,7 +51,7 @@ def test_product_signature():
         [Register("system", QAny(1)), Register("ancilla", QAny(1))]
     )
     assert _product_block_encoding_properties().signature == Signature(
-        [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(2))]
+        [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(1))]
     )
     assert _product_block_encoding_symb().signature == Signature(
         [
@@ -70,7 +81,7 @@ def test_product_params():
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
     assert bloq.ancilla_bitsize == max(2, 1) + 1
-    assert bloq.resource_bitsize == 1 + 1
+    assert bloq.resource_bitsize == max(1, 1)
 
     bloq = _product_block_encoding_symb()
     assert bloq.system_bitsize == 1
@@ -109,15 +120,13 @@ def test_product_single_tensors():
 def test_product_properties_tensors():
     bb = BloqBuilder()
     system = bb.add_register("system", 1)
-    ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState()), bb.add(ZeroState())]))
-    resource = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
+    ancilla = cast(Soquet, bb.add(IntState(0, 3)))
+    resource = cast(Soquet, bb.add(ZeroState()))
     system, ancilla, resource = bb.add_t(
         _product_block_encoding_properties(), system=system, ancilla=ancilla, resource=resource
     )
-    for q in bb.split(cast(Soquet, ancilla)):
-        bb.add(ZeroEffect(), q=q)
-    for q in bb.split(cast(Soquet, resource)):
-        bb.add(ZeroEffect(), q=q)
+    bb.add(ZeroEffect(), q=resource)
+    bb.add(IntEffect(0, 3), val=ancilla)
     bloq = bb.finalize(system=system)
 
     from_gate = np.matmul(TGate().tensor_contract(), Hadamard().tensor_contract())
