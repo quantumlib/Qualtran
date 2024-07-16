@@ -261,6 +261,34 @@ class StatePreparationAliasSampling(PrepareOracle):
         }
 
 
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _state_prep_alias() -> StatePreparationAliasSampling:
+    coeffs = [1.0, 1, 3, 2]
+    mu = 3
+    state_prep_alias = StatePreparationAliasSampling.from_probabilities(
+        coeffs, precision=2**-mu / len(coeffs) * sum(coeffs)
+    )
+    return state_prep_alias
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _state_prep_alias_symb() -> StatePreparationAliasSampling:
+    import sympy
+
+    n_coeffs, sum_coeff, eps = sympy.symbols(r"L \lambda \epsilon")
+    state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
+        n_coeffs, sum_coeff, precision=eps
+    )
+    return state_prep_alias_symb
+
+
+_STATE_PREP_ALIAS_DOC = BloqDocSpec(
+    bloq_cls=StatePreparationAliasSampling,
+    import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
+    examples=(_state_prep_alias, _state_prep_alias_symb),
+)
+
+
 @attrs.frozen
 class SparseStatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a $d$-sparse state over $L$ indices using coherent alias sampling.
@@ -484,27 +512,6 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
-def _state_prep_alias() -> StatePreparationAliasSampling:
-    coeffs = [1.0, 1, 3, 2]
-    mu = 3
-    state_prep_alias = StatePreparationAliasSampling.from_probabilities(
-        coeffs, precision=2**-mu / len(coeffs) * sum(coeffs)
-    )
-    return state_prep_alias
-
-
-@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
-def _state_prep_alias_symb() -> StatePreparationAliasSampling:
-    import sympy
-
-    n_coeffs, sum_coeff, eps = sympy.symbols(r"L \lambda \epsilon")
-    state_prep_alias_symb = StatePreparationAliasSampling.from_n_coeff(
-        n_coeffs, sum_coeff, precision=eps
-    )
-    return state_prep_alias_symb
-
-
-@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
     coeff_map = {0: 1.0, 3: 1.0, 5: 3.0, 7: 2.0}
     N = 9
@@ -525,8 +532,7 @@ def _sparse_state_prep_alias_from_list() -> SparseStatePreparationAliasSampling:
     return sparse_state_prep_alias_from_list
 
 
-_STATE_PREP_ALIAS_DOC = BloqDocSpec(
-    bloq_cls=StatePreparationAliasSampling,
-    import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
-    examples=(_state_prep_alias, _state_prep_alias_symb),
+_SPARSE_STATE_PREP_ALIAS_DOC = BloqDocSpec(
+    bloq_cls=SparseStatePreparationAliasSampling,
+    examples=(_sparse_state_prep_alias, _sparse_state_prep_alias_from_list),
 )
