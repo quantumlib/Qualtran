@@ -14,7 +14,6 @@
 import math
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
-import numpy as np
 import sympy
 from attrs import field, frozen
 
@@ -31,8 +30,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import Add, AddK
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.arithmetic import Add, Negate
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
@@ -95,6 +93,19 @@ class Subtract(Bloq):
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
+    def _dtype_as_unsigned(
+        self, dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    ) -> Union[QUInt, QMontgomeryUInt]:
+        return dtype if not isinstance(dtype, QInt) else QUInt(dtype.bitsize)
+
+    @property
+    def a_dtype_as_unsigned(self):
+        return self._dtype_as_unsigned(self.a_dtype)
+
+    @property
+    def b_dtype_as_unsigned(self):
+        return self._dtype_as_unsigned(self.b_dtype)
+
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
@@ -118,32 +129,14 @@ class Subtract(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
         return {
-            (XGate(), self.b_dtype.bitsize),
-            (AddK(self.b_dtype.bitsize, k=1), 1),
-            (Add(a_dtype, b_dtype), 1),
+            (Negate(self.b_dtype), 1),
+            (Add(self.a_dtype_as_unsigned, self.b_dtype_as_unsigned), 1),
         }
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
-        b = bb.add(
-            AddK(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
-        )  # 2s complement of b.
-
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
-
-        a, b = bb.add(Add(a_dtype, b_dtype), a=a, b=b)  # a - b
+        b = bb.add(Negate(self.b_dtype), x=b)
+        a, b = bb.add(Add(self.a_dtype_as_unsigned, self.b_dtype_as_unsigned), a=a, b=b)  # a - b
         return {'a': a, 'b': b}
 
 

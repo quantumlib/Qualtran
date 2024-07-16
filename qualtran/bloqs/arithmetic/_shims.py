@@ -63,12 +63,3 @@ class CHalf(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.n))])
-
-
-@frozen
-class Negate(Bloq):
-    n: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n))])
