@@ -38,7 +38,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs.arithmetic.addition import XorK
+from qualtran.bloqs.arithmetic.bitwise import XorK
 from qualtran.bloqs.arithmetic.comparison import EqualsAConstant
 from qualtran.linalg.permutation import (
     CycleT,
