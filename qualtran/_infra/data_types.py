@@ -577,6 +577,12 @@ class QFxp(QDType):
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
         return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
 
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        # TODO figure out why `np.vectorize` is not working here
+        return Fxp(
+            [self.from_bits(bitstring) for bitstring in bits_array.reshape(-1, self.bitsize)]
+        )
+
     def to_fixed_width_int(self, x: Union[float, Fxp]) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
         if x < 0:
