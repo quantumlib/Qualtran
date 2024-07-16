@@ -532,7 +532,22 @@ def _sparse_state_prep_alias_from_list() -> SparseStatePreparationAliasSampling:
     return sparse_state_prep_alias_from_list
 
 
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _sparse_state_prep_alias_symb() -> SparseStatePreparationAliasSampling:
+    import sympy
+
+    n_coeffs, n_nonzero_coeffs, sum_coeff, eps = sympy.symbols(r"L d \lambda \epsilon")
+    sparse_state_prep_alias_symb = SparseStatePreparationAliasSampling.from_n_coeff(
+        n_coeffs, n_nonzero_coeffs, sum_coeff, precision=eps
+    )
+    return sparse_state_prep_alias_symb
+
+
 _SPARSE_STATE_PREP_ALIAS_DOC = BloqDocSpec(
     bloq_cls=SparseStatePreparationAliasSampling,
-    examples=(_sparse_state_prep_alias, _sparse_state_prep_alias_from_list),
+    examples=(
+        _sparse_state_prep_alias,
+        _sparse_state_prep_alias_from_list,
+        _sparse_state_prep_alias_symb,
+    ),
 )

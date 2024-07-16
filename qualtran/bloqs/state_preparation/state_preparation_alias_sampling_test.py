@@ -24,6 +24,7 @@ from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _sparse_state_prep_alias_from_list,
     _state_prep_alias,
     _state_prep_alias_symb,
+    _sparse_state_prep_alias_symb,
     SparseStatePreparationAliasSampling,
     StatePreparationAliasSampling,
 )
@@ -38,6 +39,7 @@ def test_state_prep_alias_sampling_autotest(bloq_autotester):
 def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_sparse_state_prep_alias)
     bloq_autotester(_sparse_state_prep_alias_from_list)
+    bloq_autotester(_sparse_state_prep_alias_symb)
 
 
 def test_mu_from_precision():

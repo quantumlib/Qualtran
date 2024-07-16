@@ -102,6 +102,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'product_block_encoding_symb',
         'apply_lth_bloq',
         'phase_block_encoding',
+        'sparse_state_prep_alias_symb',  # cannot serialize Shaped
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
