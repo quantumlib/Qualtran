@@ -45,7 +45,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt, is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -318,6 +318,10 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     mu: SymbolicInt
     sum_of_unnormalized_probabilities: SymbolicFloat
 
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.mu) and self.mu <= 0:
+            raise ValueError(f"{self.mu=} must be at least 1")
+
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         return tuple(
@@ -348,23 +352,28 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
                 for more information.
             nonzero_threshold: minimum value for a probability entry to be considered non-zero.
         """
-        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=unnormalized_probabilities, epsilon=precision
-        )
-        N = len(unnormalized_probabilities)
+        if not all(x >= 0 for x in unnormalized_probabilities):
+            raise ValueError(f"{cls} expects only non-negative probabilities")
 
+        N = len(unnormalized_probabilities)
         is_nonzero = ~np.isclose(unnormalized_probabilities, 0, atol=nonzero_threshold)
+        nonzero_values = np.array(unnormalized_probabilities)[is_nonzero].tolist()
+        d = len(nonzero_values)  # sparsity
+
+        alt_compressed, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            unnormalized_probabilities=nonzero_values, epsilon=precision
+        )
+
         index = np.arange(N)[is_nonzero]
-        alt = np.array(alt)[is_nonzero]
-        keep = np.array(keep)[is_nonzero]
+        alt = np.array([index[idx] for idx in alt_compressed])
 
         return cls(
             selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             index=index,
             alt=alt,
-            keep=keep,
+            keep=np.array(keep),
             mu=mu,
-            sum_of_unnormalized_probabilities=sum(abs(x) for x in unnormalized_probabilities),
+            sum_of_unnormalized_probabilities=np.sum(unnormalized_probabilities),
         )
 
     @classmethod
@@ -442,33 +451,26 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         soqs['sparse_index'] = bb.add(
             PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )
-        if self.mu == 0:
-            soqs['sparse_index'], soqs['selection'] = bb.add(
-                QROM((self.index,), (self.sparse_index_bitsize,), (self.selection_bitsize,)),
-                selection=soqs['sparse_index'],
-                target0_=soqs['selection'],
-            )
-        else:
-            soqs['sigma_mu'] = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=soqs['sigma_mu'])
-            soqs['sparse_index'], soqs['selection'], soqs['alt'], soqs['keep'] = bb.add_t(
-                self.qrom_bloq,
-                selection=soqs['sparse_index'],
-                target0_=soqs['selection'],
-                target1_=soqs['alt'],
-                target2_=soqs['keep'],
-            )
-            soqs['keep'], soqs['sigma_mu'], soqs['less_than_equal'] = bb.add_t(
-                LessThanEqual(self.mu, self.mu),
-                x=soqs['keep'],
-                y=soqs['sigma_mu'],
-                target=soqs['less_than_equal'],
-            )
-            soqs['less_than_equal'], soqs['alt'], soqs['selection'] = bb.add_t(
-                CSwap(self.selection_bitsize),
-                ctrl=soqs['less_than_equal'],
-                x=soqs['alt'],
-                y=soqs['selection'],
-            )
+        soqs['sigma_mu'] = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=soqs['sigma_mu'])
+        soqs['sparse_index'], soqs['selection'], soqs['alt'], soqs['keep'] = bb.add_t(
+            self.qrom_bloq,
+            selection=soqs['sparse_index'],
+            target0_=soqs['selection'],
+            target1_=soqs['alt'],
+            target2_=soqs['keep'],
+        )
+        soqs['keep'], soqs['sigma_mu'], soqs['less_than_equal'] = bb.add_t(
+            LessThanEqual(self.mu, self.mu),
+            x=soqs['keep'],
+            y=soqs['sigma_mu'],
+            target=soqs['less_than_equal'],
+        )
+        soqs['less_than_equal'], soqs['alt'], soqs['selection'] = bb.add_t(
+            CSwap(self.selection_bitsize),
+            ctrl=soqs['less_than_equal'],
+            x=soqs['alt'],
+            y=soqs['selection'],
+        )
 
         return soqs
 

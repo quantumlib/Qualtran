@@ -93,7 +93,9 @@ def assert_state_preparation_valid_for_coefficient(
     coeff_precision = epsilon * np.sum(np.abs(lcu_coefficients))
     if sparse:
         gate = SparseStatePreparationAliasSampling.from_dense_probabilities(
-            unnormalized_probabilities=lcu_coefficients.tolist(), precision=coeff_precision
+            unnormalized_probabilities=lcu_coefficients.tolist(),
+            precision=coeff_precision,
+            nonzero_threshold=atol,
         )
     else:
         gate = StatePreparationAliasSampling.from_probabilities(
@@ -181,7 +183,7 @@ less_than_equal: ─────────────────────
     )
 
 
-def test_sparse_state_preparation_via_coherent_alias_for_0_mu():
+def test_sparse_state_preparation_via_coherent_alias():
     lcu_coefficients = np.array([1 / 8 if j < 8 else 0.0 for j in range(16)])
     assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
 
