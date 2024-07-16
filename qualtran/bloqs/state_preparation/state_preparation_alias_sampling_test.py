@@ -21,6 +21,7 @@ from qualtran import Bloq
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     _sparse_state_prep_alias,
+    _sparse_state_prep_alias_from_list,
     _state_prep_alias,
     _state_prep_alias_symb,
     SparseStatePreparationAliasSampling,
@@ -36,6 +37,7 @@ def test_state_prep_alias_sampling_autotest(bloq_autotester):
 
 def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_sparse_state_prep_alias)
+    bloq_autotester(_sparse_state_prep_alias_from_list)
 
 
 def test_mu_from_precision():

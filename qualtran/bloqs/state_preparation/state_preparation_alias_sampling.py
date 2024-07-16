@@ -45,7 +45,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.symbolics import bit_length, Shaped, slen, SymbolicFloat, SymbolicInt, is_symbolic
+from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -335,6 +335,43 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         )
 
     @classmethod
+    def from_sparse_dict(
+        cls, unnormalized_probabilities: dict[int, float], N: int, *, precision: float = 1.0e-5
+    ) -> 'SparseStatePreparationAliasSampling':
+        """Construct the state preparation gate for a given dictionary of non-zero probabilities.
+
+        Args:
+            unnormalized_probabilities: a dictionary mapping indices to non-zero probabilities.
+            N: the maximum index (i.e. prepares a state with basis in [0, N))
+            precision: The desired accuracy to represent each probability
+                (which sets mu size and keep/alt integers).
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
+                for more information.
+        """
+        if not all(x >= 0 for x in unnormalized_probabilities.values()):
+            raise ValueError(f"{cls} expects only non-negative probabilities")
+        if not all(0 <= ix < N for ix in unnormalized_probabilities.keys()):
+            raise ValueError(
+                f"Sparse indices not in range [0, {N}): {unnormalized_probabilities.keys()}"
+            )
+
+        alt_compressed, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            unnormalized_probabilities=list(unnormalized_probabilities.values()), epsilon=precision
+        )
+
+        index = list(unnormalized_probabilities.keys())
+        alt = [index[idx] for idx in alt_compressed]
+
+        return cls(
+            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            index=np.array(index),
+            alt=np.array(alt),
+            keep=np.array(keep),
+            mu=mu,
+            sum_of_unnormalized_probabilities=sum(unnormalized_probabilities.values()),
+        )
+
+    @classmethod
     def from_dense_probabilities(
         cls,
         unnormalized_probabilities: Sequence[float],
@@ -347,33 +384,16 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         Args:
             unnormalized_probabilities: A dense list of all probabilities (i.e. including 0s)
             precision: The desired accuracy to represent each probability
-                (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
-                for more information.
             nonzero_threshold: minimum value for a probability entry to be considered non-zero.
         """
-        if not all(x >= 0 for x in unnormalized_probabilities):
-            raise ValueError(f"{cls} expects only non-negative probabilities")
+        nonzero_value_map: dict[int, float] = {
+            ix: prob
+            for ix, prob in enumerate(unnormalized_probabilities)
+            if not np.isclose(prob, 0, atol=nonzero_threshold)
+        }
 
-        N = len(unnormalized_probabilities)
-        is_nonzero = ~np.isclose(unnormalized_probabilities, 0, atol=nonzero_threshold)
-        nonzero_values = np.array(unnormalized_probabilities)[is_nonzero].tolist()
-        d = len(nonzero_values)  # sparsity
-
-        alt_compressed, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=nonzero_values, epsilon=precision
-        )
-
-        index = np.arange(N)[is_nonzero]
-        alt = np.array([index[idx] for idx in alt_compressed])
-
-        return cls(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
-            index=index,
-            alt=alt,
-            keep=np.array(keep),
-            mu=mu,
-            sum_of_unnormalized_probabilities=np.sum(unnormalized_probabilities),
+        return cls.from_sparse_dict(
+            nonzero_value_map, len(unnormalized_probabilities), precision=precision
         )
 
     @classmethod
@@ -486,12 +506,23 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _sparse_state_prep_alias() -> SparseStatePreparationAliasSampling:
-    coeffs = [1.0, 0, 0, 1, 0, 3, 0, 2, 0]
+    coeff_map = {0: 1.0, 3: 1.0, 5: 3.0, 7: 2.0}
+    N = 9
     mu = 3
-    state_prep_alias = SparseStatePreparationAliasSampling.from_dense_probabilities(
-        coeffs, precision=2**-mu / len(coeffs)
+    state_prep_alias = SparseStatePreparationAliasSampling.from_sparse_dict(
+        coeff_map, N, precision=2**-mu / len(coeff_map)
     )
     return state_prep_alias
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _sparse_state_prep_alias_from_list() -> SparseStatePreparationAliasSampling:
+    coeffs = [1.0, 0, 0, 1, 0, 3, 0, 2, 0]
+    mu = 3
+    sparse_state_prep_alias_from_list = (
+        SparseStatePreparationAliasSampling.from_dense_probabilities(coeffs, precision=2**-mu / 4)
+    )
+    return sparse_state_prep_alias_from_list
 
 
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(
