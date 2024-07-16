@@ -30,7 +30,7 @@ def test_negate_classical_sim(bitsize: int):
     for x_unsigned in dtype.get_classical_domain():
         (neg_x_unsigned,) = bloq.call_classically(x=x_unsigned)
         x = _uint_to_int(x_unsigned)
-        neg_x = _uint_to_int(neg_x_unsigned)
+        neg_x = _uint_to_int(int(neg_x_unsigned))
         if x == -(2 ** (bitsize - 1)):
             # twos complement negate(-2**(n - 1)) == -2**(n - 1)
             assert neg_x == x

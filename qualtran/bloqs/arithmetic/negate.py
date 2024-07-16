@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, QDType, Signature
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.basic_gates import OnEach, XGate
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 @frozen
