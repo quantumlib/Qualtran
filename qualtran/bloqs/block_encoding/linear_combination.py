@@ -49,9 +49,10 @@ class LinearCombination(BlockEncoding):
     block encodings $B[U_1], \ldots, B[U_n]$ and coefficients $\lambda_i \in \mathbb{R}$.
 
     When each $B[U_i]$ is a $(\alpha_i, a_i, \epsilon_i)$-block encoding of $U_i$, we have that
-    $B[\lambda_1 U_1 + \cdots + \lambda_n U_n]$ is a $(\sum_i \lvert\lambda_i\rvert\alpha_i, \lceil
-    \log_2 n \rceil + \max_i a_i, (\sum_i \lvert\lambda_i\rvert)\max_i \epsilon_i)$-block encoding
-    of $\lambda_1 U_1 + \cdots + \lambda_n U_n$.
+    $B[\lambda_1 U_1 + \cdots + \lambda_n U_n]$ is a $(\alpha, a, \epsilon)$-block encoding
+    of $\lambda_1 U_1 + \cdots + \lambda_n U_n$ where
+    $\alpha = \sum_i \lvert\lambda_i\rvert\alpha_i$, $a = \lceil \log_2 n \rceil + \max_i a_i$, and
+    $\epsilon = (\sum_i \lvert\lambda_i\rvert)\max_i \epsilon_i$.
 
     Under the hood, this bloq uses LCU Prepare and Select oracles to build the block encoding.
     These oracles will be automatically instantiated if not specified by the user.
