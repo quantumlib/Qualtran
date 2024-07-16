@@ -50,21 +50,22 @@ class LinearCombination(BlockEncoding):
 
     When each $B[U_i]$ is a $(\alpha_i, a_i, \epsilon_i)$-block encoding of $U_i$, we have that
     $B[\lambda_1 U_1 + \cdots + \lambda_n U_n]$ is a $(\alpha, a, \epsilon)$-block encoding
-    of $\lambda_1 U_1 + \cdots + \lambda_n U_n$ where
-    $\alpha = \sum_i \lvert\lambda_i\rvert\alpha_i$, $a = \lceil \log_2 n \rceil + \max_i a_i$, and
+    of $\lambda_1 U_1 + \cdots + \lambda_n U_n$ where the normalization constant
+    $\alpha = \sum_i \lvert\lambda_i\rvert\alpha_i$, number of ancillas
+    $a = \lceil \log_2 n \rceil + \max_i a_i$, and precision
     $\epsilon = (\sum_i \lvert\lambda_i\rvert)\max_i \epsilon_i$.
 
     Under the hood, this bloq uses LCU Prepare and Select oracles to build the block encoding.
     These oracles will be automatically instantiated if not specified by the user.
 
     Args:
-        _block_encodings: A sequence of block encodings.
-        _lambd: Corresponding coefficients.
+        block_encodings: A sequence of block encodings.
+        lambd: Corresponding coefficients.
         lambd_bits: Number of bits needed to represent coefficients precisely.
-        _prepare: If specified, oracle preparing $\sum_i \sqrt{|\lambda_i|} \ket{i}$
+        prepare: If specified, oracle preparing $\sum_i \sqrt{|\lambda_i|} |i\rangle$
             (state should be normalized and can have junk).
-        _select: If specified, oracle taking
-            $\ket{i}\ket{\psi} \mapsto \text{sgn}(\lambda_i) \ket{i} U_i\ket{\psi}$.
+        select: If specified, oracle taking
+            $|i\rangle|\psi\rangle \mapsto \text{sgn}(\lambda_i) |i\rangle U_i|\psi\rangle$.
 
     Registers:
         system: The system register.
@@ -106,7 +107,7 @@ class LinearCombination(BlockEncoding):
             )
 
     @cached_property
-    def block_encodings(self):
+    def signed_block_encodings(self):
         """Appropriately negated constituent block encodings."""
         return tuple(
             Phase(be, phi=1, eps=0) if l < 0 else be
@@ -114,7 +115,7 @@ class LinearCombination(BlockEncoding):
         )
 
     @cached_property
-    def lambd(self):
+    def rescaled_lambd(self):
         """Rescaled and padded array of coefficients."""
         x = np.abs(np.array(self._lambd))
         x /= np.linalg.norm(x, ord=1)
@@ -131,18 +132,20 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def system_bitsize(self) -> SymbolicInt:
-        return self.block_encodings[0].system_bitsize
+        return self.signed_block_encodings[0].system_bitsize
 
     def pretty_name(self) -> str:
-        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.block_encodings)}]"
+        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.signed_block_encodings)}]"
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return ssum(abs(l) * be.alpha for be, l in zip(self.block_encodings, self.lambd))
+        return ssum(
+            abs(l) * be.alpha for be, l in zip(self.signed_block_encodings, self.rescaled_lambd)
+        )
 
     @cached_property
     def be_ancilla_bitsize(self) -> SymbolicInt:
-        return smax(be.ancilla_bitsize for be in self.block_encodings)
+        return smax(be.ancilla_bitsize for be in self.signed_block_encodings)
 
     @cached_property
     def ancilla_bitsize(self) -> SymbolicInt:
@@ -150,7 +153,7 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def be_resource_bitsize(self) -> SymbolicInt:
-        return smax(be.resource_bitsize for be in self.block_encodings)
+        return smax(be.resource_bitsize for be in self.signed_block_encodings)
 
     @cached_property
     def resource_bitsize(self) -> SymbolicInt:
@@ -158,7 +161,9 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
-        return ssum(abs(l) for l in self.lambd) * smax(be.epsilon for be in self.block_encodings)
+        return ssum(abs(l) for l in self.rescaled_lambd) * smax(
+            be.epsilon for be in self.signed_block_encodings
+        )
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -187,10 +192,10 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=tuple(self.lambd),
+            unnormalized_probabilities=tuple(self.rescaled_lambd),
             sub_bit_precision=cast(int, self.lambd_bits),
         )
-        N = len(self.lambd)
+        N = len(self.rescaled_lambd)
 
         # import here to avoid circular dependency of StatePreparationAliasSampling
         # on PrepareOracle in qualtran.bloq.block_encoding
@@ -224,7 +229,7 @@ class LinearCombination(BlockEncoding):
 
         # make all bloqs have same ancilla and resource registers
         bloqs = []
-        for be in self.block_encodings:
+        for be in self.signed_block_encodings:
             assert isinstance(be.ancilla_bitsize, int)
             assert isinstance(be.resource_bitsize, int)
 
