@@ -83,8 +83,13 @@ Bloqs Library
     basic_gates/su2_rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
+    rotations/phase_gradient.ipynb
+    rotations/hamming_weight_phasing.ipynb
+    rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
+    qft/qft_text_book.ipynb
+    qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization/qubitization_walk_operator.ipynb
@@ -97,6 +102,7 @@ Bloqs Library
     state_preparation/prepare_uniform_superposition.ipynb
     chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
+    multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
     block_encoding/block_encoding.ipynb

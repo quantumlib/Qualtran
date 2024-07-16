@@ -17,6 +17,7 @@ from typing import Dict
 
 import cirq
 import numpy as np
+import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
@@ -31,6 +32,15 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 def test_partition(bloq_autotester):
     bloq_autotester(_partition)
+
+
+def test_partition_check():
+    with pytest.raises(ValueError):
+        _ = Partition(n=0, regs=())
+    with pytest.raises(ValueError):
+        _ = Partition(n=1, regs=(Register('x', QAny(2)),))
+    with pytest.raises(ValueError):
+        _ = Partition(n=4, regs=(Register('x', QAny(1)), Register('x', QAny(3))))
 
 
 @frozen
@@ -66,9 +76,12 @@ def test_partition_wrapper():
 
 def test_partition_wrapper_tensor_contract():
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
-    assert len(tn.tensors) == 3
-    assert tn.shape == (4096, 4096)
+    tn = cbloq_to_quimb(bloq.as_composite_bloq().flatten())
+    assert tn.shape == (2,) * (2 * int(np.log2(4096)))
+
+    tn = tn.rank_simplify()
+    for tensor in tn.tensors:
+        assert np.prod(tensor.shape) <= 2**4
 
 
 def test_partition_wrapper_as_cirq_op():

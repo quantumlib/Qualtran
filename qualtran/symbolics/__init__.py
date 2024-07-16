@@ -22,11 +22,15 @@ from qualtran.symbolics.math_funcs import (
     pi,
     prod,
     sabs,
+    sarg,
     sconj,
+    sexp,
     shape,
     slen,
     smax,
     smin,
+    ssqrt,
+    ssum,
 )
 from qualtran.symbolics.types import (
     HasLength,

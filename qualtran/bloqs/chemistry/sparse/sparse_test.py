@@ -81,7 +81,6 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
     return int(qrom_bloq.call_graph()[1].get(TGate(), 0))
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12

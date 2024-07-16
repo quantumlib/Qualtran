@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Iterator, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -38,8 +38,6 @@ from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, is_symbol
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
-
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -189,9 +187,9 @@ class MultiControlPauli(GateWithRegisters):
         return {'controls': controls, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+        from qualtran.cirq_interop import cirq_gate_to_bloq
 
-        ret = {(_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
+        ret = {(cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
 
         if is_symbolic(self.n_ctrls):
             return ret | {(MultiAnd(self.cvs), 1), (MultiAnd(self.cvs).adjoint(), 1)}
@@ -206,7 +204,7 @@ class MultiControlPauli(GateWithRegisters):
             return ret | {(and_gate, 1), (and_gate.adjoint(), 1)}
         n_pre_post_x = 2 * (len(self.concrete_cvs) - sum(self.concrete_cvs))
         pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
-        return {(_cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
+        return {(cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (
@@ -215,20 +213,6 @@ class MultiControlPauli(GateWithRegisters):
             else self.target_gate
         )
         return cirq.apply_unitary(cpauli, args)
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
 
     def _has_unitary_(self) -> bool:
         return not is_symbolic(self.n_ctrls)

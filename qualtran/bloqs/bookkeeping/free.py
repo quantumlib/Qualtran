@@ -13,9 +13,8 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING, Union
 
-import numpy as np
 import sympy
 from attrs import frozen
 
@@ -24,20 +23,22 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QDType,
     QUInt,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
 
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -75,25 +76,29 @@ class Free(_BookkeepingBloq):
             raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        data = np.zeros(1 << self.dtype.num_qubits)
-        data[0] = 1
-        tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
+        from qualtran.bloqs.basic_gates.z_basis import _ZERO
+
+        return [
+            qtn.Tensor(data=_ZERO, inds=[(incoming['reg'], i)], tags=[str(self)])
+            for i in range(self.dtype.num_qubits)
+        ]
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', reg: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        qubit_manager.qfree(reg.flatten().tolist())
+        return (None, {})
 
 
 @bloq_example

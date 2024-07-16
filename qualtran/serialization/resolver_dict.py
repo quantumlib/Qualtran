@@ -34,6 +34,10 @@ import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.phase
+import qualtran.bloqs.block_encoding.product
+import qualtran.bloqs.block_encoding.tensor_product
+import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -82,6 +86,7 @@ import qualtran.bloqs.for_testing.many_registers
 import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mean_estimation.arctan
@@ -89,6 +94,7 @@ import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
@@ -144,8 +150,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.multiplication.Square": qualtran.bloqs.arithmetic.multiplication.Square,
     "qualtran.bloqs.arithmetic.multiplication.SquareRealNumber": qualtran.bloqs.arithmetic.multiplication.SquareRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.SumOfSquares": qualtran.bloqs.arithmetic.multiplication.SumOfSquares,
+    "qualtran.bloqs.arithmetic.sorting.BitonicMerge": qualtran.bloqs.arithmetic.sorting.BitonicMerge,
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
+    "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
     "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
@@ -185,8 +193,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
+    "qualtran.bloqs.block_encoding.unitary.Unitary": qualtran.bloqs.block_encoding.unitary.Unitary,
+    "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
+    "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
+    "qualtran.bloqs.block_encoding.phase.phase": qualtran.bloqs.block_encoding.phase.Phase,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
+    "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
     "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
     "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
@@ -281,6 +294,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
+    "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP": qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
@@ -292,6 +306,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
+    "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq": qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq,
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,

@@ -75,7 +75,7 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register(name='system', dtype=QAny(_total_bits(self.select.selection_registers))),)
+        return (Register(name='system', dtype=QAny(_total_bits(self.select.target_registers))),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -354,7 +354,6 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         def _extract_soqs(bloq: Bloq) -> Dict[str, 'SoquetT']:
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
-        print('xxxx')
         soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
         soqs |= bb.add_d(self.select, **_extract_soqs(self.select))
         soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))

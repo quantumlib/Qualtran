@@ -28,6 +28,7 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     CompositeBloq,
+    ConnectionT,
     Controlled,
     CtrlSpec,
     DecomposeNotImplementedError,
@@ -40,7 +41,6 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT,
 )
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
@@ -102,22 +102,11 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         except TypeError as e:
             raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        _add_my_tensors_from_gate(
-            self.cirq_gate,
-            self.signature,
-            str(self.cirq_gate),
-            tn=tn,
-            tag=tag,
-            incoming=incoming,
-            outgoing=outgoing,
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        return _my_tensors_from_gate(
+            self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -204,39 +193,27 @@ def _wire_symbol_from_gate(
     return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, wire_reg.side)
 
 
-def _add_my_tensors_from_gate(
+def _my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
-    short_name: str,
-    tn: 'qtn.TensorNetwork',
-    tag: Any,
     *,
-    incoming: Dict[str, 'SoquetT'],
-    outgoing: Dict[str, 'SoquetT'],
-):
+    incoming: Dict[str, 'ConnectionT'],
+    outgoing: Dict[str, 'ConnectionT'],
+) -> List['qtn.Tensor']:
     import quimb.tensor as qtn
 
+    from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
     from qualtran.simulation.tensor._tensor_data_manipulation import (
         tensor_data_from_unitary_and_signature,
     )
 
     if not cirq.has_unitary(gate):
-        raise NotImplementedError(
-            f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
-            f"Found {gate}."
-        )
+        raise NotImplementedError(f"Tensors are only supported for unitary gates, not {gate}.")
+
     unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
-    incoming_list = [
-        *itertools.chain.from_iterable(
-            [np.array(incoming[reg.name]).flatten() for reg in signature.lefts()]
-        )
-    ]
-    outgoing_list = [
-        *itertools.chain.from_iterable(
-            [np.array(outgoing[reg.name]).flatten() for reg in signature.rights()]
-        )
-    ]
-    tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
+    inds = _order_incoming_outgoing_indices(signature, incoming=incoming, outgoing=outgoing)
+    unitary = unitary.reshape((2,) * len(inds))
+    return [qtn.Tensor(data=unitary, inds=inds, tags=[str(gate)])]
 
 
 @frozen(eq=False)
@@ -342,7 +319,12 @@ def _gather_input_soqs(
     return qvars_in
 
 
-def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+    """For a given Cirq gate, return an equivalent bloq.
+
+    This will try to find the idiomatically correct bloq to return. If there is no equivalent
+    Qualtran bloq for the given Cirq gate, we wrap it in the `CirqGateAsBloq` wrapper class.
+    """
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import (
         CNOT,
@@ -376,12 +358,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
 
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
         # Inverse of a cirq gate, delegate to Adjoint
-        return Adjoint(_cirq_gate_to_bloq(gate._original))
-
-    if isinstance(gate, cirq.ControlledGate):
-        return Controlled(
-            _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
-        )
+        return Adjoint(cirq_gate_to_bloq(gate._original))
 
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {
@@ -400,6 +377,11 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     }
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
+
+    if isinstance(gate, cirq.ControlledGate):
+        return Controlled(
+            cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
+        )
 
     # Check specific basic gates types.
     CIRQ_TYPE_TO_BLOQ_MAP = {
@@ -421,8 +403,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
 
     if isinstance(gate, cirq.GlobalPhaseGate):
         if isinstance(gate.coefficient, numbers.Complex):
-            return GlobalPhase(coefficient=complex(gate.coefficient))
-        return GlobalPhase(coefficient=gate.coefficient)
+            return GlobalPhase.from_coefficient(coefficient=complex(gate.coefficient))
+        return GlobalPhase.from_coefficient(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)
@@ -436,7 +418,7 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
     """
     if op.gate is None:
         raise ValueError(f"Only gate operations are supported, not {op}.")
-    return _cirq_gate_to_bloq(op.gate)
+    return cirq_gate_to_bloq(op.gate)
 
 
 def cirq_optree_to_cbloq(
