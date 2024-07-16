@@ -142,18 +142,18 @@ def test_add_into_phase_grad_controlled(controlled: int):
     np.testing.assert_allclose(circuit.unitary(), expected_unitary, atol=1e-8)
 
 
+_ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
+    AddScaledValIntoPhaseReg.from_bitsize(4, 7, 0.123, 6),
+    AddScaledValIntoPhaseReg.from_bitsize(2, 8, 1.3868682, 8),
+    AddScaledValIntoPhaseReg.from_bitsize(4, 9, -19.0949456, 5),
+    AddScaledValIntoPhaseReg.from_bitsize(6, 4, 2.5, 2),
+    AddScaledValIntoPhaseReg(QFxp(4, 0, signed=False), 4, 1.3868682, QFxp(8, 7, signed=False)),
+]
+
+
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    'bloq',
-    [
-        AddScaledValIntoPhaseReg.from_bitsize(4, 7, 0.123, 6),
-        AddScaledValIntoPhaseReg.from_bitsize(2, 8, 1.3868682, 8),
-        AddScaledValIntoPhaseReg.from_bitsize(4, 9, -19.0949456, 5),
-        AddScaledValIntoPhaseReg.from_bitsize(6, 4, 2.5, 2),
-        AddScaledValIntoPhaseReg(QFxp(4, 0, signed=False), 4, 1.3868682, QFxp(8, 7, signed=False)),
-    ],
-)
-def test_add_scaled_val_into_phase_reg(bloq):
+@pytest.mark.parametrize('bloq', _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES)
+def test_add_scaled_val_into_phase_reg_classical_sim(bloq):
     cbloq = bloq.decompose_bloq()
     for x in range(2**bloq.x_dtype.bitsize):
         for phase_grad in range(2**bloq.phase_bitsize):
@@ -161,6 +161,16 @@ def test_add_scaled_val_into_phase_reg(bloq):
             c1 = bloq.on_classical_vals(**d)
             c2 = cbloq.on_classical_vals(**d)
             assert c1 == c2, f'{d=}, {c1=}, {c2=}'
+
+
+@pytest.mark.parametrize(
+    'bloq',
+    [
+        pytest.param(bloq, marks=pytest.mark.slow if bloq.num_qubits() > 11 else ())
+        for bloq in _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES
+    ],
+)
+def test_add_scaled_val_into_phase_reg_unitary(bloq: AddScaledValIntoPhaseReg):
     bloq_unitary = cirq.unitary(bloq)
     op = GateHelper(bloq).operation
     circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
