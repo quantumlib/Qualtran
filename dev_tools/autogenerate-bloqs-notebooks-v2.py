@@ -330,6 +330,11 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Negation',
+        module=qualtran.bloqs.arithmetic.negate,
+        bloq_specs=[qualtran.bloqs.arithmetic.negate._NEGATE_DOC],
+    ),
+    NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
         bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
