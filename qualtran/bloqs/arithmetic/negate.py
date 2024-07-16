@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, QDType, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QDType, QInt, Signature
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.basic_gates import OnEach, XGate
 
@@ -54,3 +54,21 @@ class Negate(Bloq):
         x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
         x = bb.add(AddK(self.dtype.num_qubits, k=1), x=x)
         return {'x': x}
+
+
+@bloq_example
+def _negate() -> Negate:
+    negate = Negate(QInt(8))
+    return negate
+
+
+@bloq_example
+def _negate_symb() -> Negate:
+    import sympy
+
+    n = sympy.Symbol("n")
+    negate_symb = Negate(QInt(n))
+    return negate_symb
+
+
+_NEGATE_DOC = BloqDocSpec(bloq_cls=Negate, examples=[_negate, _negate_symb])

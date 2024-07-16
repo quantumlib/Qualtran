@@ -14,7 +14,12 @@
 import pytest
 
 from qualtran import QInt, QUInt
-from qualtran.bloqs.arithmetic.negate import Negate
+from qualtran.bloqs.arithmetic.negate import _negate, _negate_symb, Negate
+
+
+def test_examples(bloq_autotester):
+    bloq_autotester(_negate)
+    bloq_autotester(_negate_symb)
 
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3, 4, 8])
