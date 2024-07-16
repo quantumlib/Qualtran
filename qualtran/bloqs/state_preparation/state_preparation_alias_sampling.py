@@ -326,10 +326,10 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     def junk_registers(self) -> Tuple[Register, ...]:
         return tuple(
             Signature.build(
-                sigma_mu=self.sigma_mu_bitsize,
+                sigma_mu=self.mu,
                 sparse_index=self.sparse_index_bitsize,
-                alt=self.alternates_bitsize,
-                keep=self.keep_bitsize,
+                alt=self.selection_bitsize,
+                keep=self.mu,
                 less_than_equal=1,
             )
         )
@@ -420,38 +420,26 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         return self.sum_of_unnormalized_probabilities
 
     @cached_property
-    def sigma_mu_bitsize(self) -> SymbolicInt:
-        return self.mu
+    def selection_bitsize(self) -> SymbolicInt:
+        return total_bits(self.selection_registers)
 
     @cached_property
     def sparse_index_bitsize(self) -> SymbolicInt:
         return bit_length(self.n_nonzero_coeff - 1)
 
     @cached_property
-    def alternates_bitsize(self) -> SymbolicInt:
-        return total_bits(self.selection_registers)
-
-    @cached_property
-    def keep_bitsize(self) -> SymbolicInt:
-        return self.mu
-
-    @cached_property
-    def selection_bitsize(self) -> SymbolicInt:
-        return total_bits(self.selection_registers)
-
-    @cached_property
     def qrom_bloq(self) -> QROM:
         return QROM(
             (self.index, self.alt, self.keep),
             (self.sparse_index_bitsize,),
-            (self.selection_bitsize, self.alternates_bitsize, self.keep_bitsize),
+            (self.selection_bitsize, self.selection_bitsize, self.mu),
         )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         soqs['sparse_index'] = bb.add(
             PrepareUniformSuperposition(self.n_nonzero_coeff), target=soqs['sparse_index']
         )
-        soqs['sigma_mu'] = bb.add(OnEach(self.sigma_mu_bitsize, Hadamard()), q=soqs['sigma_mu'])
+        soqs['sigma_mu'] = bb.add(OnEach(self.mu, Hadamard()), q=soqs['sigma_mu'])
         soqs['sparse_index'], soqs['selection'], soqs['alt'], soqs['keep'] = bb.add_t(
             self.qrom_bloq,
             selection=soqs['sparse_index'],
