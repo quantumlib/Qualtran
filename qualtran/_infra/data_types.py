@@ -578,6 +578,7 @@ class QFxp(QDType):
         return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
 
     def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        assert isinstance(self.bitsize, int), "cannot convert to bits for symbolic bitsize"
         # TODO figure out why `np.vectorize` is not working here
         return Fxp(
             [self.from_bits(bitstring) for bitstring in bits_array.reshape(-1, self.bitsize)]
