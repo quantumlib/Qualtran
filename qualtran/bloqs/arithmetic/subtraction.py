@@ -45,8 +45,7 @@ class Subtract(Bloq):
 
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4 T$ gates.
 
-    This construction uses `XGate` and `AddK` to compute the twos-compliment of `b` before
-    doing a standard `Add`.
+    This first negates $b$ (assuming a two's complement representation), and then adds $a$ into it.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
