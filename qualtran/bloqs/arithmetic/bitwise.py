@@ -14,6 +14,7 @@
 from functools import cached_property
 from typing import Optional, Sequence, TYPE_CHECKING
 
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -93,7 +94,10 @@ class XorK(Bloq):
         if isinstance(self.k, sympy.Expr):
             raise ValueError(f"cannot classically simulate with symbolic {self.k=}")
 
-        return {'x': x ^ self.k}
+        k: 'ClassicalValT' = self.k
+        if isinstance(x, np.integer):
+            k = np.array(k, dtype=x.dtype)[()]
+        return {'x': x ^ k}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
