@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import cirq
 import numpy as np
 import pytest
 
@@ -45,6 +45,23 @@ def test_xork_classical_sim():
         ctrl_out, x_out = cbloq.call_classically(ctrl=1, x=x)
         assert ctrl_out == 1
         assert x_out == x ^ k
+
+
+def test_xork_diagram():
+    bloq = XorK(QUInt(4), 0b0110)
+    circuit = bloq.as_composite_bloq().to_cirq_circuit()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+x0: ───⊕6───
+       │
+x1: ───⊕6───
+       │
+x2: ───⊕6───
+       │
+x3: ───⊕6───
+    ''',
+    )
 
 
 def test_xor(bloq_autotester):
@@ -88,3 +105,28 @@ def test_xor_tensor(dtype):
             np.testing.assert_allclose(
                 cbloq.tensor_contract(), IntState(x ^ y, 4).tensor_contract()
             )
+
+
+def test_xor_diagram():
+    bloq = Xor(QUInt(4))
+    circuit = bloq.as_composite_bloq().to_cirq_circuit()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+x0: ───x─────
+       │
+x1: ───x─────
+       │
+x2: ───x─────
+       │
+x3: ───x─────
+       │
+y0: ───x⊕y───
+       │
+y1: ───x⊕y───
+       │
+y2: ───x⊕y───
+       │
+y3: ───x⊕y───
+    ''',
+    )

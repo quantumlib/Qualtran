@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Optional, Sequence, TYPE_CHECKING
 
 import sympy
 from attrs import frozen
@@ -26,11 +26,13 @@ from qualtran import (
     QAny,
     QDType,
     QUInt,
+    Register,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
@@ -65,13 +67,17 @@ class XorK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.k, self.dtype)
 
+    @cached_property
+    def _bits_k(self) -> Sequence[int]:
+        return self.dtype.to_bits(self.k)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
         xs = bb.split(x)
 
-        for i, bit in enumerate(self.dtype.to_bits(self.k)):
+        for i, bit in enumerate(self._bits_k):
             if bit == 1:
                 xs[i] = bb.add(XGate(), q=xs[i])
 
@@ -80,11 +86,22 @@ class XorK(Bloq):
         return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        num_flips = self.bitsize if self.is_symbolic() else sum(self.dtype.to_bits(self.k))
+        num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
         return {(XGate(), num_flips)}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        if isinstance(self.k, sympy.Expr):
+            raise ValueError(f"cannot classically simulate with symbolic {self.k=}")
+
         return {'x': x ^ self.k}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox("")
+
+        return TextBox(f"⊕{self.k}")
 
 
 @bloq_example(generalizer=ignore_split_join)
@@ -133,6 +150,16 @@ class Xor(Bloq):
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> dict[str, 'ClassicalValT']:
         return {'x': x, 'y': x ^ y}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox('')
+        elif reg.name == 'x':
+            return TextBox('x')
+        else:  # y
+            return TextBox('x⊕y')
 
 
 @bloq_example
