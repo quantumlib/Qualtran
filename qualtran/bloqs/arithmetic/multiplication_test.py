@@ -69,6 +69,10 @@ def test_plus_equals_product_auto(bloq_autotester):
     bloq_autotester(_plus_equal_product)
 
 
+def test_invert_real_number_auto(bloq_autotester):
+    bloq_autotester(_invert_real_number)
+
+
 def test_square():
     bb = BloqBuilder()
     bitsize = 4

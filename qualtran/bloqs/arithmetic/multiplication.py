@@ -516,19 +516,14 @@ class InvertRealNumber(Bloq):
         result: `bitsize`-sized output register.
 
         References:
-        [Quantum Algorithms and Circuits for Scientific Computing](
-        https://arxiv.org/pdf/1511.08253). Section 2.1.
+        [Quantum Algorithms and Circuits for Scientific Computing](https://arxiv.org/pdf/1511.08253). Section 2.1.
     """
 
     bitsize: int
     num_frac: int
 
     def __attrs_post_init__(self):
-        if (
-            isinstance(self.num_frac, int)
-            and isinstance(self.bitsize, int)
-            and self.num_frac >= self.bitsize
-        ):
+        if self.num_frac == self.bitsize:
             raise ValueError("num_frac must be < bitsize since a >= 1.")
 
     @property
