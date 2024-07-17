@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import abc
 from functools import cached_property
 from typing import cast, Dict, Tuple
 
@@ -49,10 +50,6 @@ class RowColumnOracle(Bloq):
     Here, $r(i, \ell)$ and $c(j, \ell)$ give the $\ell$-th nonzero entry in the $i$-th row
     and $j$-th column of the matrix, respectively.
 
-    Args:
-        n: The number of bits used to represent an index.
-        num_nonzero: The number of nonzero entries in each row or column.
-
     Registers:
         l: As input, index specifying the `l`-th non-zero entry to find in row / column `i`.
            As output, position of the `l`-th non-zero entry in row / column `i`.
@@ -63,8 +60,15 @@ class RowColumnOracle(Bloq):
         https://arxiv.org/pdf/2201.08309). Lin Lin (2022). Ch. 6.5.
     """
 
-    n: SymbolicInt
-    num_nonzero: SymbolicInt
+    @property
+    @abc.abstractmethod
+    def n(self) -> SymbolicInt:
+        """The number of bits used to represent an index."""
+
+    @property
+    @abc.abstractmethod
+    def num_nonzero(self) -> SymbolicInt:
+        """The number of nonzero entries in each row or column."""
 
     def __attrs_post_init__(self):
         if self.num_nonzero > 2**self.n:
@@ -82,9 +86,6 @@ class EntryOracle(Bloq):
     In the reference, this is the interface of
     $$O_A : \ket{0}\ket{i}\ket{j} \mapsto (A_{ij}\ket{0} + \sqrt{1 - |A_{ij}|^2}\ket{i}\ket{j}).$$
 
-    Args:
-        n: The number of bits used to represent an index of the matrix.
-
     Registers:
         q: The flag qubit that is rotated proportionally to the value of the entry.
         i: The row index.
@@ -95,7 +96,10 @@ class EntryOracle(Bloq):
         https://arxiv.org/pdf/2201.08309). Lin Lin (2022). Ch. 6.5.
     """
 
-    n: SymbolicInt
+    @property
+    @abc.abstractmethod
+    def n(self) -> SymbolicInt:
+        """The number of bits used to represent an index."""
 
     @cached_property
     def signature(self) -> Signature:
@@ -220,8 +224,14 @@ class SparseMatrix(BlockEncoding):
 
 
 @frozen
-class UniformRowColumnOracle(RowColumnOracle):
-    """Oracle specifying the non-zero rows or columns of a matrix with uniform entries."""
+class FullRowColumnOracle(RowColumnOracle):
+    """Oracle specifying the non-zero rows or columns of a matrix with full entries."""
+
+    n: SymbolicInt
+
+    @cached_property
+    def num_nonzero(self) -> SymbolicInt:
+        return 2**self.n
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         # the l-th non-zero entry is at position l, so do nothing
@@ -232,6 +242,7 @@ class UniformRowColumnOracle(RowColumnOracle):
 class UniformEntryOracle(EntryOracle):
     """Oracle specifying the entries of a matrix with uniform entries."""
 
+    n: SymbolicInt
     entry: float
 
     def build_composite_bloq(
@@ -243,13 +254,10 @@ class UniformEntryOracle(EntryOracle):
 
 @bloq_example
 def _sparse_matrix_block_encoding() -> SparseMatrix:
-    from qualtran.bloqs.block_encoding.sparse_matrix import (
-        UniformEntryOracle,
-        UniformRowColumnOracle,
-    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import FullRowColumnOracle, UniformEntryOracle
 
-    row_oracle = UniformRowColumnOracle(n=2, num_nonzero=4)
-    col_oracle = UniformRowColumnOracle(n=2, num_nonzero=4)
+    row_oracle = FullRowColumnOracle(2)
+    col_oracle = FullRowColumnOracle(2)
     entry_oracle = UniformEntryOracle(n=2, entry=0.3)
     sparse_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return sparse_matrix_block_encoding
