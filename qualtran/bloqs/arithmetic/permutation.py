@@ -53,7 +53,6 @@ if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
-
 SymbolicCycleT: TypeAlias = Union[CycleT, Shaped]
 
 
@@ -66,6 +65,20 @@ def _convert_cycle(cycle) -> Union[tuple[int, ...], Shaped]:
 @frozen
 class PermutationCycle(Bloq):
     r"""Apply a single permutation cycle on the basis states.
+
+    Given a permutation cycle $C = (v_0 v_2 \ldots v_{k - 1})$, applies the following unitary:
+
+        $$
+            U|v_i\rangle \mapsto |v_{(i + 1)\mod k}\rangle
+        $$
+
+    for each $i \in [0, k)$, and
+
+        $$
+            U|x\rangle \mapsto |x\rangle
+        $$
+
+    and for every $x \not\in C$.
 
     Args:
         N: the total size the permutation acts on.
@@ -151,7 +164,8 @@ class Permutation(Bloq):
     """Apply a permutation of [0, N - 1] on the basis states.
 
     Decomposes a permutation into cycles and applies them in order.
-    See :meth:`from_dense_permutation` to construct this bloq from a permutation.
+    See :meth:`from_dense_permutation` to construct this bloq from a permutation,
+    and :meth:`from_partial_permutation_map` to construct it from a mapping.
 
     Args:
         N: the total size the permutation acts on.
@@ -183,22 +197,43 @@ class Permutation(Bloq):
 
     @classmethod
     def from_dense_permutation(cls, permutation: Sequence[int]):
+        """Construct a permutation bloq from a dense permutation of size `N`.
+
+        Args:
+            permutation: a sequence of length `N` containing a permutation of `[0, N)`.
+        """
         N = len(permutation)
         cycles = tuple(decompose_permutation_into_cycles(permutation))
         return cls(N, cycles)
 
     @classmethod
     def from_partial_permutation_map(cls, N: int, permutation_map: dict[int, int]):
+        """Construct a permutation bloq from a (partial) permutation mapping
+
+        Constructs a permuation of `[0, N)` from a partial mapping. Any numbers that
+        do not occur in `permutation_map` (i.e. as keys or values) are treated as
+        mapping to themselves.
+
+        Args:
+            N: the upper limit, i.e. permutation is on range `[0, N)`
+            permutation_map: a dictionary defining the permutation
+        """
         cycles = tuple(decompose_permutation_map_into_cycles(permutation_map))
         return cls(N, cycles)
 
     @classmethod
-    def from_sparse_permutation_prefix(cls, N: int, permutation_prefix: Sequence[int]):
-        return cls.from_partial_permutation_map(N, {i: v for i, v in enumerate(permutation_prefix)})
-
-    @classmethod
     def from_cycle_lengths(cls, N: SymbolicInt, cycle_lengths: tuple[SymbolicInt, ...]):
-        cycles = tuple(Shaped((cycle_len,)) for cycle_len in cycle_lengths)
+        """Construct a permutation bloq from a dense permutation of size `N`.
+
+        Args:
+            N: the upper limit, i.e. permutation is on range `[0, N)`
+            cycle_lengths: a tuple of lengths of each non-trivial cycle (i.e. length at least 2).
+        """
+        cycles = tuple(
+            Shaped((cycle_len,))
+            for cycle_len in cycle_lengths
+            if is_symbolic(cycle_len) or cycle_len >= 2
+        )
         return cls(N, cycles)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
@@ -252,11 +287,3 @@ def _sparse_permutation() -> Permutation:
         16, {0: 1, 1: 3, 2: 8, 3: 15, 4: 12}
     )
     return sparse_permutation
-
-
-@bloq_example
-def _sparse_permutation_from_prefix() -> Permutation:
-    sparse_permutation_from_prefix = Permutation.from_sparse_permutation_prefix(
-        16, [1, 3, 8, 15, 12]
-    )
-    return sparse_permutation_from_prefix

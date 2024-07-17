@@ -34,7 +34,6 @@ from qualtran.bloqs.arithmetic.permutation import (
     _permutation_symb,
     _permutation_symb_with_cycles,
     _sparse_permutation,
-    _sparse_permutation_from_prefix,
     Permutation,
     PermutationCycle,
 )
@@ -48,7 +47,6 @@ def test_examples(bloq_autotester):
     bloq_autotester(_permutation_cycle)
     bloq_autotester(_permutation)
     bloq_autotester(_sparse_permutation)
-    bloq_autotester(_sparse_permutation_from_prefix)
 
 
 def test_symbolic_examples(bloq_autotester):
@@ -118,12 +116,12 @@ def test_permutation_unitary_and_call_graph():
 
 def test_sparse_permutation_classical_sim():
     N = 50
-    prefix = [1, 20, 30, 40]
-    bloq = Permutation.from_sparse_permutation_prefix(N, prefix)
+    perm_map = {0: 1, 1: 20, 2: 30, 3: 40}
+    bloq = Permutation.from_partial_permutation_map(N, perm_map)
     assert bloq.bitsize == 6
     assert bloq.cycles == ((0, 1, 20), (2, 30), (3, 40))
 
-    for i, x in enumerate(prefix):
+    for i, x in perm_map.items():
         assert bloq.call_classically(x=i) == (x,)
 
 
