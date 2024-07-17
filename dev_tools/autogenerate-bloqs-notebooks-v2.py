@@ -53,6 +53,7 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
@@ -395,6 +396,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
         ],
     ),
+    NotebookSpecV2(
+        title='Bitwise Operations',
+        module=qualtran.bloqs.arithmetic.bitwise,
+        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -626,7 +632,6 @@ OTHER: List[NotebookSpecV2] = [
         title='Multi-Paulis',
         module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
         bloq_specs=[
-            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._COPY_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],

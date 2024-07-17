@@ -11,8 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import QUInt
-from qualtran.bloqs.arithmetic.bitwise import _cxork, _xork, XorK
+
+import numpy as np
+
+from qualtran import BloqBuilder, QUInt
+from qualtran.bloqs.arithmetic.bitwise import _cxork, _xor, _xor_symb, _xork, XorK
+from qualtran.bloqs.basic_gates import IntEffect, IntState
 
 
 def test_examples(bloq_autotester):
@@ -36,3 +40,25 @@ def test_xork_classical_sim():
         ctrl_out, x_out = cbloq.call_classically(ctrl=1, x=x)
         assert ctrl_out == 1
         assert x_out == x ^ k
+
+
+def test_xor(bloq_autotester):
+    bloq_autotester(_xor)
+    bloq_autotester(_xor_symb)
+
+
+def test_xor_call():
+    bloq = _xor()
+    ctrl, x = bloq.call_classically(ctrl=7, x=0)
+    assert ctrl == 7 and x == 7
+    ctrl, x = bloq.decompose_bloq().call_classically(ctrl=7, x=0)
+    assert ctrl == 7 and x == 7
+
+    bb = BloqBuilder()
+    ctrl = bb.add(IntState(13, 4))
+    x = bb.add(IntState(0, 4))
+    ctrl, x = bb.add_t(bloq, ctrl=ctrl, x=x)
+    bb.add(IntEffect(13, 4), val=ctrl)
+    bloq = bb.finalize(x=x)
+
+    np.testing.assert_allclose(bloq.tensor_contract(), IntState(13, 4).tensor_contract())

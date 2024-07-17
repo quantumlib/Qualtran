@@ -15,7 +15,6 @@
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
-    Copy,
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,

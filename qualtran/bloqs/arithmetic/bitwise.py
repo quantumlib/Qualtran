@@ -15,11 +15,14 @@ from functools import cached_property
 from typing import cast, Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     DecomposeTypeError,
     QBit,
     QDType,
@@ -36,6 +39,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 def _cvs_converter(vv):
@@ -118,3 +122,64 @@ def _cxork() -> XorK:
     cxork = XorK(QUInt(8), 0b01010111).controlled()
     assert isinstance(cxork, XorK)
     return cxork
+
+
+@frozen
+class Xor(Bloq):
+    """Xor the value of one register into another via CNOTs.
+
+    When both registers are in computational basis and the destination is 0,
+    effectively copies the value of the source into the destination.
+
+    Args:
+        bitsize: The size of the register.
+
+    Registers:
+        ctrl: The source register.
+        x: The target register.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(ctrl=self.bitsize, x=self.bitsize)
+
+    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, x: Soquet) -> Dict[str, SoquetT]:
+        if not isinstance(self.bitsize, int):
+            raise DecomposeTypeError("`bitsize` must be a concrete value.")
+
+        ctrls = bb.split(ctrl)
+        xs = bb.split(x)
+
+        for i in range(self.bitsize):
+            ctrls[i], xs[i] = bb.add_t(CNOT(), ctrl=ctrls[i], target=xs[i])
+
+        return {'ctrl': bb.join(ctrls), 'x': bb.join(xs)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(CNOT(), self.bitsize)}
+
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'ctrl': ctrl, 'x': ctrl}
+
+
+@bloq_example
+def _xor() -> Xor:
+    xor = Xor(4)
+    return xor
+
+
+@bloq_example
+def _xor_symb() -> Xor:
+    xor_symb = Xor(sympy.Symbol("n"))
+    return xor_symb
+
+
+_XOR_DOC = BloqDocSpec(
+    bloq_cls=Xor,
+    import_line='from qualtran.bloqs.arithmetic import Xor',
+    examples=(_xor, _xor_symb),
+)
