@@ -15,12 +15,16 @@ from functools import cached_property
 from typing import cast, Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     DecomposeTypeError,
+    QAny,
     QBit,
     QDType,
     QUInt,
@@ -36,6 +40,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 def _cvs_converter(vv):
@@ -58,6 +63,7 @@ class XorK(SpecializedSingleQubitControlledGate):
         x: A quantum register of type `self.dtype` (see above).
         ctrl: A sequence of control qubits (only when `control_val` is not None).
     """
+
     dtype: QDType
     k: SymbolicInt
     control_val: Optional[int] = None
@@ -118,3 +124,64 @@ def _cxork() -> XorK:
     cxork = XorK(QUInt(8), 0b01010111).controlled()
     assert isinstance(cxork, XorK)
     return cxork
+
+
+@frozen
+class Xor(Bloq):
+    """Xor the value of one register into another via CNOTs.
+
+    When both registers are in computational basis and the destination is 0,
+    effectively copies the value of the source into the destination.
+
+    Args:
+        dtype: Data type of the input registers `x` and `y`.
+
+    Registers:
+        x: The source register.
+        y: The target register.
+    """
+
+    dtype: QDType
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
+
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> Dict[str, SoquetT]:
+        if not isinstance(self.dtype.num_qubits, int):
+            raise DecomposeTypeError("`dtype.num_qubits` must be a concrete value.")
+
+        xs = bb.split(x)
+        ys = bb.split(y)
+
+        for i in range(len(xs)):
+            xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])
+
+        return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(CNOT(), self.dtype.num_qubits)}
+
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'y': x ^ y}
+
+
+@bloq_example
+def _xor() -> Xor:
+    xor = Xor(QAny(4))
+    return xor
+
+
+@bloq_example
+def _xor_symb() -> Xor:
+    xor_symb = Xor(QAny(sympy.Symbol("n")))
+    return xor_symb
+
+
+_XOR_DOC = BloqDocSpec(
+    bloq_cls=Xor,
+    import_line='from qualtran.bloqs.arithmetic import Xor',
+    examples=(_xor, _xor_symb),
+)
