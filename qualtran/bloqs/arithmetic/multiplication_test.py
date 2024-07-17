@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 import cirq
+import numpy as np
 import pytest
 
 from qualtran import BloqBuilder, QUInt, Register
 from qualtran.bloqs.arithmetic.multiplication import (
+    _invert_real_number,
     _multiply_two_reals,
     _plus_equal_product,
     _product,
@@ -31,8 +34,10 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SquareRealNumber,
     SumOfSquares,
 )
-from qualtran.bloqs.basic_gates import IntState
+from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.symbolics import HasLength
 from qualtran.testing import execute_notebook
 
 
@@ -164,6 +169,27 @@ def test_plus_equal_product():
 
     # TODO: The T-complexity here is approximate.
     assert t_complexity(bloq) == TComplexity(t=8 * max(a_bit, b_bit) ** 2)
+
+
+def test_invert_real_number():
+    from qualtran.bloqs.arithmetic.subtraction import Subtract
+
+    bitsize = 10
+    num_frac = 7
+    num_int = bitsize - num_frac
+    num_iters = int(np.ceil(np.log2(bitsize)))
+    bloq = _invert_real_number()
+    cost = (
+        Toffoli().t_complexity() * (num_int - 1)
+        + CNOT().t_complexity() * (2 + num_int - 1)
+        + MultiControlPauli(cvs=HasLength(num_int), target_gate=cirq.X).t_complexity()
+        + XGate().t_complexity()
+        + num_iters * SquareRealNumber(bitsize).t_complexity()
+        + num_iters * MultiplyTwoReals(bitsize).t_complexity()
+        + num_iters * ScaleIntByReal(bitsize, 2).t_complexity()
+        + num_iters * Subtract(QUInt(bitsize)).t_complexity()
+    )
+    assert bloq.t_complexity() == cost
 
 
 @pytest.mark.notebook
