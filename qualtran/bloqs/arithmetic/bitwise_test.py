@@ -12,7 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from qualtran import QUInt
-from qualtran.bloqs.arithmetic.bitwise import XorK
+from qualtran.bloqs.arithmetic.bitwise import _cxork, _xork, XorK
+
+
+def test_examples(bloq_autotester):
+    bloq_autotester(_cxork)
+    bloq_autotester(_xork)
 
 
 def test_xork_classical_sim():

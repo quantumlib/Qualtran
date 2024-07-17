@@ -18,10 +18,12 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import (
+    bloq_example,
     BloqBuilder,
     DecomposeTypeError,
     QBit,
     QDType,
+    QUInt,
     Register,
     Signature,
     Soquet,
@@ -29,6 +31,7 @@ from qualtran import (
 )
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -102,3 +105,15 @@ class XorK(SpecializedSingleQubitControlledGate):
         bit_flip_bloq = CNOT() if self.control_val is not None else XGate()
         num_flips = self.bitsize if self.is_symbolic() else sum(self.dtype.to_bits(self.k))
         return {(bit_flip_bloq, num_flips)}
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _xork() -> XorK:
+    xork = XorK(QUInt(8), 0b01010111)
+    return xork
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _cxork() -> XorK:
+    cxork = XorK(QUInt(8), 0b01010111).controlled()
+    return cxork
