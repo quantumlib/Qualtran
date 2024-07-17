@@ -36,6 +36,8 @@ import qualtran.bloqs.basic_gates.x_basis
 import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
+import qualtran.bloqs.block_encoding.chebyshev_polynomial
+import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
@@ -43,6 +45,14 @@ import qualtran.bloqs.block_encoding.product
 import qualtran.bloqs.block_encoding.tensor_product
 import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
+import qualtran.bloqs.bookkeeping.allocate
+import qualtran.bloqs.bookkeeping.arbitrary_clifford
+import qualtran.bloqs.bookkeeping.auto_partition
+import qualtran.bloqs.bookkeeping.cast
+import qualtran.bloqs.bookkeeping.free
+import qualtran.bloqs.bookkeeping.join
+import qualtran.bloqs.bookkeeping.partition
+import qualtran.bloqs.bookkeeping.split
 import qualtran.bloqs.chemistry.black_boxes
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.df.prepare
