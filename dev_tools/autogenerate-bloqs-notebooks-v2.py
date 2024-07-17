@@ -53,6 +53,7 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
@@ -386,6 +387,14 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
     ),
+    NotebookSpecV2(
+        title='Permutations',
+        module=qualtran.bloqs.arithmetic.permutation,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_DOC,
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
+        ],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -631,7 +640,8 @@ OTHER: List[NotebookSpecV2] = [
         title='State Preparation via Alias Sampling',
         module=qualtran.bloqs.state_preparation.state_preparation_alias_sampling,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC,
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._SPARSE_STATE_PREP_ALIAS_DOC,
         ],
     ),
     NotebookSpecV2(
