@@ -15,10 +15,12 @@
 from typing import Type
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.hamming_weight
 import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
@@ -34,6 +36,7 @@ import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.block_encoding.product
 import qualtran.bloqs.block_encoding.tensor_product
@@ -132,6 +135,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.addition.Add": qualtran.bloqs.arithmetic.addition.Add,
     "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder,
     "qualtran.bloqs.arithmetic.addition.AddK": qualtran.bloqs.arithmetic.AddK,
+    "qualtran.bloqs.arithmetic.bitwise.XorK": qualtran.bloqs.arithmetic.bitwise.XorK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
     "qualtran.bloqs.arithmetic.comparison.EqualsAConstant": qualtran.bloqs.arithmetic.comparison.EqualsAConstant,
     "qualtran.bloqs.arithmetic.comparison.GreaterThan": qualtran.bloqs.arithmetic.comparison.GreaterThan,
@@ -150,6 +154,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.multiplication.Square": qualtran.bloqs.arithmetic.multiplication.Square,
     "qualtran.bloqs.arithmetic.multiplication.SquareRealNumber": qualtran.bloqs.arithmetic.multiplication.SquareRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.SumOfSquares": qualtran.bloqs.arithmetic.multiplication.SumOfSquares,
+    "qualtran.bloqs.arithmetic.permutation.Permutation": qualtran.bloqs.arithmetic.permutation.Permutation,
+    "qualtran.bloqs.arithmetic.permutation.PermutationCycle": qualtran.bloqs.arithmetic.permutation.PermutationCycle,
     "qualtran.bloqs.arithmetic.sorting.BitonicMerge": qualtran.bloqs.arithmetic.sorting.BitonicMerge,
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
@@ -196,6 +202,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.unitary.Unitary": qualtran.bloqs.block_encoding.unitary.Unitary,
     "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
+    "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": qualtran.bloqs.block_encoding.linear_combination.LinearCombination,
     "qualtran.bloqs.block_encoding.phase.phase": qualtran.bloqs.block_encoding.phase.Phase,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,

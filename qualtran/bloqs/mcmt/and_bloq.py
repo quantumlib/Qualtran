@@ -260,7 +260,7 @@ class MultiAnd(Bloq):
     @cvs.validator
     def _validate_cvs(self, field, val):
         if not is_symbolic(val) and len(val) < 3:
-            raise ValueError("MultiAnd must cvshave at least 3 control values `cvs`.")
+            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
 
     @property
     def n_ctrls(self) -> SymbolicInt:

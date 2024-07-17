@@ -53,6 +53,7 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
@@ -60,6 +61,7 @@ import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -379,6 +381,14 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
     ),
+    NotebookSpecV2(
+        title='Permutations',
+        module=qualtran.bloqs.arithmetic.permutation,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_DOC,
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
+        ],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -592,6 +602,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
             qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
             qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
+            qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
             qualtran.bloqs.block_encoding.phase._PHASE_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
