@@ -93,7 +93,6 @@ def test_state_prep_alias_sampling_symb():
     assert_valid_bloq_decomposition(bloq)
 
 
-
 def assert_state_preparation_valid_for_coefficient(
     lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False, atol: float = 1e-6
 ):
