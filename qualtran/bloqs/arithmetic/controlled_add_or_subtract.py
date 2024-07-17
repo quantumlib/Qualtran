@@ -16,18 +16,9 @@ from typing import TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqDocSpec,
-    CtrlSpec,
-    QBit,
-    QInt,
-    QMontgomeryUInt,
-    QUInt,
-    Signature,
-)
-from qualtran.bloqs.arithmetic import Add, Negate
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QInt, QMontgomeryUInt, QUInt, Signature
+from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.basic_gates import OnEach, XGate
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -35,11 +26,11 @@ if TYPE_CHECKING:
 
 @frozen
 class ControlledAddOrSubtract(Bloq):
-    """Transforms |1>|a>|b> to |1>|a>|a + b> and |0>|a>|b> to |0>|a>|a - b>
+    """Transforms |1>|a>|b> to |1>|a>|b + a> and |0>|a>|b> to |0>|a>|b - a>
 
     Given two numbers `a`, `b` and a control bit `ctrl`, this bloq computes:
-    - the sum `a + b` when `ctrl=1`,
-    - the difference `a - b` when `ctrl=0`,
+    - the sum `b + a` when `ctrl=1`,
+    - the difference `b - a` when `ctrl=0`,
     and stores it in the second register (`b`).
 
     This uses a controlled `Negate` followed by an uncontrolled `Add`,
@@ -50,6 +41,10 @@ class ControlledAddOrSubtract(Bloq):
         a: an integer value.
         b: an integer value. If it is not big enough to store the result,
            the most significant bits are dropped.
+
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Sanders et. al. Section II-A-1, Algorithm 1.
     """
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
@@ -66,8 +61,14 @@ class ControlledAddOrSubtract(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> dict[str, 'SoquetT']:
-        ctrl, b = bb.add(Negate(self.b_dtype).controlled(CtrlSpec(cvs=0)), ctrl=ctrl, x=b)
+        ctrl = bb.add(XGate(), q=ctrl)
+        ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
+
         a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)
+
+        ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
+        ctrl = bb.add(XGate(), q=ctrl)
+
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
 

@@ -15,6 +15,7 @@ from typing import Union
 
 import numpy as np
 import pytest
+import sympy
 from attrs import field, frozen
 
 from qualtran import (
@@ -28,13 +29,16 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic import Add, Subtract
+from qualtran.bloqs.arithmetic import Add, Negate, Subtract
 from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
     _ctrl_add_or_sub_signed,
     _ctrl_add_or_sub_signed_symb,
     _ctrl_add_or_sub_unsigned,
     ControlledAddOrSubtract,
 )
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.resource_counting import get_cost_value
+from qualtran.resource_counting._bloq_counts import BloqCount
 
 
 def test_examples(bloq_autotester):
@@ -59,10 +63,10 @@ def test_controlled_add_or_subtract_classical_sim(bitsize: int):
 
                 if ctrl == 1:
                     # ctrl = 1 => add
-                    assert b_out_unsigned == (a_unsigned + b_unsigned) % 2**bitsize
+                    assert b_out_unsigned == (b_unsigned + a_unsigned) % 2**bitsize
                 else:
                     # ctrl = 0 => subtract
-                    assert b_out_unsigned == (a_unsigned - b_unsigned + 2**bitsize) % 2**bitsize
+                    assert b_out_unsigned == (b_unsigned - a_unsigned + 2**bitsize) % 2**bitsize
 
 
 @frozen
@@ -86,6 +90,7 @@ class TestNaiveControlledAddOrSubtract(Bloq):
         ctrl, a, b = bb.add(
             Subtract(self.a_dtype, self.b_dtype).controlled(CtrlSpec(cvs=0)), ctrl=ctrl, a=a, b=b
         )
+        ctrl, b = bb.add(Negate(self.b_dtype).controlled(CtrlSpec(cvs=0)), ctrl=ctrl, x=b)
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
 
@@ -95,3 +100,11 @@ def test_tensor(dtype):
     bloq = ControlledAddOrSubtract(dtype, dtype)
     naive_bloq = TestNaiveControlledAddOrSubtract(dtype, dtype)
     np.testing.assert_allclose(bloq.tensor_contract(), naive_bloq.tensor_contract())
+
+
+def test_t_complexity():
+    n = sympy.Symbol("n")
+    dtype = QUInt(n)
+    bloq = ControlledAddOrSubtract(dtype, dtype)
+
+    assert get_cost_value(bloq, BloqCount.for_gateset('t')) == {TGate(): 4 * n - 4}
