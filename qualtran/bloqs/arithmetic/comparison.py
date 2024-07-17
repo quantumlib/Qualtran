@@ -971,7 +971,11 @@ class EqualsAConstant(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        bb.add(MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=x, target=target)
+        xs = bb.split(x)
+        xs, target = bb.add(
+            MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
+        )
+        x = bb.join(xs)
         return {'x': x, 'target': target}
 
 
