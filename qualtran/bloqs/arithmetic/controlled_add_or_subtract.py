@@ -16,7 +16,17 @@ from typing import TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
-from qualtran import Bloq, CtrlSpec, QBit, QInt, QMontgomeryUInt, QUInt, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CtrlSpec,
+    QBit,
+    QInt,
+    QMontgomeryUInt,
+    QUInt,
+    Signature,
+)
 from qualtran.bloqs.arithmetic import Add, Negate
 
 if TYPE_CHECKING:
@@ -59,3 +69,30 @@ class ControlledAddOrSubtract(Bloq):
         ctrl, b = bb.add(Negate(self.b_dtype).controlled(CtrlSpec(cvs=0)), ctrl=ctrl, x=b)
         a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)
         return {'ctrl': ctrl, 'a': a, 'b': b}
+
+
+@bloq_example
+def _ctrl_add_or_sub_unsigned() -> ControlledAddOrSubtract:
+    ctrl_add_or_sub_unsigned = ControlledAddOrSubtract(QUInt(8), QUInt(8))
+    return ctrl_add_or_sub_unsigned
+
+
+@bloq_example
+def _ctrl_add_or_sub_signed() -> ControlledAddOrSubtract:
+    ctrl_add_or_sub_signed = ControlledAddOrSubtract(QInt(8), QInt(8))
+    return ctrl_add_or_sub_signed
+
+
+@bloq_example
+def _ctrl_add_or_sub_signed_symb() -> ControlledAddOrSubtract:
+    import sympy
+
+    n = sympy.Symbol("n")
+    ctrl_add_or_sub_signed_symb = ControlledAddOrSubtract(QInt(n), QInt(n))
+    return ctrl_add_or_sub_signed_symb
+
+
+_CONTROLLED_ADD_OR_SUBTRACT_DOC = BloqDocSpec(
+    bloq_cls=ControlledAddOrSubtract,
+    examples=[_ctrl_add_or_sub_unsigned, _ctrl_add_or_sub_signed, _ctrl_add_or_sub_signed_symb],
+)

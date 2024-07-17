@@ -29,7 +29,18 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic import Add, Subtract
-from qualtran.bloqs.arithmetic.controlled_add_or_subtract import ControlledAddOrSubtract
+from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
+    _ctrl_add_or_sub_signed,
+    _ctrl_add_or_sub_signed_symb,
+    _ctrl_add_or_sub_unsigned,
+    ControlledAddOrSubtract,
+)
+
+
+def test_examples(bloq_autotester):
+    bloq_autotester(_ctrl_add_or_sub_unsigned)
+    bloq_autotester(_ctrl_add_or_sub_signed)
+    bloq_autotester(_ctrl_add_or_sub_signed_symb)
 
 
 @pytest.mark.parametrize("bitsize", [2, 4, pytest.param(5, marks=pytest.mark.slow)])
