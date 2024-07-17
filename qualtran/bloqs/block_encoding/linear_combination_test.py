@@ -185,8 +185,10 @@ def test_linear_combination_approx5(lambd):
     )
 
 
+random.seed(1234)
+
+
 def gen_test():
-    random.seed(1234)
     n = random.randint(3, 6)
     bitsize = random.randint(1, 3)
     gates = [MatrixGate.random(bitsize, random_state=1234) for _ in range(n)]
