@@ -19,11 +19,11 @@ import sympy
 from attrs import frozen
 
 from qualtran import (
-    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     DecomposeTypeError,
+    QAny,
     QBit,
     QDType,
     QUInt,
@@ -62,6 +62,7 @@ class XorK(SpecializedSingleQubitControlledGate):
         x: A quantum register of type `self.dtype` (see above).
         ctrl: A sequence of control qubits (only when `control_val` is not None).
     """
+
     dtype: QDType
     k: SymbolicInt
     control_val: Optional[int] = None
@@ -125,56 +126,65 @@ def _cxork() -> XorK:
 
 
 @frozen
-class Xor(Bloq):
+class Xor(SpecializedSingleQubitControlledGate):
     """Xor the value of one register into another via CNOTs.
 
     When both registers are in computational basis and the destination is 0,
     effectively copies the value of the source into the destination.
 
     Args:
-        bitsize: The size of the register.
+        dtype: Data type of the input registers `x` and `y`.
+        control_val: An optional single bit control, apply the operation when
+            the control qubit equals the `control_val`.
 
     Registers:
-        ctrl: The source register.
-        x: The target register.
+        x: The source register.
+        y: The target register.
     """
 
-    bitsize: SymbolicInt
+    dtype: QDType
+    control_val: Optional[int] = None
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(ctrl=self.bitsize, x=self.bitsize)
+        return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
-    def build_composite_bloq(self, bb: BloqBuilder, ctrl: Soquet, x: Soquet) -> Dict[str, SoquetT]:
-        if not isinstance(self.bitsize, int):
-            raise DecomposeTypeError("`bitsize` must be a concrete value.")
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        if self.control_val is not None:
+            return (Register('ctrl', QBit()),)
+        return ()
 
-        ctrls = bb.split(ctrl)
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> Dict[str, SoquetT]:
+        if not isinstance(self.dtype.num_qubits, int):
+            raise DecomposeTypeError("`dtype.num_qubits` must be a concrete value.")
+
         xs = bb.split(x)
+        ys = bb.split(y)
 
-        for i in range(self.bitsize):
-            ctrls[i], xs[i] = bb.add_t(CNOT(), ctrl=ctrls[i], target=xs[i])
+        for i in range(len(xs)):
+            xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])
 
-        return {'ctrl': bb.join(ctrls), 'x': bb.join(xs)}
+        return {'x': bb.join(xs), 'y': bb.join(ys)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(CNOT(), self.bitsize)}
+        return {(CNOT(), self.dtype.num_qubits)}
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'ctrl': ctrl, 'x': ctrl}
+        return {'x': x, 'y': x}
 
 
 @bloq_example
 def _xor() -> Xor:
-    xor = Xor(4)
+    xor = Xor(QAny(4))
     return xor
 
 
 @bloq_example
 def _xor_symb() -> Xor:
-    xor_symb = Xor(sympy.Symbol("n"))
+    xor_symb = Xor(QAny(sympy.Symbol("n")))
     return xor_symb
 
 

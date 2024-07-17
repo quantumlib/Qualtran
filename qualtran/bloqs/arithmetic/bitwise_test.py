@@ -44,21 +44,24 @@ def test_xork_classical_sim():
 
 def test_xor(bloq_autotester):
     bloq_autotester(_xor)
+
+
+def test_xor_symb(bloq_autotester):
     bloq_autotester(_xor_symb)
 
 
 def test_xor_call():
     bloq = _xor()
-    ctrl, x = bloq.call_classically(ctrl=7, x=0)
-    assert ctrl == 7 and x == 7
-    ctrl, x = bloq.decompose_bloq().call_classically(ctrl=7, x=0)
-    assert ctrl == 7 and x == 7
+    x, y = bloq.call_classically(x=7, y=0)
+    assert x == 7 and y == 7
+    x, y = bloq.decompose_bloq().call_classically(x=7, y=0)
+    assert x == 7 and y == 7
 
     bb = BloqBuilder()
-    ctrl = bb.add(IntState(13, 4))
-    x = bb.add(IntState(0, 4))
-    ctrl, x = bb.add_t(bloq, ctrl=ctrl, x=x)
-    bb.add(IntEffect(13, 4), val=ctrl)
-    bloq = bb.finalize(x=x)
+    x = bb.add(IntState(13, 4))
+    y = bb.add(IntState(0, 4))
+    x, y = bb.add_t(bloq, x=x, y=y)
+    bb.add(IntEffect(13, 4), val=x)
+    bloq = bb.finalize(y=y)
 
     np.testing.assert_allclose(bloq.tensor_contract(), IntState(13, 4).tensor_contract())
