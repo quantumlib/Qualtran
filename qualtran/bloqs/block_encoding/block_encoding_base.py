@@ -95,11 +95,6 @@ class BlockEncoding(Bloq):
 
     @property
     @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]:
-        """Optional control registers."""
-
-    @property
-    @abc.abstractmethod
     def selection_registers(self) -> Tuple[Register, ...]:
         """The ancilla registers `a` above."""
 

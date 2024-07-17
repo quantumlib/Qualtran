@@ -52,7 +52,7 @@ from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControlledGate):
+class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
     r"""Construct a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (where coefficients $w_l > 0$ and $H_l$ are unitaries),

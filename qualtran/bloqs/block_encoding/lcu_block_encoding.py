@@ -73,7 +73,9 @@ class BlackBoxSelect(Bloq):
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return (
-            () if len(self.select.control_registers) > 0 else Register(name='control', dtype=QBit())
+            ()
+            if len(self.select.control_registers) == 0
+            else (Register(name='control', dtype=QBit()),)
         )
 
     @cached_property

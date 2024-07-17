@@ -529,7 +529,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-class SpecializedSingleQubitControlledGate(Bloq):
+class SpecializedSingleQubitControlledGate(GateWithRegisters):
     """Add a specialized single-qubit controlled version of a Bloq.
 
     `control_val` is an optional single-bit control. When `control_val` is provided,
