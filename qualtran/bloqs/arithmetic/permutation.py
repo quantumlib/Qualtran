@@ -31,6 +31,7 @@ from attrs import field, frozen
 from qualtran import (
     Bloq,
     bloq_example,
+    BloqDocSpec,
     BoundedQUInt,
     DecomposeTypeError,
     QBit,
@@ -147,10 +148,19 @@ def _permutation_cycle() -> PermutationCycle:
 def _permutation_cycle_symb() -> PermutationCycle:
     import sympy
 
+    from qualtran.symbolics import Shaped
+
     N, L = sympy.symbols("N L")
     cycle = Shaped((L,))
     permutation_cycle_symb = PermutationCycle(N, cycle)
     return permutation_cycle_symb
+
+
+_PERMUTATION_CYCLE_DOC = BloqDocSpec(
+    bloq_cls=PermutationCycle,
+    import_line='from qualtran.bloqs.arithmetic.permutation import PermutationCycle',
+    examples=[_permutation_cycle, _permutation_cycle_symb],
+)
 
 
 def _convert_cycles(cycles) -> Union[tuple[SymbolicCycleT, ...], Shaped]:
@@ -265,6 +275,8 @@ def _permutation() -> Permutation:
 def _permutation_symb() -> Permutation:
     import sympy
 
+    from qualtran.symbolics import Shaped
+
     N, k = sympy.symbols("N k")
     permutation_symb = Permutation(N, Shaped((k,)))
     return permutation_symb
@@ -274,11 +286,13 @@ def _permutation_symb() -> Permutation:
 def _permutation_symb_with_cycles() -> Permutation:
     import sympy
 
+    from qualtran.symbolics import Shaped
+
     N = sympy.symbols("N")
     n_cycles = 4
     d = sympy.IndexedBase('d', shape=(n_cycles,))
-    permutation_symb = Permutation(N, tuple(Shaped((d[i],)) for i in range(n_cycles)))
-    return permutation_symb
+    permutation_symb_with_cycles = Permutation(N, tuple(Shaped((d[i],)) for i in range(n_cycles)))
+    return permutation_symb_with_cycles
 
 
 @bloq_example
@@ -287,3 +301,10 @@ def _sparse_permutation() -> Permutation:
         16, {0: 1, 1: 3, 2: 8, 3: 15, 4: 12}
     )
     return sparse_permutation
+
+
+_PERMUTATION_DOC = BloqDocSpec(
+    bloq_cls=Permutation,
+    import_line='from qualtran.bloqs.arithmetic.permutation import Permutation',
+    examples=[_permutation, _permutation_symb, _permutation_symb_with_cycles, _sparse_permutation],
+)

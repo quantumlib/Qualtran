@@ -64,6 +64,7 @@ Bloqs Library
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
+    arithmetic/permutation.ipynb
 
 .. toctree::
     :maxdepth: 2
