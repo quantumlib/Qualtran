@@ -22,13 +22,14 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Side
 from qualtran._infra.gate_with_registers import merge_qubits, SpecializedSingleQubitControlledGate
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting import BloqCountT
 from qualtran.symbolics import ceil, log2
 
 
 @frozen
-class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
+class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""A SELECT operation that executes one of a list of bloqs $U_l$ based on a quantum index:
 
     $$

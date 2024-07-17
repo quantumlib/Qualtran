@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING, Union
+from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -67,8 +67,8 @@ class HoppingPlaquette(Bloq):
         page 13 Eq. E4 and E5 (Appendix E)
     """
 
-    kappa: Union[SymbolicFloat]
-    eps: Union[SymbolicFloat] = 1e-9
+    kappa: SymbolicFloat
+    eps: SymbolicFloat = 1e-9
 
     @cached_property
     def signature(self) -> Signature:
@@ -110,10 +110,10 @@ class HoppingTile(Bloq):
         see Eq. 21 and App E.
     """
 
-    length: Union[SymbolicInt]
-    angle: Union[SymbolicFloat]
+    length: SymbolicInt
+    angle: SymbolicFloat
     tau: float = 1.0
-    eps: Union[SymbolicFloat] = 1e-9
+    eps: SymbolicFloat = 1e-9
     pink: bool = True
 
     def __attrs_post_init__(self):

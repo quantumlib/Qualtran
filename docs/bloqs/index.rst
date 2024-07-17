@@ -37,6 +37,7 @@ Bloqs Library
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
+    mcmt/ctrl_spec_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -65,6 +66,7 @@ Bloqs Library
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
+    arithmetic/permutation.ipynb
 
 .. toctree::
     :maxdepth: 2
