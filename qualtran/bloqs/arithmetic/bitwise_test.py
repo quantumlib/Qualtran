@@ -25,12 +25,17 @@ def test_examples(bloq_autotester):
 
 
 def test_xork_classical_sim():
-    k = 0b01101010
-    bloq = XorK(QUInt(9), k)
-    cbloq = bloq.controlled()
+    dtype = QUInt(6)
+    k = 0b010110
+    bloq = XorK(dtype, k)
+    dbloq = bloq.decompose_bloq()
+    cbloq = dbloq.controlled()
 
-    for x in bloq.dtype.get_classical_domain():
+    for x in dtype.get_classical_domain():
         (x_out,) = bloq.call_classically(x=x)
+        assert x_out == x ^ k
+
+        (x_out,) = dbloq.call_classically(x=x)
         assert x_out == x ^ k
 
         ctrl_out, x_out = cbloq.call_classically(ctrl=0, x=x)

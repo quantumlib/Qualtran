@@ -90,6 +90,9 @@ class XorK(Bloq):
         num_flips = self.bitsize if self.is_symbolic() else sum(self.dtype.to_bits(self.k))
         return {(XGate(), num_flips)}
 
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        return {'x': x ^ self.k}
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _xork() -> XorK:
