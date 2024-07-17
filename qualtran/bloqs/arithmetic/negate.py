@@ -26,11 +26,16 @@ if TYPE_CHECKING:
 
 @frozen
 class Negate(Bloq):
-    """Compute the two's complement for a signed integer/fixed-point value.
+    """Compute the two's complement negation for a integer/fixed-point value.
 
-    The two's complement is computed by the following steps:
-    1. Flip all the bits
-    2. Add 1 to the value (interpreted as an unsigned integer), ignoring the overflow.
+    This bloq is equivalent to the "Unary minus" [1] C++ operator.
+    - For a signed `x`, the output is `-x`.
+    - For an unsigned `x`, the output is `2^n - x` (where `n` is the bitsize).
+
+    This is computed by the bit-fiddling trick `-x = ~x + 1`, as follows:
+    1. Flip all the bits (i.e. `x := ~x`)
+    2. Add 1 to the value (interpreted as an unsigned integer), ignoring
+       any overflow. (i.e. `x := x + 1`)
 
     For a controlled negate bloq: the second step uses a quantum-quantum adder by
     loading the constant (i.e. 1), therefore has an improved controlled version
@@ -41,7 +46,11 @@ class Negate(Bloq):
         dtype: The data type of the input value.
 
     Registers:
-        x: Any signed value stored in two's complement form.
+        x: Any unsigned value or signed value (in two's complement form).
+
+    References:
+        [Arithmetic Operators - cppreference](https://en.cppreference.com/w/cpp/language/operator_arithmetic)
+        Operator "Unary Minus". Last accessed 17 July 2024.
     """
 
     dtype: QDType
@@ -51,7 +60,9 @@ class Negate(Bloq):
         return Signature.build_from_dtypes(x=self.dtype)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
+        # x := ~x
         x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
+        # x := x + 1
         x = bb.add(AddK(self.dtype.num_qubits, k=1), x=x)
         return {'x': x}
 
