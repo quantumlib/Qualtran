@@ -11,3 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran import QUInt
+from qualtran.bloqs.arithmetic.bitwise import XorK
+
+
+def test_xork_classical_sim():
+    k = 0b01101010
+    bloq = XorK(QUInt(9), k)
+    cbloq = bloq.controlled()
+
+    for x in bloq.dtype.get_classical_domain():
+        (x_out,) = bloq.call_classically(x=x)
+        assert x_out == x ^ k
+
+        ctrl_out, x_out = cbloq.call_classically(ctrl=0, x=x)
+        assert ctrl_out == 0
+        assert x_out == x
+
+        ctrl_out, x_out = cbloq.call_classically(ctrl=1, x=x)
+        assert ctrl_out == 1
+        assert x_out == x ^ k
