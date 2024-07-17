@@ -34,6 +34,7 @@ from qualtran.bloqs.arithmetic.permutation import (
     _permutation_symb,
     _permutation_symb_with_cycles,
     _sparse_permutation,
+    _sparse_permutation_from_prefix,
     Permutation,
     PermutationCycle,
 )
@@ -47,6 +48,7 @@ def test_examples(bloq_autotester):
     bloq_autotester(_permutation_cycle)
     bloq_autotester(_permutation)
     bloq_autotester(_sparse_permutation)
+    bloq_autotester(_sparse_permutation_from_prefix)
 
 
 def test_symbolic_examples(bloq_autotester):

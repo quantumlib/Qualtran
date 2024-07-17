@@ -13,8 +13,6 @@
 #  limitations under the License.
 from typing import Iterator, Sequence, TypeAlias
 
-import numpy as np
-
 CycleT: TypeAlias = tuple[int, ...]
 
 
@@ -28,41 +26,33 @@ def decompose_permutation_into_cycles(permutation: Sequence[int]) -> Iterator[Cy
             yield tuple(cycle)
 
 
-def decompose_sparse_prefix_permutation_into_cycles(
-    permutation_prefix: Sequence[int], N: int
-) -> Iterator[CycleT]:
-    r"""Given a prefix of a permutation, extend it to a valid permutation and return non-trivial cycles.
+def decompose_permutation_map_into_cycles(permutation_map: dict[int, int]) -> Iterator[CycleT]:
+    r"""Given a (partial) permutation map, return non-trivial cycles requiring minimum swaps.
 
-    For some $d \le N$, we are given the prefix of a permutation on $N$, i.e.
-    $\{ x_i | 0 \le i < d \}$. It is guaranteed that each input $x_i$ is unique, and
-    therefore it can be extended to a valid permuation on $N$. This procedure generates
-    a sequence of cycles such that the number of swaps required to implement this prefix
+    We are given a partial permutation on $N$ as a python dictionary. This procedure generates a
+    sequence of cycles such that the number of swaps required to implement this partial mapping
     is minimized.
 
+    >>> list(decompose_permutation_map_into_cycles({0: 1, 1: 5, 5: 0, 2: 6, 3: 3}, N=10))
+    [(0, 1, 5), (2, 6)]
+
     Args:
-        permutation_prefix: a length $d$ prefix of a permutation on $N$.
-        N: the total size of the generated permutation.
+        permutation_map: a (partial) map defining the permutation.
     """
-    d = len(permutation_prefix)
-    if d > N:
-        raise ValueError(f"Permutation limit {N=} is smaller than the prefix {d=}")
+    seen = set()
 
-    seen = np.full(d, False)
-
-    for i in range(d):
-        if seen[i]:
+    for i in permutation_map:
+        if i in seen:
             continue
 
         # compute the cycle starting at `i`
         cycle = []
-        while i < d and not seen[i]:
-            seen[i] = True
+        while True:
+            seen.add(i)
             cycle.append(i)
-            i = permutation_prefix[i]
-
-        if i >= d:
-            # cycle ends outside the prefix, so add this element to the cycle
-            cycle.append(i)
+            if i not in permutation_map:
+                break
+            i = permutation_map[i]
 
         if len(cycle) >= 2:
             yield tuple(cycle)

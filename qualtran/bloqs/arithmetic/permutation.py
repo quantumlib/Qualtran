@@ -43,7 +43,7 @@ from qualtran.bloqs.arithmetic.comparison import EqualsAConstant
 from qualtran.linalg.permutation import (
     CycleT,
     decompose_permutation_into_cycles,
-    decompose_sparse_prefix_permutation_into_cycles,
+    decompose_permutation_map_into_cycles,
 )
 from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicInt
 
@@ -188,9 +188,13 @@ class Permutation(Bloq):
         return cls(N, cycles)
 
     @classmethod
-    def from_sparse_permutation_prefix(cls, N: int, permutation_prefix: Sequence[int]):
-        cycles = tuple(decompose_sparse_prefix_permutation_into_cycles(permutation_prefix, N))
+    def from_partial_permutation_map(cls, N: int, permutation_map: dict[int, int]):
+        cycles = tuple(decompose_permutation_map_into_cycles(permutation_map))
         return cls(N, cycles)
+
+    @classmethod
+    def from_sparse_permutation_prefix(cls, N: int, permutation_prefix: Sequence[int]):
+        return cls.from_partial_permutation_map(N, {i: v for i, v in enumerate(permutation_prefix)})
 
     @classmethod
     def from_cycle_lengths(cls, N: SymbolicInt, cycle_lengths: tuple[SymbolicInt, ...]):
@@ -244,5 +248,15 @@ def _permutation_symb_with_cycles() -> Permutation:
 
 @bloq_example
 def _sparse_permutation() -> Permutation:
-    sparse_permutation = Permutation.from_sparse_permutation_prefix(16, [1, 3, 8, 15, 12])
+    sparse_permutation = Permutation.from_partial_permutation_map(
+        16, {0: 1, 1: 3, 2: 8, 3: 15, 4: 12}
+    )
     return sparse_permutation
+
+
+@bloq_example
+def _sparse_permutation_from_prefix() -> Permutation:
+    sparse_permutation_from_prefix = Permutation.from_sparse_permutation_prefix(
+        16, [1, 3, 8, 15, 12]
+    )
+    return sparse_permutation_from_prefix

@@ -13,7 +13,7 @@
 #  limitations under the License.
 from qualtran.linalg.permutation import (
     decompose_permutation_into_cycles,
-    decompose_sparse_prefix_permutation_into_cycles,
+    decompose_permutation_map_into_cycles,
 )
 
 
@@ -24,8 +24,5 @@ def test_decompose_permutation_into_cycles():
 
 
 def test_decompose_sparse_prefix_permutation_into_cycles():
-    assert list(decompose_sparse_prefix_permutation_into_cycles([1, 20], 100)) == [(0, 1, 20)]
-    assert sorted(decompose_sparse_prefix_permutation_into_cycles([30, 50], 100)) == [
-        (0, 30),
-        (1, 50),
-    ]
+    assert list(decompose_permutation_map_into_cycles({0: 1, 1: 20})) == [(0, 1, 20)]
+    assert sorted(decompose_permutation_map_into_cycles({0: 30, 1: 50})) == [(0, 30), (1, 50)]
