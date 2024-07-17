@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import random
 from typing import cast
 
 import numpy as np
@@ -35,6 +36,7 @@ from qualtran.bloqs.block_encoding.linear_combination import (
     LinearCombination,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 
 
 def test_linear_combination(bloq_autotester):
@@ -181,3 +183,18 @@ def test_linear_combination_approx5(lambd):
         lambd_bits=9,
         atol=0.001,
     )
+
+
+def gen_test():
+    random.seed(1234)
+    n = random.randint(3, 6)
+    bitsize = random.randint(1, 3)
+    gates = [MatrixGate.random(bitsize, random_state=1234) for _ in range(n)]
+    lambd = [random.uniform(-10, 10) for _ in range(n)]
+    return gates, lambd
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
+def test_linear_combination_approx_random(gates, lambd):
+    run_gate_test(gates, lambd, lambd_bits=9, atol=0.001)
