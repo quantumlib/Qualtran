@@ -52,8 +52,8 @@ def test_xor_symb(bloq_autotester):
 
 
 @pytest.mark.parametrize("dtype", [QAny(4), QUInt(4)])
-@pytest.mark.parametrize("x", range(8))
-@pytest.mark.parametrize("y", range(8))
+@pytest.mark.parametrize("x", range(16))
+@pytest.mark.parametrize("y", range(16))
 def test_xor_call(dtype, x, y):
     bloq = Xor(dtype)
     x_out, y_out = bloq.call_classically(x=x, y=y)
