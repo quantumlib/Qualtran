@@ -23,7 +23,6 @@ from functools import cached_property
 from typing import Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
-import cirq
 import numpy as np
 from numpy.typing import NDArray
 
@@ -81,24 +80,6 @@ class StatePreparationAliasSampling(PrepareOracle):
     selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
 
-    Args:
-        selection_registers: The input/output registers to prepare the state on (see Signature).
-        keep: The discretized `keep` probabilities for alias sampling.
-        alt: The alternate/alias values to swap.
-        mu: The number of bits to approximate the `keep` probabilities.
-        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
-            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
-
-    Signature:
-        selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
-            coefficient state is prepared.
-        temp: Work space comprised of sub signature:
-            - sigma: A mu-sized register containing uniform probabilities for comparison against
-                `keep`.
-            - alt: A lg(L)-sized register of alternate indices
-            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
-            - one bit for the result of the comparison.
-
     This gate corresponds to the following operations:
      - UNIFORM_L on the selection register
      - H^mu on the sigma register
@@ -109,6 +90,23 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
+
+    Registers:
+        selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
+            coefficient state is prepared. Default name is 'selection' if the builder methods on
+            the class are used. Or else, users can specify custom named registers
+        sigma_mu: A mu-sized register containing uniform probabilities for comparison against `keep`.
+        alt: A lg(L)-sized register of alternate indices
+        keep: a mu-sized register of probabilities of keeping the initially sampled index.
+        less_than_equal: one bit for the result of the comparison.
+
+    Args:
+        selection_registers: The input/output registers to prepare the state on (see Registers section).
+        keep: The discretized `keep` probabilities for alias sampling.
+        alt: The alternate/alias values to swap.
+        mu: The number of bits to approximate the `keep` probabilities.
+        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
+            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
