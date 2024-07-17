@@ -17,18 +17,30 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran import Bloq
 from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+    _sparse_state_prep_alias,
+    _sparse_state_prep_alias_from_list,
+    _sparse_state_prep_alias_symb,
     _state_prep_alias,
     _state_prep_alias_symb,
+    SparseStatePreparationAliasSampling,
     StatePreparationAliasSampling,
 )
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.symbolics import ceil, log2
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+
+
+def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
+    bloq_autotester(_sparse_state_prep_alias)
+    bloq_autotester(_sparse_state_prep_alias_from_list)
+    bloq_autotester(_sparse_state_prep_alias_symb)
 
 
 def test_mu_from_precision():
@@ -82,11 +94,21 @@ def test_state_prep_alias_sampling_symb():
 
 
 
-def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
-    gate = StatePreparationAliasSampling.from_probabilities(
-        unnormalized_probabilities=lcu_coefficients.tolist(),
-        precision=epsilon * np.sum(np.abs(lcu_coefficients)),
-    )
+def assert_state_preparation_valid_for_coefficient(
+    lcu_coefficients: np.ndarray, epsilon: float, *, sparse: bool = False, atol: float = 1e-6
+):
+    gate: Bloq
+    coeff_precision = epsilon * np.sum(np.abs(lcu_coefficients))
+    if sparse:
+        gate = SparseStatePreparationAliasSampling.from_dense_probabilities(
+            unnormalized_probabilities=lcu_coefficients.tolist(),
+            precision=coeff_precision,
+            nonzero_threshold=atol,
+        )
+    else:
+        gate = StatePreparationAliasSampling.from_probabilities(
+            unnormalized_probabilities=lcu_coefficients.tolist(), precision=coeff_precision
+        )
 
     assert_valid_bloq_decomposition(gate)
     _ = gate.call_graph()
@@ -103,14 +125,14 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray,
     L, logL = len(lcu_coefficients), len(g.quregs['selection'])
     qlambda = sum(abs(lcu_coefficients))
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
-    num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
-    prepared_state = state_vector.sum(axis=1)
-    assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
-    assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
-    prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
+    prepared_state = np.linalg.norm(state_vector, axis=1)
+
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
-    np.testing.assert_allclose(lcu_coefficients / qlambda, abs(prepared_state) ** 2, atol=epsilon)
+    np.testing.assert_allclose(
+        abs(prepared_state[:L]) ** 2, lcu_coefficients / qlambda, atol=epsilon
+    )
+    np.testing.assert_allclose(np.abs(prepared_state[L:]), 0, atol=epsilon)
 
 
 def test_state_preparation_via_coherent_alias_sampling_quick():
@@ -166,6 +188,29 @@ keep2: ────────────────────────�
 less_than_equal: ─────────────────────────⨁(x <= y)───@──────
 ''',
         qubit_order=qubit_order,
+    )
+
+
+def test_sparse_state_preparation_via_coherent_alias():
+    lcu_coefficients = np.array([1 / 8 if j < 8 else 0.0 for j in range(16)])
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
+
+    lcu_coefficients = np.array([1 if j < 6 else 0.0 for j in range(10)])
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1, sparse=True)
+
+
+def test_symbolic_sparse_state_prep_t_complexity():
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+    N, d, qlambda, eps = sympy.symbols(r"N d \lambda \epsilon")
+    logN = ceil(log2(N - 1))
+    logd = ceil(log2(d - 1))
+    mu = ceil(log2(1 / (N * eps)))
+    bloq = SparseStatePreparationAliasSampling.from_n_coeff(N, d, qlambda, precision=eps)
+    assert bloq.t_complexity() == TComplexity(
+        t=4 * d + 8 * mu + 7 * logN + 12 * logd - 8,
+        clifford=d * mu * logN**2 + 13 * d + 47 * mu + 10 * logN + 52 * logd - 12,
+        rotations=2,
     )
 
 
