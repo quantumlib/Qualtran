@@ -116,4 +116,5 @@ def _xork() -> XorK:
 @bloq_example(generalizer=ignore_split_join)
 def _cxork() -> XorK:
     cxork = XorK(QUInt(8), 0b01010111).controlled()
+    assert isinstance(cxork, XorK)
     return cxork
