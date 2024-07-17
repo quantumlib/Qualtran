@@ -89,6 +89,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
@@ -201,6 +202,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Control Specification (And)',
+        module=qualtran.bloqs.mcmt.ctrl_spec_and,
+        bloq_specs=[qualtran.bloqs.mcmt.ctrl_spec_and._CTRLSPEC_AND_DOC],
     ),
 ]
 
