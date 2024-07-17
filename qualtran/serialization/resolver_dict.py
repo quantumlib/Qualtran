@@ -20,6 +20,7 @@ import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.hamming_weight
 import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.cnot
@@ -156,6 +157,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.multiplication.Square": qualtran.bloqs.arithmetic.multiplication.Square,
     "qualtran.bloqs.arithmetic.multiplication.SquareRealNumber": qualtran.bloqs.arithmetic.multiplication.SquareRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.SumOfSquares": qualtran.bloqs.arithmetic.multiplication.SumOfSquares,
+    "qualtran.bloqs.arithmetic.negate.Negate": qualtran.bloqs.arithmetic.negate.Negate,
     "qualtran.bloqs.arithmetic.permutation.Permutation": qualtran.bloqs.arithmetic.permutation.Permutation,
     "qualtran.bloqs.arithmetic.permutation.PermutationCycle": qualtran.bloqs.arithmetic.permutation.PermutationCycle,
     "qualtran.bloqs.arithmetic.sorting.BitonicMerge": qualtran.bloqs.arithmetic.sorting.BitonicMerge,

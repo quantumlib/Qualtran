@@ -19,7 +19,16 @@ from typing import Dict, Optional, Set, Tuple
 import attrs
 import sympy
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    DecomposeTypeError,
+    QAny,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.drawing import Text, WireSymbol
 from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -53,7 +62,7 @@ class OnEach(Bloq):
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
-            raise ValueError(f'Symbolic n not allowed {self.n}')
+            raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
         qs = bb.split(q)
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
