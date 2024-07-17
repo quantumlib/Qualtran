@@ -38,6 +38,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QAny,
     QBit,
@@ -971,12 +972,18 @@ class EqualsAConstant(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
+
         xs = bb.split(x)
         xs, target = bb.add(
             MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
         )
         x = bb.join(xs)
         return {'x': x, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(MultiControlPauli(self.bits_k, target_gate=cirq.X), 1)}
 
 
 def _make_equals_a_constant():
