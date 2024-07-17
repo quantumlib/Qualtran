@@ -53,6 +53,7 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
@@ -378,6 +379,14 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Permutations',
+        module=qualtran.bloqs.arithmetic.permutation,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_DOC,
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
         ],
     ),
 ]
