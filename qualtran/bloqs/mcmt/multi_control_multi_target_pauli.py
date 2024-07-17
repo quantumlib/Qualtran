@@ -26,6 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     Register,
@@ -372,3 +373,59 @@ class MultiControlX(Bloq):
 
     def pretty_name(self) -> str:
         return f'C^{len(self.cvs)}-NOT'
+
+
+@frozen
+class Copy(Bloq):
+    """Copy the value of a register in computational basis via CNOTs.
+
+    Args:
+        bitsize: The size of the register.
+
+    Registers:
+        src: The register to copy from.
+        dst: The register to copy to.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(src=self.bitsize, dst=self.bitsize)
+
+    def build_composite_bloq(self, bb: BloqBuilder, src: Soquet, dst: Soquet) -> Dict[str, SoquetT]:
+        if not isinstance(self.bitsize, int):
+            raise DecomposeTypeError("`bitsize` must be a concrete value.")
+
+        xs = bb.split(src)
+        ys = bb.split(dst)
+
+        for i in range(self.bitsize):
+            xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])
+
+        return {'src': bb.join(xs), 'dst': bb.join(ys)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(CNOT(), self.bitsize)}
+
+    def on_classical_vals(
+        self, src: 'ClassicalValT', dst: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'src': src, 'dst': src}
+
+
+@bloq_example
+def _copy() -> Copy:
+    copy = Copy(4)
+    return copy
+
+
+@bloq_example
+def _copy_symb() -> Copy:
+    copy_symb = Copy(sympy.Symbol("n"))
+    return copy_symb
+
+
+_COPY_DOC = BloqDocSpec(
+    bloq_cls=Copy, import_line='from qualtran.bloqs.mcmt import Copy', examples=(_copy, _copy_symb)
+)

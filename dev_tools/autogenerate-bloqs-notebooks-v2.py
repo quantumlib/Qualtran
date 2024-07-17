@@ -626,6 +626,7 @@ OTHER: List[NotebookSpecV2] = [
         title='Multi-Paulis',
         module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
         bloq_specs=[
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._COPY_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],

@@ -17,9 +17,13 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
+from qualtran import BloqBuilder
+from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
     _ccpauli,
     _ccpauli_symb,
+    _copy,
+    _copy_symb,
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,
@@ -120,3 +124,25 @@ def test_classical_multi_control_x(cvs, x, ctrls, result):
         np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
     assert bloq_classical[-1] == result
+
+
+def test_copy(bloq_autotester):
+    bloq_autotester(_copy)
+    bloq_autotester(_copy_symb)
+
+
+def test_copy_call():
+    bloq = _copy()
+    src, dst = bloq.call_classically(src=7, dst=0)
+    assert src == 7 and dst == 7
+    src, dst = bloq.decompose_bloq().call_classically(src=7, dst=0)
+    assert src == 7 and dst == 7
+
+    bb = BloqBuilder()
+    src = bb.add(IntState(13, 4))
+    dst = bb.add(IntState(0, 4))
+    src, dst = bb.add_t(bloq, src=src, dst=dst)
+    bb.add(IntEffect(13, 4), val=src)
+    bloq = bb.finalize(dst=dst)
+
+    np.testing.assert_allclose(bloq.tensor_contract(), IntState(13, 4).tensor_contract())
