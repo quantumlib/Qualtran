@@ -14,7 +14,7 @@
 r"""Bloqs implementing unitary evolution under the interacting part of the Hubbard Hamiltonian."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING, Union
+from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -53,10 +53,10 @@ class Interaction(Bloq):
         Eq. 6 page 2 and page 13 paragraph 1.
     """
 
-    length: Union[SymbolicInt]
-    angle: Union[SymbolicFloat]
-    hubb_u: Union[SymbolicFloat]
-    eps: Union[SymbolicFloat] = 1e-9
+    length: SymbolicInt
+    angle: SymbolicFloat
+    hubb_u: SymbolicFloat
+    eps: SymbolicFloat = 1e-9
 
     @cached_property
     def signature(self) -> Signature:
@@ -96,10 +96,10 @@ class InteractionHWP(Bloq):
             14 paragraph 3 right column. The apply 2 batches of $L^2/2$ rotations.
     """
 
-    length: Union[SymbolicInt]
-    angle: Union[SymbolicFloat]
-    hubb_u: Union[SymbolicFloat]
-    eps: Union[SymbolicFloat] = 1e-9
+    length: SymbolicInt
+    angle: SymbolicFloat
+    hubb_u: SymbolicFloat
+    eps: SymbolicFloat = 1e-9
 
     @cached_property
     def signature(self) -> Signature:
