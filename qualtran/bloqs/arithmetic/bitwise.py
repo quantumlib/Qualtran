@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-import numpy as np
 import sympy
 from attrs import frozen
 
@@ -38,12 +37,6 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-
-
-def _cvs_converter(vv):
-    if isinstance(vv, (int, np.integer)):
-        return (int(vv),)
-    return tuple(int(v) for v in vv)
 
 
 @frozen
