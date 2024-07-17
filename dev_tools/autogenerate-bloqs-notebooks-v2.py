@@ -348,6 +348,13 @@ ARITHMETIC = [
         bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
     ),
     NotebookSpecV2(
+        title='Controlled Add-or-Subtract',
+        module=qualtran.bloqs.arithmetic.controlled_add_or_subtract,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.controlled_add_or_subtract._CONTROLLED_ADD_OR_SUBTRACT_DOC
+        ],
+    ),
+    NotebookSpecV2(
         title='Multiplication',
         module=qualtran.bloqs.arithmetic.multiplication,
         bloq_specs=[

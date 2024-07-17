@@ -94,5 +94,6 @@ def _ctrl_add_or_sub_signed_symb() -> ControlledAddOrSubtract:
 
 _CONTROLLED_ADD_OR_SUBTRACT_DOC = BloqDocSpec(
     bloq_cls=ControlledAddOrSubtract,
+    import_line='from qualtran.bloqs.arithmetic.controlled_add_or_subtract import ControlledAddOrSubtract',
     examples=[_ctrl_add_or_sub_unsigned, _ctrl_add_or_sub_signed, _ctrl_add_or_sub_signed_symb],
 )
