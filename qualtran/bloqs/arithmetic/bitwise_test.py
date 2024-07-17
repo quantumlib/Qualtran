@@ -16,12 +16,11 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder, QAny, QUInt
-from qualtran.bloqs.arithmetic.bitwise import _cxork, _xor, _xor_symb, _xork, Xor, XorK
+from qualtran.bloqs.arithmetic.bitwise import _xor, _xor_symb, _xork, Xor, XorK
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 
 
 def test_examples(bloq_autotester):
-    bloq_autotester(_cxork)
     bloq_autotester(_xork)
 
 
@@ -52,20 +51,35 @@ def test_xor_symb(bloq_autotester):
 
 
 @pytest.mark.parametrize("dtype", [QAny(4), QUInt(4)])
-@pytest.mark.parametrize("x", range(16))
-@pytest.mark.parametrize("y", range(16))
-def test_xor_call(dtype, x, y):
+def test_xor_call_classically(dtype):
     bloq = Xor(dtype)
-    x_out, y_out = bloq.call_classically(x=x, y=y)
-    assert x_out == x and y_out == x ^ y
-    x_out, y_out = bloq.decompose_bloq().call_classically(x=x, y=y)
-    assert x_out == x and y_out == x ^ y
+    domain = (
+        dtype.get_classical_domain() if not isinstance(dtype, QAny) else range(2**dtype.bitsize)
+    )
+    for x in domain:
+        for y in domain:
+            x_out, y_out = bloq.call_classically(x=x, y=y)
+            assert x_out == x and y_out == x ^ y
+            x_out, y_out = bloq.decompose_bloq().call_classically(x=x, y=y)
+            assert x_out == x and y_out == x ^ y
 
-    bb = BloqBuilder()
-    x_soq = bb.add(IntState(x, 4))
-    y_soq = bb.add(IntState(y, 4))
-    x_soq, y_soq = bb.add_t(bloq, x=x_soq, y=y_soq)
-    bb.add(IntEffect(x, 4), val=x_soq)
-    bloq = bb.finalize(y=y_soq)
 
-    np.testing.assert_allclose(bloq.tensor_contract(), IntState(x ^ y, 4).tensor_contract())
+@pytest.mark.slow
+@pytest.mark.parametrize("dtype", [QAny(4), QUInt(4)])
+def test_xor_tensor(dtype):
+    bloq = Xor(dtype)
+    domain = (
+        dtype.get_classical_domain() if not isinstance(dtype, QAny) else range(2**dtype.bitsize)
+    )
+    for x in domain:
+        for y in domain:
+            bb = BloqBuilder()
+            x_soq = bb.add(IntState(x, 4))
+            y_soq = bb.add(IntState(y, 4))
+            x_soq, y_soq = bb.add_t(bloq, x=x_soq, y=y_soq)
+            bb.add(IntEffect(x, 4), val=x_soq)
+            cbloq = bb.finalize(y=y_soq)
+
+            np.testing.assert_allclose(
+                cbloq.tensor_contract(), IntState(x ^ y, 4).tensor_contract()
+            )
