@@ -171,7 +171,13 @@ def _convert_cycles(cycles) -> Union[tuple[SymbolicCycleT, ...], Shaped]:
 
 @frozen
 class Permutation(Bloq):
-    """Apply a permutation of [0, N - 1] on the basis states.
+    r"""Apply a permutation of [0, N - 1] on the basis states.
+
+    Given a permutation $P : [0, N - 1] \to [0, N - 1]$, this bloq applies the unitary:
+
+    $$
+        U|x\rangle = |P(x)\rangle
+    $$
 
     Decomposes a permutation into cycles and applies them in order.
     See :meth:`from_dense_permutation` to construct this bloq from a permutation,
