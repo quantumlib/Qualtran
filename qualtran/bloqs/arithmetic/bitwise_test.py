@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 import numpy as np
+import pytest
 
-from qualtran import BloqBuilder, QUInt
-from qualtran.bloqs.arithmetic.bitwise import _cxork, _xor, _xor_symb, _xork, XorK
+from qualtran import BloqBuilder, QAny, QUInt
+from qualtran.bloqs.arithmetic.bitwise import _cxork, _xor, _xor_symb, _xork, Xor, XorK
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 
 
@@ -50,18 +51,21 @@ def test_xor_symb(bloq_autotester):
     bloq_autotester(_xor_symb)
 
 
-def test_xor_call():
-    bloq = _xor()
-    x, y = bloq.call_classically(x=7, y=0)
-    assert x == 7 and y == 7
-    x, y = bloq.decompose_bloq().call_classically(x=7, y=0)
-    assert x == 7 and y == 7
+@pytest.mark.parametrize("dtype", [QAny(4), QUInt(4)])
+@pytest.mark.parametrize("x", range(8))
+@pytest.mark.parametrize("y", range(8))
+def test_xor_call(dtype, x, y):
+    bloq = Xor(dtype)
+    x_out, y_out = bloq.call_classically(x=x, y=y)
+    assert x_out == x and y_out == x ^ y
+    x_out, y_out = bloq.decompose_bloq().call_classically(x=x, y=y)
+    assert x_out == x and y_out == x ^ y
 
     bb = BloqBuilder()
-    x = bb.add(IntState(13, 4))
-    y = bb.add(IntState(0, 4))
-    x, y = bb.add_t(bloq, x=x, y=y)
-    bb.add(IntEffect(13, 4), val=x)
-    bloq = bb.finalize(y=y)
+    x_soq = bb.add(IntState(x, 4))
+    y_soq = bb.add(IntState(y, 4))
+    x_soq, y_soq = bb.add_t(bloq, x=x_soq, y=y_soq)
+    bb.add(IntEffect(x, 4), val=x_soq)
+    bloq = bb.finalize(y=y_soq)
 
-    np.testing.assert_allclose(bloq.tensor_contract(), IntState(13, 4).tensor_contract())
+    np.testing.assert_allclose(bloq.tensor_contract(), IntState(x ^ y, 4).tensor_contract())

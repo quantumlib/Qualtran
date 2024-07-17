@@ -19,6 +19,7 @@ import sympy
 from attrs import frozen
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -126,7 +127,7 @@ def _cxork() -> XorK:
 
 
 @frozen
-class Xor(SpecializedSingleQubitControlledGate):
+class Xor(Bloq):
     """Xor the value of one register into another via CNOTs.
 
     When both registers are in computational basis and the destination is 0,
@@ -134,8 +135,6 @@ class Xor(SpecializedSingleQubitControlledGate):
 
     Args:
         dtype: Data type of the input registers `x` and `y`.
-        control_val: An optional single bit control, apply the operation when
-            the control qubit equals the `control_val`.
 
     Registers:
         x: The source register.
@@ -143,17 +142,10 @@ class Xor(SpecializedSingleQubitControlledGate):
     """
 
     dtype: QDType
-    control_val: Optional[int] = None
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        if self.control_val is not None:
-            return (Register('ctrl', QBit()),)
-        return ()
 
     def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> Dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
@@ -165,7 +157,7 @@ class Xor(SpecializedSingleQubitControlledGate):
         for i in range(len(xs)):
             xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])
 
-        return {'x': bb.join(xs), 'y': bb.join(ys)}
+        return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(CNOT(), self.dtype.num_qubits)}
@@ -173,7 +165,7 @@ class Xor(SpecializedSingleQubitControlledGate):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'x': x, 'y': x}
+        return {'x': x, 'y': x ^ y}
 
 
 @bloq_example
