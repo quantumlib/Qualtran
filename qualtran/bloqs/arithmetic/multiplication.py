@@ -30,6 +30,7 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.symbolics import HasLength, smax, SymbolicInt
@@ -539,9 +540,6 @@ class InvertRealNumber(Bloq):
         return "1/a"
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # import here to avoid circular dependency on qualtran.bloqs.arithmetic
-        from qualtran.bloqs.arithmetic.subtraction import Subtract
-
         # initial approximation: Figure 4
         num_int = self.bitsize - self.num_frac
         # Newton-Raphson: Eq. (1)

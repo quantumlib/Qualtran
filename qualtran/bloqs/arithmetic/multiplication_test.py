@@ -34,6 +34,7 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SquareRealNumber,
     SumOfSquares,
 )
+from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -176,8 +177,6 @@ def test_plus_equal_product():
 
 
 def test_invert_real_number():
-    from qualtran.bloqs.arithmetic.subtraction import Subtract
-
     bitsize = 10
     num_frac = 7
     num_int = bitsize - num_frac
