@@ -53,6 +53,7 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
@@ -406,6 +407,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.permutation._PERMUTATION_DOC,
             qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Bitwise Operations',
+        module=qualtran.bloqs.arithmetic.bitwise,
+        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
     ),
 ]
 

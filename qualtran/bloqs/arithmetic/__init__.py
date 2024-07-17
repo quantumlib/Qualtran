@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.bitwise import Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     EqualsAConstant,
