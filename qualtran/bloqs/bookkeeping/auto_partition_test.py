@@ -16,11 +16,17 @@ import subprocess
 import pytest
 from attrs import evolve
 
-from qualtran.bloqs.bookkeeping.auto_partition import _auto_partition, AutoPartition
+from qualtran.bloqs.bookkeeping.auto_partition import (
+    _auto_partition,
+    _auto_partition_unused,
+    AutoPartition,
+    Unused,
+)
 
 
 def test_auto_partition(bloq_autotester):
     bloq_autotester(_auto_partition)
+    bloq_autotester(_auto_partition_unused)
 
 
 def test_auto_partition_input():
@@ -72,12 +78,19 @@ def test_auto_partition_input():
 
 def test_auto_partition_valid():
     from qualtran import Controlled, CtrlSpec, QAny, QUInt, Register
-    from qualtran.bloqs.basic_gates import Swap
+    from qualtran.bloqs.basic_gates import Swap, XGate
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
         bloq = AutoPartition(
             bloq, [(Register('a', QAny(3)), ['y']), (Register('b', QAny(3)), ['x'])]
+        )
+
+    with pytest.raises(ValueError):
+        bloq = AutoPartition(
+            XGate(),
+            [(Register('a', QAny(1)), ['q']), (Register('b', QAny(1)), [Unused(1)])],
+            left_only=True,
         )
 
 
@@ -130,6 +143,33 @@ def test_auto_partition_big():
     assert ctrl == 0b0111
     assert x == 0b010
     assert y == 0b101
+
+
+def test_auto_partition_unused():
+    from qualtran import QAny, Register
+
+    bloq = _auto_partition_unused()
+
+    assert tuple(bloq.signature.lefts()) == (
+        Register('x', dtype=QAny(3)),
+        Register('y', dtype=QAny(1)),
+        Register('z', dtype=QAny(2)),
+    )
+
+    assert tuple(bloq.signature.rights()) == tuple(bloq.signature.lefts())
+
+    x, y, z = bloq.call_classically(x=0b111, y=0b0, z=0b10)
+    assert x == 0b101
+    assert y == 0b1
+    assert z == 0b10
+
+    x, y, z = bloq.call_classically(x=0b010, y=0b0, z=0b01)
+    assert x == 0b010
+    assert y == 0b0
+    assert z == 0b01
+
+    with pytest.raises(ValueError):
+        _ = evolve(bloq, left_only=True)
 
 
 def test_no_circular_import():

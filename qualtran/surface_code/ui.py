@@ -387,7 +387,7 @@ def create_qubit_pie_chart(
             'Magic State Distillation',
         ]
         memory_footprint['qubits'] = [
-            FastDataBlock.grid_size(int(algorithm.algorithm_qubits)),
+            FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits)),
             multi_factory.footprint(),
         ]
         fig = px.pie(
@@ -466,7 +466,7 @@ def create_runtime_plot(
     unit, duration = format_duration(duration)
     duration_name = f'Duration ({unit})'
     num_qubits = (
-        FastDataBlock.grid_size(int(algorithm.algorithm_qubits))
+        FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits))
         + factory.footprint() * magic_counts
     )
     df = pd.DataFrame(

@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union
+from typing import overload, TypeVar, Union
 
 import sympy
 from attrs import field, frozen, validators
 from cirq._doc import document
+from typing_extensions import TypeIs
 
 SymbolicFloat = Union[float, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
@@ -63,7 +64,22 @@ class HasLength:
         return True
 
 
+T = TypeVar('T')
+
+
+@overload
+def is_symbolic(
+    arg: Union[T, sympy.Expr, Shaped, HasLength], /
+) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]:
+    ...
+
+
+@overload
 def is_symbolic(*args) -> bool:
+    ...
+
+
+def is_symbolic(*args) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bool]:
     """Returns whether the inputs contain any symbolic object.
 
     Returns:
