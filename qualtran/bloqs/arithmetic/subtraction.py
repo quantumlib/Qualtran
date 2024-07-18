@@ -68,7 +68,7 @@ class Subtract(Bloq):
     @a_dtype.validator
     def _a_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
+            raise ValueError("Only QInt, QUInt and QMontgomeryUInt types are supported.")
         if isinstance(val.num_qubits, sympy.Expr):
             return
         if val.bitsize > self.b_dtype.bitsize:
@@ -77,13 +77,13 @@ class Subtract(Bloq):
     @b_dtype.validator
     def _b_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
+            raise ValueError("Only QInt, QUInt and QMontgomeryUInt types are supported.")
 
     @property
     def dtype(self):
         if self.a_dtype != self.b_dtype:
             raise ValueError(
-                "Add.dtype is only supported when both operands have the same dtype: "
+                "Subtract.dtype is only supported when both operands have the same dtype: "
                 f"{self.a_dtype=}, {self.b_dtype=}"
             )
         return self.a_dtype
@@ -166,4 +166,94 @@ def _sub_diff_size_regs() -> Subtract:
 
 _SUB_DOC = BloqDocSpec(
     bloq_cls=Subtract, examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs]
+)
+
+
+@frozen
+class SubtractFrom(Bloq):
+    """A version of `Subtract` that stores the input in the register being subtracted from.
+
+    Implements $U|a\rangle|b\rangle \rightarrow |a - b\rangle|b\rangle$.
+
+    Args:
+        dtype: Quantum datatype used to represent the integers a, b, and a - b.
+
+    Registers:
+        a: A dtype.bitsize-sized input register (register a above).
+        b: A dtype.bitsize-sized input/output register (register b above).
+    """
+
+    dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+
+    @dtype.validator
+    def _dtype_validate(self, field, val):
+        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
+            raise ValueError("Only QInt, QUInt and QMontgomeryUInt types are supported.")
+
+    @property
+    def signature(self):
+        return Signature([Register("a", self.dtype), Register("b", self.dtype)])
+
+    @property
+    def dtype_as_unsigned(self):
+        return self.dtype if not isinstance(self.dtype, QInt) else QUInt(self.dtype.bitsize)
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
+        bitsize = self.dtype.bitsize
+        N = 2**bitsize if unsigned else 2 ** (bitsize - 1)
+        return {'a': int(math.fmod(a - b, N)), 'b': b}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        if reg is None:
+            return Text('')
+        if reg.name == 'a':
+            return directional_text_box('a-b', side=reg.side)
+        elif reg.name == 'b':
+            return directional_text_box('b', side=reg.side)
+        else:
+            raise ValueError()
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (Negate(self.dtype), 1),
+            (Negate(self.dtype).adjoint(), 1),
+            (Add(self.dtype_as_unsigned, self.dtype_as_unsigned), 1),
+        }
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+        neg = Negate(self.dtype)
+        b = bb.add(neg, x=b)  # a, -b
+        b, a = bb.add_t(Add(self.dtype_as_unsigned, self.dtype_as_unsigned), a=b, b=a)  # a - b, -b
+        b = bb.add(neg.adjoint(), x=b)  # a - b, b
+        return {'a': a, 'b': b}
+
+
+@bloq_example
+def _sub_from_symb() -> SubtractFrom:
+    n = sympy.Symbol('n')
+    sub_from_symb = SubtractFrom(QInt(bitsize=n))
+    return sub_from_symb
+
+
+@bloq_example
+def _sub_from_small() -> SubtractFrom:
+    sub_from_small = SubtractFrom(QInt(bitsize=4))
+    return sub_from_small
+
+
+@bloq_example
+def _sub_from_large() -> SubtractFrom:
+    sub_from_large = SubtractFrom(QInt(bitsize=64))
+    return sub_from_large
+
+
+_SUB_FROM_DOC = BloqDocSpec(
+    bloq_cls=SubtractFrom, examples=[_sub_from_symb, _sub_from_small, _sub_from_large]
 )
