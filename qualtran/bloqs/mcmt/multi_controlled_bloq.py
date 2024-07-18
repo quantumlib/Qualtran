@@ -53,6 +53,7 @@ class MultiControlledBloq(Bloq):
             ctrl_soqs = None
             q = soqs.pop(self.ctrl_reg_names[0])
             if self.ctrl_spec.shapes[0] == (1,):
+                assert isinstance(q, np.ndarray)
                 q = q[0]
 
             if self._single_control_value == 0:
@@ -88,6 +89,7 @@ class MultiControlledBloq(Bloq):
         else:
             # uncompute the control bit
             ctrl_spec_and_bloq = CtrlSpecAnd(self.ctrl_spec)
+            assert ctrl_soqs is not None
             ctrl_soqs['target'] = q
             ctrl_soqs = bb.add_d(ctrl_spec_and_bloq.adjoint(), **ctrl_soqs)
 
@@ -102,7 +104,7 @@ class MultiControlledBloq(Bloq):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        counts = {(self.subbloq.controlled(), 1)}
+        counts: set['BloqCountT'] = {(self.subbloq.controlled(), 1)}
 
         if self._is_single_bit_control():
             if self._single_control_value == 0:
