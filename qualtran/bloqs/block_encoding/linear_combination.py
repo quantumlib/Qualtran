@@ -192,8 +192,7 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=tuple(self.rescaled_lambd),
-            sub_bit_precision=cast(int, self.lambd_bits),
+            unnormalized_probabilities=tuple(self.rescaled_lambd), sub_bit_precision=self.lambd_bits
         )
         N = len(self.rescaled_lambd)
 
@@ -224,14 +223,14 @@ class LinearCombination(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        assert isinstance(self.be_ancilla_bitsize, int)
-        assert isinstance(self.be_resource_bitsize, int)
+        assert not is_symbolic(self.be_ancilla_bitsize)
+        assert not is_symbolic(self.be_resource_bitsize)
 
         # make all bloqs have same ancilla and resource registers
         bloqs = []
         for be in self.signed_block_encodings:
-            assert isinstance(be.ancilla_bitsize, int)
-            assert isinstance(be.resource_bitsize, int)
+            assert not is_symbolic(be.ancilla_bitsize)
+            assert not is_symbolic(be.resource_bitsize)
 
             partitions: List[Tuple[Register, List[Union[str, Unused]]]] = [
                 (Register("system", QAny(self.system_bitsize)), ["system"])
@@ -267,17 +266,15 @@ class LinearCombination(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        assert isinstance(self.be_ancilla_bitsize, int)
-        assert isinstance(self.ancilla_bitsize, int)
-        assert isinstance(self.be_resource_bitsize, int)
-        assert isinstance(self.resource_bitsize, int)
+        assert not is_symbolic(self.be_ancilla_bitsize)
+        assert not is_symbolic(self.be_resource_bitsize)
 
         # partition ancilla register
         be_system_soqs: Dict[str, SoquetT] = {"system": system}
         anc_regs = [Register("selection", QAny(self.prepare.selection_bitsize))]
         if self.be_ancilla_bitsize > 0:
             anc_regs.append(Register("ancilla", QAny(self.be_ancilla_bitsize)))
-        anc_part = Partition(cast(int, self.ancilla_bitsize), tuple(anc_regs))
+        anc_part = Partition(self.ancilla_bitsize, tuple(anc_regs))
         anc_soqs = bb.add_d(anc_part, x=ancilla)
         if self.be_ancilla_bitsize > 0:
             be_system_soqs["ancilla"] = anc_soqs.pop("ancilla")
@@ -290,7 +287,7 @@ class LinearCombination(BlockEncoding):
                 res_regs.append(Register("resource", QAny(self.be_resource_bitsize)))
             if self.prepare.junk_bitsize > 0:
                 res_regs.append(Register("prepare_junk", QAny(self.prepare.junk_bitsize)))
-            res_part = Partition(cast(int, self.resource_bitsize), tuple(res_regs))
+            res_part = Partition(self.resource_bitsize, tuple(res_regs))
             res_soqs = bb.add_d(res_part, x=soqs.pop("resource"))
             if self.be_resource_bitsize > 0:
                 be_system_soqs["resource"] = res_soqs.pop("resource")
@@ -303,7 +300,7 @@ class LinearCombination(BlockEncoding):
             be_regs.append(Register("ancilla", QAny(self.be_ancilla_bitsize)))
         if self.be_resource_bitsize > 0:
             be_regs.append(Register("resource", QAny(self.be_resource_bitsize)))
-        be_part = Partition(cast(int, self.select.system_bitsize), tuple(be_regs))
+        be_part = Partition(self.select.system_bitsize, tuple(be_regs))
 
         prepare_soqs = bb.add_d(self.prepare, **prepare_in_soqs)
         select_out_soqs = bb.add_d(

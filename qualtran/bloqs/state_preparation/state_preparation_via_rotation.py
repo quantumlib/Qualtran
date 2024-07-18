@@ -145,7 +145,6 @@ class StatePreparationViaRotations(GateWithRegisters):
     def __attrs_post_init__(self):
         if is_symbolic(self.state_coefficients):
             return
-        assert isinstance(self.state_coefficients, tuple)
         # a valid quantum state has a number of coefficients that is a power of two
         assert slen(self.state_coefficients) == 2**self.state_bitsize
         # negative number of control bits is not allowed

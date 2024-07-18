@@ -147,7 +147,7 @@ class ParallelComparators(Bloq):
     @cached_property
     def num_comparisons(self) -> SymbolicInt:
         """Number of `Comparator` gates used in the decomposition"""
-        if is_symbolic(self.k, self.offset):
+        if is_symbolic(self.k) or is_symbolic(self.offset):
             return self.k // 2  # upper bound
 
         full = (self.k // (2 * self.offset)) * self.offset
@@ -155,12 +155,11 @@ class ParallelComparators(Bloq):
         return full + max(rest - self.offset, 0)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', xs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.k, self.offset):
+        if is_symbolic(self.k) or is_symbolic(self.offset):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        # make mypy happy
-        k = int(self.k)
-        offset = int(self.offset)
+        k = self.k
+        offset = self.offset
         assert isinstance(xs, np.ndarray)
 
         comp = Comparator(self.bitsize)
@@ -225,7 +224,6 @@ class BitonicMerge(Bloq):
     def __attrs_post_init__(self):
         k = self.half_length
         if not is_symbolic(k):
-            assert not isinstance(k, sympy.Expr)
             assert k >= 1, "length of input lists must be positive"
             # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, "length of input lists must be a power of 2"
@@ -260,7 +258,7 @@ class BitonicMerge(Bloq):
         assert isinstance(xs, np.ndarray)
         assert isinstance(ys, np.ndarray)
 
-        k = int(self.half_length)
+        k = self.half_length
 
         first_round_junk = []
         for i in range(k):
@@ -340,7 +338,6 @@ class BitonicSort(Bloq):
     def __attrs_post_init__(self):
         k = self.k
         if not is_symbolic(k):
-            assert not isinstance(k, sympy.Expr)
             assert k >= 1, f"length of input list must be positive, got {k=}"
             # TODO(#1090) support non-power-of-two input lengths
             assert (k & (k - 1)) == 0, f"length of input list must be a power of 2, got {k=}"
