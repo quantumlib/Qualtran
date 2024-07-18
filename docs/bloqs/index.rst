@@ -30,7 +30,7 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb

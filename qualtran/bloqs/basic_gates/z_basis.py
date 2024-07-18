@@ -298,6 +298,9 @@ def _zgate() -> ZGate:
     return zgate
 
 
+_Z_GATE_DOC = BloqDocSpec(bloq_cls=ZGate, examples=[_zgate], call_graph_example=None)
+
+
 @frozen
 class CZ(Bloq):
     """Two-qubit controlled-Z gate.
@@ -342,6 +345,15 @@ class CZ(Bloq):
         if reg.name == 'q1' or reg.name == 'q2':
             return Circle()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
+
+
+@bloq_example
+def _cz() -> CZ:
+    cz = CZ()
+    return cz
+
+
+_CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
 
 
 @frozen
