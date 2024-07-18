@@ -132,7 +132,7 @@ class CHadamard(Bloq):
 
     Registers:
         ctrl: The control qubit.
-        q: The target qubit.
+        target: The target qubit.
     """
 
     @cached_property
