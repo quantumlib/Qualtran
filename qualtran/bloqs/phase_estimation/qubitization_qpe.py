@@ -217,11 +217,13 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     num_spat = num_spinorb // 2
     tpq = np.random.normal(size=(num_spat, num_spat))
     tpq = 0.5 * (tpq + tpq) / 2
+    eta = np.random.normal(size=(thc_dim, num_spat))
     zeta = np.random.normal(size=(thc_dim, thc_dim))
     zeta = 0.5 * (zeta + zeta) / 2
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
     walk = get_walk_operator_for_thc_ham(
         tpq,
+        eta,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_theta=num_bits_rot,

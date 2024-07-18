@@ -28,7 +28,7 @@ how they can be combined in `QubitizationWalkOperator`.
 """
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -36,12 +36,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
-from qualtran._infra.gate_with_registers import (
-    GateWithRegisters,
-    SpecializedSingleQubitControlledGate,
-    total_bits,
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
+from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+    LCUBlockEncoding,
+    LCUBlockEncodingZeroState,
 )
-from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -86,7 +85,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
         Babbush et. al. (2018). Figure 1.
     """
 
-    block_encoding: BlockEncoding
+    block_encoding: Union[LCUBlockEncoding, LCUBlockEncodingZeroState]
     control_val: Optional[int] = None
     uncompute: bool = False
 
@@ -146,6 +145,10 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
         assert self.control_val is None
         c_block = self.block_encoding.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_block, (LCUBlockEncoding, LCUBlockEncodingZeroState)):
+            raise TypeError(
+                f"controlled version of {self.block_encoding} = {c_block} must also be a SelectOracle"
+            )
         return attrs.evolve(self, block_encoding=c_block, control_val=control_val)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -155,6 +158,9 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
 
     def adjoint(self) -> 'QubitizationWalkOperator':
         return attrs.evolve(self, uncompute=not self.uncompute)
+
+    @
+    def 
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

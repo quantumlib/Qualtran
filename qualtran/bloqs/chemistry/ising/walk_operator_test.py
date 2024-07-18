@@ -41,8 +41,8 @@ def test_symbolic_1d_ising_walk_op():
     assert walk.sum_of_lcu_coefficients == n * (abs(J) + abs(Gamma))
 
     # check expression for probability bitsize `mu`
-    assert isinstance(walk.prepare, StatePreparationAliasSampling)
-    mu = walk.prepare.mu
+    assert isinstance(walk.block_encoding.prepare, StatePreparationAliasSampling)
+    mu = walk.block_encoding.prepare.mu
     assert isinstance(mu, sympy.Expr)
     # sympy limitation: unable to match exact expressions
     assert str(mu.simplify()) == str(ceil(log2(2.0 * eps + 2.0 / eps)))

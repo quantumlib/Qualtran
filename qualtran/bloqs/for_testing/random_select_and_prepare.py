@@ -21,6 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -180,4 +181,4 @@ def random_qubitization_walk_operator(
         ]
     )
 
-    return QubitizationWalkOperator(prepare=prepare, select=select), ham
+    return QubitizationWalkOperator(LCUBlockEncoding(prepare=prepare, select=select)), ham
