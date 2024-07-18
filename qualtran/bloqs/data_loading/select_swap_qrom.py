@@ -29,7 +29,7 @@ from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
-from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicInt
+from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -46,7 +46,7 @@ def find_optimal_log_block_size(
         * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
     The corresponding block size for SelectSwapQROM would be 2^k.
     """
-    k = 0.5 * log2(iteration_length / target_bitsize)
+    k: SymbolicFloat = 0.5 * log2(iteration_length / target_bitsize)
     if is_symbolic(k):
         return ceil(k)
 

@@ -17,6 +17,8 @@ from typing import List, Sequence
 import cirq
 import numpy as np
 
+from qualtran.symbolics import ssqrt, SymbolicFloat, SymbolicInt
+
 
 def get_1d_ising_pauli_terms(
     qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
@@ -91,3 +93,34 @@ def get_1d_ising_lcu_coeffs(
     ham = get_1d_ising_hamiltonian(spins, j_zz_strength, gamma_x_strength)
     coeffs = np.array([term.coefficient.real for term in ham])
     return coeffs
+
+
+def get_1d_ising_hamiltonian_norm_upper_bound(
+    n_sites: SymbolicInt, j_zz_strength: SymbolicFloat, gamma_x_strength: SymbolicFloat
+) -> SymbolicFloat:
+    r"""Weak upperbound on the norm of the 1d Ising Hamiltonian.
+
+    Recall that the 1d Ising Hamiltonian on $L$ sites is
+
+        $$
+        H = -J\sum_{k=0}^{L-1}\Z_{k}\Z_{(k+1)\%L} - \Gamma\sum_{k=0}^{L-1}X_{k}
+        $$
+
+    We can therefore upperbound the norm by grouping $Z_k Z_{k+1}$ and $X_k$:
+
+    $$
+        \norm{H} \le \sum_{k=0}^{L-1} \norm{J Z_k Z_{(k + 1)\%L} + \Gamma X_k}
+    $$
+
+    As each term is equal, this is effectively $L \norm{J Z_k Z_{(k + 1)\%L} + \Gamma X_k}$.
+    And the square of this term is
+
+    $$
+        (J Z_k Z_{(k + 1)\%L} + \Gamma X_k)^2 = (J^2 + \Gamma^2) I
+    $$
+
+    and therefore we obtain $\norm{H} \le L \sqrt{J^2 + \Gamma^2}$.
+
+    See :meth:`get_1d_ising_hamiltonian` to get the exact hamiltonian.
+    """
+    return n_sites * ssqrt(j_zz_strength**2 + gamma_x_strength**2)

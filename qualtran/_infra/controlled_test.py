@@ -380,7 +380,7 @@ def test_controlled_tensor_without_decompose():
 
 
 def test_controlled_global_phase_tensor():
-    bloq = GlobalPhase(1.0j).controlled()
+    bloq = GlobalPhase.from_coefficient(1.0j).controlled()
     should_be = np.diag([1, 1.0j])
     np.testing.assert_allclose(bloq.tensor_contract(), should_be)
 

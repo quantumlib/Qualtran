@@ -22,6 +22,7 @@ from attrs import define
 
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qsp.generalized_qsp import (
@@ -31,9 +32,6 @@ from qualtran.bloqs.qsp.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
-)
-from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
-    get_walk_operator_for_1d_ising_model,
 )
 from qualtran.linalg.polynomial.basic import evaluate_polynomial_of_unitary_matrix
 from qualtran.linalg.polynomial.qsp_testing import (
@@ -174,7 +172,7 @@ def test_call_graph(negative_power: int):
 
 @bloq_example
 def _gqsp_1d_ising() -> GeneralizedQSP:
-    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    W, _ = get_walk_operator_for_1d_ising_model(2, 1e-4)
     gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
     return gqsp_1d_ising
 

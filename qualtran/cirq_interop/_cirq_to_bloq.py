@@ -405,8 +405,8 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
 
     if isinstance(gate, cirq.GlobalPhaseGate):
         if isinstance(gate.coefficient, numbers.Complex):
-            return GlobalPhase(coefficient=complex(gate.coefficient))
-        return GlobalPhase(coefficient=gate.coefficient)
+            return GlobalPhase.from_coefficient(coefficient=complex(gate.coefficient))
+        return GlobalPhase.from_coefficient(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)

@@ -96,7 +96,9 @@ class Unitary(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
         raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
@@ -121,19 +123,19 @@ def _unitary_block_encoding() -> Unitary:
 
 
 @bloq_example
-def _unitary_block_encoding_override() -> Unitary:
+def _unitary_block_encoding_properties() -> Unitary:
     from attrs import evolve
 
     from qualtran.bloqs.basic_gates import TGate
 
-    unitary_block_encoding_override = evolve(
+    unitary_block_encoding_properties = evolve(
         Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01
     )
-    return unitary_block_encoding_override
+    return unitary_block_encoding_properties
 
 
 _UNITARY_DOC = BloqDocSpec(
     bloq_cls=Unitary,
     import_line="from qualtran.bloqs.block_encoding import Unitary",
-    examples=[_unitary_block_encoding, _unitary_block_encoding_override],
+    examples=[_unitary_block_encoding, _unitary_block_encoding_properties],
 )

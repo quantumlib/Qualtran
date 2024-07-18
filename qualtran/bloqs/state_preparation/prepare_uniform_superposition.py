@@ -96,7 +96,6 @@ class PrepareUniformSuperposition(GateWithRegisters):
         k, n, logL = 0, self.n, bit_length(self.n - 1)
         if is_symbolic(n):
             return 0, self.n, bit_length(self.n - 1)
-        n = int(n)
         while n > 1 and n % 2 == 0:
             k += 1
             logL -= 1

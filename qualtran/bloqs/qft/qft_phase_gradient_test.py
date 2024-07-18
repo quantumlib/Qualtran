@@ -17,11 +17,12 @@ import attrs
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
-from qualtran.bloqs.qft.qft_phase_gradient import QFTPhaseGradient
+from qualtran.bloqs.qft.qft_phase_gradient import _qft_phase_gradient_small, QFTPhaseGradient
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.symbolics.math_funcs import smax
 from qualtran.testing import assert_valid_bloq_decomposition
 
 if TYPE_CHECKING:
@@ -61,13 +62,15 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
 @pytest.mark.parametrize('n', [10, 123])
 def test_qft_phase_gradient_t_complexity(n: int):
     qft_bloq = QFTPhaseGradient(n)
-    print(qft_bloq.t_complexity())
-
-    def f(x):
-        if x == 1:
-            return 0
-        return f(x // 2) + f(x - x // 2) + PlusEqualProduct(x // 2, x - x // 2, x).t_complexity().t
-
+    n_symb = sympy.symbols('n')
+    symbolic_qft_bloq = QFTPhaseGradient(bitsize=n_symb)
+    plus_equals_prod_cost = 8 * smax(n_symb // 2, n_symb - n_symb // 2) ** 2
+    symbolic_qft_t_complexity = symbolic_qft_bloq.t_complexity().t
+    assert symbolic_qft_t_complexity == plus_equals_prod_cost * sympy.log(n_symb, 2)
     qft_t_complexity = qft_bloq.t_complexity()
-    assert qft_t_complexity.t == f(n) <= 8 * (n**2)
+    assert qft_t_complexity.t <= 8 * (n**2)
     assert qft_t_complexity.rotations == 0
+
+
+def test_qft_phase_gradient_small_auto(bloq_autotester):
+    bloq_autotester(_qft_phase_gradient_small)

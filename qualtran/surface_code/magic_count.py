@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union
+from typing import Dict, Union
 
 from attrs import field, frozen, validators
 
@@ -40,3 +40,7 @@ class MagicCount:
 
     def __rmul__(self, other: Union[float, int]) -> 'MagicCount':
         return self.__mul__(other)
+
+    def total_t_and_ccz_count(self) -> Dict[str, float]:
+        # TODO(mpharrigan): Temporary shim before removal of `MagicCount`.
+        return {'n_t': self.n_t, 'n_ccz': self.n_ccz}
