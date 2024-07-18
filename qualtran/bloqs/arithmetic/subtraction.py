@@ -171,16 +171,17 @@ _SUB_DOC = BloqDocSpec(
 
 @frozen
 class SubtractFrom(Bloq):
-    """A version of `Subtract` that stores the output in the register being subtracted from.
+    """A version of `Subtract` that leaves behind the value being subtracted.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a - b\rangle|b\rangle$.
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|b - a\rangle$, essentially equivalent to
+    the statement `b -= a`.
 
     Args:
         dtype: Quantum datatype used to represent the integers a, b, and a - b.
 
     Registers:
-        a: A dtype.bitsize-sized input/output register (register a above).
-        b: A dtype.bitsize-sized input register (register b above).
+        a: A dtype.bitsize-sized input register (register a above).
+        b: A dtype.bitsize-sized input/output register (register b above).
     """
 
     dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
@@ -194,17 +195,13 @@ class SubtractFrom(Bloq):
     def signature(self):
         return Signature([Register("a", self.dtype), Register("b", self.dtype)])
 
-    @property
-    def dtype_as_unsigned(self):
-        return self.dtype if not isinstance(self.dtype, QInt) else QUInt(self.dtype.bitsize)
-
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
         bitsize = self.dtype.bitsize
         N = 2**bitsize if unsigned else 2 ** (bitsize - 1)
-        return {'a': int(math.fmod(a - b, N)), 'b': b}
+        return {'a': a, 'b': int(math.fmod(b - a, N))}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -214,24 +211,18 @@ class SubtractFrom(Bloq):
         if reg is None:
             return Text('')
         if reg.name == 'a':
-            return directional_text_box('a-b', side=reg.side)
+            return directional_text_box('a', side=reg.side)
         elif reg.name == 'b':
-            return directional_text_box('b', side=reg.side)
+            return directional_text_box('b - a', side=reg.side)
         else:
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (Negate(self.dtype), 1),
-            (Negate(self.dtype).adjoint(), 1),
-            (Add(self.dtype_as_unsigned, self.dtype_as_unsigned), 1),
-        }
+        return {(Negate(self.dtype), 1), (Subtract(self.dtype, self.dtype), 1)}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        neg = Negate(self.dtype)
-        b = bb.add(neg, x=b)  # a, -b
-        b, a = bb.add_t(Add(self.dtype_as_unsigned, self.dtype_as_unsigned), a=b, b=a)  # a - b, -b
-        b = bb.add(neg.adjoint(), x=b)  # a - b, b
+        a, b = bb.add_t(Subtract(self.dtype, self.dtype), a=a, b=b)  # a, a - b
+        b = bb.add(Negate(self.dtype), x=b)  # a, b - a
         return {'a': a, 'b': b}
 
 

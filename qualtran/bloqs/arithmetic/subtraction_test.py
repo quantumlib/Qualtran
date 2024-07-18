@@ -86,14 +86,14 @@ def test_sub_from_large(bloq_autotester):
 
 
 def test_subtract_from_bloq_decomposition():
-    gate = SubtractFrom(QInt(3))
+    gate = SubtractFrom(QInt(4))
     qlt_testing.assert_valid_bloq_decomposition(gate)
 
-    want = np.zeros((64, 64))
-    for a_b in range(64):
-        a, b = a_b >> 3, a_b & 7
-        c = (a - b) % 8
-        want[(c << 3) | b][a_b] = 1
+    want = np.zeros((256, 256))
+    for a_b in range(256):
+        a, b = a_b >> 4, a_b & 15
+        c = (b - a) % 16
+        want[(a << 4) | c][a_b] = 1
     got = gate.tensor_contract()
     np.testing.assert_allclose(got, want)
 
