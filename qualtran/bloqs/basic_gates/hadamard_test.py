@@ -61,7 +61,7 @@ def test_chadamard_vs_cirq():
 def test_cirq_interop():
     circuit = CHadamard().as_composite_bloq().to_cirq_circuit()
     should_be = cirq.Circuit(
-        [cirq.Moment(cirq.H(cirq.NamedQubit('q')).controlled_by(cirq.NamedQubit('ctrl')))]
+        [cirq.Moment(cirq.H(cirq.NamedQubit('target')).controlled_by(cirq.NamedQubit('ctrl')))]
     )
     assert circuit == should_be
 
@@ -74,7 +74,7 @@ def test_active_chadamard_is_hadamard():
     bb = BloqBuilder()
     q = bb.add_register('q', 1)
     ctrl_on = bb.add(OneState())
-    ctrl_on, q = bb.add(CHadamard(), ctrl=ctrl_on, q=q)
+    ctrl_on, q = bb.add(CHadamard(), ctrl=ctrl_on, target=q)
     bb.add(OneEffect(), q=ctrl_on)
     cbloq = bb.finalize(q=q)
 
@@ -85,8 +85,8 @@ def test_chadamard_adjoint():
     bb = BloqBuilder()
     ctrl = bb.add_register('ctrl', 1)
     q = bb.add_register('q', 1)
-    ctrl, q = bb.add(CHadamard(), ctrl=ctrl, q=q)
-    ctrl, q = bb.add(CHadamard().adjoint(), ctrl=ctrl, q=q)
+    ctrl, q = bb.add(CHadamard(), ctrl=ctrl, target=q)
+    ctrl, q = bb.add(CHadamard().adjoint(), ctrl=ctrl, target=q)
     cbloq = bb.finalize(ctrl=ctrl, q=q)
 
     np.testing.assert_allclose(np.eye(4), cbloq.tensor_contract(), atol=1e-12)

@@ -92,7 +92,7 @@ class Hadamard(Bloq):
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl,) = ctrl_soqs
-            ctrl, q = bb.add(bloq, ctrl=ctrl, q=in_soqs['q'])
+            ctrl, q = bb.add(bloq, ctrl=ctrl, target=in_soqs['q'])
             return ((ctrl,), (q,))
 
         return bloq, _add_ctrled
@@ -137,7 +137,7 @@ class CHadamard(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(ctrl=1, q=1)
+        return Signature.build(ctrl=1, target=1)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -154,28 +154,32 @@ class CHadamard(Bloq):
         # Use these inds orderings to set the block where ctrl=1 to the desired gate.
         inds = [
             (outgoing['ctrl'], 0),
-            (outgoing['q'], 0),
+            (outgoing['target'], 0),
             (incoming['ctrl'], 0),
-            (incoming['q'], 0),
+            (incoming['target'], 0),
         ]
         unitary[1, :, 1, :] = _HADAMARD
 
         return [qtn.Tensor(data=unitary, inds=inds, tags=[str(self)])]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', q: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         import cirq
 
         (ctrl,) = ctrl
-        (q,) = q
-        return cirq.H.on(q).controlled_by(ctrl), {'ctrl': np.array([ctrl]), 'q': np.array([q])}
+        (target,) = target
+        return cirq.H.on(target).controlled_by(ctrl), {
+            'ctrl': np.array([ctrl]),
+            'target': np.array([target]),
+        }
 
     def _t_complexity_(self) -> 'TComplexity':
         # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
         # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
         # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
         # The other two are considered 'rotations'.
+        # https://github.com/quantumlib/Qualtran/issues/237
         return TComplexity(rotations=2, clifford=4)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
@@ -183,7 +187,7 @@ class CHadamard(Bloq):
             return Text('')
         if reg.name == 'ctrl':
             return Circle()
-        if reg.name == 'q':
+        if reg.name == 'target':
             return TextBox('H')
         raise ValueError(f"Unknown register {reg}")
 
