@@ -32,6 +32,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.symbolics import smax
+from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -44,9 +45,9 @@ if TYPE_CHECKING:
 class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Performs result += a * b"""
 
-    a_bitsize: int
-    b_bitsize: int
-    result_bitsize: int
+    a_bitsize: SymbolicInt
+    b_bitsize: SymbolicInt
+    result_bitsize: SymbolicInt
     is_adjoint: bool = False
 
     def pretty_name(self) -> str:
@@ -61,6 +62,12 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if not isinstance(self.a_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
+        if not isinstance(self.b_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
+        if not isinstance(self.result_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
 
     def adjoint(self) -> 'PlusEqualProduct':
@@ -77,6 +84,12 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return {'a': a, 'b': b, 'result': result_out}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if not isinstance(self.a_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
+        if not isinstance(self.b_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
+        if not isinstance(self.result_bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

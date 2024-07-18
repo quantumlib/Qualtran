@@ -15,6 +15,7 @@
 import pytest
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran.surface_code import azure_cost_model
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.quantum_error_correction_scheme_summary import (
@@ -109,3 +110,7 @@ def test_t_states(test: Test):
         test.error_budget, test.alg, rotation_model=BeverlandEtAlRotationCost
     )
     assert got == pytest.approx(test.t_states, rel=0.1)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('azure_cost_model')

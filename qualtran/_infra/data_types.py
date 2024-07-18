@@ -221,7 +221,11 @@ class QInt(QDType):
     def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         sign = bits[0]
-        x = QUInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
+        x = (
+            0
+            if self.bitsize == 1
+            else QUInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
+        )
         return ~x if sign else x
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):

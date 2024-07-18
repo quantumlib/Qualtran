@@ -28,7 +28,11 @@ from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
-from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.reflections.reflection_using_prepare import (
+    _refl_around_zero,
+    _refl_using_prep,
+    ReflectionUsingPrepare,
+)
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.testing import GateHelper
@@ -53,6 +57,11 @@ gateset_to_keep = cirq.Gateset(
     cirq.ControlledGate,
     cirq.AnyUnitaryGateFamily(1),
 )
+
+
+def test_reflection_using_prepare_examples(bloq_autotester):
+    bloq_autotester(_refl_using_prep)
+    bloq_autotester(_refl_around_zero)
 
 
 def keep(op: cirq.Operation):
@@ -104,11 +113,11 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
 
 
 @pytest.mark.parametrize('num_ones', [5])
-@pytest.mark.parametrize('eps', [0.01])
+@pytest.mark.parametrize('eps', [0.05])
 @pytest.mark.parametrize('global_phase', [+1, -1j])
 def test_reflection_using_prepare(num_ones, eps, global_phase):
     data = [1] * num_ones
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
 
     gate = ReflectionUsingPrepare(prepare_gate, global_phase=global_phase)
     assert_valid_bloq_decomposition(gate)
@@ -132,8 +141,8 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
 
 def test_reflection_using_prepare_diagram():
     data = [1, 2, 3, 4, 5, 6]
-    eps = 0.1
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    eps = 2.1
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
     # No control
     gate = ReflectionUsingPrepare(prepare_gate, control_val=None)
     # op = gate.on_registers(**get_named_qubits(gate.signature))
@@ -223,9 +232,7 @@ selection2: ────selection^-1──────────────�
 
 
 def test_reflection_using_prepare_consistent_protocols_and_controlled():
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(
-        [1, 2, 3, 4], probability_epsilon=0.1
-    )
+    prepare_gate = StatePreparationAliasSampling.from_probabilities([1, 2, 3, 4], precision=0.1)
     # No control
     gate = ReflectionUsingPrepare(prepare_gate, control_val=None)
     op = gate.on_registers(**get_named_qubits(gate.signature))
@@ -267,13 +274,11 @@ def test_reflection_around_zero():
 def test_call_graph_matches_decomp(global_phase, control_val):
     data = [1] * 5
     eps = 1e-11
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=0.01)
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=0.01)
 
     def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
         # Hack to catch the fact that cirq special cases some ZPowGates
-        if isinstance(bloq, ZPowGate) and np.isclose(
-            float(bloq.exponent), np.angle(global_phase) / np.pi
-        ):
+        if isinstance(bloq, ZPowGate) and np.any(np.isclose(float(bloq.exponent), [0.5, -0.5])):
             # we're already ignoring cliffords
             return None
         return bloq
@@ -281,15 +286,15 @@ def test_call_graph_matches_decomp(global_phase, control_val):
     gate = ReflectionUsingPrepare(
         prepare_gate, global_phase=global_phase, eps=eps, control_val=control_val
     )
-    cost_decomp = gate.decompose_bloq().call_graph(
+    _, cost_decomp = gate.decompose_bloq().call_graph(
         generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
-    )[1]
-    cost_call = gate.call_graph(
+    )
+    _, cost_call = gate.call_graph(
         generalizer=[
             ignore_split_join,
             ignore_alloc_free,
             ignore_cliffords,
             catch_zpow_bloq_s_gate_inv,
         ]
-    )[1]
+    )
     assert cost_decomp == cost_call
