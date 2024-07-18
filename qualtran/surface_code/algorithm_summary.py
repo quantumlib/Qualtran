@@ -126,6 +126,6 @@ class AlgorithmSummary:
             toffoli_gates=gate_count.toffoli + gate_count.and_bloq + gate_count.cswap,
             rotation_gates=gate_count.rotation,
             measurements=gate_count.measurement,
-            rotation_circuit_depth=gate_count.depth,
+            rotation_circuit_depth=gate_count.rotation,
             algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)),
         )
