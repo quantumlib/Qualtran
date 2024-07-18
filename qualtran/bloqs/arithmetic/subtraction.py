@@ -171,7 +171,7 @@ _SUB_DOC = BloqDocSpec(
 
 @frozen
 class SubtractFrom(Bloq):
-    """A version of `Subtract` that stores the input in the register being subtracted from.
+    """A version of `Subtract` that stores the output in the register being subtracted from.
 
     Implements $U|a\rangle|b\rangle \rightarrow |a - b\rangle|b\rangle$.
 
@@ -179,8 +179,8 @@ class SubtractFrom(Bloq):
         dtype: Quantum datatype used to represent the integers a, b, and a - b.
 
     Registers:
-        a: A dtype.bitsize-sized input register (register a above).
-        b: A dtype.bitsize-sized input/output register (register b above).
+        a: A dtype.bitsize-sized input/output register (register a above).
+        b: A dtype.bitsize-sized input register (register b above).
     """
 
     dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
