@@ -57,5 +57,7 @@ def test_invert_error_at():
 
 
 def test_logical_error_model():
-    ler = qecs.LogicalErrorModel(qec_scheme=qecs.BeverlandSuperconductingQubits, phys_err=1e-3)
+    ler = qecs.LogicalErrorModel(
+        qec_scheme=qecs.BeverlandSuperconductingQubits, physical_error=1e-3
+    )
     assert ler(code_distance=3) == pytest.approx(3e-4)

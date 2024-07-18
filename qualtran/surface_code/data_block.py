@@ -86,7 +86,9 @@ class DataBlock(metaclass=abc.ABCMeta):
         `self.n_cycles` to report the total number of cycles required.
         """
 
-    def n_cycles(self, n_logi_gates: 'MagicCount', logi_err_model: 'LogicalErrorModel') -> int:
+    def n_cycles(
+        self, n_logical_gates: 'MagicCount', logical_error_model: 'LogicalErrorModel'
+    ) -> int:
         """The number of surface code cycles to apply the number of gates to the data block.
 
         Note that only the Litinski (2019) derived data blocks model a limit on the number of
@@ -95,23 +97,23 @@ class DataBlock(metaclass=abc.ABCMeta):
         number of cycles taken by the magic state factories is the limiting factor in the
         computation.
         """
-        counts = n_logi_gates.total_t_and_ccz_count()
+        counts = n_logical_gates.total_t_and_ccz_count()
         n_steps = (counts['n_t'] + counts['n_ccz']) * self.n_steps_to_consume_a_magic_state
         n_cycles = self.data_d * n_steps
         return n_cycles
 
-    def n_phys_qubits(self, n_algo_qubits: int) -> int:
+    def n_physical_qubits(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block."""
         n_phys_per_tile = 2 * self.data_d**2
         return n_phys_per_tile * self.n_tiles(n_algo_qubits)
 
     def data_error(
-        self, n_algo_qubits: int, n_cycles: int, logi_err_model: 'LogicalErrorModel'
+        self, n_algo_qubits: int, n_cycles: int, logical_error_model: 'LogicalErrorModel'
     ) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
         # spacetime_volue = number of data cells x number of cycles they will live for.
         spacetime_volume = self.n_tiles(n_algo_qubits) * n_cycles
-        return spacetime_volume * logi_err_model(self.data_d)
+        return spacetime_volume * logical_error_model(self.data_d)
 
 
 @frozen

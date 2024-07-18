@@ -182,18 +182,20 @@ def get_ccz2t_costs(
         factory: magic state factory configuration. Used to evaluate distillation error and cost.
         data_block: data block configuration. Used to evaluate data error and footprint.
     """
-    logi_err_model = qec.LogicalErrorModel(
-        qec_scheme=qec.FowlerSuperconductingQubits, phys_err=phys_err
+    err_model = qec.LogicalErrorModel(
+        qec_scheme=qec.FowlerSuperconductingQubits, physical_error=phys_err
     )
     distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
     n_generation_cycles = factory.n_cycles(n_magic=n_magic, phys_err=phys_err)
-    n_consumption_cycles = data_block.n_cycles(n_logi_gates=n_magic, logi_err_model=logi_err_model)
+    n_consumption_cycles = data_block.n_cycles(
+        n_logical_gates=n_magic, logical_error_model=err_model
+    )
     n_cycles = max(n_generation_cycles, n_consumption_cycles)
     data_error = data_block.data_error(
-        n_algo_qubits=n_algo_qubits, n_cycles=int(n_cycles), logi_err_model=logi_err_model
+        n_algo_qubits=n_algo_qubits, n_cycles=int(n_cycles), logical_error_model=err_model
     )
     failure_prob = distillation_error + data_error
-    footprint = factory.footprint() + data_block.n_phys_qubits(n_algo_qubits=n_algo_qubits)
+    footprint = factory.footprint() + data_block.n_physical_qubits(n_algo_qubits=n_algo_qubits)
     duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
     return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)

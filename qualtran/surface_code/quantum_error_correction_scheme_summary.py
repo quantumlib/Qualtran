@@ -118,12 +118,12 @@ class LogicalErrorModel:
     cost models can calculate the logical error rate given a particular code distance.
     """
 
-    phys_err: float
+    physical_error: float
     _qec_scheme: 'QuantumErrorCorrectionSchemeSummary'
 
     def __call__(self, code_distance: int):
         return self._qec_scheme.logical_error_rate(
-            code_distance=code_distance, physical_error_rate=self.phys_err
+            code_distance=code_distance, physical_error_rate=self.physical_error
         )
 
 
