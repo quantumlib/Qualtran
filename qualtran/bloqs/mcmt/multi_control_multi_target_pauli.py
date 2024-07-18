@@ -27,6 +27,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CtrlSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     Register,
@@ -155,6 +156,9 @@ class MultiControlPauli(GateWithRegisters):
         return MultiControlledBloq(ctrl_spec, self.target_bloq)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.cvs):
+            raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.cvs=}")
+
         target = soqs.pop('target')
         (target_reg_name,) = [reg.name for reg in self.target_bloq.signature]
         if self.n_ctrls == 0:
@@ -192,6 +196,25 @@ class MultiControlPauli(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.n_ctrls == 0:
             return {(self.target_bloq, 1)}
+
+        if is_symbolic(self.cvs):
+            # TODO CtrlSpec does not support symbolic cvs yet.
+            #      remove this case once support is added.
+            from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+
+            if self.n_ctrls == 1:
+                return {(self.target_bloq.controlled(), 1)}
+            elif self.n_ctrls == 2:
+                and_bloq = And(ssa.new_symbol('cv1'), ssa.new_symbol('cv2'))
+                return {(self.target_bloq.controlled(), 1), (and_bloq, 1), (and_bloq.adjoint(), 1)}
+            else:
+                m_and_bloq = MultiAnd(self.cvs)
+                return {
+                    (self.target_bloq.controlled(), 1),
+                    (m_and_bloq, 1),
+                    (m_and_bloq.adjoint(), 1),
+                }
+
         return {(self._multi_ctrl_bloq, 1)}
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
