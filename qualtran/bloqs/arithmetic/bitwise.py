@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -25,7 +25,6 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QAny,
-    QBit,
     QDType,
     QUInt,
     Register,
@@ -33,8 +32,8 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
@@ -43,40 +42,24 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _cvs_converter(vv):
-    if isinstance(vv, (int, np.integer)):
-        return (int(vv),)
-    return tuple(int(v) for v in vv)
-
-
 @frozen
-class XorK(SpecializedSingleQubitControlledGate):
+class XorK(Bloq):
     r"""Maps |x> to |x \oplus k> for a constant k.
 
     Args:
         dtype: Data type of the input register `x`.
         k: The classical integer value to be XOR-ed to x.
-        control_val: an optional single bit control, apply the operation when
-                    the control qubit equals the `control_val`.
 
     Registers:
         x: A quantum register of type `self.dtype` (see above).
-        ctrl: A sequence of control qubits (only when `control_val` is not None).
     """
 
     dtype: QDType
     k: SymbolicInt
-    control_val: Optional[int] = None
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([*self.control_registers, Register('x', self.dtype)])
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        if self.control_val is not None:
-            return (Register('ctrl', QBit()),)
-        return ()
+        return Signature.build_from_dtypes(x=self.dtype)
 
     @cached_property
     def bitsize(self) -> SymbolicInt:
@@ -85,45 +68,50 @@ class XorK(SpecializedSingleQubitControlledGate):
     def is_symbolic(self):
         return is_symbolic(self.k, self.dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    @cached_property
+    def _bits_k(self) -> Sequence[int]:
+        return self.dtype.to_bits(self.k)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
-        # TODO clean this up once https://github.com/quantumlib/Qualtran/pull/1137 is merged
-        ctrl = soqs.pop('ctrl', None)
+        xs = bb.split(x)
 
-        xs = bb.split(cast(Soquet, soqs.pop('x')))
-
-        for i, bit in enumerate(self.dtype.to_bits(self.k)):
+        for i, bit in enumerate(self._bits_k):
             if bit == 1:
-                if ctrl is not None:
-                    ctrl, xs[i] = bb.add(CNOT(), ctrl=ctrl, target=xs[i])
-                else:
-                    xs[i] = bb.add(XGate(), q=xs[i])
+                xs[i] = bb.add(XGate(), q=xs[i])
 
-        soqs['x'] = bb.join(xs)
+        x = bb.join(xs, dtype=self.dtype)
 
-        if ctrl is not None:
-            soqs['ctrl'] = ctrl
-        return soqs
+        return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        bit_flip_bloq = CNOT() if self.control_val is not None else XGate()
-        num_flips = self.bitsize if self.is_symbolic() else sum(self.dtype.to_bits(self.k))
-        return {(bit_flip_bloq, num_flips)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+        num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
+        return {(XGate(), num_flips)}
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        if isinstance(self.k, sympy.Expr):
+            raise ValueError(f"cannot classically simulate with symbolic {self.k=}")
+
+        k: 'ClassicalValT' = self.k
+        if isinstance(x, np.integer):
+            k = np.array(k, dtype=x.dtype)[()]
+        return {'x': x ^ k}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox("")
+
+        return TextBox(f"⊕{self.k}")
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _xork() -> XorK:
     xork = XorK(QUInt(8), 0b01010111)
     return xork
-
-
-@bloq_example(generalizer=ignore_split_join)
-def _cxork() -> XorK:
-    cxork = XorK(QUInt(8), 0b01010111).controlled()
-    assert isinstance(cxork, XorK)
-    return cxork
 
 
 @frozen
@@ -147,7 +135,7 @@ class Xor(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
-    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
             raise DecomposeTypeError("`dtype.num_qubits` must be a concrete value.")
 
@@ -159,13 +147,23 @@ class Xor(Bloq):
 
         return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         return {(CNOT(), self.dtype.num_qubits)}
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         return {'x': x, 'y': x ^ y}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox('')
+        elif reg.name == 'x':
+            return TextBox('x')
+        else:  # y
+            return TextBox('x⊕y')
 
 
 @bloq_example
