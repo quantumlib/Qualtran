@@ -26,6 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     GateWithRegisters,
     QBit,
     Register,
@@ -34,7 +35,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, is_symbolic, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
+from qualtran.bloqs.mcmt.multi_controlled_bloq import MultiControlledBloq
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
@@ -141,30 +143,31 @@ class MultiControlPauli(GateWithRegisters):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
-    ) -> Iterator[cirq.OP_TREE]:
-        controls, target = quregs.get('controls', np.array([])), quregs['target']
-        if len(self.concrete_cvs) < 2:
-            controls = controls.flatten()
-            yield [cirq.X(q) for cv, q in zip(self.concrete_cvs, controls) if cv == 0]
-            yield self.target_gate.on(*target).controlled_by(*controls)
-            yield [cirq.X(q) for cv, q in zip(self.concrete_cvs, controls) if cv == 0]
-            return
-        qm = context.qubit_manager
-        and_ancilla, and_target = np.array(qm.qalloc(len(self.concrete_cvs) - 2)), qm.qalloc(1)
-        if len(self.concrete_cvs) == 2:
-            and_op = And(*self.concrete_cvs).on(*controls.flatten(), *and_target)
-            and_op_inv = And(*self.concrete_cvs).adjoint()(*controls.flatten(), *and_target)
-        else:
-            and_op = MultiAnd(self.concrete_cvs).on_registers(
-                ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
-            )
-            and_op_inv = and_op**-1  # type: ignore[operator]
-        yield and_op
-        yield self.target_gate.on(*target).controlled_by(*and_target)
-        yield and_op_inv
-        qm.qfree([*and_ancilla, *and_target])
+    @property
+    def target_bloq(self) -> Bloq:
+        from qualtran.cirq_interop import cirq_gate_to_bloq
+
+        return cirq_gate_to_bloq(self.target_gate)
+
+    @property
+    def _multi_ctrl_bloq(self) -> MultiControlledBloq:
+        ctrl_spec = CtrlSpec(cvs=(np.array(self.concrete_cvs),))
+        return MultiControlledBloq(ctrl_spec, self.target_bloq)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        target = soqs.pop('target')
+        (target_reg_name,) = [reg.name for reg in self.target_bloq.signature]
+        if self.n_ctrls == 0:
+            # TODO discuss if we should remove support for this case.
+            target = bb.add(self.target_bloq, **{target_reg_name: target})
+            return {'target': target}
+
+        (ctrl_reg_name,) = self._multi_ctrl_bloq.ctrl_reg_names
+
+        ctrl = soqs.pop('controls')
+        out_soqs = bb.add_d(self._multi_ctrl_bloq, **{ctrl_reg_name: ctrl, target_reg_name: target})
+
+        return {'controls': out_soqs[ctrl_reg_name], 'target': out_soqs[target_reg_name]}
 
     def pretty_name(self) -> str:
         n = self.n_ctrls
@@ -187,24 +190,9 @@ class MultiControlPauli(GateWithRegisters):
         return {'controls': controls, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.cirq_interop import cirq_gate_to_bloq
-
-        ret = {(cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
-
-        if is_symbolic(self.n_ctrls):
-            return ret | {(MultiAnd(self.cvs), 1), (MultiAnd(self.cvs).adjoint(), 1)}
-
-        n = int(self.n_ctrls)
-        if n >= 2:
-            and_gate = (
-                And(self.concrete_cvs[0], self.concrete_cvs[1])
-                if n == 2
-                else MultiAnd(self.concrete_cvs)
-            )
-            return ret | {(and_gate, 1), (and_gate.adjoint(), 1)}
-        n_pre_post_x = 2 * (len(self.concrete_cvs) - sum(self.concrete_cvs))
-        pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
-        return {(cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
+        if self.n_ctrls == 0:
+            return {(self.target_bloq, 1)}
+        return {(self._multi_ctrl_bloq, 1)}
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (
