@@ -962,11 +962,9 @@ class EqualsAConstant(Bloq):
 
     @property
     def bits_k(self) -> Union[tuple[int, ...], HasLength]:
-        if self.is_symbolic():
+        if is_symbolic(self.bitsize) or is_symbolic(self.val):
             return HasLength(self.bitsize)
 
-        assert not isinstance(self.bitsize, sympy.Expr)
-        assert not isinstance(self.val, sympy.Expr)
         return tuple(QUInt(self.bitsize).to_bits(self.val))
 
     def build_composite_bloq(
