@@ -157,7 +157,9 @@ class Subtract(Bloq):
                 (OnEach(self.b_dtype.bitsize, XGate()), 3),
                 (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
             }
-            .union([(MultiTargetCNOT(delta), 2)] if isinstance(self.a_dtype, QInt) else [])
+            .union(
+                [(MultiTargetCNOT(delta), 2)] if delta and isinstance(self.a_dtype, QInt) else []
+            )
             .union([(Allocate(QAny(delta)), 1), (Free(QAny(delta)), 1)] if delta else [])
         )
 
