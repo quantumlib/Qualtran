@@ -30,6 +30,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CNOT,
+    CZ,
     Hadamard,
     Identity,
     IntEffect,
@@ -40,7 +41,7 @@ from qualtran.bloqs.basic_gates import (
     XGate,
     ZeroEffect,
     ZeroState,
-    ZGate, CZ,
+    ZGate,
 )
 from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
 from qualtran.bloqs.multiplexers.apply_lth_bloq import _apply_lth_bloq, ApplyLthBloq
