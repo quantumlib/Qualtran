@@ -128,7 +128,7 @@ class Subtract(Bloq):
             return {'a': a, 'b': int((a - b) % N)}
         # Subtraction of signed integers can result in overflow. In most classical programming languages (e.g. C++)
         # what happens when an overflow happens is left as an implementation detail for compiler designers.
-        # However for quantum subtraction the operation shoudl be unitary and that means that the unitary of
+        # However for quantum subtraction the operation should be unitary and that means that the unitary of
         # the bloq should be a permutation matrix.
         # If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
         # by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
