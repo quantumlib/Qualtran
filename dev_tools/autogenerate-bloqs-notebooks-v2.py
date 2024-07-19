@@ -367,6 +367,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
             qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
             qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+            qualtran.bloqs.arithmetic.multiplication._INVERT_REAL_NUMBER_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -412,7 +413,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Bitwise Operations',
         module=qualtran.bloqs.arithmetic.bitwise,
-        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
+        ],
     ),
 ]
 

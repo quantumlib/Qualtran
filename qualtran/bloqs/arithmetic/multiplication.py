@@ -30,9 +30,10 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import TGate, Toffoli
-from qualtran.symbolics import smax
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.bloqs.arithmetic.subtraction import Subtract
+from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
+from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.symbolics import HasLength, smax, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -495,3 +496,73 @@ def _square_real_number() -> SquareRealNumber:
 
 
 _SQUARE_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=SquareRealNumber, examples=[_square_real_number])
+
+
+@frozen
+class InvertRealNumber(Bloq):
+    r"""Invert a fixed-point representation of a real number.
+
+    Implements the unitary:
+    $$
+        |a\rangle|0\rangle \rightarrow |a\rangle|1/a\rangle
+    $$
+    where $a \ge 1$.
+
+    Args:
+        bitsize: Number of bits used to represent the number.
+        num_frac: Number of fraction bits in the number.
+
+    Registers:
+        a: `bitsize`-sized input register.
+        result: `bitsize`-sized output register.
+
+        References:
+        [Quantum Algorithms and Circuits for Scientific Computing](https://arxiv.org/pdf/1511.08253). Section 2.1.
+    """
+
+    bitsize: int
+    num_frac: int
+
+    def __attrs_post_init__(self):
+        if self.num_frac == self.bitsize:
+            raise ValueError("num_frac must be < bitsize since a >= 1.")
+
+    @property
+    def signature(self):
+        return Signature(
+            [
+                Register("a", QFxp(self.bitsize, self.num_frac)),
+                Register("result", QFxp(self.bitsize, self.num_frac)),
+            ]
+        )
+
+    def pretty_name(self) -> str:
+        return "1/a"
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # initial approximation: Figure 4
+        num_int = self.bitsize - self.num_frac
+        # Newton-Raphson: Eq. (1)
+        # x' = -a * x^2 + 2 * x
+        num_iters = int(np.ceil(np.log2(self.bitsize)))
+        # TODO: When decomposing we will potentially need to use larger registers.
+        # Related issue: https://github.com/quantumlib/Qualtran/issues/655
+        return {
+            (Toffoli(), num_int - 1),
+            (CNOT(), 2 + num_int - 1),
+            (MultiControlPauli(cvs=HasLength(num_int), target_gate=cirq.X), 1),
+            (XGate(), 1),
+            (SquareRealNumber(self.bitsize), num_iters),  # x^2
+            (MultiplyTwoReals(self.bitsize), num_iters),  # a * x^2
+            (ScaleIntByReal(self.bitsize, 2), num_iters),  # 2 * x
+            (Subtract(QUInt(self.bitsize)), num_iters),  # 2 * x - a * x^2
+        }
+
+
+@bloq_example
+def _invert_real_number() -> InvertRealNumber:
+    invert_real_number = InvertRealNumber(bitsize=10, num_frac=7)
+    return invert_real_number
+
+
+_INVERT_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=InvertRealNumber, examples=[_invert_real_number])

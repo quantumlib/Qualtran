@@ -146,11 +146,6 @@ class Product(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        assert (
-            isinstance(self.system_bitsize, int)
-            and isinstance(self.ancilla_bitsize, int)
-            and isinstance(self.resource_bitsize, int)
-        )
         n = len(self.block_encodings)
 
         if self.ancilla_bitsize > 0:
@@ -176,8 +171,8 @@ class Product(BlockEncoding):
 
         # connect constituent bloqs
         for i, u in enumerate(reversed(self.block_encodings)):
-            assert isinstance(u.ancilla_bitsize, int)
-            assert isinstance(u.resource_bitsize, int)
+            assert not is_symbolic(u.ancilla_bitsize)
+            assert not is_symbolic(u.resource_bitsize)
             u_soqs = {"system": system}
             partition: List[Tuple[Register, List[Union[str, Unused]]]] = [
                 (Register("system", dtype=QAny(u.system_bitsize)), ["system"])

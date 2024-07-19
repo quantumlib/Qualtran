@@ -35,6 +35,7 @@ from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     BeverlandSuperconductingQubits,
     BeverlandTrappedIonQubits,
     FowlerSuperconductingQubits,
+    LogicalErrorModel,
     QuantumErrorCorrectionSchemeSummary,
 )
 from qualtran.surface_code.reference import Reference
