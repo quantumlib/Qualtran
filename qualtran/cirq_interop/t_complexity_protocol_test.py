@@ -19,6 +19,7 @@ from attrs import frozen
 
 from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.basic_gates import CHadamard
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
@@ -135,6 +136,8 @@ def test_gates():
     assert t_complexity(And() ** -1) == TComplexity(clifford=4)
 
     assert t_complexity(cirq.FREDKIN) == TComplexity(t=7, clifford=14)
+    assert t_complexity(cirq.H.controlled()) == TComplexity(clifford=4, rotations=2)
+    assert t_complexity(CHadamard()) == TComplexity(clifford=4, rotations=2)
 
     # Global phase
     assert t_complexity(cirq.GlobalPhaseGate(1j)) == TComplexity()
