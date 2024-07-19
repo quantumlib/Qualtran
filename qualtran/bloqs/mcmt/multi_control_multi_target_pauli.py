@@ -37,7 +37,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
-from qualtran.bloqs.mcmt.multi_controlled_bloq import MultiControlledBloq
+from qualtran.bloqs.mcmt.ctrl_spec_and import ControlledViaAnd
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
@@ -151,9 +151,9 @@ class MultiControlPauli(GateWithRegisters):
         return cirq_gate_to_bloq(self.target_gate)
 
     @property
-    def _multi_ctrl_bloq(self) -> MultiControlledBloq:
+    def _multi_ctrl_bloq(self) -> ControlledViaAnd:
         ctrl_spec = CtrlSpec(cvs=(np.array(self.concrete_cvs),))
-        return MultiControlledBloq(ctrl_spec, self.target_bloq)
+        return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if is_symbolic(self.cvs):

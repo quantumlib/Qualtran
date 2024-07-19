@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     BoundedQUInt,
+    Controlled,
     CtrlSpec,
     DecomposeTypeError,
     QAny,
@@ -34,6 +35,7 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import directional_text_box, Text, WireSymbol
@@ -224,3 +226,111 @@ _CTRLSPEC_AND_DOC = BloqDocSpec(
     bloq_cls=CtrlSpecAnd,
     examples=(_ctrl_on_int, _ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_multiple_values),
 )
+
+
+@frozen
+class ControlledViaAnd(Bloq):
+    """Reduces a generic control bloq to a singly-controlled bloq using an And ladder.
+
+    Implements a generic controlled version of the subbloq, by first reducing the
+    arbitrary control to a single qubit, and then using a single-qubit-controlled
+    variant of the subbloq.
+
+    For signature, see :class:`Controlled`.
+
+    Args:
+        subbloq: The bloq we are controlling.
+        ctrl_spec: The specification for how to control the bloq.
+    """
+
+    subbloq: Bloq
+    ctrl_spec: CtrlSpec
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return self._signature_and_ctrl_regs_from_controlled[0]
+
+    @cached_property
+    def ctrl_reg_names(self) -> tuple[str, ...]:
+        return self._signature_and_ctrl_regs_from_controlled[1]
+
+    @cached_property
+    def _signature_and_ctrl_regs_from_controlled(self) -> tuple[Signature, tuple[str, ...]]:
+        cbloq = Controlled(self.subbloq, self.ctrl_spec)
+        return cbloq.signature, tuple(cbloq.ctrl_reg_names)
+
+    def _is_single_bit_control(self) -> bool:
+        return self.ctrl_spec.num_qubits == 1
+
+    @cached_property
+    def _single_control_value(self) -> int:
+        assert self._is_single_bit_control()
+        return self.ctrl_spec._cvs_tuple[0]
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        # compute the control bit
+        if self._is_single_bit_control():
+            ctrl_soqs = None
+            q = soqs.pop(self.ctrl_reg_names[0])
+            if self.ctrl_spec.shapes[0] == (1,):
+                assert isinstance(q, np.ndarray)
+                q = q[0]
+
+            if self._single_control_value == 0:
+                q = bb.add(XGate(), q=q)
+        else:
+            # map input control soqs to the CtrlSpecAnd controls
+            ctrl_spec_and_bloq = CtrlSpecAnd(self.ctrl_spec)
+            ctrl_soqs = {
+                inner_ctrl_reg.name: soqs.pop(name)
+                for name, inner_ctrl_reg in zip(
+                    self.ctrl_reg_names, ctrl_spec_and_bloq.control_registers
+                )
+            }
+
+            # compute the control bit
+            ctrl_soqs = bb.add_d(CtrlSpecAnd(self.ctrl_spec), **ctrl_soqs)
+            q = ctrl_soqs.pop('target')
+
+        # add single-controlled-subbloq
+        _, adder = self.subbloq.get_ctrl_system(CtrlSpec())
+        out_q_iter, out_soqs_iter = adder(bb, [q], soqs)
+        (q,) = tuple(out_q_iter)
+        soqs = dict(zip([reg.name for reg in self.subbloq.signature], out_soqs_iter))
+
+        # uncompute the control bit
+        if self._is_single_bit_control():
+            if self._single_control_value == 0:
+                q = bb.add(XGate(), q=q)
+
+            if self.ctrl_spec.shapes[0] == (1,):
+                q = np.array([q])
+            soqs[self.ctrl_reg_names[0]] = q
+        else:
+            # uncompute the control bit
+            ctrl_spec_and_bloq = CtrlSpecAnd(self.ctrl_spec)
+            assert ctrl_soqs is not None
+            ctrl_soqs['target'] = q
+            ctrl_soqs = bb.add_d(ctrl_spec_and_bloq.adjoint(), **ctrl_soqs)
+
+            # map the control soqs back to the original bloq's control soqs
+            soqs |= {
+                name: ctrl_soqs[inner_ctrl_reg.name]
+                for name, inner_ctrl_reg in zip(
+                    self.ctrl_reg_names, ctrl_spec_and_bloq.control_registers
+                )
+            }
+
+        return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+        counts: set['BloqCountT'] = {(self.subbloq.controlled(), 1)}
+
+        if self._is_single_bit_control():
+            if self._single_control_value == 0:
+                counts |= {(XGate(), 2)}
+        else:
+            ctrl = CtrlSpecAnd(self.ctrl_spec)
+            counts |= {(ctrl, 1), (ctrl.adjoint(), 1)}
+
+        return counts
