@@ -18,7 +18,7 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QDType, QInt, Signature
 from qualtran.bloqs.arithmetic import AddK
-from qualtran.bloqs.basic_gates import OnEach, XGate
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -60,10 +60,8 @@ class Negate(Bloq):
         return Signature.build_from_dtypes(x=self.dtype)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
-        # x := ~x
-        x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
-        # x := x + 1
-        x = bb.add(AddK(self.dtype.num_qubits, k=1), x=x)
+        x = bb.add(BitwiseNot(self.dtype), x=x)  # ~x
+        x = bb.add(AddK(self.dtype.num_qubits, k=1), x=x)  # -x
         return {'x': x}
 
 

@@ -108,9 +108,8 @@ class PermutationCycle(Bloq):
         return is_symbolic(self.N, self.cycle)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycle):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
-        assert not isinstance(self.cycle, Shaped)
 
         a: 'SoquetT' = bb.allocate(dtype=QBit())
 
@@ -253,10 +252,9 @@ class Permutation(Bloq):
         return cls(N, cycles)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycles):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
-        assert not isinstance(self.cycles, Shaped)
         for cycle in self.cycles:
             x = bb.add(PermutationCycle(self.N, cycle), x=x)
 
