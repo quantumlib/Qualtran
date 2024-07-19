@@ -171,7 +171,7 @@ _SUB_DOC = BloqDocSpec(
 
 @frozen
 class SubtractFrom(Bloq):
-    """A version of `Subtract` that leaves behind the value being subtracted.
+    """A version of `Subtract` that subtracts the first register from the second in place.
 
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|b - a\rangle$, essentially equivalent to
     the statement `b -= a`.
