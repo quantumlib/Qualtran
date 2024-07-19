@@ -31,6 +31,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.drawing import Text
 
@@ -219,11 +220,12 @@ class SubtractFrom(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Negate(self.dtype), 1), (Subtract(self.dtype, self.dtype), 1)}
+        return {(BitwiseNot(self.dtype), 2), (Add(self.dtype, self.dtype), 1)}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        a, b = bb.add_t(Subtract(self.dtype, self.dtype), a=a, b=b)  # a, a - b
-        b = bb.add(Negate(self.dtype), x=b)  # a, b - a
+        b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - b
+        a, b = bb.add_t(Add(self.dtype, self.dtype), a=a, b=b)  # a, a - 1 - b
+        b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - (a - 1 - b) = a, -a + b
         return {'a': a, 'b': b}
 
 
