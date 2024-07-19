@@ -294,6 +294,13 @@ class ExplicitEntryOracle(EntryOracle):
     )
     entry_bitsize: SymbolicInt
 
+    def __attrs_post_init__(self):
+        if len(self.data.shape) != 2:
+            raise ValueError("data must be a 2-D array")
+        x, y = self.data.shape
+        if x != y:
+            raise ValueError("data must be square")
+
     def build_composite_bloq(
         self, bb: BloqBuilder, q: SoquetT, i: SoquetT, j: SoquetT
     ) -> Dict[str, SoquetT]:
