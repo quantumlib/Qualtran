@@ -148,6 +148,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.addition.Add": qualtran.bloqs.arithmetic.addition.Add,
     "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder,
     "qualtran.bloqs.arithmetic.addition.AddK": qualtran.bloqs.arithmetic.AddK,
+    "qualtran.bloqs.arithmetic.bitwise.BitwiseNot": qualtran.bloqs.arithmetic.bitwise.BitwiseNot,
     "qualtran.bloqs.arithmetic.bitwise.Xor": qualtran.bloqs.arithmetic.bitwise.Xor,
     "qualtran.bloqs.arithmetic.bitwise.XorK": qualtran.bloqs.arithmetic.bitwise.XorK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
