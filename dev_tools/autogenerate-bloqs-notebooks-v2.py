@@ -133,7 +133,10 @@ BASIC_GATES: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Hadamard',
         module=qualtran.bloqs.basic_gates.hadamard,
-        bloq_specs=[qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC],
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC,
+            qualtran.bloqs.basic_gates.hadamard._CHADAMARD_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='CNOT',
