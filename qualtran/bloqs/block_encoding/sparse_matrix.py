@@ -43,7 +43,7 @@ from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @frozen
-class RowColumnOracle(Bloq):
+class RowColumnOracle(Bloq, abc.ABC):
     r"""Oracle specifying the non-zero rows or columns of a sparse-access matrix.
 
     In the reference, this is the interface of
@@ -58,8 +58,7 @@ class RowColumnOracle(Bloq):
         i: The row / column index.
 
     References:
-        [Lecture Notes on Quantum Algorithms for Scientific Computation](
-        https://arxiv.org/pdf/2201.08309). Lin Lin (2022). Ch. 6.5.
+        [Lecture Notes on Quantum Algorithms for Scientific Computation](https://arxiv.org/abs/2201.08309). Lin Lin (2022). Ch. 6.5.
     """
 
     @property
@@ -84,7 +83,7 @@ class RowColumnOracle(Bloq):
 
 
 @frozen
-class EntryOracle(Bloq):
+class EntryOracle(Bloq, abc.ABC):
     r"""Oracle specifying the entries of a sparse-access matrix.
 
     In the reference, this is the interface of
@@ -96,8 +95,7 @@ class EntryOracle(Bloq):
         j: The column index.
 
     References:
-        [Lecture Notes on Quantum Algorithms for Scientific Computation](
-        https://arxiv.org/pdf/2201.08309). Lin Lin (2022). Ch. 6.5.
+        [Lecture Notes on Quantum Algorithms for Scientific Computation](https://arxiv.org/abs/2201.08309). Lin Lin (2022). Ch. 6.5.
     """
 
     @property
@@ -147,8 +145,7 @@ class SparseMatrix(BlockEncoding):
         resource: The resource register (present only if bitsize > 0).
 
     References:
-        [Lecture Notes on Quantum Algorithms for Scientific Computation](
-        https://arxiv.org/pdf/2201.08309). Lin Lin (2022). Ch. 6.5.
+        [Lecture Notes on Quantum Algorithms for Scientific Computation](https://arxiv.org/abs/2201.08309). Lin Lin (2022). Ch. 6.5.
     """
 
     row_oracle: RowColumnOracle
