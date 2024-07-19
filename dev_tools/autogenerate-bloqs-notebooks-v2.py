@@ -346,7 +346,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
-        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
+            qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -405,7 +408,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Bitwise Operations',
         module=qualtran.bloqs.arithmetic.bitwise,
-        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
+        ],
     ),
 ]
 
