@@ -20,8 +20,8 @@ import pytest
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.block_encoding.sparse_matrix import (
-    _sparse_matrix_block_encoding,
     _explicit_matrix_block_encoding,
+    _sparse_matrix_block_encoding,
     ExplicitEntryOracle,
     FullRowColumnOracle,
     SparseMatrix,
