@@ -35,6 +35,7 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.negate import Negate
+from qualtran.bloqs.arithmetic.sign_extension import SignExtend
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 

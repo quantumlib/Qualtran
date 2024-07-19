@@ -375,6 +375,11 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Sign Extension',
+        module=qualtran.bloqs.arithmetic.sign_extension,
+        bloq_specs=[qualtran.bloqs.arithmetic.sign_extension._SIGN_EXTEND_DOC],
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.arithmetic.sorting,
         bloq_specs=[
