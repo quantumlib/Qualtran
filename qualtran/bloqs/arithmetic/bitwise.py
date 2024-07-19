@@ -32,7 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
 from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -182,4 +182,54 @@ _XOR_DOC = BloqDocSpec(
     bloq_cls=Xor,
     import_line='from qualtran.bloqs.arithmetic import Xor',
     examples=(_xor, _xor_symb),
+)
+
+
+@frozen
+class BitwiseNot(Bloq):
+    r"""Flips every bit of the input register.
+
+    Args:
+        dtype: Data type of the input register `x`.
+
+    Registers:
+        x: A quantum register of type `self.dtype`.
+    """
+
+    dtype: QDType
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build_from_dtypes(x=self.dtype)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+        x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
+        return {'x': x}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox("")
+
+        return TextBox("~x")
+
+
+@bloq_example
+def _bitwise_not() -> BitwiseNot:
+    bitwise_not = BitwiseNot(QUInt(4))
+    return bitwise_not
+
+
+@bloq_example
+def _bitwise_not_symb() -> BitwiseNot:
+    n = sympy.Symbol("n")
+    bitwise_not_symb = BitwiseNot(QUInt(n))
+    return bitwise_not_symb
+
+
+_BITWISE_NOT_DOC = BloqDocSpec(
+    bloq_cls=BitwiseNot,
+    import_line='from qualtran.bloqs.arithmetic.bitwise import BitwiseNot',
+    examples=(_bitwise_not, _bitwise_not_symb),
 )
