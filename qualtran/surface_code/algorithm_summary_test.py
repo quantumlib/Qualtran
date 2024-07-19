@@ -114,7 +114,7 @@ def test_subtraction():
         [
             mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
             AlgorithmSummary(
-                algorithm_qubits=6, toffoli_gates=2, rotation_circuit_depth=2, measurements=2
+                algorithm_qubits=6, toffoli_gates=2, rotation_circuit_depth=4, measurements=2
             ),
         ],
     ],
