@@ -17,8 +17,9 @@ from typing import TYPE_CHECKING, Union
 from attrs import field, frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QInt, QMontgomeryUInt, QUInt, Signature
-from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import OnEach, XGate
+from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+from qualtran.bloqs.basic_gates import XGate
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -78,12 +79,18 @@ class ControlledAddOrSubtract(Bloq):
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> dict[str, 'SoquetT']:
         if self.add_when_ctrl_is_on:
+            # flip the control bit
             ctrl = bb.add(XGate(), q=ctrl)
-        ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
 
+        # subcircuit to add when ctrl=0 and subtract when ctrl=1.
+        # (0, a, b) or (1, a, b)
+        ctrl, b = bb.add(BitwiseNot(self.b_dtype).controlled(), ctrl=ctrl, x=b)
+        # -> (0, a, b) or (1, a, -1 - b)
         a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)
+        # -> (0, a, b + a) or (1, a, -1 - b + a)
+        ctrl, b = bb.add(BitwiseNot(self.b_dtype).controlled(), ctrl=ctrl, x=b)
+        # -> (0, a, b + a) or (1, a, b - a)
 
-        ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
         if self.add_when_ctrl_is_on:
             ctrl = bb.add(XGate(), q=ctrl)
 
