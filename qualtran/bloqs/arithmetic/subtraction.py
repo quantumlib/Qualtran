@@ -36,7 +36,6 @@ from qualtran import (
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
-from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.bloqs.basic_gates import OnEach, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
