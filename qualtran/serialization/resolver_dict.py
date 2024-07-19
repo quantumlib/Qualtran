@@ -226,7 +226,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.phase.Phase": qualtran.bloqs.block_encoding.phase.Phase,
     "qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle,
     "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix": qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix,
-    "qualtran.bloqs.block_encoding.sparse_matrix.SymmetricBandedRowColumnOracle": qualtran.bloqs.block_encoding.sparse_matrix.SymmetricBandedRowColumnOracle,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
