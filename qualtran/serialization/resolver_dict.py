@@ -43,6 +43,7 @@ import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.block_encoding.product
+import qualtran.bloqs.block_encoding.sparse_matrix
 import qualtran.bloqs.block_encoding.tensor_product
 import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
@@ -222,7 +223,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
     "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": qualtran.bloqs.block_encoding.linear_combination.LinearCombination,
-    "qualtran.bloqs.block_encoding.phase.phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.phase.Phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix": qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
