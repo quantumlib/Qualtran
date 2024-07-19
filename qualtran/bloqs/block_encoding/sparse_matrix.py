@@ -26,6 +26,7 @@ from qualtran import (
     BloqDocSpec,
     QAny,
     QBit,
+    QUInt,
     Register,
     Signature,
     Soquet,
@@ -62,7 +63,7 @@ class RowColumnOracle(Bloq):
 
     @property
     @abc.abstractmethod
-    def n(self) -> SymbolicInt:
+    def system_bitsize(self) -> SymbolicInt:
         """The number of bits used to represent an index."""
 
     @property
@@ -71,12 +72,14 @@ class RowColumnOracle(Bloq):
         """The number of nonzero entries in each row or column."""
 
     def __attrs_post_init__(self):
-        if self.num_nonzero > 2**self.n:
-            raise ValueError("Cannot have more than 2 ** n non-zero elements")
+        if self.num_nonzero > 2**self.system_bitsize:
+            raise ValueError("Cannot have more than 2 ** system_bitsize non-zero elements")
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(l=QAny(self.n), i=QAny(self.n))
+        return Signature.build_from_dtypes(
+            l=QUInt(self.system_bitsize), i=QUInt(self.system_bitsize)
+        )
 
 
 @frozen
@@ -98,12 +101,14 @@ class EntryOracle(Bloq):
 
     @property
     @abc.abstractmethod
-    def n(self) -> SymbolicInt:
+    def system_bitsize(self) -> SymbolicInt:
         """The number of bits used to represent an index."""
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(q=QBit(), i=QAny(self.n), j=QAny(self.n))
+        return Signature.build_from_dtypes(
+            q=QBit(), i=QAny(self.system_bitsize), j=QAny(self.system_bitsize)
+        )
 
 
 @frozen
@@ -151,7 +156,10 @@ class SparseMatrix(BlockEncoding):
     eps: SymbolicFloat
 
     def __attrs_post_init__(self):
-        if self.row_oracle.n != self.col_oracle.n or self.row_oracle.n != self.entry_oracle.n:
+        if (
+            self.row_oracle.system_bitsize != self.col_oracle.system_bitsize
+            or self.row_oracle.system_bitsize != self.entry_oracle.system_bitsize
+        ):
             raise ValueError("Row, column, and entry oracles must have same bitsize")
         if self.row_oracle.num_nonzero != self.col_oracle.num_nonzero:
             raise ValueError("Unequal row and column sparsities are not supported")
@@ -166,7 +174,7 @@ class SparseMatrix(BlockEncoding):
 
     @cached_property
     def system_bitsize(self) -> SymbolicInt:
-        return self.entry_oracle.n
+        return self.entry_oracle.system_bitsize
 
     def pretty_name(self) -> str:
         return "B[SparseMatrix]"
@@ -227,11 +235,11 @@ class SparseMatrix(BlockEncoding):
 class FullRowColumnOracle(RowColumnOracle):
     """Oracle specifying the non-zero rows or columns of a matrix with full entries."""
 
-    n: SymbolicInt
+    system_bitsize: SymbolicInt
 
     @cached_property
     def num_nonzero(self) -> SymbolicInt:
-        return 2**self.n
+        return 2**self.system_bitsize
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         # the l-th non-zero entry is at position l, so do nothing
@@ -242,7 +250,7 @@ class FullRowColumnOracle(RowColumnOracle):
 class UniformEntryOracle(EntryOracle):
     """Oracle specifying the entries of a matrix with uniform entries."""
 
-    n: SymbolicInt
+    system_bitsize: SymbolicInt
     entry: float
 
     def build_composite_bloq(
@@ -258,7 +266,7 @@ def _sparse_matrix_block_encoding() -> SparseMatrix:
 
     row_oracle = FullRowColumnOracle(2)
     col_oracle = FullRowColumnOracle(2)
-    entry_oracle = UniformEntryOracle(n=2, entry=0.3)
+    entry_oracle = UniformEntryOracle(system_bitsize=2, entry=0.3)
     sparse_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return sparse_matrix_block_encoding
 
