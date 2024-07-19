@@ -21,6 +21,7 @@ from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.block_encoding.sparse_matrix import (
     _sparse_matrix_block_encoding,
+    _explicit_matrix_block_encoding,
     ExplicitEntryOracle,
     FullRowColumnOracle,
     SparseMatrix,
@@ -29,6 +30,10 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
 
 def test_sparse_matrix(bloq_autotester):
     bloq_autotester(_sparse_matrix_block_encoding)
+
+
+def test_explicit_matrix(bloq_autotester):
+    bloq_autotester(_explicit_matrix_block_encoding)
 
 
 def test_sparse_matrix_signature():

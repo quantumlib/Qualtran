@@ -349,9 +349,9 @@ def _explicit_matrix_block_encoding() -> SparseMatrix:
     from qualtran.bloqs.block_encoding.sparse_matrix import ExplicitEntryOracle, FullRowColumnOracle
 
     data = np.array([[0.0, 0.25], [1 / 3, 0.467]])
-    row_oracle = FullRowColumnOracle(2)
-    col_oracle = FullRowColumnOracle(2)
-    entry_oracle = ExplicitEntryOracle(system_bitsize=2, data=data, entry_bitsize=10)
+    row_oracle = FullRowColumnOracle(1)
+    col_oracle = FullRowColumnOracle(1)
+    entry_oracle = ExplicitEntryOracle(system_bitsize=1, data=data, entry_bitsize=10)
     explicit_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return explicit_matrix_block_encoding
 
