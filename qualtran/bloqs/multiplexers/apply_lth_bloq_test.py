@@ -40,7 +40,7 @@ from qualtran.bloqs.basic_gates import (
     XGate,
     ZeroEffect,
     ZeroState,
-    ZGate,
+    ZGate, CZ,
 )
 from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
 from qualtran.bloqs.multiplexers.apply_lth_bloq import _apply_lth_bloq, ApplyLthBloq
@@ -77,7 +77,7 @@ def test_call_graph():
     assert sigma == {
         CHadamard(): 1,
         Controlled(TGate(), CtrlSpec()): 1,
-        Controlled(ZGate(), CtrlSpec()): 1,
+        CZ(): 1,
         CNOT(): 4,
         TGate(): 12,
         ArbitraryClifford(2): 45,
