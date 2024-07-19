@@ -405,7 +405,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Bitwise Operations',
         module=qualtran.bloqs.arithmetic.bitwise,
-        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
+        ],
     ),
 ]
 
