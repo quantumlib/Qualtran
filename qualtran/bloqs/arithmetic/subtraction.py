@@ -30,7 +30,8 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic import Add, Negate
+from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:
