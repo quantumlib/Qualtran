@@ -26,7 +26,14 @@ if TYPE_CHECKING:
 
 @frozen
 class ControlledAddOrSubtract(Bloq):
-    """Transforms |1>|a>|b> to |1>|a>|b + a> and |0>|a>|b> to |0>|a>|b - a>
+    r"""Adds or subtracts in-place into the target, based on a control bit.
+
+    Applies the transformation
+
+    $$
+        |1\rangle |a\rangle |b\rangle \mapsto |1\rangle |a\rangle |b + a\rangle \\
+        |0\rangle |a\rangle |b\rangle \mapsto |0\rangle |a\rangle |b - a\rangle
+    $$
 
     Given two numbers `a`, `b` and a control bit `ctrl`, this bloq computes:
     - the sum `b + a` when `ctrl=1`,
@@ -36,11 +43,19 @@ class ControlledAddOrSubtract(Bloq):
     This uses a controlled `Negate` followed by an uncontrolled `Add`,
     which has half the T-cost of a controlled `Add`.
 
+
+    Args:
+        a_dtype: dtype of the lhs `a`
+        b_dtype: dtype of the rhs `b`. If it is not big enough to store the
+                 result, the most significant bits are dropped on overflow.
+        add_when_ctrl_is_on: If True (default), add when `ctrl=1` and subtract when
+                             `ctrl=0`. If False, do the opposite: subtract when `ctrl=0`
+                             and add when `ctrl=1`.
+
     Registers:
         ctrl: a single control bit
         a: an integer value.
-        b: an integer value. If it is not big enough to store the result,
-           the most significant bits are dropped.
+        b: an integer value.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
@@ -49,6 +64,7 @@ class ControlledAddOrSubtract(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    add_when_ctrl_is_on = True
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -61,13 +77,15 @@ class ControlledAddOrSubtract(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> dict[str, 'SoquetT']:
-        ctrl = bb.add(XGate(), q=ctrl)
+        if self.add_when_ctrl_is_on:
+            ctrl = bb.add(XGate(), q=ctrl)
         ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
 
         a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)
 
         ctrl, b = bb.add(OnEach(self.b_dtype.num_qubits, XGate()).controlled(), ctrl=ctrl, q=b)
-        ctrl = bb.add(XGate(), q=ctrl)
+        if self.add_when_ctrl_is_on:
+            ctrl = bb.add(XGate(), q=ctrl)
 
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
