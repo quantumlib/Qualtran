@@ -19,9 +19,34 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran import QInt, QUInt
-from qualtran.bloqs.arithmetic import Subtract
+from qualtran.bloqs.arithmetic.subtraction import (
+    _sub_diff_size_regs,
+    _sub_from_large,
+    _sub_from_small,
+    _sub_from_symb,
+    _sub_large,
+    _sub_small,
+    _sub_symb,
+    Subtract,
+    SubtractFrom,
+)
 from qualtran.resource_counting.generalizers import ignore_split_join
 
+
+def test_sub_symb(bloq_autotester):
+    bloq_autotester(_sub_symb)
+
+
+def test_sub_small(bloq_autotester):
+    bloq_autotester(_sub_small)
+
+
+def test_sub_large(bloq_autotester):
+    bloq_autotester(_sub_large)
+
+
+def test_sub_diff_size_regs(bloq_autotester):
+    bloq_autotester(_sub_diff_size_regs)
 
 @pytest.mark.parametrize(
     ['a_bits', 'b_bits'], [(a, b) for a in range(1, 6) for b in range(a, 6) if a + b <= 10]
@@ -73,7 +98,7 @@ def test_subtract_bloq_validation():
     assert Subtract(QUInt(3)).dtype == QUInt(3)
 
 
-def test_subtract_bloq_consitant_counts():
+def test_subtract_bloq_consistent_counts():
     qlt_testing.assert_equivalent_bloq_counts(
         Subtract(QInt(3), QInt(4)), generalizer=ignore_split_join
     )
@@ -109,3 +134,14 @@ def test_classical_add_signed_overflow(bitsize):
     mn = -(2 ** (bitsize - 1))
     assert bloq.call_classically(a=0, b=mn) == (0, mn)
     assert cbloq.call_classically(a=0, b=mn) == (0, mn)
+
+def test_sub_from_symb(bloq_autotester):
+    bloq_autotester(_sub_from_symb)
+
+
+def test_sub_from_small(bloq_autotester):
+    bloq_autotester(_sub_from_small)
+
+
+def test_sub_from_large(bloq_autotester):
+    bloq_autotester(_sub_from_large)

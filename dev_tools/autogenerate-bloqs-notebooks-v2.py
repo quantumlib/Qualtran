@@ -346,7 +346,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
-        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
+            qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Multiplication',
