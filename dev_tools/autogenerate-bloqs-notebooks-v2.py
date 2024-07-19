@@ -628,6 +628,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
             qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
             qualtran.bloqs.block_encoding.phase._PHASE_DOC,
+            qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
