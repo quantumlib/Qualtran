@@ -279,7 +279,7 @@ class ExplicitEntryOracle(EntryOracle):
     Args:
         system_bitsize: The number of bits used to represent an index.
         data: 2-D array of matrix entries. All entries must be >= 0 and < 1.
-        entry_bitsize: Number of bits of precision for each entry.
+        entry_bitsize: The number of bits of precision to represent the arccos of each entry.
 
     Registers:
         q: The flag qubit that is rotated proportionally to the value of the entry.
