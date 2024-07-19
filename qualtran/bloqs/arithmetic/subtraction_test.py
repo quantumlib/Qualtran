@@ -48,6 +48,7 @@ def test_sub_large(bloq_autotester):
 def test_sub_diff_size_regs(bloq_autotester):
     bloq_autotester(_sub_diff_size_regs)
 
+
 @pytest.mark.parametrize(
     ['a_bits', 'b_bits'], [(a, b) for a in range(1, 6) for b in range(a, 6) if a + b <= 10]
 )
@@ -135,6 +136,7 @@ def test_classical_add_signed_overflow(bitsize):
     assert bloq.call_classically(a=0, b=mn) == (0, mn)
     assert cbloq.call_classically(a=0, b=mn) == (0, mn)
 
+
 def test_sub_from_symb(bloq_autotester):
     bloq_autotester(_sub_from_symb)
 
@@ -145,3 +147,16 @@ def test_sub_from_small(bloq_autotester):
 
 def test_sub_from_large(bloq_autotester):
     bloq_autotester(_sub_from_large)
+
+
+def test_subtract_from_bloq_decomposition():
+    gate = SubtractFrom(QInt(4))
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+
+    want = np.zeros((256, 256))
+    for a_b in range(256):
+        a, b = a_b >> 4, a_b & 15
+        c = (b - a) % 16
+        want[(a << 4) | c][a_b] = 1
+    got = gate.tensor_contract()
+    np.testing.assert_allclose(got, want)
