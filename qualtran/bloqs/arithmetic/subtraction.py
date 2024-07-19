@@ -177,7 +177,7 @@ class SubtractFrom(Bloq):
     the statement `b -= a`.
 
     Args:
-        dtype: Quantum datatype used to represent the integers a, b, and a - b.
+        dtype: Quantum datatype used to represent the integers a, b, and b - a.
 
     Registers:
         a: A dtype.bitsize-sized input register (register a above).
