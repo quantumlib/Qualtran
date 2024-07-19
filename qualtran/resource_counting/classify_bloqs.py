@@ -108,7 +108,16 @@ def classify_t_count_by_bloq_type(
 
 
 def bloq_is_clifford(b: Bloq):
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.basic_gates import (
+        CNOT,
+        CYGate,
+        Hadamard,
+        SGate,
+        TwoBitSwap,
+        XGate,
+        YGate,
+        ZGate,
+    )
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 
@@ -116,7 +125,19 @@ def bloq_is_clifford(b: Bloq):
         b = b.subbloq
 
     if isinstance(
-        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT, SGate)
+        b,
+        (
+            TwoBitSwap,
+            Hadamard,
+            XGate,
+            ZGate,
+            YGate,
+            ArbitraryClifford,
+            CNOT,
+            MultiTargetCNOT,
+            CYGate,
+            SGate,
+        ),
     ):
         return True
 
