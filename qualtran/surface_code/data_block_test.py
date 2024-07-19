@@ -15,7 +15,7 @@
 
 import pytest
 
-from qualtran.surface_code import FastDataBlock
+from qualtran.surface_code import FastDataBlock, FowlerSuperconductingQubits, LogicalErrorModel
 
 
 @pytest.mark.parametrize(
@@ -23,7 +23,8 @@ from qualtran.surface_code import FastDataBlock
     [[100, 230, 0.69], [1318, 2740, 8.22], [12581, 25481, 76.443]],
 )
 def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
-    assert FastDataBlock.grid_size(n_algo_qubits=logical_qubits) == logical_qubits_with_routing
+    assert FastDataBlock.get_n_tiles(n_algo_qubits=logical_qubits) == logical_qubits_with_routing
+    err_model = LogicalErrorModel(qec_scheme=FowlerSuperconductingQubits, physical_error=1e-3)
     assert FastDataBlock(3).data_error(
-        n_algo_qubits=logical_qubits, n_cycles=3, phys_err=1e-3
+        n_algo_qubits=logical_qubits, n_cycles=3, logical_error_model=err_model
     ) == pytest.approx(data_error)
