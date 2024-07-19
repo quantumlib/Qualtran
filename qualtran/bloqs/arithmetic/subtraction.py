@@ -14,7 +14,6 @@
 
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
-import numpy as np
 import sympy
 from attrs import field, frozen
 
@@ -54,7 +53,6 @@ class Subtract(Bloq):
     This construction uses the relation `a - b = ~(~a + b)` to turn the operation into addition. This relation is used in
     [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/pdf/2007.07391)
     to turn addition into subtraction conditioned on a qubit.
-
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -103,6 +101,19 @@ class Subtract(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    def _dtype_as_unsigned(
+        self, dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    ) -> Union[QUInt, QMontgomeryUInt]:
+        return dtype if not isinstance(dtype, QInt) else QUInt(dtype.bitsize)
+
+    @property
+    def a_dtype_as_unsigned(self):
+        return self._dtype_as_unsigned(self.a_dtype)
+
+    @property
+    def b_dtype_as_unsigned(self):
+        return self._dtype_as_unsigned(self.b_dtype)
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'

@@ -37,6 +37,7 @@ def test_bits_to_int():
     bitstrings = rs.choice([0, 1], size=(100, 23))
 
     nums = bits_to_ints(bitstrings)
+    assert nums.dtype == np.uint64
     assert nums.shape == (100,)
 
     for num, bs in zip(nums, bitstrings):

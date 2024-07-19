@@ -17,10 +17,12 @@
 import random
 import unittest
 
+import pytest
+
 from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
-    preprocess_lcu_coefficients_for_reversible_sampling,
+    preprocess_probabilities_for_reversible_sampling,
     sub_bit_prec_from_epsilon,
 )
 
@@ -28,8 +30,8 @@ from qualtran.linalg.lcu_util import (
 class DiscretizeDistributionTest(unittest.TestCase):
     def assertGetDiscretizedDistribution(self, probabilities, epsilon):
         total_probability = sum(probabilities)
-        sub_bit_prec = sub_bit_prec_from_epsilon(len(probabilities), epsilon)
-        numers, denom, mu = _discretize_probability_distribution(probabilities, sub_bit_prec)
+        mu = sub_bit_prec_from_epsilon(len(probabilities), epsilon)
+        numers, denom = _discretize_probability_distribution(probabilities, mu)
         self.assertEqual(sum(numers), denom)
         self.assertEqual(len(numers), len(probabilities))
         self.assertEqual(len(probabilities) * 2**mu, denom)
@@ -44,7 +46,8 @@ class DiscretizeDistributionTest(unittest.TestCase):
         for _ in range(100):
             n = random.randint(1, 50)
             weights = [random.random() for _ in range(n)]
-            self.assertGetDiscretizedDistribution(weights, 2 ** -random.randint(1, 20))
+            mu = random.randint(1, 20)
+            self.assertGetDiscretizedDistribution(weights, 2**-mu / n)
 
     def test_known_discretizations(self):
         self.assertEqual(self.assertGetDiscretizedDistribution([1], 0.25), ([4], 4))
@@ -128,7 +131,7 @@ class PreprocessForEfficientRouletteSelectionTest(unittest.TestCase):
 
 class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
     def assertPreprocess(self, lcu_coefs, epsilon):
-        alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
+        alternates, keep_numers, mu = preprocess_probabilities_for_reversible_sampling(
             lcu_coefs, epsilon=epsilon
         )
 
@@ -155,7 +158,8 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
             n = random.randint(1, 50)
             weights = [random.randint(0, 100) for _ in range(n)]
             weights[-1] += n - sum(weights) % n  # Ensure multiple of length.
-            self.assertPreprocess(weights, 2 ** -random.randint(1, 20))
+            mu = random.randint(1, 20)
+            self.assertPreprocess(weights, 2**-mu / n)
 
     def test_known(self):
         self.assertEqual(self.assertPreprocess([1, 2], epsilon=0.01), ([1, 1], [43, 0], 64))
@@ -163,3 +167,20 @@ class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
         self.assertEqual(
             self.assertPreprocess([1, 2, 3], epsilon=0.01), ([2, 1, 2], [32, 0, 0], 64)
         )
+
+    def test_low_precision(self):
+        """Test for a high value of `epsilon` to verify that `mu` is at least `1`."""
+        n = 10
+        epsilon = 1 / n
+        expected_mu = 1
+        probabilities = [1 - 1 / n] + [1 / (n * (n - 1)) for _ in range(n - 1)]
+
+        self.assertEqual(
+            self.assertPreprocess(probabilities, epsilon=epsilon),
+            ([0 for _ in range(n)], [1 if i in [3, 7] else 0 for i in range(n)], 2**expected_mu),
+        )
+
+
+def test_raises_on_mu_zero():
+    with pytest.raises(ValueError):
+        preprocess_probabilities_for_reversible_sampling([1, 2, 3, 4], sub_bit_precision=0)

@@ -38,6 +38,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QAny,
     QBit,
@@ -48,12 +49,12 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
+from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -926,7 +927,7 @@ _GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k]
 
 @frozen
 class EqualsAConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
+    r"""Implements $U_a|x\rangle|z\rangle = |x\rangle |z \oplus (x = a)\rangle$
 
     The bloq_counts and t_complexity are derived from:
     https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
@@ -940,8 +941,8 @@ class EqualsAConstant(Bloq):
         target: Register to hold result of comparison.
     """
 
-    bitsize: int
-    val: int
+    bitsize: SymbolicInt
+    val: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -956,10 +957,31 @@ class EqualsAConstant(Bloq):
             return TextBox(f"⨁(x = {self.val})")
         raise ValueError(f'Unknown register symbol {reg.name}')
 
+    def is_symbolic(self):
+        return is_symbolic(self.bitsize, self.val)
+
+    @property
+    def bits_k(self) -> Union[tuple[int, ...], HasLength]:
+        if is_symbolic(self.bitsize) or is_symbolic(self.val):
+            return HasLength(self.bitsize)
+
+        return tuple(QUInt(self.bitsize).to_bits(self.val))
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
+
+        xs = bb.split(x)
+        xs, target = bb.add(
+            MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
+        )
+        x = bb.join(xs)
+        return {'x': x, 'target': target}
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return {(TGate(), 4 * (self.bitsize - 1))}
+        return {(MultiControlPauli(self.bits_k, target_gate=cirq.X), 1)}
 
 
 def _make_equals_a_constant():

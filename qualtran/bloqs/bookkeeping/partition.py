@@ -59,6 +59,12 @@ class Partition(_BookkeepingBloq):
     )
     partition: bool = True
 
+    def __attrs_post_init__(self):
+        if self.n != sum(r.total_bits() for r in self.regs):
+            raise ValueError("Total bitsize not equal to sum of registers to partition into")
+        if len(set(r.name for r in self.regs)) != len(self.regs):
+            raise ValueError("Duplicate register names")
+
     @cached_property
     def signature(self) -> 'Signature':
         lumped = Side.LEFT if self.partition else Side.RIGHT

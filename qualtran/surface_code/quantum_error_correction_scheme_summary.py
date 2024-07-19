@@ -21,7 +21,7 @@ from qualtran.surface_code.reference import Reference
 
 
 @frozen
-class QuantumErrorCorrectionSchemeSummary(abc.ABC):
+class QuantumErrorCorrectionSchemeSummary(metaclass=abc.ABCMeta):
     r"""QuantumErrorCorrectionSchemeSummary represents a high-level view of a QEC scheme.
 
     QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
@@ -108,6 +108,23 @@ class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
     def error_detection_circuit_time_us(self, code_distance: int) -> float:
         """Equals the time to measure a stabilizer times the depth of the circuit."""
         return self.single_stabilizer_time_us * code_distance
+
+
+@frozen
+class LogicalErrorModel:
+    """A model for getting the logical error rate at a given code distance.
+
+    This curries a physical error rate with the QEC scheme, so various physical
+    cost models can calculate the logical error rate given a particular code distance.
+    """
+
+    physical_error: float
+    _qec_scheme: 'QuantumErrorCorrectionSchemeSummary'
+
+    def __call__(self, code_distance: int):
+        return self._qec_scheme.logical_error_rate(
+            code_distance=code_distance, physical_error_rate=self.physical_error
+        )
 
 
 BeverlandSuperconductingQubits = SimpliedSurfaceCode(

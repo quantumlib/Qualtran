@@ -53,6 +53,8 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.bitwise
+import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.swap
@@ -60,6 +62,8 @@ import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
+import qualtran.bloqs.block_encoding.linear_combination
+import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
@@ -86,11 +90,15 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
+import qualtran.bloqs.qft.qft_phase_gradient
+import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
@@ -195,6 +203,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Control Specification (And)',
+        module=qualtran.bloqs.mcmt.ctrl_spec_and,
+        bloq_specs=[qualtran.bloqs.mcmt.ctrl_spec_and._CTRLSPEC_AND_DOC],
     ),
 ]
 
@@ -326,6 +339,11 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Negation',
+        module=qualtran.bloqs.arithmetic.negate,
+        bloq_specs=[qualtran.bloqs.arithmetic.negate._NEGATE_DOC],
+    ),
+    NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
         bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
@@ -341,6 +359,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
             qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
             qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+            qualtran.bloqs.arithmetic.multiplication._INVERT_REAL_NUMBER_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -373,6 +392,22 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Permutations',
+        module=qualtran.bloqs.arithmetic.permutation,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_DOC,
+            qualtran.bloqs.arithmetic.permutation._PERMUTATION_CYCLE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Bitwise Operations',
+        module=qualtran.bloqs.arithmetic.bitwise,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
         ],
     ),
 ]
@@ -487,6 +522,16 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qft.approximate_qft,
         bloq_specs=[qualtran.bloqs.qft.approximate_qft._CC_AQFT_DOC],
     ),
+    NotebookSpecV2(
+        title='Textbook QFT',
+        module=qualtran.bloqs.qft.qft_text_book,
+        bloq_specs=[qualtran.bloqs.qft.qft_text_book._QFT_TEXT_BOOK_DOC],
+    ),
+    NotebookSpecV2(
+        title='Phase Gradient QFT',
+        module=qualtran.bloqs.qft.qft_phase_gradient,
+        bloq_specs=[qualtran.bloqs.qft.qft_phase_gradient._QFT_PHASE_GRADIENT_DOC],
+    ),
     # --------------------------------------------------------------------------
     # -----   Phase Estimation          ----------------------------------------
     # --------------------------------------------------------------------------
@@ -544,7 +589,12 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Apply to Lth Target',
         module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
-        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLY_TO_LTH_TARGET_DOC],
+    ),
+    NotebookSpecV2(
+        title='Apply Lth Bloq',
+        module=qualtran.bloqs.multiplexers.apply_lth_bloq,
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_lth_bloq._APPLY_LTH_BLOQ_DOC],
     ),
     NotebookSpecV2(
         title='QROM',
@@ -572,6 +622,9 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
             qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
             qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
+            qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
+            qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
+            qualtran.bloqs.block_encoding.phase._PHASE_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
@@ -602,7 +655,8 @@ OTHER: List[NotebookSpecV2] = [
         title='State Preparation via Alias Sampling',
         module=qualtran.bloqs.state_preparation.state_preparation_alias_sampling,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC,
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._SPARSE_STATE_PREP_ALIAS_DOC,
         ],
     ),
     NotebookSpecV2(
