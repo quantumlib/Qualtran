@@ -23,7 +23,7 @@ requirements.
 
 from .cnot import CNOT
 from .global_phase import GlobalPhase
-from .hadamard import Hadamard
+from .hadamard import CHadamard, Hadamard
 from .identity import Identity
 from .on_each import OnEach
 from .power import Power

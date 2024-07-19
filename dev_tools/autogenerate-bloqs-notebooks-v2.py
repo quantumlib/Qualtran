@@ -133,7 +133,10 @@ BASIC_GATES: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Hadamard',
         module=qualtran.bloqs.basic_gates.hadamard,
-        bloq_specs=[qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC],
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC,
+            qualtran.bloqs.basic_gates.hadamard._CHADAMARD_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='CNOT',
@@ -350,7 +353,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
-        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
+            qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -363,6 +369,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
             qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
             qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+            qualtran.bloqs.arithmetic.multiplication._INVERT_REAL_NUMBER_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -408,7 +415,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Bitwise Operations',
         module=qualtran.bloqs.arithmetic.bitwise,
-        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
+        ],
     ),
 ]
 
@@ -625,6 +635,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
             qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
             qualtran.bloqs.block_encoding.phase._PHASE_DOC,
+            qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),

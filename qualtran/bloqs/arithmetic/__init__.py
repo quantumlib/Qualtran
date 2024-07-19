@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
-from qualtran.bloqs.arithmetic.bitwise import Xor, XorK
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     EqualsAConstant,
@@ -26,6 +26,7 @@ from qualtran.bloqs.arithmetic.comparison import (
 from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement, ToContiguousIndex
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import (
+    InvertRealNumber,
     MultiplyTwoReals,
     PlusEqualProduct,
     Product,
@@ -36,6 +37,6 @@ from qualtran.bloqs.arithmetic.multiplication import (
 )
 from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
-from qualtran.bloqs.arithmetic.subtraction import Subtract
+from qualtran.bloqs.arithmetic.subtraction import Subtract, SubtractFrom
 
 from ._shims import CHalf, Lt, MultiCToffoli
