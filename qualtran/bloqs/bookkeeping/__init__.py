@@ -21,3 +21,4 @@ from qualtran.bloqs.bookkeeping.free import Free
 from qualtran.bloqs.bookkeeping.join import Join
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.bookkeeping.split import Split
+from qualtran.bloqs.bookkeeping.resize import Resize
