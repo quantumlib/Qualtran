@@ -325,7 +325,7 @@ class ControlledViaAnd(Bloq):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        counts = Counter()
+        counts: Counter[Bloq] = Counter()
         counts[self.subbloq.controlled()] += 1
 
         if self._is_single_bit_control():
