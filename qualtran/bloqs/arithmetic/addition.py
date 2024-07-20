@@ -129,8 +129,19 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a + b, N))}
+        N = 2**b_bitsize
+        if unsigned:
+            return {'a': a, 'b': int((a + b) % N)}
+
+        # Addition of signed integers can result in overflow. In most classical programming languages (e.g. C++)
+        # what happens when an overflow happens is left as an implementation detail for compiler designers.
+        # However for quantum subtraction the operation should be unitary and that means that the unitary of
+        # the bloq should be a permutation matrix.
+        # If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
+        # by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
+        # by the same amount modulu $N$. that is add N/2 before addition and then remove it.
+        half_n = N >> 1
+        return {'a': a, 'b': int(a + b + half_n) % N - half_n}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -188,6 +199,9 @@ class Add(Bloq):
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
+        if self.b_dtype.bitsize == 1:
+            yield CNOT().on(input_bits[0], output_bits[0])
+            return
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
