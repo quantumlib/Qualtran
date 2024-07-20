@@ -37,13 +37,15 @@ _SMATRIX = np.array([[1, 0], [0, 1j]], dtype=np.complex128)
 class SGate(Bloq):
     r"""The S gate.
 
-    The unitary matrix of `cirq.S` is
+    The unitary matrix of `SGate` is
     $$
     \begin{bmatrix}
         1 & 0 \\
         0 & i 
     \end{bmatrix}
     $$
+
+    It is the 'square root' of the Z gate: $S\cdot S = Z$.
 
     Registers:
         q: The qubit
@@ -95,6 +97,4 @@ def _s_gate() -> SGate:
     return s_gate
 
 
-_S_GATE_DOC = BloqDocSpec(
-    bloq_cls=SGate, import_line='from qualtran.bloqs.basic_gates import SGate', examples=[_s_gate]
-)
+_S_GATE_DOC = BloqDocSpec(bloq_cls=SGate, examples=[_s_gate], call_graph_example=None)
