@@ -133,7 +133,10 @@ BASIC_GATES: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Hadamard',
         module=qualtran.bloqs.basic_gates.hadamard,
-        bloq_specs=[qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC],
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC,
+            qualtran.bloqs.basic_gates.hadamard._CHADAMARD_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='CNOT',
@@ -141,9 +144,22 @@ BASIC_GATES: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.cnot._CNOT_DOC],
     ),
     NotebookSpecV2(
-        title='S Gate',
-        module=qualtran.bloqs.basic_gates.s_gate,
-        bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
+        title='Z, S, and CZ',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='diag_gates',
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._Z_GATE_DOC,
+            qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._CZ_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Y Gate',
+        module=qualtran.bloqs.basic_gates.y_gate,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.y_gate._Y_GATE_DOC,
+            qualtran.bloqs.basic_gates.y_gate._CY_GATE_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='And',
@@ -156,6 +172,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='States and Effects',
         module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='states_and_effects',
         bloq_specs=[
             qualtran.bloqs.basic_gates.z_basis._ZERO_STATE_DOC,
             qualtran.bloqs.basic_gates.z_basis._ZERO_EFFECT_DOC,
@@ -168,8 +185,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.basic_gates.x_basis._MINUS_STATE_DOC,
             qualtran.bloqs.basic_gates.x_basis._MINUS_EFFECT_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
-        path_stem='states_and_effects',
     ),
     NotebookSpecV2(
         title='Swap Network',
@@ -346,7 +361,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Subtraction',
         module=qualtran.bloqs.arithmetic.subtraction,
-        bloq_specs=[qualtran.bloqs.arithmetic.subtraction._SUB_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
+            qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -359,6 +377,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
             qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
             qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+            qualtran.bloqs.arithmetic.multiplication._INVERT_REAL_NUMBER_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -404,7 +423,10 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Bitwise Operations',
         module=qualtran.bloqs.arithmetic.bitwise,
-        bloq_specs=[qualtran.bloqs.arithmetic.bitwise._XOR_DOC],
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
+            qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
+        ],
     ),
 ]
 
@@ -621,6 +643,7 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
             qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
             qualtran.bloqs.block_encoding.phase._PHASE_DOC,
+            qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),

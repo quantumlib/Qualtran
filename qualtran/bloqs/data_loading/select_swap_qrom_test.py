@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran._infra.data_types import BoundedQUInt, QUInt
+from qualtran._infra.data_types import QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
 from qualtran.bloqs.data_loading import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import (
@@ -77,9 +77,7 @@ def test_select_swap_qrom(data, block_size):
         cirq.H.on_each(*dirty_target_ancilla),
     )
     all_qubits = sorted(circuit.all_qubits())
-    dtype = qrom.selection_registers[0].dtype
-    assert isinstance(dtype, BoundedQUInt)
-    for selection_integer in range(int(dtype.iteration_length)):
+    for selection_integer in range(len(data[0])):
         svals_q = QUInt(len(selection_q)).to_bits(selection_integer // qrom.block_sizes[0])
         svals_r = QUInt(len(selection_r)).to_bits(selection_integer % qrom.block_sizes[0])
         qubit_vals = {x: 0 for x in all_qubits}

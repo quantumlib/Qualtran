@@ -327,8 +327,11 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     """
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import (
+        CHadamard,
         CNOT,
         CSwap,
+        CYGate,
+        CZ,
         CZPowGate,
         GlobalPhase,
         Hadamard,
@@ -367,11 +370,14 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.S: SGate(),
         cirq.S**-1: SGate().adjoint(),
         cirq.H: Hadamard(),
+        cirq.ControlledGate(cirq.H): CHadamard(),
         cirq.CNOT: CNOT(),
         cirq.TOFFOLI: Toffoli(),
         cirq.X: XGate(),
         cirq.Y: YGate(),
+        cirq.ControlledGate(cirq.Y): CYGate(),
         cirq.Z: ZGate(),
+        cirq.CZ: CZ(),
         cirq.SWAP: TwoBitSwap(),
         cirq.CSWAP: CSwap(1),
     }

@@ -14,7 +14,7 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, Set, Tuple
+from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
 
@@ -142,13 +142,13 @@ class TensorProduct(BlockEncoding):
             if "resource" in u.signature._lefts
         )
 
-        sys_part = Partition(cast(int, self.system_bitsize), regs=sys_regs)
+        sys_part = Partition(self.system_bitsize, regs=sys_regs)
         sys_out_regs = list(bb.add_t(sys_part, x=system))
         if len(anc_regs) > 0:
-            anc_part = Partition(cast(int, self.ancilla_bitsize), regs=anc_regs)
+            anc_part = Partition(self.ancilla_bitsize, regs=anc_regs)
             anc_out_regs = list(bb.add_t(anc_part, x=soqs["ancilla"]))
         if len(res_regs) > 0:
-            res_part = Partition(cast(int, self.resource_bitsize), regs=res_regs)
+            res_part = Partition(self.resource_bitsize, regs=res_regs)
             res_out_regs = list(bb.add_t(res_part, x=soqs["resource"]))
         sys_i = 0
         anc_i = 0
