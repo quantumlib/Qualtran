@@ -31,6 +31,7 @@ Bloqs Library
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
     basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb

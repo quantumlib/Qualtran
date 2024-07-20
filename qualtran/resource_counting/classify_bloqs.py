@@ -110,6 +110,7 @@ def classify_t_count_by_bloq_type(
 def bloq_is_clifford(b: Bloq):
     from qualtran.bloqs.basic_gates import (
         CNOT,
+        CYGate,
         CZ,
         Hadamard,
         SGate,
@@ -135,6 +136,7 @@ def bloq_is_clifford(b: Bloq):
             ArbitraryClifford,
             CNOT,
             MultiTargetCNOT,
+            CYGate,
             CZ,
             SGate,
         ),

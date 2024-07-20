@@ -154,6 +154,14 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Y Gate',
+        module=qualtran.bloqs.basic_gates.y_gate,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.y_gate._Y_GATE_DOC,
+            qualtran.bloqs.basic_gates.y_gate._CY_GATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='And',
         module=qualtran.bloqs.mcmt.and_bloq,
         bloq_specs=[
