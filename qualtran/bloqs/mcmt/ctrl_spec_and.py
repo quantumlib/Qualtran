@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
@@ -230,7 +231,7 @@ _CTRLSPEC_AND_DOC = BloqDocSpec(
 
 @frozen
 class ControlledViaAnd(Bloq):
-    """Reduces a generic control bloq to a singly-controlled bloq using an And ladder.
+    """Reduces a generic controlled bloq to a singly-controlled bloq using an And ladder.
 
     Implements a generic controlled version of the subbloq, by first reducing the
     arbitrary control to a single qubit, and then using a single-qubit-controlled
@@ -324,13 +325,15 @@ class ControlledViaAnd(Bloq):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        counts: set['BloqCountT'] = {(self.subbloq.controlled(), 1)}
+        counts = Counter()
+        counts[self.subbloq.controlled()] += 1
 
         if self._is_single_bit_control():
             if self._single_control_value == 0:
-                counts |= {(XGate(), 2)}
+                counts[XGate()] += 2
         else:
             ctrl = CtrlSpecAnd(self.ctrl_spec)
-            counts |= {(ctrl, 1), (ctrl.adjoint(), 1)}
+            counts[ctrl] += 1
+            counts[ctrl.adjoint()] += 1
 
-        return counts
+        return set(counts.items())

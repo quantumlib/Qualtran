@@ -199,6 +199,7 @@ class MultiControlPauli(GateWithRegisters):
         if is_symbolic(self.cvs):
             # TODO CtrlSpec does not support symbolic cvs yet.
             #      remove this case once support is added.
+            #      https://github.com/quantumlib/Qualtran/issues/1168
             from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
             if self.n_ctrls == 1:
