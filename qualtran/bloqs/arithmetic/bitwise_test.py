@@ -16,7 +16,16 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder, QAny, QUInt
-from qualtran.bloqs.arithmetic.bitwise import _xor, _xor_symb, _xork, Xor, XorK
+from qualtran.bloqs.arithmetic.bitwise import (
+    _bitwise_not,
+    _bitwise_not_symb,
+    _xor,
+    _xor_symb,
+    _xork,
+    BitwiseNot,
+    Xor,
+    XorK,
+)
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 
 
@@ -128,5 +137,38 @@ y1: ───x⊕y───
 y2: ───x⊕y───
        │
 y3: ───x⊕y───
+    ''',
+    )
+
+
+def test_bitwise_not_examples(bloq_autotester):
+    bloq_autotester(_bitwise_not)
+    bloq_autotester(_bitwise_not_symb)
+
+
+@pytest.mark.parametrize("n", [4, 5])
+def test_bitwise_not_tensor(n):
+    bloq = BitwiseNot(QUInt(n))
+
+    matrix = np.zeros((2**n, 2**n))
+    for i in range(2**n):
+        matrix[i, ~i] = 1
+
+    np.testing.assert_allclose(bloq.tensor_contract(), matrix)
+
+
+def test_bitwise_not_diagram():
+    bloq = BitwiseNot(QUInt(4))
+    circuit = bloq.as_composite_bloq().to_cirq_circuit()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+x0: ───~x───
+       │
+x1: ───~x───
+       │
+x2: ───~x───
+       │
+x3: ───~x───
     ''',
     )
