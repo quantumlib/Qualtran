@@ -111,6 +111,7 @@ def bloq_is_clifford(b: Bloq):
     from qualtran.bloqs.basic_gates import (
         CNOT,
         CYGate,
+        CZ,
         Hadamard,
         SGate,
         TwoBitSwap,
@@ -136,6 +137,7 @@ def bloq_is_clifford(b: Bloq):
             CNOT,
             MultiTargetCNOT,
             CYGate,
+            CZ,
             SGate,
         ),
     ):
