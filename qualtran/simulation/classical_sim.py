@@ -49,7 +49,7 @@ def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[
     if bitstrings.shape[1] > 64:
         raise NotImplementedError()
     basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1)
+    return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
 
 def ints_to_bits(
@@ -62,13 +62,7 @@ def ints_to_bits(
         w: The bit width of the returned bitstrings.
     """
     x = np.atleast_1d(x)
-    if not np.issubdtype(x.dtype, np.uint):
-        assert np.all(x >= 0)
-        assert np.iinfo(x.dtype).bits <= 64
-        x = x.astype(np.uint64)
-    assert w <= np.iinfo(x.dtype).bits
-    mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
-    return (x & mask).astype(bool).astype(np.uint8).T
+    return np.array([list(map(int, np.binary_repr(v, width=w))) for v in x], dtype=np.uint8)
 
 
 def _get_in_vals(

@@ -92,9 +92,13 @@ def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
 def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
     """Directly count a clifford, T or Rotation (if it is one)."""
     from qualtran.bloqs.basic_gates import TGate
+    from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
 
     if isinstance(stc, TGate):
         return TComplexity(t=1)
+
+    if bloq_is_clifford(stc):
+        return TComplexity(clifford=1)
 
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None

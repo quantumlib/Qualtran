@@ -14,7 +14,7 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, Set, Tuple
+from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
 
@@ -109,7 +109,9 @@ class TensorProduct(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        """This method will be implemented in the future after PrepareOracle is updated for the BlockEncoding interface."""
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
         raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
@@ -140,13 +142,13 @@ class TensorProduct(BlockEncoding):
             if "resource" in u.signature._lefts
         )
 
-        sys_part = Partition(cast(int, self.system_bitsize), regs=sys_regs)
+        sys_part = Partition(self.system_bitsize, regs=sys_regs)
         sys_out_regs = list(bb.add_t(sys_part, x=system))
         if len(anc_regs) > 0:
-            anc_part = Partition(cast(int, self.ancilla_bitsize), regs=anc_regs)
+            anc_part = Partition(self.ancilla_bitsize, regs=anc_regs)
             anc_out_regs = list(bb.add_t(anc_part, x=soqs["ancilla"]))
         if len(res_regs) > 0:
-            res_part = Partition(cast(int, self.resource_bitsize), regs=res_regs)
+            res_part = Partition(self.resource_bitsize, regs=res_regs)
             res_out_regs = list(bb.add_t(res_part, x=soqs["resource"]))
         sys_i = 0
         anc_i = 0
@@ -192,7 +194,7 @@ def _tensor_product_block_encoding() -> TensorProduct:
 
 
 @bloq_example
-def _tensor_product_block_encoding_override() -> TensorProduct:
+def _tensor_product_block_encoding_properties() -> TensorProduct:
     from attrs import evolve
 
     from qualtran.bloqs.basic_gates import CNOT, TGate
@@ -200,8 +202,8 @@ def _tensor_product_block_encoding_override() -> TensorProduct:
 
     u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
-    tensor_product_block_encoding_override = TensorProduct((u1, u2))
-    return tensor_product_block_encoding_override
+    tensor_product_block_encoding_properties = TensorProduct((u1, u2))
+    return tensor_product_block_encoding_properties
 
 
 @bloq_example
@@ -231,7 +233,7 @@ _TENSOR_PRODUCT_DOC = BloqDocSpec(
     import_line="from qualtran.bloqs.block_encoding import TensorProduct",
     examples=[
         _tensor_product_block_encoding,
-        _tensor_product_block_encoding_override,
+        _tensor_product_block_encoding_properties,
         _tensor_product_block_encoding_symb,
     ],
 )

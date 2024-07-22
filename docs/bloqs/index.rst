@@ -30,13 +30,15 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
+    mcmt/ctrl_spec_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -59,11 +61,14 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
+    arithmetic/permutation.ipynb
+    arithmetic/bitwise.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -88,6 +93,8 @@ Bloqs Library
     rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
+    qft/qft_text_book.ipynb
+    qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization/qubitization_walk_operator.ipynb
@@ -100,6 +107,7 @@ Bloqs Library
     state_preparation/prepare_uniform_superposition.ipynb
     chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
+    multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
     block_encoding/block_encoding.ipynb

@@ -20,21 +20,20 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, QBit, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import (
     merge_qubits,
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -77,7 +76,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             Babbush et. al. (2018). Figure 1.
     """
 
-    prepare_gate: PrepareOracle
+    prepare_gate: 'PrepareOracle'
     control_val: Optional[int] = None
     global_phase: complex = 1
     eps: float = 1e-11
@@ -176,12 +175,10 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
         if self.control_val is None:
             costs.add((XGate(), 2))
         if self.global_phase != 1:
-            if self.control_val is None:
-                costs.add((GlobalPhase(self.global_phase, self.eps), 1))
-            else:
-                costs.add(
-                    (ZPowGate(exponent=float(np.angle(self.global_phase)) / np.pi, eps=self.eps), 1)
-                )
+            phase_op: Bloq = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
+            if self.control_val is not None:
+                phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
+            costs.add((phase_op, 1))
         return costs
 
 
@@ -191,7 +188,7 @@ def _refl_using_prep() -> ReflectionUsingPrepare:
 
     data = [1] * 5
     eps = 1e-2
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
 
     refl_using_prep = ReflectionUsingPrepare(prepare_gate)
     return refl_using_prep
