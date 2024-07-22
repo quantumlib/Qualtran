@@ -265,3 +265,20 @@ def format_classical_truth_table(
         for invals, outvals in truth_table
     ]
     return '\n'.join([heading] + entries)
+
+
+def signed_addition(a: int, b: int, N: int, is_signed: bool) -> int:
+    """Performs addition mod N of (un)signed in a reversible way.
+
+    Addition of signed integers can result in overflow. In most classical programming languages (e.g. C++)
+    what happens when an overflow happens is left as an implementation detail for compiler designers.
+    However for quantum subtraction the operation should be unitary and that means that the unitary of
+    the bloq should be a permutation matrix.
+    If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
+    by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
+    by the same amount modulu $N$. that is add N/2 before addition and then remove it.
+    """
+    c = a + b
+    if is_signed:
+        return (c + N // 2) % N - N // 2
+    return c % N
