@@ -37,6 +37,7 @@ from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
@@ -275,9 +276,6 @@ class LCUBlockEncoding(BlockEncoding):
     def target_registers(self) -> Tuple[Register, ...]:
         return self.select.target_registers
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
-        return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
-
     @property
     def alpha(self) -> SymbolicFloat:
         return self.prepare.l1_norm_of_coeffs
@@ -302,12 +300,16 @@ class LCUBlockEncoding(BlockEncoding):
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if self.control_val else '@(0)'] * _total_bits(self.control_registers)
-        wire_symbols += ['B[H]'] * (
-            _total_bits(self.signature) - _total_bits(self.control_registers)
-        )
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'control':
+            return Circle(filled=self.control_val)
+        else:
+            return TextBox('B[H]')
+
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
@@ -441,6 +443,14 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))
         return soqs
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'control':
+            return Circle(filled=self.control_val)
+        else:
+            return TextBox('B[H]')
+
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
     ) -> Tuple['Bloq', 'AddControlledT']:
@@ -537,9 +547,7 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
-    lcu_zero_state_block = LCUBlockEncodingZeroState(
-        select=select, prepare=prepare
-    )
+    lcu_zero_state_block = LCUBlockEncodingZeroState(select=select, prepare=prepare)
     return lcu_zero_state_block
 
 
