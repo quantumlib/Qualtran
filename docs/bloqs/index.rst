@@ -30,13 +30,15 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
+    mcmt/ctrl_spec_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -59,11 +61,14 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
     arithmetic/conversions.ipynb
+    arithmetic/permutation.ipynb
+    arithmetic/bitwise.ipynb
 
 .. toctree::
     :maxdepth: 2

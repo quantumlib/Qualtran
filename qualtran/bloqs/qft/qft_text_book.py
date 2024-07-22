@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Iterator, Set
+from typing import Iterator, Set
 
 import attrs
 import cirq
@@ -94,7 +94,7 @@ class QFTTextBook(GateWithRegisters):
                 )
             }
         else:
-            for i in range(1, cast(int, self.bitsize)):
+            for i in range(1, self.bitsize):
                 ret |= {(PhaseGradientUnitary(i, exponent=0.5, is_controlled=True), 1)}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}
