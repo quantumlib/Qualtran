@@ -177,7 +177,7 @@ class SignTruncate(Bloq):
         return {(MultiTargetCNOT(self.truncate_bitsize), 1)}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
-        bits = self.inp_dtype.to_bits(x)
+        bits = self.inp_dtype.to_bits(int(x))
         y = self.out_dtype.from_bits(bits[self.truncate_bitsize :])
         return {'y': y}
 
