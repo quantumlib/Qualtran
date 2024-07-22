@@ -17,7 +17,6 @@ from functools import cached_property
 from typing import Dict, Iterable, Optional, Sequence, Tuple, Union
 
 import attrs
-import cirq
 
 from qualtran import (
     AddControlledT,
@@ -277,7 +276,7 @@ class LCUBlockEncoding(BlockEncoding):
         return self.select.target_registers
 
     @property
-    def alpha(self) -> SymbolicFloat:
+    def alpha(self) -> Optional[SymbolicFloat]:
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
@@ -304,7 +303,7 @@ class LCUBlockEncoding(BlockEncoding):
         if reg is None:
             return Text('')
         if reg.name == 'control':
-            return Circle(filled=self.control_val)
+            return Circle(filled=bool(self.control_val))
         else:
             return TextBox('B[H]')
 
@@ -416,7 +415,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         return self.select.target_registers
 
     @property
-    def alpha(self) -> SymbolicFloat:
+    def alpha(self) -> Optional[SymbolicFloat]:
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
@@ -447,7 +446,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         if reg is None:
             return Text('')
         if reg.name == 'control':
-            return Circle(filled=self.control_val)
+            return Circle(filled=bool(self.control_val))
         else:
             return TextBox('B[H]')
 
