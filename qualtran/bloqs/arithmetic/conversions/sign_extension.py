@@ -12,27 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    QInt,
-    QIntOnesComp,
-    Register,
-    Side,
-    Signature,
-    Soquet,
-    SoquetT,
-)
+from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QIntOnesComp, Register, Side, Signature
 from qualtran.bloqs.mcmt import MultiTargetCNOT
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -101,6 +93,9 @@ class SignExtend(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         return {(MultiTargetCNOT(self.extend_bitsize), 1)}
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        return {'y': x}
 
 
 @bloq_example
@@ -180,6 +175,11 @@ class SignTruncate(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         return {(MultiTargetCNOT(self.truncate_bitsize), 1)}
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
+        bits = self.inp_dtype.to_bits(x)
+        y = self.out_dtype.from_bits(bits[self.truncate_bitsize :])
+        return {'y': y}
 
 
 @bloq_example

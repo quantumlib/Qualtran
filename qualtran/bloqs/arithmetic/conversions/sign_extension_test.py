@@ -84,6 +84,15 @@ def test_sign_extend_tensor(l: int, r: int):
         np.testing.assert_allclose(cbloq.tensor_contract(), 1)
 
 
+@pytest.mark.parametrize("l, r", [(2, 4)])
+def test_sign_extend_classical_sim(l: int, r: int):
+    bloq = SignExtend(QInt(l), QInt(r))
+
+    for x in QInt(l).get_classical_domain():
+        (y,) = bloq.call_classically(x=x)
+        assert y == x
+
+
 @pytest.mark.parametrize("l, r", [(4, 2)])
 def test_sign_truncate_tensor(l: int, r: int):
     bloq = SignTruncate(QInt(l), QInt(r))
@@ -96,3 +105,12 @@ def test_sign_truncate_tensor(l: int, r: int):
         cbloq = bb.finalize()
 
         np.testing.assert_allclose(cbloq.tensor_contract(), 1)
+
+
+@pytest.mark.parametrize("l, r", [(4, 2)])
+def test_sign_truncate_classical_sim(l: int, r: int):
+    bloq = SignTruncate(QInt(l), QInt(r))
+
+    for x in QInt(r).get_classical_domain():
+        (y,) = bloq.call_classically(x=x)
+        assert y == x
