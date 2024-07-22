@@ -309,13 +309,16 @@ class QROMBase(metaclass=abc.ABCMeta):
         else:
             controls = {}
 
-        n_dim = len(self.selection_bitsizes)
-        if n_dim == 1:
-            idx = vals['selection']
+        n_dim = len(self.selection_registers)
+        if n_dim == 0:
+            idx: Union[int, Tuple[int, ...]] = 0
+            selections = {}
+        elif n_dim == 1:
+            idx = int(vals.pop('selection', 0))
             selections = {'selection': idx}
         else:
             # Multidimensional
-            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))  # type: ignore[assignment]
+            idx = tuple(int(vals[f'selection{i}']) for i in range(n_dim))
             selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
 
         # Retrieve the data; bitwise add them in to the input target values
