@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import Set
 
@@ -105,28 +106,26 @@ class RzViaProgrammableAncillaRotation(Bloq):
         return cls(angle, n_rounds)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        import cirq
+
+        from qualtran.cirq_interop import CirqGateAsBloq
+
+        resources: Counter[Bloq] = Counter({CNOT(): self.n_rounds, XGate(): self.n_rounds})
+
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
             eps = ssa.new_symbol(r"\epsilon")
-            resources = {(RzResourceState(phi, eps), self.n_rounds)}
+            resources[RzResourceState(phi, eps)] += self.n_rounds
         else:
-            resources = {
-                (RzResourceState(2**i * self.angle, eps=self.eps / 2 ** (i + 1)), 1)
-                for i in range(int(self.n_rounds))
-            }
+            for i in range(int(self.n_rounds)):
+                resources[(RzResourceState(2**i * self.angle, eps=self.eps / 2 ** (i + 1)))] += 1
 
         if self.apply_final_correction:
-            resources |= {
-                (
-                    RzResourceState(
-                        2**self.n_rounds * self.angle, eps=self.eps / 2**self.n_rounds
-                    ),
-                    1,
-                )
-            }
+            resources[Rz(2**self.n_rounds * self.angle, eps=self.eps / 2**self.n_rounds)] += 1
 
-        # TODO: account for `n_rounds` measurements
-        return {(CNOT(), self.n_rounds), (XGate(), self.n_rounds)} | resources
+        resources[CirqGateAsBloq(cirq.MeasurementGate(num_qubits=1))] += self.n_rounds
+
+        return set(resources.items())
 
 
 @bloq_example

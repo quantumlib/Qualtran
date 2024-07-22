@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import cirq
 import numpy as np
 import sympy
 
@@ -24,6 +25,7 @@ from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
     RzResourceState,
     RzViaProgrammableAncillaRotation,
 )
+from qualtran.cirq_interop import CirqGateAsBloq
 
 
 def test_rz_resource_state_examples(bloq_autotester):
@@ -56,6 +58,7 @@ def test_rz_via_par_call_graphs():
         XGate(): 2,
         RzResourceState(np.pi / 4, eps=1e-11 / 2): 1,
         RzResourceState(np.pi / 2, eps=1e-11 / 4): 1,
+        CirqGateAsBloq(cirq.MeasurementGate(1)): 2,
     }
 
     phi, eps = sympy.symbols(r"\phi \epsilon")
@@ -69,10 +72,16 @@ def test_rz_via_par_call_graphs():
         RzResourceState(phi, eps / 2): 1,
         RzResourceState(2 * phi, eps / 4): 1,
         RzResourceState(4 * phi, eps / 8): 1,
+        CirqGateAsBloq(cirq.MeasurementGate(1)): 3,
     }
 
     phi0, eps0, n = sympy.symbols(r"_\phi0 _\epsilon0 n")
     _, sigma_rz_symb_rounds = RzViaProgrammableAncillaRotation(phi, eps=eps, n_rounds=n).call_graph(
         max_depth=1
     )
-    assert sigma_rz_symb_rounds == {CNOT(): n, XGate(): n, RzResourceState(phi0, eps0): n}
+    assert sigma_rz_symb_rounds == {
+        CNOT(): n,
+        XGate(): n,
+        RzResourceState(phi0, eps0): n,
+        CirqGateAsBloq(cirq.MeasurementGate(1)): n,
+    }
