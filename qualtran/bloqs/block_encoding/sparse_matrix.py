@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import cast, Dict, Iterable, Tuple
+from typing import cast, Dict, Iterable, Set, Tuple
 
 import numpy as np
 from attrs import field, frozen
@@ -35,6 +35,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.bloqs.arithmetic import Add, AddK
 from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
@@ -43,6 +44,8 @@ from qualtran.bloqs.data_loading import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import bit_length
 
@@ -282,6 +285,65 @@ class TopLeftRowColumnOracle(RowColumnOracle):
 
 
 @frozen
+class SymmetricBandedRowColumnOracle(RowColumnOracle):
+    """Oracle specifying the non-zero rows and columns of a symmetric banded matrix.
+
+    Args:
+        system_bitsize: The number of bits used to represent an index.
+        bandsize: The number of pairs of non-zero off-main diagonals. A diagonal matrix has
+            bandsize 0 and a tridiagonal matrix has bandsize 1.
+
+    Registers:
+        l: As input, index specifying the `l`-th non-zero entry to find in row / column `i`.
+           As output, position of the `l`-th non-zero entry in row / column `i`.
+        i: The row / column index.
+    """
+
+    system_bitsize: SymbolicInt
+    bandsize: SymbolicInt
+
+    @cached_property
+    def num_nonzero(self) -> SymbolicInt:
+        return 2 * self.bandsize + 1
+
+    def __attrs_post_init__(self):
+        if is_symbolic(self.system_bitsize) or is_symbolic(self.bandsize):
+            return
+        if 2**self.system_bitsize < 2 * self.bandsize:
+            raise ValueError(
+                f"bandsize={self.bandsize} too large for system_bitsize={self.system_bitsize}"
+            )
+
+    def call_classically(self, l: ClassicalValT, i: ClassicalValT) -> Tuple[ClassicalValT, ...]:
+        if (
+            is_symbolic(self.bandsize)
+            or is_symbolic(self.system_bitsize)
+            or is_symbolic(self.num_nonzero)
+        ):
+            raise DecomposeTypeError(f"Cannot call symbolic {self=} classically")
+
+        assert not isinstance(l, np.ndarray) and not isinstance(i, np.ndarray)
+        if l >= self.num_nonzero:
+            raise IndexError("l out of bounds")
+        return ((l + i - self.bandsize) % (2**self.system_bitsize), i)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set[BloqCountT]:
+        return {
+            (Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), 1),
+            (AddK(self.system_bitsize, -self.bandsize, signed=True), 1),
+        }
+
+    def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> Dict[str, SoquetT]:
+        if is_symbolic(self.system_bitsize) or is_symbolic(self.bandsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
+        i, l = bb.add_t(Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), a=i, b=l)
+        l = cast(Soquet, bb.add(AddK(self.system_bitsize, -self.bandsize, signed=True), x=l))
+
+        return {"l": l, "i": i}
+
+
+@frozen
 class UniformEntryOracle(EntryOracle):
     """Oracle specifying the entries of a matrix with uniform entries."""
 
@@ -390,8 +452,25 @@ def _explicit_matrix_block_encoding() -> SparseMatrix:
     return explicit_matrix_block_encoding
 
 
+@bloq_example
+def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
+    from qualtran.bloqs.block_encoding.sparse_matrix import SymmetricBandedRowColumnOracle
+
+    row_oracle = SymmetricBandedRowColumnOracle(3, bandsize=1)
+    col_oracle = SymmetricBandedRowColumnOracle(3, bandsize=1)
+    entry_oracle = UniformEntryOracle(3, entry=0.3)
+    symmetric_banded_matrix_block_encoding = SparseMatrix(
+        row_oracle, col_oracle, entry_oracle, eps=0
+    )
+    return symmetric_banded_matrix_block_encoding
+
+
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
     import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
-    examples=[_sparse_matrix_block_encoding, _explicit_matrix_block_encoding],
+    examples=[
+        _sparse_matrix_block_encoding,
+        _explicit_matrix_block_encoding,
+        _symmetric_banded_matrix_block_encoding,
+    ],
 )

@@ -22,8 +22,10 @@ from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.block_encoding.sparse_matrix import (
     _explicit_matrix_block_encoding,
     _sparse_matrix_block_encoding,
+    _symmetric_banded_matrix_block_encoding,
     ExplicitEntryOracle,
     SparseMatrix,
+    SymmetricBandedRowColumnOracle,
     TopLeftRowColumnOracle,
     UniformEntryOracle,
 )
@@ -35,6 +37,10 @@ def test_sparse_matrix(bloq_autotester):
 
 def test_explicit_matrix(bloq_autotester):
     bloq_autotester(_explicit_matrix_block_encoding)
+
+
+def test_symmetric_banded_matrix(bloq_autotester):
+    bloq_autotester(_symmetric_banded_matrix_block_encoding)
 
 
 def test_sparse_matrix_signature():
@@ -99,7 +105,7 @@ def test_explicit_entry_oracle(n, data):
     np.testing.assert_allclose(data, from_tensors, atol=0.003)
 
 
-test_matrix = [
+topleft_matrix = [
     [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
     [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
     [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -126,4 +132,108 @@ def test_top_left_matrix():
     bloq = bb.finalize(system=system)
 
     from_tensors = bloq.tensor_contract() * alpha
+    np.testing.assert_allclose(topleft_matrix, from_tensors, atol=0.003)
+
+
+test_matrix = [
+    [0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3],
+    [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.3, 0.3, 0.3, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.3],
+    [0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3],
+]
+
+test_matrix_nonzeros = [
+    [7, 0, 1],
+    [0, 1, 2],
+    [1, 2, 3],
+    [2, 3, 4],
+    [3, 4, 5],
+    [4, 5, 6],
+    [5, 6, 7],
+    [6, 7, 0],
+]
+
+
+def test_symmetric_banded_row_column_oracle_classical():
+    n = 3
+    bloq = SymmetricBandedRowColumnOracle(n, bandsize=1)
+
+    def test_entry(l, i):
+        l_out, i_out = bloq.call_classically(l=l, i=i)
+        assert i_out == i
+        assert l_out == test_matrix_nonzeros[i][l]
+
+    for i in range(2**n):
+        for l in range(3):
+            test_entry(l, i)
+
+
+def test_symmetric_banded_row_column_oracle():
+    n = 3
+    bloq = SymmetricBandedRowColumnOracle(n, bandsize=1)
+
+    def test_entry(l, i):
+        bb = BloqBuilder()
+        l_soq = cast(Soquet, bb.add(IntState(l, n)))
+        i_soq = cast(Soquet, bb.add(IntState(i, n)))
+        l_soq, i_soq = bb.add_t(bloq, l=l_soq, i=i_soq)
+        bb.add(IntEffect(i, n), val=i_soq)
+        out = bb.finalize(l=l_soq)
+        np.testing.assert_allclose(
+            IntState(test_matrix_nonzeros[i][l], n).tensor_contract(), out.tensor_contract()
+        )
+
+    for i in range(2**n):
+        for l in range(3):
+            test_entry(l, i)
+
+
+def test_symmetric_banded_row_column_matrix():
+    n = 3
+    bloq = _symmetric_banded_matrix_block_encoding()
+    alpha = bloq.alpha
+
+    bb = BloqBuilder()
+    system = bb.add_register("system", n)
+    ancilla = cast(Soquet, bb.add(IntState(0, n + 1)))
+    system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+    bb.add(IntEffect(0, n + 1), val=ancilla)
+    bloq = bb.finalize(system=system)
+
+    from_tensors = bloq.tensor_contract() * alpha
     np.testing.assert_allclose(test_matrix, from_tensors, atol=0.003)
+
+
+def test_matrix_stress():
+    rs = np.random.RandomState(1234)
+    f = lambda: rs.randint(0, 10) / 10
+    data = [
+        [f(), f(), f(), 0.0, 0.0, 0.0, 0.0, 0.0],
+        [f(), f(), f(), f(), 0.0, 0.0, 0.0, 0.0],
+        [f(), f(), f(), f(), f(), 0.0, 0.0, 0.0],
+        [0.0, f(), f(), f(), f(), f(), 0.0, 0.0],
+        [0.0, 0.0, f(), f(), f(), f(), f(), 0.0],
+        [0.0, 0.0, 0.0, f(), f(), f(), f(), f()],
+        [0.0, 0.0, 0.0, 0.0, f(), f(), f(), f()],
+        [0.0, 0.0, 0.0, 0.0, 0.0, f(), f(), f()],
+    ]
+    n = 3
+    row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=2)
+    col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=2)
+    entry_oracle = ExplicitEntryOracle(system_bitsize=n, data=np.array(data), entry_bitsize=7)
+    bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    alpha = bloq.alpha
+
+    bb = BloqBuilder()
+    system = bb.add_register("system", n)
+    ancilla = cast(Soquet, bb.add(IntState(0, n + 1)))
+    system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+    bb.add(IntEffect(0, n + 1), val=ancilla)
+    bloq = bb.finalize(system=system)
+
+    from_tensors = bloq.tensor_contract() * alpha
+    np.testing.assert_allclose(data, from_tensors, atol=0.03)
