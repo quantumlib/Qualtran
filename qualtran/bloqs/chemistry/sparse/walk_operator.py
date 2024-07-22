@@ -46,8 +46,6 @@ def get_walk_operator_for_sparse_chem_ham(
         num_bits_rot_aa=num_bits_rot_aa,
     )
     select = SelectSparse(num_spin_orb)
-    block_encoding = LCUBlockEncoding(
-        alpha=np.sum(abs(tpq) + 0.5 * np.sum(eris)), epsilon=1e-3, select=select, prepare=prepare
-    )
+    block_encoding = LCUBlockEncoding(select=select, prepare=prepare)
     walk_op = QubitizationWalkOperator(block_encoding=block_encoding)
     return walk_op

@@ -40,9 +40,10 @@ def test_thc_prepare(bloq_autotester):
 def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     np.random.seed(7)
     t_l = np.random.normal(0, 1, size=num_spat)
+    eta = np.random.normal(0, 1, size=(num_mu, num_spat))
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=mu)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=mu)
     qlt_testing.assert_valid_bloq_decomposition(prep)
     # Test that the alt / keep values are correct
     qlt_testing.assert_valid_bloq_decomposition(prep)

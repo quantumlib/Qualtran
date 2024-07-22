@@ -120,11 +120,7 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    block_bloq = LCUBlockEncodingZeroState(
-        select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
-    )
+    block_bloq = LCUBlockEncodingZeroState(select=select, prepare=prepare)
     chebyshev_poly = ChebyshevPolynomial(block_bloq, order=3)
     return chebyshev_poly
 
@@ -143,10 +139,8 @@ def _black_box_chebyshev_poly() -> ChebyshevPolynomial:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     black_box_block_bloq = LCUBlockEncodingZeroState(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     black_box_chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return black_box_chebyshev_poly

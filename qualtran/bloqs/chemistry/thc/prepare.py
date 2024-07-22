@@ -493,7 +493,7 @@ def _thc_prep() -> PrepareTHC:
     t_l = np.random.normal(0, 1, size=num_spat)
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    eta = np.random.normal(size=(thc_dim, num_spat))
+    eta = np.random.normal(size=(num_mu, num_spat))
     thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     return thc_prep
 

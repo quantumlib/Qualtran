@@ -46,12 +46,10 @@ def get_walk_operator_for_thc_ham(
         walk_op: Walk operator for THC hamiltonian.
     """
     t_l, _ = np.linalg.eigh(tpq)
-    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep)
     num_mu = zeta.shape[-1]
     num_spin_orb = 2 * tpq.shape[-1]
     sel = SelectTHC(num_mu, num_spin_orb, num_bits_theta, prep.keep_bitsize, kr1=kr1, kr2=kr2)
-    block_encoding = LCUBlockEncoding(
-        alpha=lambda_t + lambda_z, epsilon=1e-3, select=sel, prepare=prep
-    )
+    block_encoding = LCUBlockEncoding(select=sel, prepare=prep)
     walk_op = QubitizationWalkOperator(block_encoding=block_encoding)
     return walk_op
