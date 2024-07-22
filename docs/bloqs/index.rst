@@ -64,9 +64,9 @@ Bloqs Library
     arithmetic/subtraction.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
-    arithmetic/sign_extension.ipynb
+    arithmetic/conversions/conversions.ipynb
     arithmetic/sorting.ipynb
-    arithmetic/conversions.ipynb
+    arithmetic/conversions/contiguous_index.ipynb
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
 
