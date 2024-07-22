@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Controlled, CtrlSpec, Signature
+from qualtran import Bloq, Controlled, CtrlSpec
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class ControlledViaAnd(Bloq):
+class ControlledViaAnd(Controlled):
     """Reduces a generic controlled bloq to a singly-controlled bloq using an And ladder.
 
     Implements a generic controlled version of the subbloq, by first reducing the
@@ -45,19 +45,6 @@ class ControlledViaAnd(Bloq):
     subbloq: Bloq
     ctrl_spec: CtrlSpec
 
-    @cached_property
-    def signature(self) -> 'Signature':
-        return self._signature_and_ctrl_regs_from_controlled[0]
-
-    @cached_property
-    def ctrl_reg_names(self) -> tuple[str, ...]:
-        return self._signature_and_ctrl_regs_from_controlled[1]
-
-    @cached_property
-    def _signature_and_ctrl_regs_from_controlled(self) -> tuple[Signature, tuple[str, ...]]:
-        cbloq = Controlled(self.subbloq, self.ctrl_spec)
-        return cbloq.signature, tuple(cbloq.ctrl_reg_names)
-
     def _is_single_bit_control(self) -> bool:
         return self.ctrl_spec.num_qubits == 1
 
@@ -65,6 +52,9 @@ class ControlledViaAnd(Bloq):
     def _single_control_value(self) -> int:
         assert self._is_single_bit_control()
         return self.ctrl_spec._cvs_tuple[0]
+
+    def adjoint(self) -> 'ControlledViaAnd':
+        return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         # compute the control bit
