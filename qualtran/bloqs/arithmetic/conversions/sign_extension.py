@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import Union
 
 import numpy as np
 from attrs import frozen
@@ -21,8 +22,8 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    QDType,
-    QFxp,
+    QInt,
+    QIntOnesComp,
     Register,
     Side,
     Signature,
@@ -42,6 +43,7 @@ class SignExtend(Bloq):
     A sign extension copies the MSB into the new bits of the wider value. For
     example: a 4-bit to 6-bit sign-extension of `1010` gives `111010`.
 
+    See :class:`SignTruncate` for the adjoint operation.
 
     Args:
         inp_dtype: input data type.
@@ -53,22 +55,14 @@ class SignExtend(Bloq):
         y (RIGHT): the output register of type `out_dtype`
     """
 
-    inp_dtype: QDType
-    out_dtype: QDType
+    inp_dtype: Union[QInt, QIntOnesComp]
+    out_dtype: Union[QInt, QIntOnesComp]
 
     def __attrs_post_init__(self):
         if not isinstance(self.inp_dtype, type(self.out_dtype)):
             raise ValueError(
                 f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
             )
-
-        if isinstance(self.out_dtype, QFxp):
-            assert isinstance(self.inp_dtype, QFxp)  # checked above, but mypy does not realize
-
-            if self.out_dtype.num_frac != self.inp_dtype.num_frac:
-                raise ValueError(
-                    f"Expected same fractional sizes for QFxp, got: {self.inp_dtype.num_frac}, {self.out_dtype.num_frac}"
-                )
 
         if not is_symbolic(self.extend_bitsize) and self.extend_bitsize <= 0:
             raise ValueError(
@@ -88,6 +82,9 @@ class SignExtend(Bloq):
     @cached_property
     def extend_bitsize(self):
         return self.out_dtype.num_qubits - self.inp_dtype.num_qubits
+
+    def adjoint(self) -> 'SignTruncate':
+        return SignTruncate(self.out_dtype, self.inp_dtype)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         extend_ys = bb.allocate(self.extend_bitsize)
@@ -114,12 +111,83 @@ def _sign_extend() -> SignExtend:
     return sign_extend
 
 
+_SIGN_EXTEND_DOC = BloqDocSpec(bloq_cls=SignExtend, examples=[_sign_extend])
+
+
+@frozen
+class SignTruncate(Bloq):
+    """Truncate a signed value to a smaller bitsize.
+
+    Useful to implement arithmetic operations with differing operand bitsizes.
+    A signed truncation xors the MSB (sign bit) into the bits to drop, and
+    deallocates them.
+
+    See :class:`SignExtend` for the adjoint operation.
+
+
+    Args:
+        inp_dtype: input data type.
+        out_dtype: output data type. must be same class as `inp_dtype`,
+                   and have smaller bitsize.
+
+    Registers:
+        x (LEFT): the input register of type `inp_dtype`
+        y (RIGHT): the output register of type `out_dtype`
+    """
+
+    inp_dtype: Union[QInt, QIntOnesComp]
+    out_dtype: Union[QInt, QIntOnesComp]
+
+    def __attrs_post_init__(self):
+        if not isinstance(self.inp_dtype, type(self.out_dtype)):
+            raise ValueError(
+                f"Expected same input and output base types, got: {self.inp_dtype}, {self.out_dtype}"
+            )
+
+        if not is_symbolic(self.truncate_bitsize) and self.truncate_bitsize <= 0:
+            raise ValueError(
+                f"input bitsize {self.inp_dtype.num_qubits} must be larger than "
+                f"output bitsize {self.out_dtype.num_qubits}"
+            )
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', self.inp_dtype, side=Side.LEFT),
+                Register('y', self.out_dtype, side=Side.RIGHT),
+            ]
+        )
+
+    @cached_property
+    def truncate_bitsize(self):
+        return self.inp_dtype.num_qubits - self.out_dtype.num_qubits
+
+    def adjoint(self) -> 'SignExtend':
+        return SignExtend(self.out_dtype, self.inp_dtype)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
+        xs = bb.split(x)
+        bits_to_drop, xs = xs[: self.truncate_bitsize], xs[self.truncate_bitsize :]
+
+        xs[0], bits_to_drop = bb.add(
+            MultiTargetCNOT(self.truncate_bitsize), control=xs[0], targets=bb.join(bits_to_drop)
+        )
+        bb.free(bits_to_drop)
+        x = bb.join(xs)
+
+        return {'y': x}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+        return {(MultiTargetCNOT(self.truncate_bitsize), 1)}
+
+
 @bloq_example
-def _sign_extend_fxp() -> SignExtend:
-    from qualtran import QFxp
+def _sign_truncate() -> SignTruncate:
+    from qualtran import QInt
 
-    sign_extend_fxp = SignExtend(QFxp(8, 4, signed=True), QFxp(16, 4, signed=True))
-    return sign_extend_fxp
+    sign_truncate = SignTruncate(QInt(16), QInt(8))
+    return sign_truncate
 
 
-_SIGN_EXTEND_DOC = BloqDocSpec(bloq_cls=SignExtend, examples=[_sign_extend, _sign_extend_fxp])
+_SIGN_TRUNCATE_DOC = BloqDocSpec(bloq_cls=SignTruncate, examples=[_sign_truncate])

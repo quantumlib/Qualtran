@@ -380,6 +380,7 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_EXTEND_DOC,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_TRUNCATE_DOC,
         ],
     ),
     NotebookSpecV2(

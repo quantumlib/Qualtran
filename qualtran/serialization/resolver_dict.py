@@ -162,6 +162,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement,
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend": qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend,
+    "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate": qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,
     "qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct": qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct,
