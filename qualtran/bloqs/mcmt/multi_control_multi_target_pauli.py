@@ -36,7 +36,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
-from qualtran.bloqs.mcmt.ctrl_spec_and import ControlledViaAnd
+from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
