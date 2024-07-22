@@ -13,4 +13,4 @@
 #  limitations under the License.
 from .contiguous_index import ToContiguousIndex
 from .ones_complement_to_twos_complement import SignedIntegerToTwosComplement
-from .sign_extension import SignExtend
+from .sign_extension import SignExtend, SignTruncate
