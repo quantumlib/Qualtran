@@ -75,9 +75,7 @@ class RowColumnOracle(Bloq, abc.ABC):
         """The number of nonzero entries in each row or column."""
 
     def __attrs_post_init__(self):
-        if is_symbolic(self.system_bitsize):
-            return
-        if self.system_bitsize <= 0:
+        if not is_symbolic(self.system_bitsize) and self.system_bitsize <= 0:
             raise ValueError("system_bitsize must be > 0")
         if is_symbolic(self.num_nonzero):
             return
@@ -265,6 +263,8 @@ class UniformEntryOracle(EntryOracle):
     def build_composite_bloq(
         self, bb: BloqBuilder, q: Soquet, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
+        # Either Rx or Ry work here; Rx would induce a phase on the subspace with non-zero ancilla
+        # See https://arxiv.org/abs/2302.10949 for reference that uses Rx
         soqs["q"] = cast(Soquet, bb.add(Ry(2 * np.arccos(self.entry)), q=q))
         return soqs
 
@@ -289,7 +289,7 @@ class ExplicitEntryOracle(EntryOracle):
 
     system_bitsize: SymbolicInt
     data: NDArray[np.float64] = field(
-        converter=lambda x: np.array(x) if isinstance(x, Iterable) else x,
+        converter=lambda x: np.asarray(x) if isinstance(x, Iterable) else x,
         eq=lambda d: tuple(d.flat),
     )
     entry_bitsize: SymbolicInt
