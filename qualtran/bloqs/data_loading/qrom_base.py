@@ -309,9 +309,12 @@ class QROMBase(metaclass=abc.ABCMeta):
         else:
             controls = {}
 
-        n_dim = len(self.selection_bitsizes)
-        if n_dim == 1:
-            idx = vals['selection']
+        n_dim = len(self.selection_registers)
+        if n_dim == 0:
+            idx = 0
+            selections = {}
+        elif n_dim == 1:
+            idx = vals.pop('selection', 0)
             selections = {'selection': idx}
         else:
             # Multidimensional
