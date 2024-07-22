@@ -50,6 +50,7 @@ from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
+from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -267,15 +268,21 @@ class PrepareTHC(PrepareOracle):
     theta: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
+    sum_of_l1_coeffs: SymbolicFloat
 
     @classmethod
     def from_hamiltonian_coeffs(
-        cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], num_bits_state_prep: int = 8
+        cls,
+        t_l: NDArray[np.float64],
+        eta: NDArray[np.float64],
+        zeta: NDArray[np.float64],
+        num_bits_state_prep: int = 8,
     ) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 
         Args:
             t_l: One body hamiltonian eigenvalues.
+            eta: The THC leaf tensors.
             zeta: THC central tensor.
             num_bits_state_prep: The number of bits for the state prepared during alias sampling.
 
@@ -307,6 +314,11 @@ class PrepareTHC(PrepareOracle):
                 alt_mu.append(int(k - num_ut))
                 alt_nu.append(int(num_mu))
             alt_theta.append(thetas[k])
+        overlap = eta.dot(eta.T)
+        norm_fac = np.diag(np.diag(overlap))
+        zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
+        lambda_t = np.sum(np.abs(t_l))  # Eq. 19
+        lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
         return PrepareTHC(
             num_mu,
             2 * num_spat,
@@ -316,7 +328,12 @@ class PrepareTHC(PrepareOracle):
             theta=tuple(thetas),
             keep=tuple(keep),
             keep_bitsize=mu,
+            sum_of_l1_coeffs=lambda_t + lambda_z,
         )
+
+    @property
+    def l1_norm_coeffs(self) -> SymbolicFloat:
+        return self.sum_of_l1_coeffs
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -476,7 +493,8 @@ def _thc_prep() -> PrepareTHC:
     t_l = np.random.normal(0, 1, size=num_spat)
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    eta = np.random.normal(size=(thc_dim, num_spat))
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     return thc_prep
 
 

@@ -149,7 +149,9 @@ def walk_operator_for_pauli_hamiltonian(
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
     )
-    block_encoding = LCUBlockEncoding(select=select, prepare=prepare)
+    block_encoding = LCUBlockEncoding(
+        select=select, prepare=prepare, alpha=prepare.l1_norm_of_coeffs, epsilon=1e-3
+    )
 
     return QubitizationWalkOperator(block_encoding=block_encoding)
 

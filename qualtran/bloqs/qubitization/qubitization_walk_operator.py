@@ -22,7 +22,7 @@ $$
 \mathrm{PREPARE}|0\rangle = |\mathcal{L}\rangle \\
 (\langle \mathcal{L} | \otimes \mathbb{1}) \mathrm{SELECT} (|\mathcal{L} \rangle \otimes \mathbb{1}) = H / \lambda
 $$.
-
+sum_of_l1
 We first document the SelectOracle and PrepareOracle abstract base bloqs, and then show
 how they can be combined in `QubitizationWalkOperator`.
 """
@@ -41,6 +41,7 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     LCUBlockEncoding,
     LCUBlockEncodingZeroState,
 )
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -159,8 +160,12 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
     def adjoint(self) -> 'QubitizationWalkOperator':
         return attrs.evolve(self, uncompute=not self.uncompute)
 
-    @
-    def 
+    @cached_property
+    def prepare(self) -> PrepareOracle:
+        """Get the Prepare bloq if appropriate from the block encoding."""
+        if isinstance(self.block_encoding, (LCUBlockEncoding, LCUBlockEncodingZeroState)):
+            return self.block_encoding.prepare
+        raise ValueError(f"Prepare bloq not implemented for {self.block_encoding}.")
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

@@ -14,6 +14,7 @@
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import PrepareHubbard
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import SelectHubbard
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 
 
 def get_walk_operator_for_hubbard_model(
@@ -22,4 +23,8 @@ def get_walk_operator_for_hubbard_model(
     select = SelectHubbard(x_dim, y_dim)
     prepare = PrepareHubbard(x_dim, y_dim, t, u)
 
-    return QubitizationWalkOperator(select=select, prepare=prepare)
+    return QubitizationWalkOperator(
+        LCUBlockEncoding(
+            select=select, prepare=prepare, alpha=prepare.l1_norm_of_coeffs, epsilon=1e-3
+        )
+    )

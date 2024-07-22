@@ -254,11 +254,10 @@ class LCUBlockEncoding(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    alpha: SymbolicFloat
-    epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
+    epsilon: SymbolicFloat = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -278,6 +277,10 @@ class LCUBlockEncoding(BlockEncoding):
 
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
         return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
+
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.prepare.l1_norm_of_coeffs
 
     @cached_property
     def signature(self) -> Signature:
@@ -370,12 +373,10 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     SELECT.
 
     Args:
-        alpha: The normalization constant upper bounding the spectral norm of
-            the Hamiltonian. Often called lambda.
-        epsilon: The precision to which the block encoding is performed.
-            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
+        epsilon: The precision to which the block encoding is performed.
+            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
 
     Registers:
         selection: The combined selection register.
@@ -391,11 +392,10 @@ class LCUBlockEncodingZeroState(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    alpha: SymbolicFloat
-    epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
+    epsilon: SymbolicFloat = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -412,6 +412,10 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return self.select.target_registers
+
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.prepare.l1_norm_of_coeffs
 
     @cached_property
     def signature(self) -> Signature:
@@ -498,8 +502,7 @@ def _lcu_block() -> LCUBlockEncoding:
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    lcu_block = LCUBlockEncoding(select=select, prepare=prepare, alpha=qlambda, epsilon=0.0)
+    lcu_block = LCUBlockEncoding(select=select, prepare=prepare, epsilon=0.0)
     return lcu_block
 
 
@@ -517,7 +520,7 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
     black_box_lcu_block = LCUBlockEncoding(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_block
 
@@ -535,7 +538,7 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     N = dim * dim * 2
     qlambda = 2 * N * t + (N * U) // 2
     lcu_zero_state_block = LCUBlockEncodingZeroState(
-        select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
+        select=select, prepare=prepare
     )
     return lcu_zero_state_block
 
@@ -552,9 +555,8 @@ def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     black_box_lcu_zero_state_block = LCUBlockEncodingZeroState(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_zero_state_block
 

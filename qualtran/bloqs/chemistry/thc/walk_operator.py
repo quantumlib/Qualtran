@@ -47,11 +47,6 @@ def get_walk_operator_for_thc_ham(
     """
     t_l, _ = np.linalg.eigh(tpq)
     prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep)
-    overlap = eta.dot(eta.T)
-    norm_fac = np.diag(np.diag(overlap))
-    zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
-    lambda_t = np.sum(np.abs(t_l))  # Eq. 19
-    lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
     num_mu = zeta.shape[-1]
     num_spin_orb = 2 * tpq.shape[-1]
     sel = SelectTHC(num_mu, num_spin_orb, num_bits_theta, prep.keep_bitsize, kr1=kr1, kr2=kr2)
