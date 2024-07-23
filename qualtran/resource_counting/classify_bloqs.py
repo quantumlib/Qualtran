@@ -17,7 +17,7 @@ from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import sympy
 
-from qualtran import Adjoint, Bloq
+from qualtran import Adjoint, Bloq, Controlled
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
@@ -26,7 +26,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import GeneralizerT
 
 
 def _get_basic_bloq_classification() -> Dict[str, str]:
@@ -148,5 +148,10 @@ def bloq_is_clifford(b: Bloq):
 
 def bloq_is_rotation(b: Bloq):
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+
+    if isinstance(b, Controlled):
+        # TODO https://github.com/quantumlib/Qualtran/issues/878
+        #      explicit representation of all two-qubit rotations.
+        b = b.subbloq
 
     return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))
