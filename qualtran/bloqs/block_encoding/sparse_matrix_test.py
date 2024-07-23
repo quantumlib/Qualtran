@@ -237,3 +237,34 @@ def test_matrix_stress():
 
     from_tensors = bloq.tensor_contract() * alpha
     np.testing.assert_allclose(data, from_tensors, atol=0.03)
+
+
+def gen_vlasov_hamiltonian(n, alpha, m):
+    data = np.zeros((2**n, 2**n))
+    data[0][1] = data[1][0] = np.sqrt((1 + alpha) / 2)
+    for i in range(2, m + 1):
+        data[i - 1][i] = data[i][i - 1] = np.sqrt(i / 2)
+    data /= np.max(data)
+    return data
+
+
+def test_vlasov_explicit():
+    n = 3
+    k = 2
+    alpha = 2 / k**2
+    data = gen_vlasov_hamiltonian(n, alpha, m=(2**n - 1))
+    row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=1)
+    col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=1)
+    entry_oracle = ExplicitEntryOracle(system_bitsize=n, data=data, entry_bitsize=7)
+    bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    alpha = bloq.alpha
+
+    bb = BloqBuilder()
+    system = bb.add_register("system", n)
+    ancilla = cast(Soquet, bb.add(IntState(0, n + 1)))
+    system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+    bb.add(IntEffect(0, n + 1), val=ancilla)
+    bloq = bb.finalize(system=system)
+
+    from_tensors = bloq.tensor_contract() * alpha
+    np.testing.assert_allclose(data, from_tensors, atol=0.02)

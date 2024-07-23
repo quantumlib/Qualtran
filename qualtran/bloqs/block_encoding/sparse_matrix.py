@@ -394,8 +394,8 @@ class ExplicitEntryOracle(EntryOracle):
             raise ValueError("data must have dimension 2 ** self.system_bitsize")
         if not is_symbolic(self.entry_bitsize) and self.entry_bitsize < 1:
             raise ValueError("entry_bitsize must be >= 1")
-        if not all(x >= 0 and x < 1 for x in self.data.flat):
-            raise ValueError("entries must be >= 0 and < 1")
+        if not all(x >= 0 and x <= 1 for x in self.data.flat):
+            raise ValueError("entries must be >= 0 and <= 1")
 
     def build_composite_bloq(
         self, bb: BloqBuilder, q: SoquetT, i: SoquetT, j: SoquetT
