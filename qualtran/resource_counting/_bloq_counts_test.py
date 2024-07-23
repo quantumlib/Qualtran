@@ -58,7 +58,7 @@ def test_gate_counts():
 def test_qec_gates_cost():
     algo = make_example_costing_bloqs()
     gc = get_cost_value(algo, QECGatesCost())
-    assert gc == GateCounts(toffoli=100, t=2 * 2 * 10, clifford=2 * 10, depth=2)
+    assert gc == GateCounts(toffoli=100, t=2 * 2 * 10, clifford=2 * 10)
 
 
 @pytest.mark.parametrize(
@@ -78,12 +78,12 @@ def test_qec_gates_cost():
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            GateCounts(rotation=10, depth=1),
+            GateCounts(rotation=10),
         ],
         # Recursive
         [
             mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
-            GateCounts(and_bloq=2, depth=4, measurement=2, clifford=3),
+            GateCounts(and_bloq=2, measurement=2, clifford=3),
         ],
     ],
 )

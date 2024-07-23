@@ -103,18 +103,18 @@ def test_subtraction():
         [mcmt.And(), AlgorithmSummary(algorithm_qubits=3, toffoli_gates=1)],
         [
             basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
-            AlgorithmSummary(algorithm_qubits=1, rotation_gates=1),
+            AlgorithmSummary(algorithm_qubits=1, rotation_gates=1, rotation_circuit_depth=1),
         ],
         [
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            AlgorithmSummary(algorithm_qubits=10, rotation_gates=10, rotation_circuit_depth=1),
+            AlgorithmSummary(algorithm_qubits=10, rotation_gates=10, rotation_circuit_depth=10),
         ],
         [
             mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
             AlgorithmSummary(
-                algorithm_qubits=6, toffoli_gates=2, rotation_circuit_depth=4, measurements=2
+                algorithm_qubits=6, toffoli_gates=2, rotation_circuit_depth=0, measurements=2
             ),
         ],
     ],
