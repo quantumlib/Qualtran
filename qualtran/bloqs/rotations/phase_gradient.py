@@ -313,12 +313,18 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
-            out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
-            return out['ctrl'], out['x'], out['phase_grad']
+            if ctrl == self.controlled_by:
+                phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
+                    2**self.phase_bitsize
+                )
+            else:
+                phase_grad_out = phase_grad
+
+            return ctrl, x, phase_grad_out
 
         x, phase_grad = args
-        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
-        return out['x'], out['phase_grad']
+        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
+        return x, phase_grad_out
 
     def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
         x_fxp, phase_grad_fxp = kwargs['x'], kwargs['phase_grad']
@@ -541,8 +547,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     ) -> Tuple[
         Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
     ]:
-        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
-        return out['x'], out['phase_grad']
+        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
+        return x, phase_grad_out
 
     def on_classical_vals(self, x: Fxp, phase_grad: Fxp) -> Dict[str, Fxp]:
         x_ = _extract_raw_int_from_fxp(x)

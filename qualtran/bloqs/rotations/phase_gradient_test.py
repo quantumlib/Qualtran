@@ -86,14 +86,19 @@ def test_add_into_phase_grad():
     for x in range(2**x_bit):
         for phase_grad in range(2**phase_bit):
             phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
-            x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+            x_fxp = _fxp(x / 2**x_bit, x_bit)
             phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
             # Test Bloq style classical simulation.
-            assert bloq.call_classically(x=x, phase_grad=phase_grad) == (x, phase_grad_out)
+            assert bloq.call_classically(x=x_fxp, phase_grad=phase_fxp) == (
+                x_fxp,
+                phase_fxp + x_fxp,
+            )
+
             # Prepare basis states mapping for cirq-style simulation.
             input_state = int(f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2)
             output_state = int(f'{x:0{x_bit}b}' + f'{phase_grad_out:0{phase_bit}b}', 2)
             basis_map[input_state] = output_state
+
     # Test cirq style simulation.
     num_bits = x_bit + phase_bit
     assert len(basis_map) == len(set(basis_map.values()))
@@ -116,16 +121,18 @@ def test_add_into_phase_grad_controlled(controlled: int):
         for x in range(2**x_bit):
             for phase_grad in range(2**phase_bit):
                 phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
-                x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+                x_fxp = _fxp(x / 2**x_bit, x_bit)
                 if control == controlled:
-                    phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
+                    phase_grad_out_fxp = phase_fxp + x_fxp
+                    phase_grad_out = int(phase_grad_out_fxp.astype(float) * 2**phase_bit)
                 else:
+                    phase_grad_out_fxp = phase_fxp
                     phase_grad_out = phase_grad
                 # Test Bloq style classical simulation.
-                assert bloq.call_classically(ctrl=control, x=x, phase_grad=phase_grad) == (
+                assert bloq.call_classically(ctrl=control, x=x_fxp, phase_grad=phase_fxp) == (
                     control,
-                    x,
-                    phase_grad_out,
+                    x_fxp,
+                    phase_grad_out_fxp,
                 )
                 # Prepare basis states mapping for cirq-style simulation.
                 input_state = int(
