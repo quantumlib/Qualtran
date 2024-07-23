@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QBit,
     QDType,
+    QFxp,
     QUInt,
     Register,
     Side,
@@ -33,6 +34,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
+from qualtran.simulation.classical_sim import bits_to_ints
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -94,6 +96,9 @@ class Join(_BookkeepingBloq):
         ]
 
     def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
+        if isinstance(self.dtype, QFxp):
+            # TODO(#1095): support QFxp in classical simulation
+            return {'reg': bits_to_ints(reg)[0]}
         return {'reg': self.dtype.from_bits(reg.tolist())}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':

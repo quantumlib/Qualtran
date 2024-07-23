@@ -58,7 +58,7 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
-from qualtran.simulation.classical_sim import signed_addition
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -129,8 +129,10 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize
-        return {'a': a, 'b': signed_addition(int(a), int(b), N, not unsigned)}
+        return {
+            'a': a,
+            'b': add_ints(int(a), int(b), num_bits=int(b_bitsize), is_signed=not unsigned),
+        }
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -293,7 +295,11 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     ) -> Dict[str, 'ClassicalValT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
-        return {'a': a, 'b': b, 'c': signed_addition(int(a), int(b), 2 << self.bitsize, False)}
+        return {
+            'a': a,
+            'b': b,
+            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+        }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
@@ -418,10 +424,10 @@ class AddK(Bloq):
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': signed_addition(int(x), int(self.k), N, self.signed)}
+            return {'x': add_ints(int(x), int(self.k), num_bits=N, is_signed=self.signed)}
 
         if np.all(self.cvs == ctrls):
-            x = signed_addition(int(x), int(self.k), N, self.signed)
+            x = add_ints(int(x), int(self.k), num_bits=N, is_signed=self.signed)
 
         return {'ctrls': ctrls, 'x': x}
 
