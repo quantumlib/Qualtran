@@ -208,6 +208,7 @@ def test_symmetric_banded_row_column_matrix():
     np.testing.assert_allclose(test_matrix, from_tensors, atol=0.003)
 
 
+@pytest.mark.slow
 def test_matrix_stress():
     rs = np.random.RandomState(1234)
     f = lambda: rs.randint(0, 10) / 10
@@ -248,6 +249,7 @@ def gen_vlasov_hamiltonian(n, alpha, m):
     return data
 
 
+@pytest.mark.slow
 def test_vlasov_explicit():
     n = 3
     k = 2
