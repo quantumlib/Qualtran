@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -138,7 +138,7 @@ class PhaseGradientUnitary(GateWithRegisters):
             }
 
         ret: Set['BloqCountT'] = set()
-        for i in range(cast(int, self.bitsize)):
+        for i in range(self.bitsize):
             ret.add((gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize), 1))
         return ret
 

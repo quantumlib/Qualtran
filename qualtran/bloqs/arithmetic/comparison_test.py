@@ -298,7 +298,9 @@ def test_equals_a_constant():
     qlt_testing.assert_wire_symbols_match_expected(
         EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
     )
-    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(t=4 * (bitsize - 1))
+    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(
+        t=4 * (bitsize - 1), clifford=65
+    )
 
 
 @pytest.mark.notebook
