@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlledGate): # type: ignore[misc]
+class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =
