@@ -78,7 +78,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             Babbush et. al. (2018). Figure 1.
     """
 
-    prepare_gate: Union["PrepareOracle", "BlackBoxPrepare"]
+    prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
     control_val: Optional[int] = None
     global_phase: complex = 1
     eps: float = 1e-11
