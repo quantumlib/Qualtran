@@ -192,7 +192,7 @@ _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
     AddScaledValIntoPhaseReg.from_bitsize(2, 8, 1.3868682, 8),
     AddScaledValIntoPhaseReg.from_bitsize(4, 9, -19.0949456, 5),
     AddScaledValIntoPhaseReg.from_bitsize(6, 4, 2.5, 2),
-    AddScaledValIntoPhaseReg(QFxp(4, 0, signed=False), 4, 1.3868682, QFxp(8, 7, signed=False)),
+    AddScaledValIntoPhaseReg(QFxp(4, 4, signed=False), 4, 1.3868682, QFxp(8, 7, signed=False)),
 ]
 
 

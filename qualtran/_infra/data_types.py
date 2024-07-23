@@ -633,7 +633,7 @@ class QFxp(QDType):
     def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
         # is currently not propagated correctly through Bloqs
-        pass
+        assert isinstance(val, Fxp)
 
     def __str__(self):
         if self.signed:
