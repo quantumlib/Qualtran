@@ -13,16 +13,18 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, cast, Iterable, Iterator, Optional, Tuple
+from typing import Callable, cast, Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
-from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
-from qualtran.surface_code.magic_count import MagicCount
-from qualtran.surface_code.magic_state_factory import MagicStateFactory
-from qualtran.surface_code.multi_factory import MultiFactory
-from qualtran.surface_code.physical_cost import PhysicalCost
+from .data_block import DataBlock, SimpleDataBlock
+from .magic_state_factory import MagicStateFactory
+from .multi_factory import MultiFactory
+from .physical_cost import PhysicalCost
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import GateCounts
+    from qualtran.surface_code import DataBlock, LogicalErrorModel
 
 
 @frozen
@@ -40,21 +42,20 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
-    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
     # ----     Level 0    ---------
     # -------------------------------------------------------------------------------
 
-    def l0_state_injection_error(self, phys_err: float) -> float:
+    def l0_state_injection_error(self, error_model: 'LogicalErrorModel') -> float:
         """Error rate associated with the level-0 creation of a |T> state.
 
         By using the techniques of Ying Li (https://arxiv.org/abs/1410.7808), this can be
         done with approximately the same error rate as the underlying physical error rate.
         """
-        return phys_err
+        return error_model.physical_error
 
-    def l0_topo_error_t_gate(self, phys_err: float) -> float:
+    def l0_topo_error_t_gate(self, error_model: 'LogicalErrorModel') -> float:
         """Topological error associated with level-0 distillation.
 
         For a level-1 code distance of `d1`, this construction uses a `d1/2` distance code
@@ -63,74 +64,66 @@ class CCZ2TFactory(MagicStateFactory):
 
         # The chance of a logical error occurring within a lattice surgery unit cell at
         # code distance d1*0.5.
-        topo_error_per_unit_cell = self.qec_scheme.logical_error_rate(
-            physical_error_rate=phys_err, code_distance=self.distillation_l1_d // 2
-        )
+        topo_error_per_unit_cell = error_model(code_distance=self.distillation_l1_d // 2)
 
         # It takes approximately 100 L0 unit cells to get the injected state where
         # it needs to be and perform the T gate.
         return 100 * topo_error_per_unit_cell
 
-    def l0_error(self, phys_err: float) -> float:
+    def l0_error(self, error_model: 'LogicalErrorModel') -> float:
         """Chance of failure of a T gate performed with an injected (level-0) T state.
 
         As a simplifying approximation here (and elsewhere) we assume different sources
         of error are independent, and we merely add the probabilities.
         """
-        return self.l0_state_injection_error(phys_err) + self.l0_topo_error_t_gate(phys_err)
+        return self.l0_state_injection_error(error_model) + self.l0_topo_error_t_gate(error_model)
 
     # -------------------------------------------------------------------------------
     # ----     Level 1    ---------
     # -------------------------------------------------------------------------------
 
-    def l1_topo_error_factory(self, phys_err: float) -> float:
+    def l1_topo_error_factory(self, error_model: 'LogicalErrorModel') -> float:
         """Topological error associated with a L1 T factory."""
 
         # The L1 T factory uses approximately 1000 L1 unit cells.
-        return 1000 * self.qec_scheme.logical_error_rate(
-            physical_error_rate=phys_err, code_distance=self.distillation_l1_d
-        )
+        return 1000 * error_model(code_distance=self.distillation_l1_d)
 
-    def l1_topo_error_t_gate(self, phys_err: float) -> float:
+    def l1_topo_error_t_gate(self, error_model: 'LogicalErrorModel') -> float:
         # It takes approximately 100 L1 unit cells to get the L1 state produced by the
         # factory to where it needs to be and perform the T gate.
-        return 100 * self.qec_scheme.logical_error_rate(
-            physical_error_rate=phys_err, code_distance=self.distillation_l1_d
-        )
+        return 100 * error_model(code_distance=self.distillation_l1_d)
 
-    def l1_distillation_error(self, phys_err: float) -> float:
+    def l1_distillation_error(self, error_model: 'LogicalErrorModel') -> float:
         """The error due to level-0 faulty T states making it through distillation undetected.
 
         The level 1 distillation procedure detects any two errors. There are 35 weight-three
         errors that can make it through undetected.
         """
-        return 35 * self.l0_error(phys_err) ** 3
+        return 35 * self.l0_error(error_model) ** 3
 
-    def l1_error(self, phys_err: float) -> float:
+    def l1_error(self, error_model: 'LogicalErrorModel') -> float:
         """Chance of failure of a T gate performed with a T state produced from the L1 factory."""
         return (
-            self.l1_topo_error_factory(phys_err)
-            + self.l1_topo_error_t_gate(phys_err)
-            + self.l1_distillation_error(phys_err)
+            self.l1_topo_error_factory(error_model)
+            + self.l1_topo_error_t_gate(error_model)
+            + self.l1_distillation_error(error_model)
         )
 
     # -------------------------------------------------------------------------------
     # ----     Level 2    ---------
     # -------------------------------------------------------------------------------
 
-    def l2_error(self, phys_err: float) -> float:
+    def l2_error(self, error_model: 'LogicalErrorModel') -> float:
         """Chance of failure of the level two factory.
 
         This is the chance of failure of a CCZ gate or a pair of T gates performed with a CCZ state.
         """
 
         # The L2 CCZ factory and catalyzed T factory both use approximately 1000 L2 unit cells.
-        l2_topo_error_factory = 1000 * self.qec_scheme.logical_error_rate(
-            physical_error_rate=phys_err, code_distance=self.distillation_l2_d
-        )
+        l2_topo_error_factory = 1000 * error_model(self.distillation_l2_d)
 
         # Distillation error for this level.
-        l2_distillation_error = 28 * self.l1_error(phys_err) ** 2
+        l2_distillation_error = 28 * self.l1_error(error_model) ** 2
 
         return l2_topo_error_factory + l2_distillation_error
 
@@ -138,21 +131,27 @@ class CCZ2TFactory(MagicStateFactory):
     # ----     Totals    ---------
     # -------------------------------------------------------------------------------
 
-    def footprint(self) -> int:
+    def n_physical_qubits(self) -> int:
         l1 = 4 * 8 * 2 * self.distillation_l1_d**2
         l2 = 4 * 8 * 2 * self.distillation_l2_d**2
         return 6 * l1 + l2
 
-    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
+    def factory_error(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> float:
         """Error resulting from the magic state distillation part of the computation."""
-        n_ccz_states = n_magic.n_ccz + math.ceil(n_magic.n_t / 2)
-        return self.l2_error(phys_err) * n_ccz_states
+        counts = n_logical_gates.total_t_and_ccz_count()
+        total_ccz_states = counts['n_ccz'] + math.ceil(counts['n_t'] / 2)
+        return self.l2_error(logical_error_model) * total_ccz_states
 
-    def n_cycles(self, n_magic: MagicCount, phys_err: float = 1e-3) -> int:
+    def n_cycles(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> int:
         """The number of error-correction cycles to distill enough magic states."""
         distillation_d = max(2 * self.distillation_l1_d + 1, self.distillation_l2_d)
-        n_ccz_states = n_magic.n_ccz + math.ceil(n_magic.n_t / 2)
-        catalyzations = math.ceil(n_magic.n_t / 2)
+        counts = n_logical_gates.total_t_and_ccz_count()
+        n_ccz_states = counts['n_ccz'] + math.ceil(counts['n_t'] / 2)
+        catalyzations = math.ceil(counts['n_t'] / 2)
 
         # Naive depth of 8.5, but can be overlapped to effective depth of 5.5
         # See section 2, paragraph 2 of the reference.
@@ -163,7 +162,7 @@ class CCZ2TFactory(MagicStateFactory):
 
 def get_ccz2t_costs(
     *,
-    n_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -175,27 +174,33 @@ def get_ccz2t_costs(
     Note that this function can return failure probabilities larger than 1.
 
     Args:
-        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
+        n_logical_gates: The number of algorithm logical gates.
         n_algo_qubits: Number of algorithm logical qubits.
         phys_err: The physical error rate of the device.
         cycle_time_us: The number of microseconds it takes to execute a surface code cycle.
         factory: magic state factory configuration. Used to evaluate distillation error and cost.
         data_block: data block configuration. Used to evaluate data error and footprint.
     """
-    err_model = qec.LogicalErrorModel(
-        qec_scheme=qec.FowlerSuperconductingQubits, physical_error=phys_err
+    from qualtran.surface_code import FowlerSuperconductingQubits, LogicalErrorModel
+
+    err_model = LogicalErrorModel(qec_scheme=FowlerSuperconductingQubits, physical_error=phys_err)
+    distillation_error = factory.factory_error(
+        n_logical_gates=n_logical_gates, logical_error_model=err_model
     )
-    distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
-    n_generation_cycles = factory.n_cycles(n_magic=n_magic, phys_err=phys_err)
+    n_generation_cycles = factory.n_cycles(
+        n_logical_gates=n_logical_gates, logical_error_model=err_model
+    )
     n_consumption_cycles = data_block.n_cycles(
-        n_logical_gates=n_magic, logical_error_model=err_model
+        n_logical_gates=n_logical_gates, logical_error_model=err_model
     )
     n_cycles = max(n_generation_cycles, n_consumption_cycles)
     data_error = data_block.data_error(
         n_algo_qubits=n_algo_qubits, n_cycles=int(n_cycles), logical_error_model=err_model
     )
     failure_prob = distillation_error + data_error
-    footprint = factory.footprint() + data_block.n_physical_qubits(n_algo_qubits=n_algo_qubits)
+    footprint = factory.n_physical_qubits() + data_block.n_physical_qubits(
+        n_algo_qubits=n_algo_qubits
+    )
     duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
     return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
@@ -203,7 +208,7 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -215,7 +220,7 @@ def get_ccz2t_costs_from_error_budget(
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 
     Args:
-        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
+        n_logical_gates: Number of algorithm logical gates.
         n_algo_qubits: Number of algorithm logical qubits.
         phys_err: The physical error rate of the device. This sets the suppression
             factor for increasing code distance.
@@ -242,8 +247,13 @@ def get_ccz2t_costs_from_error_budget(
     if factory is None:
         factory = CCZ2TFactory()
 
-    distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
-    n_cycles = factory.n_cycles(n_magic=n_magic, phys_err=phys_err)
+    from qualtran.surface_code import FowlerSuperconductingQubits, LogicalErrorModel
+
+    err_model = LogicalErrorModel(qec_scheme=FowlerSuperconductingQubits, physical_error=phys_err)
+    distillation_error = factory.factory_error(
+        n_logical_gates=n_logical_gates, logical_error_model=err_model
+    )
+    n_cycles = factory.n_cycles(n_logical_gates=n_logical_gates, logical_error_model=err_model)
 
     if data_block is None:
         # Use "left over" budget for data qubits.
@@ -255,13 +265,13 @@ def get_ccz2t_costs_from_error_budget(
         n_logical_qubits = math.ceil((1 + routing_overhead) * n_algo_qubits)
         data_unit_cells = n_logical_qubits * n_cycles
         target_err_per_round = err_budget / data_unit_cells
-        data_d = qec.FowlerSuperconductingQubits.code_distance_from_budget(
+        data_d = FowlerSuperconductingQubits.code_distance_from_budget(
             physical_error_rate=phys_err, budget=target_err_per_round
         )
         data_block = SimpleDataBlock(data_d=data_d, routing_overhead=routing_overhead)
 
     return get_ccz2t_costs(
-        n_magic=n_magic,
+        n_logical_gates=n_logical_gates,
         n_algo_qubits=n_algo_qubits,
         phys_err=phys_err,
         cycle_time_us=cycle_time_us,
@@ -282,13 +292,14 @@ def iter_ccz2t_factories(
             automatically chosen as 2 + l1_distance, ensuring l2_distance > l1_distance.
         n_factories (int, optional): Number of factories to be used in parallel.
     """
+    factory: Callable[[int, int], MagicStateFactory]
     if n_factories == 1:
         factory = CCZ2TFactory
     elif n_factories > 1:
 
-        def factory(distillation_l1_d, distillation_l2_d):  # type: ignore[misc]
+        def factory(distillation_l1_d: int, distillation_l2_d: int) -> MagicStateFactory:
             base_factory = CCZ2TFactory(
-                distillation_l1_d=l1_distance, distillation_l2_d=l2_distance
+                distillation_l1_d=distillation_l1_d, distillation_l2_d=distillation_l2_d
             )
             return MultiFactory(base_factory=base_factory, n_factories=n_factories)
 
@@ -307,7 +318,7 @@ def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
 
 def get_ccz2t_costs_from_grid_search(
     *,
-    n_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -316,10 +327,10 @@ def get_ccz2t_costs_from_grid_search(
     data_block_iter: Iterable[DataBlock] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours),
 ) -> Tuple[PhysicalCost, MagicStateFactory, SimpleDataBlock]:
-    """Grid search over parameters to minimize space time volume.
+    """Grid search over parameters to minimize the space-time volume.
 
     Args:
-        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
+        n_logical_gates: Number of algorithm logical gates.
         n_algo_qubits: Number of algorithm logical qubits.
         phys_err: The physical error rate of the device. This sets the suppression
             factor for increasing code distance.
@@ -343,7 +354,7 @@ def get_ccz2t_costs_from_grid_search(
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(
-                n_magic=n_magic,
+                n_logical_gates=n_logical_gates,
                 n_algo_qubits=n_algo_qubits,
                 phys_err=phys_err,
                 cycle_time_us=cycle_time_us,

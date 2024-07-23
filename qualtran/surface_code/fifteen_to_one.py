@@ -12,20 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import lru_cache
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
-from qualtran.surface_code.quantum_error_correction_scheme_summary import (
-    FowlerSuperconductingQubits,
-    QuantumErrorCorrectionSchemeSummary,
-)
-from qualtran.surface_code.reference import Reference
 from qualtran.surface_code.t_factory_utils import NoisyPauliRotation, storage_error
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import GateCounts
+    from qualtran.surface_code import LogicalErrorModel
 
 
 @frozen
@@ -33,58 +31,61 @@ class FifteenToOne(MagicStateFactory):
     """15-to-1 Magic T state factory.
 
     reference:
-        [Magic State Distillation: Not as Costly as You Think] https://arxiv.org/abs/1905.06903
+        [Magic State Distillation: Not as Costly as You Think](https://arxiv.org/abs/1905.06903).
 
     Attributes:
         d_X: Side length of the surface code along which X measurements happen.
         d_Z: Side length of the surface code along which Z measurements happen.
         d_m: Number of code cycles used in lattice surgery.
         qec: Quantum error correction scheme being used.
-        reference: A description of the source of the factory.
     """
 
     d_X: int
     d_Z: int
     d_m: int
-    qec: QuantumErrorCorrectionSchemeSummary = FowlerSuperconductingQubits
-    reference: Optional[Reference] = None
 
     def __attrs_post_init__(self):
         assert 0 < self.d_X <= 3 * self.d_m
         assert self.d_m > 0
         assert self.d_Z > 0
 
-    def footprint(self) -> int:
+    def n_physical_qubits(self) -> int:
         # source: page 11 of https://arxiv.org/abs/1905.06903
         return 2 * (self.d_X + 4 * self.d_Z) * 3 * self.d_X + 4 * self.d_m
 
     @lru_cache(8)
-    def _final_state(self, phys_err: float):
-        factory = _build_factory(phys_err, self.d_X, self.d_Z, self.d_m, self.qec)
+    def _final_state(self, logi_err_model: 'LogicalErrorModel'):
+        factory = _build_factory(
+            d_X=self.d_X, d_Z=self.d_Z, d_m=self.d_m, logical_error_model=logi_err_model
+        )
         return (
             cirq.DensityMatrixSimulator(dtype=np.complex128).simulate(factory).final_density_matrix
         )
 
     @lru_cache(8)
-    def p_fail(self, phys_err: float) -> float:
+    def p_fail(self, logical_error_model: 'LogicalErrorModel') -> float:
         projector = np.kron(np.eye(2), np.ones((16, 16)) / 16)
-        return np.real_if_close(1 - np.trace(projector @ self._final_state(phys_err))).item()
+        return np.real_if_close(
+            1 - np.trace(projector @ self._final_state(logical_error_model))
+        ).item()
 
     @lru_cache(8)
-    def p_out(self, phys_err: float) -> float:
+    def p_out(self, logical_error_model: 'LogicalErrorModel') -> float:
         # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
         projector = np.kron(np.eye(2), np.ones((16, 16)) / 16)
         project_state = (
             1
-            / (1 - self.p_fail(phys_err))
-            * (projector @ self._final_state(phys_err) @ projector.T.conj())
+            / (1 - self.p_fail(logical_error_model))
+            * (projector @ self._final_state(logical_error_model) @ projector.T.conj())
         )
         # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
         T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(2)
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real_if_close(1 - np.trace(project_state @ target_density)).item()
 
-    def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int:
+    def n_cycles(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> int:
         """The number of cycles (time) required to produce the requested number of magic states.
 
         Unlike the same method for other factories. This method reports the *expected* number of cycles
@@ -92,17 +93,19 @@ class FifteenToOne(MagicStateFactory):
 
         reference: page 11 of https://arxiv.org/abs/1905.06903
         """
-        num_t = n_magic.n_t + 4 * n_magic.n_ccz
-        return np.ceil(num_t * 6 * self.d_m / (1 - self.p_fail(phys_err)))
+        num_t = n_logical_gates.total_t_count()
+        return np.ceil(num_t * 6 * self.d_m / (1 - self.p_fail(logical_error_model)))
 
-    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
+    def factory_error(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> float:
         """The total error expected from distilling magic states with a given physical error rate."""
-        num_t = n_magic.n_t + 4 * n_magic.n_ccz
-        return self.p_out(phys_err) * num_t
+        num_t = n_logical_gates.total_t_count()
+        return self.p_out(logical_error_model) * num_t
 
 
 def _build_factory(
-    phys_err: float, d_X: int, d_Z: int, d_m: int, qec: QuantumErrorCorrectionSchemeSummary
+    *, d_X: int, d_Z: int, d_m: int, logical_error_model: 'LogicalErrorModel'
 ) -> cirq.Circuit:
     """Builds the 15-to-1 factory with its associated cost model.
 
@@ -123,9 +126,10 @@ def _build_factory(
         The factory as a cirq circuit.
     """
     qs = cirq.LineQubit.range(5)
-    px = qec.logical_error_rate(d_X, phys_err)
-    pz = qec.logical_error_rate(d_Z, phys_err)
-    pm = qec.logical_error_rate(d_m, phys_err)
+    px = logical_error_model(d_X)
+    pz = logical_error_model(d_Z)
+    pm = logical_error_model(d_m)
+    phys_err = logical_error_model.physical_error
 
     factory = cirq.Circuit.from_moments(
         cirq.H.on_each(qs),
@@ -380,6 +384,5 @@ def _build_factory(
     return factory
 
 
-FifteenToOne733 = FifteenToOne(7, 3, 3, reference=Reference(url='https://arxiv.org/abs/1905.06903'))
-
-FifteenToOne933 = FifteenToOne(9, 3, 3, reference=Reference(url='https://arxiv.org/abs/1905.06903'))
+FifteenToOne733 = FifteenToOne(7, 3, 3)
+FifteenToOne933 = FifteenToOne(9, 3, 3)

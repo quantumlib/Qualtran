@@ -21,6 +21,7 @@ from qualtran.surface_code.ccz2t_cost_model import (
 )
 from qualtran.surface_code.data_block import (
     CompactDataBlock,
+    DataBlock,
     FastDataBlock,
     IntermediateDataBlock,
     SimpleDataBlock,
