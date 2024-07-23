@@ -26,11 +26,12 @@ from qualtran._infra.gate_with_registers import (
     SpecializedSingleQubitControlledGate,
     total_bits,
 )
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
 )
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
