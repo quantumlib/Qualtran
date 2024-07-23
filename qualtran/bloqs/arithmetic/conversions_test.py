@@ -21,6 +21,7 @@ from qualtran.bloqs.arithmetic.conversions import (
     _signed_to_twos,
     _to_contg_index,
     _to_fxp,
+    _to_fxp_resize,
     SignedIntegerToTwosComplement,
     ToContiguousIndex,
     ToFxp,
@@ -61,6 +62,10 @@ def test_to_fxp(bloq_autotester):
     bloq_autotester(_to_fxp)
 
 
+def test_to_fxp_resize(bloq_autotester):
+    bloq_autotester(_to_fxp_resize)
+
+
 def test_to_fxp_checks():
     with pytest.raises(ValueError):
         _ = ToFxp(QUInt(6), QFxp(5, 3))
@@ -78,6 +83,17 @@ def test_to_fxp_correct():
         c = a
         want[(a << 4) | (c ^ b)][a_b] = 1
     got = _to_fxp().tensor_contract()
+    np.testing.assert_allclose(got, want)
+
+
+def test_to_fxp_resize_correct():
+    tot = 1 << 10
+    want = np.zeros((tot, tot))
+    for a_b in range(tot):
+        a, b = a_b >> 6, a_b & ((1 << 6) - 1)
+        c = a << 1
+        want[(a << 6) | (c ^ b)][a_b] = 1
+    got = _to_fxp_resize().tensor_contract()
     np.testing.assert_allclose(got, want)
 
 

@@ -221,4 +221,12 @@ def _to_fxp() -> ToFxp:
     return to_fxp
 
 
-_TO_FXP = BloqDocSpec(bloq_cls=ToFxp, examples=[_to_fxp])
+@bloq_example
+def _to_fxp_resize() -> ToFxp:
+    from qualtran import QFxp, QUInt
+
+    to_fxp_resize = ToFxp(QUInt(4), QFxp(6, 3, False), 2)
+    return to_fxp_resize
+
+
+_TO_FXP = BloqDocSpec(bloq_cls=ToFxp, examples=[_to_fxp, _to_fxp_resize])
