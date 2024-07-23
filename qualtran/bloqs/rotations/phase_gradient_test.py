@@ -77,24 +77,37 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate), atol=eps)
 
 
-def test_add_into_phase_grad():
+@pytest.mark.slow
+def test_add_into_phase_grad_classical_sim():
     from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit)
+    for x in range(2**x_bit):
+        for phase_grad in range(2**phase_bit):
+            phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
+            x_fxp = _fxp(x / 2**x_bit, x_bit)
+            assert bloq.call_classically(x=x_fxp, phase_grad=phase_fxp) == (
+                x_fxp,
+                phase_fxp + x_fxp,
+            )
+
+
+@pytest.mark.slow
+def test_add_into_phase_grad_unitary():
+    from qualtran.bloqs.rotations.phase_gradient import _fxp
+
+    x_bit, phase_bit = 4, 7
+    bloq = AddIntoPhaseGrad(x_bit, phase_bit)
+
+    # Prepare basis states mapping for cirq-style simulation.
     basis_map: Dict[int, int] = {}
     for x in range(2**x_bit):
         for phase_grad in range(2**phase_bit):
             phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
             x_fxp = _fxp(x / 2**x_bit, x_bit)
             phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
-            # Test Bloq style classical simulation.
-            assert bloq.call_classically(x=x_fxp, phase_grad=phase_fxp) == (
-                x_fxp,
-                phase_fxp + x_fxp,
-            )
 
-            # Prepare basis states mapping for cirq-style simulation.
             input_state = int(f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2)
             output_state = int(f'{x:0{x_bit}b}' + f'{phase_grad_out:0{phase_bit}b}', 2)
             basis_map[input_state] = output_state
@@ -104,16 +117,48 @@ def test_add_into_phase_grad():
     assert len(basis_map) == len(set(basis_map.values()))
     circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
+
+
+def test_add_into_phase_grad_t_complexity():
+    x_bit, phase_bit = 4, 7
+    bloq = AddIntoPhaseGrad(x_bit, phase_bit)
     ((toffoli, n),) = bloq.bloq_counts().items()
     assert bloq.t_complexity() == n * toffoli.t_complexity()
 
 
+@pytest.mark.slow
+@pytest.mark.parametrize('controlled', [0, 1])
+def test_add_into_phase_grad_controlled_classical_sim(controlled: int):
+    from qualtran.bloqs.rotations.phase_gradient import _fxp
+
+    x_bit, phase_bit = 4, 7
+    bloq = AddIntoPhaseGrad(x_bit, phase_bit, controlled_by=controlled)
+
+    for control in range(2):
+        for x in range(2**x_bit):
+            for phase_grad in range(2**phase_bit):
+                phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
+                x_fxp = _fxp(x / 2**x_bit, x_bit)
+                if control == controlled:
+                    phase_grad_out_fxp = phase_fxp + x_fxp
+                else:
+                    phase_grad_out_fxp = phase_fxp
+                assert bloq.call_classically(ctrl=control, x=x_fxp, phase_grad=phase_fxp) == (
+                    control,
+                    x_fxp,
+                    phase_grad_out_fxp,
+                )
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize('controlled', [0, 1])
 def test_add_into_phase_grad_controlled(controlled: int):
     from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit, controlled_by=controlled)
+
+    # Prepare basis states mapping for cirq-style simulation.
     basis_map: Dict[int, int] = {}
     num_bits = 1 + x_bit + phase_bit
     expected_unitary = np.zeros((2**num_bits, 2**num_bits))
@@ -126,15 +171,7 @@ def test_add_into_phase_grad_controlled(controlled: int):
                     phase_grad_out_fxp = phase_fxp + x_fxp
                     phase_grad_out = int(phase_grad_out_fxp.astype(float) * 2**phase_bit)
                 else:
-                    phase_grad_out_fxp = phase_fxp
                     phase_grad_out = phase_grad
-                # Test Bloq style classical simulation.
-                assert bloq.call_classically(ctrl=control, x=x_fxp, phase_grad=phase_fxp) == (
-                    control,
-                    x_fxp,
-                    phase_grad_out_fxp,
-                )
-                # Prepare basis states mapping for cirq-style simulation.
                 input_state = int(
                     f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2
                 )
@@ -143,6 +180,7 @@ def test_add_into_phase_grad_controlled(controlled: int):
                 )
                 basis_map[input_state] = output_state
                 expected_unitary[output_state, input_state] = 1
+
     # Test cirq style simulation.
     assert len(basis_map) == len(set(basis_map.values()))
     circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
@@ -183,6 +221,10 @@ def test_add_scaled_val_into_phase_reg_unitary(bloq: AddScaledValIntoPhaseReg):
     circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
     decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
     np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
+
+
+@pytest.mark.parametrize('bloq', _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES)
+def test_add_scaled_val_into_phase_reg_unitary_t_complexity(bloq: AddScaledValIntoPhaseReg):
     ((add_into_phase, n),) = bloq.bloq_counts().items()
     assert bloq.t_complexity() == n * add_into_phase.t_complexity()
 
