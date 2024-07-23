@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QBit,
     QDType,
+    QFxp,
     QUInt,
     Register,
     Side,
@@ -95,7 +96,10 @@ class Join(_BookkeepingBloq):
         ]
 
     def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
-        return {'reg': bits_to_ints(reg)[0]}
+        if isinstance(self.dtype, QFxp):
+            # TODO(#1095): support QFxp in classical simulation
+            return {'reg': bits_to_ints(reg)[0]}
+        return {'reg': self.dtype.from_bits(reg.tolist())}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

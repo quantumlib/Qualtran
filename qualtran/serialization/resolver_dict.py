@@ -17,6 +17,7 @@ from typing import Type
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.conversions.contiguous_index
 import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
 import qualtran.bloqs.arithmetic.conversions.sign_extension
@@ -25,6 +26,7 @@ import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
+import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
 import qualtran.bloqs.basic_gates.identity
@@ -40,10 +42,10 @@ import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
-import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.block_encoding.product
+import qualtran.bloqs.block_encoding.sparse_matrix
 import qualtran.bloqs.block_encoding.tensor_product
 import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
@@ -112,6 +114,7 @@ import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
@@ -149,6 +152,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.addition.Add": qualtran.bloqs.arithmetic.addition.Add,
     "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder,
     "qualtran.bloqs.arithmetic.addition.AddK": qualtran.bloqs.arithmetic.AddK,
+    "qualtran.bloqs.arithmetic.bitwise.BitwiseNot": qualtran.bloqs.arithmetic.bitwise.BitwiseNot,
     "qualtran.bloqs.arithmetic.bitwise.Xor": qualtran.bloqs.arithmetic.bitwise.Xor,
     "qualtran.bloqs.arithmetic.bitwise.XorK": qualtran.bloqs.arithmetic.bitwise.XorK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
@@ -159,11 +163,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LessThanEqual": qualtran.bloqs.arithmetic.comparison.LessThanEqual,
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
+    "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement,
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend": qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend,
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate": qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
+    "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber": qualtran.bloqs.arithmetic.multiplication.InvertRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,
     "qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct": qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct,
     "qualtran.bloqs.arithmetic.multiplication.Product": qualtran.bloqs.arithmetic.multiplication.Product,
@@ -178,10 +184,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
     "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
+    "qualtran.bloqs.arithmetic.subtraction.Subtract": qualtran.bloqs.arithmetic.subtraction.Subtract,
+    "qualtran.bloqs.arithmetic.subtraction.SubtractFrom": qualtran.bloqs.arithmetic.subtraction.SubtractFrom,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
     "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
+    "qualtran.bloqs.basic_gates.hadamard.CHadamard": qualtran.bloqs.basic_gates.hadamard.CHadamard,
     "qualtran.bloqs.basic_gates.on_each.OnEach": qualtran.bloqs.basic_gates.on_each.OnEach,
     "qualtran.bloqs.basic_gates.rotation.CZPowGate": qualtran.bloqs.basic_gates.rotation.CZPowGate,
     "qualtran.bloqs.basic_gates.rotation.Rx": qualtran.bloqs.basic_gates.rotation.Rx,
@@ -204,6 +213,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.x_basis.PlusState": qualtran.bloqs.basic_gates.x_basis.PlusState,
     "qualtran.bloqs.basic_gates.x_basis.XGate": qualtran.bloqs.basic_gates.x_basis.XGate,
     "qualtran.bloqs.basic_gates.y_gate.YGate": qualtran.bloqs.basic_gates.y_gate.YGate,
+    "qualtran.bloqs.basic_gates.y_gate.CYGate": qualtran.bloqs.basic_gates.y_gate.CYGate,
     "qualtran.bloqs.basic_gates.z_basis.IntEffect": qualtran.bloqs.basic_gates.z_basis.IntEffect,
     "qualtran.bloqs.basic_gates.z_basis.IntState": qualtran.bloqs.basic_gates.z_basis.IntState,
     "qualtran.bloqs.basic_gates.z_basis.OneEffect": qualtran.bloqs.basic_gates.z_basis.OneEffect,
@@ -221,7 +231,11 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
     "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": qualtran.bloqs.block_encoding.linear_combination.LinearCombination,
-    "qualtran.bloqs.block_encoding.phase.phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.phase.Phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle,
+    "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix": qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix,
+    "qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle": qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle,
+    "qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
@@ -333,6 +347,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
     "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq": qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq,
+    "qualtran.bloqs.multiplexers.select_base.SelectOracle": qualtran.bloqs.multiplexers.select_base.SelectOracle,
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
@@ -360,9 +375,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
-    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle,
-    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
+    "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient": qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient,

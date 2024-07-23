@@ -30,7 +30,8 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
@@ -62,6 +63,7 @@ Bloqs Library
     arithmetic/addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
+    arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/conversions/conversions.ipynb

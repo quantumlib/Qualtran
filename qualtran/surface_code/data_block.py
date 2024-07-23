@@ -20,11 +20,7 @@ from attrs import frozen
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import GateCounts
-    from qualtran.surface_code import (
-        LogicalErrorModel,
-        MagicCount,
-        QuantumErrorCorrectionSchemeSummary,
-    )
+    from qualtran.surface_code import LogicalErrorModel, QuantumErrorCorrectionSchemeSummary
 
 
 class DataBlock(metaclass=abc.ABCMeta):
@@ -87,7 +83,7 @@ class DataBlock(metaclass=abc.ABCMeta):
         """
 
     def n_cycles(
-        self, n_logical_gates: 'MagicCount', logical_error_model: 'LogicalErrorModel'
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
     ) -> int:
         """The number of surface code cycles to apply the number of gates to the data block.
 

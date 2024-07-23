@@ -28,7 +28,9 @@ from qualtran import (
     Soquet,
 )
 from qualtran.bloqs.basic_gates import (
+    CHadamard,
     CNOT,
+    CZ,
     Hadamard,
     Identity,
     IntEffect,
@@ -74,9 +76,9 @@ def test_bloq_has_consistent_decomposition():
 def test_call_graph():
     _, sigma = _apply_lth_bloq().call_graph(generalizer=ignore_split_join)
     assert sigma == {
-        Controlled(Hadamard(), CtrlSpec()): 1,
+        CHadamard(): 1,
         Controlled(TGate(), CtrlSpec()): 1,
-        Controlled(ZGate(), CtrlSpec()): 1,
+        CZ(): 1,
         CNOT(): 4,
         TGate(): 12,
         ArbitraryClifford(2): 45,
