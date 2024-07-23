@@ -42,6 +42,7 @@ import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
+import qualtran.bloqs.block_encoding.prepare_identity
 import qualtran.bloqs.block_encoding.product
 import qualtran.bloqs.block_encoding.sparse_matrix
 import qualtran.bloqs.block_encoding.tensor_product
@@ -124,7 +125,6 @@ import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
-import qualtran.bloqs.reflections.prepare_identity
 import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
@@ -221,6 +221,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
+    "qualtran.bloqs.block_encoding.prepare_identity.PrepareIdentity": qualtran.bloqs.block_encoding.prepare_identity.PrepareIdentity,
     "qualtran.bloqs.block_encoding.unitary.Unitary": qualtran.bloqs.block_encoding.unitary.Unitary,
     "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
@@ -351,7 +352,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT": qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT,
     "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
     "qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator,
-    "qualtran.bloqs.reflections.prepare_identity.PrepareIdentity": qualtran.bloqs.reflections.prepare_identity.PrepareIdentity,
     "qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient,

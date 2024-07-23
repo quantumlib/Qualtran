@@ -34,8 +34,8 @@ from qualtran import (
 )
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.block_encoding.prepare_identity import PrepareIdentity
 from qualtran.bloqs.bookkeeping import Partition
-from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
@@ -129,7 +129,7 @@ class BlackBoxSelect(Bloq):
 
 
 @attrs.frozen
-class BlackBoxPrepare(PrepareOracle):
+class BlackBoxPrepare(Bloq):
     """Provide a black-box interface to `Prepare` bloqs.
 
     This wrapper uses `Partition` to combine descriptive selection
@@ -162,6 +162,10 @@ class BlackBoxPrepare(PrepareOracle):
     @cached_property
     def selection_bitsize(self) -> int:
         return self.selection_registers[0].bitsize
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> Optional[SymbolicFloat]:
+        return self.prepare.l1_norm_of_coeffs
 
     @cached_property
     def signature(self) -> Signature:

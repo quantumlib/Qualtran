@@ -38,6 +38,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+    BlackBoxPrepare,
     LCUBlockEncoding,
     LCUBlockEncodingZeroState,
 )
@@ -161,7 +162,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @cached_property
-    def prepare(self) -> PrepareOracle:
+    def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
         """Get the Prepare bloq if appropriate from the block encoding."""
         if isinstance(self.block_encoding, (LCUBlockEncoding, LCUBlockEncodingZeroState)):
             return self.block_encoding.prepare

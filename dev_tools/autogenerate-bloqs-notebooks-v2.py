@@ -64,6 +64,7 @@ import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
+import qualtran.bloqs.block_encoding.prepare_identity
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
@@ -103,7 +104,6 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
-import qualtran.bloqs.reflections.prepare_identity
 import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
@@ -636,6 +636,7 @@ OTHER: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.prepare_identity._PREPARE_IDENTITY_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
             qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
@@ -650,10 +651,7 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Reflections',
         module=qualtran.bloqs.reflections,
-        bloq_specs=[
-            qualtran.bloqs.reflections.prepare_identity._PREPARE_IDENTITY_DOC,
-            qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC,
-        ],
+        bloq_specs=[qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC],
         directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(
