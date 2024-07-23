@@ -23,7 +23,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting.generalizers import (

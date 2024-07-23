@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
