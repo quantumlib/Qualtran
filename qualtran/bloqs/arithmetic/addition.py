@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
 from functools import cached_property
 from typing import (
     Dict,
@@ -59,6 +58,7 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -129,19 +129,10 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize
-        if unsigned:
-            return {'a': a, 'b': int((a + b) % N)}
-
-        # Addition of signed integers can result in overflow. In most classical programming languages (e.g. C++)
-        # what happens when an overflow happens is left as an implementation detail for compiler designers.
-        # However for quantum subtraction the operation should be unitary and that means that the unitary of
-        # the bloq should be a permutation matrix.
-        # If we hold `a` constant then the valid range of values of `b` [-N/2, N/2) gets shifted forward or backwards
-        # by `a`. to keep the operation unitary overflowing values wrap around. this is the same as moving the range [0, N)
-        # by the same amount modulu $N$. that is add N/2 before addition and then remove it.
-        half_n = N >> 1
-        return {'a': a, 'b': int(a + b + half_n) % N - half_n}
+        return {
+            'a': a,
+            'b': add_ints(int(a), int(b), num_bits=int(b_bitsize), is_signed=not unsigned),
+        }
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -302,7 +293,13 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': b, 'c': a + b}
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        return {
+            'a': a,
+            'b': b,
+            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+        }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
@@ -421,14 +418,18 @@ class AddK(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
         N = 2**self.bitsize
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': int(math.fmod(x + self.k, N))}
+            return {
+                'x': add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
+            }
 
         if np.all(self.cvs == ctrls):
-            x = int(math.fmod(x + self.k, N))
+            x = add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
 
         return {'ctrls': ctrls, 'x': x}
 
@@ -530,8 +531,8 @@ class AddK(Bloq):
         def _add_ctrled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            ctrl, x = bb.add_t(bloq, ctrls=ctrl_soqs[0], **in_soqs)
-            return (ctrl,), (x,)
+            ctrls, x = bb.add_t(bloq, ctrls=np.asarray(ctrl_soqs), **in_soqs)
+            return np.asarray(ctrls).tolist(), (x,)
 
         return bloq, _add_ctrled
 

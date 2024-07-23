@@ -35,7 +35,7 @@ from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
-    from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+    from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 

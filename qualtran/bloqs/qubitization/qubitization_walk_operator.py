@@ -42,8 +42,8 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     LCUBlockEncoding,
     LCUBlockEncodingZeroState,
 )
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,

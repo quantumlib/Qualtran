@@ -33,9 +33,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 

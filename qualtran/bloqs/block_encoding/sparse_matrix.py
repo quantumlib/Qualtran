@@ -37,12 +37,14 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.data_loading import QROM
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
+from qualtran.symbolics.math_funcs import bit_length
 
 
 @frozen
@@ -224,10 +226,19 @@ class SparseMatrix(BlockEncoding):
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT
     ) -> Dict[str, SoquetT]:
+        if is_symbolic(self.system_bitsize) or is_symbolic(self.row_oracle.num_nonzero):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
         ancilla_bits = bb.split(cast(Soquet, ancilla))
         q, l = ancilla_bits[0], bb.join(ancilla_bits[1:])
 
-        diffusion = PrepareUniformSuperposition(n=2**self.system_bitsize)
+        unused = self.system_bitsize - bit_length(self.row_oracle.num_nonzero - 1)
+        diffusion = AutoPartition(
+            PrepareUniformSuperposition(n=self.row_oracle.num_nonzero),
+            partitions=[
+                (Register("target", QAny(self.system_bitsize)), [Unused(unused), "target"])
+            ],
+        )
         l = bb.add(diffusion, target=l)
         l, system = bb.add_t(self.col_oracle, l=cast(Soquet, l), i=system)
         q, l, system = bb.add_t(self.entry_oracle, q=q, i=l, j=system)
@@ -239,14 +250,31 @@ class SparseMatrix(BlockEncoding):
 
 
 @frozen
-class FullRowColumnOracle(RowColumnOracle):
-    """Oracle specifying the non-zero rows or columns of a matrix with full entries."""
+class TopLeftRowColumnOracle(RowColumnOracle):
+    """Oracle specifying the non-zero rows or columns of a matrix with top left block non-zero.
+
+    Args:
+        system_bitsize: The number of bits used to represent an index.
+        num_nonzero: The number of rows or columns of the non-zero top left block. If unspecified,
+            defaults to making the entire matrix non-zero.
+
+    Registers:
+        l: As input, index specifying the `l`-th non-zero entry to find in row / column `i`.
+           As output, position of the `l`-th non-zero entry in row / column `i`.
+        i: The row / column index.
+    """
 
     system_bitsize: SymbolicInt
+    _num_nonzero: SymbolicInt = field()
+
+    @_num_nonzero.default
+    def _num_nonzero_default(self):
+        # Default to a matrix with all entries non-zero
+        return 2**self.system_bitsize
 
     @cached_property
     def num_nonzero(self) -> SymbolicInt:
-        return 2**self.system_bitsize
+        return self._num_nonzero
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         # the l-th non-zero entry is at position l, so do nothing
@@ -335,10 +363,13 @@ class ExplicitEntryOracle(EntryOracle):
 
 @bloq_example
 def _sparse_matrix_block_encoding() -> SparseMatrix:
-    from qualtran.bloqs.block_encoding.sparse_matrix import FullRowColumnOracle, UniformEntryOracle
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle,
+        UniformEntryOracle,
+    )
 
-    row_oracle = FullRowColumnOracle(2)
-    col_oracle = FullRowColumnOracle(2)
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=2)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=2)
     entry_oracle = UniformEntryOracle(system_bitsize=2, entry=0.3)
     sparse_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return sparse_matrix_block_encoding
@@ -346,11 +377,14 @@ def _sparse_matrix_block_encoding() -> SparseMatrix:
 
 @bloq_example
 def _explicit_matrix_block_encoding() -> SparseMatrix:
-    from qualtran.bloqs.block_encoding.sparse_matrix import ExplicitEntryOracle, FullRowColumnOracle
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        ExplicitEntryOracle,
+        TopLeftRowColumnOracle,
+    )
 
     data = np.array([[0.0, 0.25], [1 / 3, 0.467]])
-    row_oracle = FullRowColumnOracle(1)
-    col_oracle = FullRowColumnOracle(1)
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=1)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=1)
     entry_oracle = ExplicitEntryOracle(system_bitsize=1, data=data, entry_bitsize=10)
     explicit_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return explicit_matrix_block_encoding
