@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran import CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledMixin
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
@@ -65,7 +65,7 @@ class CodeForRandomVariable:
 
 
 @attrs.frozen
-class MeanEstimationOperator(GateWithRegisters, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
+class MeanEstimationOperator(GateWithRegisters, SpecializedSingleQubitControlledMixin):  # type: ignore[misc]
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
 
     The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the

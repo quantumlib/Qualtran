@@ -23,7 +23,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledMixin
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting.generalizers import (
@@ -39,7 +39,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
+class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitControlledMixin):  # type: ignore[misc]
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$

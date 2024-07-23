@@ -31,7 +31,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledMixin
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -120,7 +120,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectTHC(SpecializedSingleQubitControlledMixin, SelectOracle):  # type: ignore[misc]
     r"""SELECT for THC Hamiltonian.
 
     Args:

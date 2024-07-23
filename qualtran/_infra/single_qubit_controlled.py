@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from qualtran import AddControlledT, BloqBuilder, SoquetT
 
 
-class SpecializedSingleQubitControlledGate(Bloq):
+class SpecializedSingleQubitControlledMixin(Bloq):
     """Add a specialized single-qubit controlled version of a Bloq.
 
     `control_val` is an optional single-bit control. When `control_val` is provided,
@@ -35,7 +35,7 @@ class SpecializedSingleQubitControlledGate(Bloq):
     Example usage:
 
         @attrs.frozen
-        class MyGate(SpecializedSingleQubitControlledGate):
+        class MyGate(SpecializedSingleQubitControlledMixin):
             control_val: Optional[int] = None
 
             @property
@@ -52,7 +52,7 @@ class SpecializedSingleQubitControlledGate(Bloq):
 
     def get_single_qubit_controlled_bloq(
         self, control_val: int
-    ) -> 'SpecializedSingleQubitControlledGate':
+    ) -> 'SpecializedSingleQubitControlledMixin':
         """Override this to provide a custom controlled bloq"""
         return attrs.evolve(self, control_val=control_val)  # type: ignore[misc]
 
