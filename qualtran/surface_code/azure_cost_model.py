@@ -62,8 +62,13 @@ def minimum_time_steps(
     c_min = M['meas'] + M['R'] + M['T'] + 3 * M['Tof']
     eps_syn = error_budget / 3
     if M['R'] > 0:
-        # NOTE! argument to the rotation_cost method is inverted relative to eq. D3.
-        rotation_cost = rotation_model.rotation_cost(eps_syn / M['R'])
+        # Note: The argument to the rotation_cost method is inverted relative to the notation in
+        # eq. D3. The log rotation model (corresponding to eq. D3) has a negative sign outside the
+        # log.
+        rot_err_budget = eps_syn / M['R']
+        rotation_cost = rotation_model.rotation_cost(
+            rot_err_budget
+        ) + rotation_model.preparation_overhead(rot_err_budget)
 
         if alg.n_rotation_layers is not None:
             # We don't actually push all the cliffords out and count the number of
