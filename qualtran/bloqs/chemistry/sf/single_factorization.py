@@ -46,12 +46,12 @@ from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
-from qualtran.bloqs.block_encoding.prepare_identity import PrepareIdentity
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 
 if TYPE_CHECKING:

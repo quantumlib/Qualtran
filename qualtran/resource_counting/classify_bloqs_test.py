@@ -21,9 +21,9 @@ from qualtran import Bloq, QInt, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.arithmetic.comparison import LessThanConstant
 from qualtran.bloqs.basic_gates import CSwap, TGate
-from qualtran.bloqs.block_encoding.prepare_identity import PrepareIdentity
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.resource_counting import BloqCountT
