@@ -37,7 +37,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledMixin
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
@@ -50,7 +50,7 @@ from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControlledMixin):  # type: ignore[misc]
+class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
     r"""Construct a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (where coefficients $w_l > 0$ and $H_l$ are unitaries),
