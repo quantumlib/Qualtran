@@ -37,12 +37,14 @@ class ControlledAddOrSubtract(Bloq):
     $$
 
     Given two numbers `a`, `b` and a control bit `ctrl`, this bloq computes:
+
     - the sum `b + a` when `ctrl=1`,
     - the difference `b - a` when `ctrl=0`,
-    and stores it in the second register (`b`).
 
-    This uses a controlled `Negate` followed by an uncontrolled `Add`,
-    which has half the T-cost of a controlled `Add`.
+    and stores the result in the second register (`b`).
+
+    This uses an uncontrolled `Add` surrounded by controlled `BitwiseNot`s, and only
+    the `Add` requires T gates, which has half the T-cost of a controlled `Add`.
 
 
     Args:
