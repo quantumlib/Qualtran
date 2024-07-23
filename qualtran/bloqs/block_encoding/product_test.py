@@ -37,6 +37,7 @@ from qualtran.bloqs.block_encoding.product import (
     Product,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 
@@ -150,3 +151,24 @@ def test_product_cirq():
     initial_state = [0, 0, 0]
     final_state = [1, 0, 0]
     assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
+
+
+def test_product_random():
+    random_state = np.random.RandomState(1234)
+
+    for _ in range(10):
+        n = random_state.randint(3, 6)
+        bitsize = random_state.randint(1, 3)
+        gates = [MatrixGate.random(bitsize, random_state=random_state) for _ in range(n)]
+
+        bloq = Product(tuple(Unitary(gate) for gate in gates))
+        bb = BloqBuilder()
+        system = bb.add_register("system", cast(int, bloq.system_bitsize))
+        ancilla = cast(Soquet, bb.add(IntState(0, bloq.ancilla_bitsize)))
+        system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+        bb.add(IntEffect(0, cast(int, bloq.ancilla_bitsize)), val=ancilla)
+        bloq = bb.finalize(system=system)
+
+        from_gate = np.linalg.multi_dot(tuple(gate.tensor_contract() for gate in gates))
+        from_tensors = bloq.tensor_contract()
+        np.testing.assert_allclose(from_gate, from_tensors)

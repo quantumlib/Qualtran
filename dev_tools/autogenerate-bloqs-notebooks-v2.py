@@ -54,6 +54,7 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
@@ -61,7 +62,6 @@ import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
-import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.bookkeeping
@@ -144,9 +144,14 @@ BASIC_GATES: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.cnot._CNOT_DOC],
     ),
     NotebookSpecV2(
-        title='S Gate',
-        module=qualtran.bloqs.basic_gates.s_gate,
-        bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
+        title='Z, S, and CZ',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='diag_gates',
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._Z_GATE_DOC,
+            qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._CZ_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Y Gate',
@@ -167,6 +172,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='States and Effects',
         module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='states_and_effects',
         bloq_specs=[
             qualtran.bloqs.basic_gates.z_basis._ZERO_STATE_DOC,
             qualtran.bloqs.basic_gates.z_basis._ZERO_EFFECT_DOC,
@@ -179,8 +185,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.basic_gates.x_basis._MINUS_STATE_DOC,
             qualtran.bloqs.basic_gates.x_basis._MINUS_EFFECT_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
-        path_stem='states_and_effects',
     ),
     NotebookSpecV2(
         title='Swap Network',
@@ -360,6 +364,13 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
             qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Controlled Add-or-Subtract',
+        module=qualtran.bloqs.arithmetic.controlled_add_or_subtract,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.controlled_add_or_subtract._CONTROLLED_ADD_OR_SUBTRACT_DOC
         ],
     ),
     NotebookSpecV2(
@@ -569,8 +580,8 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qubitization.qubitization_walk_operator,
         bloq_specs=[
             qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
+            qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
+            qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
         ],
     ),
     NotebookSpecV2(
