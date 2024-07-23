@@ -544,7 +544,22 @@ class QFxp(QDType):
 
     @property
     def _fxp_dtype(self) -> Fxp:
-        return Fxp(None, dtype=self.fxp_dtype_str)
+        """
+        -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
+            to a bigger fixed point number when doing operations with other Fxp objects.
+        -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
+            truncated and no rounding occurs
+        -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
+            digits are simply discarded.
+        """
+        return Fxp(
+            None,
+            dtype=self.fxp_dtype_str,
+            op_sizing='same',
+            const_op_sizing='same',
+            shifting='trunc',
+            overflow='wrap',
+        )
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize, self.num_frac)
@@ -579,7 +594,7 @@ class QFxp(QDType):
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
+        return Fxp(fxp_bin, dtype=self.fxp_dtype_str).like(self._fxp_dtype)
 
     def from_bits_array(self, bits_array: NDArray[np.uint8]):
         assert isinstance(self.bitsize, int), "cannot convert to bits for symbolic bitsize"
@@ -606,7 +621,7 @@ class QFxp(QDType):
     def get_classical_domain(self) -> Iterable[Fxp]:
         qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
         for x in qint.get_classical_domain():
-            yield Fxp(x / 2**self.num_frac, dtype=self.fxp_dtype_str)
+            yield Fxp(x / 2**self.num_frac).like(self._fxp_dtype)
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         fxp_val = val if isinstance(val, Fxp) else Fxp(val)

@@ -19,6 +19,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Type, Un
 import networkx as nx
 import numpy as np
 import sympy
+from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -34,7 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
-ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
+ClassicalValT = Union[int, np.integer, NDArray[np.integer], Fxp]
 
 
 def _get_in_vals(
