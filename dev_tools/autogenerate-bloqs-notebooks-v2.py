@@ -417,6 +417,7 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
+            qualtran.bloqs.arithmetic.conversions._TO_FXP,
         ],
     ),
     NotebookSpecV2(

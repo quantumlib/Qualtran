@@ -164,6 +164,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement,
     "qualtran.bloqs.arithmetic.conversions.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.ToContiguousIndex,
+    "qualtran.bloqs.arithmetic.conversions.ToFxp": qualtran.bloqs.arithmetic.conversions.ToFxp,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
     "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber": qualtran.bloqs.arithmetic.multiplication.InvertRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,

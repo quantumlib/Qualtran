@@ -15,23 +15,29 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import (
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
+    QFxp,
     QInt,
     QIntOnesComp,
     QUInt,
     Register,
     Side,
     Signature,
+    Soquet,
+    SoquetT,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import CNOT, Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.symbolics.types import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -150,3 +156,69 @@ def _signed_to_twos() -> SignedIntegerToTwosComplement:
 
 
 _SIGNED_TO_TWOS = BloqDocSpec(bloq_cls=SignedIntegerToTwosComplement, examples=[_signed_to_twos])
+
+
+@frozen
+class ToFxp(Bloq):
+    """Convert a register storing a `QUInt` to a `QFxp`, optionally dividing by a power of two.
+
+    Args:
+        a_dtype: Quantum datatype used to represent the input.
+        b_dtype: Quantum datatype used to represent the output.
+        divide_by: Power of two to divide by when converting (default: 0).
+
+    Registers:
+        a: A a_dtype.bitsize-sized input register (register a above).
+        b: A b_dtype.bitsize-sized output register (register b above).
+    """
+
+    a_dtype: QUInt
+    b_dtype: QFxp = field()
+    divide_by: SymbolicInt = 0
+
+    @b_dtype.validator
+    def _b_dtype_validate(self, field, val):
+        if (
+            is_symbolic(val.bitsize)
+            or is_symbolic(self.a_dtype.bitsize)
+            or is_symbolic(self.divide_by)
+        ):
+            return
+        if val.num_int < self.a_dtype.bitsize - self.divide_by or val.num_frac < self.divide_by:
+            raise ValueError("b_dtype not big enough for a_dtype")
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(a=self.a_dtype, b=self.b_dtype)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(CNOT(), self.a_dtype.bitsize)}
+
+    def build_composite_bloq(self, bb: BloqBuilder, a: Soquet, b: Soquet) -> Dict[str, SoquetT]:
+        if (
+            is_symbolic(self.a_dtype.bitsize)
+            or is_symbolic(self.b_dtype.num_frac)
+            or is_symbolic(self.divide_by)
+        ):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}.")
+
+        a_bits = bb.split(a)
+        b_bits = bb.split(b)
+        offset = self.b_dtype.num_frac - self.divide_by
+        for i in range(len(a_bits)):
+            a_bits[i], b_bits[offset + i] = bb.add_t(
+                CNOT(), ctrl=a_bits[i], target=b_bits[offset + i]
+            )
+
+        return {"a": bb.join(a_bits), "b": bb.join(b_bits)}
+
+
+@bloq_example
+def _to_fxp() -> ToFxp:
+    from qualtran import QFxp, QUInt
+
+    to_fxp = ToFxp(QUInt(4), QFxp(4, 2, False), 2)
+    return to_fxp
+
+
+_TO_FXP = BloqDocSpec(bloq_cls=ToFxp, examples=[_to_fxp])

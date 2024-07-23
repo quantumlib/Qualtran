@@ -23,7 +23,11 @@ from qualtran.bloqs.arithmetic.comparison import (
     LessThanEqual,
     SingleQubitCompare,
 )
-from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement, ToContiguousIndex
+from qualtran.bloqs.arithmetic.conversions import (
+    SignedIntegerToTwosComplement,
+    ToContiguousIndex,
+    ToFxp,
+)
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import (
     InvertRealNumber,
