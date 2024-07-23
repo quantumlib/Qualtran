@@ -30,7 +30,7 @@ from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajora
 
 
 @attrs.frozen
-class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledGate):  # type: ignore[misc]
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to SELECT for an arbitrary chemistry Hamiltonian, we:
