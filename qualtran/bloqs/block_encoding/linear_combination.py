@@ -32,7 +32,7 @@ from qualtran import (
 from qualtran._infra.bloq import DecomposeTypeError
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, BlackBoxSelect
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition

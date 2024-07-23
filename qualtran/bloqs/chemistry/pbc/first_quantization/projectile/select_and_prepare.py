@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
     PrepareTFirstQuantizationWithProj,
 )
@@ -50,6 +50,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
     MultiplexedCSwap3D,
     UniformSuperpostionIJFirstQuantization,
 )
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
