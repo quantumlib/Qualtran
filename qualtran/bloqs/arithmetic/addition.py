@@ -424,10 +424,12 @@ class AddK(Bloq):
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': add_ints(int(x), int(self.k), num_bits=N, is_signed=self.signed)}
+            return {
+                'x': add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
+            }
 
         if np.all(self.cvs == ctrls):
-            x = add_ints(int(x), int(self.k), num_bits=N, is_signed=self.signed)
+            x = add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
 
         return {'ctrls': ctrls, 'x': x}
 
