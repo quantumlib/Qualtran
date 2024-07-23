@@ -634,6 +634,8 @@ class QFxp(QDType):
         # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
         # is currently not propagated correctly through Bloqs
         assert isinstance(val, Fxp)
+        assert val.overflow == 'wrap'
+        assert val.shifting == 'trunc'
 
     def __str__(self):
         if self.signed:

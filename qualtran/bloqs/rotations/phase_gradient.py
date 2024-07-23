@@ -230,7 +230,15 @@ def _extract_raw_int_from_fxp(val: Fxp) -> int:
 
 
 def _phase_int_to_fxp(val: int, frac_bitsize: int) -> Fxp:
-    return Fxp(val, raw=True, n_word=frac_bitsize, n_frac=frac_bitsize, signed=False)
+    return Fxp(
+        val,
+        raw=True,
+        n_word=frac_bitsize,
+        n_frac=frac_bitsize,
+        signed=False,
+        overflow='wrap',
+        shifting='trunc',
+    )
 
 
 @attrs.frozen
@@ -487,7 +495,9 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return Fxp(
+            abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str, overflow='wrap', shifting='trunc'
+        )
 
     @cached_method
     def scaled_val(self, x: int) -> int:
