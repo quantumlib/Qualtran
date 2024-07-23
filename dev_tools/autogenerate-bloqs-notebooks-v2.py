@@ -54,6 +54,7 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
@@ -364,6 +365,13 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.subtraction._SUB_DOC,
             qualtran.bloqs.arithmetic.subtraction._SUB_FROM_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Controlled Add-or-Subtract',
+        module=qualtran.bloqs.arithmetic.controlled_add_or_subtract,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.controlled_add_or_subtract._CONTROLLED_ADD_OR_SUBTRACT_DOC
         ],
     ),
     NotebookSpecV2(

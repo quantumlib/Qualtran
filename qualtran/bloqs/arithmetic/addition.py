@@ -529,8 +529,8 @@ class AddK(Bloq):
         def _add_ctrled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            ctrl, x = bb.add_t(bloq, ctrls=ctrl_soqs[0], **in_soqs)
-            return (ctrl,), (x,)
+            ctrls, x = bb.add_t(bloq, ctrls=np.asarray(ctrl_soqs), **in_soqs)
+            return np.asarray(ctrls).tolist(), (x,)
 
         return bloq, _add_ctrled
 

@@ -14,10 +14,11 @@
 
 import abc
 from functools import cached_property
-from typing import cast, Dict, Tuple
+from typing import cast, Dict, Iterable, Tuple
 
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -25,6 +26,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    DecomposeTypeError,
     QAny,
     QBit,
     QUInt,
@@ -33,13 +35,16 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import Rx, Swap
+from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
+from qualtran.bloqs.data_loading import QROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
+from qualtran.symbolics.math_funcs import bit_length
 
 
 @frozen
@@ -72,6 +77,12 @@ class RowColumnOracle(Bloq, abc.ABC):
         """The number of nonzero entries in each row or column."""
 
     def __attrs_post_init__(self):
+        if not is_symbolic(self.system_bitsize) and self.system_bitsize <= 0:
+            raise ValueError("system_bitsize must be > 0")
+        if is_symbolic(self.num_nonzero):
+            return
+        if self.num_nonzero <= 0:
+            raise ValueError("num_nonzero must be > 0")
         if self.num_nonzero > 2**self.system_bitsize:
             raise ValueError("Cannot have more than 2 ** system_bitsize non-zero elements")
 
@@ -215,10 +226,19 @@ class SparseMatrix(BlockEncoding):
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT
     ) -> Dict[str, SoquetT]:
+        if is_symbolic(self.system_bitsize) or is_symbolic(self.row_oracle.num_nonzero):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
         ancilla_bits = bb.split(cast(Soquet, ancilla))
         q, l = ancilla_bits[0], bb.join(ancilla_bits[1:])
 
-        diffusion = PrepareUniformSuperposition(n=2**self.system_bitsize)
+        unused = self.system_bitsize - bit_length(self.row_oracle.num_nonzero - 1)
+        diffusion = AutoPartition(
+            PrepareUniformSuperposition(n=self.row_oracle.num_nonzero),
+            partitions=[
+                (Register("target", QAny(self.system_bitsize)), [Unused(unused), "target"])
+            ],
+        )
         l = bb.add(diffusion, target=l)
         l, system = bb.add_t(self.col_oracle, l=cast(Soquet, l), i=system)
         q, l, system = bb.add_t(self.entry_oracle, q=q, i=l, j=system)
@@ -230,14 +250,31 @@ class SparseMatrix(BlockEncoding):
 
 
 @frozen
-class FullRowColumnOracle(RowColumnOracle):
-    """Oracle specifying the non-zero rows or columns of a matrix with full entries."""
+class TopLeftRowColumnOracle(RowColumnOracle):
+    """Oracle specifying the non-zero rows or columns of a matrix with top left block non-zero.
+
+    Args:
+        system_bitsize: The number of bits used to represent an index.
+        num_nonzero: The number of rows or columns of the non-zero top left block. If unspecified,
+            defaults to making the entire matrix non-zero.
+
+    Registers:
+        l: As input, index specifying the `l`-th non-zero entry to find in row / column `i`.
+           As output, position of the `l`-th non-zero entry in row / column `i`.
+        i: The row / column index.
+    """
 
     system_bitsize: SymbolicInt
+    _num_nonzero: SymbolicInt = field()
+
+    @_num_nonzero.default
+    def _num_nonzero_default(self):
+        # Default to a matrix with all entries non-zero
+        return 2**self.system_bitsize
 
     @cached_property
     def num_nonzero(self) -> SymbolicInt:
-        return 2**self.system_bitsize
+        return self._num_nonzero
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         # the l-th non-zero entry is at position l, so do nothing
@@ -254,23 +291,107 @@ class UniformEntryOracle(EntryOracle):
     def build_composite_bloq(
         self, bb: BloqBuilder, q: Soquet, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
-        soqs["q"] = cast(Soquet, bb.add(Rx(2 * np.arccos(self.entry)), q=q))
+        # Either Rx or Ry work here; Rx would induce a phase on the subspace with non-zero ancilla
+        # See https://arxiv.org/abs/2302.10949 for reference that uses Rx
+        soqs["q"] = cast(Soquet, bb.add(Ry(2 * np.arccos(self.entry)), q=q))
         return soqs
+
+
+@frozen
+class ExplicitEntryOracle(EntryOracle):
+    """Oracle specifying the entries of a matrix as given by an explicit array.
+
+    Under the hood, implemented via QROM and quantum variable rotation. This bloq is useful for
+    prototyping and testing; its cost is larger than that of a truly sparse/structured matrix.
+
+    Args:
+        system_bitsize: The number of bits used to represent an index.
+        data: 2-D array of matrix entries. All entries must be >= 0 and < 1.
+        entry_bitsize: The number of bits of precision to represent the arccos of each entry.
+
+    Registers:
+        q: The flag qubit that is rotated proportionally to the value of the entry.
+        i: The row index.
+        j: The column index.
+    """
+
+    system_bitsize: SymbolicInt
+    data: NDArray[np.float64] = field(
+        converter=lambda x: np.asarray(x) if isinstance(x, Iterable) else x,
+        eq=lambda d: tuple(d.flat),
+    )
+    entry_bitsize: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if len(self.data.shape) != 2:
+            raise ValueError("data must be a 2-D array")
+        x, y = self.data.shape
+        if x != y:
+            raise ValueError("data must be square")
+        if not is_symbolic(self.system_bitsize) and x != 2**self.system_bitsize:
+            raise ValueError("data must have dimension 2 ** self.system_bitsize")
+        if not is_symbolic(self.entry_bitsize) and self.entry_bitsize < 1:
+            raise ValueError("entry_bitsize must be >= 1")
+        if not all(x >= 0 and x < 1 for x in self.data.flat):
+            raise ValueError("entries must be >= 0 and < 1")
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, q: SoquetT, i: SoquetT, j: SoquetT
+    ) -> Dict[str, SoquetT]:
+        if is_symbolic(self.entry_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        # load from QROM
+        data = np.arccos(self.data) / np.pi * 2**self.entry_bitsize
+        qrom = QROM.build_from_data(data, target_bitsizes=(self.entry_bitsize,))
+        target = bb.allocate(self.entry_bitsize)
+        i, j, target = bb.add_t(qrom, selection0=i, selection1=j, target0_=target)
+        # perform fractional Ry
+        # can't use StatePreparationViaRotations here because the coefficients depend on i, j
+        # can't use QvrZPow here because CRz is not symmetric and we condition on target, not q
+        # TODO: could potentially use RzViaPhaseGradient when it is done
+        target_bits = bb.split(cast(Soquet, target))
+        for k in range(len(target_bits)):
+            target_bits[k], q = bb.add_t(
+                Ry(2 * np.pi * (2 ** -(k + 1))).controlled(), ctrl=target_bits[k], q=q
+            )
+        target = bb.join(target_bits)
+        # unload from QROM
+        i, j, target = bb.add_t(qrom.adjoint(), selection0=i, selection1=j, target0_=target)
+        bb.free(cast(Soquet, target))
+        return {"q": q, "i": i, "j": j}
 
 
 @bloq_example
 def _sparse_matrix_block_encoding() -> SparseMatrix:
-    from qualtran.bloqs.block_encoding.sparse_matrix import FullRowColumnOracle, UniformEntryOracle
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle,
+        UniformEntryOracle,
+    )
 
-    row_oracle = FullRowColumnOracle(2)
-    col_oracle = FullRowColumnOracle(2)
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=2)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=2)
     entry_oracle = UniformEntryOracle(system_bitsize=2, entry=0.3)
     sparse_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     return sparse_matrix_block_encoding
 
 
+@bloq_example
+def _explicit_matrix_block_encoding() -> SparseMatrix:
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        ExplicitEntryOracle,
+        TopLeftRowColumnOracle,
+    )
+
+    data = np.array([[0.0, 0.25], [1 / 3, 0.467]])
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=1)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=1)
+    entry_oracle = ExplicitEntryOracle(system_bitsize=1, data=data, entry_bitsize=10)
+    explicit_matrix_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    return explicit_matrix_block_encoding
+
+
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
     import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
-    examples=[_sparse_matrix_block_encoding],
+    examples=[_sparse_matrix_block_encoding, _explicit_matrix_block_encoding],
 )

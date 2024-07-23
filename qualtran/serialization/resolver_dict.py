@@ -17,6 +17,7 @@ from typing import Type
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.hamming_weight
 import qualtran.bloqs.arithmetic.multiplication
@@ -160,6 +161,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LessThanEqual": qualtran.bloqs.arithmetic.comparison.LessThanEqual,
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
+    "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement,
     "qualtran.bloqs.arithmetic.conversions.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
@@ -226,7 +228,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
     "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": qualtran.bloqs.block_encoding.linear_combination.LinearCombination,
     "qualtran.bloqs.block_encoding.phase.Phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle,
     "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix": qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix,
+    "qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle": qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle,
+    "qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
