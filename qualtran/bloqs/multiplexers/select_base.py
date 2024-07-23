@@ -14,12 +14,9 @@
 
 import abc
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Tuple
 
 from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
-
-if TYPE_CHECKING:
-    from qualtran.symbolics import SymbolicFloat
 
 
 class SelectOracle(GateWithRegisters):
