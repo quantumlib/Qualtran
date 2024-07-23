@@ -23,8 +23,9 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     _explicit_matrix_block_encoding,
     _sparse_matrix_block_encoding,
     ExplicitEntryOracle,
-    FullRowColumnOracle,
     SparseMatrix,
+    TopLeftRowColumnOracle,
+    UniformEntryOracle,
 )
 
 
@@ -81,8 +82,8 @@ def gen_test():
     "n,data", [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
 )
 def test_explicit_entry_oracle(n, data):
-    row_oracle = FullRowColumnOracle(n)
-    col_oracle = FullRowColumnOracle(n)
+    row_oracle = TopLeftRowColumnOracle(n)
+    col_oracle = TopLeftRowColumnOracle(n)
     entry_oracle = ExplicitEntryOracle(n, data=data, entry_bitsize=10)
     bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
 
@@ -96,3 +97,33 @@ def test_explicit_entry_oracle(n, data):
 
     from_tensors = bloq.tensor_contract() * alpha
     np.testing.assert_allclose(data, from_tensors, atol=0.003)
+
+
+test_matrix = [
+    [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.3, 0.3, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+]
+
+
+def test_top_left_matrix():
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=3, num_nonzero=3)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=3, num_nonzero=3)
+    entry_oracle = UniformEntryOracle(system_bitsize=3, entry=0.3)
+    bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    alpha = bloq.alpha
+
+    bb = BloqBuilder()
+    system = bb.add_register("system", 3)
+    ancilla = cast(Soquet, bb.add(IntState(0, 3 + 1)))
+    system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+    bb.add(IntEffect(0, 3 + 1), val=ancilla)
+    bloq = bb.finalize(system=system)
+
+    from_tensors = bloq.tensor_contract() * alpha
+    np.testing.assert_allclose(test_matrix, from_tensors, atol=0.003)
