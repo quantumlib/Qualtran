@@ -61,6 +61,6 @@ class SelectOracle(GateWithRegisters):
 
 _SELECT_ORACLE_DOC = BloqDocSpec(
     bloq_cls=SelectOracle,
-    import_line='from qualtran.bloqs.multiplexers. import SelectOracle',
+    import_line='from qualtran.bloqs.multiplexers.select_base import SelectOracle',
     examples=[],
 )
