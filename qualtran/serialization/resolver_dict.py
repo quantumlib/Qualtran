@@ -17,6 +17,7 @@ from typing import Type
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.hamming_weight
 import qualtran.bloqs.arithmetic.multiplication
@@ -39,7 +40,6 @@ import qualtran.bloqs.basic_gates.z_basis
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
-import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.block_encoding.product
@@ -112,6 +112,7 @@ import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
@@ -160,6 +161,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LessThanEqual": qualtran.bloqs.arithmetic.comparison.LessThanEqual,
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
+    "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement,
     "qualtran.bloqs.arithmetic.conversions.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
@@ -226,7 +228,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.block_encoding.product.Product": qualtran.bloqs.block_encoding.product.Product,
     "qualtran.bloqs.block_encoding.linear_combination.LinearCombination": qualtran.bloqs.block_encoding.linear_combination.LinearCombination,
     "qualtran.bloqs.block_encoding.phase.Phase": qualtran.bloqs.block_encoding.phase.Phase,
+    "qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.ExplicitEntryOracle,
     "qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix": qualtran.bloqs.block_encoding.sparse_matrix.SparseMatrix,
+    "qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle": qualtran.bloqs.block_encoding.sparse_matrix.TopLeftRowColumnOracle,
+    "qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle": qualtran.bloqs.block_encoding.sparse_matrix.UniformEntryOracle,
     "qualtran.bloqs.bookkeeping.allocate.Allocate": qualtran.bloqs.bookkeeping.allocate.Allocate,
     "qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford": qualtran.bloqs.bookkeeping.arbitrary_clifford.ArbitraryClifford,
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
@@ -338,6 +343,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
     "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq": qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq,
+    "qualtran.bloqs.multiplexers.select_base.SelectOracle": qualtran.bloqs.multiplexers.select_base.SelectOracle,
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
@@ -365,9 +371,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
-    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.PrepareOracle,
-    "qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle": qualtran.bloqs.block_encoding.lcu_select_and_prepare.SelectOracle,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
+    "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient": qualtran.bloqs.state_preparation.state_preparation_via_rotation.PRGAViaPhaseGradient,

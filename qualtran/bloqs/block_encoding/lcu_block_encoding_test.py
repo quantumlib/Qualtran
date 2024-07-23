@@ -27,7 +27,8 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     BlackBoxSelect,
 )
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 
 
 def test_lcu_block_encoding(bloq_autotester):

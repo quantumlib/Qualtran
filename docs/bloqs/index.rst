@@ -63,6 +63,7 @@ Bloqs Library
     arithmetic/addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
+    arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
     arithmetic/sorting.ipynb
