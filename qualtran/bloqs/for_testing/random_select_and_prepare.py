@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -84,7 +84,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class TestPauliSelectOracle(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
