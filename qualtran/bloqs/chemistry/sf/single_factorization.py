@@ -45,7 +45,6 @@ from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
@@ -53,6 +52,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
