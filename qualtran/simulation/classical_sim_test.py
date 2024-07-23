@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
 from typing import Dict
 
 import numpy as np
@@ -23,6 +24,7 @@ from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, S
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
+    add_ints,
     call_cbloq_classically,
     ClassicalValT,
 )
@@ -124,6 +126,35 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(x, xarr)
     np.testing.assert_array_equal(y, [1, 0, 1, 0, 1])
     np.testing.assert_array_equal(z, xarr)
+
+
+@pytest.mark.parametrize(
+    ['x', 'y', 'n_bits'],
+    [
+        (x, y, n_bits)
+        for n_bits in range(1, 5)
+        for x, y in itertools.product(range(1 << n_bits), repeat=2)
+    ],
+)
+def test_add_ints_unsigned(x, y, n_bits):
+    assert add_ints(x, y, num_bits=n_bits, is_signed=False) == (x + y) % (1 << n_bits)
+
+
+@pytest.mark.parametrize(
+    ['x', 'y', 'n_bits'],
+    [
+        (x, y, n_bits)
+        for n_bits in range(2, 5)
+        for x, y in itertools.product(range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1)), repeat=2)
+    ],
+)
+def test_add_ints_signed(x, y, n_bits):
+    half_n = 1 << (n_bits - 1)
+    # Addition of signed ints `x` and `y` is a cyclic rotation of the interval [-2^(n-1), 2^(n-1)) by `y`.
+    interval = [*range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1))]
+    i = x + half_n  # position of `x` in the interval
+    z = interval[(i + y) % len(interval)]  # rotate by `y`
+    assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
 
 
 @pytest.mark.notebook

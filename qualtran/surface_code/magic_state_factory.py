@@ -13,26 +13,49 @@
 #  limitations under the License.
 
 import abc
+from typing import TYPE_CHECKING
 
-from qualtran.surface_code.magic_count import MagicCount
+if TYPE_CHECKING:
+    from qualtran.resource_counting import GateCounts
+    from qualtran.surface_code import LogicalErrorModel
 
 
 class MagicStateFactory(metaclass=abc.ABCMeta):
-    """A cost model for the magic state distillation factory of a surface code compilation.
+    """Methods for modeling the costs of the magic state factories of a surface code compilation.
 
-    A surface code layout is segregated into qubits dedicated to magic state distillation
-    and storing the data being processed. The former area is called the magic state distillation
-    factory, and we provide its costs here.
+    An important consideration for a surface code compilation is how to execute arbitrary gates
+    to run the desired algorithm. The surface code can execute Clifford gates in a fault-tolerant
+    manner. Non-Clifford gates like the T gate, Toffoli or CCZ gate, or non-Clifford rotation
+    gates require more expensive gadgets to implement. Executing a T or CCZ gate requires first
+    using the technique of state distillation in an area of the computation called a "magic state
+    factory" to distill a noisy T or CCZ state into a "magic state" of sufficiently low error.
+    Such quantum states can be used to enact the non-Clifford quantum gate through gate
+    teleportation.
+
+    Magic state production is thought to be an important runtime and qubit-count bottleneck in
+    foreseeable fault-tolerant quantum computers.
+
+    This abstract interface specifies that each magic state factory must report its required
+    number of physical qubits, the number of error correction cycles to produce enough magic
+    states to enact a given number of logical gates and an error model, and the expected error
+    associated with generating those magic states.
     """
 
     @abc.abstractmethod
-    def footprint(self) -> int:
+    def n_physical_qubits(self) -> int:
         """The number of physical qubits used by the magic state factory."""
 
     @abc.abstractmethod
-    def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int:
+    def n_cycles(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> int:
         """The number of cycles (time) required to produce the requested number of magic states."""
 
     @abc.abstractmethod
-    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
-        """The total error expected from distilling magic states with a given physical error rate."""
+    def factory_error(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> float:
+        """The total error expected from distilling magic states with a given physical error rate.
+
+        This includes the cumulative effects of data-processing errors and distillation failures.
+        """

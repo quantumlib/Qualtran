@@ -21,17 +21,22 @@ import plotly.graph_objects as go
 from dash import ALL, Dash, dcc, html, Input, Output
 from dash.exceptions import PreventUpdate
 
-from qualtran.surface_code import ccz2t_cost_model, fifteen_to_one, magic_state_factory
+from qualtran.resource_counting import GateCounts
+from qualtran.surface_code import (
+    AlgorithmSummary,
+    ccz2t_cost_model,
+    fifteen_to_one,
+    LogicalErrorModel,
+    magic_state_factory,
+)
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
 from qualtran.surface_code import rotation_cost_model
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.azure_cost_model import code_distance, minimum_time_steps
 from qualtran.surface_code.ccz2t_cost_model import (
     get_ccz2t_costs_from_grid_search,
     iter_ccz2t_factories,
 )
 from qualtran.surface_code.data_block import FastDataBlock
-from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.multi_factory import MultiFactory
 
 
@@ -354,15 +359,15 @@ def create_qubit_pie_chart(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: AlgorithmSummary,
+    algorithm: 'AlgorithmSummary',
     magic_factory: magic_state_factory.MagicStateFactory,
     magic_count: int,
-    needed_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
 ) -> go.Figure:
     """Create a pie chart of the physical qubit utilization."""
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
-            n_magic=needed_magic,
+            n_logical_gates=n_logical_gates,
             n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
@@ -373,7 +378,10 @@ def create_qubit_pie_chart(
             'logical qubits + routing overhead',
             'Magic State Distillation',
         ]
-        memory_footprint['qubits'] = [res.footprint - factory.footprint(), factory.footprint()]
+        memory_footprint['qubits'] = [
+            res.footprint - factory.n_physical_qubits(),
+            factory.n_physical_qubits(),
+        ]
         fig = px.pie(
             memory_footprint, values='qubits', names='source', title='Physical Qubit Utilization'
         )
@@ -388,7 +396,7 @@ def create_qubit_pie_chart(
         ]
         memory_footprint['qubits'] = [
             FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits)),
-            multi_factory.footprint(),
+            multi_factory.n_physical_qubits(),
         ]
         fig = px.pie(
             memory_footprint, values='qubits', names='source', title='Physical Qubit Utilization'
@@ -425,12 +433,12 @@ def create_runtime_plot(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: AlgorithmSummary,
+    algorithm: 'AlgorithmSummary',
     qec: qecs.QuantumErrorCorrectionSchemeSummary,
     magic_factory: magic_state_factory.MagicStateFactory,
     magic_count: int,
     rotation_model: rotation_cost_model.RotationCostModel,
-    needed_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
 ) -> Tuple[Dict[str, Any], go.Figure]:
     """Creates the runtime figure and decides whether to display it or not.
 
@@ -442,7 +450,10 @@ def create_runtime_plot(
     c_min = minimum_time_steps(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
     )
-    factory_cycles = factory.n_cycles(needed_magic, physical_error_rate)
+    err_model = LogicalErrorModel(qec_scheme=qec, physical_error=physical_error_rate)
+    factory_cycles = factory.n_cycles(
+        n_logical_gates=n_logical_gates, logical_error_model=err_model
+    )
     min_num_factories = int(np.ceil(factory_cycles / c_min))
     magic_counts = list(
         1 + np.random.choice(min_num_factories, replace=False, size=min(min_num_factories, 5))
@@ -467,7 +478,7 @@ def create_runtime_plot(
     duration_name = f'Duration ({unit})'
     num_qubits = (
         FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits))
-        + factory.footprint() * magic_counts
+        + factory.n_physical_qubits() * magic_counts
     )
     df = pd.DataFrame(
         {
@@ -513,7 +524,9 @@ def update(
     magic_factory = _MAGIC_FACTORIES[magic_name]
     rotation_model = _ROTATION_MODELS[rotaion_model_name]
     needed_magic = algorithm.to_magic_count(rotation_model, error_budget / 3)
+    n_logical_gates = GateCounts(t=int(needed_magic.n_t), toffoli=int(needed_magic.n_ccz))
     magic_count = int(magic_count)
+    logical_err_model = LogicalErrorModel(qec_scheme=qec, physical_error=physical_error_rate)
     return (
         create_qubit_pie_chart(
             physical_error_rate,
@@ -522,7 +535,7 @@ def update(
             algorithm,
             magic_factory,
             magic_count,
-            needed_magic,
+            n_logical_gates,
         ),
         *create_runtime_plot(
             physical_error_rate,
@@ -533,17 +546,17 @@ def update(
             magic_factory,
             magic_count,
             rotation_model,
-            needed_magic,
+            n_logical_gates,
         ),
-        *total_magic(estimation_model, needed_magic),
+        *total_magic(estimation_model, n_logical_gates),
         *min_num_factories(
-            physical_error_rate,
+            logical_err_model,
             error_budget,
             estimation_model,
             algorithm,
             rotation_model,
             magic_factory,
-            needed_magic,
+            n_logical_gates,
         ),
         *compute_duration(
             physical_error_rate,
@@ -552,14 +565,14 @@ def update(
             algorithm,
             rotation_model,
             magic_count,
-            needed_magic,
+            n_logical_gates,
         ),
     )
 
 
-def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[List[str], str]:
+def total_magic(estimation_model: str, n_logical_gates: 'GateCounts') -> Tuple[List[str], str]:
     """Compute the number of magic states needed for the algorithm and their type."""
-    total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
+    total_t = n_logical_gates.total_t_count()
     total_ccz = total_t / 4
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return ['Total Number of Toffoli gates'], f'{total_ccz:g}'
@@ -568,13 +581,13 @@ def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[List[s
 
 
 def min_num_factories(
-    physical_error_rate,
+    logical_error_model: 'LogicalErrorModel',
     error_budget: float,
     estimation_model: str,
-    algorithm: AlgorithmSummary,
+    algorithm: 'AlgorithmSummary',
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_factory: magic_state_factory.MagicStateFactory,
-    needed_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
 ) -> Tuple[Dict[str, Any], int]:
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, 1
@@ -582,7 +595,12 @@ def min_num_factories(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
     )
     return {'display': 'block'}, int(
-        np.ceil(magic_factory.n_cycles(needed_magic, physical_error_rate) / c_min)
+        np.ceil(
+            magic_factory.n_cycles(
+                n_logical_gates=n_logical_gates, logical_error_model=logical_error_model
+            )
+            / c_min
+        )
     )
 
 
@@ -590,10 +608,10 @@ def compute_duration(
     physical_error_rate: float,
     error_budget: float,
     estimation_model: str,
-    algorithm: AlgorithmSummary,
+    algorithm: 'AlgorithmSummary',
     rotation_model: rotation_cost_model.RotationCostModel,
     magic_count: int,
-    needed_magic: MagicCount,
+    n_logical_gates: 'GateCounts',
 ) -> Tuple[Dict[str, Any], str]:
     """Compute the duration of running the algorithm and whether to display the result or not.
 
@@ -601,7 +619,7 @@ def compute_duration(
     """
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
-            n_magic=needed_magic,
+            n_logical_gates=n_logical_gates,
             n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,

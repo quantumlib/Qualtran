@@ -17,12 +17,13 @@ import math
 import pytest
 from attrs import frozen
 
+from qualtran.resource_counting import GateCounts
+from qualtran.surface_code import FowlerSuperconductingQubits, LogicalErrorModel
 from qualtran.surface_code.fifteen_to_one import FifteenToOne
-from qualtran.surface_code.magic_count import MagicCount
 
 
 @frozen
-class TestCase:
+class FifteenToOneTestCase:
     d_X: int
     d_Z: int
     d_m: int
@@ -34,19 +35,28 @@ class TestCase:
 
 
 PAPER_RESULTS = [
-    TestCase(d_X=7, d_Z=3, d_m=3, phys_err=1e-4, p_out=4.4e-8, footprint=810, cycles=18.1),
-    TestCase(d_X=9, d_Z=3, d_m=3, phys_err=1e-4, p_out=9.3e-10, footprint=1150, cycles=18.1),
-    TestCase(d_X=11, d_Z=5, d_m=5, phys_err=1e-4, p_out=1.9e-11, footprint=2070, cycles=30),
-    TestCase(d_X=17, d_Z=7, d_m=7, phys_err=1e-3, p_out=4.5e-8, footprint=4620, cycles=42.6),
+    FifteenToOneTestCase(
+        d_X=7, d_Z=3, d_m=3, phys_err=1e-4, p_out=4.4e-8, footprint=810, cycles=18.1
+    ),
+    FifteenToOneTestCase(
+        d_X=9, d_Z=3, d_m=3, phys_err=1e-4, p_out=9.3e-10, footprint=1150, cycles=18.1
+    ),
+    FifteenToOneTestCase(
+        d_X=11, d_Z=5, d_m=5, phys_err=1e-4, p_out=1.9e-11, footprint=2070, cycles=30
+    ),
+    FifteenToOneTestCase(
+        d_X=17, d_Z=7, d_m=7, phys_err=1e-3, p_out=4.5e-8, footprint=4620, cycles=42.6
+    ),
 ]
 
 
 @pytest.mark.parametrize("test", PAPER_RESULTS)
-def test_compare_with_paper(test: TestCase):
-    factory = FifteenToOne(test.d_X, test.d_Z, test.d_m)
-    assert f'{factory.distillation_error(MagicCount(n_t=1), test.phys_err):.1e}' == str(test.p_out)
-    assert round(factory.footprint(), -1) == test.footprint  # rounding to the 10s digit.
-    assert factory.n_cycles(MagicCount(n_t=1), test.phys_err) == math.ceil(test.cycles + 1e-9)
+def test_compare_with_paper(test: FifteenToOneTestCase):
+    factory = FifteenToOne(d_X=test.d_X, d_Z=test.d_Z, d_m=test.d_m)
+    lem = LogicalErrorModel(qec_scheme=FowlerSuperconductingQubits, physical_error=test.phys_err)
+    assert f'{factory.factory_error(GateCounts(t=1), lem):.1e}' == str(test.p_out)
+    assert round(factory.n_physical_qubits(), -1) == test.footprint  # rounding to the 10s digit.
+    assert factory.n_cycles(GateCounts(t=1), lem) == math.ceil(test.cycles + 1e-9)
 
 
 def test_validation():

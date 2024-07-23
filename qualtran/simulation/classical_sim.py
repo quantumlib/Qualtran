@@ -14,7 +14,7 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 import networkx as nx
 import numpy as np
@@ -238,3 +238,33 @@ def format_classical_truth_table(
         for invals, outvals in truth_table
     ]
     return '\n'.join([heading] + entries)
+
+
+def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
+    r"""Performs addition modulo $2^\mathrm{num\_bits}$ of (un)signed in a reversible way.
+
+    Addition of signed integers can result in an overflow. In most classical programming languages (e.g. C++)
+    what happens when an overflow happens is left as an implementation detail for compiler designers. However,
+    for quantum subtraction, the operation should be unitary and that means that the unitary of the bloq should
+    be a permutation matrix.
+
+    If we hold `a` constant then the valid range of values of $b \in [-2^{\mathrm{num\_bits}-1}, 2^{\mathrm{num\_bits}-1})$
+    gets shifted forward or backward by `a`. To keep the operation unitary overflowing values wrap around. This is the same
+    as moving the range $2^\mathrm{num\_bits}$ by the same amount modulo $2^\mathrm{num\_bits}$. That is add
+    $2^{\mathrm{num\_bits}-1})$ before addition modulo and then remove it.
+
+    Args:
+        a: left operand of addition.
+        b: right operand of addition.
+        num_bits: optional num_bits. When specified addition is done in the interval [0, 2**num_bits) or
+            [-2**(num_bits-1), 2**(num_bits-1)) based on the value of `is_signed`.
+        is_signed: boolean whether the numbers are unsigned or signed ints. This value is only used when
+            `num_bits` is provided.
+    """
+    c = a + b
+    if num_bits is not None:
+        N = 2**num_bits
+        if is_signed:
+            return (c + N // 2) % N - N // 2
+        return c % N
+    return c
