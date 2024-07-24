@@ -17,10 +17,7 @@ from attrs import frozen
 
 import qualtran.testing as qlt_testing
 from qualtran.resource_counting import GateCounts
-from qualtran.surface_code import AlgorithmSummary, azure_cost_model
-from qualtran.surface_code.quantum_error_correction_scheme_summary import (
-    BeverlandSuperconductingQubits,
-)
+from qualtran.surface_code import AlgorithmSummary, beverland_et_al_model, QECScheme
 from qualtran.surface_code.rotation_cost_model import BeverlandEtAlRotationCost
 
 
@@ -83,7 +80,7 @@ _TESTS = [
 
 @pytest.mark.parametrize('test', _TESTS)
 def test_minimum_time_step(test: Test):
-    got = azure_cost_model.minimum_time_steps(
+    got = beverland_et_al_model.minimum_time_steps(
         error_budget=test.error_budget, alg=test.alg, rotation_model=BeverlandEtAlRotationCost
     )
     assert got == pytest.approx(test.c_min, rel=0.1)
@@ -91,11 +88,11 @@ def test_minimum_time_step(test: Test):
 
 @pytest.mark.parametrize('test', _TESTS)
 def test_code_distance(test: Test):
-    got = azure_cost_model.code_distance(
+    got = beverland_et_al_model.code_distance(
         error_budget=test.error_budget,
         time_steps=test.time_steps,
         alg=test.alg,
-        qec_scheme=BeverlandSuperconductingQubits,
+        qec_scheme=QECScheme.make_beverland_et_al(),
         physical_error=1e-4,
     )
     assert got == test.code_distance
@@ -103,11 +100,11 @@ def test_code_distance(test: Test):
 
 @pytest.mark.parametrize('test', _TESTS)
 def test_t_states(test: Test):
-    got = azure_cost_model.t_states(
+    got = beverland_et_al_model.t_states(
         error_budget=test.error_budget, alg=test.alg, rotation_model=BeverlandEtAlRotationCost
     )
     assert got == pytest.approx(test.t_states, rel=0.1)
 
 
 def test_notebook():
-    qlt_testing.execute_notebook('azure_cost_model')
+    qlt_testing.execute_notebook('beverland_et_al_model')
