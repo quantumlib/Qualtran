@@ -301,7 +301,10 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if self.controlled_by == ctrl:
             x_fxp = self.x_dtype.float_to_fxp(x, raw=True)
             phase_grad_fxp = self.phase_dtype.float_to_fxp(phase_grad, raw=True)
-            out = self.on_classical_vals(x=x_fxp, phase_grad=phase_grad_fxp)
+
+            ctrl_kwarg = {} if self.controlled_by is None else {'ctrl': ctrl}
+            out = self.on_classical_vals(x=x_fxp, phase_grad=phase_grad_fxp, **ctrl_kwarg)
+
             phase_grad_out_fxp = out['phase_grad']
             assert isinstance(phase_grad_out_fxp, Fxp)
             phase_grad_out = int(phase_grad_out_fxp.raw())
