@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Controlled, CtrlSpec
+from qualtran import Bloq, bloq_example, BloqDocSpec, Controlled, CtrlSpec
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
@@ -125,3 +125,30 @@ class ControlledViaAnd(Controlled):
             counts[ctrl.adjoint()] += 1
 
         return set(counts.items())
+
+
+@bloq_example
+def _controlled_via_and_qbits() -> ControlledViaAnd:
+    from qualtran.bloqs.basic_gates import Hadamard
+
+    controlled_via_and_qbits = ControlledViaAnd(Hadamard(), CtrlSpec(cvs=(np.array([0, 1, 1, 0]),)))
+    return controlled_via_and_qbits
+
+
+@bloq_example
+def _controlled_via_and_ints() -> ControlledViaAnd:
+    from qualtran import QInt, QUInt
+    from qualtran.bloqs.basic_gates import Hadamard
+
+    controlled_via_and_ints = ControlledViaAnd(
+        Hadamard(),
+        CtrlSpec(
+            qdtypes=(QUInt(4), QInt(4)), cvs=(np.array([0, 1, 2, 3]), np.array([0, 1, -1, -2]))
+        ),
+    )
+    return controlled_via_and_ints
+
+
+_CONTROLLED_VIA_AND_DOC = BloqDocSpec(
+    bloq_cls=ControlledViaAnd, examples=[_controlled_via_and_ints, _controlled_via_and_qbits]
+)
