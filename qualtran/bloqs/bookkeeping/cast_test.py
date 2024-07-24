@@ -33,14 +33,14 @@ def test_cast_tensor_contraction():
 def test_cast_classical_sim():
     c = Cast(QInt(8), QFxp(8, 8))
     (y,) = c.call_classically(reg=7)
-    assert y == 7
-    bloq = TestCastToFrom()
-    (a, b) = bloq.call_classically(a=7, b=2)
+    assert y == 7 / 2**8
+    bloq = TestCastToFrom(bitsize=8)
+    (a, b) = bloq.call_classically(a=7, b=QFxp(8, 8).float_to_fxp(2 / 2**8))
     assert a == 7
-    assert b == 9
+    assert b == QFxp(8, 8).float_to_fxp(9 / 2**8)
 
     c = Cast(QFxp(8, 8), QUInt(8))
-    assert c.call_classically(reg=1.2) == (1,)  # type: ignore
+    assert c.call_classically(reg=QFxp(8, 8).float_to_fxp(1 / 2**8)) == (1,)  # type: ignore
 
 
 def test_cast_unsiged_signed():
