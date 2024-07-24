@@ -17,6 +17,7 @@ from typing import Dict, Iterable, List, Sequence, Set, TYPE_CHECKING, Union
 import cirq
 import numpy as np
 from attrs import evolve, frozen
+from fxpmath import Fxp
 
 from qualtran import (
     Bloq,
@@ -57,10 +58,12 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     @property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(
-            a=QUInt(self.a_bitsize),
-            b=QUInt(self.b_bitsize),
-            result=QFxp(self.result_bitsize, self.result_bitsize),
+            a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), result=self.result_dtype
         )
+
+    @property
+    def result_dtype(self):
+        return QFxp(self.result_bitsize, self.result_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         if not isinstance(self.a_bitsize, int):
@@ -80,8 +83,11 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("Not needed.")
 
-    def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
-        result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
+    def on_classical_vals(self, a: int, b: int, result: Fxp) -> Dict[str, 'ClassicalValT']:
+        result_out_raw = (int(result.raw()) + a * b * ((-1) ** self.is_adjoint)) % (
+            2**self.result_bitsize
+        )
+        result_out = self.result_dtype.float_to_fxp(result_out_raw, raw=True)
         return {'a': a, 'b': b, 'result': result_out}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

@@ -159,14 +159,19 @@ def test_plus_equal_product():
         for b in range(2**b_bit):
             for result in range(2**res_bit):
                 res_out = (result + a * b) % 2**res_bit
+
                 # Test Bloq style classical simulation.
-                assert bloq.call_classically(a=a, b=b, result=result) == (a, b, res_out)
+                result_fxp = bloq.result_dtype.float_to_fxp(result, raw=True)
+                res_out_fxp = bloq.result_dtype.float_to_fxp(res_out, raw=True)
+                assert bloq.call_classically(a=a, b=b, result=result_fxp) == (a, b, res_out_fxp)
+
                 # Prepare basis states mapping for cirq-style simulation.
                 input_state_str = f'{a:0{a_bit}b}' + f'{b:0{b_bit}b}' + f'{result:0{res_bit}b}'
                 input_state = int(input_state_str, 2)
                 output_state_str = f'{a:0{a_bit}b}' + f'{b:0{b_bit}b}' + f'{res_out:0{res_bit}b}'
                 output_state = int(output_state_str, 2)
                 basis_map[input_state] = output_state
+
     # Test cirq style simulation.
     assert len(basis_map) == len(set(basis_map.values()))
     circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
