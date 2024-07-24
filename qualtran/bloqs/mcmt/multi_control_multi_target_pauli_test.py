@@ -112,8 +112,8 @@ def test_classical_multi_control_pauli_target_x(cvs, x, ctrls, result):
 def test_classical_multi_control_x(cvs, x, ctrls, result):
     bloq = MultiControlX(cvs=cvs)
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(x=x, ctrls=ctrls)
-    cbloq_classical = cbloq.call_classically(x=x, ctrls=ctrls)
+    bloq_classical = bloq.call_classically(target=x, controls=ctrls)
+    cbloq_classical = cbloq.call_classically(target=x, controls=ctrls)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):
