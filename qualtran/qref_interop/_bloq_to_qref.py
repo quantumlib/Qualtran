@@ -1,24 +1,15 @@
-"""
-..  Copyright © 2023-2024 PsiQuantum Corp.  All rights reserved.
-    PSIQUANTUM CORP. CONFIDENTIAL
-    This file includes unpublished proprietary source code of PsiQuantum Corp.
-    The copyright notice above does not evidence any actual or intended publication
-    of such source code. Disclosure of this source code or any related proprietary
-    information is strictly prohibited without the express written permission of
-    PsiQuantum Corp.
-
-Integration with Qualtran.
-"""
+import networkx as nx
 
 from functools import singledispatch
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union
+
+import sympy
+from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 
 from qualtran import Bloq, BloqInstance, CompositeBloq
 from qualtran import Connection as QualtranConnection
 from qualtran import Register, Side, Soquet
 from qualtran.cirq_interop import CirqGateAsBloq
-
-from qref.schema_v1 import RoutineV1, PortV1, ConnectionV1, ResourceV1, SchemaV1
 
 
 @singledispatch
@@ -36,16 +27,23 @@ def _cirq_gate_bloq_type(bloq: CirqGateAsBloq) -> str:
     """Determine type of Bloq constructed from Cirq gate.
 
     Without this variant of _bloq_type, type of all instances of CirqGateAsBloq
-    are set to "CirqGateAsBloq" which is not helpful, because all gates get the
+    are set to "CirqGateAsBloq" which is not helpful, because all gates would get the
     same type. Instead of this default behaviour, we extract textual representation
     of the Cirq's gate.
     """
     return str(bloq.gate)
 
 
+def _is_symbol_or_int(expression):
+    try:
+        int(expression)
+        return True
+    except (TypeError, ValueError):
+        return expression.isidentifier()
+
+
 def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> dict[str, Any]:
     """Extract common bloq attributes such as name, type and ports.
-
 
     There are several Bloq classes, however, they all share common set of atributes.
     This function is used to extract them, so that we don't have to duplicate logic
@@ -58,16 +56,40 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
             name is when a better name is known from the parent Bloq.
 
     Returns:
-        A dictionary that can be unpacked into arguments of RoutineV1 initializer,
-        containing the following fields: "name", "type", "ports".
+        A dictionary that can be unpacked into arguments of RoutineV1 initializer.
     """
-    return {
-        "name": bloq.__class__.__name__ if name is None else name,
+    ports = [port for reg in bloq.signature for port in _ports_from_register(reg)]
+    local_variables = {}
+    for port in ports:
+        if not _is_symbol_or_int(str(port.size)):
+            local_variable_name = f"{port.name}_size"
+            local_variables[local_variable_name] = port.size
+            port.size = local_variable_name
+
+    if name is None:
+        name = bloq.__class__.__name__
+        try:
+            if bloq.uncompute:
+                name += "_uncompute"
+        except AttributeError:
+            pass
+        try:
+            if bloq.is_adjoint:
+                name += "_adjoint"
+        except AttributeError:
+            pass
+    input_params = _extract_input_params(bloq, ports, local_variables)
+
+    attributes = {
+        "name": name,
         "type": _bloq_type(bloq),
-        "ports": [port for reg in bloq.signature for port in _ports_from_register(reg)],
+        "ports": ports,
         "resources": _import_resources(bloq),
-        "input_params": _extract_input_params(bloq),
+        "input_params": input_params,
     }
+    if len(local_variables) > 0:
+        attributes["local_variables"] = local_variables
+    return attributes
 
 
 def _bloq_instance_name(instance: BloqInstance) -> str:
@@ -82,13 +104,13 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
 
 
 def bloq_to_qref(obj) -> SchemaV1:
-    """TODO"""
+    """Converts Bloq to QREF SchemaV1 object."""
     return SchemaV1(version="v1", program=bloq_to_routine(obj))
 
 
 @singledispatch
 def bloq_to_routine(obj, name: Optional[str] = None):
-    """Import object from Qualtran by converting it into coresponding Bartiq object.
+    """Import object from Qualtran by converting it into corresponding QREF RoutineV1 object.
 
     Args:
         obj: object to be imported. Can be either Bloq or BloqInstance.
@@ -108,7 +130,7 @@ def bloq_to_routine(obj, name: Optional[str] = None):
 def _composite_bloq_to_routine(bloq: CompositeBloq, name: Optional[str] = None) -> RoutineV1:
     """Import CompositeBloq from Qualtran.
 
-    See `import_from_qualtran` for moe info.
+    See `import_from_qualtran` for more info.
     """
     return RoutineV1(
         **_extract_common_bloq_attributes(bloq, name),
@@ -241,6 +263,7 @@ def _import_connection(connection: QualtranConnection) -> dict[str, Any]:
 
 
 def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
+    """Import resources from Bloq's t_complexity method."""
     t_complexity = bloq.t_complexity()
     resource_names = ["t", "clifford", "rotations"]
     resources = []
@@ -252,24 +275,24 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
                 "type": "additive",
             }
         )
-    # if all(resource["value"] == 0 for resource in resources):
-    #     return {}
     return resources
 
 
-from typing import Union
-
-
-# TODO: copied from Bartiq QREF integration
 def _ensure_primitive_type(value: Any) -> Union[int, float, str, None]:
     """Ensure given value is of primitive type (e.g. is not a sympy expression)."""
     return value if value is None or isinstance(value, (int, float, str)) else str(value)
 
 
-# TODO: typing
-def _extract_input_params(bloq: Bloq):
+def _extract_input_params(bloq: Bloq, ports: list[PortV1], local_variables) -> list[str]:
+    """Extracts input_params from bloq's t_complexity and port sizes."""
+    params_from_t_complexity = _extract_input_params_from_t_complexity(bloq)
+    params_from_ports = _extract_input_params_from_ports(ports)
+    params = list(set(params_from_t_complexity + params_from_ports) - set(local_variables))
+    return sorted(params)
+
+
+def _extract_input_params_from_t_complexity(bloq: Bloq) -> list[str]:
     input_params = set()
-    # TODO: logic duplication from _import_resources
     t_complexity = bloq.t_complexity()
     resource_names = ["t", "clifford", "rotations"]
     for name in resource_names:
@@ -278,3 +301,11 @@ def _extract_input_params(bloq: Bloq):
         except AttributeError:
             pass
     return [str(symbol) for symbol in input_params]
+
+
+def _extract_input_params_from_ports(ports) -> list[str]:
+    input_params = set()
+    for port in ports:
+        input_params = input_params | sympy.sympify(port.size).free_symbols
+
+    return [str(param) for param in input_params]

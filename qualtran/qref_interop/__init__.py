@@ -1,1 +1,1 @@
-from ._bloq_to_qref import bloq_to_qref
+from ._bloq_to_qref import bloq_to_qref, bloq_to_qref_from_call_graph
