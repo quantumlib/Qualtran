@@ -19,7 +19,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @frozen
@@ -51,8 +51,12 @@ class ArcSin(Bloq):
     degree: SymbolicInt = 4  # reference studies degree-3, 4, 5, or 6 polynomials
 
     def __attrs_post_init__(self):
-        if self.num_frac == self.bitsize:
-            raise ValueError("num_frac must be < bitsize since a >= 1.")
+        if (
+            not is_symbolic(self.num_frac)
+            and not is_symbolic(self.bitsize)
+            and self.num_frac > self.bitsize
+        ):
+            raise ValueError("num_frac must be < bitsize.")
 
     @property
     def signature(self):
