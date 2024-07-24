@@ -631,11 +631,22 @@ class QFxp(QDType):
             )
 
     def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
-        # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
-        # is currently not propagated correctly through Bloqs
         assert isinstance(val, Fxp)
         assert val.overflow == 'wrap'
         assert val.shifting == 'trunc'
+        self._assert_valid_classical_val(val, debug_str)
+
+    def float_to_fxp(self, val: float, *, require_exact: bool = True) -> Fxp:
+        """Convert a floating point value to an Fxp constant of this dtype.
+
+        Args:
+            val: Floating point value.
+            require_exact: If True, represent the input `val` exactly and raise
+                           a ValueError if it cannot be represented.
+        """
+        if require_exact:
+            self._assert_valid_classical_val(val)
+        return Fxp(val).like(self._fxp_dtype)
 
     def __str__(self):
         if self.signed:
