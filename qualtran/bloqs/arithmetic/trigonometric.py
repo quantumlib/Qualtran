@@ -14,8 +14,8 @@
 
 from typing import Dict, Set
 
-from attrs import frozen
 import numpy as np
+from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
