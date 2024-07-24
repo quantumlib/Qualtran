@@ -302,7 +302,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             x_fxp = self.x_dtype.float_to_fxp(x, raw=True)
             phase_grad_fxp = self.phase_dtype.float_to_fxp(phase_grad, raw=True)
             out = self.on_classical_vals(x=x_fxp, phase_grad=phase_grad_fxp)
-            phase_grad_out = int(out['phase_grad'].raw())
+            phase_grad_out_fxp = out['phase_grad']
+            assert isinstance(phase_grad_out_fxp, Fxp)
+            phase_grad_out = int(phase_grad_out_fxp.raw())
         else:
             phase_grad_out = phase_grad
 
@@ -311,7 +313,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         else:
             return x, phase_grad_out
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
+    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
         x: Fxp = kwargs['x']
         phase_grad: Fxp = kwargs['phase_grad']
 

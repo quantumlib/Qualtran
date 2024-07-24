@@ -461,6 +461,9 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
+        if is_symbolic(self.gamma):
+            raise ValueError(f"Cannot compute Fxp from symbolic {self.gamma=}")
+
         return self.gamma_dtype.float_to_fxp(abs(self.gamma))
 
     @cached_property
