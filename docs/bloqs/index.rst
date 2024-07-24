@@ -39,6 +39,7 @@ Bloqs Library
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
+    mcmt/controlled_via_and.ipynb
 
 .. toctree::
     :maxdepth: 2
