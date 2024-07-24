@@ -30,6 +30,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CNOT,
+    CZ,
     Hadamard,
     Identity,
     IntEffect,
@@ -77,7 +78,7 @@ def test_call_graph():
     assert sigma == {
         CHadamard(): 1,
         Controlled(TGate(), CtrlSpec()): 1,
-        Controlled(ZGate(), CtrlSpec()): 1,
+        CZ(): 1,
         CNOT(): 4,
         TGate(): 12,
         ArbitraryClifford(2): 45,

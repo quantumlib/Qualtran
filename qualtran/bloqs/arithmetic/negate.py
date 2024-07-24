@@ -61,7 +61,7 @@ class Negate(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)  # ~x
-        x = bb.add(AddK(self.dtype.num_qubits, k=1), x=x)  # -x
+        x = bb.add(AddK(self.dtype.num_qubits, k=1, signed=isinstance(self.dtype, QInt)), x=x)  # -x
         return {'x': x}
 
 

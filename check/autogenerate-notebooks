@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Autogenerates the notebooks and reports whether there were any changes.
+#
+# Usage:
+#     check/autogenerate-notebooks
+#
+################################################################################
+
+python dev_tools/autogenerate-bloqs-notebooks-v2.py || exit $?
+
+if output=$(git status --porcelain) && [ -z "$output" ]; then
+  # Working directory clean
+  exit 0
+else
+  # Uncommitted changes
+  echo $output
+  exit 1
+fi

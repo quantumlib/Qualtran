@@ -50,7 +50,6 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
@@ -61,6 +60,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
