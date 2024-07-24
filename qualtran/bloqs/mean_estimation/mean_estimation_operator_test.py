@@ -21,11 +21,8 @@ import pytest
 from attrs import frozen
 
 from qualtran import BoundedQUInt, QAny, QBit, QUInt, Register
-from qualtran._infra.gate_with_registers import (
-    get_named_qubits,
-    SpecializedSingleQubitControlledGate,
-    total_bits,
-)
+from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -55,7 +52,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class BernoulliEncoder(SelectOracle, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
