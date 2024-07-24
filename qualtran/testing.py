@@ -568,7 +568,7 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     bloq = bloq_ex.make()
 
     try:
-        bloq_lib = bloqs_to_proto(bloq)
+        bloq_lib = bloqs_to_proto(bloq, max_depth=0)
     except Exception as e:
         raise BloqCheckException.fail('Serialization Failed:\n' + str(e)) from e
     try:
