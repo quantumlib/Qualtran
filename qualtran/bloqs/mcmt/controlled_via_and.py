@@ -137,7 +137,7 @@ def _controlled_via_and_qbits() -> ControlledViaAnd:
 
 @bloq_example
 def _controlled_via_and_ints() -> ControlledViaAnd:
-    from qualtran import QInt, QUInt
+    from qualtran import CtrlSpec, QInt, QUInt
     from qualtran.bloqs.basic_gates import Hadamard
 
     controlled_via_and_ints = ControlledViaAnd(
