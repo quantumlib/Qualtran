@@ -292,30 +292,25 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
 
-    @cached_method
-    def scaled_val_int(self, x: int) -> int:
-        """Computes `x >> right_shift` using fixed point arithmetic."""
-        x_width = self.x_bitsize + self.right_shift
-        x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
-        return int(x_fxp.astype(float) * 2**self.phase_bitsize)
-
     def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
-            if ctrl == self.controlled_by:
-                phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
-                    2**self.phase_bitsize
-                )
-            else:
-                phase_grad_out = phase_grad
+        else:
+            ctrl = None
+            x, phase_grad = args
 
+        if self.controlled_by == ctrl:
+            x_fxp = self.x_dtype.float_to_fxp(x, raw=True)
+            phase_grad_fxp = self.phase_dtype.float_to_fxp(phase_grad, raw=True)
+            out = self.on_classical_vals(x=x_fxp, phase_grad=phase_grad_fxp)
+            phase_grad_out = int(out['phase_grad'].raw())
+        else:
+            phase_grad_out = phase_grad
+
+        if ctrl is not None:
             return ctrl, x, phase_grad_out
-
-        x, phase_grad = args
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
-            2**self.phase_bitsize
-        )
-        return x, phase_grad_out
+        else:
+            return x, phase_grad_out
 
     def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
         x: Fxp = kwargs['x']
@@ -464,32 +459,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             raise ValueError(f"Cannot compute Fxp for symbolic {self.gamma=}")
         return self.gamma_dtype.float_to_fxp(abs(self.gamma), require_exact=False)
 
-    @cached_method
-    def scaled_val_int(self, x: int) -> int:
-        """Computes `x*self.gamma` using fixed point arithmetic."""
-        if isinstance(self.gamma, sympy.Expr):
-            raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
-        if isinstance(self.phase_dtype.bitsize, sympy.Expr):
-            raise ValueError(f'Symbolic phase bitsize {self.phase_dtype.bitsize} not allowed')
-        sign = np.sign(self.gamma)
-        # `x` is an integer because we currently represent each bitstring as an integer during simulations.
-        # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
-        # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
-        # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
-        # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
-        # of bits for integer and fractional part. This is done in self.gamma_fxp
-        # Compute the result = x_fxp * gamma_fxp
-        result = _mul_via_repeated_add(x_fxp, self.abs_gamma_fxp, self.phase_dtype.bitsize)
-        # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
-        # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
-        # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
-        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_str
-        # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
-        # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
-        # can be ignored during the fixed point arithmetic analysis.
-        return int(np.floor(result.astype(float) * 2**self.phase_dtype.bitsize) * sign)
-
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
@@ -522,7 +491,12 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     ) -> Tuple[
         Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
     ]:
-        phase_grad_out = (phase_grad + self.scaled_val_int(x)) % 2**self.phase_bitsize
+        x_fxp = self.x_dtype.float_to_fxp(x, raw=True)
+        phase_grad_fxp = self.phase_dtype.float_to_fxp(phase_grad, raw=True)
+
+        out = self.on_classical_vals(x=x_fxp, phase_grad=phase_grad_fxp)
+        phase_grad_out = int(out['phase_grad'].raw())
+
         return x, phase_grad_out
 
     def on_classical_vals(self, x: Fxp, phase_grad: Fxp) -> Dict[str, Fxp]:

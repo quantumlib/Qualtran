@@ -636,17 +636,22 @@ class QFxp(QDType):
         assert val.shifting == 'trunc'
         self._assert_valid_classical_val(val, debug_str)
 
-    def float_to_fxp(self, val: float, *, require_exact: bool = True) -> Fxp:
+    def float_to_fxp(
+        self, val: Union[float, int], *, raw: bool = False, require_exact: bool = True
+    ) -> Fxp:
         """Convert a floating point value to an Fxp constant of this dtype.
+
+        If `raw` is True, then returns `val / 2**self.n_frac` instead.
 
         Args:
             val: Floating point value.
+            raw: Convert from a raw integer value instead
             require_exact: If True, represent the input `val` exactly and raise
                            a ValueError if it cannot be represented.
         """
         if require_exact:
-            self._assert_valid_classical_val(val)
-        return Fxp(val).like(self._fxp_dtype)
+            self._assert_valid_classical_val(val if not raw else val / 2**self.num_frac)
+        return Fxp(val, raw=raw, like=self._fxp_dtype)
 
     def __str__(self):
         if self.signed:
