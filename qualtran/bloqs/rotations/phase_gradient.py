@@ -459,7 +459,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     @cached_property
-    def gamma_fxp(self) -> Fxp:
+    def abs_gamma_fxp(self) -> Fxp:
         if is_symbolic(self.gamma):
             raise ValueError(f"Cannot compute Fxp for symbolic {self.gamma=}")
         return self.gamma_dtype.float_to_fxp(abs(self.gamma), require_exact=False)
@@ -480,7 +480,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
-        result = _mul_via_repeated_add(x_fxp, self.gamma_fxp, self.phase_dtype.bitsize)
+        result = _mul_via_repeated_add(x_fxp, self.abs_gamma_fxp, self.phase_dtype.bitsize)
         # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
@@ -497,10 +497,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
         x, phase_grad = quregs['x'], quregs['phase_grad']
         sign = int(np.sign(self.gamma))
-        for i, bit in enumerate(self.gamma_fxp.bin()):
+        for i, bit in enumerate(self.abs_gamma_fxp.bin()):
             if bit == '0':
                 continue
-            shift = self.gamma_fxp.n_int - i - 1
+            shift = self.abs_gamma_fxp.n_int - i - 1
             if 0 <= shift < self.x_dtype.num_frac:
                 # Left shift by `shift` bits / multiply by 2**shift
                 yield AddIntoPhaseGrad(
@@ -532,7 +532,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             raise ValueError(f"Cannot classically simulate with symbolic {self.gamma=}")
 
         scaled_x = _mul_via_repeated_add(
-            x.like(phase_grad), gamma_fxp=self.gamma_fxp, out=self.phase_bitsize
+            x.like(phase_grad), gamma_fxp=self.abs_gamma_fxp, out=self.phase_bitsize
         )
         if np.sign(self.gamma) == -1:
             phase_grad_out = phase_grad - scaled_x
@@ -544,10 +544,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         num_additions = (self.gamma_dtype.bitsize + 2) // 2
         if not isinstance(self.gamma, sympy.Basic):
             num_additions_naive = 0
-            for i, bit in enumerate(self.gamma_fxp.bin()):
+            for i, bit in enumerate(self.abs_gamma_fxp.bin()):
                 if bit == '0':
                     continue
-                shift = self.gamma_fxp.n_int - i - 1
+                shift = self.abs_gamma_fxp.n_int - i - 1
                 if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)
