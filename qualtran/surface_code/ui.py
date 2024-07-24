@@ -24,6 +24,7 @@ from dash.exceptions import PreventUpdate
 from qualtran.resource_counting import GateCounts
 from qualtran.surface_code import (
     AlgorithmSummary,
+    azure_cost_model,
     ccz2t_cost_model,
     fifteen_to_one,
     LogicalErrorModel,
@@ -31,7 +32,6 @@ from qualtran.surface_code import (
 )
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
 from qualtran.surface_code import rotation_cost_model
-from qualtran.surface_code.azure_cost_model import code_distance, minimum_time_steps
 from qualtran.surface_code.ccz2t_cost_model import (
     get_ccz2t_costs_from_grid_search,
     iter_ccz2t_factories,
@@ -368,7 +368,7 @@ def create_qubit_pie_chart(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
             n_logical_gates=n_logical_gates,
-            n_algo_qubits=int(algorithm.algorithm_qubits),
+            n_algo_qubits=int(algorithm.n_algo_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, int(magic_count)) for f in iter_ccz2t_factories()],
@@ -395,7 +395,7 @@ def create_qubit_pie_chart(
             'Magic State Distillation',
         ]
         memory_footprint['qubits'] = [
-            FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits)),
+            FastDataBlock.get_n_tiles(int(algorithm.n_algo_qubits)),
             multi_factory.n_physical_qubits(),
         ]
         fig = px.pie(
@@ -447,7 +447,7 @@ def create_runtime_plot(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, go.Figure()
     factory = MultiFactory(magic_factory, int(magic_count))
-    c_min = minimum_time_steps(
+    c_min = azure_cost_model.minimum_time_steps(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
     )
     err_model = LogicalErrorModel(qec_scheme=qec, physical_error=physical_error_rate)
@@ -464,12 +464,12 @@ def create_runtime_plot(
     magic_counts[0] = min_num_factories
     time_steps[0] = c_min
     cds = [
-        code_distance(
+        azure_cost_model.code_distance(
             error_budget=error_budget,
             time_steps=t,
             alg=algorithm,
-            qec=qec,
-            physical_error_rate=physical_error_rate,
+            qec_scheme=qec,
+            physical_error=physical_error_rate,
         )
         for t in time_steps
     ]
@@ -477,7 +477,7 @@ def create_runtime_plot(
     unit, duration = format_duration(duration)
     duration_name = f'Duration ({unit})'
     num_qubits = (
-        FastDataBlock.get_n_tiles(int(algorithm.algorithm_qubits))
+        FastDataBlock.get_n_tiles(int(algorithm.n_algo_qubits))
         + factory.n_physical_qubits() * magic_counts
     )
     df = pd.DataFrame(
@@ -507,24 +507,35 @@ def create_runtime_plot(
     *_ALL_INPUTS,
 )
 def update(
-    physical_error_rate,
-    error_budget,
-    estimation_model,
-    algorithm_data,
-    qec_name,
-    magic_name,
-    magic_count,
-    rotaion_model_name,
+    physical_error_rate: float,
+    error_budget: float,
+    estimation_model: str,
+    algorithm_data: Sequence[Any],
+    qec_name: str,
+    magic_name: str,
+    magic_count: int,
+    rotaion_model_name: str,
 ):
     """Updates the visualization."""
     if any(x is None for x in [physical_error_rate, error_budget, *algorithm_data, magic_count]):
         raise PreventUpdate
-    algorithm = AlgorithmSummary(*algorithm_data)
+
+    # TODO: We implicitly rely on the order of the input components
+    qubits, measurements, ts, toffolis, rotations, n_rotation_layers = algorithm_data
+    algorithm = AlgorithmSummary(
+        n_algo_qubits=qubits,
+        n_logical_gates=GateCounts(
+            measurement=measurements, t=ts, toffoli=toffolis, rotation=rotations
+        ),
+        n_rotation_layers=n_rotation_layers,
+    )
     qec = _QEC_SCHEMES[qec_name]
     magic_factory = _MAGIC_FACTORIES[magic_name]
     rotation_model = _ROTATION_MODELS[rotaion_model_name]
-    needed_magic = algorithm.to_magic_count(rotation_model, error_budget / 3)
-    n_logical_gates = GateCounts(t=int(needed_magic.n_t), toffoli=int(needed_magic.n_ccz))
+    n_logical_gates = azure_cost_model.n_discrete_logical_gates(
+        eps_syn=error_budget / 3, alg=algorithm, rotation_model=rotation_model
+    )
+    # n_logical_gates = GateCounts(t=int(n_logical_gates.t), toffoli=int(n_logical_gates.toffoli))
     magic_count = int(magic_count)
     logical_err_model = LogicalErrorModel(qec_scheme=qec, physical_error=physical_error_rate)
     return (
@@ -591,7 +602,7 @@ def min_num_factories(
 ) -> Tuple[Dict[str, Any], int]:
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, 1
-    c_min = minimum_time_steps(
+    c_min = azure_cost_model.minimum_time_steps(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
     )
     return {'display': 'block'}, int(
@@ -620,7 +631,7 @@ def compute_duration(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
             n_logical_gates=n_logical_gates,
-            n_algo_qubits=int(algorithm.algorithm_qubits),
+            n_algo_qubits=int(algorithm.n_algo_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, magic_count) for f in iter_ccz2t_factories()],

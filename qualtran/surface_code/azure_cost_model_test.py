@@ -16,8 +16,8 @@ import pytest
 from attrs import frozen
 
 import qualtran.testing as qlt_testing
-from qualtran.surface_code import azure_cost_model
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.resource_counting import GateCounts
+from qualtran.surface_code import AlgorithmSummary, azure_cost_model
 from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     BeverlandSuperconductingQubits,
 )
@@ -40,10 +40,9 @@ class Test:
 _TESTS = [
     Test(
         alg=AlgorithmSummary(
-            algorithm_qubits=100,
-            rotation_gates=30100,
-            measurements=1.4 * 10**6,
-            rotation_circuit_depth=501,
+            n_algo_qubits=100,
+            n_logical_gates=GateCounts(rotation=30_100, measurement=int(1.4e6)),
+            n_rotation_layers=501,
         ),
         error_budget=1e-3,
         c_min=1.5e6,
@@ -53,12 +52,11 @@ _TESTS = [
     ),
     Test(
         alg=AlgorithmSummary(
-            algorithm_qubits=1318,
-            t_gates=5.53e7,
-            rotation_circuit_depth=2.05e8,
-            rotation_gates=2.06e8,
-            toffoli_gates=1.35e11,
-            measurements=1.37e9,
+            n_algo_qubits=1318,
+            n_logical_gates=GateCounts(
+                t=int(5.53e7), rotation=int(2.06e8), toffoli=int(1.35e11), measurement=int(1.37e9)
+            ),
+            n_rotation_layers=int(2.05e8),
         ),
         error_budget=1e-2,
         c_min=4.1e11,
@@ -68,12 +66,11 @@ _TESTS = [
     ),
     Test(
         alg=AlgorithmSummary(
-            algorithm_qubits=12581,
-            t_gates=12,
-            rotation_circuit_depth=12,
-            rotation_gates=12,
-            toffoli_gates=3.73e9,
-            measurements=1.08e9,
+            n_algo_qubits=12581,
+            n_logical_gates=GateCounts(
+                t=12, rotation=12, toffoli=int(3.73e9), measurement=int(1.08e9)
+            ),
+            n_rotation_layers=12,
         ),
         error_budget=1 / 3,
         c_min=1.23e10,
@@ -87,7 +84,7 @@ _TESTS = [
 @pytest.mark.parametrize('test', _TESTS)
 def test_minimum_time_step(test: Test):
     got = azure_cost_model.minimum_time_steps(
-        test.error_budget, test.alg, rotation_model=BeverlandEtAlRotationCost
+        error_budget=test.error_budget, alg=test.alg, rotation_model=BeverlandEtAlRotationCost
     )
     assert got == pytest.approx(test.c_min, rel=0.1)
 
@@ -95,11 +92,11 @@ def test_minimum_time_step(test: Test):
 @pytest.mark.parametrize('test', _TESTS)
 def test_code_distance(test: Test):
     got = azure_cost_model.code_distance(
-        test.error_budget,
-        test.time_steps,
-        test.alg,
-        qec=BeverlandSuperconductingQubits,
-        physical_error_rate=1e-4,
+        error_budget=test.error_budget,
+        time_steps=test.time_steps,
+        alg=test.alg,
+        qec_scheme=BeverlandSuperconductingQubits,
+        physical_error=1e-4,
     )
     assert got == test.code_distance
 
@@ -107,7 +104,7 @@ def test_code_distance(test: Test):
 @pytest.mark.parametrize('test', _TESTS)
 def test_t_states(test: Test):
     got = azure_cost_model.t_states(
-        test.error_budget, test.alg, rotation_model=BeverlandEtAlRotationCost
+        error_budget=test.error_budget, alg=test.alg, rotation_model=BeverlandEtAlRotationCost
     )
     assert got == pytest.approx(test.t_states, rel=0.1)
 
