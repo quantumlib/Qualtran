@@ -90,6 +90,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -223,6 +224,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Control Specification (And)',
         module=qualtran.bloqs.mcmt.ctrl_spec_and,
         bloq_specs=[qualtran.bloqs.mcmt.ctrl_spec_and._CTRLSPEC_AND_DOC],
+    ),
+    NotebookSpecV2(
+        title='Multi control bloq via single control bloq and `And` ladder',
+        module=qualtran.bloqs.mcmt.controlled_via_and,
+        bloq_specs=[qualtran.bloqs.mcmt.controlled_via_and._CONTROLLED_VIA_AND_DOC],
     ),
 ]
 
