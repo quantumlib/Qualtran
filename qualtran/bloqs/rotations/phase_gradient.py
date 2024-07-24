@@ -225,23 +225,6 @@ _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
 )
 
 
-def _extract_raw_int_from_fxp(val: Fxp) -> int:
-    """extracts the bits of the Fxp as a binary number (ignoring the dot)"""
-    return int(val.bin(), 2)
-
-
-def _phase_int_to_fxp(val: int, frac_bitsize: int) -> Fxp:
-    return Fxp(
-        val,
-        raw=True,
-        n_word=frac_bitsize,
-        n_frac=frac_bitsize,
-        signed=False,
-        overflow='wrap',
-        shifting='trunc',
-    )
-
-
 @attrs.frozen
 class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Quantum-quantum addition into a phase gradient register using $b_{phase} - 2$ Toffolis
@@ -311,7 +294,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
     @cached_method
     def scaled_val_int(self, x: int) -> int:
-        """Computes `phase_grad + x` using fixed point arithmetic."""
+        """Computes `x >> right_shift` using fixed point arithmetic."""
         x_width = self.x_bitsize + self.right_shift
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
@@ -335,31 +318,24 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return x, phase_grad_out
 
     def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
-        x_fxp, phase_grad_fxp = kwargs['x'], kwargs['phase_grad']
+        x: Fxp = kwargs['x']
+        phase_grad: Fxp = kwargs['phase_grad']
 
-        x, phase_grad = _extract_raw_int_from_fxp(x_fxp), _extract_raw_int_from_fxp(phase_grad_fxp)
-        if self.controlled_by is not None:
-            ctrl = kwargs['ctrl']
-            if ctrl == self.controlled_by:
-                phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
-                    2**self.phase_bitsize
-                )
+        if self.controlled_by is None or self.controlled_by == kwargs['ctrl']:
+            # widen appropriately so that right shifting does not drop necessary bits
+            x = x.like(
+                QFxp(x.n_int + phase_grad.n_frac, phase_grad.n_frac, phase_grad.signed)._fxp_dtype
+            )
+            scaled_x = x >> self.right_shift
+            if self.sign == 1:
+                phase_grad_out = phase_grad + scaled_x
             else:
-                phase_grad_out = phase_grad
+                phase_grad_out = phase_grad - scaled_x
+        else:
+            phase_grad_out = phase_grad.copy()
 
-            return {
-                'ctrl': ctrl,
-                'x': x_fxp,
-                'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
-            }
-
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
-            2**self.phase_bitsize
-        )
-        return {
-            'x': kwargs['x'],
-            'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
-        }
+        kwargs['phase_grad'] = phase_grad_out
+        return kwargs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
@@ -530,7 +506,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                 yield AddIntoPhaseGrad(
                     self.x_dtype.num_frac - shift, self.phase_bitsize, sign=sign
                 ).on_registers(x=x[shift + self.x_dtype.num_int :], phase_grad=phase_grad)
-            elif -len(phase_grad) - self.x_dtype.num_int < shift < 0:
+            elif -self.phase_dtype.bitsize - self.x_dtype.num_int < shift < 0:
                 # Right shift by `shift` bits / divide by 2**shift
                 shift = abs(shift)
                 x_bitsize = self.x_dtype.num_frac + min(shift, self.x_dtype.num_int)
@@ -550,12 +526,19 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return x, phase_grad_out
 
     def on_classical_vals(self, x: Fxp, phase_grad: Fxp) -> Dict[str, Fxp]:
-        x_ = _extract_raw_int_from_fxp(x)
-        phase_grad_ = _extract_raw_int_from_fxp(phase_grad)
+        if is_symbolic(self.phase_bitsize):
+            raise ValueError(f"Cannot classically simulate with symbolic {self.phase_bitsize=}")
+        if is_symbolic(self.gamma):
+            raise ValueError(f"Cannot classically simulate with symbolic {self.gamma=}")
 
-        phase_grad_out = (phase_grad_ + self.scaled_val(x_)) % 2**self.phase_bitsize
-
-        return {'x': x, 'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize))}
+        scaled_x = _mul_via_repeated_add(
+            x.like(phase_grad), gamma_fxp=self.gamma_fxp, out=self.phase_bitsize
+        )
+        if np.sign(self.gamma) == -1:
+            phase_grad_out = phase_grad - scaled_x
+        else:
+            phase_grad_out = phase_grad + scaled_x
+        return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_additions = (self.gamma_dtype.bitsize + 2) // 2
