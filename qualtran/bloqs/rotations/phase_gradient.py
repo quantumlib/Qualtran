@@ -227,8 +227,6 @@ _PHASE_GRADIENT_STATE_DOC = BloqDocSpec(
 
 def _extract_raw_int_from_fxp(val: Fxp) -> int:
     """extracts the bits of the Fxp as a binary number (ignoring the dot)"""
-    if isinstance(val, (int, np.integer)):
-        return int(val)
     return int(val.bin(), 2)
 
 
@@ -312,7 +310,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         raise NotImplementedError("not needed.")
 
     @cached_method
-    def scaled_val(self, x: int) -> int:
+    def scaled_val_int(self, x: int) -> int:
         """Computes `phase_grad + x` using fixed point arithmetic."""
         x_width = self.x_bitsize + self.right_shift
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
@@ -322,7 +320,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
             if ctrl == self.controlled_by:
-                phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
+                phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
                     2**self.phase_bitsize
                 )
             else:
@@ -331,7 +329,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
             return ctrl, x, phase_grad_out
 
         x, phase_grad = args
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
+        phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
+            2**self.phase_bitsize
+        )
         return x, phase_grad_out
 
     def on_classical_vals(self, **kwargs) -> Dict[str, Union['ClassicalValT', Fxp]]:
@@ -341,7 +341,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if self.controlled_by is not None:
             ctrl = kwargs['ctrl']
             if ctrl == self.controlled_by:
-                phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
+                phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
                     2**self.phase_bitsize
                 )
             else:
@@ -353,7 +353,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
             }
 
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
+        phase_grad_out = (phase_grad + self.sign * self.scaled_val_int(x)) % (
+            2**self.phase_bitsize
+        )
         return {
             'x': kwargs['x'],
             'phase_grad': _phase_int_to_fxp(phase_grad_out, int(self.phase_bitsize)),
@@ -487,7 +489,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return self.gamma_dtype.float_to_fxp(abs(self.gamma), require_exact=False)
 
     @cached_method
-    def scaled_val(self, x: int) -> int:
+    def scaled_val_int(self, x: int) -> int:
         """Computes `x*self.gamma` using fixed point arithmetic."""
         if isinstance(self.gamma, sympy.Expr):
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
@@ -544,7 +546,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     ) -> Tuple[
         Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
     ]:
-        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
+        phase_grad_out = (phase_grad + self.scaled_val_int(x)) % 2**self.phase_bitsize
         return x, phase_grad_out
 
     def on_classical_vals(self, x: Fxp, phase_grad: Fxp) -> Dict[str, Fxp]:
