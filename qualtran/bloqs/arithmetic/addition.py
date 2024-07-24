@@ -459,7 +459,7 @@ class AddK(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -479,7 +479,7 @@ class AddK(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
