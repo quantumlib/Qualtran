@@ -29,10 +29,10 @@ class PhysicalParameters:
     cycle_time_us: float = 1.0
 
     @classmethod
-    def from_beverland(
+    def make_beverland_et_al(
         cls, qubit_modality: str = 'superconducting', optimistic_err_rate: bool = False
     ):
-        """The physical parameters considered in the reference.
+        """The physical parameters considered in the Beverland et. al. reference.
 
         Args:
             qubit_modality: One of "superconducting", "ion", or "majorana". This sets the
@@ -42,7 +42,7 @@ class PhysicalParameters:
                 error rates.
 
         References:
-            [https://arxiv.org/abs/2211.07629](Assessing requirements to scale to practical quantum advantage).
+            [Assessing requirements to scale to practical quantum advantage](https://arxiv.org/abs/2211.07629).
             Beverland et. al. (2022).
         """
         if optimistic_err_rate:
@@ -74,3 +74,17 @@ class PhysicalParameters:
         return PhysicalParameters(
             physical_error=phys_err_rate, cycle_time_us=cycle_time_ns / 1000.0
         )
+
+    @classmethod
+    def make_gidney_fowler(cls, optimistic_err_rate: bool = False):
+        """The physical parameters considered in the Gidney and Fowler reference.
+
+        References:
+            [Efficient magic state factories with a catalyzed |CCZ> to 2|T> transformation](https://arxiv.org/abs/1812.01238).
+            Gidney and Fowler (2018).
+        """
+        if optimistic_err_rate:
+            phys_err_rate = 1e-4
+        else:
+            phys_err_rate = 1e-3
+        return PhysicalParameters(physical_error=phys_err_rate, cycle_time_us=1.0)
