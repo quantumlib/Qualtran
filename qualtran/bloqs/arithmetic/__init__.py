@@ -38,5 +38,6 @@ from qualtran.bloqs.arithmetic.multiplication import (
 from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
 from qualtran.bloqs.arithmetic.subtraction import Subtract, SubtractFrom
+from qualtran.bloqs.arithmetic.trigonometric import ArcSin
 
 from ._shims import CHalf, Lt, MultiCToffoli

@@ -71,6 +71,7 @@ Bloqs Library
     arithmetic/conversions.ipynb
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
+    arithmetic/trigonometric.ipynb
 
 .. toctree::
     :maxdepth: 2

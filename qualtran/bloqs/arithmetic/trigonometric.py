@@ -1,0 +1,94 @@
+#  Copyright 2024 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+from typing import Set
+
+from attrs import frozen
+
+from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Signature
+from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.symbolics import SymbolicInt
+
+
+@frozen
+class ArcSin(Bloq):
+    r"""Compute the arcsine of a fixed-point number.
+
+    Implements the unitary:
+    $$
+        |a\rangle|0\rangle \rightarrow |a\rangle|\arcsin(a)\rangle
+    $$
+
+    Args:
+        bitsize: Number of bits used to represent the number.
+        num_frac: Number of fraction bits in the number.
+        num_iters: Number of Newton-Raphson iterations.
+        degree: Degree of the polynomial of the initial approximation.
+
+    Registers:
+        x: `bitsize`-sized input register.
+        result: `bitsize`-sized output register.
+
+    References:
+        [Optimizing Quantum Circuits for Arithmetic](https://arxiv.org/abs/1805.12445). Appendix D.
+    """
+
+    bitsize: SymbolicInt
+    num_frac: SymbolicInt
+    num_iters: SymbolicInt = 4  # reference studies 3, 4, or 5 iterations
+    degree: SymbolicInt = 4  # reference studies degree-3, 4, 5, or 6 polynomials
+
+    def __attrs_post_init__(self):
+        if self.num_frac == self.bitsize:
+            raise ValueError("num_frac must be < bitsize since a >= 1.")
+
+    @property
+    def signature(self):
+        return Signature(
+            [
+                Register("x", QFxp(self.bitsize, self.num_frac)),
+                Register("result", QFxp(self.bitsize, self.num_frac)),
+            ]
+        )
+
+    def pretty_name(self) -> str:
+        return "arcsin(x)"
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        n = self.bitsize
+        p = self.bitsize - self.num_frac
+        d = self.degree
+        m = self.num_iters
+        # directly copied from T_arcsin on page 10 of reference
+        ts = (
+            d * (3 * n**2 + n * (6 * p + 7) - 6 * (p - 1) * p - 2)
+            + m * (n * (15 * n + 30 * p + 23) - 30 * p * (p - 1) - 4)
+            + 9 * (n + 1) * p
+            + 9 * n * (n + 1) // 2
+            + 6 * n**2
+            + 28 * n
+            - 9 * p**2
+            + 2
+        )
+        return {(Toffoli(), ts)}
+
+
+@bloq_example
+def _arcsin() -> ArcSin:
+    arcsin = ArcSin(bitsize=10, num_frac=7)
+    return arcsin
+
+
+_ARCSIN_DOC = BloqDocSpec(bloq_cls=ArcSin, examples=[_arcsin])
