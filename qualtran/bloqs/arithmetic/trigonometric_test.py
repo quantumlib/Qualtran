@@ -12,8 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
+
 from qualtran.bloqs.arithmetic.trigonometric import _arcsin
 
 
 def test_arcsin(bloq_autotester):
     bloq_autotester(_arcsin)
+
+
+def test_arcsin_classical():
+    bloq = _arcsin()
+    x = int(1 / np.sqrt(2) * 2**10)
+    result_out = int(np.arcsin(1 / np.sqrt(2)) * 2**10)
+    assert bloq.call_classically(x=x, result=0) == (x, result_out)
