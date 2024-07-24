@@ -133,7 +133,7 @@ class MontgomeryModNeg(Bloq):
         # representing 0.
         cvs = tuple([0] * self.bitsize)
         x_split = bb.split(x)
-        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
+        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), controls=x_split, target=ctrl)
         x = bb.join(x_split)
 
         # Bitflips all qubits if the ctrl bit is set to 1 (the input x register is not in the 0
@@ -153,7 +153,7 @@ class MontgomeryModNeg(Bloq):
         # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
         # representing 0.
         x_split = bb.split(x)
-        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
+        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), controls=x_split, target=ctrl)
         x = bb.join(x_split)
 
         # Return the ancilla qubit to the 0 state and free it.
