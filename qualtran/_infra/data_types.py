@@ -549,6 +549,11 @@ class QFxp(QDType):
         -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
             digits are simply discarded.
         """
+        if is_symbolic(self.bitsize) or is_symbolic(self.num_frac):
+            raise ValueError(
+                "Cannot construct Fxp template for symbolic bitsizes {self.bitsize=}, {self.num_frac=}"
+            )
+
         return Fxp(
             None,
             n_word=self.bitsize,
