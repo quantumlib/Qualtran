@@ -38,9 +38,9 @@ from qualtran import (
 from qualtran.bloqs.arithmetic import Add, AddK
 from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.data_loading import QROM
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )

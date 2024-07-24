@@ -358,15 +358,19 @@ class Controlled(GateWithRegisters):
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
+        return Bloq.decompose_bloq(self)
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
-        from qualtran import BloqBuilder, CompositeBloq
+        from qualtran import CompositeBloq
 
         if isinstance(self.subbloq, CompositeBloq):
             cbloq = self.subbloq
         else:
             cbloq = self.subbloq.decompose_bloq()
 
-        bb, initial_soqs = BloqBuilder.from_signature(self.signature)
         ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -380,7 +384,7 @@ class Controlled(GateWithRegisters):
 
         fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
-        return bb.finalize(**fsoqs)
+        return fsoqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
