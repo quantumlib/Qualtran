@@ -18,7 +18,6 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from cirq._compat import cached_method
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
