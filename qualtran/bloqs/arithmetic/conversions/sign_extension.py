@@ -178,6 +178,12 @@ class SignTruncate(Bloq):
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         bits = self.inp_dtype.to_bits(int(x))
+
+        bits_to_drop = bits[: self.truncate_bitsize]
+        sign_bit = int(bits[self.truncate_bitsize])
+        if not np.equal(bits_to_drop, sign_bit):
+            raise ValueError(f"{bits_to_drop=} must be equal to the {sign_bit=}!")
+
         y = self.out_dtype.from_bits(bits[self.truncate_bitsize :])
         return {'y': y}
 
