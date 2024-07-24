@@ -79,35 +79,23 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     if bloq_ex.name in [
         'prep_sparse',
         'thc_prep',
-        'modexp',
         'apply_z_to_odd',
         'select_pauli_lcu',
         'sel_hubb',
         'walk_op',
         'thc_walk_op',  # thc_prep does not serialize
-        'qubitization_qpe_chem_thc',  # too slow
         'walk_op_chem_sparse',
-        'qubitization_qpe_sparse_chem',  # too slow
         'trott_unitary',
         'symbolic_hamsim_by_gqsp',
         'gqsp_1d_ising',
-        'auto_partition',
-        'unitary_block_encoding',
-        'unitary_block_encoding_properties',
-        'tensor_product_block_encoding',
-        'tensor_product_block_encoding_properties',
-        'tensor_product_block_encoding_symb',
-        'product_block_encoding',
-        'product_block_encoding_properties',
-        'product_block_encoding_symb',
-        'apply_lth_bloq',
-        'linear_combination_block_encoding',
-        'phase_block_encoding',
-        'sparse_matrix_block_encoding',
+        'auto_partition',  # cannot serialize nested tuple attribute
+        'apply_lth_bloq',  # cannot serialize tuple[bloq] attribute
+        'linear_combination_block_encoding',  # cannot serialize tuple[bloq] attributes
+        'tensor_product_block_encoding',  # cannot serialize tuple[bloq] attributes
+        'product_block_encoding',  # cannot serialize tuple[bloq] attributes
         'sparse_state_prep_alias_symb',  # cannot serialize Shaped
         'sparse_permutation',
         'permutation_cycle_symb',
-        'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
