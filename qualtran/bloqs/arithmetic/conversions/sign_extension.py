@@ -181,7 +181,7 @@ class SignTruncate(Bloq):
 
         bits_to_drop = bits[: self.truncate_bitsize]
         sign_bit = int(bits[self.truncate_bitsize])
-        if not np.equal(bits_to_drop, sign_bit):
+        if any(b != sign_bit for b in bits_to_drop):
             raise ValueError(f"{bits_to_drop=} must be equal to the {sign_bit=}!")
 
         y = self.out_dtype.from_bits(bits[self.truncate_bitsize :])
