@@ -102,3 +102,10 @@ def test_sign_truncate_classical_sim(l: int, r: int):
     for x in QInt(r).get_classical_domain():
         (y,) = bloq.call_classically(x=x)
         assert y == x
+
+
+def test_sign_truncate_raises_on_invalid_truncation_bits():
+    bloq = SignTruncate(QInt(4), QInt(2))
+    with pytest.raises(ValueError):
+        # 1100 is invalid as the new sign bit is 0, which doesn't match the dropped bits 11.
+        bloq.call_classically(x=0b1100)
