@@ -235,7 +235,7 @@ def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -
     from qualtran.bloqs.rotations.phase_gradient import _mul_via_repeated_add
 
     cost_val = (2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)
-    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_str)
+    cost_fxp = cost_dtype.float_to_fxp(cost_val)
     expected_val = (gamma_fxp.get_val() * cost_val) % 1
 
     def is_good_phase_grad_size(phase_bitsize: int):
@@ -461,7 +461,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return self.gamma_dtype.float_to_fxp(abs(self.gamma))
 
     @cached_property
     def gamma_dtype(self) -> QFxp:

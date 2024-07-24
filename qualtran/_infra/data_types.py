@@ -539,12 +539,9 @@ class QFxp(QDType):
         return self.bitsize - self.num_frac - int(self.signed)
 
     @property
-    def fxp_dtype_str(self) -> str:
-        return f'fxp-{"us"[self.signed]}{self.bitsize}/{self.num_frac}'
+    def fxp_dtype_template(self) -> Fxp:
+        """A template of the `Fxp` data type for classical values.
 
-    @property
-    def _fxp_dtype(self) -> Fxp:
-        """
         -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
             to a bigger fixed point number when doing operations with other Fxp objects.
         -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
@@ -554,7 +551,9 @@ class QFxp(QDType):
         """
         return Fxp(
             None,
-            dtype=self.fxp_dtype_str,
+            n_word=self.bitsize,
+            n_frac=self.num_frac,
+            signed=self.signed,
             op_sizing='same',
             const_op_sizing='same',
             shifting='trunc',
@@ -585,7 +584,7 @@ class QFxp(QDType):
             sign = int(x < 0)
             x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
-        bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        bits = [int(x) for x in fxp.like(self.fxp_dtype_template).bin()]
         if self.signed and not complement:
             bits[0] = sign
         return bits
@@ -594,7 +593,7 @@ class QFxp(QDType):
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin, dtype=self.fxp_dtype_str).like(self._fxp_dtype)
+        return Fxp(fxp_bin, like=self.fxp_dtype_template)
 
     def from_bits_array(self, bits_array: NDArray[np.uint8]):
         assert isinstance(self.bitsize, int), "cannot convert to bits for symbolic bitsize"
@@ -621,11 +620,11 @@ class QFxp(QDType):
     def get_classical_domain(self) -> Iterable[Fxp]:
         qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
         for x in qint.get_classical_domain():
-            yield Fxp(x / 2**self.num_frac).like(self._fxp_dtype)
+            yield Fxp(x / 2**self.num_frac).like(self.fxp_dtype_template)
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         fxp_val = val if isinstance(val, Fxp) else Fxp(val)
-        if fxp_val.get_val() != fxp_val.like(self._fxp_dtype).get_val():
+        if fxp_val.get_val() != fxp_val.like(self.fxp_dtype_template).get_val():
             raise ValueError(
                 f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
             )
@@ -651,7 +650,7 @@ class QFxp(QDType):
         """
         if require_exact:
             self._assert_valid_classical_val(val if not raw else val / 2**self.num_frac)
-        return Fxp(val, raw=raw, like=self._fxp_dtype)
+        return Fxp(val, raw=raw, like=self.fxp_dtype_template)
 
     def __str__(self):
         if self.signed:

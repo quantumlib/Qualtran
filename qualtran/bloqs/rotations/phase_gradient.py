@@ -319,7 +319,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if self.controlled_by is None or self.controlled_by == kwargs['ctrl']:
             # widen appropriately so that right shifting does not drop necessary bits
             x = x.like(
-                QFxp(x.n_int + phase_grad.n_frac, phase_grad.n_frac, phase_grad.signed)._fxp_dtype
+                QFxp(
+                    x.n_int + phase_grad.n_frac, phase_grad.n_frac, phase_grad.signed
+                ).fxp_dtype_template
             )
             scaled_x = x >> self.right_shift
             if self.sign == 1:
