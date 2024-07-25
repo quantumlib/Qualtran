@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import Dict, Iterable, Set, Tuple
 
 import numpy as np
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -455,6 +456,21 @@ def _sparse_matrix_block_encoding() -> SparseMatrix:
 
 
 @bloq_example
+def _sparse_matrix_symb_block_encoding() -> SparseMatrix:
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle,
+        UniformEntryOracle,
+    )
+
+    n = sympy.Symbol('n')
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=n)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=n)
+    entry_oracle = UniformEntryOracle(system_bitsize=n, entry=0.3)
+    sparse_matrix_symb_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    return sparse_matrix_symb_block_encoding
+
+
+@bloq_example
 def _explicit_matrix_block_encoding() -> SparseMatrix:
     from qualtran.bloqs.block_encoding.sparse_matrix import (
         ExplicitEntryOracle,
@@ -486,7 +502,9 @@ _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
     import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
     examples=[
+
         _sparse_matrix_block_encoding,
+        _sparse_matrix_symb_block_encoding,
         _explicit_matrix_block_encoding,
         _symmetric_banded_matrix_block_encoding,
     ],

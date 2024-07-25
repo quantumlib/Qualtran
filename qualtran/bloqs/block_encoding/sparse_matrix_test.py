@@ -16,13 +16,15 @@ from typing import cast
 
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
-from qualtran.bloqs.basic_gates import IntEffect, IntState
+from qualtran.bloqs.basic_gates import Hadamard, IntEffect, IntState
 from qualtran.bloqs.block_encoding.sparse_matrix import (
     _explicit_matrix_block_encoding,
     _sparse_matrix_block_encoding,
+    _sparse_matrix_symb_block_encoding,
     _symmetric_banded_matrix_block_encoding,
     ExplicitEntryOracle,
     SparseMatrix,
@@ -30,10 +32,16 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     TopLeftRowColumnOracle,
     UniformEntryOracle,
 )
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics import ceil, log2
 
 
 def test_sparse_matrix(bloq_autotester):
     bloq_autotester(_sparse_matrix_block_encoding)
+
+
+def test_sparse_matrix_symb(bloq_autotester):
+    bloq_autotester(_sparse_matrix_symb_block_encoding)
 
 
 def test_explicit_matrix(bloq_autotester):
@@ -58,6 +66,25 @@ def test_sparse_matrix_params():
     assert bloq.epsilon == 0
     assert bloq.ancilla_bitsize == 2 + 1
     assert bloq.resource_bitsize == 0
+
+    bloq = _sparse_matrix_symb_block_encoding()
+    n = sympy.Symbol('n')
+    assert bloq.system_bitsize == n
+    assert bloq.alpha == 2**n
+    assert bloq.epsilon == 0
+    assert bloq.ancilla_bitsize == n + 1
+    assert bloq.resource_bitsize == 0
+
+
+def test_call_graph():
+    bloq = _sparse_matrix_block_encoding()
+    _, sigma = bloq.call_graph(generalizer=ignore_split_join)
+    assert sigma[Hadamard()] == 4
+
+    bloq = _sparse_matrix_symb_block_encoding()
+    _, sigma = bloq.call_graph(generalizer=ignore_split_join)
+    n = sympy.Symbol('n')
+    assert sigma[Hadamard()] == 6 * ceil(log2(2**n - 1))
 
 
 def test_sparse_matrix_tensors():
