@@ -535,9 +535,9 @@ class QFxp(QDType):
         return int(''.join(str(b) for b in self.to_bits(x, require_exact=False)), 2)
 
     def __attrs_post_init__(self):
-        if isinstance(self.num_qubits, int):
-            if self.num_qubits == 1 and self.signed:
-                raise ValueError("num_qubits must be > 1.")
+        if not is_symbolic(self.num_qubits) and self.num_qubits == 1 and self.signed:
+            raise ValueError("num_qubits must be > 1.")
+        if not is_symbolic(self.bitsize) and not is_symbolic(self.num_frac):
             if self.signed and self.bitsize == self.num_frac:
                 raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
             if self.bitsize < self.num_frac:
