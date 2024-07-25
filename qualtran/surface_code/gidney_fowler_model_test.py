@@ -15,13 +15,13 @@
 import numpy as np
 
 from qualtran.resource_counting import GateCounts
-from qualtran.surface_code.ccz2t_cost_model import (
+from qualtran.surface_code import (
     CCZ2TFactory,
     get_ccz2t_costs_from_error_budget,
     get_ccz2t_costs_from_grid_search,
     iter_ccz2t_factories,
+    MultiFactory,
 )
-from qualtran.surface_code.multi_factory import MultiFactory
 
 
 def test_vs_spreadsheet():

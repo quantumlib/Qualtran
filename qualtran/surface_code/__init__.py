@@ -12,38 +12,35 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.ccz2t_cost_model import (
-    CCZ2TFactory,
-    get_ccz2t_costs,
-    get_ccz2t_costs_from_error_budget,
-    get_ccz2t_costs_from_grid_search,
-)
-from qualtran.surface_code.data_block import (
+# isort:skip_file
+
+from .algorithm_summary import AlgorithmSummary
+from .physical_cost_summary import PhysicalCostsSummary
+from .physical_parameters import PhysicalParameters
+from .qec_scheme import LogicalErrorModel, QECScheme
+from .magic_state_factory import MagicStateFactory
+from .ccz2t_factory import CCZ2TFactory
+from .fifteen_to_one_factory import FifteenToOne
+from .data_block import (
     CompactDataBlock,
     DataBlock,
     FastDataBlock,
     IntermediateDataBlock,
     SimpleDataBlock,
 )
-from qualtran.surface_code.magic_count import MagicCount
-from qualtran.surface_code.magic_state_factory import MagicStateFactory
-from qualtran.surface_code.multi_factory import MultiFactory
-from qualtran.surface_code.physical_cost import PhysicalCost
-from qualtran.surface_code.physical_parameters import PhysicalParameters
-from qualtran.surface_code.quantum_error_correction_scheme_summary import (
-    BeverlandMajoranaQubits,
-    BeverlandSuperconductingQubits,
-    BeverlandTrappedIonQubits,
-    FowlerSuperconductingQubits,
-    LogicalErrorModel,
-    QuantumErrorCorrectionSchemeSummary,
-)
-from qualtran.surface_code.reference import Reference
-from qualtran.surface_code.rotation_cost_model import (
+from .multi_factory import MultiFactory
+from .rotation_cost_model import (
     BeverlandEtAlRotationCost,
     ConstantWithOverheadRotationCost,
     RotationCostModel,
     RotationLogarithmicModel,
     SevenDigitsOfPrecisionConstantCost,
 )
+from .gidney_fowler_model import (
+    get_ccz2t_costs,
+    get_ccz2t_costs_from_error_budget,
+    get_ccz2t_costs_from_grid_search,
+    iter_ccz2t_factories,
+    iter_simple_data_blocks,
+)
+from .reference import Reference
