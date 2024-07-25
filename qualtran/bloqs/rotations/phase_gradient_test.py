@@ -159,9 +159,14 @@ _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
 ]
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('bloq', _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES)
-def test_add_scaled_val_into_phase_reg(bloq):
+@pytest.mark.parametrize(
+    'bloq',
+    [
+        pytest.param(bloq, marks=pytest.mark.slow if bloq.num_qubits() > 10 else ())
+        for bloq in _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES
+    ],
+)
+def test_add_scaled_val_into_phase_reg_classical_sim(bloq: AddScaledValIntoPhaseReg):
     cbloq = bloq.decompose_bloq()
     for x in range(2**bloq.x_dtype.bitsize):
         for phase_grad in range(2**bloq.phase_bitsize):
@@ -169,11 +174,25 @@ def test_add_scaled_val_into_phase_reg(bloq):
             c1 = bloq.on_classical_vals(**d)
             c2 = cbloq.on_classical_vals(**d)
             assert c1 == c2, f'{d=}, {c1=}, {c2=}'
+
+
+@pytest.mark.parametrize(
+    'bloq',
+    [
+        pytest.param(bloq, marks=pytest.mark.slow if bloq.num_qubits() > 12 else ())
+        for bloq in _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES
+    ],
+)
+def test_add_scaled_val_into_phase_reg_unitary(bloq: AddScaledValIntoPhaseReg):
     bloq_unitary = cirq.unitary(bloq)
     op = GateHelper(bloq).operation
     circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
     decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
     np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
+
+
+@pytest.mark.parametrize('bloq', _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES)
+def test_add_scaled_val_into_phase_reg_t_complexity(bloq):
     ((add_into_phase, n),) = bloq.bloq_counts().items()
     assert bloq.t_complexity() == n * add_into_phase.t_complexity()
 
