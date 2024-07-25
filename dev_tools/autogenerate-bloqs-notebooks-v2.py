@@ -407,6 +407,15 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Integer Conversions',
+        module=qualtran.bloqs.arithmetic.conversions,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement._SIGNED_TO_TWOS,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_EXTEND_DOC,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_TRUNCATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.arithmetic.sorting,
         bloq_specs=[
@@ -418,12 +427,9 @@ ARITHMETIC = [
         directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
     ),
     NotebookSpecV2(
-        title='Conversions',
-        module=qualtran.bloqs.arithmetic.conversions,
-        bloq_specs=[
-            qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
-            qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
-        ],
+        title='Indexing',
+        module=qualtran.bloqs.arithmetic.conversions.contiguous_index,
+        bloq_specs=[qualtran.bloqs.arithmetic.conversions.contiguous_index._TO_CONTG_INDX],
     ),
     NotebookSpecV2(
         title='Permutations',
