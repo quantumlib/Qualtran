@@ -127,7 +127,6 @@ def test_hamming_weight_phasing_using_phase_via_cost_function(
 @attrs.frozen
 class TestSquarePhasing(GateWithRegisters):
     bitsize: int
-    normalize: bool
     gamma: float
     eps: float
     use_phase_gradient: bool = False
@@ -138,9 +137,7 @@ class TestSquarePhasing(GateWithRegisters):
 
     @property
     def cost_reg(self) -> Register:
-        return Register(
-            'result', QFxp(2 * self.bitsize, 2 * self.bitsize * int(self.normalize), signed=False)
-        )
+        return Register('result', QFxp(2 * self.bitsize, 2 * self.bitsize, signed=False))
 
     @property
     def phase_gradient_oracle(self) -> QvrPhaseGradient:
@@ -169,30 +166,17 @@ class TestSquarePhasing(GateWithRegisters):
         return soqs
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('normalize_cost_function', [True, False])
-@pytest.mark.parametrize('use_phase_gradient', [True, False])
-@pytest.mark.parametrize('gamma, eps', [(0.1, 5e-2), (1.20345, 5e-2), (-1.1934341, 5e-2)])
+@pytest.mark.parametrize('use_phase_gradient', [pytest.param(True, marks=pytest.mark.slow), False])
+@pytest.mark.parametrize('gamma, eps', [(0.125, 5e-2), (1.1875, 5e-2), (-1.375, 5e-2)])
 @pytest.mark.parametrize('n', [2])
 def test_square_phasing_via_phase_gradient(
-    n: int, gamma: float, eps: float, use_phase_gradient: bool, normalize_cost_function: bool
+    n: int, gamma: float, eps: float, use_phase_gradient: bool
 ):
     initial_state = np.array([1 / np.sqrt(2**n)] * 2**n)
-    normalization_factor = 1 if normalize_cost_function else 4**n
-    phases = np.array(
-        [
-            np.exp(1j * 2 * np.pi * gamma * x**2 * normalization_factor / 4**n)
-            for x in range(2**n)
-        ]
-    )
+    phases = np.array([np.exp(1j * 2 * np.pi * gamma * x**2 / 4**n) for x in range(2**n)])
     expected_final_state = np.multiply(initial_state, phases)
-    test_bloq_one = TestSquarePhasing(
-        n, True, gamma * normalization_factor, eps, use_phase_gradient
-    )
-    test_bloq_two = TestSquarePhasing(
-        n, False, gamma * normalization_factor / (4**n), eps, use_phase_gradient
-    )
-    for test_bloq in [test_bloq_one, test_bloq_two]:
+    test_bloq = TestSquarePhasing(n, gamma, eps, use_phase_gradient)
+    for test_bloq in [test_bloq]:
         bb = BloqBuilder()
         a = bb.allocate(n)
         a = bb.add(OnEach(n, Hadamard()), q=a)

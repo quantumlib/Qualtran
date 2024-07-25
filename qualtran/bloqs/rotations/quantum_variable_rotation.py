@@ -240,7 +240,8 @@ def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -
 
     def is_good_phase_grad_size(phase_bitsize: int):
         res = _mul_via_repeated_add(cost_fxp, gamma_fxp, phase_bitsize)
-        return np.abs(res.get_val() - expected_val) <= eps
+        actual_val = res.get_val() % 1
+        return np.abs(actual_val - expected_val) <= eps
 
     low, high, ans = 1, 100, None
     while low <= high:
@@ -464,7 +465,7 @@ class QvrPhaseGradient(QvrInterface):
         if is_symbolic(self.gamma):
             raise ValueError(f"Cannot compute Fxp from symbolic {self.gamma=}")
 
-        return self.gamma_dtype.float_to_fxp(abs(self.gamma))
+        return self.gamma_dtype.float_to_fxp(abs(self.gamma), require_exact=False)
 
     @cached_property
     def gamma_dtype(self) -> QFxp:

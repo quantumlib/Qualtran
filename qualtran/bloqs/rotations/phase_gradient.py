@@ -366,37 +366,30 @@ _ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(bloq_cls=AddIntoPhaseGrad, examples=(_add
 
 
 def _fxp(x: float, n: 'SymbolicInt') -> Fxp:
-    """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
-
-    Specifically,
-    -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
-        to a bigger fixed point number when doing operations with other Fxp objects.
-    -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
-        truncated and no rounding occurs
-    -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
-        digits are simply discarded.
-    """
+    """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties."""
     assert 0 <= x < 1
-    return Fxp(
-        x,
-        dtype=f'fxp-u{n}/{n}',
-        op_sizing='same',
-        const_op_sizing='same',
-        shifting='trunc',
-        overflow='wrap',
-    )
+    return QFxp(n, n).float_to_fxp(x, require_exact=False)
 
 
 def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
     """Multiplication via repeated additions algorithm described in Appendix D5"""
 
     res = _fxp(0, out)
+    x_fxp = x_fxp.copy()
+    x_fxp.resize(n_int=x_fxp.n_int, n_frac=max(out, x_fxp.n_frac))
     for i, bit in enumerate(gamma_fxp.bin()):
         if bit == '0':
             continue
         shift = gamma_fxp.n_int - i - 1
         # Left/Right shift by `shift` bits.
-        res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
+        # Issue: Fxp << and >> does not preserve config, so we use `* 2**shift` instead.
+        x_shifted = x_fxp.copy()
+        if shift > 0:
+            x_shifted.set_val(x_fxp.val << np.array(shift, dtype=x_fxp.val.dtype), raw=True)
+        else:
+            x_shifted.set_val(x_fxp.val >> np.array(-shift, dtype=x_fxp.val.dtype), raw=True)
+        assert x_shifted.overflow == 'wrap' and x_shifted.shifting == 'trunc'
+        res += x_shifted
     return res
 
 
