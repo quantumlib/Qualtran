@@ -18,8 +18,7 @@ import pytest
 from attrs import frozen
 
 from qualtran.resource_counting import GateCounts
-from qualtran.surface_code import FowlerSuperconductingQubits, LogicalErrorModel
-from qualtran.surface_code.fifteen_to_one import FifteenToOne
+from qualtran.surface_code import FifteenToOne, LogicalErrorModel, QECScheme
 
 
 @frozen
@@ -53,7 +52,7 @@ PAPER_RESULTS = [
 @pytest.mark.parametrize("test", PAPER_RESULTS)
 def test_compare_with_paper(test: FifteenToOneTestCase):
     factory = FifteenToOne(d_X=test.d_X, d_Z=test.d_Z, d_m=test.d_m)
-    lem = LogicalErrorModel(qec_scheme=FowlerSuperconductingQubits, physical_error=test.phys_err)
+    lem = LogicalErrorModel(qec_scheme=QECScheme.make_gidney_fowler(), physical_error=test.phys_err)
     assert f'{factory.factory_error(GateCounts(t=1), lem):.1e}' == str(test.p_out)
     assert round(factory.n_physical_qubits(), -1) == test.footprint  # rounding to the 10s digit.
     assert factory.n_cycles(GateCounts(t=1), lem) == math.ceil(test.cycles + 1e-9)

@@ -16,7 +16,7 @@ from attrs import frozen
 
 
 @frozen
-class PhysicalCost:
+class PhysicalCostsSummary:
     failure_prob: float
     """Approximate probability of an error occurring during execution of the algorithm.
 

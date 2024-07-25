@@ -13,7 +13,7 @@
 #  limitations under the License.
 import inspect
 import sys
-from typing import Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import cast, Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import cirq
 
@@ -32,7 +32,7 @@ def _get_all_rotation_types() -> Tuple[Type['_HasEps'], ...]:
     bloqs_to_exclude = [GlobalPhase]
 
     return tuple(
-        v
+        cast(Type['_HasEps'], v)  # Can't use `issubclass` with protocols with attributes.
         for (_, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
         if isinstance(v, _HasEps) and v not in bloqs_to_exclude
     )

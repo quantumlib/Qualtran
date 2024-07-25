@@ -26,6 +26,9 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 from qualtran.resource_counting import BloqCountT
 from qualtran.resource_counting.classify_bloqs import (
     _get_basic_bloq_classification,
@@ -69,6 +72,13 @@ def test_default_classification(bloq_count, classification):
     bloq = TestBundleOfBloqs(bloq_count)
     classified_bloqs = classify_t_count_by_bloq_type(bloq)
     assert classified_bloqs[classification] == t_counts_from_sigma(bloq.call_graph()[1])
+
+
+def test_dont_return_zeros():
+    # Requires zero Ts if n is a power of 2
+    bloqs = TestBundleOfBloqs(((PrepareUniformSuperposition(4), 2),))
+    classified_bloqs = classify_t_count_by_bloq_type(bloqs)
+    assert len(classified_bloqs) == 0
 
 
 @pytest.mark.parametrize(

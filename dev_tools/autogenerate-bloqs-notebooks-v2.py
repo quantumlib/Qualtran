@@ -90,6 +90,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -223,6 +224,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Control Specification (And)',
         module=qualtran.bloqs.mcmt.ctrl_spec_and,
         bloq_specs=[qualtran.bloqs.mcmt.ctrl_spec_and._CTRLSPEC_AND_DOC],
+    ),
+    NotebookSpecV2(
+        title='Multi control bloq via single control bloq and `And` ladder',
+        module=qualtran.bloqs.mcmt.controlled_via_and,
+        bloq_specs=[qualtran.bloqs.mcmt.controlled_via_and._CONTROLLED_VIA_AND_DOC],
     ),
 ]
 
@@ -401,6 +407,15 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Integer Conversions',
+        module=qualtran.bloqs.arithmetic.conversions,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement._SIGNED_TO_TWOS,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_EXTEND_DOC,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_TRUNCATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.arithmetic.sorting,
         bloq_specs=[
@@ -412,12 +427,9 @@ ARITHMETIC = [
         directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
     ),
     NotebookSpecV2(
-        title='Conversions',
-        module=qualtran.bloqs.arithmetic.conversions,
-        bloq_specs=[
-            qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
-            qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
-        ],
+        title='Indexing',
+        module=qualtran.bloqs.arithmetic.conversions.contiguous_index,
+        bloq_specs=[qualtran.bloqs.arithmetic.conversions.contiguous_index._TO_CONTG_INDX],
     ),
     NotebookSpecV2(
         title='Permutations',
