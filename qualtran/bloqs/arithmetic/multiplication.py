@@ -44,7 +44,19 @@ if TYPE_CHECKING:
 
 @frozen
 class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Performs result += a * b"""
+    """Performs result += a * b.
+
+    Args:
+        a_bitsize: bitsize of input `a`.
+        b_bitsize: bitsize of input `b`.
+        result_bitsize: bitsize of the output register.
+        is_adjoint: If true, performs `result -= a * b` instead. Defaults to False.
+
+    Registers:
+        a: QUInt of `a_bitsize` bits.
+        b: QUInt of `b_bitsize` bits.
+        result: QUInt of `result_bitsize` bits.
+    """
 
     a_bitsize: SymbolicInt
     b_bitsize: SymbolicInt
