@@ -162,7 +162,7 @@ _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
 @pytest.mark.parametrize(
     'bloq',
     [
-        pytest.param(bloq, marks=pytest.mark.slow if bloq.num_qubits() > 10 else ())
+        pytest.param(bloq, marks=pytest.mark.slow if bloq.signature.n_qubits() > 10 else ())
         for bloq in _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES
     ],
 )
@@ -179,7 +179,7 @@ def test_add_scaled_val_into_phase_reg_classical_sim(bloq: AddScaledValIntoPhase
 @pytest.mark.parametrize(
     'bloq',
     [
-        pytest.param(bloq, marks=pytest.mark.slow if bloq.num_qubits() > 12 else ())
+        pytest.param(bloq, marks=pytest.mark.slow if bloq.signature.n_qubits() > 12 else ())
         for bloq in _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES
     ],
 )
