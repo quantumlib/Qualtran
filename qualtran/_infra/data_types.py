@@ -353,6 +353,10 @@ class QUInt(QDType):
         if is_symbolic(self.bitsize):
             raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
 
+        if self.bitsize > 64:
+            # use the default vectorized `to_bits`
+            return super().to_bits_array(x_array)
+
         w = int(self.bitsize)
         x = np.atleast_1d(x_array)
         if not np.issubdtype(x.dtype, np.uint):

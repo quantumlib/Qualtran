@@ -45,11 +45,10 @@ def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[
     Returns:
         An array of integers; one for each bitstring.
     """
+    from qualtran import QUInt
+
     bitstrings = np.atleast_2d(bitstrings)
-    if bitstrings.shape[1] > 64:
-        raise NotImplementedError()
-    basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
+    return QUInt(bitstrings.shape[1]).from_bits_array(bitstrings)
 
 
 def ints_to_bits(
