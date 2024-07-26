@@ -56,11 +56,19 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            a=QUInt(self.a_bitsize),
-            b=QUInt(self.b_bitsize),
-            result=QFxp(self.result_bitsize, self.result_bitsize),
-        )
+        return Signature.build_from_dtypes(a=self.a_dtype, b=self.b_dtype, result=self.result_dtype)
+
+    @property
+    def a_dtype(self):
+        return QUInt(self.a_bitsize)
+
+    @property
+    def b_dtype(self):
+        return QUInt(self.b_bitsize)
+
+    @property
+    def result_dtype(self):
+        return QUInt(self.result_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         if not isinstance(self.a_bitsize, int):
