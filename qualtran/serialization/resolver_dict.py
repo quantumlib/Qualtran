@@ -18,7 +18,9 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
-import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.conversions.contiguous_index
+import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
+import qualtran.bloqs.arithmetic.conversions.sign_extension
 import qualtran.bloqs.arithmetic.hamming_weight
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
@@ -163,8 +165,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
     "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
-    "qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.SignedIntegerToTwosComplement,
-    "qualtran.bloqs.arithmetic.conversions.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.ToContiguousIndex,
+    "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex,
+    "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement,
+    "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend": qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend,
+    "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate": qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
     "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber": qualtran.bloqs.arithmetic.multiplication.InvertRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,

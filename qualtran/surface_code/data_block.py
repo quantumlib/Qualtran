@@ -20,7 +20,7 @@ from attrs import frozen
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import GateCounts
-    from qualtran.surface_code import LogicalErrorModel, QuantumErrorCorrectionSchemeSummary
+    from qualtran.surface_code import LogicalErrorModel, QECScheme
 
 
 class DataBlock(metaclass=abc.ABCMeta):
@@ -183,7 +183,6 @@ class IntermediateDataBlock(DataBlock):
 
     Attributes:
         data_d: The code distance `d` for protecting the qubits in the data block.
-        qec_scheme: Underlying quantum error correction scheme.
 
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892).
@@ -212,7 +211,6 @@ class FastDataBlock(DataBlock):
 
     Attributes:
         data_d: The code distance `d` for protecting the qubits in the data block.
-        qec_scheme: Underlying quantum error correction scheme.
 
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892).
@@ -236,11 +234,7 @@ class FastDataBlock(DataBlock):
 
     @classmethod
     def from_error_budget(
-        cls,
-        error_budget: float,
-        n_algo_qubits: int,
-        qec_scheme: 'QuantumErrorCorrectionSchemeSummary',
-        phys_err_rate: float,
+        cls, error_budget: float, n_algo_qubits: int, qec_scheme: 'QECScheme', phys_err_rate: float
     ) -> 'FastDataBlock':
         q = FastDataBlock.get_n_tiles(n_algo_qubits)
         d = qec_scheme.code_distance_from_budget(phys_err_rate, error_budget / q)
