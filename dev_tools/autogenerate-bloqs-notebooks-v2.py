@@ -62,6 +62,7 @@ import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
+import qualtran.bloqs.arithmetic.trigonometric
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
@@ -470,6 +471,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
             qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Trigonometric Functions',
+        module=qualtran.bloqs.arithmetic.trigonometric,
+        bloq_specs=[qualtran.bloqs.arithmetic.trigonometric._ARCSIN_DOC],
     ),
 ]
 
