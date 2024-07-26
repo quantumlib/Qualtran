@@ -236,6 +236,15 @@ def test_symmetric_banded_row_column_matrix():
     np.testing.assert_allclose(test_matrix, from_tensors, atol=0.003)
 
 
+def test_counts():
+    qlt_testing.assert_equivalent_bloq_counts(
+        _sparse_matrix_block_encoding(), generalizer=ignore_split_join
+    )
+    qlt_testing.assert_equivalent_bloq_counts(
+        _explicit_matrix_block_encoding(), generalizer=ignore_split_join
+    )
+
+
 @pytest.mark.slow
 def test_matrix_stress():
     rs = np.random.RandomState(1234)
