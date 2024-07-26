@@ -51,6 +51,14 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     result_bitsize: SymbolicInt
     is_adjoint: bool = False
 
+    def __attrs_post_init__(self):
+        res_has_enough = self.a_bitsize + self.b_bitsize <= self.result_bitsize
+        if not is_symbolic(res_has_enough) and not res_has_enough:
+            raise ValueError(
+                f"{self.result_bitsize=} must be at least the sum of input "
+                f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
+            )
+
     def pretty_name(self) -> str:
         return "result -= a*b" if self.is_adjoint else "result += a*b"
 
