@@ -103,15 +103,6 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return PlusEqualProduct(
-                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.is_adjoint
-            )
-        raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
-
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
     ) -> List['qtn.Tensor']:
