@@ -13,19 +13,20 @@
 #  limitations under the License.
 import abc
 import math
-from typing import Optional
 
 from attrs import field, frozen
 
-from qualtran.surface_code.reference import Reference
-
 
 @frozen
-class QuantumErrorCorrectionSchemeSummary(metaclass=abc.ABCMeta):
-    r"""QuantumErrorCorrectionSchemeSummary represents a high-level view of a QEC scheme.
+class QECScheme:
+    r"""A model of the error-correction scheme used to suppress errors
 
-    QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
-    number of physical qubits and the time of an error detection cycle.
+    This class primarily provides a formula for estimating the logical error rate
+    given code parameters (i.e. the distance) and a physical error rate. The class
+    attributes parameterize this formula.
+
+    This class also provides the formula for computing the number of physical
+    qubits required to store one logical qubit.
 
     The logical error rate as a function of code distance $d$ and physical error rate $p$
     is given by
@@ -39,14 +40,12 @@ class QuantumErrorCorrectionSchemeSummary(metaclass=abc.ABCMeta):
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
         error_rate_threshold: Logical error rate threshold.
-        reference: source of the estimates.
     """
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
     error_rate_threshold: float = field(repr=lambda x: f'{x:g}')
-    reference: Optional[Reference] = None
 
-    def logical_error_rate(self, code_distance: int, physical_error_rate: float) -> float:
+    def logical_error_rate(self, code_distance: int, physical_error: float) -> float:
         """Logical error suppressed with code distance for this physical error rate.
 
         This is an estimate, see the references section.
@@ -67,16 +66,16 @@ class QuantumErrorCorrectionSchemeSummary(metaclass=abc.ABCMeta):
             Note: this doesn't actually contain the formula from the above reference.
         """
         return self.error_rate_scaler * math.pow(
-            physical_error_rate / self.error_rate_threshold, (code_distance + 1) / 2
+            physical_error / self.error_rate_threshold, (code_distance + 1) / 2
         )
 
-    def code_distance_from_budget(self, physical_error_rate: float, budget: float) -> int:
+    def code_distance_from_budget(self, physical_error: float, budget: float) -> int:
         """Get the code distance that keeps one below the logical error `budget`."""
 
         # See: `logical_error_rate()`. p_l = a Λ^(-r) where r = (d+1)/2
         # Which we invert: r = ln(p_l/a) / ln(1/Λ)
         r = math.log(budget / self.error_rate_scaler) / math.log(
-            physical_error_rate / self.error_rate_threshold
+            physical_error / self.error_rate_threshold
         )
         d = 2 * math.ceil(r) - 1
         if d < 3:
@@ -86,28 +85,27 @@ class QuantumErrorCorrectionSchemeSummary(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def physical_qubits(self, code_distance: int) -> int:
         """The number of physical qubits per logical qubit used by the error detection circuit."""
-
-    @abc.abstractmethod
-    def error_detection_circuit_time_us(self, code_distance: int) -> float:
-        """The time of a quantum error detection cycle in microseconds."""
-
-
-@frozen
-class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
-    """A Surface Code Quantum Error Correction Scheme.
-
-    Attributes:
-        single_stabilizer_time_us: Max time of a single X or Z stabilizer measurement.
-    """
-
-    single_stabilizer_time_us: float = 1
-
-    def physical_qubits(self, code_distance: int) -> int:
         return 2 * code_distance**2
 
-    def error_detection_circuit_time_us(self, code_distance: int) -> float:
-        """Equals the time to measure a stabilizer times the depth of the circuit."""
-        return self.single_stabilizer_time_us * code_distance
+    @classmethod
+    def make_gidney_fowler(cls):
+        """The qec scheme parameters considered in the Gidney/Fowler set of references.
+
+        References:
+            [Low overhead quantum computation using lattice surgery](https://arxiv.org/abs/1808.06709).
+            Fowler and Gidney (2018).
+        """
+        return cls(error_rate_scaler=0.1, error_rate_threshold=0.01)
+
+    @classmethod
+    def make_beverland_et_al(cls):
+        """The qec scheme parameters considered in Beverland et. al. reference.
+
+        References:
+            [https://arxiv.org/abs/2211.07629](Assessing requirements to scale to practical quantum advantage).
+            Beverland et. al. (2022).
+        """
+        return cls(error_rate_scaler=0.03, error_rate_threshold=0.01)
 
 
 @frozen
@@ -119,38 +117,9 @@ class LogicalErrorModel:
     """
 
     physical_error: float
-    _qec_scheme: 'QuantumErrorCorrectionSchemeSummary'
+    _qec_scheme: 'QECScheme'
 
     def __call__(self, code_distance: int):
         return self._qec_scheme.logical_error_rate(
-            code_distance=code_distance, physical_error_rate=self.physical_error
+            code_distance=code_distance, physical_error=self.physical_error
         )
-
-
-BeverlandSuperconductingQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.03,
-    error_rate_threshold=0.01,
-    single_stabilizer_time_us=0.4,  # Equals 4*t_gate+2*t_meas where t_gate=50ns and t_meas=100ns.
-    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
-)
-
-FowlerSuperconductingQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.1,
-    error_rate_threshold=0.01,
-    single_stabilizer_time_us=1,
-    reference=Reference(url='https://arxiv.org/abs/1808.06709'),
-)
-
-BeverlandMajoranaQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.03,
-    error_rate_threshold=0.01,
-    single_stabilizer_time_us=0.6,  # Equals 4*t_gate+2*t_meas where t_gate=100ns and t_meas=100ns.
-    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
-)
-
-BeverlandTrappedIonQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.03,
-    error_rate_threshold=0.01,
-    single_stabilizer_time_us=600,  # Equals 4*t_gate+2*t_meas where t_gate=100us and t_meas=100us.
-    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
-)

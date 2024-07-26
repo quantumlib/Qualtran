@@ -20,11 +20,7 @@ import attrs
 from qualtran.resource_counting import GateCounts
 
 if TYPE_CHECKING:
-    from qualtran.surface_code import (
-        AlgorithmSummary,
-        QuantumErrorCorrectionSchemeSummary,
-        RotationCostModel,
-    )
+    from qualtran.surface_code import AlgorithmSummary, QECScheme, RotationCostModel
 
 
 def minimum_time_steps(
@@ -85,7 +81,7 @@ def code_distance(
     error_budget: float,
     time_steps: float,
     alg: 'AlgorithmSummary',
-    qec_scheme: 'QuantumErrorCorrectionSchemeSummary',
+    qec_scheme: 'QECScheme',
     physical_error: float,
 ) -> int:
     r"""Minimum code distance needed to run the algorithm within the error budget.

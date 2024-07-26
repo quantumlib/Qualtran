@@ -115,11 +115,11 @@ def _build_factory(
     material of https://arxiv.org/abs/1905.06903.
 
     Args:
-        phys_err: physical error rate.
         d_X: Side length of the surface code along which X measurements happen.
         d_Z: Side length of the surface code along which Z measurements happen.
         d_m: Number of code cycles used in lattice surgery.
-        qec: Quantum error correction scheme being used.
+        logical_error_model: The logical error model for determining the logical error
+            rate at a given code distance.
 
 
     Returns:
@@ -382,7 +382,3 @@ def _build_factory(
         ),
     )
     return factory
-
-
-FifteenToOne733 = FifteenToOne(7, 3, 3)
-FifteenToOne933 = FifteenToOne(9, 3, 3)

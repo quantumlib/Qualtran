@@ -67,8 +67,9 @@ Bloqs Library
     arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
+    arithmetic/conversions/conversions.ipynb
     arithmetic/sorting.ipynb
-    arithmetic/conversions.ipynb
+    arithmetic/conversions/contiguous_index.ipynb
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
 
