@@ -29,6 +29,7 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     TopLeftRowColumnOracle,
     UniformEntryOracle,
 )
+import qualtran.testing as qlt_testing
 
 
 def test_sparse_matrix(bloq_autotester):
@@ -270,3 +271,8 @@ def test_vlasov_explicit():
 
     from_tensors = bloq.tensor_contract() * alpha
     np.testing.assert_allclose(data, from_tensors, atol=0.02)
+
+
+def test_symmetric_banded_counts():
+    bloq = SymmetricBandedRowColumnOracle(3, bandsize=1)
+    qlt_testing.assert_equivalent_bloq_counts(bloq)
