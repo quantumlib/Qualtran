@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import cast, Dict, Iterable, Set, Tuple
+from typing import Dict, Iterable, Set, Tuple
 
 import numpy as np
 from attrs import field, frozen
@@ -232,7 +232,8 @@ class SparseMatrix(BlockEncoding):
         if is_symbolic(self.system_bitsize) or is_symbolic(self.row_oracle.num_nonzero):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        ancilla_bits = bb.split(cast(Soquet, ancilla))
+        assert not isinstance(ancilla, np.ndarray)
+        ancilla_bits = bb.split(ancilla)
         q, l = ancilla_bits[0], bb.join(ancilla_bits[1:])
 
         unused = self.system_bitsize - bit_length(self.row_oracle.num_nonzero - 1)
@@ -243,10 +244,10 @@ class SparseMatrix(BlockEncoding):
             ],
         )
         l = bb.add(diffusion, target=l)
-        l, system = bb.add_t(self.col_oracle, l=cast(Soquet, l), i=system)
-        q, l, system = bb.add_t(self.entry_oracle, q=q, i=l, j=system)
-        l, system = bb.add_t(Swap(self.system_bitsize), x=l, y=system)
-        l, system = bb.add_t(self.row_oracle.adjoint(), l=l, i=system)
+        l, system = bb.add(self.col_oracle, l=l, i=system)
+        q, l, system = bb.add(self.entry_oracle, q=q, i=l, j=system)
+        l, system = bb.add(Swap(self.system_bitsize), x=l, y=system)
+        l, system = bb.add(self.row_oracle.adjoint(), l=l, i=system)
         l = bb.add(diffusion.adjoint(), target=l)
 
         return {"system": system, "ancilla": bb.join(np.concatenate([[q], bb.split(l)]))}
@@ -286,7 +287,10 @@ class TopLeftRowColumnOracle(RowColumnOracle):
 
 @frozen
 class SymmetricBandedRowColumnOracle(RowColumnOracle):
-    """Oracle specifying the non-zero rows and columns of a symmetric banded matrix.
+    """Oracle specifying the non-zero rows and columns of a symmetric
+    [banded matrix](https://en.wikipedia.org/wiki/Band_matrix).
+
+    The symmetry here refers to the pattern of non-zero entries, not necessarily the entries themselves, which are determined separately by the `EntryOracle`.
 
     Args:
         system_bitsize: The number of bits used to represent an index.
@@ -337,8 +341,8 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
         if is_symbolic(self.system_bitsize) or is_symbolic(self.bandsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
-        i, l = bb.add_t(Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), a=i, b=l)
-        l = cast(Soquet, bb.add(AddK(self.system_bitsize, -self.bandsize, signed=True), x=l))
+        i, l = bb.add(Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), a=i, b=l)
+        l = bb.add(AddK(self.system_bitsize, -self.bandsize, signed=True), x=l)
 
         return {"l": l, "i": i}
 
@@ -355,7 +359,7 @@ class UniformEntryOracle(EntryOracle):
     ) -> Dict[str, SoquetT]:
         # Either Rx or Ry work here; Rx would induce a phase on the subspace with non-zero ancilla
         # See https://arxiv.org/abs/2302.10949 for reference that uses Rx
-        soqs["q"] = cast(Soquet, bb.add(Ry(2 * np.arccos(self.entry)), q=q))
+        soqs["q"] = bb.add(Ry(2 * np.arccos(self.entry)), q=q)
         return soqs
 
 
@@ -406,20 +410,20 @@ class ExplicitEntryOracle(EntryOracle):
         data = np.arccos(self.data) / np.pi * 2**self.entry_bitsize
         qrom = QROM.build_from_data(data, target_bitsizes=(self.entry_bitsize,))
         target = bb.allocate(self.entry_bitsize)
-        i, j, target = bb.add_t(qrom, selection0=i, selection1=j, target0_=target)
+        i, j, target = bb.add(qrom, selection0=i, selection1=j, target0_=target)
         # perform fractional Ry
         # can't use StatePreparationViaRotations here because the coefficients depend on i, j
         # can't use QvrZPow here because CRz is not symmetric and we condition on target, not q
         # TODO: could potentially use RzViaPhaseGradient when it is done
-        target_bits = bb.split(cast(Soquet, target))
+        target_bits = bb.split(target)
         for k in range(len(target_bits)):
-            target_bits[k], q = bb.add_t(
+            target_bits[k], q = bb.add(
                 Ry(2 * np.pi * (2 ** -(k + 1))).controlled(), ctrl=target_bits[k], q=q
             )
         target = bb.join(target_bits)
         # unload from QROM
-        i, j, target = bb.add_t(qrom.adjoint(), selection0=i, selection1=j, target0_=target)
-        bb.free(cast(Soquet, target))
+        i, j, target = bb.add(qrom.adjoint(), selection0=i, selection1=j, target0_=target)
+        bb.free(target)
         return {"q": q, "i": i, "j": j}
 
 
