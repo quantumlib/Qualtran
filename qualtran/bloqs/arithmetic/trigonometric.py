@@ -38,7 +38,9 @@ class ArcSin(Bloq):
         bitsize: Number of bits used to represent the number.
         num_frac: Number of fraction bits in the number.
         num_iters: Number of Newton-Raphson iterations.
+            Defaults to 4; the reference studies 3, 4, or 5 iterations.
         degree: Degree of the polynomial of the initial approximation.
+            Defaults to 4; the reference studies degree-3, 4, 5, or 6 polynomials.
 
     Registers:
         x: `bitsize`-sized input register.
@@ -50,8 +52,8 @@ class ArcSin(Bloq):
 
     bitsize: SymbolicInt
     num_frac: SymbolicInt
-    num_iters: SymbolicInt = 4  # reference studies 3, 4, or 5 iterations
-    degree: SymbolicInt = 4  # reference studies degree-3, 4, 5, or 6 polynomials
+    num_iters: SymbolicInt = 4
+    degree: SymbolicInt = 4
 
     def __attrs_post_init__(self):
         if (
@@ -88,7 +90,7 @@ class ArcSin(Bloq):
         d = self.degree
         m = self.num_iters
         # directly copied from T_arcsin on page 10 of reference
-        ts = (
+        toffolis = (
             d * (3 * n**2 + n * (6 * p + 7) - 6 * (p - 1) * p - 2)
             + m * (n * (15 * n + 30 * p + 23) - 30 * p * (p - 1) - 4)
             + 9 * (n + 1) * p
@@ -98,7 +100,7 @@ class ArcSin(Bloq):
             - 9 * p**2
             + 2
         )
-        return {(Toffoli(), ts)}
+        return {(Toffoli(), toffolis)}
 
 
 @bloq_example
