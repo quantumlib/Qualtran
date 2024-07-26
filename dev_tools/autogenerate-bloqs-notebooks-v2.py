@@ -634,6 +634,60 @@ ROT_QFT_PE = [
 ]
 
 # --------------------------------------------------------------------------
+# -----   Block Encoding   ----------------------------------------------------------
+# --------------------------------------------------------------------------
+BLOCK_ENCODING: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Block Encoding Interface',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC],
+    ),
+    NotebookSpecV2(
+        title='Unitary',
+        module=qualtran.bloqs.block_encoding.unitary,
+        bloq_specs=[qualtran.bloqs.block_encoding.unitary._UNITARY_DOC],
+    ),
+    NotebookSpecV2(
+        title='Tensor Product',
+        module=qualtran.bloqs.block_encoding.tensor_product,
+        bloq_specs=[qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Product',
+        module=qualtran.bloqs.block_encoding.product,
+        bloq_specs=[qualtran.bloqs.block_encoding.product._PRODUCT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Phase',
+        module=qualtran.bloqs.block_encoding.phase,
+        bloq_specs=[qualtran.bloqs.block_encoding.phase._PHASE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Linear Combination',
+        module=qualtran.bloqs.block_encoding.linear_combination,
+        bloq_specs=[qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC],
+    ),
+    NotebookSpecV2(
+        title='Sparse Matrix',
+        module=qualtran.bloqs.block_encoding.sparse_matrix,
+        bloq_specs=[qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC],
+    ),
+    NotebookSpecV2(
+        title='Chebyshev Polynomial',
+        module=qualtran.bloqs.block_encoding.chebyshev_polynomial,
+        bloq_specs=[qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC],
+    ),
+    NotebookSpecV2(
+        title='LCU from Select/Prepare ORacles',
+        module=qualtran.bloqs.block_encoding.lcu_block_encoding,
+        bloq_specs=[
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
+        ],
+    ),
+]
+
+# --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
 OTHER: List[NotebookSpecV2] = [
@@ -678,23 +732,6 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
             qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC,
         ],
-    ),
-    NotebookSpecV2(
-        title='Block Encoding',
-        module=qualtran.bloqs.block_encoding,
-        bloq_specs=[
-            qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
-            qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
-            qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
-            qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
-            qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
-            qualtran.bloqs.block_encoding.phase._PHASE_DOC,
-            qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
         title='Reflections',
@@ -773,6 +810,7 @@ NB_BY_SECTION = [
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
+    ('Block Encoding', BLOCK_ENCODING),
     ('Other', OTHER),
 ]
 
