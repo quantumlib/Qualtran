@@ -17,6 +17,7 @@ from typing import cast
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.block_encoding.sparse_matrix import (
@@ -29,7 +30,6 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     TopLeftRowColumnOracle,
     UniformEntryOracle,
 )
-import qualtran.testing as qlt_testing
 
 
 def test_sparse_matrix(bloq_autotester):
