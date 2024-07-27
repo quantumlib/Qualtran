@@ -291,7 +291,7 @@ def test_bits_to_int():
         assert num == ref_num
 
     # check one input bitstring instead of array of input bitstrings.
-    (num,) = QUInt(23).from_bits_array(np.array([1, 0]))
+    (num,) = QUInt(2).from_bits_array(np.array([1, 0]))
     assert num == 2
 
 
