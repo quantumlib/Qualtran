@@ -33,7 +33,6 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     UniformEntryOracle,
 )
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics import ceil, log2
 
 
 def test_sparse_matrix(bloq_autotester):
@@ -83,8 +82,8 @@ def test_call_graph():
 
     bloq = _sparse_matrix_symb_block_encoding()
     _, sigma = bloq.call_graph(generalizer=ignore_split_join)
-    n = sympy.Symbol('n')
-    assert sigma[Hadamard()] == 6 * ceil(log2(2**n - 1))
+    n = sympy.Symbol('n', integer=True, positive=True)
+    assert sigma[Hadamard()] == 6 * n
 
 
 def test_sparse_matrix_tensors():
