@@ -34,12 +34,13 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
+from .cnot import CNOT
+from .hadamard import Hadamard
 from .t_gate import TGate
 
 if TYPE_CHECKING:
@@ -176,7 +177,7 @@ class TwoBitCSwap(Bloq):
         return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
+        return {(TGate(), 7), (CNOT(), 8), (Hadamard(), 2)}
 
     def adjoint(self) -> 'Bloq':
         return self
