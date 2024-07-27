@@ -60,8 +60,13 @@ def ints_to_bits(
         x: An integer or array of unsigned integers.
         w: The bit width of the returned bitstrings.
     """
+    from qualtran import QInt, QUInt
+
     x = np.atleast_1d(x)
-    return np.array([list(map(int, np.binary_repr(v, width=w))) for v in x], dtype=np.uint8)
+    if np.all(x >= 0):
+        return QUInt(w).to_bits_array(x)
+    else:
+        return QInt(w).to_bits_array(x)
 
 
 def _get_in_vals(

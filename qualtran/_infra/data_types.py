@@ -50,7 +50,7 @@ respectively.
 
 import abc
 from enum import Enum
-from typing import Any, cast, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
@@ -235,8 +235,7 @@ class QInt(QDType):
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        mask = (1 << cast(int, self.bitsize)) - 1
-        return QUInt(self.bitsize).to_bits(int(x) & mask)
+        return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
 
     def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
