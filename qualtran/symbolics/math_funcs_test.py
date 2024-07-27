@@ -113,6 +113,13 @@ def test_bit_length():
         assert x.bit_length() == bit_length(x + 0.0001)
 
 
+@pytest.mark.parametrize('val', [3, 4])
+def test_bit_length_symbolic(val: int):
+    n: sympy.Expr = sympy.Symbol("n")
+    b: sympy.Expr = bit_length(n)
+    assert b.subs({n: val}) == val.bit_length()
+
+
 @pytest.mark.parametrize(
     "shape",
     [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
