@@ -380,9 +380,14 @@ class QUInt(QDType):
             An array of integers; one for each bitstring.
         """
         bitstrings = np.atleast_2d(bits_array)
-        if bitstrings.shape[1] > 64:
-            raise NotImplementedError()
-        basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
+        if bitstrings.shape[1] != self.bitsize:
+            raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
+
+        if self.bitsize > 64:
+            # use the default vectorized `from_bits`
+            return super().from_bits_array(bits_array)
+
+        basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
         return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
