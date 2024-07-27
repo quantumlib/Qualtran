@@ -67,7 +67,7 @@ def test_sparse_matrix_params():
     assert bloq.resource_bitsize == 0
 
     bloq = _sparse_matrix_symb_block_encoding()
-    n = sympy.Symbol('n')
+    n = sympy.Symbol('n', positive=True, integer=True)
     assert bloq.system_bitsize == n
     assert bloq.alpha == 2**n
     assert bloq.epsilon == 0
