@@ -120,6 +120,15 @@ def test_bit_length_symbolic(val: int):
     assert b.subs({n: val}) == val.bit_length()
 
 
+def test_bit_length_symbolic_simplify():
+    """Most common use case of bit_length: bits to represent [0, N - 1]"""
+    n: sympy.Expr = sympy.Symbol("n", positive=True, integer=True)
+    N: sympy.Expr = sympy.Symbol("N", positive=True, integer=True)
+    b: sympy.Expr = bit_length(N - 1)
+    assert b == ceil(log2(N))
+    assert b.subs({N: 2**n}) == n
+
+
 @pytest.mark.parametrize(
     "shape",
     [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
