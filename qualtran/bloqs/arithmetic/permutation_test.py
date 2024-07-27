@@ -40,7 +40,7 @@ from qualtran.bloqs.arithmetic.permutation import (
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.bookkeeping import Allocate, ArbitraryClifford, Free
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics import bit_length, slen
+from qualtran.symbolics import ceil, log2, slen
 
 
 def test_examples(bloq_autotester):
@@ -74,7 +74,7 @@ def test_permutation_cycle_unitary_and_call_graph():
 
 def test_permutation_cycle_symbolic_call_graph():
     bloq = _permutation_cycle_symb()
-    logN, L = bit_length(bloq.N - 1), slen(bloq.cycle)
+    logN, L = ceil(log2(bloq.N)), slen(bloq.cycle)
 
     _, sigma = bloq.call_graph()
     assert sigma == {
@@ -126,8 +126,8 @@ def test_sparse_permutation_classical_sim():
 
 
 def test_permutation_symbolic_call_graph():
-    N = sympy.Symbol("N")
-    logN = bit_length(N - 1)
+    N = sympy.Symbol("N", positive=True, integer=True)
+    logN = ceil(log2(N))
     bloq = _permutation_symb()
 
     _, sigma = bloq.call_graph()
