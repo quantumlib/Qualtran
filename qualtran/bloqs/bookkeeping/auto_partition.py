@@ -106,14 +106,14 @@ class AutoPartition(Bloq):
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
         unused_regs: Dict[str, SoquetT] = dict()
-        for out_reg, bloq_regs in self.partitions:
+        for parti, (out_reg, bloq_regs) in enumerate(self.partitions):
             part = Partition(
                 out_reg.bitsize,
                 regs=tuple(
                     (
                         self.bloq.signature.get_left(r)
                         if isinstance(r, str)
-                        else Register(f"_unused{i}", QAny(r.bitsize))
+                        else Register(f"_unused{parti}_{i}", QAny(r.bitsize))
                     )
                     for i, r in enumerate(bloq_regs)
                 ),
