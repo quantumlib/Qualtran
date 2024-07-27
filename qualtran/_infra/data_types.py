@@ -234,6 +234,9 @@ class QInt(QDType):
 
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
+
         self.assert_valid_classical_val(x)
         return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
 

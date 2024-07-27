@@ -37,7 +37,7 @@ from qualtran._infra.composite_bloq import _binst_to_cxns
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
+def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.integer]:
     """Returns the integer specified by the given big-endian bitstrings.
 
     Args:
