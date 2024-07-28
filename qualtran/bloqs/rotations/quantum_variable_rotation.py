@@ -235,7 +235,7 @@ def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -
     from qualtran.bloqs.rotations.phase_gradient import _mul_via_repeated_add
 
     cost_val = (2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)
-    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_str)
+    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_template.dtype)
     expected_val = (gamma_fxp.get_val() * cost_val) % 1
 
     def is_good_phase_grad_size(phase_bitsize: int):
@@ -461,7 +461,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template.dtype)
 
     @cached_property
     def gamma_dtype(self) -> QFxp:
@@ -472,7 +472,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = smax(0, bit_length(sympy.Abs(self.gamma)))
+        n_int = smax(0, bit_length(sabs(self.gamma)))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 

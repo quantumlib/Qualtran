@@ -521,8 +521,9 @@ class QFxp(QDType):
 
     A real number can be approximately represented in fixed point using `num_int`
     bits for the integer part and `num_frac` bits for the fractional part. If the
-    real number is signed we require an additional bit to store the sign (0 for
-    +, 1 for -). In total there are `bitsize = (n_sign + num_int + num_frac)` bits used
+    real number is signed we store negative values in two's complement form. The first
+    bit can therefore be treated as the sign bit in such cases (0 for +, 1 for -).
+    In total there are `bitsize = (n_sign + num_int + num_frac)` bits used
     to represent the number. E.g. Using `(bitsize = 8, num_frac = 6, signed = False)`
     then $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
 
@@ -533,13 +534,21 @@ class QFxp(QDType):
         bitsize: The total number of qubits used to represent the integer and
             fractional part combined.
         num_frac: The number of qubits used to represent the fractional part of the real number.
-        signed: Whether the number is signed or not. If signed is true the
-            number of integer bits is reduced by 1.
+        signed: Whether the number is signed or not.
     """
 
     bitsize: SymbolicInt
     num_frac: SymbolicInt
     signed: bool = False
+
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.num_qubits) and self.num_qubits == 1 and self.signed:
+            raise ValueError("num_qubits must be > 1.")
+        if not is_symbolic(self.bitsize) and not is_symbolic(self.num_frac):
+            if self.signed and self.bitsize == self.num_frac:
+                raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
+            if self.bitsize < self.num_frac:
+                raise ValueError("bitsize must be >= num_frac.")
 
     @property
     def num_qubits(self):
@@ -547,20 +556,88 @@ class QFxp(QDType):
 
     @property
     def num_int(self) -> SymbolicInt:
-        return self.bitsize - self.num_frac - int(self.signed)
-
-    @property
-    def fxp_dtype_str(self) -> str:
-        return f'fxp-{"us"[self.signed]}{self.bitsize}/{self.num_frac}'
-
-    @property
-    def _fxp_dtype(self) -> Fxp:
-        return Fxp(None, dtype=self.fxp_dtype_str)
+        return self.bitsize - self.num_frac
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize, self.num_frac)
 
-    def to_bits(
+    @property
+    def _int_qdtype(self) -> Union[QUInt, QInt]:
+        """The corresponding integer type used to represent raw values of this type.
+
+        This raw integer value is used in the classical simulator to represent values
+        of QFxp registers.
+
+        For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
+        int type is QUInt(6). So a true classical value of `10.0011` will have a raw
+        integer representation of `100011`.
+        """
+        return QInt(self.bitsize) if self.signed else QUInt(self.bitsize)
+
+    def get_classical_domain(self) -> Iterable[int]:
+        yield from self._int_qdtype.get_classical_domain()
+
+    def to_bits(self, x) -> List[int]:
+        return self._int_qdtype.to_bits(x)
+
+    def from_bits(self, bits: Sequence[int]):
+        return self._int_qdtype.from_bits(bits)
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        self._int_qdtype.assert_valid_classical_val(val, debug_str)
+
+    def to_fixed_width_int(self, x: Union[float, Fxp], *, require_exact: bool = False) -> int:
+        """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
+        if x < 0:
+            raise ValueError("x must be >= 0.")
+        return int(''.join(str(b) for b in self._fxp_to_bits(x, require_exact=require_exact)), 2)
+
+    def __str__(self):
+        if self.signed:
+            return f'QFxp({self.bitsize}, {self.num_frac}, True)'
+        else:
+            return f'QFxp({self.bitsize}, {self.num_frac})'
+
+    """Experimental `fxpmath.Fxp` support.
+    
+    This support is currently experimental, and does not hook into the classical
+    simulator protocol. Once the library choice for fixed-point classical real
+    values is finalized, the code will be updated to use the new functionality
+    instead of delegating to raw integer values (see above).
+    """
+
+    @property
+    def fxp_dtype_template(self) -> Fxp:
+        """A template of the `Fxp` data type for classical values.
+
+        -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
+            to a bigger fixed point number when doing operations with other Fxp objects.
+        -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
+            truncated and no rounding occurs
+        -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
+            digits are simply discarded.
+        """
+        if is_symbolic(self.bitsize) or is_symbolic(self.num_frac):
+            raise ValueError(
+                f"Cannot construct Fxp template for symbolic bitsizes: {self.bitsize=}, {self.num_frac=}"
+            )
+
+        return Fxp(
+            None,
+            n_word=self.bitsize,
+            n_frac=self.num_frac,
+            signed=self.signed,
+            op_sizing='same',
+            const_op_sizing='same',
+            shifting='trunc',
+            overflow='wrap',
+        )
+
+    def _get_classical_domain_fxp(self) -> Iterable[Fxp]:
+        for x in self._int_qdtype.get_classical_domain():
+            yield Fxp(x / 2**self.num_frac, like=self.fxp_dtype_template)
+
+    def _fxp_to_bits(
         self, x: Union[float, Fxp], require_exact: bool = True, complement: bool = True
     ) -> List[int]:
         """Yields individual bits corresponding to binary representation of `x`.
@@ -581,61 +658,23 @@ class QFxp(QDType):
             sign = int(x < 0)
             x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
-        bits = [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+        bits = [int(x) for x in fxp.like(self.fxp_dtype_template).bin()]
         if self.signed and not complement:
             bits[0] = sign
         return bits
 
-    def from_bits(self, bits: Sequence[int]) -> Fxp:
+    def _from_bits_to_fxp(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
-
-    def from_bits_array(self, bits_array: NDArray[np.uint8]):
-        assert isinstance(self.bitsize, int), "cannot convert to bits for symbolic bitsize"
-        # TODO figure out why `np.vectorize` is not working here
-        return Fxp(
-            [self.from_bits(bitstring) for bitstring in bits_array.reshape(-1, self.bitsize)]
-        )
-
-    def to_fixed_width_int(self, x: Union[float, Fxp]) -> int:
-        """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
-        if x < 0:
-            raise ValueError("x must be >= 0.")
-        return int(''.join(str(b) for b in self.to_bits(x, require_exact=False)), 2)
-
-    def __attrs_post_init__(self):
-        if not is_symbolic(self.num_qubits) and self.num_qubits == 1 and self.signed:
-            raise ValueError("num_qubits must be > 1.")
-        if not is_symbolic(self.bitsize) and not is_symbolic(self.num_frac):
-            if self.signed and self.bitsize == self.num_frac:
-                raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
-            if self.bitsize < self.num_frac:
-                raise ValueError("bitsize must be >= num_frac.")
-
-    def get_classical_domain(self) -> Iterable[Fxp]:
-        qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
-        for x in qint.get_classical_domain():
-            yield Fxp(x / 2**self.num_frac, dtype=self.fxp_dtype_str)
+        return Fxp(fxp_bin, like=self.fxp_dtype_template)
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         fxp_val = val if isinstance(val, Fxp) else Fxp(val)
-        if fxp_val.get_val() != fxp_val.like(self._fxp_dtype).get_val():
+        if fxp_val.get_val() != fxp_val.like(self.fxp_dtype_template).get_val():
             raise ValueError(
                 f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
             )
-
-    def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
-        # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
-        # is currently not propagated correctly through Bloqs
-        pass
-
-    def __str__(self):
-        if self.signed:
-            return f'QFxp({self.bitsize}, {self.num_frac}, True)'
-        else:
-            return f'QFxp({self.bitsize}, {self.num_frac})'
 
 
 @attrs.frozen

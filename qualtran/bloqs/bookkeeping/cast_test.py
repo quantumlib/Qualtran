@@ -40,7 +40,9 @@ def test_cast_classical_sim():
     assert b == 9
 
     c = Cast(QFxp(8, 8), QUInt(8))
-    assert c.call_classically(reg=1.2) == (1,)  # type: ignore
+    val = 1.2
+    val_as_int = QFxp(8, 8).to_fixed_width_int(val)
+    assert c.call_classically(reg=val_as_int) == (val_as_int,)  # type: ignore
 
 
 def test_cast_unsiged_signed():
