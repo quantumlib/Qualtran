@@ -353,7 +353,20 @@ def test_qintonescomp_to_and_from_bits():
 
 
 def test_qfxp_to_and_from_bits():
-    # QFxp: Negative numbers are stored as ones complement
+    assert_to_and_from_bits_array_consistent(
+        QFxp(4, 3, False), [QFxp(4, 3, False).to_fixed_width_int(x) for x in [1 / 2, 1 / 4, 3 / 8]]
+    )
+    assert_to_and_from_bits_array_consistent(
+        QFxp(4, 3, True),
+        [
+            QFxp(4, 3, True).to_fixed_width_int(x)
+            for x in [1 / 2, -1 / 2, 1 / 4, -1 / 4, -3 / 8, 3 / 8]
+        ],
+    )
+
+
+def test_qfxp_to_and_from_bits_using_fxp():
+    # QFxp: Negative numbers are stored as twos complement
     qfxp_4_3 = QFxp(4, 3, True)
     assert list(qfxp_4_3._fxp_to_bits(0.5)) == [0, 1, 0, 0]
     assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(0.5)).get_val() == 0.5
@@ -392,11 +405,6 @@ def test_qfxp_to_and_from_bits():
 
     assert list(QFxp(7, 3, True)._fxp_to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
     assert list(QFxp(7, 3, True)._fxp_to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
-
-    # assert_to_and_from_bits_array_consistent(QFxp(4, 3, False), [1 / 2, 1 / 4, 3 / 8])
-    # assert_to_and_from_bits_array_consistent(
-    #     QFxp(4, 3, True), [1 / 2, -1 / 2, 1 / 4, -1 / 4, -3 / 8, 3 / 8]
-    # )
 
 
 def test_iter_bits():
