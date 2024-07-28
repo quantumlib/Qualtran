@@ -21,15 +21,16 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
+from qualtran._infra.gate_with_registers import total_bits
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 
 
 @attrs.frozen
-class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to SELECT for an arbitrary chemistry Hamiltonian, we:

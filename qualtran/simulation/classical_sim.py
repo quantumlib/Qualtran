@@ -14,7 +14,7 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 import networkx as nx
 import numpy as np
@@ -37,7 +37,7 @@ from qualtran._infra.composite_bloq import _binst_to_cxns
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
+def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.integer]:
     """Returns the integer specified by the given big-endian bitstrings.
 
     Args:
@@ -45,11 +45,10 @@ def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[
     Returns:
         An array of integers; one for each bitstring.
     """
+    from qualtran import QUInt
+
     bitstrings = np.atleast_2d(bitstrings)
-    if bitstrings.shape[1] > 64:
-        raise NotImplementedError()
-    basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
+    return QUInt(bitstrings.shape[1]).from_bits_array(bitstrings)
 
 
 def ints_to_bits(
@@ -61,8 +60,13 @@ def ints_to_bits(
         x: An integer or array of unsigned integers.
         w: The bit width of the returned bitstrings.
     """
+    from qualtran import QInt, QUInt
+
     x = np.atleast_1d(x)
-    return np.array([list(map(int, np.binary_repr(v, width=w))) for v in x], dtype=np.uint8)
+    if np.all(x >= 0):
+        return QUInt(w).to_bits_array(x)
+    else:
+        return QInt(w).to_bits_array(x)
 
 
 def _get_in_vals(
@@ -265,3 +269,33 @@ def format_classical_truth_table(
         for invals, outvals in truth_table
     ]
     return '\n'.join([heading] + entries)
+
+
+def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
+    r"""Performs addition modulo $2^\mathrm{num\_bits}$ of (un)signed in a reversible way.
+
+    Addition of signed integers can result in an overflow. In most classical programming languages (e.g. C++)
+    what happens when an overflow happens is left as an implementation detail for compiler designers. However,
+    for quantum subtraction, the operation should be unitary and that means that the unitary of the bloq should
+    be a permutation matrix.
+
+    If we hold `a` constant then the valid range of values of $b \in [-2^{\mathrm{num\_bits}-1}, 2^{\mathrm{num\_bits}-1})$
+    gets shifted forward or backward by `a`. To keep the operation unitary overflowing values wrap around. This is the same
+    as moving the range $2^\mathrm{num\_bits}$ by the same amount modulo $2^\mathrm{num\_bits}$. That is add
+    $2^{\mathrm{num\_bits}-1})$ before addition modulo and then remove it.
+
+    Args:
+        a: left operand of addition.
+        b: right operand of addition.
+        num_bits: optional num_bits. When specified addition is done in the interval [0, 2**num_bits) or
+            [-2**(num_bits-1), 2**(num_bits-1)) based on the value of `is_signed`.
+        is_signed: boolean whether the numbers are unsigned or signed ints. This value is only used when
+            `num_bits` is provided.
+    """
+    c = a + b
+    if num_bits is not None:
+        N = 2**num_bits
+        if is_signed:
+            return (c + N // 2) % N - N // 2
+        return c % N
+    return c

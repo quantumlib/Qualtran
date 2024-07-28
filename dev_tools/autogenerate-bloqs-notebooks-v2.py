@@ -54,17 +54,33 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
+import qualtran.bloqs.arithmetic.comparison
+import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
+import qualtran.bloqs.arithmetic.trigonometric
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
-import qualtran.bloqs.block_encoding.lcu_select_and_prepare
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
+import qualtran.bloqs.block_encoding.product
+import qualtran.bloqs.block_encoding.sparse_matrix
+import qualtran.bloqs.block_encoding.tensor_product
+import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
+import qualtran.bloqs.bookkeeping.allocate
+import qualtran.bloqs.bookkeeping.auto_partition
+import qualtran.bloqs.bookkeeping.cast
+import qualtran.bloqs.bookkeeping.free
+import qualtran.bloqs.bookkeeping.join
+import qualtran.bloqs.bookkeeping.partition
+import qualtran.bloqs.bookkeeping.split
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
@@ -90,12 +106,17 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
+import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
+import qualtran.bloqs.phase_estimation.qubitization_qpe
+import qualtran.bloqs.phase_estimation.text_book_qpe
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.qft_phase_gradient
 import qualtran.bloqs.qft.qft_text_book
@@ -105,10 +126,15 @@ import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
 import qualtran.bloqs.reflections.prepare_identity
 import qualtran.bloqs.reflections.reflection_using_prepare
+import qualtran.bloqs.rotations.hamming_weight_phasing
+import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
+import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
 import qualtran.bloqs.swap_network.swap_with_zero
@@ -223,6 +249,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Control Specification (And)',
         module=qualtran.bloqs.mcmt.ctrl_spec_and,
         bloq_specs=[qualtran.bloqs.mcmt.ctrl_spec_and._CTRLSPEC_AND_DOC],
+    ),
+    NotebookSpecV2(
+        title='Multi control bloq via single control bloq and `And` ladder',
+        module=qualtran.bloqs.mcmt.controlled_via_and,
+        bloq_specs=[qualtran.bloqs.mcmt.controlled_via_and._CONTROLLED_VIA_AND_DOC],
     ),
 ]
 
@@ -367,6 +398,13 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Controlled Add-or-Subtract',
+        module=qualtran.bloqs.arithmetic.controlled_add_or_subtract,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.controlled_add_or_subtract._CONTROLLED_ADD_OR_SUBTRACT_DOC
+        ],
+    ),
+    NotebookSpecV2(
         title='Multiplication',
         module=qualtran.bloqs.arithmetic.multiplication,
         bloq_specs=[
@@ -394,6 +432,15 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Integer Conversions',
+        module=qualtran.bloqs.arithmetic.conversions,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement._SIGNED_TO_TWOS,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_EXTEND_DOC,
+            qualtran.bloqs.arithmetic.conversions.sign_extension._SIGN_TRUNCATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.arithmetic.sorting,
         bloq_specs=[
@@ -405,12 +452,9 @@ ARITHMETIC = [
         directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
     ),
     NotebookSpecV2(
-        title='Conversions',
-        module=qualtran.bloqs.arithmetic.conversions,
-        bloq_specs=[
-            qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
-            qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
-        ],
+        title='Indexing',
+        module=qualtran.bloqs.arithmetic.conversions.contiguous_index,
+        bloq_specs=[qualtran.bloqs.arithmetic.conversions.contiguous_index._TO_CONTG_INDX],
     ),
     NotebookSpecV2(
         title='Permutations',
@@ -427,6 +471,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.bitwise._XOR_DOC,
             qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Trigonometric Functions',
+        module=qualtran.bloqs.arithmetic.trigonometric,
+        bloq_specs=[qualtran.bloqs.arithmetic.trigonometric._ARCSIN_DOC],
     ),
 ]
 
@@ -573,8 +622,8 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qubitization.qubitization_walk_operator,
         bloq_specs=[
             qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._SELECT_ORACLE_DOC,
-            qualtran.bloqs.block_encoding.lcu_select_and_prepare._PREPARE_ORACLE_DOC,
+            qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
+            qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
         ],
     ),
     NotebookSpecV2(
