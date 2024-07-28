@@ -597,13 +597,11 @@ class QFxp(QDType):
         else:
             return f'QFxp({self.bitsize}, {self.num_frac})'
 
-    """Experimental `fxpmath.Fxp` support.
-    
-    This support is currently experimental, and does not hook into the classical
-    simulator protocol. Once the library choice for fixed-point classical real
-    values is finalized, the code will be updated to use the new functionality
-    instead of delegating to raw integer values (see above).
-    """
+    # Experimental `fxpmath.Fxp` support.
+    # This support is currently experimental, and does not hook into the classical
+    # simulator protocol. Once the library choice for fixed-point classical real
+    # values is finalized, the code will be updated to use the new functionality
+    # instead of delegating to raw integer values (see above).
 
     @property
     def fxp_dtype_template(self) -> Fxp:
