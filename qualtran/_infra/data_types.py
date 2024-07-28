@@ -587,10 +587,9 @@ class QFxp(QDType):
         self._int_qdtype.assert_valid_classical_val(val, debug_str)
 
     def to_fixed_width_int(self, x: Union[float, Fxp], *, require_exact: bool = False) -> int:
-        """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
-        if x < 0:
-            raise ValueError("x must be >= 0.")
-        return int(''.join(str(b) for b in self._fxp_to_bits(x, require_exact=require_exact)), 2)
+        """Returns the interpretation of the binary representation of `x` as an integer."""
+        bits = self._fxp_to_bits(x, require_exact, require_exact)
+        return self._int_qdtype.from_bits(bits)
 
     def __str__(self):
         if self.signed:
