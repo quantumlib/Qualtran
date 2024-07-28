@@ -57,7 +57,7 @@ def test_rz_via_par_call_graphs():
         CNOT(): 2,
         XGate(): 2,
         RzResourceState(np.pi / 4, eps=1e-11 / 2): 1,
-        RzResourceState(np.pi / 2, eps=1e-11 / 4): 1,
+        RzResourceState(np.pi / 2, eps=1e-11 / 2): 1,
         CirqGateAsBloq(cirq.MeasurementGate(1)): 2,
     }
 
@@ -69,9 +69,9 @@ def test_rz_via_par_call_graphs():
     assert sigma_rz_symb == {
         CNOT(): 3,
         XGate(): 3,
-        RzResourceState(phi, eps / 2): 1,
-        RzResourceState(2 * phi, eps / 4): 1,
-        RzResourceState(4 * phi, eps / 8): 1,
+        RzResourceState(phi, eps / 3): 1,
+        RzResourceState(2 * phi, eps / 3): 1,
+        RzResourceState(4 * phi, eps / 3): 1,
         CirqGateAsBloq(cirq.MeasurementGate(1)): 3,
     }
 

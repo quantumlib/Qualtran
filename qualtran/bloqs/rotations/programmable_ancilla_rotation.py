@@ -13,7 +13,6 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Set
 
 import numpy as np
 import sympy
@@ -75,6 +74,7 @@ class RzViaProgrammableAncillaRotation(Bloq):
     Args:
          angle: The angle $\phi$ to apply $Rz(\phi)$ on the input qubit.
          n_rounds: The max number of rounds to attempt the rotation.
+         eps: The precision of the synthesized rotation.
          apply_final_correction: Whether to apply an expensive Rz rotation at
                  the end to correct the qubit in case all measurements failed.
 
@@ -84,8 +84,8 @@ class RzViaProgrammableAncillaRotation(Bloq):
     """
 
     angle: SymbolicFloat
-    eps: SymbolicFloat = 1e-11
     n_rounds: SymbolicInt = 2
+    eps: SymbolicFloat = 1e-11
     apply_final_correction: bool = False
 
     @cached_property
@@ -94,23 +94,30 @@ class RzViaProgrammableAncillaRotation(Bloq):
 
     @classmethod
     def from_failure_probability(
-        cls, angle: SymbolicFloat, *, max_fail_probability: SymbolicFloat
+        cls,
+        angle: SymbolicFloat,
+        *,
+        max_fail_probability: SymbolicFloat,
+        eps: SymbolicFloat = 1e-11,
     ) -> 'RzViaProgrammableAncillaRotation':
         """Applies the rotation `Rz(angle)` except with some specified failure probability.
 
         Args:
             angle: Rotation angle.
             max_fail_probability: Upper bound on fail probability of the rotation gate.
+            eps: The precision of the synthesized rotation.
         """
         n_rounds = ceil(log2(1 / max_fail_probability))
-        return cls(angle, n_rounds)
+        return cls(angle=angle, n_rounds=n_rounds, eps=eps)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         import cirq
 
         from qualtran.cirq_interop import CirqGateAsBloq
 
         resources: Counter[Bloq] = Counter({CNOT(): self.n_rounds, XGate(): self.n_rounds})
+
+        n_rz = self.n_rounds + (1 if self.apply_final_correction else 0)
 
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
@@ -118,10 +125,10 @@ class RzViaProgrammableAncillaRotation(Bloq):
             resources[RzResourceState(phi, eps)] += self.n_rounds
         else:
             for i in range(int(self.n_rounds)):
-                resources[(RzResourceState(2**i * self.angle, eps=self.eps / 2 ** (i + 1)))] += 1
+                resources[RzResourceState(2**i * self.angle, eps=self.eps / n_rz)] += 1
 
         if self.apply_final_correction:
-            resources[Rz(2**self.n_rounds * self.angle, eps=self.eps / 2**self.n_rounds)] += 1
+            resources[Rz(2**self.n_rounds * self.angle, eps=self.eps / n_rz)] += 1
 
         resources[CirqGateAsBloq(cirq.MeasurementGate(num_qubits=1))] += self.n_rounds
 
