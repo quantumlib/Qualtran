@@ -42,7 +42,6 @@ from qualtran.symbolics.types import is_symbolic
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
@@ -99,10 +98,14 @@ class PhaseGradientUnitary(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
+            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=self.phase_dtype)
             if self.is_controlled
-            else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
+            else Signature.build_from_dtypes(phase_grad=self.phase_dtype)
         )
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
@@ -123,9 +126,7 @@ class PhaseGradientUnitary(GateWithRegisters):
     def __pow__(self, power):
         if power == 1:
             return self
-        return PhaseGradientUnitary(
-            self.bitsize, self.exponent * power, self.is_controlled, self.eps
-        )
+        return attrs.evolve(self, exponent=self.exponent * power)
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
         gate = CZPowGate if self.is_controlled else ZPowGate
@@ -191,9 +192,11 @@ class PhaseGradientState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=Side.RIGHT)]
-        )
+        return Signature([Register('phase_grad', self.phase_dtype, side=Side.RIGHT)])
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -264,17 +267,14 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(
-                ctrl=QBit(),
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            Signature.build_from_dtypes(ctrl=QBit(), x=self.x_dtype, phase_grad=self.phase_dtype)
             if self.controlled_by is not None
-            else Signature.build_from_dtypes(
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            else Signature.build_from_dtypes(x=self.x_dtype, phase_grad=self.phase_dtype)
         )
+
+    @cached_property
+    def x_dtype(self) -> QFxp:
+        return QFxp(self.x_bitsize, self.x_bitsize, signed=False)
 
     @cached_property
     def phase_dtype(self) -> QFxp:
@@ -331,21 +331,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         return {(Toffoli(), num_toffoli)}
 
-    def adjoint(self) -> 'Bloq':
-        return AddIntoPhaseGrad(
-            self.x_bitsize,
-            self.phase_bitsize,
-            self.right_shift,
-            sign=-1 * self.sign,
-            controlled_by=self.controlled_by,
-        )
-
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return self.adjoint()
-        raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
+    def adjoint(self) -> 'AddIntoPhaseGrad':
+        return attrs.evolve(self, sign=-self.sign)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

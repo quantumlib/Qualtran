@@ -11,12 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import math
+from typing import TYPE_CHECKING
 
-import numpy as np
 from attrs import frozen
 
-from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import GateCounts
+    from qualtran.surface_code import LogicalErrorModel
 
 
 @frozen
@@ -24,7 +28,7 @@ class MultiFactory(MagicStateFactory):
     """Overlay of MagicStateFactory representing multiple factories of the same kind.
 
     All quantities are derived by those of `base_factory`. `footprint` is multiplied by
-    `n_factories`, `n_cycles` is divided by `n_factoties`, and  `distillation_error` is independent
+    `n_factories`, `n_cycles` is divided by `n_factories`, and  `distillation_error` is independent
     on the number of factories.
 
     Args:
@@ -35,11 +39,17 @@ class MultiFactory(MagicStateFactory):
     base_factory: MagicStateFactory
     n_factories: int
 
-    def footprint(self) -> int:
-        return self.base_factory.footprint() * self.n_factories
+    def n_physical_qubits(self) -> int:
+        return self.base_factory.n_physical_qubits() * self.n_factories
 
-    def n_cycles(self, n_magic: MagicCount, phys_err: float = 1e-3) -> int:
-        return np.ceil(self.base_factory.n_cycles(n_magic, phys_err) / self.n_factories)
+    def n_cycles(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> int:
+        return math.ceil(
+            self.base_factory.n_cycles(n_logical_gates, logical_error_model) / self.n_factories
+        )
 
-    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
-        return self.base_factory.distillation_error(n_magic, phys_err)
+    def factory_error(
+        self, n_logical_gates: 'GateCounts', logical_error_model: 'LogicalErrorModel'
+    ) -> float:
+        return self.base_factory.factory_error(n_logical_gates, logical_error_model)

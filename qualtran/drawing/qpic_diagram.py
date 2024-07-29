@@ -50,9 +50,12 @@ def _format_label_text(label: str, scale: float = 0.8) -> str:
     replacements = {
         '&': r'\&',
         '_': r'\_',
+        '<=': r'$\le$',
+        '>=': r'$\ge$',
         '<': r'$<$',
         '>': r'$>$',
         '⨁': r'$\oplus$',
+        '⨂': r'$\otimes$',
         '∧': r'$\land$',
     }
     for key, val in replacements.items():

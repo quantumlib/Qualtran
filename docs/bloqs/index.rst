@@ -39,6 +39,7 @@ Bloqs Library
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
+    mcmt/controlled_via_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -66,10 +67,12 @@ Bloqs Library
     arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
+    arithmetic/conversions/conversions.ipynb
     arithmetic/sorting.ipynb
-    arithmetic/conversions.ipynb
+    arithmetic/conversions/contiguous_index.ipynb
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
+    arithmetic/trigonometric.ipynb
 
 .. toctree::
     :maxdepth: 2
