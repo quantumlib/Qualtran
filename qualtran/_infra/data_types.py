@@ -586,7 +586,9 @@ class QFxp(QDType):
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         self._int_qdtype.assert_valid_classical_val(val, debug_str)
 
-    def to_fixed_width_int(self, x: Union[float, Fxp], *, require_exact: bool = False) -> int:
+    def to_fixed_width_int(
+        self, x: Union[float, Fxp], *, require_exact: bool = False, complement: bool = True
+    ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
 
         The returned value is an integer equal to `round(x * 2**self.num_frac)`.
@@ -600,8 +602,13 @@ class QFxp(QDType):
         For negative values, we use twos complement form. So in
         `QFxp(6, 4, signed=True).to_fixed_width_int(-1.5)`, the input is `0b10.1000`,
         which is interpreted as `0b101000` = -24.
+
+        Args:
+            x: input floating point value
+            require_exact: Raise `ValueError` if `x` cannot be exactly represented.
+            complement: Use twos-complement rather than sign-magnitude representation of negative values.
         """
-        bits = self._fxp_to_bits(x, require_exact=require_exact)
+        bits = self._fxp_to_bits(x, require_exact=require_exact, complement=complement)
         return self._int_qdtype.from_bits(bits)
 
     def float_from_fixed_width_int(self, x: int) -> float:

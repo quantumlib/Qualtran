@@ -31,7 +31,7 @@ def test_arctan(selection_bitsize, target_bitsize):
         y = -2 * np.arctan(x) / np.pi
         bits = QFxp(target_bitsize + 1, target_bitsize, True).to_bits(
             QFxp(target_bitsize + 1, target_bitsize, True).to_fixed_width_int(
-                y, require_exact=False
+                y, require_exact=False, complement=False
             )
         )
         sign, y_bin = bits[0], bits[1:]
