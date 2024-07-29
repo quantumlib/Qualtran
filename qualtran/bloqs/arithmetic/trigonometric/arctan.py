@@ -34,6 +34,7 @@ import numpy as np
 from qualtran import GateWithRegisters, QFxp, Signature
 from qualtran.bloqs.arithmetic import PlusEqualProduct
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
@@ -49,14 +50,19 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     TODO missing reference
     """
 
-    selection_bitsize: int
-    target_bitsize: int
+    selection_bitsize: SymbolicInt
+    target_bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(select=self.selection_bitsize, sign=1, target=self.target_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if is_symbolic(self.selection_bitsize) or is_symbolic(self.target_bitsize):
+            raise TypeError(
+                "Cannot build registers for symbolic bitsizes "
+                f"{self.selection_bitsize=} {self.target_bitsize=}"
+            )
         return (2,) * self.selection_bitsize, (2,), (2,) * self.target_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "ArcTan":
