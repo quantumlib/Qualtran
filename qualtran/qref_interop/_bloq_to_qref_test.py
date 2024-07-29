@@ -1,5 +1,5 @@
 from dev_tools.qualtran_dev_tools.bloq_finder import get_bloq_examples
-from qualtran.qref_interop import bloq_to_qref, bloq_to_qref_from_call_graph
+from qualtran.qref_interop import bloq_to_qref
 import pytest
 
 import sympy
@@ -228,7 +228,7 @@ def _qrom_symbolic() -> tuple[Bloq, RoutineV1, str]:
 
 
 def _undecomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
-    bloq = StatePreparationAliasSampling.from_lcu_probs([0.25, 0.5, 0.25], probability_epsilon=0.05)
+    bloq = StatePreparationAliasSampling.from_probabilities([0.25, 0.5, 0.25])
 
     routine = RoutineV1(
         name="StatePreparationAliasSampling",
@@ -256,9 +256,7 @@ def _undecomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
 
 
 def _decomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
-    bloq = StatePreparationAliasSampling.from_lcu_probs(
-        [0.25, 0.5, 0.25], probability_epsilon=0.05
-    ).decompose_bloq()
+    bloq = StatePreparationAliasSampling.from_probabilities([0.25, 0.5, 0.25]).decompose_bloq()
 
     routine = RoutineV1(
         name="CompositeBloq",

@@ -1,7 +1,5 @@
-import networkx as nx
-
 from functools import singledispatch
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional
 
 import sympy
 from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
@@ -10,6 +8,7 @@ from qualtran import Bloq, BloqInstance, CompositeBloq
 from qualtran import Connection as QualtranConnection
 from qualtran import Register, Side, Soquet
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.symbolics import is_symbolic
 
 
 @singledispatch
@@ -78,7 +77,7 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
                 name += "_adjoint"
         except AttributeError:
             pass
-    input_params = _extract_input_params(bloq, ports, local_variables)
+    input_params = _extract_input_params(bloq, ports) - set(local_variables)
 
     attributes = {
         "name": name,
@@ -161,7 +160,7 @@ def _bloq_instance_to_routine(instance: BloqInstance) -> RoutineV1:
 
 
 def _names_and_dir_from_register(reg: Register) -> Iterable[tuple[str, str]]:
-    """Yield names and directions of Bartiq Ports corresponding to QualtranRegister.
+    """Yield names and directions of Bartiq Ports corresponding to Qualtran Register.
 
     For LEFT/RIGHT registers we yield one pair of name and direction corresponding
     of resp. output and input port. For THRU registers we yield both such pairs,
@@ -180,6 +179,12 @@ def _expand_name_if_needed(reg_name, shape) -> Iterable[str]:
         "reg", () -> "reg"
         "reg", (3,) -> "reg_0", "reg_1", "reg_2"
     """
+    if len(shape) > 1:
+        raise NotImplementedError(
+            "Registers with two or more dimensional shape are not yet supported. "
+            f"The error was caused by register {reg_name}."
+        )
+
     return (reg_name,) if shape == () else (f"{reg_name}_{i}" for i in range(shape[0]))
 
 
@@ -200,12 +205,6 @@ def _ports_from_register(reg: Register) -> Iterable[PortV1]:
        NotImplementedError: if `reg` is a compound register with more than one-dimension.
        Currently we don't support such scenario.
     """
-    if len(reg.shape) > 1:
-        raise NotImplementedError(
-            "Registers with two or more dimensional shape are not yet supported. "
-            f"The error was caused by register {reg}."
-        )
-
     return sorted(
         [
             # Observe two loops:
@@ -269,43 +268,36 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     resources = []
     for name in resource_names:
         resources.append(
-            {
-                "name": name,
-                "value": _ensure_primitive_type(getattr(t_complexity, name)),
-                "type": "additive",
-            }
+            {"name": name, "value": is_symbolic(getattr(t_complexity, name)), "type": "additive"}
         )
     return resources
 
 
-def _ensure_primitive_type(value: Any) -> Union[int, float, str, None]:
-    """Ensure given value is of primitive type (e.g. is not a sympy expression)."""
-    return value if value is None or isinstance(value, (int, float, str)) else str(value)
-
-
-def _extract_input_params(bloq: Bloq, ports: list[PortV1], local_variables) -> list[str]:
+def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> list[str]:
     """Extracts input_params from bloq's t_complexity and port sizes."""
-    params_from_t_complexity = _extract_input_params_from_t_complexity(bloq)
-    params_from_ports = _extract_input_params_from_ports(ports)
-    params = list(set(params_from_t_complexity + params_from_ports) - set(local_variables))
+    params_from_t_complexity = _extract_symbols_from_t_complexity(bloq)
+    params_from_ports = _extract_symbols_from_port_sizes(ports)
+    params = list(set(params_from_t_complexity + params_from_ports))
     return sorted(params)
 
 
-def _extract_input_params_from_t_complexity(bloq: Bloq) -> list[str]:
-    input_params = set()
+def _extract_symbols_from_t_complexity(bloq: Bloq) -> list[str]:
+    """Extracts symbols from t_complexity of a given bloq."""
+    symbols = set()
     t_complexity = bloq.t_complexity()
     resource_names = ["t", "clifford", "rotations"]
     for name in resource_names:
         try:
-            input_params.update(getattr(t_complexity, name).free_symbols)
+            symbols.update(getattr(t_complexity, name).free_symbols)
         except AttributeError:
             pass
-    return [str(symbol) for symbol in input_params]
+    return [str(symbol) for symbol in symbols]
 
 
-def _extract_input_params_from_ports(ports) -> list[str]:
-    input_params = set()
+def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
+    """Extracts symbols from the expressions for port sizes."""
+    symbols = set()
     for port in ports:
-        input_params = input_params | sympy.sympify(port.size).free_symbols
+        symbols = symbols | sympy.sympify(port.size).free_symbols
 
-    return [str(param) for param in input_params]
+    return [str(symbol) for symbol in symbols]
