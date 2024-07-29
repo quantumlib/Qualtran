@@ -82,7 +82,5 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
             )
         }
 
-    def __pow__(self, power) -> 'ArcTan':
-        if power in [+1, -1]:
-            return self
-        raise NotImplementedError("__pow__ is only implemented for +1/-1.")  # pragma: no cover
+    def adjoint(self) -> 'ArcTan':
+        return self
