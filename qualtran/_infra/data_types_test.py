@@ -371,6 +371,17 @@ def test_qfxp_to_fixed_width_int():
     assert QFxp(6, 4, signed=True).to_fixed_width_int(-1.5) == -24 == -1.5 * 2**4
 
 
+def test_qfxp_from_fixed_width_int():
+    qfxp = QFxp(6, 4)
+    for x_int in qfxp.get_classical_domain():
+        x_float = qfxp.float_from_fixed_width_int(x_int)
+        x_int_roundtrip = qfxp.to_fixed_width_int(x_float)
+        assert x_int == x_int_roundtrip
+
+    for float_val in [1.5, 1.25]:
+        assert qfxp.float_from_fixed_width_int(qfxp.to_fixed_width_int(float_val)) == float_val
+
+
 def test_qfxp_to_and_from_bits_using_fxp():
     # QFxp: Negative numbers are stored as twos complement
     qfxp_4_3 = QFxp(4, 3, True)

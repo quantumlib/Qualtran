@@ -604,6 +604,14 @@ class QFxp(QDType):
         bits = self._fxp_to_bits(x, require_exact=require_exact)
         return self._int_qdtype.from_bits(bits)
 
+    def float_from_fixed_width_int(self, x: int) -> float:
+        """Helper to convert from the fixed-width-int representation to a true floating point value.
+
+        Here `x` is the internal value used by the classical simulator.
+        See `to_fixed_width_int` for conventions.
+        """
+        return x / 2**self.num_frac
+
     def __str__(self):
         if self.signed:
             return f'QFxp({self.bitsize}, {self.num_frac}, True)'
