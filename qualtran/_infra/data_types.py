@@ -530,11 +530,22 @@ class QFxp(QDType):
     We can specify a fixed point real number by the tuple bitsize, num_frac and
     signed, with num_int determined as `(bitsize - num_frac)`.
 
+
     Classical Simulation:
         To hook into the classical simulator, we use fixed-width integers to represent
         values of this type. See `to_fixed_width_int` for details.
         In particular, the user should call `QFxp.to_fixed_width_int(float_value)`
         before passing a value to `bloq.call_classically`.
+
+        The corresponding raw qdtype is either an QUInt (when `signed=False`) or
+        QInt (when `signed=True`) of the same bitsize. This is the data type used
+        to represent classical values during simulation, and convert to and from bits
+        for intermediate values.
+
+        For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
+        int type is QUInt(6). So a true classical value of `10.0011` will have a raw
+        integer representation of `100011`.
+
 
     Attributes:
         bitsize: The total number of qubits used to represent the integer and
@@ -569,33 +580,47 @@ class QFxp(QDType):
 
     @property
     def _int_qdtype(self) -> Union[QUInt, QInt]:
-        """The corresponding integer type used to represent raw values of this type.
+        """The corresponding dtype for the raw integer representation.
 
-        This raw integer value is used in the classical simulator to represent values
-        of QFxp registers.
-
-        For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
-        int type is QUInt(6). So a true classical value of `10.0011` will have a raw
-        integer representation of `100011`.
+        See class docstring section on "Classical Simulation" for more details.
         """
         return QInt(self.bitsize) if self.signed else QUInt(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[int]:
+        """Use the classical domain for the underlying raw integer type.
+
+        See class docstring section on "Classical Simulation" for more details.
+        """
         yield from self._int_qdtype.get_classical_domain()
 
     def to_bits(self, x) -> List[int]:
+        """Use the underlying raw integer type.
+
+        See class docstring section on "Classical Simulation" for more details.
+        """
         return self._int_qdtype.to_bits(x)
 
     def from_bits(self, bits: Sequence[int]):
+        """Use the underlying raw integer type.
+
+        See class docstring section on "Classical Simulation" for more details.
+        """
         return self._int_qdtype.from_bits(bits)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        """Verify using the underlying raw integer type.
+
+        See class docstring section on "Classical Simulation" for more details.
+        """
         self._int_qdtype.assert_valid_classical_val(val, debug_str)
 
     def to_fixed_width_int(
         self, x: Union[float, Fxp], *, require_exact: bool = False, complement: bool = True
     ) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer.
+
+        See class docstring section on "Classical Simulation" for more details on
+        the choice of this representation.
 
         The returned value is an integer equal to `round(x * 2**self.num_frac)`.
         That is, the input value `x` is converted to a fixed-point binary value
@@ -622,6 +647,9 @@ class QFxp(QDType):
 
         Here `x` is the internal value used by the classical simulator.
         See `to_fixed_width_int` for conventions.
+
+        See class docstring section on "Classical Simulation" for more details on
+        the choice of this representation.
         """
         return x / 2**self.num_frac
 
