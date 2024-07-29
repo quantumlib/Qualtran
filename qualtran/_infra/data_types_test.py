@@ -365,6 +365,12 @@ def test_qfxp_to_and_from_bits():
     )
 
 
+def test_qfxp_to_fixed_width_int():
+    assert QFxp(6, 4).to_fixed_width_int(1.5) == 24 == 1.5 * 2**4
+    assert QFxp(6, 4, signed=True).to_fixed_width_int(1.5) == 24 == 1.5 * 2**4
+    assert QFxp(6, 4, signed=True).to_fixed_width_int(-1.5) == -24 == -1.5 * 2**4
+
+
 def test_qfxp_to_and_from_bits_using_fxp():
     # QFxp: Negative numbers are stored as twos complement
     qfxp_4_3 = QFxp(4, 3, True)
