@@ -33,7 +33,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.symbolics import HasLength, smax, SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, smax, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -44,30 +44,58 @@ if TYPE_CHECKING:
 
 @frozen
 class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Performs result += a * b"""
+    """Performs result += a * b.
+
+    Args:
+        a_bitsize: bitsize of input `a`.
+        b_bitsize: bitsize of input `b`.
+        result_bitsize: bitsize of the output register.
+        is_adjoint: If true, performs `result -= a * b` instead. Defaults to False.
+
+    Registers:
+        a: QUInt of `a_bitsize` bits.
+        b: QUInt of `b_bitsize` bits.
+        result: QUInt of `result_bitsize` bits.
+    """
 
     a_bitsize: SymbolicInt
     b_bitsize: SymbolicInt
     result_bitsize: SymbolicInt
     is_adjoint: bool = False
 
+    def __attrs_post_init__(self):
+        res_has_enough = self.a_bitsize + self.b_bitsize <= self.result_bitsize
+        if not is_symbolic(res_has_enough) and not res_has_enough:
+            raise ValueError(
+                f"{self.result_bitsize=} must be at least the sum of input "
+                f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
+            )
+
     def pretty_name(self) -> str:
         return "result -= a*b" if self.is_adjoint else "result += a*b"
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            a=QUInt(self.a_bitsize),
-            b=QUInt(self.b_bitsize),
-            result=QFxp(self.result_bitsize, self.result_bitsize),
-        )
+        return Signature.build_from_dtypes(a=self.a_dtype, b=self.b_dtype, result=self.result_dtype)
+
+    @property
+    def a_dtype(self):
+        return QUInt(self.a_bitsize)
+
+    @property
+    def b_dtype(self):
+        return QUInt(self.b_bitsize)
+
+    @property
+    def result_dtype(self):
+        return QUInt(self.result_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        if not isinstance(self.a_bitsize, int):
+        if is_symbolic(self.a_bitsize):
             raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
-        if not isinstance(self.b_bitsize, int):
+        if is_symbolic(self.b_bitsize):
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
-        if not isinstance(self.result_bitsize, int):
+        if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
 
@@ -85,24 +113,15 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return {'a': a, 'b': b, 'result': result_out}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        if not isinstance(self.a_bitsize, int):
+        if is_symbolic(self.a_bitsize):
             raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
-        if not isinstance(self.b_bitsize, int):
+        if is_symbolic(self.b_bitsize):
             raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
-        if not isinstance(self.result_bitsize, int):
+        if is_symbolic(self.result_bitsize):
             raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return PlusEqualProduct(
-                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.is_adjoint
-            )
-        raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

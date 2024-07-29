@@ -174,7 +174,8 @@ def _prep_uniform() -> PrepareUniformSuperposition:
 def _prep_uniform_symb() -> PrepareUniformSuperposition:
     import sympy
 
-    prep_uniform_symb = PrepareUniformSuperposition(n=sympy.Symbol("n"))
+    n = sympy.Symbol("n", positive=True, integer=True)
+    prep_uniform_symb = PrepareUniformSuperposition(n=n)
     return prep_uniform_symb
 
 

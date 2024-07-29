@@ -170,33 +170,21 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(z, xarr)
 
 
-@pytest.mark.parametrize(
-    ['x', 'y', 'n_bits'],
-    [
-        (x, y, n_bits)
-        for n_bits in range(1, 5)
-        for x, y in itertools.product(range(1 << n_bits), repeat=2)
-    ],
-)
-def test_add_ints_unsigned(x, y, n_bits):
-    assert add_ints(x, y, num_bits=n_bits, is_signed=False) == (x + y) % (1 << n_bits)
+@pytest.mark.parametrize('n_bits', range(1, 5))
+def test_add_ints_unsigned(n_bits):
+    for x, y in itertools.product(range(1 << n_bits), repeat=2):
+        assert add_ints(x, y, num_bits=n_bits, is_signed=False) == (x + y) % (1 << n_bits)
 
 
-@pytest.mark.parametrize(
-    ['x', 'y', 'n_bits'],
-    [
-        (x, y, n_bits)
-        for n_bits in range(2, 5)
-        for x, y in itertools.product(range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1)), repeat=2)
-    ],
-)
-def test_add_ints_signed(x, y, n_bits):
+@pytest.mark.parametrize('n_bits', range(2, 5))
+def test_add_ints_signed(n_bits: int):
     half_n = 1 << (n_bits - 1)
     # Addition of signed ints `x` and `y` is a cyclic rotation of the interval [-2^(n-1), 2^(n-1)) by `y`.
     interval = [*range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1))]
-    i = x + half_n  # position of `x` in the interval
-    z = interval[(i + y) % len(interval)]  # rotate by `y`
-    assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
+    for x, y in itertools.product(range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1)), repeat=2):
+        i = x + half_n  # position of `x` in the interval
+        z = interval[(i + y) % len(interval)]  # rotate by `y`
+        assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
 
 
 @pytest.mark.notebook
