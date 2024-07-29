@@ -530,6 +530,12 @@ class QFxp(QDType):
     We can specify a fixed point real number by the tuple bitsize, num_frac and
     signed, with num_int determined as `(bitsize - num_frac)`.
 
+    Classical Simulation:
+        To hook into the classical simulator, we use fixed-width integers to represent
+        values of this type. See `to_fixed_width_int` for details.
+        In particular, the user should call `QFxp.to_fixed_width_int(float_value)`
+        before passing a value to `bloq.call_classically`.
+
     Attributes:
         bitsize: The total number of qubits used to represent the integer and
             fractional part combined.
