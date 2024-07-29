@@ -588,7 +588,7 @@ class QFxp(QDType):
 
     def to_fixed_width_int(self, x: Union[float, Fxp], *, require_exact: bool = False) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer."""
-        bits = self._fxp_to_bits(x, require_exact, require_exact)
+        bits = self._fxp_to_bits(x, require_exact=require_exact)
         return self._int_qdtype.from_bits(bits)
 
     def __str__(self):
