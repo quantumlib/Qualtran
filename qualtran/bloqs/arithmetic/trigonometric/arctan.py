@@ -73,13 +73,11 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        from qualtran.resource_counting import big_O
+        # Hack to propagate bigO(...). Here `c` is some arbitrary constant.
+        c = ssa.new_symbol("c")
 
         return {
-            (
-                PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize),
-                big_O(1),
-            )
+            (PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize), c)
         }
 
     def adjoint(self) -> 'ArcTan':

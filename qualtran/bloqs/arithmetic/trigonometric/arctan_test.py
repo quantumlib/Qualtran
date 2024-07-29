@@ -27,10 +27,10 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import QFxp
 from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 
 @pytest.mark.parametrize('selection_bitsize', [3, 4])
@@ -60,5 +60,7 @@ def test_arctan(selection_bitsize, target_bitsize):
 
 
 def test_arctan_t_complexity():
-    gate = ArcTan(4, 5)
-    assert t_complexity(gate) == TComplexity(t=5)
+    n = sympy.Symbol("n")
+    c = sympy.Symbol("_c0")
+    bloq = ArcTan(4, n)
+    assert bloq.t_complexity().t == 8 * c * n**2
