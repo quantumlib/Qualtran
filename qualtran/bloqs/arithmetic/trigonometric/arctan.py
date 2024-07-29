@@ -32,7 +32,8 @@ import cirq
 import numpy as np
 
 from qualtran import GateWithRegisters, QFxp, Signature
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.arithmetic import PlusEqualProduct
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -71,9 +72,15 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
         )
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
-    def _t_complexity_(self) -> TComplexity:
-        # Approximate T-complexity of O(target_bitsize)
-        return TComplexity(t=self.target_bitsize)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+        from qualtran.resource_counting import big_O
+
+        return {
+            (
+                PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize),
+                big_O(1),
+            )
+        }
 
     def __pow__(self, power) -> 'ArcTan':
         if power in [+1, -1]:
