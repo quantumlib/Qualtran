@@ -247,10 +247,12 @@ def test_add_classical():
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)
+    cbloq = gate.decompose_bloq()
     for x in range(2**3):
         for y in range(2**3):
             basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
             assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
+            assert cbloq.call_classically(a=x, b=y, c=0) == (x, y, x + y)
     op = GateHelper(gate).operation
     op_inv = cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
@@ -316,9 +318,16 @@ def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
     assert bloq_classical[-1] == result
 
 
-# TODO: write tests for signed integer addition (subtraction)
-# https://github.com/quantumlib/Qualtran/issues/606
-@pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_classical_add_signed_overflow(bitsize):
+    bloq = Add(QInt(bitsize))
+    mx = 2 ** (bitsize - 1) - 1
+    assert bloq.call_classically(a=mx, b=mx) == (mx, -2)
+
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2), (6, -3, 2, (), (), -1)]
+)
 def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
     bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     cbloq = bloq.decompose_bloq()

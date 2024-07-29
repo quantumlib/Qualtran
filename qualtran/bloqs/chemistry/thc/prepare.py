@@ -42,13 +42,13 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
-from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
 if TYPE_CHECKING:
@@ -290,8 +290,8 @@ class PrepareTHC(PrepareOracle):
         num_ut = len(triu_indices[0])
         flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            flat_data, epsilon=2**-num_bits_state_prep / len(flat_data)
+        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            flat_data, sub_bit_precision=num_bits_state_prep
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []

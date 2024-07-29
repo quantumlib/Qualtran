@@ -40,6 +40,7 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
+from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import check_dtypes_consistent, QAny, QBit, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
@@ -48,6 +49,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -253,7 +255,7 @@ class CompositeBloq(Bloq):
             a predecessor and again as a successor.
         """
         g = self._binst_graph
-        for binst in nx.topological_sort(g):
+        for binst in greedy_topological_sort(g):
             if isinstance(binst, DanglingT):
                 continue
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
@@ -1015,7 +1017,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[str]]],
+        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
         left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
@@ -1024,12 +1026,13 @@ class BloqBuilder:
 
         Args:
             bloq: The bloq representing the operation to add.
-            partitions: A sequence of pairs specifying each register that the wrapped bloq should
-            accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
+            partitions: A sequence of pairs specifying each register that is exposed in the external
+                signature of the `AutoPartition` and the corresponding register names from `bloq`
+                that concatenate to form the externally exposed register. See `AutoPartition`.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
-                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
-                as is required for the bloq to be fully wrapped on the left and right.
+                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT
+                registers, as is required for the bloq to be fully wrapped on the left and right.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
                 `Soquet`s. This is likely the output soquets from a prior operation.
 

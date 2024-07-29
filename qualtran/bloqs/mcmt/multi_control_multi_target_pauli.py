@@ -26,15 +26,17 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     Register,
     Signature,
-    Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, And, is_symbolic, MultiAnd
+from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
+from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
@@ -141,30 +143,34 @@ class MultiControlPauli(GateWithRegisters):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
-    ) -> Iterator[cirq.OP_TREE]:
-        controls, target = quregs.get('controls', np.array([])), quregs['target']
-        if len(self.concrete_cvs) < 2:
-            controls = controls.flatten()
-            yield [cirq.X(q) for cv, q in zip(self.concrete_cvs, controls) if cv == 0]
-            yield self.target_gate.on(*target).controlled_by(*controls)
-            yield [cirq.X(q) for cv, q in zip(self.concrete_cvs, controls) if cv == 0]
-            return
-        qm = context.qubit_manager
-        and_ancilla, and_target = np.array(qm.qalloc(len(self.concrete_cvs) - 2)), qm.qalloc(1)
-        if len(self.concrete_cvs) == 2:
-            and_op = And(*self.concrete_cvs).on(*controls.flatten(), *and_target)
-            and_op_inv = And(*self.concrete_cvs).adjoint()(*controls.flatten(), *and_target)
-        else:
-            and_op = MultiAnd(self.concrete_cvs).on_registers(
-                ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
-            )
-            and_op_inv = and_op**-1  # type: ignore[operator]
-        yield and_op
-        yield self.target_gate.on(*target).controlled_by(*and_target)
-        yield and_op_inv
-        qm.qfree([*and_ancilla, *and_target])
+    @property
+    def target_bloq(self) -> Bloq:
+        from qualtran.cirq_interop import cirq_gate_to_bloq
+
+        return cirq_gate_to_bloq(self.target_gate)
+
+    @property
+    def _multi_ctrl_bloq(self) -> ControlledViaAnd:
+        ctrl_spec = CtrlSpec(cvs=(np.array(self.concrete_cvs),))
+        return ControlledViaAnd(self.target_bloq, ctrl_spec)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.cvs):
+            raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.cvs=}")
+
+        target = soqs.pop('target')
+        (target_reg_name,) = [reg.name for reg in self.target_bloq.signature]
+        if self.n_ctrls == 0:
+            # TODO discuss if we should remove support for this case.
+            target = bb.add(self.target_bloq, **{target_reg_name: target})
+            return {'target': target}
+
+        (ctrl_reg_name,) = self._multi_ctrl_bloq.ctrl_reg_names
+
+        ctrl = soqs.pop('controls')
+        out_soqs = bb.add_d(self._multi_ctrl_bloq, **{ctrl_reg_name: ctrl, target_reg_name: target})
+
+        return {'controls': out_soqs[ctrl_reg_name], 'target': out_soqs[target_reg_name]}
 
     def pretty_name(self) -> str:
         n = self.n_ctrls
@@ -187,24 +193,29 @@ class MultiControlPauli(GateWithRegisters):
         return {'controls': controls, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+        if self.n_ctrls == 0:
+            return {(self.target_bloq, 1)}
 
-        ret = {(_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1)}
+        if is_symbolic(self.cvs):
+            # TODO CtrlSpec does not support symbolic cvs yet.
+            #      remove this case once support is added.
+            #      https://github.com/quantumlib/Qualtran/issues/1168
+            from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
-        if is_symbolic(self.n_ctrls):
-            return ret | {(MultiAnd(self.cvs), 1), (MultiAnd(self.cvs).adjoint(), 1)}
+            if self.n_ctrls == 1:
+                return {(self.target_bloq.controlled(), 1)}
+            elif self.n_ctrls == 2:
+                and_bloq = And(ssa.new_symbol('cv1'), ssa.new_symbol('cv2'))
+                return {(self.target_bloq.controlled(), 1), (and_bloq, 1), (and_bloq.adjoint(), 1)}
+            else:
+                m_and_bloq = MultiAnd(self.cvs)
+                return {
+                    (self.target_bloq.controlled(), 1),
+                    (m_and_bloq, 1),
+                    (m_and_bloq.adjoint(), 1),
+                }
 
-        n = int(self.n_ctrls)
-        if n >= 2:
-            and_gate = (
-                And(self.concrete_cvs[0], self.concrete_cvs[1])
-                if n == 2
-                else MultiAnd(self.concrete_cvs)
-            )
-            return ret | {(and_gate, 1), (and_gate.adjoint(), 1)}
-        n_pre_post_x = 2 * (len(self.concrete_cvs) - sum(self.concrete_cvs))
-        pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
-        return {(_cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
+        return {(self._multi_ctrl_bloq, 1)}
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (
@@ -240,135 +251,13 @@ _CC_PAULI_DOC = BloqDocSpec(
 
 
 @frozen
-class MultiControlX(Bloq):
-    r"""Implements multi-control, single-target X gate as a bloq using $n-2$ clean ancillas.
+class MultiControlX(MultiControlPauli):
+    r"""Implements multi-control, single-target X gate.
 
-    Args:
-        cvs: A tuple of control values. Each entry specifies whether that control line is a
-            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
-
-    Registers:
-        ctrls: An input register with n 1-bit controls corresponding to the size of the control
-            variable settings above.
-        x: A 1-bit input register bit-flipped based on the values in the ctrls register.
-
-    References:
-        [Constructing Large CNOTS](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html).
-        Section title "$n−2$ Ancilla Bits", Figure titled $C^n$NOT from $n-2$ zeroed bits.
+    See :class:`MultiControlPauli` for implementation and costs.
     """
+    target_gate: cirq.Pauli = field(init=False)
 
-    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        assert len(self.cvs) > 0
-        return Signature([Register('ctrls', QBit(), shape=(len(self.cvs),)), Register('x', QBit())])
-
-    def on_classical_vals(
-        self, ctrls: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
-        if np.all(self.cvs == ctrls):
-            x = (x + 1) % 2
-
-        return {'ctrls': ctrls, 'x': x}
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrls: NDArray[Soquet], x: SoquetT  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
-        # n = number of controls in the bloq.
-        n = len(self.cvs)
-
-        # Base case 1: CNOT()
-        if n == 1:
-            # Allows for 0-controlled implementations.
-            if self.cvs[0] == 0:
-                ctrls[0] = bb.add(XGate(), q=ctrls[0])
-            ctrls[0], x = bb.add(CNOT(), ctrl=ctrls[0], target=x)
-            if self.cvs[0] == 0:
-                ctrls[0] = bb.add(XGate(), q=ctrls[0])
-            return {'ctrls': ctrls, 'x': x}
-
-        # Base case 2: Toffoli()
-        if n == 2:
-            # Allows for 0-controlled implementations.
-            for i in range(len(self.cvs)):
-                if self.cvs[i] == 0:
-                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-            ctrls, x = bb.add(Toffoli(), ctrl=ctrls, target=x)
-
-            for i in range(len(self.cvs)):
-                if self.cvs[i] == 0:
-                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-            return {'ctrls': ctrls, 'x': x}
-
-        # Iterative case: MultiControlledX
-        # Allocate necessary ancilla bits.
-        ancillas = bb.allocate(n=(n - 2))
-
-        # Split the ancilla bits for bloq decomposition connections.
-        ancillas_split = bb.split(ancillas)
-
-        # Initialize a list to store the grouped Toffoli gate controls.
-        toffoli_ctrls = []
-
-        # Allows for 0-controlled implementations.
-        for i in range(len(self.cvs)):
-            if self.cvs[i] == 0:
-                ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-        # Iterative case 0: The first Toffoli gate is controlled by the first two controls.
-        toffoli_ctrl = [ctrls[0], ctrls[1]]
-        toffoli_ctrl, ancillas_split[0] = bb.add(
-            Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
-        )
-        # Save the Toffoli controls for later uncomputation.
-        toffoli_ctrls.append(toffoli_ctrl)
-
-        # Iterative case i: The middle Toffoli gates with controls ancilla and control.
-        for i in range(n - 3):
-            toffoli_ctrl = [ancillas_split[i], ctrls[i + 2]]
-            toffoli_ctrl, ancillas_split[i + 1] = bb.add(
-                Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[i + 1]
-            )
-            toffoli_ctrls.append(toffoli_ctrl)
-
-        # Iteritave case n - 1: The final Toffoli gate which is not uncomputed.
-        toffoli_ctrl = [ancillas_split[n - 3], ctrls[n - 1]]
-        toffoli_ctrl, x = bb.add(Toffoli(), ctrl=toffoli_ctrl, target=x)
-
-        # Start storing end states back into ancilla and control qubits.
-        ancillas_split[n - 3] = toffoli_ctrl[0]
-        ctrls[n - 1] = toffoli_ctrl[1]
-
-        # Iterative case i: Uncomputation of middle Toffoli gates.
-        for i in range(n - 3):
-            toffoli_ctrl = toffoli_ctrls.pop()
-            toffoli_ctrl, ancillas_split[n - 3 - i] = bb.add(
-                Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[n - 3 - i]
-            )
-            ancillas_split[n - 4 - i] = toffoli_ctrl[0]
-            ctrls[n - 2 - i] = toffoli_ctrl[1]
-
-        # Iterative case 0: Uncomputation of first Toffoli gate.
-        toffoli_ctrl = toffoli_ctrls.pop()
-        toffoli_ctrl, ancillas_split[0] = bb.add(
-            Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
-        )
-        ctrls[0:2] = toffoli_ctrl
-
-        # Uncompute 0-controlled qubits.
-        for i in range(len(self.cvs)):
-            if self.cvs[i] == 0:
-                ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-        # Join and free ancilla qubits.
-        ancillas = bb.join(ancillas_split)
-        bb.free(ancillas)
-
-        # Return the output registers.
-        return {'ctrls': ctrls, 'x': x}
-
-    def pretty_name(self) -> str:
-        return f'C^{len(self.cvs)}-NOT'
+    @target_gate.default
+    def _X(self):
+        return cirq.X

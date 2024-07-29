@@ -103,12 +103,24 @@ def classify_t_count_by_bloq_type(
     classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
-        classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])
+        t_counts = t_counts_from_sigma(k.call_graph()[1])
+        if t_counts > 0:
+            classified_bloqs[classification] += v * t_counts
     return classified_bloqs
 
 
 def bloq_is_clifford(b: Bloq):
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.basic_gates import (
+        CNOT,
+        CYGate,
+        CZ,
+        Hadamard,
+        SGate,
+        TwoBitSwap,
+        XGate,
+        YGate,
+        ZGate,
+    )
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 
@@ -116,7 +128,20 @@ def bloq_is_clifford(b: Bloq):
         b = b.subbloq
 
     if isinstance(
-        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT, SGate)
+        b,
+        (
+            TwoBitSwap,
+            Hadamard,
+            XGate,
+            ZGate,
+            YGate,
+            ArbitraryClifford,
+            CNOT,
+            MultiTargetCNOT,
+            CYGate,
+            CZ,
+            SGate,
+        ),
     ):
         return True
 
