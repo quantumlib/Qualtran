@@ -12,3 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from qualtran.bloqs.arithmetic.trigonometric.arcsin import ArcSin
+from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
