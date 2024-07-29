@@ -523,12 +523,12 @@ class QFxp(QDType):
     bits for the integer part and `num_frac` bits for the fractional part. If the
     real number is signed we store negative values in two's complement form. The first
     bit can therefore be treated as the sign bit in such cases (0 for +, 1 for -).
-    In total there are `bitsize = (n_sign + num_int + num_frac)` bits used
-    to represent the number. E.g. Using `(bitsize = 8, num_frac = 6, signed = False)`
-    then $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
+    In total there are `bitsize = (num_int + num_frac)` bits used to represent the number.
+    E.g. Using `(bitsize = 8, num_frac = 6, signed = False)` then
+    $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
 
     We can specify a fixed point real number by the tuple bitsize, num_frac and
-    signed, with num_int determined as `(bitsize - num_frac - n_sign)`.
+    signed, with num_int determined as `(bitsize - num_frac)`.
 
     Attributes:
         bitsize: The total number of qubits used to represent the integer and
