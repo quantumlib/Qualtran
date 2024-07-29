@@ -625,22 +625,30 @@ class QFxp(QDType):
         else:
             return f'QFxp({self.bitsize}, {self.num_frac})'
 
-    # Experimental `fxpmath.Fxp` support.
-    # This support is currently experimental, and does not hook into the classical
-    # simulator protocol. Once the library choice for fixed-point classical real
-    # values is finalized, the code will be updated to use the new functionality
-    # instead of delegating to raw integer values (see above).
-
-    @property
     def fxp_dtype_template(self) -> Fxp:
         """A template of the `Fxp` data type for classical values.
 
-        -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
-            to a bigger fixed point number when doing operations with other Fxp objects.
-        -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
-            truncated and no rounding occurs
-        -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
-            digits are simply discarded.
+        Usage:
+
+            To construct an `Fxp` with this config, one can use:
+            `Fxp(float_value, like=QFxp(...).fxp_dtype_template)`,
+            or given an existing value `some_fxp_value: Fxp`:
+            `some_fxp_value.like(QFxp(...).fxp_dtype_template)`.
+
+        The following Fxp configuration is used:
+            - op_sizing='same' and const_op_sizing='same' ensure that the returned
+              object is not resized to a bigger fixed point number when doing
+              operations with other Fxp objects.
+            - shifting='trunc' ensures that when shifting the Fxp integer to
+              left / right; the digits are truncated and no rounding occurs
+            - overflow='wrap' ensures that when performing operations where result
+              overflows, the overflowed digits are simply discarded.
+
+        Notes:
+            Support for `fxpmath.Fxp` is experimental, and does not hook into the classical
+            simulator protocol. Once the library choice for fixed-point classical real
+            values is finalized, the code will be updated to use the new functionality
+            instead of delegating to raw integer values (see above).
         """
         if is_symbolic(self.bitsize) or is_symbolic(self.num_frac):
             raise ValueError(
@@ -660,7 +668,7 @@ class QFxp(QDType):
 
     def _get_classical_domain_fxp(self) -> Iterable[Fxp]:
         for x in self._int_qdtype.get_classical_domain():
-            yield Fxp(x / 2**self.num_frac, like=self.fxp_dtype_template)
+            yield Fxp(x / 2**self.num_frac, like=self.fxp_dtype_template())
 
     def _fxp_to_bits(
         self, x: Union[float, Fxp], require_exact: bool = True, complement: bool = True
@@ -683,7 +691,7 @@ class QFxp(QDType):
             sign = int(x < 0)
             x = abs(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
-        bits = [int(x) for x in fxp.like(self.fxp_dtype_template).bin()]
+        bits = [int(x) for x in fxp.like(self.fxp_dtype_template()).bin()]
         if self.signed and not complement:
             bits[0] = sign
         return bits
@@ -692,11 +700,11 @@ class QFxp(QDType):
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin, like=self.fxp_dtype_template)
+        return Fxp(fxp_bin, like=self.fxp_dtype_template())
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         fxp_val = val if isinstance(val, Fxp) else Fxp(val)
-        if fxp_val.get_val() != fxp_val.like(self.fxp_dtype_template).get_val():
+        if fxp_val.get_val() != fxp_val.like(self.fxp_dtype_template()).get_val():
             raise ValueError(
                 f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
             )

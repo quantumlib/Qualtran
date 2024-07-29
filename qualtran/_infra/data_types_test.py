@@ -97,13 +97,13 @@ def test_qfxp():
     assert str(qfp_16) == 'QFxp(16, 15)'
     assert qfp_16.num_qubits == 16
     assert qfp_16.num_int == 1
-    assert qfp_16.fxp_dtype_template.dtype == 'fxp-u16/15'
+    assert qfp_16.fxp_dtype_template().dtype == 'fxp-u16/15'
 
     qfp_16 = QFxp(16, 15, signed=True)
     assert str(qfp_16) == 'QFxp(16, 15, True)'
     assert qfp_16.num_qubits == 16
     assert qfp_16.num_int == 1
-    assert qfp_16.fxp_dtype_template.dtype == 'fxp-s16/15'
+    assert qfp_16.fxp_dtype_template().dtype == 'fxp-s16/15'
 
     with pytest.raises(ValueError, match="num_qubits must be > 1."):
         QFxp(1, 1, signed=True)
