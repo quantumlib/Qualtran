@@ -37,7 +37,7 @@ from qualtran._infra.composite_bloq import _binst_to_cxns
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
+def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.integer]:
     """Returns the integer specified by the given big-endian bitstrings.
 
     Args:
@@ -45,11 +45,10 @@ def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[
     Returns:
         An array of integers; one for each bitstring.
     """
+    from qualtran import QUInt
+
     bitstrings = np.atleast_2d(bitstrings)
-    if bitstrings.shape[1] > 64:
-        raise NotImplementedError()
-    basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
+    return QUInt(bitstrings.shape[1]).from_bits_array(bitstrings)
 
 
 def ints_to_bits(
@@ -61,8 +60,13 @@ def ints_to_bits(
         x: An integer or array of unsigned integers.
         w: The bit width of the returned bitstrings.
     """
+    from qualtran import QInt, QUInt
+
     x = np.atleast_1d(x)
-    return np.array([list(map(int, np.binary_repr(v, width=w))) for v in x], dtype=np.uint8)
+    if np.all(x >= 0):
+        return QUInt(w).to_bits_array(x)
+    else:
+        return QInt(w).to_bits_array(x)
 
 
 def _get_in_vals(

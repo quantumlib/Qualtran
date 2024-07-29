@@ -40,7 +40,7 @@ def test_prep_uniform_symb():
     bloq = _prep_uniform_symb.make()
     # TODO: This should be 8logL instead because LessThanConst + LessThanConst.adjoint() should combined
     # be n AND / AND^{dagger} gates. We are doing the work twice right now.
-    assert bloq.t_complexity().t == 12 * ceil(log2(bloq.n - 1)) - 4
+    assert bloq.t_complexity().t == 12 * ceil(log2(bloq.n)) - 4
 
 
 @pytest.mark.notebook

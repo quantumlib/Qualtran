@@ -462,7 +462,7 @@ def _sparse_matrix_symb_block_encoding() -> SparseMatrix:
         UniformEntryOracle,
     )
 
-    n = sympy.Symbol('n')
+    n = sympy.Symbol('n', positive=True, integer=True)
     row_oracle = TopLeftRowColumnOracle(system_bitsize=n)
     col_oracle = TopLeftRowColumnOracle(system_bitsize=n)
     entry_oracle = UniformEntryOracle(system_bitsize=n, entry=0.3)
