@@ -105,6 +105,15 @@ def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
     np.testing.assert_allclose(from_gate, from_tensors, atol=atol)
 
 
+def test_linear_combination_alpha():
+    lambd = (2.0, 3.0)
+    gates = (evolve(Unitary(TGate()), alpha=2.0), evolve(Unitary(Hadamard()), alpha=4.0))
+    bloq = LinearCombination(gates, lambd, lambd_bits=1)
+    from_gate = sum(l * g.U.tensor_contract() * g.alpha for l, g in zip(lambd, gates))
+    from_tensors = get_tensors(bloq)
+    np.testing.assert_allclose(from_gate, from_tensors)
+
+
 # all coefficients are multiples of small negative powers of 2 after normalization
 exact2 = [[0.0, 1.0], [1 / 3, 1 / 3], [0.5, 0.5], [0.25, 0.25], [2.0, 6.0], [1.0, 0.0]]
 exact3 = [
