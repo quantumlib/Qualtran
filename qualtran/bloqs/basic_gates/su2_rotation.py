@@ -23,7 +23,7 @@ from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, 
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
-from qualtran.symbolics import is_symbolic, SymbolicFloat
+from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -125,13 +125,17 @@ class SU2RotationGate(GateWithRegisters):
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        pi = sympy.pi if self.is_symbolic() else np.pi
-        exp = sympy.exp if self.is_symbolic() else np.exp
-
-        bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
-        q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
+        bb.add(
+            GlobalPhase(exponent=1 + self.global_shift / pi(self.global_shift), eps=self.eps / 4)
+        )
+        q = bb.add(
+            ZPowGate(exponent=1 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
+            q=q,
+        )
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
-        q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
+        q = bb.add(
+            ZPowGate(exponent=-self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
+        )
         return {'q': q}
 
     def adjoint(self) -> 'SU2RotationGate':

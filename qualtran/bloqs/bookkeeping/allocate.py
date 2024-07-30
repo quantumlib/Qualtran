@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING, Union
 
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -34,7 +35,10 @@ from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
+
+    from qualtran.cirq_interop import CirqQuregT
 
 
 @frozen
@@ -82,6 +86,15 @@ class Allocate(_BookkeepingBloq):
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        shape = (*self.signature[0].shape, self.signature[0].bitsize)
+        return (
+            None,
+            {'reg': np.array(qubit_manager.qalloc(self.signature.n_qubits())).reshape(shape)},
+        )
 
 
 @bloq_example

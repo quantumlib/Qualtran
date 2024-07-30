@@ -30,8 +30,9 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import SymbolicFloat
 
 
@@ -75,7 +76,7 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register(name='system', dtype=QAny(_total_bits(self.select.selection_registers))),)
+        return (Register(name='system', dtype=QAny(_total_bits(self.select.target_registers))),)
 
     @cached_property
     def signature(self) -> Signature:

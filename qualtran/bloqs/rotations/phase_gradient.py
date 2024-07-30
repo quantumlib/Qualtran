@@ -36,11 +36,12 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
@@ -67,6 +68,20 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     Registers:
         phase_grad: A THRU register which the phase gradient is applied to.
+        (optional) ctrl: A THRU register which specifies the control for this gate. Must have
+            `is_controlled` set to `True` to use this register.
+
+    Arguments:
+        bitsize: The number of qubits of the register being acted on
+        exponent: $t$ in the above expression for $\omega_{n, t}$, a multiplicative factor
+            for the phases applied to each state. Defaults to 1.0.
+        is_controlled: `bool` which determines if the unitary is controlled via a `ctrl` register.
+        eps: The precision for the total unitary, each underlying rotation is synthesized to a precision of `eps` / `bitsize`.
+
+    Costs:
+        qubits: 0 ancilla qubits are allocated.
+        T-gates: Only uses 1 T gate explicitly but does rely on more costly Z rotations.
+        rotations: Uses $n$ rotations with angles varying from 1/2 (for a single T-gate) to 1/(2^n).
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
@@ -83,10 +98,14 @@ class PhaseGradientUnitary(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
+            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=self.phase_dtype)
             if self.is_controlled
-            else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
+            else Signature.build_from_dtypes(phase_grad=self.phase_dtype)
         )
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
@@ -107,9 +126,29 @@ class PhaseGradientUnitary(GateWithRegisters):
     def __pow__(self, power):
         if power == 1:
             return self
-        return PhaseGradientUnitary(
-            self.bitsize, self.exponent * power, self.is_controlled, self.eps
-        )
+        return attrs.evolve(self, exponent=self.exponent * power)
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+        gate = CZPowGate if self.is_controlled else ZPowGate
+        if is_symbolic(self.bitsize):
+            return {
+                (
+                    gate(exponent=self.exponent / 2 ** (self.bitsize), eps=self.eps / self.bitsize),
+                    self.bitsize,
+                )
+            }
+
+        ret: Set['BloqCountT'] = set()
+        for i in range(self.bitsize):
+            ret.add((gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize), 1))
+        return ret
+
+
+@bloq_example
+def _phase_gradient_unitary_symbolic() -> PhaseGradientUnitary:
+    n = sympy.symbols('n')
+    phase_gradient_unitary_symbolic = PhaseGradientUnitary(bitsize=n)
+    return phase_gradient_unitary_symbolic
 
 
 @bloq_example
@@ -121,7 +160,7 @@ def _phase_gradient_unitary() -> PhaseGradientUnitary:
 _PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
     bloq_cls=PhaseGradientUnitary,
     import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary',
-    examples=(_phase_gradient_unitary,),
+    examples=(_phase_gradient_unitary, _phase_gradient_unitary_symbolic),
 )
 
 
@@ -153,9 +192,11 @@ class PhaseGradientState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=Side.RIGHT)]
-        )
+        return Signature([Register('phase_grad', self.phase_dtype, side=Side.RIGHT)])
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -226,17 +267,14 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(
-                ctrl=QBit(),
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            Signature.build_from_dtypes(ctrl=QBit(), x=self.x_dtype, phase_grad=self.phase_dtype)
             if self.controlled_by is not None
-            else Signature.build_from_dtypes(
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            else Signature.build_from_dtypes(x=self.x_dtype, phase_grad=self.phase_dtype)
         )
+
+    @cached_property
+    def x_dtype(self) -> QFxp:
+        return QFxp(self.x_bitsize, self.x_bitsize, signed=False)
 
     @cached_property
     def phase_dtype(self) -> QFxp:
@@ -293,21 +331,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         return {(Toffoli(), num_toffoli)}
 
-    def adjoint(self) -> 'Bloq':
-        return AddIntoPhaseGrad(
-            self.x_bitsize,
-            self.phase_bitsize,
-            self.right_shift,
-            sign=-1 * self.sign,
-            controlled_by=self.controlled_by,
-        )
-
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return self.adjoint()
-        raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
+    def adjoint(self) -> 'AddIntoPhaseGrad':
+        return attrs.evolve(self, sign=-self.sign)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

@@ -118,8 +118,6 @@ class GateCounts:
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
-    In addition to this, the class holds a heuristic approximation for the depth of the
-    circuit `depth` which we compute as the depth of the call graph.
     """
 
     t: int = 0
@@ -129,7 +127,6 @@ class GateCounts:
     clifford: int = 0
     rotation: int = 0
     measurement: int = 0
-    depth: int = 0
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -143,7 +140,6 @@ class GateCounts:
             clifford=self.clifford + other.clifford,
             rotation=self.rotation + other.rotation,
             measurement=self.measurement + other.measurement,
-            depth=self.depth + other.depth,
         )
 
     def __mul__(self, other):
@@ -155,7 +151,6 @@ class GateCounts:
             clifford=other * self.clifford,
             rotation=other * self.rotation,
             measurement=other * self.measurement,
-            depth=other * self.depth,
         )
 
     def __rmul__(self, other):
@@ -194,6 +189,36 @@ class GateCounts:
             + ts_per_and_bloq * self.and_bloq
             + ts_per_rotation * self.rotation
         )
+
+    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, int]:
+        n_ccz = self.toffoli + self.cswap + self.and_bloq
+        n_t = self.t + ts_per_rotation * self.rotation
+        return {'n_t': n_t, 'n_ccz': n_ccz}
+
+    def total_beverland_count(self) -> Dict[str, int]:
+        r"""Counts used by Beverland. et. al. using notation from the reference.
+
+         - $M_\mathrm{meas}$ is the number of measurements.
+         - $M_R$ is the number of rotations.
+         - $M_T$ is the number of T operations.
+         - $3*M_mathrm{Tof}$ is the number of Toffoli operations.
+         - $D_R$ is the number of layers containing at least one rotation. This can be smaller than
+           the total number of non-Clifford layers since it excludes layers consisting only of T or
+           Toffoli gates. Since we don't compile the 'layers' explicitly, we set this to be the
+           number of rotations.
+
+        Reference:
+            https://arxiv.org/abs/2211.07629.
+            Equation D3.
+        """
+        toffoli = self.toffoli + self.and_bloq + self.cswap
+        return {
+            'meas': self.measurement,
+            'R': self.rotation,
+            'T': self.t,
+            'Tof': toffoli,
+            'D_R': self.rotation,
+        }
 
 
 @frozen
@@ -236,12 +261,9 @@ class QECGatesCost(CostKey[GateCounts]):
         totals = GateCounts()
         callees = get_bloq_callee_counts(bloq)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
-        depth = 0
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)
             totals += n_times_called * callee_cost
-            depth = max(depth, callee_cost.depth + 1)
-        totals = attrs.evolve(totals, depth=depth)
         return totals
 
     def zero(self) -> GateCounts:

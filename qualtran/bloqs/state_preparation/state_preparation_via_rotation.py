@@ -87,8 +87,6 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
-    QAny,
-    Register,
     Signature,
     Soquet,
     SoquetT,
@@ -145,7 +143,6 @@ class StatePreparationViaRotations(GateWithRegisters):
     def __attrs_post_init__(self):
         if is_symbolic(self.state_coefficients):
             return
-        assert isinstance(self.state_coefficients, tuple)
         # a valid quantum state has a number of coefficients that is a power of two
         assert slen(self.state_coefficients) == 2**self.state_bitsize
         # negative number of control bits is not allowed
@@ -249,7 +246,8 @@ class StatePreparationViaRotations(GateWithRegisters):
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
-            soqs["selection"] = bb.join(state_qubits[:qi])
+            if qi:
+                soqs["selection"] = bb.join(state_qubits[:qi])
             if self.control_bitsize > 1:
                 soqs["control"] = bb.join(
                     np.array(
@@ -265,7 +263,8 @@ class StatePreparationViaRotations(GateWithRegisters):
             if self.control_bitsize != 0:
                 soqs["prepare_control"] = bb.join(separated[:-1])
             state_qubits[qi] = separated[-1]
-            state_qubits[:qi] = bb.split(cast(Soquet, soqs.pop("selection")))
+            if qi:
+                state_qubits[:qi] = bb.split(cast(Soquet, soqs.pop("selection")))
             state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[qi])
 
         soqs["target_state"] = bb.join(state_qubits)
@@ -304,9 +303,11 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs["control"] = rot_ancilla
         ctrl_rot = self.prga_prepare_phases
         # rename some registers to make them compatible with PRGAViaPhaseGradient
-        soqs["selection"] = soqs.pop("target_state")
+        if ctrl_rot.selection_bitsize:
+            soqs["selection"] = soqs.pop("target_state")
         soqs = bb.add_d(ctrl_rot, **soqs)
-        soqs["target_state"] = soqs.pop("selection")
+        if ctrl_rot.selection_bitsize:
+            soqs["target_state"] = soqs.pop("selection")
         separated = bb.split(cast(Soquet, soqs.pop("control")))
         if self.control_bitsize != 0:
             soqs["prepare_control"] = bb.join(separated[:-1])
@@ -382,12 +383,10 @@ class PRGAViaPhaseGradient(Bloq):
 
     @property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("control", QAny(self.control_bitsize)),
-                Register("selection", QAny(self.selection_bitsize)),
-                Register("phase_gradient", QAny(self.phase_bitsize)),
-            ]
+        return Signature.build(
+            control=self.control_bitsize,
+            selection=self.selection_bitsize,
+            phase_gradient=self.phase_bitsize,
         )
 
     @property

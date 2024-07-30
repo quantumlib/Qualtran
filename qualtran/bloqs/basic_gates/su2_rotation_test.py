@@ -99,7 +99,7 @@ def test_call_graph():
     gate = SU2RotationGate(theta, phi, lambd, alpha, eps)
     _, sigma = gate.call_graph()
     assert sigma == {
-        GlobalPhase(-sympy.exp(1j * alpha), eps / 4): 1,
+        GlobalPhase(exponent=1 + alpha / pi, eps=eps / 4): 1,
         ZPowGate(-phi / pi, -1, eps / 4): 1,
         ZPowGate(-lambd / pi + 1, -1, eps / 4): 1,
         Ry(2 * theta, eps / 4): 1,

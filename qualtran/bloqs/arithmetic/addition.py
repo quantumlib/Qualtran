@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
 from functools import cached_property
 from typing import (
     Dict,
@@ -54,11 +53,11 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -129,8 +128,10 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a + b, N))}
+        return {
+            'a': a,
+            'b': add_ints(int(a), int(b), num_bits=int(b_bitsize), is_signed=not unsigned),
+        }
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -188,6 +189,9 @@ class Add(Bloq):
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
+        if self.b_dtype.bitsize == 1:
+            yield CNOT().on(input_bits[0], output_bits[0])
+            return
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
@@ -288,7 +292,13 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': b, 'c': a + b}
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        return {
+            'a': a,
+            'b': b,
+            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+        }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
@@ -316,10 +326,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return cirq.inverse(optree) if self.is_adjoint else optree
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (And(uncompute=self.is_adjoint), self.bitsize),
-            (ArbitraryClifford(n=2), 5 * self.bitsize),
-        }
+        return {(And(uncompute=self.is_adjoint), self.bitsize), (CNOT(), 5 * self.bitsize)}
 
     def __pow__(self, power: int):
         if power == 1:
@@ -407,14 +414,18 @@ class AddK(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
         N = 2**self.bitsize
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': int(math.fmod(x + self.k, N))}
+            return {
+                'x': add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
+            }
 
         if np.all(self.cvs == ctrls):
-            x = int(math.fmod(x + self.k, N))
+            x = add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
 
         return {'ctrls': ctrls, 'x': x}
 
@@ -444,7 +455,7 @@ class AddK(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -464,7 +475,7 @@ class AddK(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -516,8 +527,8 @@ class AddK(Bloq):
         def _add_ctrled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            ctrl, x = bb.add_t(bloq, ctrls=ctrl_soqs[0], **in_soqs)
-            return (ctrl,), (x,)
+            ctrls, x = bb.add_t(bloq, ctrls=np.asarray(ctrl_soqs), **in_soqs)
+            return np.asarray(ctrls).tolist(), (x,)
 
         return bloq, _add_ctrled
 

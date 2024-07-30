@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -73,7 +73,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float = 1
-    eps: Union[SymbolicFloat] = 1e-10
+    eps: SymbolicFloat = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
