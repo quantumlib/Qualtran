@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Iterable, Sequence, Union
 
@@ -20,28 +19,48 @@ import cirq
 import numpy as np
 
 from qualtran import GateWithRegisters, QFxp, Signature
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.arithmetic import PlusEqualProduct
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @attrs.frozen
 class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
+    This is computed by a series of fused-multiply-add (`PlusEqualProduct`) instructions.
+    See Ref. 2 for classical implementations, and Ref. 3 for quantum multiplication circuits.
+
     Args:
         selection_bitsize: The bitsize of input register |x>.
         target_bitsize: The bitsize of output register. The computed quantity,
             $\abs(-2 * \arctan(x) / \pi)$ is stored as a fixed-length binary approximation
             in the output register of size `target_bitsize`.
+
+    References:
+        [Mean estimation when you have the source code; or, quantum Monte Carlo methods](https://arxiv.org/abs/2208.07544)
+        Kothari and Donnell, 2022. Appendix A.
+
+        [StackOverflow: FPATAN](https://stackoverflow.com/questions/23047978/how-is-arctan-implemented/23097989#23097989)
+        Accessed 29.07.2022.
+
+        [Fast quantum integer multiplication with zero ancillas](https://arxiv.org/abs/2403.18006)
+        Kahanamoku-Meyer and Yao, 2024.
     """
 
-    selection_bitsize: int
-    target_bitsize: int
+    selection_bitsize: SymbolicInt
+    target_bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(select=self.selection_bitsize, sign=1, target=self.target_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if is_symbolic(self.selection_bitsize) or is_symbolic(self.target_bitsize):
+            raise TypeError(
+                "Cannot build registers for symbolic bitsizes "
+                f"{self.selection_bitsize=} {self.target_bitsize=}"
+            )
         return (2,) * self.selection_bitsize, (2,), (2,) * self.target_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "ArcTan":
@@ -57,11 +76,13 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
         )
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
-    def _t_complexity_(self) -> TComplexity:
-        # Approximate T-complexity of O(target_bitsize)
-        return TComplexity(t=self.target_bitsize)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+        # Hack to propagate bigO(...). Here `c` is some constant.
+        c = ssa.new_symbol("c")
 
-    def __pow__(self, power) -> 'ArcTan':
-        if power in [+1, -1]:
-            return self
-        raise NotImplementedError("__pow__ is only implemented for +1/-1.")  # pragma: no cover
+        return {
+            (PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize), c)
+        }
+
+    def adjoint(self) -> 'ArcTan':
+        return self
