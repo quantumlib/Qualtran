@@ -135,7 +135,5 @@ def _unitary_block_encoding_properties() -> Unitary:
 
 
 _UNITARY_DOC = BloqDocSpec(
-    bloq_cls=Unitary,
-    import_line="from qualtran.bloqs.block_encoding import Unitary",
-    examples=[_unitary_block_encoding, _unitary_block_encoding_properties],
+    bloq_cls=Unitary, examples=[_unitary_block_encoding, _unitary_block_encoding_properties]
 )

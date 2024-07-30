@@ -500,7 +500,6 @@ def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
 
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
-    import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
     examples=[
         _sparse_matrix_block_encoding,
         _sparse_matrix_symb_block_encoding,

@@ -115,8 +115,4 @@ def _phase_block_encoding() -> Phase:
     return phase_block_encoding
 
 
-_PHASE_DOC = BloqDocSpec(
-    bloq_cls=Phase,
-    import_line="from qualtran.bloqs.block_encoding import Phase",
-    examples=[_phase_block_encoding],
-)
+_PHASE_DOC = BloqDocSpec(bloq_cls=Phase, examples=[_phase_block_encoding])

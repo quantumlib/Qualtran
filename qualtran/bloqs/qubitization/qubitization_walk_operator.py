@@ -204,7 +204,5 @@ def _walk_op_chem_sparse() -> QubitizationWalkOperator:
 
 
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
-    bloq_cls=QubitizationWalkOperator,
-    import_line='from qualtran.bloqs.qubitization import QubitizationWalkOperator',
-    examples=(_walk_op, _thc_walk_op, _walk_op_chem_sparse),
+    bloq_cls=QubitizationWalkOperator, examples=(_walk_op, _thc_walk_op, _walk_op_chem_sparse)
 )
