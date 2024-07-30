@@ -264,7 +264,6 @@ def _product_block_encoding_symb() -> Product:
 
 _PRODUCT_DOC = BloqDocSpec(
     bloq_cls=Product,
-    import_line="from qualtran.bloqs.block_encoding import Product",
     examples=[
         _product_block_encoding,
         _product_block_encoding_properties,
