@@ -447,7 +447,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
 
     @cached_method
     def scaled_val(self, x: int) -> int:
@@ -461,7 +461,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
         # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
         # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
+        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_template().dtype)
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
@@ -469,7 +469,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
-        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_str
+        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_template().dtype
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
