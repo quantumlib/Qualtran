@@ -103,7 +103,9 @@ def classify_t_count_by_bloq_type(
     classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
-        classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])
+        t_counts = t_counts_from_sigma(k.call_graph()[1])
+        if t_counts > 0:
+            classified_bloqs[classification] += v * t_counts
     return classified_bloqs
 
 

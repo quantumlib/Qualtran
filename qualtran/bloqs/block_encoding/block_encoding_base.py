@@ -115,7 +115,5 @@ class BlockEncoding(Bloq):
 
 
 _BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=BlockEncoding,  # type: ignore[type-abstract]
-    import_line="from qualtran.bloqs.block_encoding import BlockEncoding",
-    examples=[],
+    bloq_cls=BlockEncoding, examples=[]  # type: ignore[type-abstract]
 )

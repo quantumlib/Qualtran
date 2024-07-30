@@ -348,7 +348,5 @@ def _linear_combination_block_encoding() -> LinearCombination:
 
 
 _LINEAR_COMBINATION_DOC = BloqDocSpec(
-    bloq_cls=LinearCombination,
-    import_line="from qualtran.bloqs.block_encoding import LinearCombination",
-    examples=[_linear_combination_block_encoding],
+    bloq_cls=LinearCombination, examples=[_linear_combination_block_encoding]
 )

@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,14 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran import QFxp
-from qualtran.bloqs.mean_estimation.arctan import ArcTan
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
 
 @pytest.mark.parametrize('selection_bitsize', [3, 4])
@@ -30,7 +29,9 @@ def test_arctan(selection_bitsize, target_bitsize):
         inp = f'0b_{x:0{selection_bitsize}b}_0_{0:0{target_bitsize}b}'
         y = -2 * np.arctan(x) / np.pi
         bits = QFxp(target_bitsize + 1, target_bitsize, True).to_bits(
-            y, require_exact=False, complement=False
+            QFxp(target_bitsize + 1, target_bitsize, True).to_fixed_width_int(
+                y, require_exact=False, complement=False
+            )
         )
         sign, y_bin = bits[0], bits[1:]
         y_bin_str = ''.join(str(b) for b in y_bin)
@@ -48,5 +49,7 @@ def test_arctan(selection_bitsize, target_bitsize):
 
 
 def test_arctan_t_complexity():
-    gate = ArcTan(4, 5)
-    assert t_complexity(gate) == TComplexity(t=5)
+    n = sympy.Symbol("n")
+    c = sympy.Symbol("_c0")
+    bloq = ArcTan(4, n)
+    assert bloq.t_complexity().t == 8 * c * n**2

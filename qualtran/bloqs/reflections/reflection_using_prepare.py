@@ -21,11 +21,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import (
-    merge_qubits,
-    SpecializedSingleQubitControlledGate,
-    total_bits,
-)
+from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits, total_bits
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
@@ -38,7 +35,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
+class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =

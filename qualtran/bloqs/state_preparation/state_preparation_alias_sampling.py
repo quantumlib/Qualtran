@@ -283,9 +283,7 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
 
 
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(
-    bloq_cls=StatePreparationAliasSampling,
-    import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
-    examples=(_state_prep_alias, _state_prep_alias_symb),
+    bloq_cls=StatePreparationAliasSampling, examples=(_state_prep_alias, _state_prep_alias_symb)
 )
 
 
