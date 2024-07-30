@@ -41,13 +41,24 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
+    This is computed by a series of fused-multiply-add (`PlusEqualProduct`) instructions.
+    See Ref. 2 for classical implementations, and Ref. 3 for quantum multiplication circuits.
+
     Args:
         selection_bitsize: The bitsize of input register |x>.
         target_bitsize: The bitsize of output register. The computed quantity,
             $\abs(-2 * \arctan(x) / \pi)$ is stored as a fixed-length binary approximation
             in the output register of size `target_bitsize`.
 
-    TODO missing reference
+    References:
+        [Mean estimation when you have the source code; or, quantum Monte Carlo methods](https://arxiv.org/abs/2208.07544)
+        Kothari and Donnell, 2022. Appendix A.
+
+        [StackOverflow: FPATAN](https://stackoverflow.com/questions/23047978/how-is-arctan-implemented/23097989#23097989)
+        Accessed 29.07.2022.
+
+        [Fast quantum integer multiplication with zero ancillas](https://arxiv.org/abs/2403.18006)
+        Kahanamoku-Meyer and Yao, 2024.
     """
 
     selection_bitsize: SymbolicInt
@@ -79,7 +90,7 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        # Hack to propagate bigO(...). Here `c` is some arbitrary constant.
+        # Hack to propagate bigO(...). Here `c` is some constant.
         c = ssa.new_symbol("c")
 
         return {
