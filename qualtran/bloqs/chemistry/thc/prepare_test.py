@@ -52,12 +52,11 @@ def build_random_test_integrals(num_mu: int, num_spat: int, seed: Optional[int] 
         t_l: The eigenvalues of the one-body Hamiltonian.
         zeta: The central tensor (matrix) of size num_mu x num_mu.
     """
-    if seed is not None:
-        np.random.seed(seed)
-    tpq = np.random.normal(size=(num_spat, num_spat))
+    rs = np.random.RandomState(seed)
+    tpq = rs.normal(size=(num_spat, num_spat))
     tpq = 0.5 * (tpq + tpq.T)
     t_l = np.linalg.eigvalsh(tpq)
-    zeta = np.random.normal(size=(num_mu, num_mu))
+    zeta = rs.normal(size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
     return t_l, zeta
 

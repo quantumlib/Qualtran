@@ -74,14 +74,13 @@ def build_random_test_integrals(nb: int, seed: Optional[int] = 7):
         tpq: The one-body matrix elements.
         eris: Chemist ERIs (pq|rs).
     """
-    if seed is not None:
-        np.random.seed(seed)
-    tpq = np.random.normal(size=(nb, nb))
+    rs = np.random.RandomState(seed)
+    tpq = rs.normal(size=(nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
-    eris = np.random.normal(scale=4, size=(nb,) * 4)
-    eris += np.transpose(eris, (0, 1, 3, 2))
-    eris += np.transpose(eris, (1, 0, 2, 3))
-    eris += np.transpose(eris, (2, 3, 0, 1))
+    eris = rs.normal(scale=4, size=(nb,) * 4)
+    eris += rs.transpose(eris, (0, 1, 3, 2))
+    eris += rs.transpose(eris, (1, 0, 2, 3))
+    eris += rs.transpose(eris, (2, 3, 0, 1))
     return tpq, eris
 
 
