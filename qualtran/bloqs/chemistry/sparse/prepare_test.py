@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Optional
+
 import numpy as np
 import pytest
 
@@ -61,16 +63,19 @@ def test_decompose_bloq_counts():
     assert cost_decomp == cost_call
 
 
-def build_random_test_integrals(nb: int):
+def build_random_test_integrals(nb: int, seed: Optional[int] = 7):
     """Build random one- and two-electron integrals of the correct symmetry.
 
     Args:
         nb: The number of spatial orbitals.
+        seed: If set then set the random number seed to this value. Otherwise it is not set here.
 
     Returns:
         tpq: The one-body matrix elements.
         eris: Chemist ERIs (pq|rs).
     """
+    if seed is not None:
+        np.random.seed(seed)
     tpq = np.random.normal(size=(nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
     eris = np.random.normal(scale=4, size=(nb,) * 4)
@@ -83,7 +88,7 @@ def build_random_test_integrals(nb: int):
 @pytest.mark.parametrize('sparsity', [0.0, 1e-2])
 @pytest.mark.parametrize('nb', [4, 5, 6, 7])
 def test_get_sparse_inputs_from_integrals(nb, sparsity):
-    tpq, eris = build_random_test_integrals(nb)
+    tpq, eris = build_random_test_integrals(nb, seed=7)
     pqrs_indx, eris_eight = get_sparse_inputs_from_integrals(
         tpq, eris, drop_element_thresh=sparsity
     )

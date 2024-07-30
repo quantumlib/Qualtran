@@ -471,11 +471,11 @@ def _thc_uni() -> UniformSuperpositionTHC:
 
 @bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
+
     num_spat = 4
     num_mu = 8
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
+    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
     thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
     return thc_prep
 

@@ -20,7 +20,7 @@ from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationW
 
 
 def get_walk_operator_for_thc_ham(
-    tpq: NDArray,
+    t_l: NDArray,
     zeta: NDArray,
     num_bits_state_prep: int,
     num_bits_theta: int,
@@ -30,7 +30,7 @@ def get_walk_operator_for_thc_ham(
     """Build a QubitizationWalkOperator for the THC hamiltonian.
 
     Args:
-        tpq: Modified one-body hamiltonian.
+        t_l: Eigenvalues of modified one-body hamiltonian.
         zeta: THC central tensor.
         num_bits_state_prep: The number of bits for the state prepared during alias sampling.
         num_bits_theta: Number of bits of precision for the rotations. Called
@@ -42,10 +42,9 @@ def get_walk_operator_for_thc_ham(
     Returns:
         walk_op: Walk operator for THC hamiltonian.
     """
-    t_l, _ = np.linalg.eigh(tpq)
     prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep)
     num_mu = zeta.shape[-1]
-    num_spin_orb = 2 * tpq.shape[-1]
+    num_spin_orb = 2 * len(t_l)
     sel = SelectTHC(num_mu, num_spin_orb, num_bits_theta, prep.keep_bitsize, kr1=kr1, kr2=kr2)
     walk_op = QubitizationWalkOperator(select=sel, prepare=prep)
     return walk_op
