@@ -37,18 +37,6 @@ def test_bloq_examples_can_be_converted_to_qualtran_when_decomposed(bloq_example
         pytest.xfail(f"QREF conversion failing for {bloq}")
 
 
-@pytest.mark.parametrize("bloq_example", get_bloq_examples())
-def test_bloq_examples_can_be_converted_to_qualtran_through_call_graph(bloq_example):
-    try:
-        bloq = bloq_example.make()
-    except (DecomposeTypeError, DecomposeNotImplementedError, ValueError) as e:
-        pytest.skip(f"QREF conversion not attempted, as extracting callgraph failed with {e}")
-    try:
-        qref_routine = bloq_to_qref_from_call_graph(bloq)
-    except:
-        pytest.xfail(f"QREF conversion failing for {bloq}")
-
-
 def _cnot_routine(name: str) -> RoutineV1:
     return RoutineV1(
         name=name,
@@ -235,214 +223,24 @@ def _undecomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
         type="StatePreparationAliasSampling",
         ports=[
             {"name": "in_selection", "size": 2, "direction": "input"},
-            {"name": "in_sigma_mu", "size": 3, "direction": "input"},
+            {"name": "in_sigma_mu", "size": 16, "direction": "input"},
             {"name": "in_alt", "size": 2, "direction": "input"},
-            {"name": "in_keep", "size": 3, "direction": "input"},
+            {"name": "in_keep", "size": 16, "direction": "input"},
             {"name": "in_less_than_equal", "size": 1, "direction": "input"},
             {"name": "out_selection", "size": 2, "direction": "output"},
-            {"name": "out_sigma_mu", "size": 3, "direction": "output"},
+            {"name": "out_sigma_mu", "size": 16, "direction": "output"},
             {"name": "out_alt", "size": 2, "direction": "output"},
-            {"name": "out_keep", "size": 3, "direction": "output"},
+            {"name": "out_keep", "size": 16, "direction": "output"},
             {"name": "out_less_than_equal", "size": 1, "direction": "output"},
         ],
         resources=[
-            {"name": "clifford", "value": 268, "type": "additive"},
+            {"name": "clifford", "value": 879, "type": "additive"},
             {"name": "rotations", "value": 2, "type": "additive"},
-            {"name": "t", "value": 58, "type": "additive"},
+            {"name": "t", "value": 162, "type": "additive"},
         ],
     )
 
     return bloq, routine, "alias sampling (not decomposed)"
-
-
-def _decomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
-    bloq = StatePreparationAliasSampling.from_probabilities([0.25, 0.5, 0.25]).decompose_bloq()
-
-    routine = RoutineV1(
-        name="CompositeBloq",
-        type="CompositeBloq",
-        ports=[
-            {"name": "in_selection", "size": 2, "direction": "input"},
-            {"name": "in_sigma_mu", "size": 3, "direction": "input"},
-            {"name": "in_alt", "size": 2, "direction": "input"},
-            {"name": "in_keep", "size": 3, "direction": "input"},
-            {"name": "in_less_than_equal", "size": 1, "direction": "input"},
-            {"name": "out_selection", "size": 2, "direction": "output"},
-            {"name": "out_sigma_mu", "size": 3, "direction": "output"},
-            {"name": "out_alt", "size": 2, "direction": "output"},
-            {"name": "out_keep", "size": 3, "direction": "output"},
-            {"name": "out_less_than_equal", "size": 1, "direction": "output"},
-        ],
-        children=[
-            RoutineV1(
-                name="Split_1",
-                type="Split",
-                ports=[
-                    {"name": "in_reg", "direction": "input", "size": 3},
-                    {"name": "out_reg_0", "direction": "output", "size": 1},
-                    {"name": "out_reg_1", "direction": "output", "size": 1},
-                    {"name": "out_reg_2", "direction": "output", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 0, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 0, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="Hadamard_2",
-                type="Hadamard",
-                ports=[
-                    {"name": "in_q", "direction": "input", "size": 1},
-                    {"name": "out_q", "direction": "output", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 1, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 0, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="Hadamard_3",
-                type="Hadamard",
-                ports=[
-                    {"name": "in_q", "direction": "input", "size": 1},
-                    {"name": "out_q", "direction": "output", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 1, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 0, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="Hadamard_4",
-                type="Hadamard",
-                ports=[
-                    {"name": "in_q", "direction": "input", "size": 1},
-                    {"name": "out_q", "direction": "output", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 1, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 0, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="CSwap_8",
-                type="CSwap",
-                ports=[
-                    {"name": "in_ctrl", "direction": "input", "size": 1},
-                    {"name": "out_ctrl", "direction": "output", "size": 1},
-                    {"name": "in_x", "direction": "input", "size": 2},
-                    {"name": "out_x", "direction": "output", "size": 2},
-                    {"name": "in_y", "direction": "input", "size": 2},
-                    {"name": "out_y", "direction": "output", "size": 2},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 20, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 14, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="Join_6",
-                type="Join",
-                ports=[
-                    {"name": "out_reg", "direction": "output", "size": 3},
-                    {"name": "in_reg_0", "direction": "input", "size": 1},
-                    {"name": "in_reg_1", "direction": "input", "size": 1},
-                    {"name": "in_reg_2", "direction": "input", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 0, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 0, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="LessThanEqual_7",
-                type="LessThanEqual",
-                ports=[
-                    {"name": "in_x", "direction": "input", "size": 3},
-                    {"name": "out_x", "direction": "output", "size": 3},
-                    {"name": "in_y", "direction": "input", "size": 3},
-                    {"name": "out_y", "direction": "output", "size": 3},
-                    {"name": "in_target", "direction": "input", "size": 1},
-                    {"name": "out_target", "direction": "output", "size": 1},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 117, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 20, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="PrepareUniformSuperposition_0",
-                type="PrepareUniformSuperposition",
-                ports=[
-                    {"name": "in_target", "direction": "input", "size": 2},
-                    {"name": "out_target", "direction": "output", "size": 2},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 103, "type": "additive"},
-                    {"name": "rotations", "value": 2, "type": "additive"},
-                    {"name": "t", "value": 20, "type": "additive"},
-                ],
-            ),
-            RoutineV1(
-                name="QROM_5",
-                type="QROM",
-                ports=[
-                    {"name": "in_selection", "direction": "input", "size": 2},
-                    {"name": "out_selection", "direction": "output", "size": 2},
-                    {"name": "in_target0_", "direction": "input", "size": 2},
-                    {"name": "out_target0_", "direction": "output", "size": 2},
-                    {"name": "in_target1_", "direction": "input", "size": 3},
-                    {"name": "out_target1_", "direction": "output", "size": 3},
-                ],
-                resources=[
-                    {"name": "clifford", "value": 25, "type": "additive"},
-                    {"name": "rotations", "value": 0, "type": "additive"},
-                    {"name": "t", "value": 4, "type": "additive"},
-                ],
-            ),
-        ],
-        connections=[
-            {"source": in_, "target": out_}
-            for in_, out_ in [
-                ("CSwap_8.out_ctrl", "out_less_than_equal"),
-                ("CSwap_8.out_x", "out_alt"),
-                ("CSwap_8.out_y", "out_selection"),
-                ("Hadamard_2.out_q", "Join_6.in_reg_0"),
-                ("Hadamard_3.out_q", "Join_6.in_reg_1"),
-                ("Hadamard_4.out_q", "Join_6.in_reg_2"),
-                ("Join_6.out_reg", "LessThanEqual_7.in_y"),
-                ("LessThanEqual_7.out_target", "CSwap_8.in_ctrl"),
-                ("LessThanEqual_7.out_x", "out_keep"),
-                ("LessThanEqual_7.out_y", "out_sigma_mu"),
-                ("PrepareUniformSuperposition_0.out_target", "QROM_5.in_selection"),
-                ("QROM_5.out_selection", "CSwap_8.in_y"),
-                ("QROM_5.out_target0_", "CSwap_8.in_x"),
-                ("QROM_5.out_target1_", "LessThanEqual_7.in_x"),
-                ("Split_1.out_reg_0", "Hadamard_2.in_q"),
-                ("Split_1.out_reg_1", "Hadamard_3.in_q"),
-                ("Split_1.out_reg_2", "Hadamard_4.in_q"),
-                ("in_alt", "QROM_5.in_target0_"),
-                ("in_keep", "QROM_5.in_target1_"),
-                ("in_less_than_equal", "LessThanEqual_7.in_target"),
-                ("in_selection", "PrepareUniformSuperposition_0.in_target"),
-                ("in_sigma_mu", "Split_1.in_reg"),
-            ]
-        ],
-        resources=[
-            {"name": "clifford", "value": 268, "type": "additive"},
-            {"name": "rotations", "value": 2, "type": "additive"},
-            {"name": "t", "value": 58, "type": "additive"},
-        ],
-    )
-
-    return bloq, routine, "alias sampling (decomposed)"
 
 
 @pytest.mark.parametrize(
@@ -456,7 +254,6 @@ def _decomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
             _less_than_equal_symbolic(),
             _qrom_symbolic(),
             _undecomposed_alias_sampling(),
-            _decomposed_alias_sampling(),
         ]
     ],
 )

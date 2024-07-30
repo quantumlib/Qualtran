@@ -1,5 +1,5 @@
 from functools import singledispatch
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union
 
 import sympy
 from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
@@ -58,6 +58,9 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
         A dictionary that can be unpacked into arguments of RoutineV1 initializer.
     """
     ports = [port for reg in bloq.signature for port in _ports_from_register(reg)]
+
+    # Logic associated with local_variables is needed in order to get around a limitation of bartiq,
+    # which currently cannot handle input port sizes with non-trivial sizes.
     local_variables = {}
     for port in ports:
         if not _is_symbol_or_int(str(port.size)):
@@ -77,7 +80,10 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
                 name += "_adjoint"
         except AttributeError:
             pass
-    input_params = _extract_input_params(bloq, ports) - set(local_variables)
+
+    input_params = sorted(
+        list(_extract_input_params(bloq, ports, local_variables) - set(local_variables))
+    )
 
     attributes = {
         "name": name,
@@ -87,6 +93,10 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
         "input_params": input_params,
     }
     if len(local_variables) > 0:
+        print("\n")
+        print(local_variables)
+        print(_import_resources(bloq))
+        print("\n")
         attributes["local_variables"] = local_variables
     return attributes
 
@@ -261,6 +271,11 @@ def _import_connection(connection: QualtranConnection) -> dict[str, Any]:
     }
 
 
+def _ensure_primitive_type(value: Any) -> Union[int, float, str, None]:
+    """Ensure given value is of primitive type (e.g. is not a sympy expression)."""
+    return value if value is None or not is_symbolic(value) else str(value)
+
+
 def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     """Import resources from Bloq's t_complexity method."""
     t_complexity = bloq.t_complexity()
@@ -268,17 +283,20 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     resources = []
     for name in resource_names:
         resources.append(
-            {"name": name, "value": is_symbolic(getattr(t_complexity, name)), "type": "additive"}
+            {
+                "name": name,
+                "value": _ensure_primitive_type(getattr(t_complexity, name)),
+                "type": "additive",
+            }
         )
     return resources
 
 
-def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> list[str]:
+def _extract_input_params(bloq: Bloq, ports: list[PortV1], local_variables) -> list[str]:
     """Extracts input_params from bloq's t_complexity and port sizes."""
     params_from_t_complexity = _extract_symbols_from_t_complexity(bloq)
     params_from_ports = _extract_symbols_from_port_sizes(ports)
-    params = list(set(params_from_t_complexity + params_from_ports))
-    return sorted(params)
+    return set(params_from_t_complexity + params_from_ports)
 
 
 def _extract_symbols_from_t_complexity(bloq: Bloq) -> list[str]:
