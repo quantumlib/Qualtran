@@ -145,7 +145,5 @@ def _approx_cswap_large() -> CSwapApprox:
 
 
 _APPROX_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=CSwapApprox,
-    import_line='from qualtran.bloqs.swap_network import CSwapApprox',
-    examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large),
+    bloq_cls=CSwapApprox, examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large)
 )
