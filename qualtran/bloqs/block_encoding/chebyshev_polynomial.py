@@ -13,40 +13,52 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import attrs
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
-from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncodingZeroState
-from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran import (
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    CtrlSpec,
+    DecomposeTypeError,
+    QAny,
+    Register,
+    Signature,
+    SoquetT,
+)
+from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
-class ChebyshevPolynomial(Bloq):
-    r"""Block encoding of $T_j[H]$ where $T_j$ is the $j$-th Chebyshev polynomial.
+class ChebyshevPolynomial(BlockEncoding):
+    r"""Block encoding of $T_j[A]$ where $T_j$ is the $j$-th Chebyshev polynomial.
 
-    Here H is a Hamiltonian with spectral norm $|H| \le 1$, we assume we have
+    Here $A$ is a Hermitian matrix with spectral norm $|A| \le 1$, we assume we have
     an $n_L$ qubit ancilla register, and assume that $j > 0$ to avoid block
     encoding the identity operator.
 
     Recall:
 
     \begin{align*}
-        T_0[H] &= \mathbb{1} \\
-        T_1[H] &= H \\
-        T_2[H] &= 2 H^2 - \mathbb{1} \\
-        T_3[H] &= 4 H^3 - 3 H \\
+        T_0[A] &= I \\
+        T_1[A] &= A \\
+        T_2[A] &= 2 A^2 - I \\
+        T_3[A] &= 4 A^3 - 3 A \\
         &\dots
     \end{align*}
 
     See https://github.com/quantumlib/Qualtran/issues/984 for an alternative.
 
     Args:
-        block_encoding: Block encoding of a Hamiltonian $H$, $\mathcal{B}[H]$.
+        block_encoding: Block encoding of a Hermitian matrix $A$, $\mathcal{B}[A]$.
             Assumes the $|G\rangle$ state of the block encoding is the identity operator.
         order: order of Chebychev polynomial.
 
@@ -55,104 +67,116 @@ class ChebyshevPolynomial(Bloq):
             von Burg et al. 2007. Page 45; Theorem 1.
     """
 
-    block_encoding: LCUBlockEncodingZeroState
+    block_encoding: BlockEncoding
     order: int
 
     def __attrs_post_init__(self):
         if self.order < 1:
             raise ValueError(f"order must be greater >= 1. Found {self.order}.")
 
-    def pretty_name(self) -> str:
-        return f"T_{self.order}[{self.block_encoding.pretty_name()}]"
-
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                *self.block_encoding.selection_registers,
-                *self.block_encoding.junk_registers,
-                *self.block_encoding.target_registers,
-            ]
+        return Signature.build_from_dtypes(
+            system=QAny(self.system_bitsize),
+            ancilla=QAny(self.ancilla_bitsize),  # if ancilla_bitsize is 0, not present
+            resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def build_reflection_bloq(self) -> 'ReflectionUsingPrepare':
-        refl_bitsizes = tuple(r.bitsize for r in self.block_encoding.selection_registers)
-        return ReflectionUsingPrepare.reflection_around_zero(
-            bitsizes=refl_bitsizes, global_phase=-1
+    def pretty_name(self) -> str:
+        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
+
+    @property
+    def system_bitsize(self) -> SymbolicInt:
+        return self.block_encoding.system_bitsize
+
+    @property
+    def ancilla_bitsize(self) -> SymbolicInt:
+        return self.block_encoding.ancilla_bitsize
+
+    @property
+    def resource_bitsize(self) -> SymbolicInt:
+        return self.block_encoding.resource_bitsize
+
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.block_encoding.alpha**self.order
+
+    @property
+    def epsilon(self) -> SymbolicFloat:
+        return self.block_encoding.epsilon * self.order
+
+    @property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return tuple(self.signature.rights())
+
+    @property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
+
+    @property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
+        raise NotImplementedError
+
+    @cached_property
+    def reflection_bloq(self):
+        return GlobalPhase(exponent=1).controlled(
+            ctrl_spec=CtrlSpec(qdtypes=QAny(self.ancilla_bitsize), cvs=0)
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
-        # includes selection registers and any selection registers used by PREPARE
-        soqs |= bb.add_d(self.block_encoding, **soqs)
-
-        def _extract_soqs(
-            to_regs: Union[Signature, Tuple[Register, ...]],
-            from_regs: Union[Signature, Tuple[Register, ...]],
-            reg_map: Dict[str, 'SoquetT'],
-        ) -> Dict[str, 'SoquetT']:
-            return {t.name: reg_map[f.name] for t, f in zip(to_regs, from_regs)}
-
-        refl_bloq = self.build_reflection_bloq()
-        for iorder in range(1, self.order):
-            refl_regs = _extract_soqs(
-                refl_bloq.signature, self.block_encoding.selection_registers, soqs
-            )
-            refl_regs |= bb.add_d(self.build_reflection_bloq(), **refl_regs)
-            soqs |= _extract_soqs(
-                self.block_encoding.selection_registers, refl_bloq.signature, refl_regs
-            )
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        if is_symbolic(self.ancilla_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        for _ in range(self.order // 2):
+            if self.ancilla_bitsize > 0:
+                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+            soqs |= bb.add_d(self.block_encoding, **soqs)
+            if self.ancilla_bitsize > 0:
+                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+            soqs |= bb.add_d(self.block_encoding.adjoint(), **soqs)
+        if self.order % 2 == 1:
+            if self.ancilla_bitsize > 0:
+                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding, **soqs)
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.order
-        return {(self.build_reflection_bloq(), n - 1), (self.block_encoding, n)}
+        s: Set['BloqCountT'] = {
+            (self.block_encoding, n // 2 + n % 2),
+            (self.block_encoding.adjoint(), n // 2),
+        }
+        if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
+            s.add((self.reflection_bloq, n - n % 2))
+        return s
 
 
 @bloq_example
-def _chebyshev_poly() -> ChebyshevPolynomial:
-    from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+def _chebyshev_poly_even() -> ChebyshevPolynomial:
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
 
-    dim = 3
-    select = SelectHubbard(x_dim=dim, y_dim=dim)
-    U = 4
-    t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    block_bloq = LCUBlockEncodingZeroState(
-        select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
-    )
-    chebyshev_poly = ChebyshevPolynomial(block_bloq, order=3)
-    return chebyshev_poly
+    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (1.0, 1.0), lambd_bits=1)
+    chebyshev_poly_even = ChebyshevPolynomial(bloq, order=4)
+    return chebyshev_poly_even
 
 
 @bloq_example
-def _black_box_chebyshev_poly() -> ChebyshevPolynomial:
-    from qualtran.bloqs.block_encoding import (
-        BlackBoxPrepare,
-        BlackBoxSelect,
-        LCUBlockEncodingZeroState,
-    )
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+def _chebyshev_poly_odd() -> ChebyshevPolynomial:
+    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.block_encoding import Unitary
 
-    dim = 3
-    select = SelectHubbard(x_dim=dim, y_dim=dim)
-    U = 4
-    t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    black_box_block_bloq = LCUBlockEncodingZeroState(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
-    )
-    black_box_chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
-    return black_box_chebyshev_poly
+    bloq = Unitary(Hadamard())
+    chebyshev_poly_odd = ChebyshevPolynomial(bloq, order=5)
+    return chebyshev_poly_odd
 
 
 _CHEBYSHEV_BLOQ_DOC = BloqDocSpec(
-    bloq_cls=ChebyshevPolynomial,
-    import_line='from qualtran.bloqs.block_encoding import ChebyshevPolynomial',
-    examples=(_chebyshev_poly, _black_box_chebyshev_poly),
+    bloq_cls=ChebyshevPolynomial, examples=(_chebyshev_poly_even, _chebyshev_poly_odd)
 )
