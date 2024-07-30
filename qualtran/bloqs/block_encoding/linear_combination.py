@@ -141,7 +141,7 @@ class LinearCombination(BlockEncoding):
     def alpha(self) -> SymbolicFloat:
         return ssum(
             abs(l) * be.alpha for be, l in zip(self.signed_block_encodings, self.rescaled_lambd)
-        )
+        ) * np.linalg.norm(self._lambd, ord=1)
 
     @cached_property
     def be_ancilla_bitsize(self) -> SymbolicInt:
