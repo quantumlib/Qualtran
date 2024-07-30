@@ -269,11 +269,7 @@ def _potential_energy() -> PotentialEnergy:
     return potential_energy
 
 
-_POTENTIAL_ENERGY = BloqDocSpec(
-    bloq_cls=PotentialEnergy,
-    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PotentialEnergy',
-    examples=(_potential_energy,),
-)
+_POTENTIAL_ENERGY = BloqDocSpec(bloq_cls=PotentialEnergy, examples=(_potential_energy,))
 
 _PAIR_POTENTIAL = BloqDocSpec(
     bloq_cls=PairPotential,

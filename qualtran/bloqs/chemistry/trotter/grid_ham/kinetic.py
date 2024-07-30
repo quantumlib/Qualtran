@@ -85,8 +85,4 @@ def _kinetic_energy() -> KineticEnergy:
     return kinetic_energy
 
 
-_KINETIC_ENERGY = BloqDocSpec(
-    bloq_cls=KineticEnergy,
-    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import KineticEnergy',
-    examples=(_kinetic_energy,),
-)
+_KINETIC_ENERGY = BloqDocSpec(bloq_cls=KineticEnergy, examples=(_kinetic_energy,))
