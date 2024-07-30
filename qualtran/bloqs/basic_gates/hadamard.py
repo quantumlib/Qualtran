@@ -80,10 +80,8 @@ class Hadamard(Bloq):
             )
         ]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         bloq = CHadamard()

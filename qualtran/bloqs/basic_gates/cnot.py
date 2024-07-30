@@ -95,12 +95,10 @@ class CNOT(Bloq):
     def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates.toffoli import Toffoli
 
-        if ctrl_spec is None or ctrl_spec == CtrlSpec():
+        if ctrl_spec == CtrlSpec():
             bloq = Toffoli()
 
             def add_controlled(
