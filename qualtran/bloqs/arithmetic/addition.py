@@ -53,7 +53,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
@@ -327,10 +326,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return cirq.inverse(optree) if self.is_adjoint else optree
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (And(uncompute=self.is_adjoint), self.bitsize),
-            (ArbitraryClifford(n=2), 5 * self.bitsize),
-        }
+        return {(And(uncompute=self.is_adjoint), self.bitsize), (CNOT(), 5 * self.bitsize)}
 
     def __pow__(self, power: int):
         if power == 1:

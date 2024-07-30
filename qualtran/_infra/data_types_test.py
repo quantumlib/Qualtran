@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import math
 import random
+from typing import Any, Sequence, Union
 
+import cirq
 import numpy as np
 import pytest
 import sympy
+from numpy.typing import NDArray
 
 from qualtran.symbolics import is_symbolic
 
@@ -233,8 +235,20 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
 
 
-def test_to_and_from_bits():
-    # QInt
+def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Union[Sequence[Any], NDArray]):
+    values = np.asarray(values)
+    bits_array = qdtype.to_bits_array(values)
+
+    # individual values
+    for val, bits in zip(values.reshape(-1), bits_array.reshape(-1, qdtype.num_qubits)):
+        assert np.all(bits == qdtype.to_bits(val))
+
+    # round trip
+    values_roundtrip = qdtype.from_bits_array(bits_array)
+    assert np.all(values_roundtrip == values)
+
+
+def test_qint_to_and_from_bits():
     qint4 = QInt(4)
     assert [*qint4.get_classical_domain()] == [*range(-8, 8)]
     for x in range(-8, 8):
@@ -246,7 +260,10 @@ def test_to_and_from_bits():
     with pytest.raises(ValueError):
         QInt(4).to_bits(10)
 
-    # QUInt
+    assert_to_and_from_bits_array_consistent(qint4, range(-8, 8))
+
+
+def test_quint_to_and_from_bits():
     quint4 = QUInt(4)
     assert [*quint4.get_classical_domain()] == [*range(0, 16)]
     assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
@@ -259,23 +276,66 @@ def test_to_and_from_bits():
     with pytest.raises(ValueError):
         quint4.to_bits(-1)
 
-    # BoundedQUInt
+    assert_to_and_from_bits_array_consistent(quint4, range(0, 16))
+
+
+def test_bits_to_int():
+    rs = np.random.RandomState(52)
+    bitstrings = rs.choice([0, 1], size=(100, 23))
+
+    nums = QUInt(23).from_bits_array(bitstrings)
+    assert nums.shape == (100,)
+
+    for num, bs in zip(nums, bitstrings):
+        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
+        assert num == ref_num
+
+    # check one input bitstring instead of array of input bitstrings.
+    (num,) = QUInt(2).from_bits_array(np.array([1, 0]))
+    assert num == 2
+
+
+def test_int_to_bits():
+    rs = np.random.RandomState(52)
+    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
+    bitstrings = QUInt(23).to_bits_array(nums)
+    assert bitstrings.shape == (100, 23)
+
+    for num, bs in zip(nums, bitstrings):
+        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
+        np.testing.assert_array_equal(ref_bs, bs)
+
+    # check bounds
+    with pytest.raises(AssertionError):
+        QUInt(8).to_bits_array(np.array([4, -2]))
+
+
+def test_bounded_quint_to_and_from_bits():
     bquint4 = BoundedQUInt(4, 12)
     assert [*bquint4.get_classical_domain()] == [*range(0, 12)]
     assert list(bquint4.to_bits(10)) == [1, 0, 1, 0]
     with pytest.raises(ValueError):
         BoundedQUInt(4, 12).to_bits(13)
 
-    # QBit
+    assert_to_and_from_bits_array_consistent(bquint4, range(0, 12))
+
+
+def test_qbit_to_and_from_bits():
     assert list(QBit().to_bits(0)) == [0]
     assert list(QBit().to_bits(1)) == [1]
     with pytest.raises(ValueError):
         QBit().to_bits(2)
 
-    # QAny
+    assert_to_and_from_bits_array_consistent(QBit(), [0, 1])
+
+
+def test_qany_to_and_from_bits():
     assert list(QAny(4).to_bits(10)) == [1, 0, 1, 0]
 
-    # QIntOnesComp
+    assert_to_and_from_bits_array_consistent(QAny(4), range(16))
+
+
+def test_qintonescomp_to_and_from_bits():
     qintones4 = QIntOnesComp(4)
     assert list(qintones4.to_bits(-2)) == [1, 1, 0, 1]
     assert list(qintones4.to_bits(2)) == [0, 0, 1, 0]
@@ -287,6 +347,10 @@ def test_to_and_from_bits():
     with pytest.raises(ValueError):
         qintones4.to_bits(-8)
 
+    assert_to_and_from_bits_array_consistent(qintones4, range(-7, 8))
+
+
+def test_qfxp_to_and_from_bits():
     # QFxp: Negative numbers are stored as ones complement
     qfxp_4_3 = QFxp(4, 3, True)
     assert list(qfxp_4_3.to_bits(0.5)) == [0, 1, 0, 0]
@@ -320,6 +384,11 @@ def test_to_and_from_bits():
 
     assert list(QFxp(7, 3, True).to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
     assert list(QFxp(7, 3, True).to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
+
+    assert_to_and_from_bits_array_consistent(QFxp(4, 3, False), [1 / 2, 1 / 4, 3 / 8])
+    assert_to_and_from_bits_array_consistent(
+        QFxp(4, 3, True), [1 / 2, -1 / 2, 1 / 4, -1 / 4, -3 / 8, 3 / 8]
+    )
 
 
 def test_iter_bits():

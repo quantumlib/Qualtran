@@ -199,9 +199,10 @@ def test_sparse_state_preparation_via_coherent_alias():
 def test_symbolic_sparse_state_prep_t_complexity():
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
-    N, d, qlambda, eps = sympy.symbols(r"N d \lambda \epsilon")
-    logN = ceil(log2(N - 1))
-    logd = ceil(log2(d - 1))
+    N, d = sympy.symbols("N d", positive=True, integer=True)
+    qlambda, eps = sympy.symbols(r"\lambda \epsilon")
+    logN = ceil(log2(N))
+    logd = ceil(log2(d))
     mu = ceil(log2(1 / (N * eps)))
     bloq = SparseStatePreparationAliasSampling.from_n_coeff(N, d, qlambda, precision=eps)
     assert bloq.t_complexity() == TComplexity(

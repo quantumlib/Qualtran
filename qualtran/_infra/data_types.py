@@ -50,7 +50,7 @@ respectively.
 
 import abc
 from enum import Enum
-from typing import Any, cast, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
@@ -77,9 +77,29 @@ class QDType(metaclass=abc.ABCMeta):
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
 
+    def to_bits_array(self, x_array: NDArray[Any]) -> NDArray[np.uint8]:
+        """Yields an NDArray of bits corresponding to binary representations of the input elements.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of values, and the output array satisfies
+        `output_shape = input_shape + (self.bitsize,)`.
+        """
+        return np.vectorize(
+            lambda x: np.asarray(self.to_bits(x), dtype=np.uint8), signature='()->(n)'
+        )(x_array)
+
     @abc.abstractmethod
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        """Combine individual bits to form classical values.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
+        and the output array satisfies `output_shape = input_shape[:-1]`.
+        """
+        return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
 
     @abc.abstractmethod
     def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
@@ -89,17 +109,6 @@ class QDType(metaclass=abc.ABCMeta):
             val: A classical value that should be in the domain of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
-
-    @abc.abstractmethod
-    def is_symbolic(self) -> bool:
-        """Returns True if this qdtype is parameterized with symbolic objects."""
-
-    def iteration_length_or_zero(self) -> SymbolicInt:
-        """Safe version of iteration length.
-
-        Returns the iteration_length if the type has it or else zero.
-        """
-        return getattr(self, 'iteration_length', 0)
 
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
         """Raises an exception if `val_array` is not a valid array of classical values
@@ -115,6 +124,17 @@ class QDType(metaclass=abc.ABCMeta):
         """
         for val in val_array.reshape(-1):
             self.assert_valid_classical_val(val)
+
+    @abc.abstractmethod
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return getattr(self, 'iteration_length', 0)
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_qubits})'
@@ -214,9 +234,11 @@ class QInt(QDType):
 
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
+
         self.assert_valid_classical_val(x)
-        mask = (1 << cast(int, self.bitsize)) - 1
-        return QUInt(self.bitsize).to_bits(int(x) & mask)
+        return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
 
     def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
@@ -324,9 +346,51 @@ class QUInt(QDType):
         self.assert_valid_classical_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
+    def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
+        """Returns the big-endian bitstrings specified by the given integers.
+
+        Args:
+            x_array: An integer or array of unsigned integers.
+        """
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
+
+        if self.bitsize > 64:
+            # use the default vectorized `to_bits`
+            return super().to_bits_array(x_array)
+
+        w = int(self.bitsize)
+        x = np.atleast_1d(x_array)
+        if not np.issubdtype(x.dtype, np.uint):
+            assert np.all(x >= 0)
+            assert np.iinfo(x.dtype).bits <= 64
+            x = x.astype(np.uint64)
+        assert w <= np.iinfo(x.dtype).bits
+        mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
+        return (x & mask).astype(bool).astype(np.uint8).T
+
     def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         return int("".join(str(x) for x in bits), 2)
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.integer]:
+        """Returns the integer specified by the given big-endian bitstrings.
+
+        Args:
+            bits_array: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
+        Returns:
+            An array of integers; one for each bitstring.
+        """
+        bitstrings = np.atleast_2d(bits_array)
+        if bitstrings.shape[1] != self.bitsize:
+            raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
+
+        if self.bitsize > 64:
+            # use the default vectorized `from_bits`
+            return super().from_bits_array(bits_array)
+
+        basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
+        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -528,6 +592,13 @@ class QFxp(QDType):
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
         return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
 
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        assert isinstance(self.bitsize, int), "cannot convert to bits for symbolic bitsize"
+        # TODO figure out why `np.vectorize` is not working here
+        return Fxp(
+            [self.from_bits(bitstring) for bitstring in bits_array.reshape(-1, self.bitsize)]
+        )
+
     def to_fixed_width_int(self, x: Union[float, Fxp]) -> int:
         """Returns the interpretation of the binary representation of `x` as an integer. Requires `x` to be nonnegative."""
         if x < 0:
@@ -535,9 +606,9 @@ class QFxp(QDType):
         return int(''.join(str(b) for b in self.to_bits(x, require_exact=False)), 2)
 
     def __attrs_post_init__(self):
-        if isinstance(self.num_qubits, int):
-            if self.num_qubits == 1 and self.signed:
-                raise ValueError("num_qubits must be > 1.")
+        if not is_symbolic(self.num_qubits) and self.num_qubits == 1 and self.signed:
+            raise ValueError("num_qubits must be > 1.")
+        if not is_symbolic(self.bitsize) and not is_symbolic(self.num_frac):
             if self.signed and self.bitsize == self.num_frac:
                 raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
             if self.bitsize < self.num_frac:
