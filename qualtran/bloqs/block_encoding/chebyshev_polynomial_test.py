@@ -15,11 +15,12 @@
 import numpy as np
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
+from qualtran.bloqs.basic_gates import Hadamard, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     _chebyshev_poly_even,
     _chebyshev_poly_odd,
 )
+from qualtran.symbolics import is_symbolic
 from qualtran.testing import assert_equivalent_bloq_example_counts
 
 
@@ -46,6 +47,12 @@ def test_chebyshev_poly_even_tensors():
     from_gate = t4((XGate().tensor_contract() + Hadamard().tensor_contract()) / 2.0)
 
     bloq = _chebyshev_poly_even()
+    assert (
+        not is_symbolic(bloq.system_bitsize)
+        and not is_symbolic(bloq.ancilla_bitsize)
+        and not is_symbolic(bloq.resource_bitsize)
+    )
+
     bb = BloqBuilder()
     system = bb.add_register("system", bloq.system_bitsize)
     ancilla = bb.add(IntState(0, bloq.ancilla_bitsize))
@@ -65,6 +72,7 @@ def test_chebyshev_poly_odd_tensors():
     from_gate = t5(Hadamard().tensor_contract())
 
     bloq = _chebyshev_poly_odd()
+    assert not is_symbolic(bloq.system_bitsize)
     bb = BloqBuilder()
     system = bb.add_register("system", bloq.system_bitsize)
     system = bb.add(bloq, system=system)

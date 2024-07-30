@@ -127,7 +127,7 @@ class ChebyshevPolynomial(BlockEncoding):
     @cached_property
     def reflection_bloq(self):
         return GlobalPhase(exponent=1).controlled(
-            CtrlSpec(qdtypes=QAny(self.ancilla_bitsize), cvs=0)
+            ctrl_spec=CtrlSpec(qdtypes=QAny(self.ancilla_bitsize), cvs=0)
         )
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
@@ -148,7 +148,10 @@ class ChebyshevPolynomial(BlockEncoding):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.order
-        s = {(self.block_encoding, n // 2 + n % 2), (self.block_encoding.adjoint(), n // 2)}
+        s: Set['BloqCountT'] = {
+            (self.block_encoding, n // 2 + n % 2),
+            (self.block_encoding.adjoint(), n // 2),
+        }
         if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
             s.add((self.reflection_bloq, n - n % 2))
         return s
