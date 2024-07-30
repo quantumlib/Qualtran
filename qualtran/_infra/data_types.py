@@ -525,26 +525,27 @@ class QFxp(QDType):
     bit can therefore be treated as the sign bit in such cases (0 for +, 1 for -).
     In total there are `bitsize = (num_int + num_frac)` bits used to represent the number.
     E.g. Using `(bitsize = 8, num_frac = 6, signed = False)` then
-    $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
+    $\pi \approx 3.140625 = 11.001001$, where the . represents the decimal place.
 
     We can specify a fixed point real number by the tuple bitsize, num_frac and
     signed, with num_int determined as `(bitsize - num_frac)`.
 
 
-    Classical Simulation:
-        To hook into the classical simulator, we use fixed-width integers to represent
-        values of this type. See `to_fixed_width_int` for details.
-        In particular, the user should call `QFxp.to_fixed_width_int(float_value)`
-        before passing a value to `bloq.call_classically`.
+    ### Classical Simulation
 
-        The corresponding raw qdtype is either an QUInt (when `signed=False`) or
-        QInt (when `signed=True`) of the same bitsize. This is the data type used
-        to represent classical values during simulation, and convert to and from bits
-        for intermediate values.
+    To hook into the classical simulator, we use fixed-width integers to represent
+    values of this type. See `to_fixed_width_int` for details.
+    In particular, the user should call `QFxp.to_fixed_width_int(float_value)`
+    before passing a value to `bloq.call_classically`.
 
-        For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
-        int type is QUInt(6). So a true classical value of `10.0011` will have a raw
-        integer representation of `100011`.
+    The corresponding raw qdtype is either an QUInt (when `signed=False`) or
+    QInt (when `signed=True`) of the same bitsize. This is the data type used
+    to represent classical values during simulation, and convert to and from bits
+    for intermediate values.
+
+    For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
+    int type is QUInt(6). So a true classical value of `10.0011` will have a raw
+    integer representation of `100011`.
 
 
     Attributes:
@@ -573,6 +574,7 @@ class QFxp(QDType):
 
     @property
     def num_int(self) -> SymbolicInt:
+        """Number of bits for the integral part."""
         return self.bitsize - self.num_frac
 
     def is_symbolic(self) -> bool:
@@ -662,27 +664,24 @@ class QFxp(QDType):
     def fxp_dtype_template(self) -> Fxp:
         """A template of the `Fxp` data type for classical values.
 
-        Usage:
-
-            To construct an `Fxp` with this config, one can use:
-            `Fxp(float_value, like=QFxp(...).fxp_dtype_template)`,
-            or given an existing value `some_fxp_value: Fxp`:
-            `some_fxp_value.like(QFxp(...).fxp_dtype_template)`.
+        To construct an `Fxp` with this config, one can use:
+        `Fxp(float_value, like=QFxp(...).fxp_dtype_template)`,
+        or given an existing value `some_fxp_value: Fxp`:
+        `some_fxp_value.like(QFxp(...).fxp_dtype_template)`.
 
         The following Fxp configuration is used:
-            - op_sizing='same' and const_op_sizing='same' ensure that the returned
-              object is not resized to a bigger fixed point number when doing
-              operations with other Fxp objects.
-            - shifting='trunc' ensures that when shifting the Fxp integer to
-              left / right; the digits are truncated and no rounding occurs
-            - overflow='wrap' ensures that when performing operations where result
-              overflows, the overflowed digits are simply discarded.
+         - op_sizing='same' and const_op_sizing='same' ensure that the returned
+           object is not resized to a bigger fixed point number when doing
+           operations with other Fxp objects.
+         - shifting='trunc' ensures that when shifting the Fxp integer to
+           left / right; the digits are truncated and no rounding occurs
+         - overflow='wrap' ensures that when performing operations where result
+           overflows, the overflowed digits are simply discarded.
 
-        Notes:
-            Support for `fxpmath.Fxp` is experimental, and does not hook into the classical
-            simulator protocol. Once the library choice for fixed-point classical real
-            values is finalized, the code will be updated to use the new functionality
-            instead of delegating to raw integer values (see above).
+        Support for `fxpmath.Fxp` is experimental, and does not hook into the classical
+        simulator protocol. Once the library choice for fixed-point classical real
+        values is finalized, the code will be updated to use the new functionality
+        instead of delegating to raw integer values (see above).
         """
         if is_symbolic(self.bitsize) or is_symbolic(self.num_frac):
             raise ValueError(
