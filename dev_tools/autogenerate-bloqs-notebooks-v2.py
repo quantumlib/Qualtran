@@ -475,7 +475,7 @@ ARITHMETIC = [
     NotebookSpecV2(
         title='Trigonometric Functions',
         module=qualtran.bloqs.arithmetic.trigonometric,
-        bloq_specs=[qualtran.bloqs.arithmetic.trigonometric._ARCSIN_DOC],
+        bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
     ),
 ]
 
