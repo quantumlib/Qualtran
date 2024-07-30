@@ -149,11 +149,15 @@ def bloq_is_clifford(b: Bloq):
 
 
 def bloq_is_rotation(b: Bloq):
+    from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 
     if isinstance(b, Controlled):
         # TODO https://github.com/quantumlib/Qualtran/issues/878
         #      explicit representation of all two-qubit rotations.
-        b = b.subbloq
+        if isinstance(b.subbloq, (SGate, TGate, GlobalPhase)):
+            return True
+
+        return bloq_is_rotation(b.subbloq)
 
     return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))

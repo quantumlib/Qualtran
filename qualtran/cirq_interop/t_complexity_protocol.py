@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import warnings
-from typing import Any, Callable, Iterable, Optional, Protocol
+from typing import Any, Callable, Iterable, Optional, Protocol, Union
 
 import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq, Controlled
-from qualtran.resource_counting import get_bloq_callee_counts
+from qualtran import Bloq, Controlled, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 from .decompose_protocol import _decompose_once_considering_known_decomposition
@@ -94,7 +94,7 @@ def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
 
 def _from_directly_countable_bloqs(bloq: Bloq) -> Optional[TComplexity]:
     """Directly count a clifford, T or Rotation (if it is one)."""
-    from qualtran.bloqs.basic_gates import TGate
+    from qualtran.bloqs.basic_gates import Identity, TGate
     from qualtran.resource_counting.classify_bloqs import bloq_is_clifford, bloq_is_rotation
 
     if isinstance(bloq, TGate):
@@ -105,6 +105,11 @@ def _from_directly_countable_bloqs(bloq: Bloq) -> Optional[TComplexity]:
 
     if bloq_is_rotation(bloq):
         return TComplexity(rotations=1)
+
+    # TODO: https://github.com/quantumlib/Qualtran/issues/1207). This logic should
+    #       be implemented by `Identity` directly
+    if isinstance(bloq, Controlled) and bloq.subbloq == Identity():
+        return TComplexity()
 
     # Else
     return None
@@ -137,6 +142,7 @@ def _from_directly_countable_cirq(stc: Any) -> Optional[TComplexity]:
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.
         return TComplexity(rotations=1)
+
     return None
 
 
@@ -154,12 +160,16 @@ def _from_iterable(it: Any) -> Optional[TComplexity]:
 
 def _from_bloq_build_call_graph(bloq: Bloq) -> Optional[TComplexity]:
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
-    callee_counts = get_bloq_callee_counts(bloq)
-    if len(callee_counts) == 0:
+    try:
+        callee_counts = bloq.build_call_graph(ssa=SympySymbolAllocator())
+    except (DecomposeNotImplementedError, DecomposeTypeError):
+        # We must explicitly catch these exceptions rather than using `get_bloq_callee_counts`
+        # to distinguish between no decomposition and an empty list of callees.
         return None
+
     ret = TComplexity()
-    for bloq, n in callee_counts:
-        r = t_complexity(bloq)
+    for callee, n in callee_counts:
+        r = t_complexity(callee)
         if r is None:
             return None
         ret += n * r
@@ -204,6 +214,21 @@ def _t_complexity_from_strategies(
         if ret is not None:
             break
     return ret
+
+
+@cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
+def _t_complexity_for_gate_or_op(
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
+) -> Optional[TComplexity]:
+    if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
+        gate_or_op = gate_or_op.gate
+
+    strategies = [
+        _from_explicit_annotation,
+        _from_directly_countable_cirq,
+        _from_cirq_decomposition,
+    ]
+    return _t_complexity_from_strategies(gate_or_op, strategies)
 
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
@@ -266,7 +291,7 @@ def t_complexity_compat(stc: Any) -> TComplexity:
     elif isinstance(stc, (cirq.AbstractCircuit, cirq.Moment, list)):
         ret = _from_iterable(stc)
     elif isinstance(stc, (cirq.Gate, cirq.Operation)):
-        ret = _from_directly_countable_cirq(stc)
+        ret = _t_complexity_for_gate_or_op(stc)
     else:
         ret = None
 

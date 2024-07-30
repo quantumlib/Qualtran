@@ -338,6 +338,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         CZPowGate,
         GlobalPhase,
         Hadamard,
+        Identity,
         Rx,
         Ry,
         Rz,
@@ -383,6 +384,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.CZ: CZ(),
         cirq.SWAP: TwoBitSwap(),
         cirq.CSWAP: CSwap(1),
+        cirq.I: Identity(),
     }
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]

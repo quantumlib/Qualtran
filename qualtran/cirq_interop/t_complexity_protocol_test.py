@@ -89,12 +89,12 @@ def test_t_complexity_for_bloq_does_not_support():
         _ = t_complexity(DoesNotSupportTComplexityBloq())
 
 
-def test_t_complexity():
-    with pytest.raises(AttributeError):
+def test_t_complexity_compat():
+    with pytest.raises(TypeError):
         _ = t_complexity_compat(DoesNotSupportTComplexity())
     with pytest.raises(TypeError):
         t_complexity_compat([DoesNotSupportTComplexity()])
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError):
         _ = t_complexity_compat(DoesNotSupportTComplexityGate())
 
     assert t_complexity_compat(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
@@ -103,6 +103,11 @@ def test_t_complexity():
     assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented  # type: ignore[attr-defined]
     assert t_complexity(g.gate) == TComplexity(t=1, clifford=2)
     assert t_complexity_compat(g.operation) == TComplexity(t=1, clifford=2)
+
+    assert t_complexity_compat([cirq.T, cirq.X]) == TComplexity(t=1, clifford=1)
+
+    q = cirq.NamedQubit('q')
+    assert t_complexity_compat([cirq.T(q), cirq.X(q)]) == TComplexity(t=1, clifford=1)
 
 
 def test_gates():
@@ -129,10 +134,8 @@ def test_gates():
     assert t_complexity(And()) == TComplexity(t=4, clifford=9)
     assert t_complexity(And() ** -1) == TComplexity(clifford=4)
 
-    assert t_complexity_compat(cirq.FREDKIN) == TComplexity(t=7, clifford=14)  # FIXME
-    assert _from_directly_countable_cirq(cirq.H.controlled()) == TComplexity(
-        clifford=4, rotations=2
-    )
+    assert t_complexity_compat(cirq.FREDKIN) == TComplexity(t=7, clifford=14)
+    assert t_complexity_compat(cirq.H.controlled()) == TComplexity(clifford=4, rotations=2)
     assert t_complexity(CHadamard()) == TComplexity(clifford=4, rotations=2)
 
     # Global phase
@@ -142,7 +145,7 @@ def test_gates():
 
 def test_operations():
     q = cirq.NamedQubit('q')
-    assert _from_directly_countable_cirq(cirq.T(q)) == TComplexity(t=1)
+    assert t_complexity_compat(cirq.T(q)) == TComplexity(t=1)
 
     gate = And()
     op = gate.on_registers(**get_named_qubits(gate.signature))
@@ -151,6 +154,8 @@ def test_operations():
     gate = And() ** -1
     op = gate.on_registers(**get_named_qubits(gate.signature))
     assert t_complexity_compat(op) == TComplexity(clifford=4)
+
+    assert t_complexity_compat(cirq.global_phase_operation(1j)) == TComplexity()
 
 
 def test_circuits():
@@ -161,11 +166,33 @@ def test_circuits():
         cirq.X(q) ** 0.5,
         cirq.Rx(rads=0.1)(q),
         cirq.Ry(rads=0.6)(q),
+        cirq.measure(q, key='m'),
     )
-    assert t_complexity_compat(circuit) == TComplexity(clifford=1, rotations=3, t=1)
+    assert t_complexity_compat(circuit) == TComplexity(clifford=2, rotations=3, t=1)
 
-    circuit = cirq.FrozenCircuit(cirq.T(q) ** -1, cirq.Rx(rads=0.1)(q))
-    assert t_complexity_compat(circuit) == TComplexity(clifford=0, rotations=1, t=1)
+    circuit = cirq.FrozenCircuit(cirq.T(q) ** -1, cirq.Rx(rads=0.1)(q), cirq.measure(q, key='m'))
+    assert t_complexity_compat(circuit) == TComplexity(clifford=1, rotations=1, t=1)
+
+
+def test_circuit_operations():
+    q = cirq.NamedQubit('q')
+    circuit = cirq.FrozenCircuit(
+        cirq.T(q), cirq.X(q) ** 0.5, cirq.Rx(rads=0.1)(q), cirq.measure(q, key='m')
+    )
+    assert t_complexity_compat(cirq.CircuitOperation(circuit)) == TComplexity(
+        clifford=2, rotations=1, t=1
+    )
+    assert t_complexity_compat(cirq.CircuitOperation(circuit, repetitions=10)) == TComplexity(
+        clifford=20, rotations=10, t=10
+    )
+
+    circuit = cirq.FrozenCircuit(cirq.T(q) ** -1, cirq.Rx(rads=0.1)(q), cirq.measure(q, key='m'))
+    assert t_complexity_compat(cirq.CircuitOperation(circuit)) == TComplexity(
+        clifford=1, rotations=1, t=1
+    )
+    assert t_complexity_compat(cirq.CircuitOperation(circuit, repetitions=3)) == TComplexity(
+        clifford=3, rotations=3, t=3
+    )
 
 
 def test_classically_controlled_operations():
