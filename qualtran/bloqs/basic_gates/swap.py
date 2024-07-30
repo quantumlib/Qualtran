@@ -350,8 +350,4 @@ def _cswap_large() -> CSwap:
     return cswap_large
 
 
-_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=CSwap,
-    import_line='from qualtran.bloqs.basic_gates import CSwap',
-    examples=(_cswap_symb, _cswap_small, _cswap_large),
-)
+_CSWAP_DOC = BloqDocSpec(bloq_cls=CSwap, examples=(_cswap_symb, _cswap_small, _cswap_large))

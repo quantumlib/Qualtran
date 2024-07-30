@@ -117,6 +117,4 @@ def _t_gate() -> TGate:
     return t_gate
 
 
-_T_GATE_DOC = BloqDocSpec(
-    bloq_cls=TGate, import_line='from qualtran.bloqs.basic_gates import TGate', examples=[_t_gate]
-)
+_T_GATE_DOC = BloqDocSpec(bloq_cls=TGate, examples=[_t_gate])

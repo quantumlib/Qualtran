@@ -290,7 +290,6 @@ def _textbook_qpe_from_standard_deviation_eps() -> TextbookQPE:
 
 _CC_TEXTBOOK_PHASE_ESTIMATION_DOC = BloqDocSpec(
     bloq_cls=TextbookQPE,
-    import_line='from qualtran.bloqs.phase_estimation import TextbookQPE',
     examples=(
         _textbook_qpe_small,
         _textbook_qpe_using_m_bits,

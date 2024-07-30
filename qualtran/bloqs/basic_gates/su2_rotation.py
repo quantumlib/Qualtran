@@ -197,7 +197,5 @@ def _t_gate() -> SU2RotationGate:
 
 
 _SU2_ROTATION_GATE_DOC = BloqDocSpec(
-    bloq_cls=SU2RotationGate,
-    import_line='from qualtran.bloqs.basic_gates import SU2RotationGate',
-    examples=[_su2_rotation_gate, _hadamard, _t_gate],
+    bloq_cls=SU2RotationGate, examples=[_su2_rotation_gate, _hadamard, _t_gate]
 )

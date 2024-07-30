@@ -450,20 +450,11 @@ def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     return black_box_lcu_zero_state_block
 
 
-_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=BlockEncoding,  # type: ignore[type-abstract]
-    import_line="from qualtran.bloqs.block_encoding import BlockEncoding",
-    examples=[],
-)
-
 _LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=LCUBlockEncoding,
-    import_line='from qualtran.bloqs.block_encoding import LCUBlockEncoding',
-    examples=(_lcu_block, _black_box_lcu_block),
+    bloq_cls=LCUBlockEncoding, examples=(_lcu_block, _black_box_lcu_block)
 )
 
 _LCU_ZERO_STATE_BLOCK_ENCODING_DOC = BloqDocSpec(
     bloq_cls=LCUBlockEncodingZeroState,
-    import_line='from qualtran.bloqs.block_encoding import LCUBlockEncodingZeroState',
     examples=(_lcu_zero_state_block, _black_box_lcu_zero_state_block),
 )
