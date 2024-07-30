@@ -288,8 +288,9 @@ class PrepareTHC(PrepareOracle):
         num_spat = t_l.shape[0]
         triu_indices = np.triu_indices(num_mu)
         num_ut = len(triu_indices[0])
-        flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+        flat_data = np.concatenate([zeta[triu_indices], t_l])
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
+        flat_data = np.abs(flat_data)
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
             flat_data, sub_bit_precision=num_bits_state_prep
         )
