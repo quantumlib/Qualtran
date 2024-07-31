@@ -14,6 +14,7 @@
 
 from typing import Tuple
 
+import pytest
 from attrs import frozen
 
 from qualtran import QAny, QBit, Register
@@ -29,6 +30,7 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
 )
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.testing import execute_notebook
 
 
 def test_lcu_block_encoding(bloq_autotester):
@@ -91,3 +93,8 @@ def test_prepare_oracle():
     bloq = BlackBoxPrepare(TestPrepareOracle())
     assert bloq.selection_registers == (Register('selection', QAny(1)),)
     assert bloq.junk_registers == (Register('junk', QAny(5)),)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('lcu_block_encoding')
