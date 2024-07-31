@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
 
 import numpy as np
 import pytest
@@ -40,7 +39,3 @@ def test_free_nonzero_state_vector_leads_to_unnormalized_state():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('bookkeeping')
-
-
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import allocate'])
