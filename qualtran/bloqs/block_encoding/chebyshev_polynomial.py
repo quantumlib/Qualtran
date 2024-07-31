@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
+import numpy as np
 
 from qualtran import (
     bloq_example,
@@ -30,6 +31,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
@@ -39,13 +41,9 @@ if TYPE_CHECKING:
 
 @attrs.frozen
 class ChebyshevPolynomial(BlockEncoding):
-    r"""Block encoding of $T_j[A]$ where $T_j$ is the $j$-th Chebyshev polynomial.
+    r"""Block encoding of $T_j(A)$ where $T_j$ is the $j$-th Chebyshev polynomial.
 
-    Here $A$ is a Hermitian matrix with spectral norm $|A| \le 1$, we assume we have
-    an $n_L$ qubit ancilla register, and assume that $j > 0$ to avoid block
-    encoding the identity operator.
-
-    Recall:
+    Given a Hermitian matrix $A$ with spectral norm $|A| \le 1$, recall:
 
     \begin{align*}
         T_0[A] &= I \\
@@ -58,7 +56,7 @@ class ChebyshevPolynomial(BlockEncoding):
     If `block_encoding` block encodes $A$ with normalization factor $\alpha$, i.e. it constructs
     $\mathcal{B}[A/\alpha]$, then this bloq constructs $\mathcal{B}[T_j(A/\alpha)]$ with
     normalization factor 1. Note that $\mathcal{B}[T_j(A/\alpha)]$ is not a multiple of
-    $\mathcal{B}[T_j(A)]$ in general.
+    $\mathcal{B}[T_j(A)]$ in general; use `ScaledChebyshevPolynomial` if $\alpha \neq 1$.
 
     See https://github.com/quantumlib/Qualtran/issues/984 for an alternative.
 
@@ -76,8 +74,8 @@ class ChebyshevPolynomial(BlockEncoding):
     order: int
 
     def __attrs_post_init__(self):
-        if self.order < 1:
-            raise ValueError(f"order must be greater >= 1. Found {self.order}.")
+        if self.order < 0:
+            raise ValueError(f"order must be greater >= 0. Found {self.order}.")
 
     @cached_property
     def signature(self) -> Signature:
@@ -167,7 +165,7 @@ def _chebyshev_poly_even() -> ChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard, XGate
     from qualtran.bloqs.block_encoding import LinearCombination, Unitary
 
-    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (1.0, 1.0), lambd_bits=1)
+    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (0.5, 0.5), lambd_bits=1)
     chebyshev_poly_even = ChebyshevPolynomial(bloq, order=4)
     return chebyshev_poly_even
 
@@ -184,4 +182,128 @@ def _chebyshev_poly_odd() -> ChebyshevPolynomial:
 
 _CHEBYSHEV_BLOQ_DOC = BloqDocSpec(
     bloq_cls=ChebyshevPolynomial, examples=(_chebyshev_poly_even, _chebyshev_poly_odd)
+)
+
+
+@attrs.frozen
+class ScaledChebyshevPolynomial(BlockEncoding):
+    r"""Block encoding of $T_j(A)$ where $T_j$ is the $j$-th Chebyshev polynomial.
+
+    Unlike `ChebyshevPolynomial`, this bloq accepts $\mathcal{B}[A/\alpha]$ with $\alpha \neq 1$
+    and constructs $\mathcal{B}[T_j(A)]$ which is not a multiple of $\mathcal{B}[T_j(A/\alpha)]$
+    in general. It does so by constructing $T_k(t)$ in terms of $T_j(t/\alpha)$ for $j \in [0, k]$.
+
+    Args:
+        block_encoding: Block encoding of a Hermitian matrix $A$, $\mathcal{B}[A/\alpha]$.
+            Assumes the $|G\rangle$ state of the block encoding is the identity operator.
+        order: order of Chebychev polynomial.
+        lambd_bits: number of bits to represent coefficients of linear combination precisely.
+
+    References:
+        [Explicit Quantum Circuits for Block Encodings of Certain Sparse Matrices](https://arxiv.org/abs/2203.10236). Camps et al. (2023). Section 5.1.
+    """
+
+    block_encoding: BlockEncoding
+    order: int
+    lambd_bits: int = 5
+
+    def __attrs_post_init__(self):
+        if self.order < 0:
+            raise ValueError(f"order must be greater >= 0. Found {self.order}.")
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(
+            system=QAny(self.system_bitsize),
+            ancilla=QAny(self.ancilla_bitsize),  # if ancilla_bitsize is 0, not present
+            resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
+        )
+
+    def pretty_name(self) -> str:
+        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
+
+    @property
+    def system_bitsize(self) -> SymbolicInt:
+        return self.linear_combination.system_bitsize
+
+    @property
+    def ancilla_bitsize(self) -> SymbolicInt:
+        return self.linear_combination.ancilla_bitsize
+
+    @property
+    def resource_bitsize(self) -> SymbolicInt:
+        return self.linear_combination.resource_bitsize
+
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.linear_combination.alpha
+
+    @property
+    def epsilon(self) -> SymbolicFloat:
+        return self.linear_combination.epsilon
+
+    @property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return tuple(self.signature.rights())
+
+    @property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
+
+    @property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        # This method will be implemented in the future after PrepareOracle
+        # is updated for the BlockEncoding interface.
+        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
+        raise NotImplementedError
+
+    @cached_property
+    def linear_combination(self) -> Union[LinearCombination, ChebyshevPolynomial]:
+        if self.order <= 1:
+            return ChebyshevPolynomial(self.block_encoding, self.order)
+
+        coeffs = np.polynomial.chebyshev.cheb2poly([0] * self.order + [1])
+        for i in range(len(coeffs)):
+            coeffs[i] *= self.block_encoding.alpha**i
+        cheb_coeffs = np.polynomial.chebyshev.poly2cheb(coeffs)
+
+        return LinearCombination(
+            tuple(ChebyshevPolynomial(self.block_encoding, i) for i in range(self.order + 1)),
+            cheb_coeffs,
+            self.lambd_bits,
+        )
+
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        return bb.add_d(self.linear_combination, **soqs)
+
+
+@bloq_example
+def _scaled_chebyshev_poly_even() -> ScaledChebyshevPolynomial:
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
+
+    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (1.0, 1.0), lambd_bits=1)
+    scaled_chebyshev_poly_even = ScaledChebyshevPolynomial(bloq, order=4)
+    return scaled_chebyshev_poly_even
+
+
+@bloq_example
+def _scaled_chebyshev_poly_odd() -> ScaledChebyshevPolynomial:
+    from attrs import evolve
+
+    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.block_encoding import Unitary
+
+    bloq = evolve(Unitary(Hadamard()), alpha=3.14)
+    scaled_chebyshev_poly_odd = ScaledChebyshevPolynomial(bloq, order=5)
+    return scaled_chebyshev_poly_odd
+
+
+_SCALED_CHEBYSHEV_BLOQ_DOC = BloqDocSpec(
+    bloq_cls=ScaledChebyshevPolynomial,
+    examples=(_scaled_chebyshev_poly_even, _scaled_chebyshev_poly_odd),
 )

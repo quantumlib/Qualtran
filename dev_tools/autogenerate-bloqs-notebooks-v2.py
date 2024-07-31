@@ -675,7 +675,10 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Chebyshev Polynomial',
         module=qualtran.bloqs.block_encoding.chebyshev_polynomial,
-        bloq_specs=[qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC],
+        bloq_specs=[
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._SCALED_CHEBYSHEV_BLOQ_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='LCU Select/Prepare Oracles',
