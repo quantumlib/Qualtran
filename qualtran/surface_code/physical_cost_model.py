@@ -170,6 +170,7 @@ class PhysicalCostModel:
             QECScheme,
         )
 
+        data_block: DataBlock
         if data_block_name == 'fast':
             data_block = FastDataBlock(data_d=data_d)
         elif data_block_name == 'compact':
