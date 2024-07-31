@@ -65,15 +65,16 @@ def test_linear_combination_checks():
 def test_linear_combination_params():
     u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = evolve(Unitary(Hadamard()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
-    bloq = LinearCombination((u1, u2), (0.5, 0.5), lambd_bits=1)
+    bloq = LinearCombination((u1, u2), (1.0, 1.0), lambd_bits=1)
     assert bloq.system_bitsize == 1
-    assert bloq.alpha == 0.5 * 0.5 + 0.5 * 0.5
+    assert bloq.alpha == (0.5 * 0.5 + 0.5 * 0.5) * 2
     assert bloq.epsilon == (0.5 + 0.5) * max(0.01, 0.1)
     assert bloq.ancilla_bitsize == 1 + max(1, 2)
     assert bloq.resource_bitsize == max(1, 1) + 4  # dependent on state preparation
 
 
 def get_tensors(bloq):
+    alpha = bloq.alpha
     bb = BloqBuilder()
     system = bb.add_register("system", cast(int, bloq.system_bitsize))
     ancilla = cast(Soquet, bb.add(IntState(0, bloq.ancilla_bitsize)))
@@ -82,7 +83,7 @@ def get_tensors(bloq):
     bb.add(IntEffect(0, cast(int, bloq.ancilla_bitsize)), val=ancilla)
     bb.add(IntEffect(0, cast(int, bloq.resource_bitsize)), val=resource)
     bloq = bb.finalize(system=system)
-    return bloq.tensor_contract()
+    return bloq.tensor_contract() * alpha
 
 
 def test_linear_combination_tensors():
@@ -99,10 +100,18 @@ def test_linear_combination_tensors():
 
 def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
     bloq = LinearCombination(tuple(Unitary(g) for g in gates), lambd, lambd_bits)
-    lambd = np.array(lambd) / np.linalg.norm(lambd, ord=1)
     from_gate = sum(l * g.tensor_contract() for l, g in zip(lambd, gates))
     from_tensors = get_tensors(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=atol)
+
+
+def test_linear_combination_alpha():
+    lambd = (2.0, 3.0)
+    gates = (evolve(Unitary(TGate()), alpha=2.0), evolve(Unitary(Hadamard()), alpha=4.0))
+    bloq = LinearCombination(gates, lambd, lambd_bits=1)
+    from_gate = sum(l * g.U.tensor_contract() * g.alpha for l, g in zip(lambd, gates))
+    from_tensors = get_tensors(bloq)
+    np.testing.assert_allclose(from_gate, from_tensors)
 
 
 # all coefficients are multiples of small negative powers of 2 after normalization
@@ -166,7 +175,7 @@ approx5 = [
 
 @pytest.mark.parametrize('lambd', approx2)
 def test_linear_combination_approx2(lambd):
-    run_gate_test([TGate(), Hadamard()], lambd, lambd_bits=9, atol=0.001)
+    run_gate_test([TGate(), Hadamard()], lambd, lambd_bits=9, atol=0.003)
 
 
 @pytest.mark.parametrize('lambd', approx5)
@@ -181,7 +190,7 @@ def test_linear_combination_approx5(lambd):
         ],
         lambd,
         lambd_bits=9,
-        atol=0.001,
+        atol=0.002,
     )
 
 
@@ -199,4 +208,4 @@ def gen_test():
 @pytest.mark.slow
 @pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
 def test_linear_combination_approx_random(gates, lambd):
-    run_gate_test(gates, lambd, lambd_bits=9, atol=0.001)
+    run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
