@@ -391,6 +391,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
@@ -453,6 +454,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
