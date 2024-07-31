@@ -87,5 +87,6 @@ def test_power_circuit_diagram():
     )
 
 
+@pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.basic_gates import power'])

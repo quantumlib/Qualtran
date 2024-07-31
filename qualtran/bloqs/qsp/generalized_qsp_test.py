@@ -264,7 +264,6 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "degree",
     [
