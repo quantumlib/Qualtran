@@ -547,6 +547,9 @@ class QFxp(QDType):
     int type is QUInt(6). So a true classical value of `10.0011` will have a raw
     integer representation of `100011`.
 
+    See https://github.com/quantumlib/Qualtran/issues/1219 for discussion on alternatives
+    and future upgrades.
+
 
     Attributes:
         bitsize: The total number of qubits used to represent the integer and

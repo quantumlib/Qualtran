@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, List, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -86,12 +86,9 @@ class GlobalPhase(CirqGateAsBloqBase):
 
         return [qtn.Tensor(data=self.coefficient, inds=[], tags=[str(self)])]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         # Delegate to superclass logic for more than one control.
-        if not (ctrl_spec is None or ctrl_spec == CtrlSpec() or ctrl_spec == CtrlSpec(cvs=0)):
+        if not (ctrl_spec == CtrlSpec() or ctrl_spec == CtrlSpec(cvs=0)):
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         # Otherwise, it's a ZPowGate

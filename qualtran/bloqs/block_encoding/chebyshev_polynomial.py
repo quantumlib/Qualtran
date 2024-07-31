@@ -55,6 +55,11 @@ class ChebyshevPolynomial(BlockEncoding):
         &\dots
     \end{align*}
 
+    If `block_encoding` block encodes $A$ with normalization factor $\alpha$, i.e. it constructs
+    $\mathcal{B}[A/\alpha]$, then this bloq constructs $\mathcal{B}[T_j(A/\alpha)]$ with
+    normalization factor 1. Note that $\mathcal{B}[T_j(A/\alpha)]$ is not a multiple of
+    $\mathcal{B}[T_j(A)]$ in general.
+
     See https://github.com/quantumlib/Qualtran/issues/984 for an alternative.
 
     Args:
@@ -99,7 +104,7 @@ class ChebyshevPolynomial(BlockEncoding):
 
     @property
     def alpha(self) -> SymbolicFloat:
-        return self.block_encoding.alpha**self.order
+        return 1
 
     @property
     def epsilon(self) -> SymbolicFloat:
