@@ -142,8 +142,4 @@ def _two_bit_ffft() -> TwoBitFFFT:
     return two_bit_ffft
 
 
-_TWO_BIT_FFFT_DOC = BloqDocSpec(
-    bloq_cls=TwoBitFFFT,
-    import_line='from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT',
-    examples=[_two_bit_ffft],
-)
+_TWO_BIT_FFFT_DOC = BloqDocSpec(bloq_cls=TwoBitFFFT, examples=[_two_bit_ffft])

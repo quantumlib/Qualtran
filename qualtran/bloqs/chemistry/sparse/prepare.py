@@ -469,8 +469,4 @@ def _prep_sparse() -> PrepareSparse:
     return prep_sparse
 
 
-_SPARSE_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse',
-    examples=(_prep_sparse,),
-)
+_SPARSE_PREPARE = BloqDocSpec(bloq_cls=PrepareSparse, examples=(_prep_sparse,))

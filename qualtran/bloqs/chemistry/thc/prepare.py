@@ -483,14 +483,6 @@ def _thc_prep() -> PrepareTHC:
     return thc_prep
 
 
-_THC_UNI_PREP = BloqDocSpec(
-    bloq_cls=UniformSuperpositionTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import UniformSuperpositionTHC',
-    examples=(_thc_uni,),
-)
+_THC_UNI_PREP = BloqDocSpec(bloq_cls=UniformSuperpositionTHC, examples=(_thc_uni,))
 
-_THC_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import PrepareTHC',
-    examples=(_thc_prep,),
-)
+_THC_PREPARE = BloqDocSpec(bloq_cls=PrepareTHC, examples=(_thc_prep,))

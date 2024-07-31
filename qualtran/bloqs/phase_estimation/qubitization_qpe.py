@@ -257,7 +257,6 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
 
 _QUBITIZATION_QPE_DOC = BloqDocSpec(
     bloq_cls=QubitizationQPE,
-    import_line='from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE',
     examples=(
         _qubitization_qpe_hubbard_model_small,
         _qubitization_qpe_sparse_chem,

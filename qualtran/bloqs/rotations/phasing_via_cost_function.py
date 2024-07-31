@@ -124,7 +124,5 @@ def _square_via_phase_gradient() -> PhasingViaCostFunction:
 
 
 _PHASING_VIA_COST_FUNCTION = BloqDocSpec(
-    bloq_cls=PhasingViaCostFunction,
-    import_line='from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction',
-    examples=(_square_via_phase_gradient, _square_via_zpow_phasing),
+    bloq_cls=PhasingViaCostFunction, examples=(_square_via_phase_gradient, _square_via_zpow_phasing)
 )
