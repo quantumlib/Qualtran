@@ -502,12 +502,7 @@ class AddK(Bloq):
 
         return {loading_cost, (Add(QUInt(self.bitsize)), 1)}
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if self.cvs:
             # We're already controlled, use default fallback
             return super().get_ctrl_system(ctrl_spec)

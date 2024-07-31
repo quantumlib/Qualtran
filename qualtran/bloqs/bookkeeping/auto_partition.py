@@ -173,7 +173,5 @@ def _auto_partition_unused() -> AutoPartition:
 
 
 _AUTO_PARTITION_DOC = BloqDocSpec(
-    bloq_cls=AutoPartition,
-    import_line="from qualtran.bloqs.bookkeeping import AutoPartition",
-    examples=[_auto_partition, _auto_partition_unused],
+    bloq_cls=AutoPartition, examples=[_auto_partition, _auto_partition_unused]
 )

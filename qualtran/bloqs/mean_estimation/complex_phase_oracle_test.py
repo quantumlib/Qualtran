@@ -70,7 +70,9 @@ def test_phase_oracle(bitsize: int, arctan_bitsize: int):
     for x in range(2**bitsize):
         output_val = -2 * np.arctan(x, dtype=np.double) / np.pi
         output_bits = QFxp(arctan_bitsize, arctan_bitsize).to_bits(
-            np.abs(output_val), require_exact=False
+            QFxp(arctan_bitsize, arctan_bitsize).to_fixed_width_int(
+                np.abs(output_val), require_exact=False
+            )
         )
         approx_val = np.sign(output_val) * math.fsum(
             [b * (1 / 2 ** (1 + i)) for i, b in enumerate(output_bits)]
