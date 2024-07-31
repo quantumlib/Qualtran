@@ -24,7 +24,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Sequence, Set, TYPE_CHECKING, TypeAlias, Union
+from typing import cast, Iterable, Sequence, Set, TYPE_CHECKING, TypeAlias, Union
 
 from attrs import field, frozen
 
@@ -222,7 +222,7 @@ class Permutation(Bloq):
         return cls(N, cycles)
 
     @classmethod
-    def from_partial_permutation_map(cls, N: int, permutation_map: dict[int, int]):
+    def from_partial_permutation_map(cls, N: SymbolicInt, permutation_map: dict[int, int]):
         """Construct a permutation bloq from a (partial) permutation mapping
 
         Constructs a permuation of `[0, N)` from a partial mapping. Any numbers that
@@ -237,7 +237,7 @@ class Permutation(Bloq):
         return cls(N, cycles)
 
     @classmethod
-    def from_cycle_lengths(cls, N: SymbolicInt, cycle_lengths: tuple[SymbolicInt, ...]):
+    def from_cycle_lengths(cls, N: SymbolicInt, cycle_lengths: Iterable[SymbolicInt]):
         """Construct a permutation bloq from a dense permutation of size `N`.
 
         Args:
