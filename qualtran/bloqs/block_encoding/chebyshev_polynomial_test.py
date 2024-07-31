@@ -40,6 +40,11 @@ def test_chebyshev_poly_odd_counts():
     assert_equivalent_bloq_example_counts(_chebyshev_poly_odd)
 
 
+def test_chebyshev_alpha():
+    assert _chebyshev_poly_even().alpha == 1
+    assert _chebyshev_poly_odd().alpha == 1
+
+
 def test_chebyshev_poly_even_tensors():
     def t4(x):
         return 8 * np.linalg.matrix_power(x, 4) - 8 * np.linalg.matrix_power(x, 2) + np.eye(2)
