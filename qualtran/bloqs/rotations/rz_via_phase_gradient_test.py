@@ -11,10 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import numpy as np
+import pytest
 import sympy
+from attrs import frozen
 
-from qualtran import QUInt
-from qualtran.bloqs.basic_gates import TGate
+from qualtran import Bloq, BloqBuilder, QBit, QFxp, QUInt, Signature, Soquet, SoquetT
+from qualtran.bloqs.basic_gates import IntState, Rz, TGate
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.rotations.rz_via_phase_gradient import (
     _rz_via_phase_gradient,
     RzViaPhaseGradient,
@@ -32,3 +36,51 @@ def test_costs():
     bloq = RzViaPhaseGradient(angle_dtype=dtype, phasegrad_dtype=dtype)
     # TODO need to improve this to `4 * n - 8` (i.e. Toffoli cost of `n - 2`)
     assert get_cost_value(bloq, BloqCount.for_gateset('t')) == {TGate(): 4 * n - 4}
+
+
+@frozen
+class TestRz(Bloq):
+    angle: float
+    phasegrad_bitsize: int = 4
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build_from_dtypes(q=QBit())
+
+    @property
+    def dtype(self) -> QFxp:
+        return QFxp(self.phasegrad_bitsize, self.phasegrad_bitsize)
+
+    @property
+    def load_angle_bloq(self) -> IntState:
+        return IntState(
+            self.dtype.to_fixed_width_int(self.angle / (2 * np.pi), require_exact=False),
+            bitsize=self.phasegrad_bitsize,
+        )
+
+    @property
+    def load_phasegrad_bloq(self) -> PhaseGradientState:
+        return PhaseGradientState(self.phasegrad_bitsize)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', q: Soquet) -> dict[str, 'SoquetT']:
+        angle = bb.add(self.load_angle_bloq)
+        phase_grad = bb.add(self.load_phasegrad_bloq)
+        q, angle, phase_grad = bb.add(
+            RzViaPhaseGradient(angle_dtype=self.dtype, phasegrad_dtype=self.dtype),
+            q=q,
+            angle=angle,
+            phase_grad=phase_grad,
+        )
+        bb.add(self.load_angle_bloq.adjoint(), val=angle)
+        bb.add(self.load_phasegrad_bloq.adjoint(), phase_grad=phase_grad)
+        return {'q': q}
+
+
+@pytest.mark.parametrize("bitsize", [3, 4])
+def test_tensor(bitsize: int):
+    theta = 2 * np.pi / 2**bitsize
+
+    actual = TestRz(angle=theta, phasegrad_bitsize=bitsize).tensor_contract()
+    expected = Rz(2 * theta).tensor_contract()
+
+    np.testing.assert_allclose(actual, expected, atol=1 / 2**bitsize)
