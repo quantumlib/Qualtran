@@ -333,6 +333,7 @@ class PrepareSparse(PrepareOracle):
             self.keep,
             target_bitsizes=target_bitsizes,
             log_block_sizes=log_block_sizes,
+            use_dirty_ancilla=False,
         )
         return qrom
 
