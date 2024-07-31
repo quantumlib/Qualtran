@@ -31,17 +31,24 @@ def test_cast_tensor_contraction():
 
 
 def test_cast_classical_sim():
-    c = Cast(QInt(8), QFxp(8, 8))
-    (y,) = c.call_classically(reg=7)
-    assert y == 7
-    bloq = TestCastToFrom()
-    (a, b) = bloq.call_classically(a=7, b=2)
-    assert a == 7
-    assert b == 9
+    qint = QUInt(8)
+    qfxp = QFxp(8, 8)
 
-    c = Cast(QFxp(8, 8), QUInt(8))
+    c = Cast(qint, qfxp)
+    (y,) = c.call_classically(reg=7)
+    assert y == int(y)
+    assert qfxp.float_from_fixed_width_int(int(y)) == 7 / 2**8
+
+    bloq = TestCastToFrom(bitsize=8)
+    b_float = 2 / 2**8
+    (a, b) = bloq.call_classically(a=7, b=qfxp.to_fixed_width_int(b_float))
+    assert a == 7
+    assert b == int(b)
+    assert qfxp.float_from_fixed_width_int(int(b)) == 9 / 2**8
+
+    c = Cast(qfxp, qint)
     val = 1.2
-    val_as_int = QFxp(8, 8).to_fixed_width_int(val)
+    val_as_int = qfxp.to_fixed_width_int(val)
     assert c.call_classically(reg=val_as_int) == (val_as_int,)  # type: ignore
 
 
