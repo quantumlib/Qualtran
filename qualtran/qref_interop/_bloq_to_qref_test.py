@@ -20,9 +20,9 @@ def test_bloq_examples_can_be_converted_to_qualtran(bloq_example):
     bloq = bloq_example.make()
     try:
         qref_routine = bloq_to_qref(bloq)
-        verify_topology(qref_routine)
     except:
         pytest.xfail(f"QREF conversion failing for {bloq}")
+    verify_topology(qref_routine)
 
 
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
@@ -206,10 +206,10 @@ def _qrom_symbolic() -> tuple[Bloq, RoutineV1, str]:
         ],
         input_params=["M", "N", "b1", "b2", "c"],
         local_variables={
-            'in_selection0_size': 'ceiling(log2(N - 1))',
-            'out_selection0_size': 'ceiling(log2(N - 1))',
-            'in_selection1_size': 'ceiling(log2(M - 1))',
-            'out_selection1_size': 'ceiling(log2(M - 1))',
+            'in_selection0_size': 'ceiling(log2(floor(N)))',
+            'out_selection0_size': 'ceiling(log2(floor(N)))',
+            'in_selection1_size': 'ceiling(log2(floor(M)))',
+            'out_selection1_size': 'ceiling(log2(floor(M)))',
         },
     )
     return bloq, routine, "qrom (symbolic)"
