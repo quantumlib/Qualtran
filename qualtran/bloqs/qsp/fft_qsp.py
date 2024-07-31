@@ -24,6 +24,10 @@ def fft_complementary_polynomial(
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying
         $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
 
+    Note that this function uses several private local functions to process intermediate calculations. Writing each
+    step as a callable function prevents the output of these steps from being saved as a variable and thus
+    reduces the memory used.
+
     Args:
           P: Co-efficients of a complex QSP polynomial
           num_modes: The number of modes used in the FFT operation. The more modes, the more accurate the result.
@@ -72,7 +76,7 @@ def fft_complementary_polynomial(
     def calculate_coeff(poly: np.ndarray) -> np.ndarray:
         """Compute coefficients of Q
 
-        This runs the entire process calling the other intermediate methods.
+        Calculates the coefficients and truncates them to the proper degree.
 
         Args:
             poly: The input polynomial, P.

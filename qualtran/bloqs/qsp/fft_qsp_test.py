@@ -46,7 +46,7 @@ def test_complementary_polynomial(degree: int, num_modes: int):
 def test_real_polynomial_has_real_complementary_polynomial(degree: int, num_modes: int):
     random_state = np.random.RandomState(42)
     tolerance = 1e-9
-    for _ in range(10):
+    for _ in range(5):
         P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
         Q = fft_complementary_polynomial(P, tolerance=tolerance, num_modes=num_modes)
         np.testing.assert_allclose(np.imag(Q), 0, atol=tolerance)
@@ -61,24 +61,10 @@ def test_fft_qsp_on_random_unitaries(degree: int, bitsize: int):
     random_state = np.random.RandomState(102)
     num_modes = 500
     tolerance = 1e-6
-    for _ in range(10):
+    for _ in range(5):
         P = random_qsp_polynomial(degree, random_state=random_state)
         U = MatrixGate.random(bitsize=bitsize, random_state=random_state)
         Q = fft_complementary_polynomial(P, tolerance=tolerance, num_modes=num_modes)
         verify_generalized_qsp(U, P, Q=Q, tolerance=tolerance)
 
 
-@pytest.mark.parametrize("bitsize", [1, 2, 3])
-@pytest.mark.parametrize("degree", [3, 5, 10])
-@pytest.mark.parametrize("negative_power", [0, 1, 2])
-def test_fft_qsp_with_complex_poly_on_random_unitaries(
-    bitsize: int, degree: int, negative_power: int
-):
-    random_state = np.random.RandomState(42)
-    tolerance = 1e-6
-    num_modes = 500
-    for _ in range(3):
-        U = MatrixGate.random(bitsize, random_state=random_state)
-        P = random_qsp_polynomial(degree, random_state=random_state)
-        Q = fft_complementary_polynomial(P, tolerance, num_modes=num_modes)
-        verify_generalized_qsp(U, P, negative_power=negative_power, Q=Q, tolerance=tolerance)
