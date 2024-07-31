@@ -37,34 +37,6 @@ from qualtran._infra.composite_bloq import _binst_to_cxns
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
-    """Returns the integer specified by the given big-endian bitstrings.
-
-    Args:
-        bitstrings: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
-    Returns:
-        An array of integers; one for each bitstring.
-    """
-    bitstrings = np.atleast_2d(bitstrings)
-    if bitstrings.shape[1] > 64:
-        raise NotImplementedError()
-    basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
-
-
-def ints_to_bits(
-    x: Union[int, np.integer, Sequence[int], NDArray[np.integer]], w: int
-) -> NDArray[np.uint8]:
-    """Returns the big-endian bitstrings specified by the given integers.
-
-    Args:
-        x: An integer or array of unsigned integers.
-        w: The bit width of the returned bitstrings.
-    """
-    x = np.atleast_1d(x)
-    return np.array([list(map(int, np.binary_repr(v, width=w))) for v in x], dtype=np.uint8)
-
-
 def _get_in_vals(
     binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:

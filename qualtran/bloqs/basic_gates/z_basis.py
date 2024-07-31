@@ -33,6 +33,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QBit,
+    QDType,
     Register,
     Side,
     Signature,
@@ -42,7 +43,6 @@ from qualtran import (
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
-from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import cirq
@@ -253,11 +253,8 @@ class ZGate(Bloq):
             )
         ]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-
-        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
@@ -385,11 +382,15 @@ class _IntVector(Bloq):
             raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
 
     @cached_property
+    def dtype(self) -> QDType:
+        if self.bitsize == 1:
+            return QBit()
+        return QAny(self.bitsize)
+
+    @cached_property
     def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
-        if self.bitsize == 1:
-            return Signature([Register('val', QBit(), side=side)])
-        return Signature([Register('val', QAny(self.bitsize), side=side)])
+        return Signature([Register('val', self.dtype, side=side)])
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
@@ -415,7 +416,7 @@ class _IntVector(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError(f'Symbolic bitsize {self.bitsize} not supported')
-        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+        bits = np.asarray(self.dtype.to_bits(self.val))
         if self.state:
             assert not val
             return self._build_composite_state(bb, bits)

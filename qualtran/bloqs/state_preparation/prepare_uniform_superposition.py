@@ -174,7 +174,8 @@ def _prep_uniform() -> PrepareUniformSuperposition:
 def _prep_uniform_symb() -> PrepareUniformSuperposition:
     import sympy
 
-    prep_uniform_symb = PrepareUniformSuperposition(n=sympy.Symbol("n"))
+    n = sympy.Symbol("n", positive=True, integer=True)
+    prep_uniform_symb = PrepareUniformSuperposition(n=n)
     return prep_uniform_symb
 
 
@@ -185,7 +186,5 @@ def _c_prep_uniform() -> PrepareUniformSuperposition:
 
 
 _PREP_UNIFORM_DOC = BloqDocSpec(
-    bloq_cls=PrepareUniformSuperposition,
-    import_line='from qualtran.bloqs.state_preparation import PrepareUniformSuperposition',
-    examples=(_prep_uniform, _c_prep_uniform),
+    bloq_cls=PrepareUniformSuperposition, examples=(_prep_uniform, _c_prep_uniform)
 )

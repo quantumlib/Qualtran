@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import Dict, Iterable, Set, Tuple
 
 import numpy as np
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -226,6 +227,26 @@ class SparseMatrix(BlockEncoding):
         # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
         raise NotImplementedError
 
+    @cached_property
+    def diffusion(self):
+        unused = self.system_bitsize - bit_length(self.row_oracle.num_nonzero - 1)
+        return AutoPartition(
+            PrepareUniformSuperposition(n=self.row_oracle.num_nonzero),
+            partitions=[
+                (Register("target", QAny(self.system_bitsize)), [Unused(unused), "target"])
+            ],
+        )
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+        return {
+            (self.diffusion, 1),
+            (self.col_oracle, 1),
+            (self.entry_oracle, 1),
+            (Swap(self.system_bitsize), 1),
+            (self.row_oracle.adjoint(), 1),
+            (self.diffusion.adjoint(), 1),
+        }
+
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT
     ) -> Dict[str, SoquetT]:
@@ -236,19 +257,12 @@ class SparseMatrix(BlockEncoding):
         ancilla_bits = bb.split(ancilla)
         q, l = ancilla_bits[0], bb.join(ancilla_bits[1:])
 
-        unused = self.system_bitsize - bit_length(self.row_oracle.num_nonzero - 1)
-        diffusion = AutoPartition(
-            PrepareUniformSuperposition(n=self.row_oracle.num_nonzero),
-            partitions=[
-                (Register("target", QAny(self.system_bitsize)), [Unused(unused), "target"])
-            ],
-        )
-        l = bb.add(diffusion, target=l)
+        l = bb.add(self.diffusion, target=l)
         l, system = bb.add(self.col_oracle, l=l, i=system)
         q, l, system = bb.add(self.entry_oracle, q=q, i=l, j=system)
         l, system = bb.add(Swap(self.system_bitsize), x=l, y=system)
         l, system = bb.add(self.row_oracle.adjoint(), l=l, i=system)
-        l = bb.add(diffusion.adjoint(), target=l)
+        l = bb.add(self.diffusion.adjoint(), target=l)
 
         return {"system": system, "ancilla": bb.join(np.concatenate([[q], bb.split(l)]))}
 
@@ -442,6 +456,21 @@ def _sparse_matrix_block_encoding() -> SparseMatrix:
 
 
 @bloq_example
+def _sparse_matrix_symb_block_encoding() -> SparseMatrix:
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle,
+        UniformEntryOracle,
+    )
+
+    n = sympy.Symbol('n', positive=True, integer=True)
+    row_oracle = TopLeftRowColumnOracle(system_bitsize=n)
+    col_oracle = TopLeftRowColumnOracle(system_bitsize=n)
+    entry_oracle = UniformEntryOracle(system_bitsize=n, entry=0.3)
+    sparse_matrix_symb_block_encoding = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+    return sparse_matrix_symb_block_encoding
+
+
+@bloq_example
 def _explicit_matrix_block_encoding() -> SparseMatrix:
     from qualtran.bloqs.block_encoding.sparse_matrix import (
         ExplicitEntryOracle,
@@ -471,9 +500,9 @@ def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
 
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
-    import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
     examples=[
         _sparse_matrix_block_encoding,
+        _sparse_matrix_symb_block_encoding,
         _explicit_matrix_block_encoding,
         _symmetric_banded_matrix_block_encoding,
     ],

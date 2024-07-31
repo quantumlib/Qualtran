@@ -152,8 +152,4 @@ def _prep_hubb() -> PrepareHubbard:
     return prep_hubb
 
 
-_PREPARE_HUBBARD = BloqDocSpec(
-    bloq_cls=PrepareHubbard,
-    import_line='from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard',
-    examples=(_prep_hubb,),
-)
+_PREPARE_HUBBARD = BloqDocSpec(bloq_cls=PrepareHubbard, examples=(_prep_hubb,))

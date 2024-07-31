@@ -225,12 +225,10 @@ class XGate(Bloq):
             )
         ]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates import CNOT, Toffoli
 
-        if ctrl_spec is None or ctrl_spec == CtrlSpec():
+        if ctrl_spec == CtrlSpec():
             bloq: 'Bloq' = CNOT()
         elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
             bloq = Toffoli()

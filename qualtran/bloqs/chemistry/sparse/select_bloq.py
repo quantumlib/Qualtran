@@ -174,8 +174,4 @@ def _sel_sparse() -> SelectSparse:
     return sel_sparse
 
 
-_SPARSE_SELECT = BloqDocSpec(
-    bloq_cls=SelectSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse',
-    examples=(_sel_sparse,),
-)
+_SPARSE_SELECT = BloqDocSpec(bloq_cls=SelectSparse, examples=(_sel_sparse,))

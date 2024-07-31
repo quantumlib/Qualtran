@@ -56,12 +56,7 @@ class SpecializedSingleQubitControlledExtension(Bloq):
         """Override this to provide a custom controlled bloq"""
         return attrs.evolve(self, control_val=control_val)  # type: ignore[misc]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
             control_val = int(ctrl_spec.cvs[0].item())
             cbloq = self.get_single_qubit_controlled_bloq(control_val)
