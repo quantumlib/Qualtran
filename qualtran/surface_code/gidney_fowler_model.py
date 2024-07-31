@@ -15,11 +15,15 @@
 import math
 from typing import Callable, cast, Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
 
+from .algorithm_summary import AlgorithmSummary
 from .ccz2t_factory import CCZ2TFactory
 from .data_block import DataBlock, SimpleDataBlock
 from .magic_state_factory import MagicStateFactory
 from .multi_factory import MultiFactory
+from .physical_cost_model import PhysicalCostModel
 from .physical_cost_summary import PhysicalCostsSummary
+from .physical_parameters import PhysicalParameters
+from .qec_scheme import QECScheme
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import GateCounts
@@ -38,6 +42,9 @@ def get_ccz2t_costs(
 
     Note that this function can return failure probabilities larger than 1.
 
+    This function exists for backwards-compatibility. Consider constructing a `PhysicalCostModel`
+    directly.
+
     Args:
         n_logical_gates: The number of algorithm logical gates.
         n_algo_qubits: Number of algorithm logical qubits.
@@ -46,32 +53,18 @@ def get_ccz2t_costs(
         factory: magic state factory configuration. Used to evaluate distillation error and cost.
         data_block: data block configuration. Used to evaluate data error and footprint.
     """
-    from qualtran.surface_code import LogicalErrorModel, QECScheme
 
-    err_model = LogicalErrorModel(
-        qec_scheme=QECScheme.make_gidney_fowler(), physical_error=phys_err
+    model = PhysicalCostModel(
+        physical_params=PhysicalParameters(physical_error=phys_err, cycle_time_us=cycle_time_us),
+        data_block=data_block,
+        factory=factory,
+        qec_scheme=QECScheme.make_gidney_fowler(),
     )
-    distillation_error = factory.factory_error(
-        n_logical_gates=n_logical_gates, logical_error_model=err_model
-    )
-    n_generation_cycles = factory.n_cycles(
-        n_logical_gates=n_logical_gates, logical_error_model=err_model
-    )
-    n_consumption_cycles = data_block.n_cycles(
-        n_logical_gates=n_logical_gates, logical_error_model=err_model
-    )
-    n_cycles = max(n_generation_cycles, n_consumption_cycles)
-    data_error = data_block.data_error(
-        n_algo_qubits=n_algo_qubits, n_cycles=int(n_cycles), logical_error_model=err_model
-    )
-    failure_prob = distillation_error + data_error
-    footprint = factory.n_physical_qubits() + data_block.n_physical_qubits(
-        n_algo_qubits=n_algo_qubits
-    )
-    duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
-
+    algo = AlgorithmSummary(n_algo_qubits=n_algo_qubits, n_logical_gates=n_logical_gates)
     return PhysicalCostsSummary(
-        failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr
+        failure_prob=model.error(algo),
+        footprint=model.n_phys_qubits(algo),
+        duration_hr=model.duration_hr(algo),
     )
 
 
