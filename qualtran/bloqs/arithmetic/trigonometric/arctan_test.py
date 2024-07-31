@@ -21,7 +21,10 @@ from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
 
 @pytest.mark.parametrize('selection_bitsize', [3, 4])
-@pytest.mark.parametrize('target_bitsize', [3, 5, 6])
+@pytest.mark.parametrize(
+    'target_bitsize',
+    [3, pytest.param(5, marks=pytest.mark.slow), pytest.param(6, marks=pytest.mark.slow)],
+)
 def test_arctan(selection_bitsize, target_bitsize):
     gate = ArcTan(selection_bitsize, target_bitsize)
     maps = {}
