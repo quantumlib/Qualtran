@@ -193,8 +193,4 @@ def _swz_multi_dimensional() -> SwapWithZero:
     return swz_multi_dimensional
 
 
-_SWZ_DOC = BloqDocSpec(
-    bloq_cls=SwapWithZero,
-    import_line='from qualtran.bloqs.swap_network import SwapWithZero',
-    examples=(_swz, _swz_small, _swz_multi_dimensional),
-)
+_SWZ_DOC = BloqDocSpec(bloq_cls=SwapWithZero, examples=(_swz, _swz_small, _swz_multi_dimensional))

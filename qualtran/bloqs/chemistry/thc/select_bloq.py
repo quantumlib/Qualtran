@@ -327,8 +327,4 @@ def _thc_sel() -> SelectTHC:
     return thc_sel
 
 
-_THC_SELECT = BloqDocSpec(
-    bloq_cls=SelectTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC',
-    examples=(_thc_sel,),
-)
+_THC_SELECT = BloqDocSpec(bloq_cls=SelectTHC, examples=(_thc_sel,))

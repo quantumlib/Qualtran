@@ -253,11 +253,8 @@ class ZGate(Bloq):
             )
         ]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-
-        if not (ctrl_spec is None or ctrl_spec == CtrlSpec()):
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 

@@ -230,7 +230,6 @@ def _tensor_product_block_encoding_symb() -> TensorProduct:
 
 _TENSOR_PRODUCT_DOC = BloqDocSpec(
     bloq_cls=TensorProduct,
-    import_line="from qualtran.bloqs.block_encoding import TensorProduct",
     examples=[
         _tensor_product_block_encoding,
         _tensor_product_block_encoding_properties,
