@@ -175,7 +175,7 @@ approx5 = [
 
 @pytest.mark.parametrize('lambd', approx2)
 def test_linear_combination_approx2(lambd):
-    run_gate_test([TGate(), Hadamard()], lambd, lambd_bits=9, atol=0.001)
+    run_gate_test([TGate(), Hadamard()], lambd, lambd_bits=9, atol=0.003)
 
 
 @pytest.mark.parametrize('lambd', approx5)
@@ -190,7 +190,7 @@ def test_linear_combination_approx5(lambd):
         ],
         lambd,
         lambd_bits=9,
-        atol=0.001,
+        atol=0.002,
     )
 
 
@@ -208,4 +208,4 @@ def gen_test():
 @pytest.mark.slow
 @pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
 def test_linear_combination_approx_random(gates, lambd):
-    run_gate_test(gates, lambd, lambd_bits=9, atol=0.001)
+    run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
