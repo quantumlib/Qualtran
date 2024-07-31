@@ -176,6 +176,7 @@ def test_add_scaled_val_into_phase_reg_classical_sim(bloq: AddScaledValIntoPhase
             assert c1 == c2, f'{d=}, {c1=}, {c2=}'
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     'bloq',
     [

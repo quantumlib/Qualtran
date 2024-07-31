@@ -20,6 +20,7 @@ from qualtran import QFxp
 from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('selection_bitsize', [3, 4])
 @pytest.mark.parametrize('target_bitsize', [3, 5, 6])
 def test_arctan(selection_bitsize, target_bitsize):
