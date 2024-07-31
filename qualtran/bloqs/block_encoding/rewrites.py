@@ -30,7 +30,7 @@ from qualtran.symbolics import smax
 
 
 def collect_like_terms(x: BlockEncoding) -> BlockEncoding:
-    '''Optimize a `BlockEncoding` by collecting like terms in nested `LinearCombination`s.
+    """Optimize a `BlockEncoding` by collecting like terms in nested `LinearCombination`s.
 
     The effect is to replace instances of
     ```
@@ -46,7 +46,7 @@ def collect_like_terms(x: BlockEncoding) -> BlockEncoding:
     )
     ```
     which requires fewer resources.
-    '''
+    """
 
     if isinstance(x, (Unitary, SparseMatrix)):
         return x
