@@ -207,5 +207,6 @@ def test_auto_partition_unused_index():
         _ = evolve(bloq, left_only=True)
 
 
+@pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import auto_partition'])

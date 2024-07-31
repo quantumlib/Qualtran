@@ -119,5 +119,6 @@ def test_partition_call_classically():
     assert out[0] == 64
 
 
+@pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import partition'])

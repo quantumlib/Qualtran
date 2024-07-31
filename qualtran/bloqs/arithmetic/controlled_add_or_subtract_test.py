@@ -47,6 +47,7 @@ def test_examples(bloq_autotester):
     bloq_autotester(_ctrl_add_or_sub_signed_symb)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [2, 4, pytest.param(5, marks=pytest.mark.slow)])
 def test_controlled_add_or_subtract_classical_sim(bitsize: int):
     # TODO use QInt once classical simulation is fixed

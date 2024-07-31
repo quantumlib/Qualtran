@@ -42,5 +42,6 @@ def test_notebook():
     execute_notebook('bookkeeping')
 
 
+@pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import allocate'])

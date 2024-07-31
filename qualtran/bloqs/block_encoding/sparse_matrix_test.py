@@ -111,6 +111,7 @@ def gen_test():
     return n, data
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "n,data", [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
 )

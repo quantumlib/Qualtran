@@ -159,6 +159,7 @@ _ADD_SCALED_VAL_INTO_PHASE_REG_EXAMPLES: list[AddScaledValIntoPhaseReg] = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     'bloq',
     [

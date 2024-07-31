@@ -84,5 +84,6 @@ def test_classical_sim_dtypes():
     #     _ = s.call_classically(reg=np.uint16(256))
 
 
+@pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import split'])
