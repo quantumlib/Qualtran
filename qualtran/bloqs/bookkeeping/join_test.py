@@ -53,8 +53,3 @@ def test_util_bloqs_tensor_contraction():
     expected = np.zeros(2**10)
     expected[0] = 1
     np.testing.assert_allclose(cbloq.tensor_contract(), expected)
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import join'])

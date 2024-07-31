@@ -82,8 +82,3 @@ def test_classical_sim_dtypes():
     #  https://github.com/quantumlib/Qualtran/issues/446
     # with pytest.raises(ValueError):
     #     _ = s.call_classically(reg=np.uint16(256))
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import split'])

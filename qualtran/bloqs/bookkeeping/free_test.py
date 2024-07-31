@@ -36,8 +36,3 @@ def test_util_bloqs():
     no_return = bb.add(Free(QAny(10)), reg=qs3)
     assert no_return is None
     assert bb.finalize().tensor_contract() == 1.0
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import free'])

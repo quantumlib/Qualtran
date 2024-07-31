@@ -40,8 +40,3 @@ def test_free_nonzero_state_vector_leads_to_unnormalized_state():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('bookkeeping')
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import allocate'])

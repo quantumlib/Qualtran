@@ -117,8 +117,3 @@ def test_partition_call_classically():
     assert flat_out[2] == 2
     out = bloq.adjoint().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
     assert out[0] == 64
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import partition'])

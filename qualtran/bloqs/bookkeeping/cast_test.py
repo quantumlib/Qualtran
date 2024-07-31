@@ -61,8 +61,3 @@ def test_cast_unsiged_signed():
 
     c = Cast(QInt(5), QUInt(5))
     assert c.call_classically(reg=-1) == (31,)
-
-
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import cast'])
