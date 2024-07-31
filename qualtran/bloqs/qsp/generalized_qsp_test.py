@@ -104,7 +104,6 @@ def verify_generalized_qsp(
     assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left, atol=tolerance)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize(
     "degree",
@@ -122,7 +121,6 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
         verify_generalized_qsp(U, P)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize(
     "degree",
@@ -266,7 +264,6 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "degree",
     [

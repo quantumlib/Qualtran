@@ -34,8 +34,10 @@ def test_notebook():
     qlt_testing.execute_notebook('apply_gate_to_lth_target')
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
+@pytest.mark.parametrize(
+    "selection_bitsize,target_bitsize",
+    [[3, 5], pytest.param([3, 7], marks=pytest.mark.slow), [4, 5]],
+)
 def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = ApplyGateToLthQubit(

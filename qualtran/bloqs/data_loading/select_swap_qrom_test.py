@@ -170,8 +170,7 @@ def test_qroam_multi_dim_autotest(bloq_autotester):
     bloq_autotester(_qroam_multi_dim)
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('use_dirty_ancilla', [True, False])
+@pytest.mark.parametrize('use_dirty_ancilla', [pytest.param(True, marks=pytest.mark.slow), False])
 def test_tensor_contraction(use_dirty_ancilla: bool):
     data = np.array([[0, 1, 0, 1]] * 8)
     log_block_sizes = (2, 1)
