@@ -225,7 +225,5 @@ def _programmable_rotation_gate_array() -> ProgrammableRotationGateArray:
 
 
 _PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC = BloqDocSpec(
-    bloq_cls=ProgrammableRotationGateArray,
-    import_line='from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArray',
-    examples=(_programmable_rotation_gate_array,),
+    bloq_cls=ProgrammableRotationGateArray, examples=(_programmable_rotation_gate_array,)
 )

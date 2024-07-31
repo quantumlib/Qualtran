@@ -186,11 +186,7 @@ def _xor_symb() -> Xor:
     return xor_symb
 
 
-_XOR_DOC = BloqDocSpec(
-    bloq_cls=Xor,
-    import_line='from qualtran.bloqs.arithmetic import Xor',
-    examples=(_xor, _xor_symb),
-)
+_XOR_DOC = BloqDocSpec(bloq_cls=Xor, examples=(_xor, _xor_symb))
 
 
 @frozen
@@ -239,8 +235,4 @@ def _bitwise_not_symb() -> BitwiseNot:
     return bitwise_not_symb
 
 
-_BITWISE_NOT_DOC = BloqDocSpec(
-    bloq_cls=BitwiseNot,
-    import_line='from qualtran.bloqs.arithmetic.bitwise import BitwiseNot',
-    examples=(_bitwise_not, _bitwise_not_symb),
-)
+_BITWISE_NOT_DOC = BloqDocSpec(bloq_cls=BitwiseNot, examples=(_bitwise_not, _bitwise_not_symb))
