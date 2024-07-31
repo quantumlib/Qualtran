@@ -57,8 +57,7 @@ class RzViaPhaseGradient(Bloq):
         phase_grad: The phase gradient register of sufficient width.
 
     References:
-         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/abs/2007.07391).
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
         Section II-C: Oracles for phasing by cost function.
         Appendix A: Addition for controlled rotations.
     """
