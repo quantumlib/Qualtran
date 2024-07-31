@@ -24,7 +24,6 @@ from qualtran.linalg.polynomial.qsp_testing import (
 )
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "degree, num_tests",
     [
