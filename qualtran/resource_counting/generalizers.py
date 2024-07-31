@@ -91,6 +91,20 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(generalize_cvs, b)
 
 
+def generalize_cswap_approx(b: Bloq) -> Optional[Bloq]:
+    """A generalizer that CSwapApprox with regular-old CSwap."""
+    from qualtran import Adjoint
+    from qualtran.bloqs.basic_gates import CSwap
+    from qualtran.bloqs.swap_network import CSwapApprox
+
+    if isinstance(b, CSwapApprox):
+        return CSwap(b.bitsize)
+    if isinstance(b, Adjoint) and isinstance(b.subbloq, CSwapApprox):
+        return CSwap(b.subbloq.bitsize).adjoint()
+
+    return _ignore_wrapper(generalize_cswap_approx, b)
+
+
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
     from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
