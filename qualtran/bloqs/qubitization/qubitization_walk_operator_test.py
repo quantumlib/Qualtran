@@ -88,7 +88,7 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         )
 
 
-@pytest.mark.slow()
+@pytest.mark.slow
 def test_qubitization_walk_operator_adjoint():
     num_sites, eps = 3, 0.5
     walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
