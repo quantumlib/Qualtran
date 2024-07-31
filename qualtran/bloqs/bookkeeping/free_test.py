@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import pytest
 import subprocess
+
+import pytest
 
 from qualtran import BloqBuilder, QAny, Soquet
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
