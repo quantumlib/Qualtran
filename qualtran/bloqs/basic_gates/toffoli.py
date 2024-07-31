@@ -131,8 +131,4 @@ def _toffoli() -> Toffoli:
     return toffoli
 
 
-_TOFFOLI_DOC = BloqDocSpec(
-    bloq_cls=Toffoli,
-    import_line='from qualtran.bloqs.basic_gates import Toffoli',
-    examples=[_toffoli],
-)
+_TOFFOLI_DOC = BloqDocSpec(bloq_cls=Toffoli, examples=[_toffoli])

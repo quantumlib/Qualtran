@@ -116,8 +116,7 @@ def test_multiply_float_int():
     float_width = 24
     int_width = 8
     val = np.random.random()
-    fp_bits = QFxp(float_width, float_width).to_bits(val, require_exact=False)
-    fp_int = int(''.join(str(b) for b in fp_bits), 2)
+    fp_int = QFxp(float_width, float_width).to_fixed_width_int(val)
     int_val = np.random.randint(0, 2**int_width - 1)
     result = multiply_fixed_point_float_by_int(fp_int, int_val, float_width, int_width)
     assert abs(result / 2**float_width - int_val * val) <= int_width * 2 ** (
@@ -129,9 +128,7 @@ def test_multiply_floats():
     float_width = 24
     a = np.random.random()
     b = np.random.random()
-    bits = QFxp(float_width, float_width).to_bits(a, require_exact=False)
-    fp_a = int(''.join(str(b) for b in bits), 2)
-    bits = QFxp(float_width, float_width).to_bits(b, require_exact=False)
-    fp_b = int(''.join(str(b) for b in bits), 2)
+    fp_a = QFxp(float_width, float_width).to_fixed_width_int(a)
+    fp_b = QFxp(float_width, float_width).to_fixed_width_int(b)
     result = multiply_fixed_point_floats(fp_a, fp_b, float_width)
     assert abs(result / 2**float_width - a * b) <= (float_width + 1) / 2**float_width

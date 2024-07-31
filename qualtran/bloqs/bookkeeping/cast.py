@@ -26,7 +26,6 @@ from qualtran import (
     ConnectionT,
     DecomposeTypeError,
     QDType,
-    QFxp,
     Register,
     Side,
     Signature,
@@ -95,12 +94,7 @@ class Cast(_BookkeepingBloq):
         ]
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        if isinstance(self.out_dtype, QFxp):
-            res = reg
-        elif isinstance(self.inp_dtype, QFxp):
-            res = int(reg)
-        else:
-            res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
+        res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
         return {'reg': res}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
