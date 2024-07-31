@@ -59,14 +59,23 @@ def gate_test(bloq):
         and not is_symbolic(bloq.resource_bitsize)
     )
     bb = BloqBuilder()
-    system = bb.add_register("system", bloq.system_bitsize)
-    ancilla = bb.add(IntState(0, bloq.ancilla_bitsize))
-    resource = bb.add(IntState(0, bloq.resource_bitsize))
-    system, ancilla, resource = bb.add(bloq, system=system, ancilla=ancilla, resource=resource)
-    bb.add(IntEffect(0, bloq.ancilla_bitsize), val=ancilla)
-    bb.add(IntEffect(0, bloq.resource_bitsize), val=resource)
-    bloq = bb.finalize(system=system)
+    soqs = {}
+    soqs["system"] = bb.add_register("system", bloq.system_bitsize)
+    if bloq.ancilla_bitsize > 0:
+        soqs["ancilla"] = bb.add(IntState(0, bloq.ancilla_bitsize))
+    if bloq.resource_bitsize > 0:
+        soqs["resource"] = bb.add(IntState(0, bloq.resource_bitsize))
+    soqs = bb.add_d(bloq, **soqs)
+    if bloq.ancilla_bitsize > 0:
+        bb.add(IntEffect(0, bloq.ancilla_bitsize), val=soqs["ancilla"])
+    if bloq.resource_bitsize > 0:
+        bb.add(IntEffect(0, bloq.resource_bitsize), val=soqs["resource"])
+    bloq = bb.finalize(system=soqs["system"])
     return bloq.tensor_contract() * alpha
+
+
+def t2(x):
+    return 2 * np.linalg.matrix_power(x, 2) - np.eye(2)
 
 
 def t4(x):
@@ -79,7 +88,7 @@ def t5(x):
 
 @pytest.mark.slow
 def test_chebyshev_poly_even_tensors():
-    from_gate = t4((XGate().tensor_contract() + Hadamard().tensor_contract()) / 2.0)
+    from_gate = t4(XGate().tensor_contract())
     bloq = _chebyshev_poly_even()
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
@@ -90,35 +99,21 @@ def test_chebyshev_poly_odd_tensors():
     bloq = _chebyshev_poly_odd()
     assert not is_symbolic(bloq.system_bitsize)
 
-    bb = BloqBuilder()
-    system = bb.add_register("system", bloq.system_bitsize)
-    system = bb.add(bloq, system=system)
-    bloq = bb.finalize(system=system)
-    from_tensors = bloq.tensor_contract()
+    from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
 
 
 def test_chebyshev_zero_order():
-    bloq = ChebyshevPolynomial(Unitary(Hadamard()), order=0)
-    bb = BloqBuilder()
-    system = bb.add_register("system", 1)
-    system = bb.add(bloq, system=system)
-    bloq = bb.finalize(system=system)
-    from_tensors = bloq.tensor_contract()
-
     from_gate = Identity().tensor_contract()
+    bloq = ChebyshevPolynomial(Unitary(XGate()), order=0)
+    from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
 
 
 def test_chebyshev_first_order():
-    bloq = ChebyshevPolynomial(Unitary(Hadamard()), order=1)
-    bb = BloqBuilder()
-    system = bb.add_register("system", 1)
-    system = bb.add(bloq, system=system)
-    bloq = bb.finalize(system=system)
-    from_tensors = bloq.tensor_contract()
-
-    from_gate = Hadamard().tensor_contract()
+    from_gate = XGate().tensor_contract()
+    bloq = ChebyshevPolynomial(Unitary(XGate()), order=1)
+    from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
 
 
@@ -130,16 +125,15 @@ def test_scaled_chebyshev_poly_odd(bloq_autotester):
     bloq_autotester(_scaled_chebyshev_poly_odd)
 
 
-@pytest.mark.slow
-def test_scaled_chebyshev_even_tensors():
-    from_gate = t4((XGate().tensor_contract() + Hadamard().tensor_contract()))
+def test_scaled_chebyshev_poly_even_tensors():
+    from_gate = t2(XGate().tensor_contract() * 3.14)
     bloq = _scaled_chebyshev_poly_even()
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=0.06)
 
 
 @pytest.mark.slow
-def test_scaled_chebyshev_odd_tensors():
+def test_scaled_chebyshev_poly_odd_tensors():
     from_gate = t5(Hadamard().tensor_contract() * 3.14)
     bloq = _scaled_chebyshev_poly_odd()
     from_tensors = gate_test(bloq)

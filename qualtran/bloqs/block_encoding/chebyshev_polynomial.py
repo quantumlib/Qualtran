@@ -137,15 +137,13 @@ class ChebyshevPolynomial(BlockEncoding):
         if is_symbolic(self.ancilla_bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         for _ in range(self.order // 2):
-            if self.ancilla_bitsize > 0:
-                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding, **soqs)
             if self.ancilla_bitsize > 0:
                 soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding.adjoint(), **soqs)
-        if self.order % 2 == 1:
             if self.ancilla_bitsize > 0:
                 soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+        if self.order % 2 == 1:
             soqs |= bb.add_d(self.block_encoding, **soqs)
         return soqs
 
@@ -162,11 +160,10 @@ class ChebyshevPolynomial(BlockEncoding):
 
 @bloq_example
 def _chebyshev_poly_even() -> ChebyshevPolynomial:
-    from qualtran.bloqs.basic_gates import Hadamard, XGate
-    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
+    from qualtran.bloqs.basic_gates import XGate
+    from qualtran.bloqs.block_encoding import Unitary
 
-    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (0.5, 0.5), lambd_bits=1)
-    chebyshev_poly_even = ChebyshevPolynomial(bloq, order=4)
+    chebyshev_poly_even = ChebyshevPolynomial(Unitary(XGate()), order=4)
     return chebyshev_poly_even
 
 
@@ -175,8 +172,7 @@ def _chebyshev_poly_odd() -> ChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding import Unitary
 
-    bloq = Unitary(Hadamard())
-    chebyshev_poly_odd = ChebyshevPolynomial(bloq, order=5)
+    chebyshev_poly_odd = ChebyshevPolynomial(Unitary(Hadamard()), order=5)
     return chebyshev_poly_odd
 
 
@@ -283,23 +279,27 @@ class ScaledChebyshevPolynomial(BlockEncoding):
 
 @bloq_example
 def _scaled_chebyshev_poly_even() -> ScaledChebyshevPolynomial:
-    from qualtran.bloqs.basic_gates import Hadamard, XGate
-    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
+    from attr import evolve
 
-    bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (1.0, 1.0), lambd_bits=1)
-    scaled_chebyshev_poly_even = ScaledChebyshevPolynomial(bloq, order=4)
+    from qualtran.bloqs.basic_gates import XGate
+    from qualtran.bloqs.block_encoding import Unitary
+
+    scaled_chebyshev_poly_even = ScaledChebyshevPolynomial(
+        evolve(Unitary(XGate()), alpha=3.14), order=2
+    )
     return scaled_chebyshev_poly_even
 
 
 @bloq_example
 def _scaled_chebyshev_poly_odd() -> ScaledChebyshevPolynomial:
-    from attrs import evolve
+    from attr import evolve
 
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding import Unitary
 
-    bloq = evolve(Unitary(Hadamard()), alpha=3.14)
-    scaled_chebyshev_poly_odd = ScaledChebyshevPolynomial(bloq, order=5)
+    scaled_chebyshev_poly_odd = ScaledChebyshevPolynomial(
+        evolve(Unitary(Hadamard()), alpha=3.14), order=5
+    )
     return scaled_chebyshev_poly_odd
 
 

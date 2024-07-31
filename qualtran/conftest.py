@@ -110,7 +110,6 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'permutation_cycle_symb',
         'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
         'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition
-        'chebyshev_poly_even',
         'scaled_chebyshev_poly_even',
         'scaled_chebyshev_poly_odd',
     ]:
