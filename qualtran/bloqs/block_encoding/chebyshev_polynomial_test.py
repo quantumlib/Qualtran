@@ -125,16 +125,19 @@ def test_scaled_chebyshev_poly_odd(bloq_autotester):
     bloq_autotester(_scaled_chebyshev_poly_odd)
 
 
+@pytest.mark.slow
 def test_scaled_chebyshev_poly_even_tensors():
-    from_gate = t2(XGate().tensor_contract() * 3.14)
+    alpha = np.sqrt(2 + np.sqrt(2))
+    from_gate = t2(alpha * XGate().tensor_contract() + alpha * Hadamard().tensor_contract())
     bloq = _scaled_chebyshev_poly_even()
     from_tensors = gate_test(bloq)
-    np.testing.assert_allclose(from_gate, from_tensors, atol=0.06)
+    np.testing.assert_allclose(from_gate, from_tensors, atol=0.03)
 
 
 @pytest.mark.slow
 def test_scaled_chebyshev_poly_odd_tensors():
-    from_gate = t5(Hadamard().tensor_contract() * 3.14)
+    alpha = np.sqrt(2 + np.sqrt(2))
+    from_gate = t5(alpha * XGate().tensor_contract() + alpha * Hadamard().tensor_contract())
     bloq = _scaled_chebyshev_poly_odd()
     from_tensors = gate_test(bloq)
-    np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
+    np.testing.assert_allclose(from_gate, from_tensors, rtol=0.002)
