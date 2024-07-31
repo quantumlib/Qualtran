@@ -54,7 +54,7 @@ class TestRz(Bloq):
     @property
     def load_angle_bloq(self) -> IntState:
         return IntState(
-            self.dtype.to_fixed_width_int(self.angle / (2 * np.pi), require_exact=False),
+            self.dtype.to_fixed_width_int(self.angle / (4 * np.pi), require_exact=False),
             bitsize=self.phasegrad_bitsize,
         )
 
@@ -78,9 +78,10 @@ class TestRz(Bloq):
 
 @pytest.mark.parametrize("bitsize", [3, 4])
 def test_tensor(bitsize: int):
-    theta = 2 * np.pi / 2**bitsize
+    for coeff in [1, 2]:
+        theta = 4 * np.pi * coeff / 2**bitsize
 
-    actual = TestRz(angle=theta, phasegrad_bitsize=bitsize).tensor_contract()
-    expected = Rz(2 * theta).tensor_contract()
+        actual = TestRz(angle=theta, phasegrad_bitsize=bitsize).tensor_contract()
+        expected = Rz(theta).tensor_contract()
 
-    np.testing.assert_allclose(actual, expected, atol=1 / 2**bitsize)
+        np.testing.assert_allclose(actual, expected, atol=1 / 2**bitsize)

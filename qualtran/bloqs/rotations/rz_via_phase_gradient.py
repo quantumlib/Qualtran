@@ -36,7 +36,7 @@ class RzViaPhaseGradient(Bloq):
     Implements the following unitary action:
 
     $$
-        |\psi\rangle \otimes |x\rangle \mapsto \text{Rz}(x) |\psi\rangle \otimes |x\rangle
+        |\psi\rangle \otimes |x\rangle \mapsto \text{Rz}(4 \pi x) |\psi\rangle \otimes |x\rangle
     $$
 
     for every state $|\psi\rangle$ and every $x$, or equivalently
@@ -46,6 +46,8 @@ class RzViaPhaseGradient(Bloq):
     $$
 
     for every $b \in \{0, 1\}$ and every $x$.
+
+    To apply an $\text{Rz}(\theta) = e^{-i Z \theta/2}$, the angle register $x$ should store $\theta/(4\pi)$.
 
     Args:
         angle_dtype: Data type for the `angle_data` register.
