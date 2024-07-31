@@ -99,11 +99,7 @@ def _c_multi_not() -> MultiTargetCNOT:
     return c_multi_not
 
 
-_C_MULTI_NOT_DOC = BloqDocSpec(
-    bloq_cls=MultiTargetCNOT,
-    import_line='from qualtran.bloqs.mcmt import MultiTargetCNOT',
-    examples=(_c_multi_not_symb, _c_multi_not),
-)
+_C_MULTI_NOT_DOC = BloqDocSpec(bloq_cls=MultiTargetCNOT, examples=(_c_multi_not_symb, _c_multi_not))
 
 
 @frozen
@@ -243,11 +239,7 @@ def _ccpauli_symb() -> MultiControlPauli:
     return ccpauli_symb
 
 
-_CC_PAULI_DOC = BloqDocSpec(
-    bloq_cls=MultiControlPauli,
-    import_line='from qualtran.bloqs.mcmt import MultiControlPauli',
-    examples=(_ccpauli,),
-)
+_CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlPauli, examples=(_ccpauli,))
 
 
 @frozen

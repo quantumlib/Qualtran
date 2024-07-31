@@ -107,8 +107,4 @@ _ISING_ZZ_UNITARY_DOC = BloqDocSpec(
     examples=(_ising_zz,),
 )
 
-_ISING_X_UNITARY_DOC = BloqDocSpec(
-    bloq_cls=IsingXUnitary,
-    import_line='from qualtran.bloqs.chemistry.trotter.ising.unitaries import IsingXUnitary',
-    examples=(_ising_x,),
-)
+_ISING_X_UNITARY_DOC = BloqDocSpec(bloq_cls=IsingXUnitary, examples=(_ising_x,))

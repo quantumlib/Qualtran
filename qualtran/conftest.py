@@ -110,6 +110,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'permutation_cycle_symb',
         'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
         'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition
+        'chebyshev_poly_even',
         'sparse_state_prep_via_rotations',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")

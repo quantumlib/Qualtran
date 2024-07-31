@@ -97,12 +97,14 @@ def test_qfxp():
     assert str(qfp_16) == 'QFxp(16, 15)'
     assert qfp_16.num_qubits == 16
     assert qfp_16.num_int == 1
-    assert qfp_16.fxp_dtype_str == 'fxp-u16/15'
+    assert qfp_16.fxp_dtype_template().dtype == 'fxp-u16/15'
+
     qfp_16 = QFxp(16, 15, signed=True)
     assert str(qfp_16) == 'QFxp(16, 15, True)'
     assert qfp_16.num_qubits == 16
-    assert qfp_16.num_int == 0
-    assert qfp_16.fxp_dtype_str == 'fxp-s16/15'
+    assert qfp_16.num_int == 1
+    assert qfp_16.fxp_dtype_template().dtype == 'fxp-s16/15'
+
     with pytest.raises(ValueError, match="num_qubits must be > 1."):
         QFxp(1, 1, signed=True)
     QFxp(1, 1, signed=False)
@@ -117,7 +119,7 @@ def test_qfxp():
     assert qfp.num_int == b - f
     qfp = QFxp(b, f, True)
     assert qfp.num_qubits == b
-    assert qfp.num_int == b - f - 1
+    assert qfp.num_int == b - f
     assert is_symbolic(QFxp(*sympy.symbols('x y')))
 
 
@@ -351,44 +353,75 @@ def test_qintonescomp_to_and_from_bits():
 
 
 def test_qfxp_to_and_from_bits():
-    # QFxp: Negative numbers are stored as ones complement
+    assert_to_and_from_bits_array_consistent(
+        QFxp(4, 3, False), [QFxp(4, 3, False).to_fixed_width_int(x) for x in [1 / 2, 1 / 4, 3 / 8]]
+    )
+    assert_to_and_from_bits_array_consistent(
+        QFxp(4, 3, True),
+        [
+            QFxp(4, 3, True).to_fixed_width_int(x)
+            for x in [1 / 2, -1 / 2, 1 / 4, -1 / 4, -3 / 8, 3 / 8]
+        ],
+    )
+
+
+def test_qfxp_to_fixed_width_int():
+    assert QFxp(6, 4).to_fixed_width_int(1.5) == 24 == 1.5 * 2**4
+    assert QFxp(6, 4, signed=True).to_fixed_width_int(1.5) == 24 == 1.5 * 2**4
+    assert QFxp(6, 4, signed=True).to_fixed_width_int(-1.5) == -24 == -1.5 * 2**4
+
+
+def test_qfxp_from_fixed_width_int():
+    qfxp = QFxp(6, 4)
+    for x_int in qfxp.get_classical_domain():
+        x_float = qfxp.float_from_fixed_width_int(x_int)
+        x_int_roundtrip = qfxp.to_fixed_width_int(x_float)
+        assert x_int == x_int_roundtrip
+
+    for float_val in [1.5, 1.25]:
+        assert qfxp.float_from_fixed_width_int(qfxp.to_fixed_width_int(float_val)) == float_val
+
+
+def test_qfxp_to_and_from_bits_using_fxp():
+    # QFxp: Negative numbers are stored as twos complement
     qfxp_4_3 = QFxp(4, 3, True)
-    assert list(qfxp_4_3.to_bits(0.5)) == [0, 1, 0, 0]
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(0.5)).get_val() == 0.5
-    assert list(qfxp_4_3.to_bits(-0.5)) == [1, 1, 0, 0]
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.5)).get_val() == -0.5
-    assert list(qfxp_4_3.to_bits(0.625)) == [0, 1, 0, 1]
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(+0.625)).get_val() == +0.625
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.625)).get_val() == -0.625
-    assert list(qfxp_4_3.to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(0.375)).get_val() == 0.375
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-0.375)).get_val() == -0.375
+    assert list(qfxp_4_3._fxp_to_bits(0.5)) == [0, 1, 0, 0]
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(0.5)).get_val() == 0.5
+    assert list(qfxp_4_3._fxp_to_bits(-0.5)) == [1, 1, 0, 0]
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(-0.5)).get_val() == -0.5
+    assert list(qfxp_4_3._fxp_to_bits(0.625)) == [0, 1, 0, 1]
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(+0.625)).get_val() == +0.625
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(-0.625)).get_val() == -0.625
+    assert list(qfxp_4_3._fxp_to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(0.375)).get_val() == 0.375
+    assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(-0.375)).get_val() == -0.375
     with pytest.raises(ValueError):
-        _ = qfxp_4_3.to_bits(0.1)
-    assert list(qfxp_4_3.to_bits(0.7, require_exact=False)) == [0, 1, 0, 1]
-    assert list(qfxp_4_3.to_bits(0.7, require_exact=False, complement=False)) == [0, 1, 0, 1]
-    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False)) == [1, 0, 1, 1]
-    assert list(qfxp_4_3.to_bits(-0.7, require_exact=False, complement=False)) == [1, 1, 0, 1]
+        _ = qfxp_4_3._fxp_to_bits(0.1)
+    assert list(qfxp_4_3._fxp_to_bits(0.7, require_exact=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3._fxp_to_bits(0.7, require_exact=False, complement=False)) == [0, 1, 0, 1]
+    assert list(qfxp_4_3._fxp_to_bits(-0.7, require_exact=False)) == [1, 0, 1, 1]
+    assert list(qfxp_4_3._fxp_to_bits(-0.7, require_exact=False, complement=False)) == [1, 1, 0, 1]
 
     with pytest.raises(ValueError):
-        _ = qfxp_4_3.to_bits(1.5)
+        _ = qfxp_4_3._fxp_to_bits(1.5)
 
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(1 / 2 + 1 / 4 + 1 / 8)) == 1 / 2 + 1 / 4 + 1 / 8
-    assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-1 / 2 - 1 / 4 - 1 / 8)) == -1 / 2 - 1 / 4 - 1 / 8
+    assert (
+        qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(1 / 2 + 1 / 4 + 1 / 8))
+        == 1 / 2 + 1 / 4 + 1 / 8
+    )
+    assert (
+        qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(-1 / 2 - 1 / 4 - 1 / 8))
+        == -1 / 2 - 1 / 4 - 1 / 8
+    )
     with pytest.raises(ValueError):
-        _ = qfxp_4_3.to_bits(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
+        _ = qfxp_4_3._fxp_to_bits(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
 
     for qfxp in [QFxp(4, 3, True), QFxp(3, 3, False), QFxp(7, 3, False), QFxp(7, 3, True)]:
-        for x in qfxp.get_classical_domain():
-            assert qfxp.from_bits(qfxp.to_bits(x)) == x
+        for x in qfxp._get_classical_domain_fxp():
+            assert qfxp._from_bits_to_fxp(qfxp._fxp_to_bits(x)) == x
 
-    assert list(QFxp(7, 3, True).to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
-    assert list(QFxp(7, 3, True).to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
-
-    assert_to_and_from_bits_array_consistent(QFxp(4, 3, False), [1 / 2, 1 / 4, 3 / 8])
-    assert_to_and_from_bits_array_consistent(
-        QFxp(4, 3, True), [1 / 2, -1 / 2, 1 / 4, -1 / 4, -3 / 8, 3 / 8]
-    )
+    assert list(QFxp(7, 3, True)._fxp_to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
+    assert list(QFxp(7, 3, True)._fxp_to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
 
 
 def test_iter_bits():
@@ -416,11 +449,11 @@ random.seed(1234)
 def test_fixed_point(val, width, signed):
     if (val < 0) and not signed:
         with pytest.raises(ValueError):
-            _ = QFxp(width + int(signed), width, signed=signed).to_bits(
+            _ = QFxp(width + int(signed), width, signed=signed)._fxp_to_bits(
                 val, require_exact=False, complement=False
             )
     else:
-        bits = QFxp(width + int(signed), width, signed=signed).to_bits(
+        bits = QFxp(width + int(signed), width, signed=signed)._fxp_to_bits(
             val, require_exact=False, complement=False
         )
         if signed:

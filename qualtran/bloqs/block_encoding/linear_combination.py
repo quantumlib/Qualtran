@@ -117,7 +117,7 @@ class LinearCombination(BlockEncoding):
     @cached_property
     def rescaled_lambd(self):
         """Rescaled and padded array of coefficients."""
-        x = np.abs(np.array(self._lambd))
+        x = np.abs(np.array(self._lambd) * np.array([be.alpha for be in self._block_encodings]))
         x /= np.linalg.norm(x, ord=1)
         x.resize(2 ** int(np.ceil(np.log2(len(x)))), refcheck=False)
         return x
@@ -139,9 +139,7 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return ssum(
-            abs(l) * be.alpha for be, l in zip(self.signed_block_encodings, self.rescaled_lambd)
-        )
+        return ssum(abs(l) * be.alpha for be, l in zip(self._block_encodings, self._lambd))
 
     @cached_property
     def be_ancilla_bitsize(self) -> SymbolicInt:
@@ -348,7 +346,5 @@ def _linear_combination_block_encoding() -> LinearCombination:
 
 
 _LINEAR_COMBINATION_DOC = BloqDocSpec(
-    bloq_cls=LinearCombination,
-    import_line="from qualtran.bloqs.block_encoding import LinearCombination",
-    examples=[_linear_combination_block_encoding],
+    bloq_cls=LinearCombination, examples=[_linear_combination_block_encoding]
 )

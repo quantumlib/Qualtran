@@ -288,8 +288,9 @@ class PrepareTHC(PrepareOracle):
         num_spat = t_l.shape[0]
         triu_indices = np.triu_indices(num_mu)
         num_ut = len(triu_indices[0])
-        flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+        flat_data = np.concatenate([zeta[triu_indices], t_l])
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
+        flat_data = np.abs(flat_data)
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
             flat_data, sub_bit_precision=num_bits_state_prep
         )
@@ -390,6 +391,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
@@ -452,6 +454,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
@@ -471,23 +474,15 @@ def _thc_uni() -> UniformSuperpositionTHC:
 
 @bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
+
     num_spat = 4
     num_mu = 8
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
+    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
     thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
     return thc_prep
 
 
-_THC_UNI_PREP = BloqDocSpec(
-    bloq_cls=UniformSuperpositionTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import UniformSuperpositionTHC',
-    examples=(_thc_uni,),
-)
+_THC_UNI_PREP = BloqDocSpec(bloq_cls=UniformSuperpositionTHC, examples=(_thc_uni,))
 
-_THC_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import PrepareTHC',
-    examples=(_thc_prep,),
-)
+_THC_PREPARE = BloqDocSpec(bloq_cls=PrepareTHC, examples=(_thc_prep,))

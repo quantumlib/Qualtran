@@ -68,6 +68,9 @@ class XorK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.k, self.dtype)
 
+    def adjoint(self) -> 'XorK':
+        return self
+
     @cached_property
     def _bits_k(self) -> Sequence[int]:
         return self.dtype.to_bits(self.k)
@@ -116,7 +119,9 @@ def _xork() -> XorK:
 
 @frozen
 class Xor(Bloq):
-    """Xor the value of one register into another via CNOTs.
+    r"""Xor the value of one register into another via CNOTs.
+
+    Maps basis states $|x, y\rangle$ to $|x, y \oplus x\rangle$.
 
     When both registers are in computational basis and the destination is 0,
     effectively copies the value of the source into the destination.
@@ -134,6 +139,9 @@ class Xor(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
+
+    def adjoint(self) -> 'Xor':
+        return self
 
     def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
@@ -178,11 +186,7 @@ def _xor_symb() -> Xor:
     return xor_symb
 
 
-_XOR_DOC = BloqDocSpec(
-    bloq_cls=Xor,
-    import_line='from qualtran.bloqs.arithmetic import Xor',
-    examples=(_xor, _xor_symb),
-)
+_XOR_DOC = BloqDocSpec(bloq_cls=Xor, examples=(_xor, _xor_symb))
 
 
 @frozen
@@ -201,6 +205,9 @@ class BitwiseNot(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    def adjoint(self) -> 'BitwiseNot':
+        return self
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
         x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
@@ -228,8 +235,4 @@ def _bitwise_not_symb() -> BitwiseNot:
     return bitwise_not_symb
 
 
-_BITWISE_NOT_DOC = BloqDocSpec(
-    bloq_cls=BitwiseNot,
-    import_line='from qualtran.bloqs.arithmetic.bitwise import BitwiseNot',
-    examples=(_bitwise_not, _bitwise_not_symb),
-)
+_BITWISE_NOT_DOC = BloqDocSpec(bloq_cls=BitwiseNot, examples=(_bitwise_not, _bitwise_not_symb))
