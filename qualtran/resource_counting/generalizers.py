@@ -92,7 +92,7 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 
 
 def generalize_cswap_approx(b: Bloq) -> Optional[Bloq]:
-    """A generalizer that CSwapApprox with regular-old CSwap."""
+    """A generalizer to replace CSwapApprox with a regular-old CSwap."""
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import CSwap
     from qualtran.bloqs.swap_network import CSwapApprox
