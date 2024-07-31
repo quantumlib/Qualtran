@@ -51,6 +51,7 @@ def test_chebyshev_alpha():
 
 
 def gate_test(bloq):
+    r'''Given `bloq` implementing $B[A/\alpha]$, returns $A$ by tensor contraction.'''
     alpha = bloq.alpha
     assert (
         not is_symbolic(bloq.system_bitsize)

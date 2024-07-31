@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 @attrs.frozen
 class ChebyshevPolynomial(BlockEncoding):
-    r"""Block encoding of $T_j(A)$ where $T_j$ is the $j$-th Chebyshev polynomial.
+    r"""Block encoding of $T_j(A / \alpha)$ where $T_j$ is the $j$-th Chebyshev polynomial.
 
     Given a Hermitian matrix $A$ with spectral norm $|A| \le 1$, recall:
 
