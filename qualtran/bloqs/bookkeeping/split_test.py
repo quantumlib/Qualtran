@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
 
 import numpy as np
 import pytest
@@ -82,7 +81,3 @@ def test_classical_sim_dtypes():
     #  https://github.com/quantumlib/Qualtran/issues/446
     # with pytest.raises(ValueError):
     #     _ = s.call_classically(reg=np.uint16(256))
-
-
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import split'])

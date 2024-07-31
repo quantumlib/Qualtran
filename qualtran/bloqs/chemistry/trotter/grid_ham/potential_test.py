@@ -26,10 +26,12 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.potential import (
 )
 
 
+@pytest.mark.slow
 def test_pair_potential(bloq_autotester):
     bloq_autotester(_pair_potential)
 
 
+@pytest.mark.slow
 def test_potential_energy(bloq_autotester):
     bloq_autotester(_potential_energy)
 

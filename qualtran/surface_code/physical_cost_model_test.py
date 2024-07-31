@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,13 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import subprocess
-
-import pytest
+import qualtran.testing as qlt_testing
 
 
-@pytest.mark.slow
-def test_no_circular_import():
-    subprocess.check_call(
-        ['python', '-c', 'from qualtran.bloqs.bookkeeping import arbitrary_clifford']
-    )
+def test_notebook():
+    qlt_testing.execute_notebook('physical_cost_model')
