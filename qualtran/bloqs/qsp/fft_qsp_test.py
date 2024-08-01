@@ -66,5 +66,3 @@ def test_fft_qsp_on_random_unitaries(degree: int, bitsize: int):
         U = MatrixGate.random(bitsize=bitsize, random_state=random_state)
         Q = fft_complementary_polynomial(P, tolerance=tolerance, num_modes=num_modes)
         verify_generalized_qsp(U, P, Q=Q, tolerance=tolerance)
-
-
