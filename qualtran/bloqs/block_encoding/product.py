@@ -90,6 +90,7 @@ class Product(BlockEncoding):
 
     @classmethod
     def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `Product` from block encodings."""
         return cls(block_encodings)
 
     @cached_property

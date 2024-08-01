@@ -109,6 +109,7 @@ class LinearCombination(BlockEncoding):
 
     @classmethod
     def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
+        """Construct a `LinearCombination` from pairs of (coefficient, block encoding)."""
         return cls(tuple(t[1] for t in terms), tuple(t[0] for t in terms), lambd_bits)
 
     @cached_property

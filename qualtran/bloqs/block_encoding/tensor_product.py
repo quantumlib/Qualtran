@@ -67,6 +67,7 @@ class TensorProduct(BlockEncoding):
 
     @classmethod
     def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `TensorProduct` from block encodings."""
         return cls(block_encodings)
 
     @cached_property
