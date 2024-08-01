@@ -17,7 +17,7 @@ from numpy.typing import NDArray
 from cirq.testing.lin_alg_utils import random_orthogonal
 
 
-def random_hermitian_matrix(random_state: np.random.RandomState) -> NDArray:
-    """Return a random Hermitian matrix of norm <= 1."""
-    a = random_orthogonal(2, random_state=random_state)
+def random_hermitian_matrix(dim: int, random_state: np.random.RandomState) -> NDArray:
+    """Return a random Hermitian matrix of given dimension and norm <= 1."""
+    a = random_orthogonal(dim, random_state=random_state)
     return (a + a.conj().T) / 2

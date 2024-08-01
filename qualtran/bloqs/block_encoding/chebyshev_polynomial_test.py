@@ -219,7 +219,7 @@ def test_chebyshev_matrix():
 def test_chebyshev_matrix_random():
     random_state = np.random.RandomState(1234)
     for _ in range(20):
-        a = random_hermitian_matrix(random_state)
+        a = random_hermitian_matrix(2, random_state)
         from_gate = t4(a)
         bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
         from_tensors = gate_test(bloq)
