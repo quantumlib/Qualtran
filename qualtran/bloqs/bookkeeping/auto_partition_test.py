@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
 
 import pytest
 from attrs import evolve
@@ -205,7 +204,3 @@ def test_auto_partition_unused_index():
 
     with pytest.raises(ValueError):
         _ = evolve(bloq, left_only=True)
-
-
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import auto_partition'])

@@ -333,6 +333,7 @@ class PrepareSparse(PrepareOracle):
             self.keep,
             target_bitsizes=target_bitsizes,
             log_block_sizes=log_block_sizes,
+            use_dirty_ancilla=False,
         )
         return qrom
 
@@ -468,8 +469,4 @@ def _prep_sparse() -> PrepareSparse:
     return prep_sparse
 
 
-_SPARSE_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse',
-    examples=(_prep_sparse,),
-)
+_SPARSE_PREPARE = BloqDocSpec(bloq_cls=PrepareSparse, examples=(_prep_sparse,))
