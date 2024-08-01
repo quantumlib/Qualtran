@@ -156,7 +156,8 @@ def test_scaled_chebyshev_odd_tensors():
 
 @frozen
 class TestBlockEncoding(BlockEncoding):
-    """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one ancilla qubit and one resource qubit."""
+    """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one
+    ancilla qubit and one resource qubit."""
 
     matrix: Tuple[Tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)

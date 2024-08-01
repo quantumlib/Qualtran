@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import numpy as np
-from numpy.typing import NDArray
 from cirq.testing.lin_alg_utils import random_orthogonal
+from numpy.typing import NDArray
 
 
 def random_hermitian_matrix(dim: int, random_state: np.random.RandomState) -> NDArray:
