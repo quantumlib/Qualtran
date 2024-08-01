@@ -18,7 +18,7 @@ from typing import Dict, Tuple
 import numpy as np
 import pytest
 from attr import field, frozen
-from cirq.testing.lin_alg_utils import random_orthogonal
+from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
@@ -32,6 +32,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
 )
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.testing import assert_equivalent_bloq_example_counts
 
@@ -155,7 +156,7 @@ def test_scaled_chebyshev_odd_tensors():
 
 @frozen
 class TestBlockEncoding(BlockEncoding):
-    """Instance of `BlockEncoding` accepting a matrix with one system, ancilla, and resource bit."""
+    """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one ancilla qubit and one resource qubit."""
 
     matrix: Tuple[Tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)
@@ -166,6 +167,16 @@ class TestBlockEncoding(BlockEncoding):
     system_bitsize: SymbolicInt = 1
     ancilla_bitsize: SymbolicInt = 1
     resource_bitsize: SymbolicInt = 1
+
+    @classmethod
+    def from_matrix(cls, a: NDArray):
+        """Given A, constructs a block encoding of A."""
+        ua = np.zeros((4, 4))
+        a = a.astype(complex)
+        ua[:2, :2] = a.real
+        ua[2:, 2:] = -a.real
+        ua[:2, 2:] = ua[2:, :2] = np.sqrt(np.eye(2) - a.T @ a).real
+        return cls(np.kron(np.eye(2), ua))
 
     @cached_property
     def signature(self) -> Signature:
@@ -196,27 +207,12 @@ class TestBlockEncoding(BlockEncoding):
         return {"system": system, "ancilla": ancilla, "resource": resource}
 
 
-def block_encoding_matrix(a):
-    """Given A, returns a unitary that block-encodes A with two extra qubits."""
-    ua = np.zeros((4, 4))
-    a = a.astype(complex)
-    ua[:2, :2] = a.real
-    ua[2:, 2:] = -a.real
-    ua[:2, 2:] = ua[2:, :2] = np.sqrt(np.eye(2) - a.T @ a).real
-    return np.kron(np.eye(2), ua)
-
-
 def test_chebyshev_matrix():
     a = (XGate().tensor_contract() + 3.0 * Hadamard().tensor_contract()) / 4.0
     from_gate = t4(a)
-    bloq = ChebyshevPolynomial(TestBlockEncoding(block_encoding_matrix(a)), order=4)
+    bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=2e-15)
-
-
-def random_hermitian_matrix(random_state):
-    a = random_orthogonal(2, random_state=random_state)
-    return (a + a.conj().T) / 2
 
 
 @pytest.mark.slow
@@ -225,6 +221,6 @@ def test_chebyshev_matrix_random():
     for _ in range(20):
         a = random_hermitian_matrix(random_state)
         from_gate = t4(a)
-        bloq = ChebyshevPolynomial(TestBlockEncoding(block_encoding_matrix(a)), order=4)
+        bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
         from_tensors = gate_test(bloq)
         np.testing.assert_allclose(from_gate, from_tensors, atol=3e-8)
