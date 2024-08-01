@@ -38,7 +38,7 @@ def fft_complementary_polynomial(
         The complementary polynomial, Q.
 
     References:
-    [Complementary polynomials in quantum signal processing](https://arxiv.org/abs/2406.04246)
+        [Complementary polynomials in quantum signal processing](https://arxiv.org/abs/2406.04246)
         Berntson and Sunderhauf. (2024). Figure 1.
     """
     P = np.array(P)
