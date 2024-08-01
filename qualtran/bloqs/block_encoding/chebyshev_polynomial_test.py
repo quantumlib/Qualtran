@@ -190,7 +190,7 @@ class TestBlockEncoding(BlockEncoding):
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
     ) -> Dict[str, SoquetT]:
-        bits = bb.join(np.concatenate([bb.split(system), bb.split(ancilla), bb.split(resource)]))
+        bits = bb.join(np.array([system, ancilla, resource]))
         bits = bb.add(MatrixGate(3, self.matrix, atol=3e-8), q=bits)
         system, ancilla, resource = bb.split(bits)
         return {"system": system, "ancilla": ancilla, "resource": resource}
