@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
-import numpy as np
 from attrs import frozen
 
 from qualtran import (
@@ -122,9 +121,9 @@ class CtrlSpecAnd(Bloq):
         if is_symbolic(self.ctrl_spec):
             return HasLength(self.n_ctrl_qubits)
 
-        flat_cvs = []
+        flat_cvs: list[int] = []
         for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
-            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).flat)
+            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
         return tuple(flat_cvs)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
