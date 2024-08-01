@@ -14,9 +14,10 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Self, Set, Tuple
+from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,

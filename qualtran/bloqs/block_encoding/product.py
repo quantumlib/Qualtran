@@ -13,11 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Self, Tuple, Union
+from typing import cast, Dict, List, Tuple, Union
 
 import cirq
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
