@@ -122,11 +122,10 @@ class CtrlSpecAnd(Bloq):
         if is_symbolic(self.ctrl_spec):
             return HasLength(self.n_ctrl_qubits)
 
-        # TODO use QDType features once https://github.com/quantumlib/Qualtran/pull/1142 is merged
         flat_cvs = []
         for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
-            flat_cvs.extend([reg.dtype.to_bits(c) for c in cv.reshape(-1)])
-        return tuple(np.concatenate(flat_cvs).tolist())
+            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).flat)
+        return tuple(flat_cvs)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.n_ctrl_qubits):
