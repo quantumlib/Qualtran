@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, Union
+from typing import cast, Dict, List, Optional, Self, Tuple, Union
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
@@ -105,6 +105,10 @@ class LinearCombination(BlockEncoding):
             raise ValueError(
                 "If given, select oracle must have block encoding `system` register as target."
             )
+
+    @classmethod
+    def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
+        return cls(tuple(t[1] for t in terms), tuple(t[0] for t in terms), lambd_bits)
 
     @cached_property
     def signed_block_encodings(self):
