@@ -29,6 +29,7 @@ class MatrixGate(GateWithRegisters):
     Args:
         bitsize: number of qubits $n$
         matrix: a $2^n \times 2^n$ complex unitary matrix
+        atol: tolerance to use for unitarity checking
 
     Registers:
         q: $n$-qubit register
@@ -38,12 +39,17 @@ class MatrixGate(GateWithRegisters):
     matrix: Tuple[Tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)
     )
+    atol: float = 1e-10
 
     def __attrs_post_init__(self):
         # verify that matrix is unitary
         matrix = np.array(self.matrix)
-        np.testing.assert_allclose(matrix @ matrix.conj().T, np.eye(2**self.bitsize), atol=1e-10)
-        np.testing.assert_allclose(matrix.conj().T @ matrix, np.eye(2**self.bitsize), atol=1e-10)
+        np.testing.assert_allclose(
+            matrix @ matrix.conj().T, np.eye(2**self.bitsize), atol=self.atol
+        )
+        np.testing.assert_allclose(
+            matrix.conj().T @ matrix, np.eye(2**self.bitsize), atol=self.atol
+        )
 
     @property
     def signature(self) -> Signature:
@@ -76,4 +82,4 @@ class MatrixGate(GateWithRegisters):
         return np.array(self.matrix)
 
     def adjoint(self) -> 'MatrixGate':
-        return MatrixGate(self.bitsize, np.conj(self.matrix).T)
+        return MatrixGate(self.bitsize, np.conj(self.matrix).T, self.atol)
