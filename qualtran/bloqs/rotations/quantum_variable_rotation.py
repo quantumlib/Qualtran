@@ -212,11 +212,7 @@ def _qvr_zpow() -> QvrZPow:
     return qvr_zpow
 
 
-_QVR_ZPOW = BloqDocSpec(
-    bloq_cls=QvrZPow,
-    import_line='from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow',
-    examples=(_qvr_zpow,),
-)
+_QVR_ZPOW = BloqDocSpec(bloq_cls=QvrZPow, examples=(_qvr_zpow,))
 
 
 def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -> int:
@@ -502,8 +498,4 @@ def _qvr_phase_gradient() -> QvrPhaseGradient:
     return qvr_phase_gradient
 
 
-_QVR_PHASE_GRADIENT = BloqDocSpec(
-    bloq_cls=QvrPhaseGradient,
-    import_line='from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient',
-    examples=(_qvr_phase_gradient,),
-)
+_QVR_PHASE_GRADIENT = BloqDocSpec(bloq_cls=QvrPhaseGradient, examples=(_qvr_phase_gradient,))

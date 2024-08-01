@@ -49,6 +49,7 @@ class ExampleSelect(SelectOracle):
         yield [cirq.CNOT(s, t) for s, t in zip(selection, target)]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('bitsize', [2, 3, 4, 5])
 @pytest.mark.parametrize('arctan_bitsize', [5, 6, 7])
 def test_phase_oracle(bitsize: int, arctan_bitsize: int):

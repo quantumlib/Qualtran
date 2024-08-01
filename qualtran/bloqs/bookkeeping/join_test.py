@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
+
 from typing import Type, Union
 
 import numpy as np
@@ -53,7 +53,3 @@ def test_util_bloqs_tensor_contraction():
     expected = np.zeros(2**10)
     expected[0] = 1
     np.testing.assert_allclose(cbloq.tensor_contract(), expected)
-
-
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import join'])

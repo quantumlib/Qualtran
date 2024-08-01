@@ -354,7 +354,6 @@ def _state_prep_via_rotation_symb() -> StatePreparationViaRotations:
 
 _STATE_PREP_VIA_ROTATIONS_DOC = BloqDocSpec(
     bloq_cls=StatePreparationViaRotations,
-    import_line='from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations',
     examples=(_state_prep_via_rotation, _state_prep_via_rotation_symb),
 )
 
