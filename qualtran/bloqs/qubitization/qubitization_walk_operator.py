@@ -191,7 +191,7 @@ def _thc_walk_op() -> QubitizationWalkOperator:
     num_bits_rot = 20
     thc_dim = 450
     num_spat = num_spinorb // 2
-    t_l, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
+    t_l, eta, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
     thc_walk_op = get_walk_operator_for_thc_ham(
         t_l,

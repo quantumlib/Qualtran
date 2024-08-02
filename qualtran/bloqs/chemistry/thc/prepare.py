@@ -290,9 +290,11 @@ class PrepareTHC(PrepareOracle):
             Constructed PrepareTHC object.
         """
         assert len(t_l.shape) == 1
+        assert len(eta.shape) == 2
         assert len(zeta.shape) == 2
         num_mu = zeta.shape[0]
         num_spat = t_l.shape[0]
+        assert eta.shape == (num_mu, num_spat)
         triu_indices = np.triu_indices(num_mu)
         num_ut = len(triu_indices[0])
         flat_data = np.concatenate([zeta[triu_indices], t_l])
@@ -315,6 +317,8 @@ class PrepareTHC(PrepareOracle):
                 alt_mu.append(int(k - num_ut))
                 alt_nu.append(int(num_mu))
             alt_theta.append(thetas[k])
+        # Compute the lambda value using the formula from the reference /
+        # OpenFermion: resource_estimates.thc.compute_lambda_thc
         overlap = eta.dot(eta.T)
         norm_fac = np.diag(np.diag(overlap))
         zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
@@ -495,8 +499,8 @@ def _thc_prep() -> PrepareTHC:
 
     num_spat = 4
     num_mu = 8
-    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     return thc_prep
 
 

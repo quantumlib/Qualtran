@@ -50,21 +50,23 @@ def build_random_test_integrals(num_mu: int, num_spat: int, seed: Optional[int] 
 
     Retuns:
         t_l: The eigenvalues of the one-body Hamiltonian.
+        eta: The THC leaf tensors (matrix) of size num_mu x num_spat.
         zeta: The central tensor (matrix) of size num_mu x num_mu.
     """
     rs = np.random.RandomState(seed)
     tpq = rs.normal(size=(num_spat, num_spat))
     tpq = 0.5 * (tpq + tpq.T)
     t_l = np.linalg.eigvalsh(tpq)
+    eta = rs.normal(size=(num_mu, num_spat))
     zeta = rs.normal(size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    return t_l, zeta
+    return t_l, eta, zeta
 
 
 @pytest.mark.parametrize("num_mu, num_spat, mu", ((10, 4, 10), (40, 10, 17), (72, 31, 27)))
 def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
-    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
-    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=mu)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=mu)
     qlt_testing.assert_valid_bloq_decomposition(prep)
     # Test that the alt / keep values are correct
     qlt_testing.assert_valid_bloq_decomposition(prep)
@@ -107,12 +109,12 @@ def test_prepare_graph():
 def test_prepare_qrom_counts():
     num_spat = 4
     num_mu = 8
-    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     binned_counts = classify_t_count_by_bloq_type(thc_prep)
     assert binned_counts['data_loading'] == 304, binned_counts['data_loading']
-    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=23)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=23)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     binned_counts = classify_t_count_by_bloq_type(thc_prep)
     assert binned_counts['data_loading'] == 296, binned_counts['data_loading']
 
