@@ -274,7 +274,7 @@ class LCUBlockEncoding(BlockEncoding):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.junk_registers
+        return ()
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
