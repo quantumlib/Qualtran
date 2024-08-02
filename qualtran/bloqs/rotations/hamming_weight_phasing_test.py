@@ -21,10 +21,7 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.rotations import QvrPhaseGradient
-from qualtran.bloqs.rotations.hamming_weight_phasing import (
-    HammingWeightPhasing,
-    HammingWeightPhasingViaPhaseGradient,
-)
+from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
@@ -83,21 +80,19 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         return Signature.build(x=self.bitsize)
 
     @property
+    def hwp_bloq(self) -> HammingWeightPhasing:
+        return HammingWeightPhasing.via_phase_gradient(self.bitsize, self.exponent, self.eps)
+
+    @property
     def b_grad(self) -> SymbolicInt:
-        qvr_phase_grad = HammingWeightPhasingViaPhaseGradient(
-            self.bitsize, self.exponent, self.eps
-        ).phase_oracle
+        qvr_phase_grad = self.hwp_bloq.phase_oracle
         assert isinstance(qvr_phase_grad, QvrPhaseGradient)
         return qvr_phase_grad.b_grad
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
         b_grad = self.b_grad
         phase_grad = bb.add(PhaseGradientState(b_grad))
-        x, phase_grad = bb.add(
-            HammingWeightPhasingViaPhaseGradient(self.bitsize, self.exponent, self.eps),
-            x=x,
-            phase_grad=phase_grad,
-        )
+        x, phase_grad = bb.add(self.hwp_bloq, x=x, phase_grad=phase_grad)
         bb.add(PhaseGradientState(b_grad).adjoint(), phase_grad=phase_grad)
         return {'x': x}
 
@@ -131,7 +126,7 @@ def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: fl
 
 @pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-1)])
 def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: float, eps: float):
-    hwp_t_complexity = HammingWeightPhasingViaPhaseGradient(n, theta, eps).t_complexity()
+    hwp_t_complexity = HammingWeightPhasing.via_phase_gradient(n, theta, eps).t_complexity()
     naive_hwp_t_complexity = HammingWeightPhasing(n, theta, eps).t_complexity()
 
     total_t = hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
