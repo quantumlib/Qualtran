@@ -31,6 +31,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -205,7 +206,7 @@ class BlackBoxPrepare(Bloq):
 
 
 @attrs.frozen
-class LCUBlockEncoding(BlockEncoding):
+class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the block encoding via
@@ -312,42 +313,16 @@ class LCUBlockEncoding(BlockEncoding):
             return TextBox('B[H]')
 
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
-        return attrs.evolve(self, select=attrs.evolve(self.select, control_val=control_val), control_val=control_val)  # type: ignore[misc]
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
-        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
-            control_val = int(ctrl_spec.cvs[0].item())
-            c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-            if not isinstance(c_select, SelectOracle):
-                raise TypeError(
-                    f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
-                )
-            cbloq = attrs.evolve(self, select=c_select, control_val=control_val)
-
-            if not hasattr(cbloq, 'control_registers'):
-                raise TypeError("{cbloq} should have attribute `control_registers`")
-
-            (ctrl_reg,) = cbloq.control_registers
-
-            def adder(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-                soqs = bb.add_d(cbloq, **soqs)
-                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-                return ctrl_soqs, soqs.values()
-
-            return cbloq, adder
-        return super().get_ctrl_system(ctrl_spec)
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
+        return attrs.evolve(self, select=c_select, control_val=control_val)
 
 
 @attrs.frozen
-class LCUBlockEncodingZeroState(BlockEncoding):
+class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the standard block encoding from an LCU as
@@ -454,36 +429,13 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         else:
             return TextBox('B[H]')
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
-        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
-            control_val = int(ctrl_spec.cvs[0].item())
-            c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-            if not isinstance(c_select, SelectOracle):
-                raise TypeError(
-                    f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
-                )
-            cbloq = attrs.evolve(self, select=c_select, control_val=control_val)
-
-            if not hasattr(cbloq, 'control_registers'):
-                raise TypeError("{cbloq} should have attribute `control_registers`")
-
-            (ctrl_reg,) = cbloq.control_registers
-
-            def adder(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-                soqs = bb.add_d(cbloq, **soqs)
-                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-                return ctrl_soqs, soqs.values()
-
-            return cbloq, adder
-        return super().get_ctrl_system(ctrl_spec)
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
+        return attrs.evolve(self, select=c_select, control_val=control_val)
 
 
 @bloq_example
