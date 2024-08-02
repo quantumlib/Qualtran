@@ -38,6 +38,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
+from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     LCUBlockEncoding,
@@ -88,7 +89,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
         Babbush et. al. (2018). Figure 1.
     """
 
-    block_encoding: Union[LCUBlockEncoding, LCUBlockEncodingZeroState]
+    block_encoding: BlockEncoding
     control_val: Optional[int] = None
     uncompute: bool = False
 
@@ -165,9 +166,11 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
     @cached_property
     def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
         """Get the Prepare bloq if appropriate from the block encoding."""
-        if isinstance(self.block_encoding, (LCUBlockEncoding, LCUBlockEncodingZeroState)):
+        if hasattr(self.block_encoding, 'prepare'):
             return self.block_encoding.prepare
-        raise ValueError(f"Prepare bloq not implemented for {self.block_encoding}.")
+        raise ValueError(
+            f"Prepare bloq not implemented or not appropriate for {self.block_encoding}."
+        )
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
@@ -195,6 +198,7 @@ def _thc_walk_op() -> QubitizationWalkOperator:
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
     thc_walk_op = get_walk_operator_for_thc_ham(
         t_l,
+        eta,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_theta=num_bits_rot,

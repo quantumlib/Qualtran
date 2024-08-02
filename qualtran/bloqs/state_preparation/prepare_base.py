@@ -17,9 +17,7 @@ from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 
 from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
-
-if TYPE_CHECKING:
-    from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat
 
 
 class PrepareOracle(GateWithRegisters):
@@ -52,12 +50,12 @@ class PrepareOracle(GateWithRegisters):
         return Signature([*self.selection_registers, *self.junk_registers])
 
     @property
-    def l1_norm_of_coeffs(self) -> Optional['SymbolicFloat']:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         r"""Sum of the absolute values of coefficients $c_i$.
 
         For LCU Hamiltonians, this is usually referred to as $\lambda$ in texts.
         """
-        return None
+        raise NotImplementedError
 
 
 _PREPARE_ORACLE_DOC = BloqDocSpec(

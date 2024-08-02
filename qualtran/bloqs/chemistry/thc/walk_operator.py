@@ -28,7 +28,7 @@ def get_walk_operator_for_thc_ham(
     kr1: int = 1,
     kr2: int = 1,
 ) -> QubitizationWalkOperator:
-    """Build a QubitizationWalkOperator for the THC hamiltonian.
+    r"""Build a QubitizationWalkOperator for the THC hamiltonian.
 
     Args:
         t_l: Eigenvalues of modified one-body hamiltonian.

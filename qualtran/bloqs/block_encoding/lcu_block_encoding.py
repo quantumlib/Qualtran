@@ -164,7 +164,7 @@ class BlackBoxPrepare(Bloq):
         return self.selection_registers[0].bitsize
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> Optional[SymbolicFloat]:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
@@ -261,7 +261,7 @@ class LCUBlockEncoding(BlockEncoding):
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
-    epsilon: SymbolicFloat = 0.0
+    epsilon: Optional[SymbolicFloat] = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -280,7 +280,7 @@ class LCUBlockEncoding(BlockEncoding):
         return self.select.target_registers
 
     @property
-    def alpha(self) -> Optional[SymbolicFloat]:
+    def alpha(self) -> SymbolicFloat:
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
@@ -400,7 +400,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
-    epsilon: SymbolicFloat = 0.0
+    epsilon: Optional[SymbolicFloat] = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -419,7 +419,7 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         return self.select.target_registers
 
     @property
-    def alpha(self) -> Optional[SymbolicFloat]:
+    def alpha(self) -> SymbolicFloat:
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
@@ -515,7 +515,7 @@ def _lcu_block() -> LCUBlockEncoding:
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
     N = dim * dim * 2
-    lcu_block = LCUBlockEncoding(select=select, prepare=prepare, epsilon=0.0)
+    lcu_block = LCUBlockEncoding(select=select, prepare=prepare)
     return lcu_block
 
 
@@ -565,7 +565,6 @@ def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
     black_box_lcu_zero_state_block = LCUBlockEncodingZeroState(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )

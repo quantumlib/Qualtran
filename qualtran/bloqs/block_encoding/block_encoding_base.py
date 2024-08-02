@@ -94,6 +94,11 @@ class BlockEncoding(Bloq):
         raise NotImplementedError
 
     @property
+    def control_registers(self) -> Tuple[Register, ...]:
+        """Any control registers."""
+        raise NotImplementedError
+
+    @property
     @abc.abstractmethod
     def selection_registers(self) -> Tuple[Register, ...]:
         """The ancilla registers `a` above."""

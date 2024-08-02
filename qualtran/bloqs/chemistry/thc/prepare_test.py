@@ -57,9 +57,9 @@ def build_random_test_integrals(num_mu: int, num_spat: int, seed: Optional[int] 
     tpq = rs.normal(size=(num_spat, num_spat))
     tpq = 0.5 * (tpq + tpq.T)
     t_l = np.linalg.eigvalsh(tpq)
-    eta = rs.normal(size=(num_mu, num_spat))
     zeta = rs.normal(size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
+    eta = rs.normal(size=(num_mu, num_spat))
     return t_l, eta, zeta
 
 
