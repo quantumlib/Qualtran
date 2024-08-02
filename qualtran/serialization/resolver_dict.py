@@ -379,7 +379,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.reflections.prepare_identity.PrepareIdentity": qualtran.bloqs.reflections.prepare_identity.PrepareIdentity,
     "qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflections.reflection_using_prepare.ReflectionUsingPrepare,
     "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasing,
-    "qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient": qualtran.bloqs.rotations.hamming_weight_phasing.HammingWeightPhasingViaPhaseGradient,
     "qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad": qualtran.bloqs.rotations.phase_gradient.AddIntoPhaseGrad,
     "qualtran.bloqs.rotations.phase_gradient.AddScaledValIntoPhaseReg": qualtran.bloqs.rotations.phase_gradient.AddScaledValIntoPhaseReg,
     "qualtran.bloqs.rotations.phase_gradient.PhaseGradientState": qualtran.bloqs.rotations.phase_gradient.PhaseGradientState,

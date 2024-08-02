@@ -12,10 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.rotations.hamming_weight_phasing import (
-    HammingWeightPhasing,
-    HammingWeightPhasingViaPhaseGradient,
-)
+from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.bloqs.rotations.phase_gradient import (
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,

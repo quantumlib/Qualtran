@@ -575,10 +575,7 @@ ROT_QFT_PE = [
     NotebookSpecV2(
         title='Z Rotations via Hamming Weight Phasing',
         module=qualtran.bloqs.rotations.hamming_weight_phasing,
-        bloq_specs=[
-            qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC,
-            qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC,
-        ],
+        bloq_specs=[qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC],
     ),
     NotebookSpecV2(
         title='Programmable Rotation Gate Array',

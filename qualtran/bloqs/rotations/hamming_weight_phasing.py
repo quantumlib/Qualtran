@@ -69,6 +69,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     Registers:
         x: A `THRU` register of `bitsize` qubits.
+        extra_registers: Any additional registers used by the `QvrInterface` phase oracle.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
@@ -81,19 +82,58 @@ class HammingWeightPhasing(GateWithRegisters):
 
     @phase_oracle.default
     def _default_qvr(self):
-        return QvrZPow(self._hamming_weight_register, gamma=self.exponent / 2, eps=self.eps)
+        return QvrZPow(
+            Register('out', QFxp(self._hamming_weight_bitsize, 0)),
+            gamma=self.exponent / 2,
+            eps=self.eps,
+        )
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register("x", QUInt(self.bitsize)), *self.phase_oracle.extra_registers])
 
+    @classmethod
+    def via_phase_gradient(cls, bitsize: int, exponent: float = 1, eps: SymbolicFloat = 1e-10):
+        r"""Factory method for `HammingWeightPhasing` using a phase gradient state.
+
+        In this variant of Hamming Weight Phasing, instead of directly synthesizing $O(\log_2 (\texttt{bitsize}))$
+        rotations on the Hamming weight register we synthesize the rotations via an addition into the
+        phase gradient register. See reference [1] for more details on this technique.
+
+        Note: For most reasonable values of `bitsize` and `eps`, the naive `HammingWeightPhasing` would
+        have better constant factors than `HammingWeightPhasingViaPhaseGradient`. This is because, in
+        general, the primary advantage of using phase gradient is to reduce the complexity from
+        $O(n * \log(1/ \texttt{eps} ))$ to $O(\log^2(1/ \texttt{eps} ))$ (the phase gradient register is of size
+        $O(\log(1/\texttt{eps}))$ and a scaled addition into the target takes $(b_{grad} - 2)(\log(1/\texttt{eps}) + 2)$).
+        Therefore, to apply $n$ individual rotations on a target register of size $n$, the complexity is
+        independent of $n$ and is essentially a constant (scales only with $log(1/\texttt{eps})$).
+        However, for the actual constant values to be better, the value of $n$ needs to be
+        $> \log(1/\texttt{eps})$. In the case of hamming weight phasing, $n$ corresponds to the hamming weight
+        register which itself is $\log(\texttt{bitsize})$. Thus, as `eps` becomes smaller, the required
+        value of $\texttt{bitsize}$, for the phase gradient version to become more performant, becomes
+        larger.
+
+        Args:
+            bitsize: Size of input register to apply `Z ** exponent` to.
+            exponent: The exponent of `Z ** exponent` to be applied to each qubit in the input register.
+            eps: Accuracy of synthesizing the Z rotations.
+
+        Registers:
+            x : Input THRU register of size `bitsize`, to apply `Z**exponent` to.
+            phase_grad : Phase gradient THRU register of size `O(log2(1/eps))`, to be used to
+                apply the phasing via addition.
+
+        References:
+            1. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
+            (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
+        """
+        hw_bitsize = bit_length(bitsize)
+        phase_oracle = QvrPhaseGradient(Register('out', QFxp(hw_bitsize, 0)), exponent / 2, eps)
+        return cls(bitsize, exponent, eps, phase_oracle)
+
     @cached_property
     def _hamming_weight_bitsize(self):
         return bit_length(self.bitsize)
-
-    @cached_property
-    def _hamming_weight_register(self) -> Register:
-        return Register('out', QFxp(self._hamming_weight_bitsize, 0))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         x = soqs.pop('x')
@@ -128,71 +168,16 @@ def _hamming_weight_phasing() -> HammingWeightPhasing:
     return hamming_weight_phasing
 
 
-_HAMMING_WEIGHT_PHASING_DOC = BloqDocSpec(
-    bloq_cls=HammingWeightPhasing, examples=(_hamming_weight_phasing,)
-)
-
-
-@attrs.frozen
-class HammingWeightPhasingViaPhaseGradient(HammingWeightPhasing):
-    r"""Applies $Z^{\text{exponent}}$ to every qubit of an input register of size `bitsize`.
-
-    See docstring of `HammingWeightPhasing` for more details about how hamming weight phasing works.
-
-    In this variant of Hamming Weight Phasing, instead of directly synthesizing $O(\log_2 (\texttt{bitsize}))$
-    rotations on the Hamming weight register we synthesize the rotations via an addition into the
-    phase gradient register. See reference [1] for more details on this technique.
-
-    Note: For most reasonable values of `bitsize` and `eps`, the naive `HammingWeightPhasing` would
-    have better constant factors than `HammingWeightPhasingViaPhaseGradient`. This is because, in
-    general, the primary advantage of using phase gradient is to reduce the complexity from
-    $O(n * \log(1/ \texttt{eps} ))$ to $O(\log^2(1/ \texttt{eps} ))$ (the phase gradient register is of size
-    $O(\log(1/\texttt{eps}))$ and a scaled addition into the target takes $(b_{grad} - 2)(\log(1/\texttt{eps}) + 2)$).
-    Therefore, to apply $n$ individual rotations on a target register of size $n$, the complexity is
-    independent of $n$ and is essentially a constant (scales only with $log(1/\texttt{eps})$).
-    However, for the actual constant values to be better, the value of $n$ needs to be
-    $> \log(1/\texttt{eps})$. In the case of hamming weight phasing, $n$ corresponds to the hamming weight
-    register which itself is $\log(\texttt{bitsize})$. Thus, as `eps` becomes smaller, the required
-    value of $\texttt{bitsize}$, for the phase gradient version to become more performant, becomes
-    larger.
-
-    Args:
-        bitsize: Size of input register to apply `Z ** exponent` to.
-        exponent: The exponent of `Z ** exponent` to be applied to each qubit in the input register.
-        eps: Accuracy of synthesizing the Z rotations.
-
-    Registers:
-        x : Input THRU register of size `bitsize`, to apply `Z**exponent` to.
-        phase_grad : Phase gradient THRU register of size `O(log2(1/eps))`, to be used to
-            apply the phasing via addition.
-
-    References:
-        1. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
-    """
-
-    phase_oracle: QvrInterface = attrs.field()
-
-    @phase_oracle.default
-    def _qvr_default(self) -> QvrPhaseGradient:
-        return QvrPhaseGradient(
-            Register('out', QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False)),
-            self.exponent / 2,
-            self.eps,
-        )
-
-    def pretty_name(self) -> str:
-        return f'HWPG_{self.bitsize}(Z^{self.exponent})'
-
-
 @bloq_example
-def _hamming_weight_phasing_via_phase_gradient() -> HammingWeightPhasingViaPhaseGradient:
-    hamming_weight_phasing_via_phase_gradient = HammingWeightPhasingViaPhaseGradient(4, np.pi / 2.0)
+def _hamming_weight_phasing_via_phase_gradient() -> HammingWeightPhasing:
+    hamming_weight_phasing_via_phase_gradient = HammingWeightPhasing.via_phase_gradient(
+        4, np.pi / 2.0
+    )
     print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
     return hamming_weight_phasing_via_phase_gradient
 
 
-_HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
-    bloq_cls=HammingWeightPhasingViaPhaseGradient,
-    examples=(_hamming_weight_phasing_via_phase_gradient,),
+_HAMMING_WEIGHT_PHASING_DOC = BloqDocSpec(
+    bloq_cls=HammingWeightPhasing,
+    examples=(_hamming_weight_phasing, _hamming_weight_phasing_via_phase_gradient),
 )
