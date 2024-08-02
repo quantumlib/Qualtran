@@ -552,13 +552,9 @@ def _sel_first_quant() -> SelectFirstQuantization:
 
 
 _FIRST_QUANTIZED_PREPARE_DOC = BloqDocSpec(
-    bloq_cls=PrepareFirstQuantization,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareFirstQuantization',
-    examples=(_prep_first_quant,),
+    bloq_cls=PrepareFirstQuantization, examples=(_prep_first_quant,)
 )
 
 _FIRST_QUANTIZED_SELECT_DOC = BloqDocSpec(
-    bloq_cls=SelectFirstQuantization,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization import SelectFirstQuantization',
-    examples=(_sel_first_quant,),
+    bloq_cls=SelectFirstQuantization, examples=(_sel_first_quant,)
 )

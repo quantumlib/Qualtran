@@ -364,9 +364,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return dict(get_bloq_callee_counts(self, generalizer=generalizer))
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         """Get a controlled version of this bloq and a function to wire it up correctly.
 
         Users should likely call `Bloq.controlled(...)` which uses this method behind-the-scenes.
@@ -400,10 +398,7 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
+        from qualtran import Controlled
 
         return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
@@ -423,6 +418,11 @@ class Bloq(metaclass=abc.ABCMeta):
         Returns:
             A controlled version of the bloq.
         """
+        from qualtran import CtrlSpec
+
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
         controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
         return controlled_bloq
 

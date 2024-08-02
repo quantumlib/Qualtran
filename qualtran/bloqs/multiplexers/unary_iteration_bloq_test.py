@@ -41,7 +41,9 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register('control', QAny(self._control_bitsize)),)
+        return (
+            (Register('control', QAny(self._control_bitsize)),) if self._control_bitsize > 0 else ()
+        )
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -78,7 +80,7 @@ def test_unary_iteration_gate(selection_bitsize, target_bitsize, control_bitsize
         # Initial qubit values
         qubit_vals = {q: 0 for q in g.operation.qubits}
         # All controls 'on' to activate circuit
-        qubit_vals.update({c: 1 for c in g.quregs['control']})
+        qubit_vals.update({c: 1 for c in g.quregs.get('control', [])})
         # Set selection according to `n`
         qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 

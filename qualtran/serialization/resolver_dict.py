@@ -27,6 +27,7 @@ import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
+import qualtran.bloqs.arithmetic.trigonometric
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
 import qualtran.bloqs.basic_gates.identity
@@ -109,7 +110,6 @@ import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
-import qualtran.bloqs.mean_estimation.arctan
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
@@ -135,6 +135,7 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
@@ -187,6 +188,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
     "qualtran.bloqs.arithmetic.subtraction.Subtract": qualtran.bloqs.arithmetic.subtraction.Subtract,
     "qualtran.bloqs.arithmetic.subtraction.SubtractFrom": qualtran.bloqs.arithmetic.subtraction.SubtractFrom,
+    "qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin": qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin,
+    "qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan": qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
     "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
@@ -345,7 +348,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT,
-    "qualtran.bloqs.mean_estimation.arctan.ArcTan": qualtran.bloqs.mean_estimation.arctan.ArcTan,
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,

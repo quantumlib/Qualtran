@@ -54,17 +54,33 @@ from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
+import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.arithmetic.subtraction
+import qualtran.bloqs.arithmetic.trigonometric
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding.block_encoding_base
 import qualtran.bloqs.block_encoding.chebyshev_polynomial
 import qualtran.bloqs.block_encoding.lcu_block_encoding
 import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
+import qualtran.bloqs.block_encoding.product
+import qualtran.bloqs.block_encoding.sparse_matrix
+import qualtran.bloqs.block_encoding.tensor_product
+import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
+import qualtran.bloqs.bookkeeping.allocate
+import qualtran.bloqs.bookkeeping.auto_partition
+import qualtran.bloqs.bookkeeping.cast
+import qualtran.bloqs.bookkeeping.free
+import qualtran.bloqs.bookkeeping.join
+import qualtran.bloqs.bookkeeping.partition
+import qualtran.bloqs.bookkeeping.split
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
@@ -92,11 +108,15 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
+import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
+import qualtran.bloqs.phase_estimation.qubitization_qpe
+import qualtran.bloqs.phase_estimation.text_book_qpe
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.qft_phase_gradient
 import qualtran.bloqs.qft.qft_text_book
@@ -106,10 +126,15 @@ import qualtran.bloqs.qubitization.qubitization_walk_operator
 import qualtran.bloqs.reflections
 import qualtran.bloqs.reflections.prepare_identity
 import qualtran.bloqs.reflections.reflection_using_prepare
+import qualtran.bloqs.rotations.hamming_weight_phasing
+import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
+import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
 import qualtran.bloqs.swap_network.swap_with_zero
@@ -447,6 +472,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.bitwise._BITWISE_NOT_DOC,
         ],
     ),
+    NotebookSpecV2(
+        title='Trigonometric Functions',
+        module=qualtran.bloqs.arithmetic.trigonometric,
+        bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -604,6 +634,63 @@ ROT_QFT_PE = [
 ]
 
 # --------------------------------------------------------------------------
+# -----   Block Encoding   ----------------------------------------------------------
+# --------------------------------------------------------------------------
+BLOCK_ENCODING: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Block Encoding Interface',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC],
+    ),
+    NotebookSpecV2(
+        title='Unitary',
+        module=qualtran.bloqs.block_encoding.unitary,
+        bloq_specs=[qualtran.bloqs.block_encoding.unitary._UNITARY_DOC],
+    ),
+    NotebookSpecV2(
+        title='Tensor Product',
+        module=qualtran.bloqs.block_encoding.tensor_product,
+        bloq_specs=[qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Product',
+        module=qualtran.bloqs.block_encoding.product,
+        bloq_specs=[qualtran.bloqs.block_encoding.product._PRODUCT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Phase',
+        module=qualtran.bloqs.block_encoding.phase,
+        bloq_specs=[qualtran.bloqs.block_encoding.phase._PHASE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Linear Combination',
+        module=qualtran.bloqs.block_encoding.linear_combination,
+        bloq_specs=[qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC],
+    ),
+    NotebookSpecV2(
+        title='Sparse Matrix',
+        module=qualtran.bloqs.block_encoding.sparse_matrix,
+        bloq_specs=[qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC],
+    ),
+    NotebookSpecV2(
+        title='Chebyshev Polynomial',
+        module=qualtran.bloqs.block_encoding.chebyshev_polynomial,
+        bloq_specs=[
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
+            qualtran.bloqs.block_encoding.chebyshev_polynomial._SCALED_CHEBYSHEV_BLOQ_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='LCU Select/Prepare Oracles',
+        module=qualtran.bloqs.block_encoding.lcu_block_encoding,
+        bloq_specs=[
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
+        ],
+    ),
+]
+
+# --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
 OTHER: List[NotebookSpecV2] = [
@@ -648,24 +735,6 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
             qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC,
         ],
-    ),
-    NotebookSpecV2(
-        title='Block Encoding',
-        module=qualtran.bloqs.block_encoding,
-        bloq_specs=[
-            qualtran.bloqs.block_encoding.block_encoding_base._BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.reflections.prepare_identity._PREPARE_IDENTITY_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.chebyshev_polynomial._CHEBYSHEV_BLOQ_DOC,
-            qualtran.bloqs.block_encoding.unitary._UNITARY_DOC,
-            qualtran.bloqs.block_encoding.tensor_product._TENSOR_PRODUCT_DOC,
-            qualtran.bloqs.block_encoding.product._PRODUCT_DOC,
-            qualtran.bloqs.block_encoding.linear_combination._LINEAR_COMBINATION_DOC,
-            qualtran.bloqs.block_encoding.phase._PHASE_DOC,
-            qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/block_encoding/',
     ),
     NotebookSpecV2(
         title='Reflections',
@@ -741,6 +810,7 @@ NB_BY_SECTION = [
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
+    ('Block Encoding', BLOCK_ENCODING),
     ('Other', OTHER),
 ]
 

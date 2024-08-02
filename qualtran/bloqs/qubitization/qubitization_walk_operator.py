@@ -182,6 +182,7 @@ def _walk_op() -> QubitizationWalkOperator:
 def _thc_walk_op() -> QubitizationWalkOperator:
     from openfermion.resource_estimates.utils import QI
 
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
     from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
 
     # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
@@ -190,15 +191,10 @@ def _thc_walk_op() -> QubitizationWalkOperator:
     num_bits_rot = 20
     thc_dim = 450
     num_spat = num_spinorb // 2
-    tpq = np.random.normal(size=(num_spat, num_spat))
-    tpq = 0.5 * (tpq + tpq) / 2
-    eta = np.random.normal(size=(thc_dim, num_spat))
-    zeta = np.random.normal(size=(thc_dim, thc_dim))
-    zeta = 0.5 * (zeta + zeta) / 2
+    t_l, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
     thc_walk_op = get_walk_operator_for_thc_ham(
-        tpq,
-        eta,
+        t_l,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_theta=num_bits_rot,
@@ -224,7 +220,5 @@ def _walk_op_chem_sparse() -> QubitizationWalkOperator:
 
 
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
-    bloq_cls=QubitizationWalkOperator,
-    import_line='from qualtran.bloqs.qubitization import QubitizationWalkOperator',
-    examples=(_walk_op, _thc_walk_op, _walk_op_chem_sparse),
+    bloq_cls=QubitizationWalkOperator, examples=(_walk_op, _thc_walk_op, _walk_op_chem_sparse)
 )

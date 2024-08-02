@@ -112,6 +112,7 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
     return ret
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('num_ones', [5])
 @pytest.mark.parametrize('eps', [0.05])
 @pytest.mark.parametrize('global_phase', [+1, -1j])

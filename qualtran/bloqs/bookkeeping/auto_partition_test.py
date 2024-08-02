@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
 
 import pytest
 from attrs import evolve
 
+from qualtran import Controlled, CtrlSpec, QAny, Register
+from qualtran.bloqs.basic_gates import Swap
 from qualtran.bloqs.bookkeeping.auto_partition import (
     _auto_partition,
     _auto_partition_unused,
@@ -172,5 +173,34 @@ def test_auto_partition_unused():
         _ = evolve(bloq, left_only=True)
 
 
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import auto_partition'])
+def test_auto_partition_unused_index():
+    bloq = Controlled(Swap(1), CtrlSpec())
+    bloq = AutoPartition(
+        bloq,
+        [
+            (Register('x', QAny(3)), [Unused(1), 'ctrl', 'x']),
+            (Register('y', QAny(1)), ['y']),
+            (Register('z', QAny(2)), [Unused(2)]),
+        ],
+    )
+
+    assert tuple(bloq.signature.lefts()) == (
+        Register('x', dtype=QAny(3)),
+        Register('y', dtype=QAny(1)),
+        Register('z', dtype=QAny(2)),
+    )
+
+    assert tuple(bloq.signature.rights()) == tuple(bloq.signature.lefts())
+
+    x, y, z = bloq.call_classically(x=0b111, y=0b0, z=0b10)
+    assert x == 0b110
+    assert y == 0b1
+    assert z == 0b10
+
+    x, y, z = bloq.call_classically(x=0b001, y=0b0, z=0b01)
+    assert x == 0b001
+    assert y == 0b0
+    assert z == 0b01
+
+    with pytest.raises(ValueError):
+        _ = evolve(bloq, left_only=True)
