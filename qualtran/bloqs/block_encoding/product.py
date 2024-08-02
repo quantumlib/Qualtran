@@ -18,6 +18,7 @@ from typing import cast, Dict, List, Tuple, Union
 import cirq
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -86,6 +87,11 @@ class Product(BlockEncoding):
     def __attrs_post_init__(self):
         if not all(u.system_bitsize == self.system_bitsize for u in self.block_encodings):
             raise ValueError("All block encodings must have the same system size.")
+
+    @classmethod
+    def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `Product` from block encodings."""
+        return cls(block_encodings)
 
     @cached_property
     def signature(self) -> Signature:
