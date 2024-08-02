@@ -13,12 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import attrs
 
 from qualtran import (
-    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
@@ -240,8 +239,6 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
     Args:
         alpha: The normalization constant upper bounding the spectral norm of
             the Hamiltonian. Often called lambda.
-        epsilon: The precision to which the block encoding is performed.
-            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
 
@@ -262,7 +259,6 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
-    epsilon: Optional[SymbolicFloat] = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -355,8 +351,6 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
     Args:
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
-        epsilon: The precision to which the block encoding is performed.
-            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
 
     Registers:
         selection: The combined selection register.
@@ -375,7 +369,6 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
     control_val: Optional[int] = None
-    epsilon: Optional[SymbolicFloat] = 0.0
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -429,7 +422,7 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
         else:
             return TextBox('B[H]')
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncodingZeroState':
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
         if not isinstance(c_select, SelectOracle):
             raise TypeError(

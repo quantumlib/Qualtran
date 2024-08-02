@@ -34,7 +34,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
     cvs: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
-    qlambda: Optional[float] = None
+    qlambda: float = 0.0
 
     @cached_property
     def selection_registers(self) -> Signature:
@@ -45,7 +45,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
         return Signature.build()
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> Optional['SymbolicFloat']:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.qlambda
 
     def decompose_from_registers(

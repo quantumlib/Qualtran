@@ -127,7 +127,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
         )
 
     @cached_property
-    def sum_of_lcu_coefficients(self) -> Optional[SymbolicFloat]:
+    def sum_of_lcu_coefficients(self) -> SymbolicFloat:
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.block_encoding.alpha
 
