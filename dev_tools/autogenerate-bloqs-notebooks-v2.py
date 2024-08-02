@@ -739,7 +739,10 @@ OTHER: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Reflections',
         module=qualtran.bloqs.reflections,
-        bloq_specs=[qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC],
+        bloq_specs=[
+            qualtran.bloqs.reflections.prepare_identity._PREPARE_IDENTITY_DOC,
+            qualtran.bloqs.reflections.reflection_using_prepare._REFL_USING_PREP_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/reflections',
     ),
     NotebookSpecV2(
