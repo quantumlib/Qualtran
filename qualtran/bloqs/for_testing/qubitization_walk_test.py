@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Tuple
 
 import attrs
 import cirq

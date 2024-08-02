@@ -247,7 +247,7 @@ class PrepareSparse(PrepareOracle):
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
-    def l1_norm_coeffs(self) -> SymbolicFloat:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.sum_of_l1_coeffs
 
     @classmethod

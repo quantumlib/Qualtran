@@ -337,7 +337,7 @@ class PrepareTHC(PrepareOracle):
         )
 
     @property
-    def l1_norm_coeffs(self) -> SymbolicFloat:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.sum_of_l1_coeffs
 
     @cached_property
