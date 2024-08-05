@@ -21,7 +21,21 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
-from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import (
+    _add_diff_size_regs,
+    _add_k,
+    _add_k_large,
+    _add_k_small,
+    _add_large,
+    _add_oop_large,
+    _add_oop_small,
+    _add_oop_symb,
+    _add_small,
+    _add_symb,
+    Add,
+    AddK,
+    OutOfPlaceAdder,
+)
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
@@ -30,6 +44,25 @@ from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
 )
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        _add_symb,
+        _add_small,
+        _add_large,
+        _add_diff_size_regs,
+        _add_oop_symb,
+        _add_oop_small,
+        _add_oop_large,
+        _add_k,
+        _add_k_small,
+        _add_k_large,
+    ],
+)
+def test_examples(bloq_autotester, bloq):
+    bloq_autotester(bloq)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
