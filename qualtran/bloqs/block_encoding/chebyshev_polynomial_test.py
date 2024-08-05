@@ -20,7 +20,7 @@ import pytest
 from attr import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran import BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
@@ -190,18 +190,6 @@ class TestBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        raise NotImplementedError
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        raise NotImplementedError
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
         raise NotImplementedError
 
     def build_composite_bloq(

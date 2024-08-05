@@ -12,9 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import abc
-from typing import Tuple
 
-from qualtran import Bloq, BloqDocSpec, Register
+from qualtran import Bloq, BloqDocSpec
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
@@ -69,44 +68,29 @@ class BlockEncoding(Bloq):
         return 'B[H]'
 
     @property
+    @abc.abstractmethod
     def alpha(self) -> SymbolicFloat:
         """The normalization constant."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def system_bitsize(self) -> SymbolicInt:
         """The number of qubits that represent the system being block encoded."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def ancilla_bitsize(self) -> SymbolicInt:
         """The number of ancilla qubits."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def resource_bitsize(self) -> SymbolicInt:
         """The number of resource qubits not counted in ancillas."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def epsilon(self) -> SymbolicFloat:
         """The precision to which the block encoding is to be prepared."""
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]:
-        """The ancilla registers `a` above."""
-
-    @property
-    @abc.abstractmethod
-    def junk_registers(self) -> Tuple[Register, ...]:
-        """Any additional junk registers not included in selection registers."""
-
-    @property
-    @abc.abstractmethod
-    def target_registers(self) -> Tuple[Register, ...]:
-        """The system registers of combined size `s`."""
 
     @property
     @abc.abstractmethod
