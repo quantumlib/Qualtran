@@ -69,29 +69,29 @@ class BlockEncoding(Bloq):
         return 'B[H]'
 
     @property
+    @abc.abstractmethod
     def alpha(self) -> SymbolicFloat:
         """The normalization constant."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def system_bitsize(self) -> SymbolicInt:
         """The number of qubits that represent the system being block encoded."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def ancilla_bitsize(self) -> SymbolicInt:
         """The number of ancilla qubits."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def resource_bitsize(self) -> SymbolicInt:
         """The number of resource qubits not counted in ancillas."""
-        raise NotImplementedError
 
     @property
+    @abc.abstractmethod
     def epsilon(self) -> SymbolicFloat:
         """The precision to which the block encoding is to be prepared."""
-        raise NotImplementedError
 
     @property
     @abc.abstractmethod
