@@ -12,12 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
+from typing import Dict, Tuple
+
 import numpy as np
 import pytest
+from attr import field, frozen
+from numpy.typing import NDArray
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
-from qualtran.bloqs.block_encoding import Unitary
+from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     _chebyshev_poly_even,
     _chebyshev_poly_odd,
@@ -25,7 +30,10 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     _scaled_chebyshev_poly_odd,
     ChebyshevPolynomial,
 )
-from qualtran.symbolics import is_symbolic
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.linalg.matrix import random_hermitian_matrix
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
 
 
@@ -149,3 +157,76 @@ def test_scaled_chebyshev_odd_tensors():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('chebyshev_polynomial')
+
+
+@frozen
+class TestBlockEncoding(BlockEncoding):
+    """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one
+    ancilla qubit and one resource qubit."""
+
+    matrix: Tuple[Tuple[complex, ...], ...] = field(
+        converter=lambda mat: tuple(tuple(row) for row in mat)
+    )
+    alpha: SymbolicFloat = 1
+    epsilon: SymbolicFloat = 0
+
+    system_bitsize: SymbolicInt = 1
+    ancilla_bitsize: SymbolicInt = 1
+    resource_bitsize: SymbolicInt = 1
+
+    @classmethod
+    def from_matrix(cls, a: NDArray):
+        """Given A, constructs a block encoding of A."""
+        ua = np.zeros((4, 4))
+        a = a.astype(complex)
+        ua[:2, :2] = a.real
+        ua[2:, 2:] = -a.real
+        ua[:2, 2:] = ua[2:, :2] = np.sqrt(np.eye(2) - a.T @ a).real
+        return cls(np.kron(np.eye(2), ua))
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(system=1, ancilla=1, resource=1)
+
+    @property
+    def signal_state(self) -> PrepareOracle:
+        raise NotImplementedError
+
+    @property
+    def target_registers(self) -> Tuple[Register, ...]:
+        raise NotImplementedError
+
+    @property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        raise NotImplementedError
+
+    @property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        raise NotImplementedError
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
+    ) -> Dict[str, SoquetT]:
+        bits = bb.join(np.array([system, ancilla, resource]))
+        bits = bb.add(MatrixGate(3, self.matrix, atol=3e-8), q=bits)
+        system, ancilla, resource = bb.split(bits)
+        return {"system": system, "ancilla": ancilla, "resource": resource}
+
+
+def test_chebyshev_matrix():
+    a = (XGate().tensor_contract() + 3.0 * Hadamard().tensor_contract()) / 4.0
+    from_gate = t4(a)
+    bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
+    from_tensors = gate_test(bloq)
+    np.testing.assert_allclose(from_gate, from_tensors, atol=2e-15)
+
+
+@pytest.mark.slow
+def test_chebyshev_matrix_random():
+    random_state = np.random.RandomState(1234)
+    for _ in range(20):
+        a = random_hermitian_matrix(2, random_state)
+        from_gate = t4(a)
+        bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
+        from_tensors = gate_test(bloq)
+        np.testing.assert_allclose(from_gate, from_tensors, atol=3e-8)

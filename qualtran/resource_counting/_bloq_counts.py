@@ -158,14 +158,16 @@ class GateCounts:
 
     def __str__(self):
         strs = []
-        for f in attrs.fields(self.__class__):
-            val = getattr(self, f.name)
-            if val != 0:
-                strs.append(f'{f.name}: {val}')
+        for k, v in self.asdict().items():
+            strs.append(f'{k}: {v}')
 
         if strs:
             return ', '.join(strs)
         return '-'
+
+    def asdict(self):
+        d = attrs.asdict(self)
+        return {k: v for k, v in d.items() if v > 0}
 
     def total_t_count(
         self,

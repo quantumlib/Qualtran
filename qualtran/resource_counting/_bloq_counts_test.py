@@ -48,6 +48,7 @@ def test_bloq_count():
 def test_gate_counts():
     gc = GateCounts(t=100, toffoli=13)
     assert str(gc) == 't: 100, toffoli: 13'
+    assert gc.asdict() == {'t': 100, 'toffoli': 13}
 
     assert GateCounts(t=10) * 2 == GateCounts(t=20)
     assert 2 * GateCounts(t=10) == GateCounts(t=20)
