@@ -121,13 +121,13 @@ class SingleFactorizationOneBody(BlockEncoding):
 
     @property
     def alpha(self) -> float:
-        # TODO: correct if necessary, see https://github.com/quantumlib/Qualtran/issues/1247
-        return 1.0
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
 
     @property
     def epsilon(self) -> float:
-        # TODO: correct if necessary, see https://github.com/quantumlib/Qualtran/issues/1247
-        return 0.0
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -331,13 +331,13 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
 
     @property
     def alpha(self) -> float:
-        # TODO: correct if necessary, see https://github.com/quantumlib/Qualtran/issues/1247
-        return 1.0
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
 
     @property
     def epsilon(self) -> float:
-        # TODO: correct if necessary, see https://github.com/quantumlib/Qualtran/issues/1247
-        return 0.0
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
 
     @cached_property
     def ancilla_bitsize(self) -> int:
