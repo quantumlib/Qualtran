@@ -247,6 +247,18 @@ class LCUBlockEncoding(BlockEncoding):
     prepare: Union[BlackBoxPrepare, PrepareOracle]
 
     @cached_property
+    def ancilla_bitsize(self) -> int:
+        return _total_bits(self.prepare.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return _total_bits(self.prepare.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return _total_bits(self.select.target_registers)
+
+    @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return self.prepare.selection_registers
 
@@ -329,6 +341,18 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return _total_bits(self.prepare.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return _total_bits(self.prepare.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return _total_bits(self.select.target_registers)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
