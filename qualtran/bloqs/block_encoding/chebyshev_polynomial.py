@@ -22,16 +22,15 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    CtrlSpec,
     DecomposeTypeError,
     QAny,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
@@ -129,8 +128,8 @@ class ChebyshevPolynomial(BlockEncoding):
 
     @cached_property
     def reflection_bloq(self):
-        return GlobalPhase(exponent=1).controlled(
-            ctrl_spec=CtrlSpec(qdtypes=QAny(self.ancilla_bitsize), cvs=0)
+        return ReflectionUsingPrepare.reflection_around_zero(
+            bitsizes=(self.ancilla_bitsize,), global_phase=-1
         )
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
@@ -138,14 +137,14 @@ class ChebyshevPolynomial(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         for _ in range(self.order // 2):
             if self.ancilla_bitsize > 0:
-                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+                soqs["ancilla"] = bb.add(self.reflection_bloq, reg0_=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding, **soqs)
             if self.ancilla_bitsize > 0:
-                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+                soqs["ancilla"] = bb.add(self.reflection_bloq, reg0_=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding.adjoint(), **soqs)
         if self.order % 2 == 1:
             if self.ancilla_bitsize > 0:
-                soqs["ancilla"] = bb.add(self.reflection_bloq, ctrl=soqs["ancilla"])
+                soqs["ancilla"] = bb.add(self.reflection_bloq, reg0_=soqs["ancilla"])
             soqs |= bb.add_d(self.block_encoding, **soqs)
         return soqs
 

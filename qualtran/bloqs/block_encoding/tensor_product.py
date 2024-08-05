@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -63,6 +64,11 @@ class TensorProduct(BlockEncoding):
     block_encodings: Tuple[BlockEncoding, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
+
+    @classmethod
+    def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `TensorProduct` from block encodings."""
+        return cls(block_encodings)
 
     @cached_property
     def signature(self) -> Signature:
