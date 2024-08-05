@@ -34,7 +34,7 @@ from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
-from qualtran.testing import assert_equivalent_bloq_example_counts
+from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
 
 
 def test_chebyshev_poly_even(bloq_autotester):
@@ -152,6 +152,11 @@ def test_scaled_chebyshev_odd_tensors():
     bloq = _scaled_chebyshev_poly_odd()
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('chebyshev_polynomial')
 
 
 @frozen
