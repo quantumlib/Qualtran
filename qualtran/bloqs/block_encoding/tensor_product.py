@@ -25,7 +25,6 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QAny,
-    Register,
     Signature,
     SoquetT,
 )
@@ -100,18 +99,6 @@ class TensorProduct(BlockEncoding):
     @cached_property
     def epsilon(self) -> SymbolicFloat:
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
     def signal_state(self) -> PrepareOracle:
