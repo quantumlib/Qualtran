@@ -37,6 +37,7 @@ from qualtran.bloqs.block_encoding.linear_combination import (
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.testing import execute_notebook
 
 
 def test_linear_combination(bloq_autotester):
@@ -211,3 +212,8 @@ def gen_test():
 @pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
 def test_linear_combination_approx_random(gates, lambd):
     run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('linear_combination')
