@@ -38,7 +38,6 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
-    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     Register,
@@ -169,9 +168,6 @@ class And(GateWithRegisters):
     def __str__(self):
         dag = '†' if self.uncompute else ''
         return f'And{dag}'
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        raise DecomposeTypeError('Atomic')
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]

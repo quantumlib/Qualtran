@@ -64,7 +64,7 @@ class Register:
 
     name: str
     dtype: QDType
-    shape: Tuple[SymbolicInt, ...] = field(
+    _shape: Tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
@@ -74,17 +74,17 @@ class Register:
             raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
 
     def is_symbolic(self) -> bool:
-        return is_symbolic(self.dtype, *self.shape)
+        return is_symbolic(self.dtype, *self._shape)
 
     @property
     def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
-        return self.shape
+        return self._shape
 
-    # @property
-    # def shape(self) -> Tuple[int, ...]:
-    #     if is_symbolic(*self._shape):
-    #         raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
-    #     return cast(Tuple[int, ...], self._shape)
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        if is_symbolic(*self._shape):
+            raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
+        return cast(Tuple[int, ...], self._shape)
 
     @property
     def bitsize(self) -> int:
@@ -112,6 +112,17 @@ class Register:
         raise ValueError(f"Unknown side {self.side}")
 
 
+def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
+    """Construct a dictionary, but check that there are no duplicate keys."""
+    # throw ValueError if duplicate keys are provided.
+    d = {}
+    for k, v in kv_iter:
+        if k in d:
+            raise ValueError(f"Register {k} is specified more than once per side.") from None
+        d[k] = v
+    return d
+
+
 class Signature:
     """An ordered sequence of `Register`s that follow the rules for a bloq signature.
 
@@ -128,8 +139,8 @@ class Signature:
 
     def __init__(self, registers: Iterable[Register]):
         self._registers = tuple(registers)
-        self._lefts = None
-        self._rights = None
+        self._lefts = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.LEFT)
+        self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
     def build(cls, **registers: Union[int, sympy.Expr]) -> 'Signature':
@@ -153,40 +164,20 @@ class Signature:
         """
         return cls(Register(name=k, dtype=v) for k, v in registers.items() if v.num_qubits)
 
-    def _sort_lefts(self):
-        if self._lefts is None:
-            self._lefts = dict(
-                (reg.name, reg)
-                for reg in self._registers
-                if reg.side == Side.LEFT or reg.side == Side.THRU
-            )
-
-    def _sort_rights(self):
-        if self._rights is None:
-            self._rights = dict(
-                (reg.name, reg)
-                for reg in self._registers
-                if reg.side == Side.RIGHT or reg.side == Side.THRU
-            )
-
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
-        self._sort_lefts()
         yield from self._lefts.values()
 
     def rights(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the RIGHT as output."""
-        self._sort_rights()
         yield from self._rights.values()
 
     def get_left(self, name: str) -> Register:
         """Get a left register by name."""
-        self._sort_lefts()
         return self._lefts[name]
 
     def get_right(self, name: str) -> Register:
         """Get a right register by name."""
-        self._sort_rights()
         return self._rights[name]
 
     def groups(self) -> Iterable[Tuple[str, List[Register]]]:
