@@ -209,18 +209,6 @@ class SparseMatrix(BlockEncoding):
         return self.eps
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
     def signal_state(self) -> PrepareOracle:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
@@ -500,7 +488,6 @@ def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
 
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
-    import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
     examples=[
         _sparse_matrix_block_encoding,
         _sparse_matrix_symb_block_encoding,

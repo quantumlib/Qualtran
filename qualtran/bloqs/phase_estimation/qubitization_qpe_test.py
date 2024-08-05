@@ -44,6 +44,7 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_sparse_chem)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):

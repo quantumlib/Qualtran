@@ -33,6 +33,7 @@ from qualtran.bloqs.block_encoding.sparse_matrix import (
     UniformEntryOracle,
 )
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.testing import execute_notebook
 
 
 def test_sparse_matrix(bloq_autotester):
@@ -111,6 +112,7 @@ def gen_test():
     return n, data
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "n,data", [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
 )
@@ -311,3 +313,8 @@ def test_vlasov_explicit():
 def test_symmetric_banded_counts():
     bloq = SymmetricBandedRowColumnOracle(3, bandsize=1)
     qlt_testing.assert_equivalent_bloq_counts(bloq)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('sparse_matrix')

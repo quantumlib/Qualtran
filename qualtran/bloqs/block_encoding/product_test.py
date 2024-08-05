@@ -39,6 +39,7 @@ from qualtran.bloqs.block_encoding.product import (
 from qualtran.bloqs.block_encoding.unitary import Unitary
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.testing import execute_notebook
 
 
 def test_product(bloq_autotester):
@@ -172,3 +173,8 @@ def test_product_random():
         from_gate = np.linalg.multi_dot(tuple(gate.tensor_contract() for gate in gates))
         from_tensors = bloq.tensor_contract()
         np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('product')

@@ -100,8 +100,4 @@ def _identity() -> Identity:
     return identity
 
 
-_IDENTITY_DOC = BloqDocSpec(
-    bloq_cls=Identity,
-    import_line='from qualtran.bloqs.basic_gates import Identity',
-    examples=[_identity],
-)
+_IDENTITY_DOC = BloqDocSpec(bloq_cls=Identity, examples=[_identity])

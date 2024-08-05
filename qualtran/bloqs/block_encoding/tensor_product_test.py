@@ -29,6 +29,7 @@ from qualtran.bloqs.block_encoding.tensor_product import (
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.testing import execute_notebook
 
 
 def test_tensor_product(bloq_autotester):
@@ -125,3 +126,8 @@ def test_tensor_product_cirq():
     initial_state = [0, 1, 1, 1]
     final_state = [1, 0, 1, 0]
     assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('tensor_product')

@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -24,7 +25,6 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QAny,
-    Register,
     Signature,
     SoquetT,
 )
@@ -64,6 +64,11 @@ class TensorProduct(BlockEncoding):
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
 
+    @classmethod
+    def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `TensorProduct` from block encodings."""
+        return cls(block_encodings)
+
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
@@ -94,18 +99,6 @@ class TensorProduct(BlockEncoding):
     @cached_property
     def epsilon(self) -> SymbolicFloat:
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
     def signal_state(self) -> PrepareOracle:
@@ -230,7 +223,6 @@ def _tensor_product_block_encoding_symb() -> TensorProduct:
 
 _TENSOR_PRODUCT_DOC = BloqDocSpec(
     bloq_cls=TensorProduct,
-    import_line="from qualtran.bloqs.block_encoding import TensorProduct",
     examples=[
         _tensor_product_block_encoding,
         _tensor_product_block_encoding_properties,
