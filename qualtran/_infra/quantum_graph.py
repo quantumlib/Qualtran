@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
-
-from typing import Tuple, TYPE_CHECKING, Union
+from functools import cached_property
+from typing import Sequence, Tuple, TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from qualtran import Bloq, Register
 
 
-@frozen
 class BloqInstance:
     """A unique instance of a Bloq within a `CompositeBloq`.
 
@@ -32,11 +31,23 @@ class BloqInstance:
             within a `CompositeBloq`.
     """
 
-    bloq: 'Bloq'
-    i: int
+    def __init__(self, bloq: 'Bloq', i: int):
+        self._bloq = bloq
+        self._i = i
+
+    @property
+    def bloq(self):
+        return self._bloq
+
+    @property
+    def i(self):
+        return self._i
 
     def __str__(self):
-        return f'{self.bloq}<{self.i}>'
+        return f'{self._bloq}<{self._i}>'
+
+    def __repr__(self):
+        return f'{self._bloq!r}<{self._i}>'
 
     def bloq_is(self, t) -> bool:
         """Helper method that does `isinstance(self.bloq, t)`.
@@ -46,7 +57,16 @@ class BloqInstance:
 
         >>> not isinstance(binst, DanglingT) and isinstance(binst.bloq, t)
         """
-        return isinstance(self.bloq, t)
+        return isinstance(self._bloq, t)
+
+    def __hash__(self):
+        return self._i
+
+    def __eq__(self, other):
+        if not isinstance(other, BloqInstance):
+            return False
+
+        return self.i == other.i and self.bloq == other.bloq
 
 
 class DanglingT:
@@ -78,7 +98,6 @@ def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
     return x
 
 
-@frozen
 class Soquet:
     """One half of a connection.
 
@@ -99,11 +118,40 @@ class Soquet:
             register.
     """
 
-    binst: Union[BloqInstance, DanglingT]
-    reg: 'Register'
-    idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
+    def __init__(
+        self,
+        binst: Union[BloqInstance, DanglingT],
+        reg: 'Register',
+        idx: Union[int, Sequence[int]] = (),
+    ):
+        self._binst = binst
+        self._reg = reg
+        if isinstance(idx, int):
+            self._idx = (idx,)
+        else:
+            self._idx = tuple(idx)
 
-    @idx.validator
+    @property
+    def binst(self):
+        return self._binst
+
+    @property
+    def reg(self):
+        return self._reg
+
+    @property
+    def idx(self):
+        return self._idx
+
+    def __hash__(self):
+        return hash((self.binst, self.reg, self.idx))
+
+    def __eq__(self, other):
+        if not isinstance(other, Soquet):
+            return False
+
+        return (self.binst == other.binst) and (self.reg == other.reg) and (self.idx == other.idx)
+
     def _check_idx(self, attribute, value):
         if len(value) != len(self.reg.shape):
             raise ValueError(f"Bad index shape {value} for {self.reg}.")
@@ -143,7 +191,7 @@ class Connection:
     left: Soquet
     right: Soquet
 
-    @property
+    @cached_property
     def shape(self) -> int:
         ls = self.left.reg.bitsize
         rs = self.right.reg.bitsize

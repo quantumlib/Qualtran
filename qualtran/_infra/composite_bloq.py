@@ -653,11 +653,7 @@ class _IgnoreAvailable:
         pass
 
 
-def _reg_to_soq(
-    binst: Union[BloqInstance, DanglingT],
-    reg: Register,
-    available: Union[Set[Soquet], _IgnoreAvailable] = _IgnoreAvailable(),
-) -> SoquetT:
+def _reg_to_soq(binst: Union[BloqInstance, DanglingT], reg: Register) -> SoquetT:
     """Create the soquet or array of soquets for a register.
 
     Args:
@@ -677,14 +673,12 @@ def _reg_to_soq(
         for ri in reg.all_idxs():
             soq = Soquet(binst, reg, idx=ri)
             soqs[ri] = soq
-            available.add(soq)
         return soqs
 
     # Annoyingly, this must be a special case.
     # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
     # 'object'. This wouldn't happen--for example--with an integer array.
     soq = Soquet(binst, reg)
-    available.add(soq)
     return soq
 
 
@@ -692,7 +686,8 @@ def _process_soquets(
     registers: Iterable[Register],
     in_soqs: Mapping[str, SoquetInT],
     debug_str: str,
-    func: Callable[[Soquet, Register, Tuple[int, ...]], None],
+    cxn_list: List[Connection],
+    binst: BloqInstance,
 ) -> None:
     """Process and validate `in_soqs` in the context of `registers`.
 
@@ -715,30 +710,31 @@ def _process_soquets(
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
-    unchecked_names: Set[str] = set(in_soqs.keys())
+    # unchecked_names: Set[str] = set(in_soqs.keys())
     for reg in registers:
-        try:
-            # if we want fancy indexing (which we do), we need numpy
-            # this also supports length-zero indexing natively, which is good too.
-            in_soq = np.asarray(in_soqs[reg.name])
-        except KeyError:
-            raise BloqError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
+        in_soq = np.asarray(in_soqs[reg.name])
+        # try:
+        #     # if we want fancy indexing (which we do), we need numpy
+        #     # this also supports length-zero indexing natively, which is good too.
+        #     in_soq = np.asarray(in_soqs[reg.name])
+        # except KeyError:
+        #     raise BloqError(f"{debug_str} requires a soquet named `{reg.name}`.") from None
 
-        unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
+        # unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
 
         for li in reg.all_idxs():
             idxed_soq = in_soq[li]
             assert isinstance(idxed_soq, Soquet), idxed_soq
-            func(idxed_soq, reg, li)
-            if not check_dtypes_consistent(idxed_soq.reg.dtype, reg.dtype):
-                extra_str = (
-                    f"{idxed_soq.reg.name}: {idxed_soq.reg.dtype} vs {reg.name}: {reg.dtype}"
-                )
-                raise BloqError(
-                    f"{debug_str} register dtypes are not consistent {extra_str}."
-                ) from None
-    if unchecked_names:
-        raise BloqError(f"{debug_str} does not accept Soquets: {unchecked_names}.") from None
+            cxn_list.append(Connection(idxed_soq, Soquet(binst, reg, li)))
+            # if not check_dtypes_consistent(idxed_soq.reg.dtype, reg.dtype):
+            #     extra_str = (
+            #         f"{idxed_soq.reg.name}: {idxed_soq.reg.dtype} vs {reg.name}: {reg.dtype}"
+            #     )
+            #     raise BloqError(
+            #         f"{debug_str} register dtypes are not consistent {extra_str}."
+            #     ) from None
+    # if unchecked_names:
+    #     raise BloqError(f"{debug_str} does not accept soquets: {unchecked_names}.") from None
 
 
 def _map_soqs(
@@ -866,7 +862,7 @@ class BloqBuilder:
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:
-            return _reg_to_soq(LeftDangle, reg, available=self._available)
+            return _reg_to_soq(LeftDangle, reg)
         return None
 
     @overload
@@ -1090,17 +1086,19 @@ class BloqBuilder:
 
         bloq = binst.bloq
 
-        def _add(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
-            # close over `binst`
-            return self._add_cxn(binst, idxed_soq, reg, idx)
+        # def _add(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
+        #     # close over `binst`
+        #     cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
+        #     self._cxns.append(cxn)
 
         _process_soquets(
-            registers=bloq.signature.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
+            registers=bloq.signature.lefts(),
+            in_soqs=in_soqs,
+            debug_str=str(bloq),
+            cxn_list=self._cxns,
+            binst=binst,
         )
-        yield from (
-            (reg.name, _reg_to_soq(binst, reg, available=self._available))
-            for reg in bloq.signature.rights()
-        )
+        yield from ((reg.name, _reg_to_soq(binst, reg)) for reg in bloq.signature.rights())
 
     def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
@@ -1184,17 +1182,22 @@ class BloqBuilder:
         """
         signature = Signature(self._regs)
 
-        def _fin(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
-            # close over `RightDangle`
-            return self._add_cxn(RightDangle, idxed_soq, reg, idx)
+        # def _fin(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
+        #     # close over `RightDangle`
+        #     cxn = Connection(idxed_soq, Soquet(RightDangle, reg, idx))
+        #     self._cxns.append(cxn)
 
         _process_soquets(
-            registers=signature.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
+            registers=signature.rights(),
+            debug_str='Finalizing',
+            in_soqs=final_soqs,
+            cxn_list=self._cxns,
+            binst=RightDangle,
         )
-        if self._available:
-            raise BloqError(
-                f"During finalization, {self._available} Soquets were not used."
-            ) from None
+        # if self._available:
+        #     raise BloqError(
+        #         f"During finalization, {self._available} Soquets were not used."
+        #     ) from None
 
         return CompositeBloq(
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
