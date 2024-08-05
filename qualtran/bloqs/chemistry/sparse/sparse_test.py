@@ -17,6 +17,7 @@ import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
 from openfermion.resource_estimates.utils import power_two, QI
 
+from qualtran import Adjoint
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
@@ -76,9 +77,15 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
         if isinstance(k, SelectSwapQROM):
             qrom_bloq = k
             break
+        if isinstance(k, Adjoint) and isinstance(k.subbloq, SelectSwapQROM):
+            qrom_bloq = k
+            break
     if qrom_bloq is None:
         return 0
-    return int(qrom_bloq.call_graph()[1].get(TGate(), 0))
+    return int(
+        qrom_bloq.call_graph()[1].get(TGate(), 0)
+        + qrom_bloq.call_graph()[1].get(TGate().adjoint(), 0)
+    )
 
 
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
@@ -87,15 +94,15 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     cost = 0
     bloq = SelectSparse(num_spin_orb)
     _, sigma = bloq.call_graph()
-    cost += sigma[TGate()]
+    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     _, sigma = prep_sparse.call_graph()
-    cost += sigma[TGate()]
+    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
     prep_sparse_adj = attrs.evolve(
         prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
     )
     _, sigma = prep_sparse_adj.call_graph()
-    cost += sigma[TGate()]
+    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
     unused_lambda = 10
     unused_de = 1e-3
     unused_stps = 10
