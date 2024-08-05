@@ -17,7 +17,7 @@ import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
 from openfermion.resource_estimates.utils import power_two, QI
 
-from qualtran import Adjoint
+from qualtran import Adjoint, Bloq
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
@@ -26,6 +26,8 @@ from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.resource_counting.generalizers import generalize_cswap_approx
 from qualtran.testing import execute_notebook
 
 
@@ -88,6 +90,13 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
     )
 
 
+def get_toffoli_count(bloq: Bloq) -> int:
+    counts = get_cost_value(bloq, QECGatesCost(), generalizer=generalize_cswap_approx)
+    cost_dict = counts.total_t_and_ccz_count(ts_per_rotation=0)
+    assert cost_dict['n_t'] == 0
+    return cost_dict['n_ccz']
+
+
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
@@ -95,12 +104,15 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     bloq = SelectSparse(num_spin_orb)
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
+    cost_acc = get_toffoli_count(bloq)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
+    cost_acc += get_toffoli_count(prep_sparse)
     _, sigma = prep_sparse.call_graph()
     cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
     prep_sparse_adj = attrs.evolve(
         prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
     )
+    cost_acc += get_toffoli_count(prep_sparse)
     _, sigma = prep_sparse_adj.call_graph()
     cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
     unused_lambda = 10
@@ -129,8 +141,10 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
         * (3 * (prep_sparse.num_non_zero - 1).bit_length() - 3 * eta + 2 * num_bits_rot_aa - 9)
     )
     prep = PrepareUniformSuperposition(prep_sparse.num_non_zero)
-    cost1a_mod = prep.call_graph()[1][TGate()]
-    cost1a_mod += prep.adjoint().call_graph()[1][TGate()]
+    cost1a_mod = prep.call_graph()[1][TGate()] + prep.call_graph()[1].get(TGate().adjoint(), 0)
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] + prep.call_graph()[1].get(
+        TGate().adjoint(), 0
+    )
     # correct for SelectSwapQROM vs QROAM
     # https://github.com/quantumlib/Qualtran/issues/574
     our_qrom = get_sel_swap_qrom_t_count(prep_sparse)
@@ -144,6 +158,16 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     t_count_lte = 2 * lte.call_graph()[1][TGate()]
     t_count_lte_paper = 4 * prep_sparse.num_bits_state_prep  # inverted at zero cost
     delta_ineq = t_count_lte - t_count_lte_paper  # 4 * (prep_sparse.num_bits_state_prep + 1)
+    print(
+        cost_acc
+        - our_qrom // 4
+        + paper_qrom // 4
+        - cost1a_mod // 4
+        + cost_uni_prep // 4
+        - delta_ineq
+        - (8 * (num_spin_orb // 2 - 1).bit_length() + 1),
+        cost_of - refl_cost,
+    )
     adjusted_cost_qualtran = (
         cost - cost1a_mod + cost_uni_prep + refl_cost - delta_swap - delta_qrom - delta_ineq
     ) // 4
