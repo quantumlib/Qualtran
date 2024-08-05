@@ -108,18 +108,6 @@ class ChebyshevPolynomial(BlockEncoding):
         return self.block_encoding.epsilon * self.order
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.signature.rights())
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
-
-    @property
     def signal_state(self) -> PrepareOracle:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.

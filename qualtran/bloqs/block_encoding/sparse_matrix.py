@@ -209,18 +209,6 @@ class SparseMatrix(BlockEncoding):
         return self.eps
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
     def signal_state(self) -> PrepareOracle:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
