@@ -120,6 +120,28 @@ class SingleFactorizationOneBody(BlockEncoding):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register(
@@ -306,6 +328,28 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
     @property
     def control_registers(self) -> Iterable[Register]:
         return (Register('ctrl', QBit(), shape=(3,)),)
+
+    @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
 
     @property
     def selection_registers(self) -> Iterable[Register]:

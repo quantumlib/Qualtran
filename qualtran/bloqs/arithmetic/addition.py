@@ -57,6 +57,7 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
@@ -214,26 +215,26 @@ class Add(Bloq):
         return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_symb() -> Add:
     n = sympy.Symbol('n')
     add_symb = Add(QInt(bitsize=n))
     return add_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_small() -> Add:
     add_small = Add(QUInt(bitsize=4))
     return add_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_large() -> Add:
     add_large = Add(QUInt(bitsize=64))
     return add_large
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_diff_size_regs() -> Add:
     add_diff_size_regs = Add(QUInt(bitsize=4), QUInt(bitsize=16))
     return add_diff_size_regs
@@ -336,20 +337,20 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_symb() -> OutOfPlaceAdder:
     n = sympy.Symbol('n')
     add_oop_symb = OutOfPlaceAdder(bitsize=n)
     return add_oop_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_small() -> OutOfPlaceAdder:
     add_oop_small = OutOfPlaceAdder(bitsize=4)
     return add_oop_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_large() -> OutOfPlaceAdder:
     add_oop_large = OutOfPlaceAdder(bitsize=64)
     return add_oop_large
@@ -528,20 +529,20 @@ class AddK(Bloq):
         return bloq, _add_ctrled
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_k() -> AddK:
     n, k = sympy.symbols('n k')
     add_k = AddK(bitsize=n, k=k)
     return add_k
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_k_small() -> AddK:
     add_k_small = AddK(bitsize=4, k=2, signed=False)
     return add_k_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_k_large() -> AddK:
     add_k_large = AddK(bitsize=64, k=-23, signed=True)
     return add_k_large

@@ -17,6 +17,7 @@ from typing import cast, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -106,6 +107,11 @@ class LinearCombination(BlockEncoding):
                 "If given, select oracle must have block encoding `system` register as target."
             )
 
+    @classmethod
+    def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
+        """Construct a `LinearCombination` from pairs of (coefficient, block encoding)."""
+        return cls(tuple(t[1] for t in terms), tuple(t[0] for t in terms), lambd_bits)
+
     @cached_property
     def signed_block_encodings(self):
         """Appropriately negated constituent block encodings."""
@@ -117,7 +123,7 @@ class LinearCombination(BlockEncoding):
     @cached_property
     def rescaled_lambd(self):
         """Rescaled and padded array of coefficients."""
-        x = np.abs(np.array(self._lambd))
+        x = np.abs(np.array(self._lambd) * np.array([be.alpha for be in self._block_encodings]))
         x /= np.linalg.norm(x, ord=1)
         x.resize(2 ** int(np.ceil(np.log2(len(x)))), refcheck=False)
         return x
@@ -139,9 +145,7 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return ssum(
-            abs(l) * be.alpha for be, l in zip(self.signed_block_encodings, self.rescaled_lambd)
-        )
+        return ssum(abs(l) * be.alpha for be, l in zip(self._block_encodings, self._lambd))
 
     @cached_property
     def be_ancilla_bitsize(self) -> SymbolicInt:
@@ -164,18 +168,6 @@ class LinearCombination(BlockEncoding):
         return ssum(abs(l) for l in self.rescaled_lambd) * smax(
             be.epsilon for be in self.signed_block_encodings
         )
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
 
     @property
     def signal_state(self) -> PrepareOracle:

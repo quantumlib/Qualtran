@@ -160,8 +160,4 @@ def _modexp_symb() -> ModExp:
     return modexp_symb
 
 
-_MODEXP_DOC = BloqDocSpec(
-    bloq_cls=ModExp,
-    import_line='from qualtran.bloqs.factoring.mod_exp import ModExp',
-    examples=(_modexp_symb, _modexp_small, _modexp),
-)
+_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_symb, _modexp_small, _modexp))
