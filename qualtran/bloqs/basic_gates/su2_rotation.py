@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
-from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
+from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rz, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
@@ -129,12 +129,14 @@ class SU2RotationGate(GateWithRegisters):
             GlobalPhase(exponent=1 + self.global_shift / pi(self.global_shift), eps=self.eps / 4)
         )
         q = bb.add(
-            ZPowGate(exponent=1 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
+            ZPowGate(exponent=0.5 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
             q=q,
         )
-        q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
+        q = bb.add(Hadamard(), q=q)
+        q = bb.add(Rz(angle=2 * self.theta, eps=self.eps / 4), q=q)
+        q = bb.add(Hadamard(), q=q)
         q = bb.add(
-            ZPowGate(exponent=-self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
+            ZPowGate(exponent=0.5 - self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
         )
         return {'q': q}
 
