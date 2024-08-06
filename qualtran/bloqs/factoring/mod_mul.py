@@ -18,7 +18,7 @@ from typing import Dict, Optional, Set, Tuple, Union
 import attrs
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import (
     Bloq,
@@ -33,6 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
+from qualtran.bloqs.factoring._big_int_helpers import int_or_expr, python_int_field
 from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -54,9 +55,9 @@ class CtrlModMul(Bloq):
         x: The integer being multiplied
     """
 
-    k: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    bitsize: Union[int, sympy.Expr]
+    k: Union[int, sympy.Expr] = python_int_field()
+    mod: Union[int, sympy.Expr] = python_int_field()
+    bitsize: Union[int, sympy.Expr] = field()
 
     def __attrs_post_init__(self):
         if isinstance(self.k, sympy.Expr):
@@ -104,11 +105,12 @@ class CtrlModMul(Bloq):
         k = ssa.new_symbol('k')
         return {(self._Add(k=k), 2), (CSwap(self.bitsize), 1)}
 
-    def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
+    def on_classical_vals(self, ctrl: int, x: int) -> Dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x}
 
         assert ctrl == 1, ctrl
+        x = int_or_expr(x)
         return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':

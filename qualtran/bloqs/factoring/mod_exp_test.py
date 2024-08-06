@@ -19,13 +19,13 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq
 from qualtran.bloqs.bookkeeping import Join, Split
-from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
+from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_small, _modexp_symb, ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.testing import execute_notebook
 
 
 def test_mod_exp_consistent_classical():
@@ -92,6 +92,10 @@ def test_mod_exp_t_complexity():
     assert tcomp.t > 0
 
 
+def test_modexp_small(bloq_autotester):
+    bloq_autotester(_modexp_small)
+
+
 def test_modexp(bloq_autotester):
     bloq_autotester(_modexp)
 
@@ -102,9 +106,9 @@ def test_modexp_symb(bloq_autotester):
 
 @pytest.mark.notebook
 def test_intro_notebook():
-    execute_notebook('factoring-via-modexp')
+    qlt_testing.execute_notebook('factoring-via-modexp')
 
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('mod_exp')
+    qlt_testing.execute_notebook('mod_exp')

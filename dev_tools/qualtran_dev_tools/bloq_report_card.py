@@ -21,6 +21,7 @@ import pandas.io.formats.style
 from qualtran import Bloq, BloqExample
 from qualtran.testing import (
     BloqCheckResult,
+    check_bloq_example_classical_action,
     check_bloq_example_decompose,
     check_bloq_example_make,
     check_bloq_example_qtyping,
@@ -69,7 +70,7 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'qtyping']
+CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'qtyping', 'classical']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
@@ -89,6 +90,7 @@ def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
         'counts': check_equivalent_bloq_example_counts(be)[0],
         'serialize': check_bloq_example_serializes(be)[0],
         'qtyping': check_bloq_example_qtyping(be)[0],
+        'classical': check_bloq_example_classical_action(be)[0],
     }
     dur = time.perf_counter() - start
     if dur > 1.0:
