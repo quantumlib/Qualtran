@@ -86,12 +86,6 @@ class ECAddR(Bloq):
             return TextBox(f'$+{self.R.y}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def __str__(self):
-        return 'ECAddR'
-
-    def cost_attrs(self):
-        return [('n', self.n)]
-
 
 @bloq_example
 def _ec_add_r() -> ECAddR:

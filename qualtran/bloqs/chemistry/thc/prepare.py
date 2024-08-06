@@ -44,11 +44,11 @@ from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
-from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
 if TYPE_CHECKING:
@@ -154,11 +154,11 @@ class UniformSuperpositionTHC(Bloq):
         # 6. Reflect on comparitors, rotated qubit and |+>.
         # ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
         rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
-            Reflection((1, 1, 1, 1), (1, 1, 1, 1)),
-            reg0=rot,
-            reg1=lte_nu_mp1,
-            reg2=lte_mu_nu,
-            reg3=junk,
+            ReflectionUsingPrepare.reflection_around_zero(bitsizes=(1, 1, 1, 1), global_phase=1),
+            reg0_=rot,
+            reg1_=lte_nu_mp1,
+            reg2_=lte_mu_nu,
+            reg3_=junk,
         )
         # (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
@@ -175,7 +175,12 @@ class UniformSuperpositionTHC(Bloq):
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         mu, nu, rot = bb.add(
-            Reflection((num_bits_mu, num_bits_mu, 1), (1, 1, 1)), reg0=mu, reg1=nu, reg2=rot
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(num_bits_mu, num_bits_mu, 1), global_phase=1
+            ),
+            reg0_=mu,
+            reg1_=nu,
+            reg2_=rot,
         )
         # amp = trg[0]
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
@@ -283,10 +288,11 @@ class PrepareTHC(PrepareOracle):
         num_spat = t_l.shape[0]
         triu_indices = np.triu_indices(num_mu)
         num_ut = len(triu_indices[0])
-        flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+        flat_data = np.concatenate([zeta[triu_indices], t_l])
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            flat_data, epsilon=2**-num_bits_state_prep / len(flat_data)
+        flat_data = np.abs(flat_data)
+        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            flat_data, sub_bit_precision=num_bits_state_prep
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []
@@ -382,9 +388,10 @@ class PrepareTHC(PrepareOracle):
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
@@ -444,9 +451,10 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
-        qroam = SelectSwapQROM(
+        qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
@@ -466,23 +474,15 @@ def _thc_uni() -> UniformSuperpositionTHC:
 
 @bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
+
     num_spat = 4
     num_mu = 8
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
+    t_l, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
     thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
     return thc_prep
 
 
-_THC_UNI_PREP = BloqDocSpec(
-    bloq_cls=UniformSuperpositionTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import UniformSuperpositionTHC',
-    examples=(_thc_uni,),
-)
+_THC_UNI_PREP = BloqDocSpec(bloq_cls=UniformSuperpositionTHC, examples=(_thc_uni,))
 
-_THC_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import PrepareTHC',
-    examples=(_thc_prep,),
-)
+_THC_PREPARE = BloqDocSpec(bloq_cls=PrepareTHC, examples=(_thc_prep,))

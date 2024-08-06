@@ -37,7 +37,8 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFi
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Text, TextBox, WireSymbol
 
@@ -543,13 +544,9 @@ def _sel_first_quant() -> SelectFirstQuantization:
 
 
 _FIRST_QUANTIZED_PREPARE_DOC = BloqDocSpec(
-    bloq_cls=PrepareFirstQuantization,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareFirstQuantization',
-    examples=(_prep_first_quant,),
+    bloq_cls=PrepareFirstQuantization, examples=(_prep_first_quant,)
 )
 
 _FIRST_QUANTIZED_SELECT_DOC = BloqDocSpec(
-    bloq_cls=SelectFirstQuantization,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization import SelectFirstQuantization',
-    examples=(_sel_first_quant,),
+    bloq_cls=SelectFirstQuantization, examples=(_sel_first_quant,)
 )

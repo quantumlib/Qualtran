@@ -21,9 +21,9 @@ from numpy.typing import NDArray
 
 from qualtran import Signature
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import SymbolicFloat
 
 

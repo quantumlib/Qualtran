@@ -151,8 +151,8 @@ class SwapWithZero(Bloq):
         return sel | {'targets': targets}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_swaps = prod(*[x for x in self.n_target_registers]) - 1
-        return {(CSwapApprox(self.target_bitsize), num_swaps)}
+        num_swaps = prod(x for x in self.n_target_registers) - 1
+        return {(self.cswap_n, num_swaps)}
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
@@ -187,8 +187,4 @@ def _swz_multi_dimensional() -> SwapWithZero:
     return swz_multi_dimensional
 
 
-_SWZ_DOC = BloqDocSpec(
-    bloq_cls=SwapWithZero,
-    import_line='from qualtran.bloqs.swap_network import SwapWithZero',
-    examples=(_swz, _swz_small, _swz_multi_dimensional),
-)
+_SWZ_DOC = BloqDocSpec(bloq_cls=SwapWithZero, examples=(_swz, _swz_small, _swz_multi_dimensional))

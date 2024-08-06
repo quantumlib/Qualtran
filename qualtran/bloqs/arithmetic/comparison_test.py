@@ -19,23 +19,24 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
     _eq_k,
     _greater_than,
     _gt_k,
+    _leq_symb,
+    _lt_k_symb,
+    BiQubitsMixer,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
     LinearDepthGreaterThan,
+    SingleQubitCompare,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.testing import (
-    assert_circuit_inp_out_cirqsim,
-    assert_decompose_is_consistent_with_t_complexity,
-)
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 
 
 def test_greater_than(bloq_autotester):
@@ -44,6 +45,14 @@ def test_greater_than(bloq_autotester):
 
 def test_gt_k(bloq_autotester):
     bloq_autotester(_gt_k)
+
+
+def test_lt_k_symb(bloq_autotester):
+    bloq_autotester(_lt_k_symb)
+
+
+def test_leq_symb(bloq_autotester):
+    bloq_autotester(_leq_symb)
 
 
 def test_eq_k(bloq_autotester):
@@ -92,7 +101,7 @@ def test_less_than_gate():
 @pytest.mark.parametrize("bits", [*range(8)])
 @pytest.mark.parametrize("val", [3, 5, 7, 8, 9])
 def test_decompose_less_than_gate(bits: int, val: int):
-    qubit_states = list(iter_bits(bits, 3))
+    qubit_states = QUInt(3).to_bits(bits)
     circuit = cirq.Circuit(
         cirq.decompose_once(
             LessThanConstant(3, val).on_registers(x=cirq.LineQubit.range(3), target=cirq.q(4))
@@ -115,11 +124,28 @@ def test_decompose_less_than_gate(bits: int, val: int):
 @pytest.mark.parametrize("val", [3, 4, 5, 7, 8, 9])
 def test_less_than_consistent_protocols(n: int, val: int):
     g = LessThanConstant(n, val)
-    assert_decompose_is_consistent_with_t_complexity(g)
+    expected_t_complexity = (
+        TComplexity(clifford=1)
+        if val >= 2**n
+        else TComplexity(t=4 * n, clifford=15 * n + 3 * bin(val).count("1") + 2)
+    )
+    assert g.t_complexity() == expected_t_complexity
     # Test the unitary is self-inverse
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (n + 1)))
     qlt_testing.assert_valid_bloq_decomposition(g)
+
+
+def test_bi_qubits_mixer_t_complexity():
+    g = BiQubitsMixer()
+    assert g.t_complexity() == TComplexity(t=8, clifford=28)
+    assert g.adjoint().t_complexity() == TComplexity(clifford=18)
+
+
+def test_single_qubit_compare_t_complexity():
+    g = SingleQubitCompare()
+    assert g.t_complexity() == TComplexity(t=4, clifford=14)
+    assert g.adjoint().t_complexity() == TComplexity(clifford=9)
 
 
 def test_multi_in_less_equal_than_gate():
@@ -145,11 +171,33 @@ def test_multi_in_less_equal_than_gate():
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
 
 
+def _less_than_equal_expected_t_complexity(gate: LessThanEqual):
+    n = min(gate.x_bitsize, gate.y_bitsize)
+    d = max(gate.x_bitsize, gate.y_bitsize) - n
+    is_second_longer = gate.y_bitsize > gate.x_bitsize
+    if d == 0:
+        # When both registers are of the same size the T complexity is
+        # 8n - 4 same as in the second reference.
+        return TComplexity(t=8 * n - 4, clifford=46 * n - 21)
+    else:
+        # When the registers differ in size and `n` is the size of the smaller one and
+        # `d` is the difference in size. The T complexity is the sum of the tree
+        # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
+        # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
+        # From the decomposition we get that the constant is -4 as well as the clifford counts.
+        if d == 1:
+            return TComplexity(t=8 * n, clifford=46 * n - 1 + 2 * is_second_longer)
+        else:
+            return TComplexity(
+                t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 18 + 2 * is_second_longer
+            )
+
+
 @pytest.mark.parametrize("x_bitsize", [*range(1, 5)])
 @pytest.mark.parametrize("y_bitsize", [*range(1, 5)])
 def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     g = LessThanEqual(x_bitsize, y_bitsize)
-    assert_decompose_is_consistent_with_t_complexity(g)
+    assert g.t_complexity() == _less_than_equal_expected_t_complexity(g)
     qlt_testing.assert_valid_bloq_decomposition(g)
 
     # Decomposition works even when context is None.
@@ -179,9 +227,11 @@ def test_greater_than_manual():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
-    cbloq.t_complexity()
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
+    assert cbloq.t_complexity() == (
+        t_complexity(LessThanEqual(bitsize, bitsize)) + TComplexity(clifford=1)
     )
 
 
@@ -229,9 +279,11 @@ def test_greater_than_constant():
     anc = bb.add_register('result', 1)
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
-    cbloq.t_complexity()
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
+    assert t_complexity(GreaterThanConstant(bitsize, 17)) == t_complexity(
+        LessThanConstant(bitsize, 17)
     )
 
 
@@ -246,6 +298,9 @@ def test_equals_a_constant():
     qlt_testing.assert_wire_symbols_match_expected(
         EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
     )
+    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(
+        t=4 * (bitsize - 1), clifford=65
+    )
 
 
 @pytest.mark.notebook
@@ -256,3 +311,11 @@ def test_t_complexity_of_comparison_gates_notebook():
 @pytest.mark.notebook
 def test_comparison_notebook():
     qlt_testing.execute_notebook('comparison')
+
+
+@pytest.mark.parametrize('gate', [LessThanConstant(3, 3), LessThanEqual(3, 3)])
+def test_decomposition_frees_ancilla(gate):
+    op = gate(*cirq.LineQid.for_gate(gate))
+    qubit_manager = cirq.ops.GreedyQubitManager(prefix='_test')
+    _ = cirq.decompose(op, context=cirq.DecompositionContext(qubit_manager))
+    assert len(qubit_manager._used_qubits) == 0

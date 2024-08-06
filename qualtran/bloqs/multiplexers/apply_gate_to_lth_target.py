@@ -141,7 +141,7 @@ def _apply_z_to_odd() -> ApplyGateToLthQubit:
     return apply_z_to_odd
 
 
-_APPLYLTH_DOC = BloqDocSpec(
+_APPLY_TO_LTH_TARGET_DOC = BloqDocSpec(
     bloq_cls=ApplyGateToLthQubit,
     import_line='from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit',
     examples=(_apply_z_to_odd,),

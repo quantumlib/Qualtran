@@ -16,19 +16,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class IntOrSympy(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -42,13 +38,13 @@ class IntOrSympy(google.protobuf.message.Message):
         int_val: builtins.int = ...,
         sympy_expr: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "sympy_expr"] | None: ...
+    def HasField(self, field_name: typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["val", b"val"]) -> typing.Literal["int_val", "sympy_expr"] | None: ...
 
 global___IntOrSympy = IntOrSympy
 
-@typing_extensions.final
+@typing.final
 class NDArray(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -60,11 +56,11 @@ class NDArray(google.protobuf.message.Message):
         *,
         ndarray: builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ndarray", b"ndarray"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["ndarray", b"ndarray"]) -> None: ...
 
 global___NDArray = NDArray
 
-@typing_extensions.final
+@typing.final
 class Complex(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -78,6 +74,6 @@ class Complex(google.protobuf.message.Message):
         real: builtins.float = ...,
         imag: builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["imag", b"imag", "real", b"real"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["imag", b"imag", "real", b"real"]) -> None: ...
 
 global___Complex = Complex

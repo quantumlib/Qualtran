@@ -18,10 +18,21 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+    _ccpauli,
+    _ccpauli_symb,
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,
 )
+
+
+def test_ccpauli(bloq_autotester):
+    bloq_autotester(_ccpauli)
+
+
+def test_ccpauli_symb():
+    bloq = _ccpauli_symb.make()
+    assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
 
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])
@@ -101,8 +112,8 @@ def test_classical_multi_control_pauli_target_x(cvs, x, ctrls, result):
 def test_classical_multi_control_x(cvs, x, ctrls, result):
     bloq = MultiControlX(cvs=cvs)
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(x=x, ctrls=ctrls)
-    cbloq_classical = cbloq.call_classically(x=x, ctrls=ctrls)
+    bloq_classical = bloq.call_classically(target=x, controls=ctrls)
+    cbloq_classical = cbloq.call_classically(target=x, controls=ctrls)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):

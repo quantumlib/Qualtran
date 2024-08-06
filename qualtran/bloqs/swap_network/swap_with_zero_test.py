@@ -23,10 +23,9 @@ import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.swap_with_zero import _swz, _swz_small, SwapWithZero
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition
 
 random.seed(12345)
@@ -57,8 +56,7 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
             trgs.append(trg)
         sel, trgs = bb.add(swz, selection=sel, targets=np.array(trgs))
         circuit = bb.finalize(sel=sel, trgs=trgs)
-        flat_circuit = flatten_for_tensor_contraction(circuit)
-        full_state_vector = flat_circuit.tensor_contract()
+        full_state_vector = circuit.tensor_contract()
         result_state_vector = cirq.sub_state_vector(
             full_state_vector,
             keep_indices=list(range(selection_bitsize, selection_bitsize + target_bitsize)),
@@ -104,6 +102,8 @@ targets[3][1]: ───swap_3──────────×(y)─────
 def test_swap_with_zero_cirq_gate_diagram_multi_dim():
     gate = SwapWithZero((2, 1), 2, (3, 2))
     gh = cq_testing.GateHelper(gate)
+    # Bloq -> Cirq conversion preserves insertion ordering when all operations are THRU
+    # operations
     cirq.testing.assert_has_diagram(
         cirq.Circuit(gh.operation, cirq.decompose_once(gh.operation)),
         """
@@ -146,9 +146,11 @@ def test_swap_with_zero_classically():
     data = np.array([131, 255, 92, 2])
     swz = SwapWithZero(selection_bitsizes=2, target_bitsize=8, n_target_registers=4)
 
-    for sel in range(2**2):
-        sel, out_data = swz.call_classically(selection=sel, targets=data)  # type: ignore[assignment]
-        print(sel, out_data)
+    for sel_in in range(2**2):
+        sel_out, out_data = swz.call_classically(selection=sel_in, targets=data)  # type: ignore[assignment]
+        assert sel_in == sel_out
+        assert isinstance(out_data, np.ndarray)
+        assert out_data[0] == data[sel_in]
 
 
 @pytest.mark.parametrize(

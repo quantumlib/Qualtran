@@ -21,10 +21,18 @@ import numpy as np
 from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BoundedQUInt,
+    GateWithRegisters,
+    QAny,
+    QUInt,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
-from qualtran.cirq_interop.bit_tools import iter_bits
 
 
 class ProgrammableRotationGateArrayBase(GateWithRegisters):
@@ -148,7 +156,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         for i, thetas in enumerate(self.angles):
             bit_width = max(thetas).bit_length()
             st, en = en, en + bit_width
-            angles_bits[:, st:en] = [[*iter_bits(t, bit_width)] for t in thetas]
+            angles_bits[:, st:en] = [QUInt(bit_width).to_bits(t) for t in thetas]
             angles_bit_pow[st:en] = [*range(bit_width)][::-1]
             angles_idx[st:en] = i
         assert en == num_bits
@@ -206,3 +214,16 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
     @cached_property
     def interleaved_unitary_target(self) -> Tuple[Register, ...]:
         return ()
+
+
+@bloq_example
+def _programmable_rotation_gate_array() -> ProgrammableRotationGateArray:
+    programmable_rotation_gate_array = ProgrammableRotationGateArray(
+        [1, 2, 3, 4], kappa=2, rotation_gate=cirq.Z
+    )
+    return programmable_rotation_gate_array
+
+
+_PROGRAMMABLE_ROTATAION_GATE_ARRAY_DOC = BloqDocSpec(
+    bloq_cls=ProgrammableRotationGateArray, examples=(_programmable_rotation_gate_array,)
+)

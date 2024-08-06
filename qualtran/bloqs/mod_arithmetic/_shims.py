@@ -27,8 +27,8 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, QBit, QUInt, Register, Signature
-from qualtran.bloqs.arithmetic import Add, AddK
-from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate, Sub
+from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
+from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
@@ -76,7 +76,7 @@ class CModSub(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':
@@ -84,9 +84,6 @@ class CModSub(Bloq):
         elif reg.name == 'y':
             return TextBox('x-y')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -121,7 +118,7 @@ class _ModInvInner(Bloq):
             (CNOT(), 2),
             (Lt(self.n), 1),
             (CSwap(self.n), 2),
-            (Sub(self.n), 1),
+            (Subtract(QUInt(self.n)), 1),
             (Add(QUInt(self.n)), 1),
             (CNOT(), 1),
             (ModDbl(self.n, self.mod), 1),
@@ -140,15 +137,12 @@ class _ModInvInner(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -165,7 +159,7 @@ class ModInv(Bloq):
         # return {(Toffoli(), 32 * self.n**2 * log2(self.n))}
         return {
             (_ModInvInner(n=self.n, mod=self.mod), 2 * self.n),
-            (Negate(self.n), 1),
+            (Negate(QUInt(self.n)), 1),
             (AddK(self.n, k=self.mod), 1),
             (Swap(self.n), 1),
         }
@@ -174,15 +168,12 @@ class ModInv(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -208,7 +199,7 @@ class ModMul(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name in ['x', 'y']:
             return TextBox(reg.name)
         elif reg.name == 'out':
@@ -232,15 +223,12 @@ class ModDbl(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
             return TextBox('$2x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -264,13 +252,10 @@ class ModNeg(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__
 
 
 @frozen
@@ -290,12 +275,9 @@ class CModNeg(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__

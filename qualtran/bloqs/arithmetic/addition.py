@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import itertools
-import math
 from functools import cached_property
 from typing import (
-    Any,
     Dict,
     Iterable,
     Iterator,
@@ -28,6 +25,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import cirq
 import numpy as np
 import sympy
@@ -35,14 +33,18 @@ from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    CtrlSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     QInt,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Side,
@@ -50,18 +52,15 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs import util_bloqs
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import directional_text_box, Text
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
-
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -122,28 +121,6 @@ class Add(Bloq):
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
-            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N_a = 2**self.a_dtype.bitsize
-        N_b = 2**self.b_dtype.bitsize
-        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
-        # TODO: Add a value-to-index method on dtype to make this easier.
-        for a, b in itertools.product(range(N_a), range(N_b)):
-            unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
-
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.pretty_name(), tag]))
-
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
@@ -152,8 +129,10 @@ class Add(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a + b, N))}
+        return {
+            'a': a,
+            'b': add_ints(int(a), int(b), num_bits=int(b_bitsize), is_signed=not unsigned),
+        }
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -161,10 +140,9 @@ class Add(Bloq):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box, Text
 
         if reg is None:
-            return Text("a+b")
+            return Text("")
         if reg.name == 'a':
             return directional_text_box('a', side=reg.side)
         elif reg.name == 'b':
@@ -212,6 +190,9 @@ class Add(Bloq):
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
+        if self.b_dtype.bitsize == 1:
+            yield CNOT().on(input_bits[0], output_bits[0])
+            return
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
@@ -234,26 +215,26 @@ class Add(Bloq):
         return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_symb() -> Add:
     n = sympy.Symbol('n')
     add_symb = Add(QInt(bitsize=n))
     return add_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_small() -> Add:
     add_small = Add(QUInt(bitsize=4))
     return add_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_large() -> Add:
     add_large = Add(QUInt(bitsize=64))
     return add_large
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_diff_size_regs() -> Add:
     add_diff_size_regs = Add(QUInt(bitsize=4), QUInt(bitsize=16))
     return add_diff_size_regs
@@ -312,7 +293,13 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': b, 'c': a + b}
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        return {
+            'a': a,
+            'b': b,
+            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+        }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
@@ -339,17 +326,8 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         ]
         return cirq.inverse(optree) if self.is_adjoint else optree
 
-    def _t_complexity_(self) -> TComplexity:
-        and_t = And(uncompute=self.is_adjoint).t_complexity()
-        num_clifford = self.bitsize * (5 + and_t.clifford)
-        num_t = self.bitsize * and_t.t
-        return TComplexity(t=num_t, clifford=num_clifford)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (And(uncompute=self.is_adjoint), self.bitsize),
-            (util_bloqs.ArbitraryClifford(n=2), 5 * self.bitsize),
-        }
+        return {(And(uncompute=self.is_adjoint), self.bitsize), (CNOT(), 5 * self.bitsize)}
 
     def __pow__(self, power: int):
         if power == 1:
@@ -359,20 +337,20 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_symb() -> OutOfPlaceAdder:
     n = sympy.Symbol('n')
     add_oop_symb = OutOfPlaceAdder(bitsize=n)
     return add_oop_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_small() -> OutOfPlaceAdder:
     add_oop_small = OutOfPlaceAdder(bitsize=4)
     return add_oop_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _add_oop_large() -> OutOfPlaceAdder:
     add_oop_large = OutOfPlaceAdder(bitsize=64)
     return add_oop_large
@@ -383,15 +361,21 @@ _ADD_OOP_DOC = BloqDocSpec(
 )
 
 
+def _cvs_converter(vv):
+    if isinstance(vv, (int, np.integer)):
+        return (int(vv),)
+    return tuple(int(v) for v in vv)
+
+
 @frozen
-class SimpleAddConstant(Bloq):
+class AddK(Bloq):
     r"""Takes |x> to |x + k> for a classical integer `k`.
 
-    Applies addition to input register `|x>` given classical integer 'k'.
-
-    This is the simple version of constant addition because it involves simply converting the
-    classical integer into a quantum parameter and using quantum-quantum addition as opposed to
-    designing a bespoke circuit for constant addition based on the classical parameter.
+    This construction simply XORs the classical constant into a quantum register and
+    applies quantum-quantum addition. This is the lowest T-count algorithm at the expense
+    of $n$ auxiliary qubits. This construction also permits an inexpensive controlled version:
+    you only need to control the loading of the classical constant which can be done with
+    only clifford operations.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -405,14 +389,13 @@ class SimpleAddConstant(Bloq):
         x: A bitsize-sized input register (register x above).
 
     References:
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580) Fig 2a
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
+        Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
 
-    bitsize: Union[int, sympy.Expr]
-    k: int
-    cvs: Tuple[int, ...] = field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
-    )
+    bitsize: 'SymbolicInt'
+    k: 'SymbolicInt'
+    cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
     signed: bool = False
 
     @cached_property
@@ -432,23 +415,27 @@ class SimpleAddConstant(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
+        N = 2**self.bitsize
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': x + self.k}
+            return {
+                'x': add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
+            }
 
         if np.all(self.cvs == ctrls):
-            x = x + self.k
+            x = add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
 
         return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(
-                f'Symbolic bitsize {self.bitsize} not supported for SimpleAddConstant.build_composite_bloq'
-            )
+        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
             ctrls = regs['ctrls']
@@ -459,9 +446,9 @@ class SimpleAddConstant(Bloq):
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
         if self.signed:
-            binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
+            binary_rep = QInt(self.bitsize).to_bits(self.k)
         else:
-            binary_rep = list(iter_bits(self.k, self.bitsize))
+            binary_rep = QUInt(self.bitsize).to_bits(self.k)
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
@@ -469,7 +456,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -489,7 +476,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -504,273 +491,61 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x}
 
-    def pretty_name(self) -> str:
-        return f'x += {self.k}'
-
-
-@bloq_example
-def _simple_add_k_small() -> SimpleAddConstant:
-    simple_add_k_small = SimpleAddConstant(bitsize=4, k=2, signed=False)
-    return simple_add_k_small
-
-
-@bloq_example
-def _simple_add_k_large() -> SimpleAddConstant:
-    simple_add_k_large = SimpleAddConstant(bitsize=64, k=-23, signed=True)
-    return simple_add_k_large
-
-
-_SIMPLE_ADD_K_DOC = BloqDocSpec(
-    bloq_cls=SimpleAddConstant, examples=[_simple_add_k_small, _simple_add_k_large]
-)
-
-
-@frozen(auto_attribs=True)
-class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Applies U(add, M)|x> = |(x + add) % M> if x < M else |x>.
-
-    Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
-     1. If integer `x` < `mod`: output is `|(x + add) % M>`
-     2. If integer `x` >= `mod`: output is `|x>`.
-
-    This condition is needed to ensure that the mapping of all input basis states (i.e. input
-    states |0>, |1>, ..., |2 ** bitsize - 1) to corresponding output states is bijective and thus
-    the gate is reversible.
-
-    Also supports controlled version of the gate by specifying a per qubit control value as a tuple
-    of integers passed as `cvs`.
-    """
-
-    bitsize: int
-    mod: int = field()
-    add_val: int = 1
-    cvs: Tuple[int, ...] = field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
-    )
-
-    @mod.validator
-    def _validate_mod(self, attribute, value):
-        if isinstance(value, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
-            return
-        if not 1 <= value <= 2**self.bitsize:
-            raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
-
-    @cached_property
-    def signature(self) -> Signature:
-        if self.cvs:
-            return Signature(
-                [Register('ctrl', QUInt(len(self.cvs))), Register('x', QUInt(self.bitsize))]
-            )
-        return Signature([Register('x', QUInt(self.bitsize))])
-
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        add_reg = (2,) * self.bitsize
-        control_reg = (2,) * len(self.cvs)
-        return (control_reg, add_reg) if control_reg else (add_reg,)
-
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddConstantMod":
-        raise NotImplementedError()
-
-    def _classical_unctrled(self, target_val: int):
-        if target_val < self.mod:
-            return (target_val + self.add_val) % self.mod
-        return target_val
-
-    def apply(self, *args) -> Union[int, Iterable[int]]:
-        target_val = args[-1]
-        new_target_val = self._classical_unctrled(target_val)
-        if self.cvs and args[0] != int(''.join(str(x) for x in self.cvs), 2):
-            new_target_val = target_val
-        ret = (args[0], new_target_val) if self.cvs else (new_target_val,)
-        return ret
-
-    def on_classical_vals(
-        self, *, x: int, ctrl: Optional[int] = None
-    ) -> Dict[str, 'ClassicalValT']:
-        out = self._classical_unctrled(x)
-        if self.cvs:
-            assert ctrl is not None
-            if ctrl == int(''.join(str(x) for x in self.cvs), 2):
-                return {'ctrl': ctrl, 'x': out}
-            else:
-                return {'ctrl': ctrl, 'x': x}
-
-        assert ctrl is None
-        return {'x': out}
-
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if b else '@(0)' for b in self.cvs]
-        wire_symbols += [f"Add_{self.add_val}_Mod_{self.mod}"] * self.bitsize
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def __pow__(self, power: int) -> 'AddConstantMod':
-        return AddConstantMod(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(QUInt(self.bitsize), QUInt(self.bitsize)), 5)}
+        loading_cost: Tuple[Bloq, SymbolicInt]
+        if len(self.cvs) == 0:
+            loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.
+        elif len(self.cvs) == 1:
+            loading_cost = (CNOT(), self.bitsize)  # upper bound; depends on the data.
+        else:
+            # Otherwise, use the decomposition
+            return super().build_call_graph(ssa=ssa)
+
+        return {loading_cost, (Add(QUInt(self.bitsize)), 1)}
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if self.cvs:
+            # We're already controlled, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        if ctrl_spec.num_ctrl_reg != 1:
+            # Multiple control registers, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        ((qdtype, cv_shape),) = ctrl_spec.activation_function_dtypes()
+        if qdtype != QBit():
+            # Control values aren't bits, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        # Supported via this class's custom `cvs` attribute.
+        bloq = attrs.evolve(self, cvs=ctrl_spec.cvs)
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            ctrls, x = bb.add_t(bloq, ctrls=np.asarray(ctrl_soqs), **in_soqs)
+            return np.asarray(ctrls).tolist(), (x,)
+
+        return bloq, _add_ctrled
 
 
-@bloq_example
-def _add_k_symb() -> AddConstantMod:
-    n, m, k = sympy.symbols('n m k')
-    add_k_symb = AddConstantMod(bitsize=n, mod=m, add_val=k)
-    return add_k_symb
+@bloq_example(generalizer=ignore_split_join)
+def _add_k() -> AddK:
+    n, k = sympy.symbols('n k')
+    add_k = AddK(bitsize=n, k=k)
+    return add_k
 
 
-@bloq_example
-def _add_k_small() -> AddConstantMod:
-    add_k_small = AddConstantMod(bitsize=4, mod=7, add_val=1)
+@bloq_example(generalizer=ignore_split_join)
+def _add_k_small() -> AddK:
+    add_k_small = AddK(bitsize=4, k=2, signed=False)
     return add_k_small
 
 
-@bloq_example
-def _add_k_large() -> AddConstantMod:
-    add_k_large = AddConstantMod(bitsize=64, mod=500, add_val=23)
+@bloq_example(generalizer=ignore_split_join)
+def _add_k_large() -> AddK:
+    add_k_large = AddK(bitsize=64, k=-23, signed=True)
     return add_k_large
 
 
-_ADD_K_DOC = BloqDocSpec(
-    bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
-)
-
-
-@frozen
-class Subtract(Bloq):
-    r"""An n-bit subtraction gate.
-
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4 T$ gates.
-
-    Args:
-        a_dtype: Quantum datatype used to represent the integer a.
-        b_dtype: Quantum datatype used to represent the integer b. Must be large
-            enough to hold the result in the output register of a - b, or else it simply
-            drops the most significant bits. If not specified, b_dtype is set to a_dtype.
-
-    Registers:
-        a: A a_dtype.bitsize-sized input register (register a above).
-        b: A b_dtype.bitsize-sized input/output register (register b above).
-
-    References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
-    """
-
-    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-
-    @b_dtype.default
-    def b_dtype_default(self):
-        return self.a_dtype
-
-    @a_dtype.validator
-    def _a_dtype_validate(self, field, val):
-        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
-        if isinstance(val.num_qubits, sympy.Expr):
-            return
-        if val.bitsize > self.b_dtype.bitsize:
-            raise ValueError("a_dtype bitsize must be less than or equal to b_dtype bitsize")
-
-    @b_dtype.validator
-    def _b_dtype_validate(self, field, val):
-        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
-
-    @property
-    def dtype(self):
-        if self.a_dtype != self.b_dtype:
-            raise ValueError(
-                "Add.dtype is only supported when both operands have the same dtype: "
-                f"{self.a_dtype=}, {self.b_dtype=}"
-            )
-        return self.a_dtype
-
-    @property
-    def signature(self):
-        return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
-
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
-        unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
-        b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(a - b, N))}
-
-    def short_name(self) -> str:
-        return "a-b"
-
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
-        wire_symbols += ["In(y)/Out(x-y)"] * int(self.b_dtype.bitsize)
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
-
-        if soq.reg.name == 'a':
-            return directional_text_box('a', side=soq.reg.side)
-        elif soq.reg.name == 'b':
-            return directional_text_box('a-b', side=soq.reg.side)
-        else:
-            raise ValueError()
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
-        return {
-            (XGate(), self.b_dtype.bitsize),
-            (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1),
-            (Add(a_dtype, b_dtype), 1),
-            (util_bloqs.Split(self.b_dtype), 1),
-            (util_bloqs.Join(self.b_dtype), 1),
-        }
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
-        b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
-        b = bb.add(
-            SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
-        )  # 2s complement of b.
-
-        a_dtype = (
-            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
-        )
-        b_dtype = (
-            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
-        )
-
-        a, b = bb.add(Add(a_dtype, b_dtype), a=a, b=b)  # a - b
-        return {'a': a, 'b': b}
-
-
-@bloq_example
-def _sub_symb() -> Subtract:
-    n = sympy.Symbol('n')
-    sub_symb = Subtract(QInt(bitsize=n))
-    return sub_symb
-
-
-@bloq_example
-def _sub_small() -> Subtract:
-    sub_small = Subtract(QInt(bitsize=4))
-    return sub_small
-
-
-@bloq_example
-def _sub_large() -> Subtract:
-    sub_large = Subtract(QInt(bitsize=64))
-    return sub_large
-
-
-@bloq_example
-def _sub_diff_size_regs() -> Subtract:
-    sub_diff_size_regs = Subtract(QInt(bitsize=4), QInt(bitsize=16))
-    return sub_diff_size_regs
-
-
-_SUB_DOC = BloqDocSpec(
-    bloq_cls=Subtract, examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs]
-)
+_ADD_K_DOC = BloqDocSpec(bloq_cls=AddK, examples=[_add_k, _add_k_small, _add_k_large])

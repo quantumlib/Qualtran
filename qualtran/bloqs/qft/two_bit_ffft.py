@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Set, TYPE_CHECKING
+from typing import Dict, List, Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    ConnectionT,
     QBit,
     Register,
     Signature,
@@ -88,27 +89,21 @@ class TwoBitFFFT(Bloq):
     def pretty_name(self) -> str:
         return 'F(k, n)'
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        out_inds = [outgoing['x'], outgoing['y']]
-        in_inds = [incoming['x'], incoming['y']]
+        # TODO: https://github.com/quantumlib/Qualtran/issues/873. This tensor definition
+        #       isn't used by default since this isn't (yet) a "leaf bloq".
+
+        out_inds = [(outgoing['x'], 0), (outgoing['y'], 0)]
+        in_inds = [(incoming['x'], 0), (incoming['y'], 0)]
         matrix = _fkn_matrix(self.k, self.n)
         matrix = matrix.conj().T if self.is_adjoint else matrix
-        tn.add(
-            qtn.Tensor(
-                data=matrix.reshape((2,) * 4),
-                inds=out_inds + in_inds,
-                tags=[self.pretty_name(), tag],
-            )
-        )
+        return [
+            qtn.Tensor(data=matrix.reshape((2,) * 4), inds=out_inds + in_inds, tags=[str(self)])
+        ]
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
@@ -147,8 +142,4 @@ def _two_bit_ffft() -> TwoBitFFFT:
     return two_bit_ffft
 
 
-_TWO_BIT_FFFT_DOC = BloqDocSpec(
-    bloq_cls=TwoBitFFFT,
-    import_line='from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT',
-    examples=[_two_bit_ffft],
-)
+_TWO_BIT_FFFT_DOC = BloqDocSpec(bloq_cls=TwoBitFFFT, examples=[_two_bit_ffft])

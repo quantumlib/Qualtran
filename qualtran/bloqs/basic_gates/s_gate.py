@@ -13,15 +13,15 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, Register, Signature
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -37,13 +37,15 @@ _SMATRIX = np.array([[1, 0], [0, 1j]], dtype=np.complex128)
 class SGate(Bloq):
     r"""The S gate.
 
-    The unitary matrix of `cirq.S` is
+    The unitary matrix of `SGate` is
     $$
     \begin{bmatrix}
         1 & 0 \\
         0 & i 
     \end{bmatrix}
     $$
+
+    It is the 'square root' of the Z gate: $S\cdot S = Z$.
 
     Registers:
         q: The qubit
@@ -57,22 +59,15 @@ class SGate(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         data = _SMATRIX.conj().T if self.is_adjoint else _SMATRIX
-        tn.add(
-            qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
-            )
-        )
+        return [
+            qtn.Tensor(data=data, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)])
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type:ignore[type-var]
@@ -80,13 +75,16 @@ class SGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.S(q), {'q': np.array([q])}
+        p = -1 if self.is_adjoint else 1
+        return cirq.S(q) ** p, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
         maybe_dag = '†' if self.is_adjoint else ''
         return f'S{maybe_dag}'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         return TextBox(self.pretty_name())
 
     def adjoint(self) -> 'Bloq':
@@ -99,6 +97,4 @@ def _s_gate() -> SGate:
     return s_gate
 
 
-_S_GATE_DOC = BloqDocSpec(
-    bloq_cls=SGate, import_line='from qualtran.bloqs.basic_gates import SGate', examples=[_s_gate]
-)
+_S_GATE_DOC = BloqDocSpec(bloq_cls=SGate, examples=[_s_gate], call_graph_example=None)

@@ -13,7 +13,7 @@
 #  limitations under the License.
 import inspect
 import sys
-from typing import Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import cast, Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import cirq
 
@@ -32,7 +32,7 @@ def _get_all_rotation_types() -> Tuple[Type['_HasEps'], ...]:
     bloqs_to_exclude = [GlobalPhase]
 
     return tuple(
-        v
+        cast(Type['_HasEps'], v)  # Can't use `issubclass` with protocols with attributes.
         for (_, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
         if isinstance(v, _HasEps) and v not in bloqs_to_exclude
     )
@@ -48,7 +48,7 @@ def t_counts_from_sigma(
 
     if rotation_types is None:
         rotation_types = _get_all_rotation_types()
-    ret = sigma.get(TGate(), 0)
+    ret = sigma.get(TGate(), 0) + sigma.get(TGate().adjoint(), 0)
     for bloq, counts in sigma.items():
         if isinstance(bloq, rotation_types) and not cirq.has_stabilizer_effect(bloq):
             ret += ceil(TComplexity.rotation_cost(bloq.eps)) * counts

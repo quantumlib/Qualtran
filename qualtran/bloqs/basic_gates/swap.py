@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -26,6 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    ConnectionT,
     DecomposeTypeError,
     GateWithRegisters,
     Register,
@@ -33,12 +34,13 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
+from .cnot import CNOT
+from .hadamard import Hadamard
 from .t_gate import TGate
 
 if TYPE_CHECKING:
@@ -83,20 +85,15 @@ class TwoBitSwap(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         matrix = _swap_matrix()
-        out_inds = [outgoing['x'], outgoing['y']]
-        in_inds = [incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
+        out_inds = [(outgoing['x'], 0), (outgoing['y'], 0)]
+        in_inds = [(incoming['x'], 0), (incoming['y'], 0)]
+        return [qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[str(self)])]
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -152,20 +149,20 @@ class TwoBitCSwap(Bloq):
         yield [cirq.T(x), cirq.H(y)]
         yield [cirq.CNOT(y, x)]
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
+        # TODO: https://github.com/quantumlib/Qualtran/issues/873. Since this bloq
+        #       has a decomposition, it will be used (by default) whenever `bloq.tensor_contract()`
+        #       is called on a bloq containing a TwoBitCSwap instead of this implementation.
+        #       When this becomes a leaf bloq, this explicit tensor will be used.
+
         matrix = _controlled_swap_matrix()
-        out_inds = [outgoing['ctrl'], outgoing['x'], outgoing['y']]
-        in_inds = [incoming['ctrl'], incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
+        out_inds = [(outgoing['ctrl'], 0), (outgoing['x'], 0), (outgoing['y'], 0)]
+        in_inds = [(incoming['ctrl'], 0), (incoming['x'], 0), (incoming['y'], 0)]
+        return [qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[str(self)])]
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -180,14 +177,14 @@ class TwoBitCSwap(Bloq):
         return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
+        return {(TGate(), 7), (CNOT(), 8), (Hadamard(), 2)}
 
     def adjoint(self) -> 'Bloq':
         return self
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
-            return Text('swap')
+            return Text('')
         if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
@@ -236,7 +233,7 @@ class Swap(Bloq):
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
-            return Text('swap')
+            return Text('')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':
@@ -318,16 +315,13 @@ class CSwap(GateWithRegisters):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(r'x↔y')
+            return Text('')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':
             return TextBox('×(y)')
         else:
             return Circle(filled=True)
-
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -356,8 +350,4 @@ def _cswap_large() -> CSwap:
     return cswap_large
 
 
-_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=CSwap,
-    import_line='from qualtran.bloqs.basic_gates import CSwap',
-    examples=(_cswap_symb, _cswap_small, _cswap_large),
-)
+_CSWAP_DOC = BloqDocSpec(bloq_cls=CSwap, examples=(_cswap_symb, _cswap_small, _cswap_large))

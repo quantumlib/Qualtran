@@ -31,10 +31,10 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
-from qualtran.bloqs.select_and_prepare import SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -120,7 +120,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
     r"""SELECT for THC Hamiltonian.
 
     Args:
@@ -327,8 +327,4 @@ def _thc_sel() -> SelectTHC:
     return thc_sel
 
 
-_THC_SELECT = BloqDocSpec(
-    bloq_cls=SelectTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC',
-    examples=(_thc_sel,),
-)
+_THC_SELECT = BloqDocSpec(bloq_cls=SelectTHC, examples=(_thc_sel,))

@@ -25,3 +25,4 @@ def test_create_and_unitary(bitsize: int):
         gate = MatrixGate.random(bitsize, random_state=random_state)
         np.testing.assert_allclose(cirq.unitary(gate), gate.matrix)
         np.testing.assert_allclose(cirq.unitary(gate**-1), np.conj(gate.matrix).T)
+        np.testing.assert_allclose(gate.tensor_contract(), gate.matrix)

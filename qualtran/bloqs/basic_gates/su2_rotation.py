@@ -12,18 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
-from qualtran.symbolics import is_symbolic, SymbolicFloat
+from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -106,23 +106,18 @@ class SU2RotationGate(GateWithRegisters):
 
         return SU2RotationGate(theta, phi, lambd, alpha)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(
+        return [
             qtn.Tensor(
                 data=self.rotation_matrix,
-                inds=(outgoing['q'], incoming['q']),
-                tags=[self.pretty_name(), tag],
+                inds=[(outgoing['q'], 0), (incoming['q'], 0)],
+                tags=[str(self)],
             )
-        )
+        ]
 
     def _unitary_(self):
         if self.is_symbolic():
@@ -130,13 +125,17 @@ class SU2RotationGate(GateWithRegisters):
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        pi = sympy.pi if self.is_symbolic() else np.pi
-        exp = sympy.exp if self.is_symbolic() else np.exp
-
-        bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
-        q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
+        bb.add(
+            GlobalPhase(exponent=1 + self.global_shift / pi(self.global_shift), eps=self.eps / 4)
+        )
+        q = bb.add(
+            ZPowGate(exponent=1 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
+            q=q,
+        )
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
-        q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
+        q = bb.add(
+            ZPowGate(exponent=-self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
+        )
         return {'q': q}
 
     def adjoint(self) -> 'SU2RotationGate':
@@ -146,17 +145,6 @@ class SU2RotationGate(GateWithRegisters):
             lambd=-self.phi,
             global_shift=-self.global_shift,
             eps=self.eps,
-        )
-
-    def pretty_name(self) -> str:
-        return 'SU_2'
-
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        if reg is None:
-            return Text("SU_2")
-
-        return TextBox(
-            f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
         )
 
     def _t_complexity_(self) -> TComplexity:
@@ -174,6 +162,20 @@ class SU2RotationGate(GateWithRegisters):
         alpha = ssa.new_symbol("alpha")
         eps = ssa.new_symbol("eps")
         return cls(theta, phi, lambd, alpha, eps)
+
+    def pretty_name(self) -> str:
+        return 'SU_2'
+
+    def __str__(self):
+        return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(
+                f'({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
+            )
+
+        return TextBox("SU2")
 
 
 @bloq_example
@@ -195,7 +197,5 @@ def _t_gate() -> SU2RotationGate:
 
 
 _SU2_ROTATION_GATE_DOC = BloqDocSpec(
-    bloq_cls=SU2RotationGate,
-    import_line='from qualtran.bloqs.basic_gates import SU2RotationGate',
-    examples=[_su2_rotation_gate, _hadamard, _t_gate],
+    bloq_cls=SU2RotationGate, examples=[_su2_rotation_gate, _hadamard, _t_gate]
 )

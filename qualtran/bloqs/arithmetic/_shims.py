@@ -41,25 +41,6 @@ class MultiCToffoli(Bloq):
 
 
 @frozen
-class AddK(Bloq):
-    n: int
-    k: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n))])
-
-
-@frozen
-class Sub(Bloq):
-    n: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
-
-
-@frozen
 class Lt(Bloq):
     n: int
     signed: bool = False
@@ -82,12 +63,3 @@ class CHalf(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.n))])
-
-
-@frozen
-class Negate(Bloq):
-    n: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n))])

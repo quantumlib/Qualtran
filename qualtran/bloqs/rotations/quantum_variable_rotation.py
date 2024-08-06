@@ -56,7 +56,7 @@ References:
 
 import abc
 from functools import cached_property
-from typing import cast, Dict, Sequence, Set, TYPE_CHECKING, Union
+from typing import cast, Dict, Sequence, Set, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -84,6 +84,7 @@ from qualtran.symbolics import (
     sabs,
     smax,
     smin,
+    SymbolicFloat,
     SymbolicInt,
 )
 
@@ -145,15 +146,12 @@ class QvrZPow(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: SymbolicFloat = 1.0
+    eps: SymbolicFloat = 1e-9
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-9
     ) -> 'QvrZPow':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrZPow(cost_reg, gamma=gamma, eps=eps)
@@ -214,11 +212,7 @@ def _qvr_zpow() -> QvrZPow:
     return qvr_zpow
 
 
-_QVR_ZPOW = BloqDocSpec(
-    bloq_cls=QvrZPow,
-    import_line='from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow',
-    examples=(_qvr_zpow,),
-)
+_QVR_ZPOW = BloqDocSpec(bloq_cls=QvrZPow, examples=(_qvr_zpow,))
 
 
 def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -> int:
@@ -237,7 +231,7 @@ def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -
     from qualtran.bloqs.rotations.phase_gradient import _mul_via_repeated_add
 
     cost_val = (2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)
-    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_str)
+    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_template().dtype)
     expected_val = (gamma_fxp.get_val() * cost_val) % 1
 
     def is_good_phase_grad_size(phase_bitsize: int):
@@ -381,8 +375,8 @@ class QvrPhaseGradient(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: SymbolicFloat = 1.0
+    eps: SymbolicFloat = 1e-9
 
     def __attrs_post_init__(self):
         dtype = self.cost_reg.dtype
@@ -391,10 +385,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-9
     ) -> 'QvrPhaseGradient':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrPhaseGradient(cost_reg, gamma=gamma, eps=eps)
@@ -466,7 +457,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
 
     @cached_property
     def gamma_dtype(self) -> QFxp:
@@ -477,7 +468,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = smax(0, bit_length(sympy.Abs(self.gamma)))
+        n_int = smax(0, bit_length(sabs(self.gamma)))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 
@@ -507,8 +498,4 @@ def _qvr_phase_gradient() -> QvrPhaseGradient:
     return qvr_phase_gradient
 
 
-_QVR_PHASE_GRADIENT = BloqDocSpec(
-    bloq_cls=QvrPhaseGradient,
-    import_line='from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient',
-    examples=(_qvr_phase_gradient,),
-)
+_QVR_PHASE_GRADIENT = BloqDocSpec(bloq_cls=QvrPhaseGradient, examples=(_qvr_phase_gradient,))

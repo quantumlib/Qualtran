@@ -21,7 +21,7 @@ import numpy as np
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -161,16 +161,18 @@ class QubitizationQPE(GateWithRegisters):
 def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     import numpy as np
 
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 2, 2, 2
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps
@@ -182,16 +184,18 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
 def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     import numpy as np
 
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+        get_walk_operator_for_hubbard_model,
+    )
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 20, 20, 20
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps
@@ -203,6 +207,7 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
 def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     from openfermion.resource_estimates.utils import QI
 
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
     from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
 
     # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
@@ -211,13 +216,10 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     num_bits_rot = 20
     thc_dim = 450
     num_spat = num_spinorb // 2
-    tpq = np.random.normal(size=(num_spat, num_spat))
-    tpq = 0.5 * (tpq + tpq) / 2
-    zeta = np.random.normal(size=(thc_dim, thc_dim))
-    zeta = 0.5 * (zeta + zeta) / 2
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
+    t_l, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
     walk = get_walk_operator_for_thc_ham(
-        tpq,
+        t_l,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_theta=num_bits_rot,
@@ -241,7 +243,7 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     num_spatial = 6
-    tpq, eris = build_random_test_integrals(num_spatial // 2)
+    tpq, eris = build_random_test_integrals(num_spatial // 2, seed=7)
     walk = get_walk_operator_for_sparse_chem_ham(
         tpq, eris, num_bits_rot_aa=8, num_bits_state_prep=16
     )
@@ -255,7 +257,6 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
 
 _QUBITIZATION_QPE_DOC = BloqDocSpec(
     bloq_cls=QubitizationQPE,
-    import_line='from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE',
     examples=(
         _qubitization_qpe_hubbard_model_small,
         _qubitization_qpe_sparse_chem,
