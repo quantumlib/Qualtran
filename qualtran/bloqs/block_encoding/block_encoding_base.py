@@ -14,7 +14,7 @@
 import abc
 
 from qualtran import Bloq, BloqDocSpec
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
@@ -94,7 +94,7 @@ class BlockEncoding(Bloq):
 
     @property
     @abc.abstractmethod
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         r"""Returns the signal / ancilla flag state $|G\rangle."""
 
 

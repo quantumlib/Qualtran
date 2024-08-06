@@ -36,7 +36,7 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, Bl
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics import smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.types import is_symbolic
@@ -170,7 +170,7 @@ class LinearCombination(BlockEncoding):
         )
 
     @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # GitHub issue: https://github.com/quantumlib/Qualtran/issues/1104
