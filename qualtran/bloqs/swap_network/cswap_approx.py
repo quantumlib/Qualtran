@@ -24,7 +24,6 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
