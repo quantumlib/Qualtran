@@ -38,11 +38,13 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=100,
-            n_logical_gates=GateCounts(rotation=30_100, measurement=int(1.4e6)),
+            n_logical_gates=GateCounts(
+                rotation_epsilons={1e-3 / 30_000: 30_000}, measurement=int(1.4e6)
+            ),
             n_rotation_layers=501,
         ),
         error_budget=1e-3,
-        c_min=1.5e6,
+        c_min=2.5e6,
         time_steps=1.5e5,
         code_distance=9,
         t_states=602000,
@@ -51,7 +53,10 @@ _TESTS = [
         alg=AlgorithmSummary(
             n_algo_qubits=1318,
             n_logical_gates=GateCounts(
-                t=int(5.53e7), rotation=int(2.06e8), toffoli=int(1.35e11), measurement=int(1.37e9)
+                t=int(5.53e7),
+                rotation_epsilons={1e-2 / 2.06e8: int(2.06e8)},
+                toffoli=int(1.35e11),
+                measurement=int(1.37e9),
             ),
             n_rotation_layers=int(2.05e8),
         ),
@@ -65,7 +70,10 @@ _TESTS = [
         alg=AlgorithmSummary(
             n_algo_qubits=12581,
             n_logical_gates=GateCounts(
-                t=12, rotation=12, toffoli=int(3.73e9), measurement=int(1.08e9)
+                t=12,
+                rotation_epsilons={1 / 3 / 12: 12},
+                toffoli=int(3.73e9),
+                measurement=int(1.08e9),
             ),
             n_rotation_layers=12,
         ),

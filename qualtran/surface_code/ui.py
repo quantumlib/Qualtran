@@ -522,7 +522,7 @@ def update(
     qec_name: str,
     magic_name: str,
     magic_count: int,
-    rotaion_model_name: str,
+    rotation_model_name: str,
 ):
     """Updates the visualization."""
     if any(x is None for x in [physical_error_rate, error_budget, *algorithm_data, magic_count]):
@@ -530,16 +530,22 @@ def update(
 
     # TODO: We implicitly rely on the order of the input components
     qubits, measurements, ts, toffolis, rotations, n_rotation_layers = algorithm_data
+
+    rotation_eps = 1e-3 / rotations  # TODO this should not be a magic number
+
     algorithm = AlgorithmSummary(
         n_algo_qubits=qubits,
         n_logical_gates=GateCounts(
-            measurement=measurements, t=ts, toffoli=toffolis, rotation=rotations
+            measurement=measurements,
+            t=ts,
+            toffoli=toffolis,
+            rotation_epsilons={rotation_eps: rotations},
         ),
         n_rotation_layers=n_rotation_layers,
     )
     qec = _QEC_SCHEMES[qec_name]
     magic_factory = _MAGIC_FACTORIES[magic_name]
-    rotation_model = _ROTATION_MODELS[rotaion_model_name]
+    rotation_model = _ROTATION_MODELS[rotation_model_name]
     n_logical_gates = beverland_et_al_model.n_discrete_logical_gates(
         eps_syn=error_budget / 3, alg=algorithm, rotation_model=rotation_model
     )

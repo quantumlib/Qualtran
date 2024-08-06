@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-from collections import defaultdict
-from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
+from collections import Counter, defaultdict
+from typing import Callable, Dict, Mapping, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -112,6 +112,12 @@ class BloqCount(CostKey[BloqCountDict]):
         return f'{self.gateset_name} counts'
 
 
+def _mapping_to_counter(mapping: Mapping[float, int]) -> Counter[float]:
+    if isinstance(mapping, Counter):
+        return mapping
+    return Counter(mapping)
+
+
 @frozen(kw_only=True)
 class GateCounts:
     """A data class of counts of the typical target gates in a compilation.
@@ -125,8 +131,17 @@ class GateCounts:
     cswap: int = 0
     and_bloq: int = 0
     clifford: int = 0
-    rotation: int = 0
     measurement: int = 0
+    rotation_epsilons: Counter[float] = field(factory=Counter, converter=_mapping_to_counter)
+
+    @property
+    def rotation(self):
+        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+        return sum(
+            n_rotations * int(TComplexity.rotation_cost(eps))
+            for eps, n_rotations in self.rotation_epsilons.items()
+        )
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -138,8 +153,8 @@ class GateCounts:
             cswap=self.cswap + other.cswap,
             and_bloq=self.and_bloq + other.and_bloq,
             clifford=self.clifford + other.clifford,
-            rotation=self.rotation + other.rotation,
             measurement=self.measurement + other.measurement,
+            rotation_epsilons=self.rotation_epsilons + other.rotation_epsilons,
         )
 
     def __mul__(self, other):
@@ -149,8 +164,8 @@ class GateCounts:
             cswap=other * self.cswap,
             and_bloq=other * self.and_bloq,
             clifford=other * self.clifford,
-            rotation=other * self.rotation,
             measurement=other * self.measurement,
+            rotation_epsilons=Counter({k: other * v for k, v in self.rotation_epsilons.items()}),
         )
 
     def __rmul__(self, other):
@@ -167,7 +182,13 @@ class GateCounts:
 
     def asdict(self):
         d = attrs.asdict(self)
-        return {k: v for k, v in d.items() if v > 0}
+
+        def _keep(key, value) -> bool:
+            if key == 'rotation_epsilons':
+                return value
+            return value > 0
+
+        return {k: v for k, v in d.items() if _keep(k, v)}
 
     def total_t_count(
         self,
@@ -232,6 +253,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates.rotation import _HasEps
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
@@ -257,7 +279,8 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(clifford=1)
 
         if bloq_is_rotation(bloq):
-            return GateCounts(rotation=1)
+            assert isinstance(bloq, _HasEps)
+            return GateCounts(rotation_epsilons={bloq.eps: 1})
 
         # Recursive case
         totals = GateCounts()

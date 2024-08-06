@@ -116,14 +116,12 @@ def n_discrete_logical_gates(
         rotation_model: Cost model used to compute the number of T gates
             needed to approximate rotations.
     """
-    n_rotations: int = alg.n_logical_gates.rotation
-    ret = attrs.evolve(alg.n_logical_gates, rotation=0)
-    if n_rotations > 0:
-        ret = (
-            ret
-            + rotation_model.preparation_overhead(eps_syn)
-            + n_rotations * rotation_model.rotation_cost(eps_syn / n_rotations)
-        )
+    rotation_epsilons: dict[float, int] = alg.n_logical_gates.rotation_epsilons
+    ret = attrs.evolve(alg.n_logical_gates, rotation_epsilons={})
+    if rotation_epsilons:
+        rotation_model.preparation_overhead(min(eps for eps in rotation_epsilons.values()))
+        for eps, n_rotations in rotation_epsilons.items():
+            ret += n_rotations * rotation_model.rotation_cost(eps)
     return ret
 
 
