@@ -60,21 +60,11 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                name='selection',
-                dtype=QAny((sum(r.total_bits() for r in self.select.selection_registers))),
-            ),
-        )
+        return (Register(name='selection', dtype=QAny(self.selection_bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                name='system',
-                dtype=QAny((sum(r.total_bits() for r in self.select.target_registers))),
-            ),
-        )
+        return (Register(name='system', dtype=QAny(self.system_bitsize)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -82,11 +72,11 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def selection_bitsize(self) -> int:
-        return self.selection_registers[0].bitsize
+        return sum(r.total_bits() for r in self.select.selection_registers)
 
     @cached_property
     def system_bitsize(self) -> int:
-        return self.target_registers[0].bitsize
+        return sum(r.total_bits() for r in self.select.target_registers)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, selection: SoquetT, system: SoquetT
