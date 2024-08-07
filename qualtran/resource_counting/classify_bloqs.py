@@ -122,7 +122,7 @@ def bloq_is_clifford(b: Bloq):
         ZGate,
     )
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
-    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 
     if isinstance(b, Adjoint):
         b = b.subbloq
