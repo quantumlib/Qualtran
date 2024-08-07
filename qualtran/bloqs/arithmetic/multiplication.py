@@ -34,7 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.symbolics import HasLength, is_symbolic, smax, SymbolicInt
+from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -567,7 +567,7 @@ class InvertRealNumber(Bloq):
         num_int = self.bitsize - self.num_frac
         # Newton-Raphson: Eq. (1)
         # x' = -a * x^2 + 2 * x
-        num_iters = int(np.ceil(np.log2(self.bitsize)))
+        num_iters = ceil(log2(self.bitsize))
         # TODO: When decomposing we will potentially need to use larger registers.
         # Related issue: https://github.com/quantumlib/Qualtran/issues/655
         return {
