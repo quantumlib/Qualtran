@@ -19,13 +19,12 @@ from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
 import attrs
-import cirq
 import numpy as np
 from attrs import field, frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -215,9 +214,7 @@ class ApplyControlledZs(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: Soquet):
         split_sys = bb.split(system)
-        ctrls, split_sys[0] = bb.add(
-            MultiControlPauli(self.cvs, cirq.Z), controls=ctrls, target=split_sys[0]
-        )
+        ctrls, split_sys[0] = bb.add(MultiControlZ(self.cvs), controls=ctrls, target=split_sys[0])
         system = bb.join(split_sys)
         return {'ctrls': ctrls, 'system': system}
 
