@@ -210,6 +210,10 @@ def test_chebyshev_matrix():
     np.testing.assert_allclose(from_gate, from_tensors, atol=2e-15)
 
 
+def test_chebyshev_poly_signal_state():
+    assert isinstance(_chebyshev_poly_even().signal_state.prepare, PrepareIdentity)
+
+
 @pytest.mark.slow
 def test_chebyshev_matrix_random():
     random_state = np.random.RandomState(1234)
