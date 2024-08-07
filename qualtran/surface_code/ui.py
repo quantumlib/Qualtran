@@ -531,7 +531,7 @@ def update(
     # TODO: We implicitly rely on the order of the input components
     qubits, measurements, ts, toffolis, rotations, n_rotation_layers = algorithm_data
 
-    rotation_eps = 1e-3 / rotations  # TODO this should not be a magic number
+    rotation_eps = error_budget / rotations
 
     algorithm = AlgorithmSummary(
         n_algo_qubits=qubits,
