@@ -115,7 +115,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'scaled_chebyshev_poly_odd',
         'black_box_select',  # cannot serialize AutoPartition
         'black_box_prepare',  # cannot serialize AutoPartition
-        'vlasov_block_encoding'
+        'vlasov_block_encoding',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
