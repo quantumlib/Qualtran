@@ -25,8 +25,8 @@ from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.mcmt import MultiControlPauli, MultiTargetCNOT
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import (
     _refl_around_zero,
