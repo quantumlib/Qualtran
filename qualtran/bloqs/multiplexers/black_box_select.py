@@ -22,15 +22,14 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    DecomposeTypeError,
     QAny,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
-from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
+from qualtran.symbolics import ssum, SymbolicInt
 
 
 @frozen
@@ -80,33 +79,12 @@ class BlackBoxSelect(Bloq):
     def system_bitsize(self) -> SymbolicInt:
         return ssum(r.total_bits() for r in self.select.target_registers)
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, selection: SoquetT, system: SoquetT
-    ) -> Dict[str, SoquetT]:
-        if is_symbolic(self.selection_bitsize) or is_symbolic(self.system_bitsize):
-            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-
-        # includes selection registers and any selection registers used by PREPARE
-        sel_regs = self.select.selection_registers
-        sel_part = Partition(self.selection_bitsize, regs=sel_regs)
-        sel_out_regs = bb.add_t(sel_part, x=selection)
-        sys_regs = tuple(self.select.target_registers)
-        sys_part = Partition(self.system_bitsize, regs=sys_regs)
-        sys_out_regs = bb.add_t(sys_part, x=system)
-        out_regs = bb.add_t(
-            self.select,
-            **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)},
-            **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)},
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        partitions = (
+            (self.selection_registers[0], [r.name for r in self.select.selection_registers]),
+            (self.target_registers[0], [r.name for r in self.select.target_registers]),
         )
-        sel_out_regs = out_regs[: len(sel_regs)]
-        sys_out_regs = out_regs[len(sel_regs) :]
-        selection = bb.add(
-            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
-        )
-        system = bb.add(
-            sys_part.adjoint(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
-        )
-        return {'selection': selection, 'system': system}
+        return bb.add_d(AutoPartition(self.select, partitions), **soqs)
 
 
 @bloq_example
