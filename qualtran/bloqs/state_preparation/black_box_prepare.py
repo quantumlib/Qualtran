@@ -22,15 +22,14 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    DecomposeTypeError,
     QAny,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
-from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
+from qualtran.symbolics import ssum, SymbolicInt
 
 
 @frozen
@@ -75,32 +74,12 @@ class BlackBoxPrepare(Bloq):
             ]
         )
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, selection: SoquetT, junk: SoquetT
-    ) -> Dict[str, SoquetT]:
-        if is_symbolic(self.selection_bitsize) or is_symbolic(self.junk_bitsize):
-            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-
-        sel_regs = self.prepare.selection_registers
-        sel_part = Partition(self.selection_bitsize, regs=sel_regs)
-        sel_out_regs = bb.add_t(sel_part, x=selection)
-        jnk_regs = tuple(self.prepare.junk_registers)
-        jnk_part = Partition(self.junk_bitsize, regs=jnk_regs)
-        jnk_out_regs = bb.add_t(jnk_part, x=junk)
-        out_regs = bb.add_t(
-            self.prepare,
-            **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)},
-            **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)},
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        partitions = (
+            (self.selection_registers[0], [r.name for r in self.prepare.selection_registers]),
+            (self.junk_registers[0], [r.name for r in self.prepare.junk_registers]),
         )
-        sel_out_regs = out_regs[: len(sel_regs)]
-        jnk_out_regs = out_regs[len(sel_regs) :]
-        selection = bb.add(
-            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
-        )
-        junk = bb.add(
-            jnk_part.adjoint(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
-        )
-        return {'selection': selection, 'junk': junk}
+        return bb.add_d(AutoPartition(self.prepare, partitions), **soqs)
 
     def pretty_name(self) -> str:
         return 'Prep'
