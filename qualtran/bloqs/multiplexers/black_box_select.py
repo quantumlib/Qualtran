@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QAny,
     Register,
     Signature,
@@ -29,6 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 
 @frozen
@@ -71,16 +73,19 @@ class BlackBoxSelect(Bloq):
         return Signature([*self.selection_registers, *self.target_registers])
 
     @cached_property
-    def selection_bitsize(self) -> int:
-        return sum(r.total_bits() for r in self.select.selection_registers)
+    def selection_bitsize(self) -> SymbolicInt:
+        return ssum(r.total_bits() for r in self.select.selection_registers)
 
     @cached_property
-    def system_bitsize(self) -> int:
-        return sum(r.total_bits() for r in self.select.target_registers)
+    def system_bitsize(self) -> SymbolicInt:
+        return ssum(r.total_bits() for r in self.select.target_registers)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, selection: SoquetT, system: SoquetT
     ) -> Dict[str, SoquetT]:
+        if is_symbolic(self.selection_bitsize) or is_symbolic(self.system_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
         # includes selection registers and any selection registers used by PREPARE
         sel_regs = self.select.selection_registers
         sel_part = Partition(self.selection_bitsize, regs=sel_regs)

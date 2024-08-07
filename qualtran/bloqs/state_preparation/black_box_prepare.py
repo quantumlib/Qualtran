@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QAny,
     Register,
     Signature,
@@ -29,6 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 
 @frozen
@@ -50,28 +52,19 @@ class BlackBoxPrepare(Bloq):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                name='selection',
-                dtype=QAny(sum(r.total_bits() for r in self.prepare.selection_registers)),
-            ),
-        )
+        return (Register(name='selection', dtype=QAny(self.selection_bitsize)),)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                name='junk', dtype=QAny(sum(r.total_bits() for r in self.prepare.junk_registers))
-            ),
-        )
+        return (Register(name='junk', dtype=QAny(self.junk_bitsize)),)
 
     @cached_property
-    def junk_bitsize(self) -> int:
-        return self.junk_registers[0].bitsize
+    def junk_bitsize(self) -> SymbolicInt:
+        return ssum(r.total_bits() for r in self.prepare.junk_registers)
 
     @cached_property
-    def selection_bitsize(self) -> int:
-        return self.selection_registers[0].bitsize
+    def selection_bitsize(self) -> SymbolicInt:
+        return ssum(r.total_bits() for r in self.prepare.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
@@ -85,6 +78,9 @@ class BlackBoxPrepare(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, selection: SoquetT, junk: SoquetT
     ) -> Dict[str, SoquetT]:
+        if is_symbolic(self.selection_bitsize) or is_symbolic(self.junk_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+
         sel_regs = self.prepare.selection_registers
         sel_part = Partition(self.selection_bitsize, regs=sel_regs)
         sel_out_regs = bb.add_t(sel_part, x=selection)
