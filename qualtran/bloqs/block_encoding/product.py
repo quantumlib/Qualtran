@@ -37,7 +37,7 @@ from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 
 
@@ -125,7 +125,7 @@ class Product(BlockEncoding):
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
