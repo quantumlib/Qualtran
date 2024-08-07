@@ -54,6 +54,15 @@ def test_chebyshev_poly_odd_counts():
     assert_equivalent_bloq_example_counts(_chebyshev_poly_odd)
 
 
+def test_chebyshev_checks():
+    from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
+
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(Unitary(XGate()), -1)
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(TestBlockEncoding(), 2)
+
+
 def test_chebyshev_alpha():
     assert _chebyshev_poly_even().alpha == 1
     assert _chebyshev_poly_odd().alpha == 1
