@@ -170,18 +170,6 @@ class LinearCombination(BlockEncoding):
         )
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
     def signal_state(self) -> PrepareOracle:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
@@ -272,6 +260,8 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         assert not is_symbolic(self.be_ancilla_bitsize)
         assert not is_symbolic(self.be_resource_bitsize)
+        assert not is_symbolic(self.prepare.junk_bitsize)
+        assert not is_symbolic(self.select.system_bitsize)
 
         # partition ancilla register
         be_system_soqs: Dict[str, SoquetT] = {"system": system}

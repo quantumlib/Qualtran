@@ -17,20 +17,11 @@ from typing import Dict, Tuple, Union
 
 import attrs
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    QAny,
-    Register,
-    Signature,
-    Soquet,
-    SoquetT,
-)
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
-from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import SymbolicFloat
 
@@ -38,153 +29,6 @@ from qualtran.symbolics import SymbolicFloat
 def _total_bits(registers: Tuple[Register, ...]) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
-
-
-@attrs.frozen
-class BlackBoxSelect(Bloq):
-    r"""A 'black box' Select bloq.
-
-    The `SELECT` operation applies the $l$'th unitary $U_{l}$ on the system register
-    when the selection register stores integer $l$.
-    When implementing specific `SelectOracle` bloqs, it is helpful to have multiple selection
-    registers each with semantic meaning. For example: you could have spatial or spin coordinates
-    on different, named registers. The `SelectOracle` interface encourages this. `BlackBoxSelect`
-    uses the properties on the `SelectOracle` interface to provide a "black box" view of a select
-    operation that just has a selection and system register.
-    During decomposition, this bloq will use the `Partition` utility bloq to partition
-    and route the parts of the unified selection register to the `Select` bloq.
-
-    Args:
-        select: The bloq implementing the `SelectOracle` interface.
-
-    Registers:
-        selection: The combined selection register
-        system: The combined system register
-    """
-
-    select: SelectOracle
-
-    def pretty_name(self) -> str:
-        return 'SELECT'
-
-    @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(name='selection', dtype=QAny(_total_bits(self.select.selection_registers))),
-        )
-
-    @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (Register(name='system', dtype=QAny(_total_bits(self.select.target_registers))),)
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.target_registers])
-
-    @cached_property
-    def selection_bitsize(self) -> int:
-        return self.selection_registers[0].bitsize
-
-    @cached_property
-    def system_bitsize(self) -> int:
-        return self.target_registers[0].bitsize
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', selection: 'SoquetT', system: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
-        # includes selection registers and any selection registers used by PREPARE
-        sel_regs = self.select.selection_registers
-        sel_part = Partition(self.selection_bitsize, regs=sel_regs)
-        sel_out_regs = bb.add_t(sel_part, x=selection)
-        sys_regs = tuple(self.select.target_registers)
-        sys_part = Partition(self.system_bitsize, regs=sys_regs)
-        sys_out_regs = bb.add_t(sys_part, x=system)
-        out_regs = bb.add(
-            self.select,
-            **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)},
-            **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)},
-        )
-        sel_out_regs = out_regs[: len(sel_regs)]
-        sys_out_regs = out_regs[len(sel_regs) :]
-        selection = bb.add(
-            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
-        )
-        system = bb.add(
-            sys_part.adjoint(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
-        )
-        return {'selection': selection, 'system': system}
-
-
-@attrs.frozen
-class BlackBoxPrepare(Bloq):
-    """Provide a black-box interface to `Prepare` bloqs.
-
-    This wrapper uses `Partition` to combine descriptive selection
-    registers into one register named "selection".
-
-    Args:
-        prepare: The bloq following the `Prepare` interface to wrap.
-
-    Registers:
-        selection: selection register.
-        junk: Additional junk registers not prepared upon.
-    """
-
-    prepare: PrepareOracle
-
-    @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(name='selection', dtype=QAny(_total_bits(self.prepare.selection_registers))),
-        )
-
-    @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register(name='junk', dtype=QAny(_total_bits(self.prepare.junk_registers))),)
-
-    @cached_property
-    def junk_bitsize(self) -> int:
-        return self.junk_registers[0].bitsize
-
-    @cached_property
-    def selection_bitsize(self) -> int:
-        return self.selection_registers[0].bitsize
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('selection', QAny(self.selection_bitsize)),
-                Register('junk', QAny(self.junk_bitsize)),
-            ]
-        )
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
-        sel_regs = self.prepare.selection_registers
-        sel_part = Partition(self.selection_bitsize, regs=sel_regs)
-        sel_out_regs = bb.add_t(sel_part, x=selection)
-        jnk_regs = tuple(self.prepare.junk_registers)
-        jnk_part = Partition(self.junk_bitsize, regs=jnk_regs)
-        jnk_out_regs = bb.add_t(jnk_part, x=junk)
-        out_regs = bb.add(
-            self.prepare,
-            **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)},
-            **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)},
-        )
-        sel_out_regs = out_regs[: len(sel_regs)]
-        jnk_out_regs = out_regs[len(sel_regs) :]
-        selection = bb.add(
-            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
-        )
-        junk = bb.add(
-            jnk_part.adjoint(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
-        )
-        return {'selection': selection, 'junk': junk}
-
-    def pretty_name(self) -> str:
-        return 'Prep'
 
 
 @attrs.frozen
@@ -245,6 +89,18 @@ class LCUBlockEncoding(BlockEncoding):
     epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return _total_bits(self.prepare.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return _total_bits(self.prepare.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return _total_bits(self.select.target_registers)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -331,6 +187,18 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     prepare: Union[BlackBoxPrepare, PrepareOracle]
 
     @cached_property
+    def ancilla_bitsize(self) -> int:
+        return _total_bits(self.prepare.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return _total_bits(self.prepare.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return _total_bits(self.select.target_registers)
+
+    @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return self.prepare.selection_registers
 
@@ -361,24 +229,6 @@ class LCUBlockEncodingZeroState(BlockEncoding):
 
 
 @bloq_example
-def _black_box_prepare() -> BlackBoxPrepare:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard
-
-    prepare = PrepareHubbard(2, 2, 1, 4)
-    black_box_prepare = BlackBoxPrepare(prepare=prepare)
-    return black_box_prepare
-
-
-@bloq_example
-def _black_box_select() -> BlackBoxSelect:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import SelectHubbard
-
-    select = SelectHubbard(2, 2)
-    black_box_select = BlackBoxSelect(select=select)
-    return black_box_select
-
-
-@bloq_example
 def _lcu_block() -> LCUBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
@@ -396,8 +246,9 @@ def _lcu_block() -> LCUBlockEncoding:
 
 @bloq_example
 def _black_box_lcu_block() -> LCUBlockEncoding:
-    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+    from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
+    from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
     # 3x3 hubbard model U/t = 4
     dim = 3
@@ -433,8 +284,9 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
 
 @bloq_example
 def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
-    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+    from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
+    from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
     # 3x3 hubbard model U/t = 4
     dim = 3

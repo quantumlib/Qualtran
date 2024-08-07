@@ -13,11 +13,13 @@
 #  limitations under the License.
 
 import numpy as np
+import pytest
 
 from qualtran import QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.block_encoding.phase import _phase_block_encoding, Phase
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.testing import execute_notebook
 
 
 def test_phase(bloq_autotester):
@@ -48,3 +50,8 @@ def test_negate():
     from_gate = -Hadamard().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('phase')
