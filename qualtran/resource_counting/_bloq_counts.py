@@ -20,6 +20,8 @@ import networkx as nx
 import numpy as np
 from attrs import field, frozen
 
+from qualtran.symbolics import ceil, log2, SymbolicFloat
+
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
 from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
@@ -235,6 +237,16 @@ class GateCounts:
             return value > 0
 
         return {k: v for k, v in d.items() if _keep(k, v)}
+
+    @staticmethod
+    def rotation_t_cost(eps: SymbolicFloat) -> SymbolicFloat:
+        """T-cost of a single Z rotation with precision `eps`.
+
+        References:
+            [Efficient synthesis of universal Repeat-Until-Success circuits](https://arxiv.org/abs/1404.5320)
+            Bocharov et. al. 2014. Page 4, Paragraph "Simulation Results."
+        """
+        return ceil(1.149 * log2(1.0 / eps) + 9.2)
 
     @property
     def rotation_to_t(self) -> int:

@@ -20,7 +20,7 @@ import cirq
 
 from qualtran import Bloq, Controlled, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, SymbolicFloat, SymbolicInt
 
 from .decompose_protocol import _decompose_once_considering_known_decomposition
 
@@ -38,7 +38,9 @@ class TComplexity:
 
     @staticmethod
     def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
-        return ceil(1.149 * log2(1.0 / eps) + 9.2)
+        from qualtran.resource_counting import GateCounts
+
+        return GateCounts.rotation_t_cost(eps)
 
     def t_incl_rotations(self, eps: float = 1e-11) -> SymbolicInt:
         """Return the total number of T gates after compiling rotations"""
