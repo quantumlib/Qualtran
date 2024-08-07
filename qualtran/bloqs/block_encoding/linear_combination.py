@@ -110,7 +110,9 @@ class LinearCombination(BlockEncoding):
         if not all(
             isinstance(u.signal_state.prepare, PrepareIdentity) for u in self._block_encodings
         ):
-            raise ValueError("Cannot take product of block encodings with non-zero signal state.")
+            raise ValueError(
+                "Cannot take linear combination of block encodings with non-zero signal state."
+            )
 
     @classmethod
     def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:

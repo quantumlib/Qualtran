@@ -77,7 +77,9 @@ class ChebyshevPolynomial(BlockEncoding):
         if self.order < 0:
             raise ValueError(f"order must be greater >= 0. Found {self.order}.")
         if not isinstance(self.block_encoding.signal_state.prepare, PrepareIdentity):
-            raise ValueError("Cannot take product of block encodings with non-zero signal state.")
+            raise ValueError(
+                "Cannot take Chebyshev polynomial of block encodings with non-zero signal state."
+            )
 
     @cached_property
     def signature(self) -> Signature:
