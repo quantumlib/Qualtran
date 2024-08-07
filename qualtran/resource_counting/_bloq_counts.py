@@ -17,6 +17,7 @@ from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHEC
 
 import attrs
 import networkx as nx
+import numpy as np
 from attrs import field, frozen
 
 from ._call_graph import get_bloq_callee_counts
@@ -133,10 +134,10 @@ class GateCounts:
     clifford: int = 0
     measurement: int = 0
     binned_rotation_epsilons: Counter[int] = field(factory=Counter, converter=_mapping_to_counter)
-    eps_bin_prec: int = 10
+    eps_bin_prec: int = 20
 
     @classmethod
-    def from_rotation_with_eps(cls, eps: float, *, eps_bin_prec: int = 10, n_rotations: int = 1):
+    def from_rotation_with_eps(cls, eps: float, *, eps_bin_prec: int = 20, n_rotations: int = 1):
         """Construct a GateCount with a rotation of precision `eps`.
 
         Args:
@@ -144,7 +145,9 @@ class GateCounts:
             eps_bin_prec: number of bits to approximate `eps` to, defaults to 10.
             n_rotations: number of rotations, defaults to 1.
         """
-        eps_bin = int(eps * 2**eps_bin_prec)
+        eps_bin = int(np.ceil(eps * 2**eps_bin_prec))
+        # treat any eps < 2**(-eps_bin_prec) as 2**(-eps_bin_prec)
+        eps_bin = max(1, eps_bin)
         return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
 
     def with_rotation_eps_bin_prec(self, new_eps_bin_prec: int) -> 'GateCounts':
