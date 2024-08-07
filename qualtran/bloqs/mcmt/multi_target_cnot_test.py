@@ -16,7 +16,15 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+from qualtran.bloqs.mcmt.multi_target_cnot import _c_multi_not, _c_multi_not_symb, MultiTargetCNOT
+
+
+def test_examples(bloq_autotester):
+    bloq_autotester(_c_multi_not)
+
+
+def test_symbolic_examples(bloq_autotester):
+    bloq_autotester(_c_multi_not_symb)
 
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])
