@@ -39,13 +39,13 @@ _TESTS = [
         alg=AlgorithmSummary(
             n_algo_qubits=100,
             n_logical_gates=(
-                GateCounts.from_rotation_with_eps(1e-3 / 30_000, n_rotations=30_000)
+                GateCounts.from_rotation_with_eps(0, n_rotations=30_000)
                 + GateCounts(measurement=int(1.4e6))
             ),
             n_rotation_layers=501,
         ),
         error_budget=1e-3,
-        c_min=2.5e6,
+        c_min=1.5e6,
         time_steps=1.5e5,
         code_distance=9,
         t_states=602000,
@@ -55,7 +55,7 @@ _TESTS = [
             n_algo_qubits=1318,
             n_logical_gates=(
                 GateCounts(t=int(5.53e7), toffoli=int(1.35e11), measurement=int(1.37e9))
-                + GateCounts.from_rotation_with_eps(1e-2 / 2.06e8, n_rotations=int(2.06e8))
+                + GateCounts.from_rotation_with_eps(0, n_rotations=int(2.06e8))
             ),
             n_rotation_layers=int(2.05e8),
         ),
@@ -70,7 +70,7 @@ _TESTS = [
             n_algo_qubits=12581,
             n_logical_gates=(
                 GateCounts(t=12, toffoli=int(3.73e9), measurement=int(1.08e9))
-                + GateCounts.from_rotation_with_eps(1 / 3 / 12, n_rotations=12)
+                + GateCounts.from_rotation_with_eps(0, n_rotations=12)
             ),
             n_rotation_layers=12,
         ),

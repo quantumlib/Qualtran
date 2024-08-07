@@ -173,16 +173,6 @@ class GateCounts:
             eps_bin_prec=new_eps_bin_prec,
         )
 
-    @property
-    def rotation(self):
-        # TODO return correct value and document precisely.
-        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-        return sum(
-            n_rotations * int(TComplexity.rotation_cost(eps_bin / 2**self.eps_bin_prec))
-            for eps_bin, n_rotations in self.binned_rotation_epsilons.items()
-        )
-
     def iter_rotations_with_epsilon(self) -> Iterator[tuple[float, int]]:
         """Iterate through the rotation precisions (epsilon) and their frequency."""
         for eps_bin, n_rot in self.binned_rotation_epsilons.items():
@@ -246,12 +236,18 @@ class GateCounts:
 
         return {k: v for k, v in d.items() if _keep(k, v)}
 
+    @property
+    def rotation_to_t(self) -> int:
+        """Total number of T Gates for the rotations."""
+        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+        return sum(
+            n_rotations * int(TComplexity.rotation_cost(eps))
+            for eps, n_rotations in self.iter_rotations_with_epsilon()
+        )
+
     def total_t_count(
-        self,
-        ts_per_toffoli: int = 4,
-        ts_per_cswap: int = 7,
-        ts_per_and_bloq: int = 4,
-        ts_per_rotation: int = 11,
+        self, ts_per_toffoli: int = 4, ts_per_cswap: int = 7, ts_per_and_bloq: int = 4
     ) -> int:
         """Get the total number of T Gates for the `GateCounts` object.
 
@@ -266,13 +262,17 @@ class GateCounts:
             + ts_per_toffoli * self.toffoli
             + ts_per_cswap * self.cswap
             + ts_per_and_bloq * self.and_bloq
-            + ts_per_rotation * self.rotation
+            + self.rotation_to_t
         )
 
-    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, int]:
+    def total_t_and_ccz_count(self) -> Dict[str, int]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
-        n_t = self.t + ts_per_rotation * self.rotation
+        n_t = self.t + self.rotation_to_t
         return {'n_t': n_t, 'n_ccz': n_ccz}
+
+    def n_rotation_ignoring_eps(self) -> int:
+        """Total number of rotations, ignoring the individual precisions."""
+        return sum(self.binned_rotation_epsilons.values())
 
     def total_beverland_count(self) -> Dict[str, int]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
@@ -286,17 +286,20 @@ class GateCounts:
            Toffoli gates. Since we don't compile the 'layers' explicitly, we set this to be the
            number of rotations.
 
+        Note: This costing method ignores the individual rotation precisions (`eps`).
+
         Reference:
             https://arxiv.org/abs/2211.07629.
             Equation D3.
         """
         toffoli = self.toffoli + self.and_bloq + self.cswap
+        rotation = self.n_rotation_ignoring_eps()
         return {
             'meas': self.measurement,
-            'R': self.rotation,
+            'R': rotation,
             'T': self.t,
             'Tof': toffoli,
-            'D_R': self.rotation,
+            'D_R': rotation,
         }
 
 
