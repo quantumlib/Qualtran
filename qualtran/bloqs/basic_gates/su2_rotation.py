@@ -126,18 +126,21 @@ class SU2RotationGate(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         bb.add(
-            GlobalPhase(exponent=1 + self.global_shift / pi(self.global_shift), eps=self.eps / 4)
+            GlobalPhase(
+                exponent=(
+                    0.5
+                    + self.global_shift / pi(self.global_shift)
+                    + self.lambd / (2 * pi(self.lambd))
+                    + self.phi / (2 * pi(self.phi))
+                ),
+                eps=self.eps / 4,
+            )
         )
-        q = bb.add(
-            ZPowGate(exponent=0.5 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
-            q=q,
-        )
+        q = bb.add(Rz(pi(self.lambd) / 2 - self.lambd, eps=self.eps / 4), q=q)
         q = bb.add(Hadamard(), q=q)
-        q = bb.add(Rz(angle=2 * self.theta, eps=self.eps / 4), q=q)
+        q = bb.add(Rz(2 * self.theta, eps=self.eps / 4), q=q)
         q = bb.add(Hadamard(), q=q)
-        q = bb.add(
-            ZPowGate(exponent=0.5 - self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
-        )
+        q = bb.add(Rz(pi(self.phi) / 2 - self.phi, eps=self.eps / 4), q=q)
         return {'q': q}
 
     def adjoint(self) -> 'SU2RotationGate':
