@@ -174,43 +174,43 @@ class VlasovEntryOracle(EntryOracle):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         mcx = MultiControlPauli(cvs=(0,) * self.system_bitsize, target_gate=cirq.X)
-        i_bits, i_zero = bb.add_t(mcx, controls=bb.split(cast(Soquet, i)), target=bb.allocate(1))
-        j_bits, j_zero = bb.add_t(mcx, controls=bb.split(cast(Soquet, j)), target=bb.allocate(1))
+        i_bits, i_zero = bb.add(mcx, controls=bb.split(cast(Soquet, i)), target=bb.allocate(1))
+        j_bits, j_zero = bb.add(mcx, controls=bb.split(cast(Soquet, j)), target=bb.allocate(1))
         i = bb.join(cast(NDArray, i_bits))
         j = bb.join(cast(NDArray, j_bits))
-        i_zero_j_zero, i_or_j_zero = bb.add_t(And(), ctrl=np.array([i_zero, j_zero]))
+        i_zero_j_zero, i_or_j_zero = bb.add(And(), ctrl=np.array([i_zero, j_zero]))
 
         # case 1: i = 0 or j = 0, entry is sqrt((1 + alpha) / 2)
-        i_or_j_zero, q = bb.add_t(
+        i_or_j_zero, q = bb.add(
             Ry(2 * np.arccos(np.sqrt((1 + self.alpha) / 2))).controlled(), ctrl=i_or_j_zero, q=q
         )
 
         gt = GreaterThan(self.system_bitsize, self.system_bitsize)
         i_gt_j = bb.allocate(1)
         j_gt_i = bb.allocate(1)
-        i, j, i_gt_j = bb.add_t(gt, a=i, b=j, target=i_gt_j)
-        i, j, j_gt_i = bb.add_t(gt, a=j, b=i, target=j_gt_i)
+        i, j, i_gt_j = bb.add(gt, a=i, b=j, target=i_gt_j)
+        i, j, j_gt_i = bb.add(gt, a=j, b=i, target=j_gt_i)
 
         # case 2: i > j, entry is sqrt(i / 2)
         # swap i and j such that we fall into case 3
-        i_gt_j, i, j = bb.add_t(Swap(self.system_bitsize).controlled(), ctrl=i_gt_j, x=i, y=j)
+        i_gt_j, i, j = bb.add(Swap(self.system_bitsize).controlled(), ctrl=i_gt_j, x=i, y=j)
 
         # case 3: i < j, entry is sqrt(j / 2)
         num_frac = self.entry_bitsize - (self.system_bitsize - 1)
         entry0 = bb.allocate(dtype=QFxp(self.entry_bitsize, num_frac))
         # compute entry = 1 / (j / 2)
         inv = InvertRealNumber(QFxp(self.system_bitsize, 1), QFxp(self.entry_bitsize, num_frac))
-        j, entry0 = bb.add_t(inv, a=j, result=entry0)
+        j, entry0 = bb.add(inv, a=j, result=entry0)
         # compute entry' = 1 / sqrt(1 / (j / 2)) = sqrt(j / 2)
         invsqrt = InverseSquareRoot(self.entry_bitsize, num_frac)
         entry1 = bb.allocate(dtype=QFxp(self.entry_bitsize, num_frac))
-        entry0, entry1 = bb.add_t(invsqrt, x=entry0, result=entry1)
+        entry0, entry1 = bb.add(invsqrt, x=entry0, result=entry1)
         # compute entry' = arcsin(entry)
         arcsin = ArcSin(self.entry_bitsize, num_frac)
         entry = bb.allocate(dtype=QFxp(self.entry_bitsize, num_frac))
-        entry1, entry = bb.add_t(arcsin, x=entry1, result=entry)
+        entry1, entry = bb.add(arcsin, x=entry1, result=entry)
 
-        i_gt_j_j_gt_i, i_neq_j = bb.add_t(And(cv1=0, cv2=0), ctrl=np.array([i_gt_j, j_gt_i]))
+        i_gt_j_j_gt_i, i_neq_j = bb.add(And(cv1=0, cv2=0), ctrl=np.array([i_gt_j, j_gt_i]))
         i_gt_j, j_gt_i = cast(NDArray, i_gt_j_j_gt_i)
         i_neq_j = cast(Soquet, bb.add(XGate(), q=i_neq_j))
 
@@ -221,23 +221,23 @@ class VlasovEntryOracle(EntryOracle):
         swap = Swap(1).controlled(CtrlSpec(cvs=(1, 0)))
         for k in range(len(entry_bits)):
             # selectively swap entry bit with 0 so we only rotate if i_neq_j and not i_or_j_zero
-            ctrls, entry_bits[k], zero = bb.add_t(swap, ctrl=ctrls, x=entry_bits[k], y=zero)
+            ctrls, entry_bits[k], zero = bb.add(swap, ctrl=ctrls, x=entry_bits[k], y=zero)
             # flip q because entry is arcsin, not arccos
-            ctrls, q = bb.add_t(XGate().controlled(CtrlSpec(cvs=(1, 0))), ctrl=ctrls, q=q)
-            entry_bits[k], q = bb.add_t(Ry(2**-k).controlled(), ctrl=entry_bits[k], q=q)
-            ctrls, entry_bits[k], zero = bb.add_t(swap, ctrl=ctrls, x=entry_bits[k], y=zero)
+            ctrls, q = bb.add(XGate().controlled(CtrlSpec(cvs=(1, 0))), ctrl=ctrls, q=q)
+            entry_bits[k], q = bb.add(Ry(2**-k).controlled(), ctrl=entry_bits[k], q=q)
+            ctrls, entry_bits[k], zero = bb.add(swap, ctrl=ctrls, x=entry_bits[k], y=zero)
         i_neq_j, i_or_j_zero = cast(NDArray, ctrls)
         bb.free(cast(Soquet, zero))
         entry = bb.join(entry_bits)
 
-        entry1, entry = bb.add_t(arcsin.adjoint(), x=entry1, result=entry)
+        entry1, entry = bb.add(arcsin.adjoint(), x=entry1, result=entry)
         bb.free(entry)
-        entry0, entry1 = bb.add_t(invsqrt.adjoint(), x=entry0, result=entry1)
+        entry0, entry1 = bb.add(invsqrt.adjoint(), x=entry0, result=entry1)
         bb.free(entry1)
-        j, entry0 = bb.add_t(inv.adjoint(), a=j, result=entry0)
+        j, entry0 = bb.add(inv.adjoint(), a=j, result=entry0)
         bb.free(cast(Soquet, entry0))
 
-        i_gt_j, i, j = bb.add_t(Swap(self.system_bitsize).controlled(), ctrl=i_gt_j, x=i, y=j)
+        i_gt_j, i, j = bb.add(Swap(self.system_bitsize).controlled(), ctrl=i_gt_j, x=i, y=j)
 
         i_neq_j = bb.add(XGate(), q=i_neq_j)
         i_gt_j, j_gt_i = cast(
@@ -247,16 +247,16 @@ class VlasovEntryOracle(EntryOracle):
             ),
         )
 
-        i, j, j_gt_i = bb.add_t(gt.adjoint(), a=j, b=i, target=j_gt_i)
-        i, j, i_gt_j = bb.add_t(gt.adjoint(), a=i, b=j, target=i_gt_j)
+        i, j, j_gt_i = bb.add(gt.adjoint(), a=j, b=i, target=j_gt_i)
+        i, j, i_gt_j = bb.add(gt.adjoint(), a=i, b=j, target=i_gt_j)
         bb.free(cast(Soquet, i_gt_j))
         bb.free(cast(Soquet, j_gt_i))
 
         i_zero, j_zero = cast(
             NDArray, bb.add(And().adjoint(), ctrl=i_zero_j_zero, target=i_or_j_zero)
         )
-        j_bits, j_zero = bb.add_t(mcx.adjoint(), controls=bb.split(cast(Soquet, j)), target=j_zero)
-        i_bits, i_zero = bb.add_t(mcx.adjoint(), controls=bb.split(cast(Soquet, i)), target=i_zero)
+        j_bits, j_zero = bb.add(mcx.adjoint(), controls=bb.split(cast(Soquet, j)), target=j_zero)
+        i_bits, i_zero = bb.add(mcx.adjoint(), controls=bb.split(cast(Soquet, i)), target=i_zero)
         bb.free(cast(Soquet, j_zero))
         bb.free(cast(Soquet, i_zero))
 
