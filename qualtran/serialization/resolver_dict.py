@@ -347,7 +347,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX,
-    "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT,
+    "qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT,
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
