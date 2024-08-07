@@ -22,7 +22,6 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
     _ccpauli_symb,
     MultiControlPauli,
     MultiControlX,
-    MultiTargetCNOT,
 )
 
 
@@ -33,20 +32,6 @@ def test_ccpauli(bloq_autotester):
 def test_ccpauli_symb():
     bloq = _ccpauli_symb.make()
     assert bloq.t_complexity().t == 4 * bloq.n_ctrls - 4
-
-
-@pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])
-def test_multi_target_cnot(num_targets):
-    qubits = cirq.LineQubit.range(num_targets + 1)
-    naive_circuit = cirq.Circuit(cirq.CNOT(qubits[0], q) for q in qubits[1:])
-    bloq = MultiTargetCNOT(num_targets)
-    op = bloq.on(*qubits)
-    cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
-        cirq.Circuit(op), naive_circuit, atol=1e-6
-    )
-    optimal_circuit = cirq.Circuit(cirq.decompose_once(op))
-    assert len(optimal_circuit) == 2 * np.ceil(np.log2(num_targets)) + 1
-    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize("num_controls", [0, 1, 2, *range(7, 17)])

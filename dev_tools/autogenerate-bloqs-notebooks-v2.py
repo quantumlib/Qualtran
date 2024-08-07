@@ -749,12 +749,13 @@ OTHER: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
-        module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
+        module=qualtran.bloqs.mcmt,
         bloq_specs=[
-            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.mcmt.multi_target_cnot._C_MULTI_NOT_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/mcmt/',
+        path_stem='multi_control_multi_target_pauli',
     ),
     NotebookSpecV2(
         title='Generic Select',
