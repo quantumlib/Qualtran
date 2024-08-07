@@ -133,7 +133,9 @@ class GateCounts:
     and_bloq: int = 0
     clifford: int = 0
     measurement: int = 0
-    binned_rotation_epsilons: Counter[int] = field(factory=Counter, converter=_mapping_to_counter)
+    binned_rotation_epsilons: Counter[int] = field(
+        factory=Counter, converter=_mapping_to_counter, eq=lambda d: tuple(d.items())
+    )
     eps_bin_prec: int = 20
 
     @classmethod
@@ -235,8 +237,11 @@ class GateCounts:
         d = attrs.asdict(self)
 
         def _keep(key, value) -> bool:
-            if key == 'rotation_epsilons':
+            if key == 'binned_rotation_epsilons':
                 return value
+            if key == 'eps_bin_prec':
+                # rotations non-empty
+                return len(self.binned_rotation_epsilons) > 0
             return value > 0
 
         return {k: v for k, v in d.items() if _keep(k, v)}

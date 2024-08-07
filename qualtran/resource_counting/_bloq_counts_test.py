@@ -82,7 +82,7 @@ def test_qec_gates_cost():
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            GateCounts.from_rotation_with_eps(1e-10),
+            GateCounts.from_rotation_with_eps(1e-10, n_rotations=10),
         ],
         # Recursive
         [
