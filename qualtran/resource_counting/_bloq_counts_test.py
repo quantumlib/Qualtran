@@ -76,13 +76,13 @@ def test_qec_gates_cost():
         # Rotations
         [
             basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
-            GateCounts(rotation_epsilons={1e-11: 1}),
+            GateCounts.from_rotation_with_eps(1e-11),
         ],
         [
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            GateCounts(rotation_epsilons={1e-10: 10}),
+            GateCounts.from_rotation_with_eps(1e-10),
         ],
         # Recursive
         [

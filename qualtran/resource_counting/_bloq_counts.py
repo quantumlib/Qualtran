@@ -13,7 +13,7 @@
 #  limitations under the License.
 import logging
 from collections import Counter, defaultdict
-from typing import Callable, Dict, Mapping, Sequence, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -112,7 +112,7 @@ class BloqCount(CostKey[BloqCountDict]):
         return f'{self.gateset_name} counts'
 
 
-def _mapping_to_counter(mapping: Mapping[float, int]) -> Counter[float]:
+def _mapping_to_counter(mapping: Mapping[int, int]) -> Counter[int]:
     if isinstance(mapping, Counter):
         return mapping
     return Counter(mapping)
@@ -132,29 +132,74 @@ class GateCounts:
     and_bloq: int = 0
     clifford: int = 0
     measurement: int = 0
-    rotation_epsilons: Counter[float] = field(factory=Counter, converter=_mapping_to_counter)
+    binned_rotation_epsilons: Counter[int] = field(factory=Counter, converter=_mapping_to_counter)
+    eps_bin_prec: int = 10
+
+    @classmethod
+    def from_rotation_with_eps(cls, eps: float, *, eps_bin_prec: int = 10, n_rotations: int = 1):
+        """Construct a GateCount with a rotation of precision `eps`.
+
+        Args:
+            eps: precision to synthesize the rotation(s).
+            eps_bin_prec: number of bits to approximate `eps` to, defaults to 10.
+            n_rotations: number of rotations, defaults to 1.
+        """
+        eps_bin = int(eps * 2**eps_bin_prec)
+        return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
+
+    def with_rotation_eps_bin_prec(self, new_eps_bin_prec: int) -> 'GateCounts':
+        """Returns `GateCounts` with a new bin precision for rotation epsilons."""
+        if new_eps_bin_prec == self.eps_bin_prec:
+            return self
+
+        def _get_new_eps_bin(eps_bin):
+            return int(eps_bin * 2 ** (new_eps_bin_prec - self.eps_bin_prec))
+
+        new_binned_rotation_epsilons = Counter(
+            {
+                _get_new_eps_bin(eps_bin): n_rot
+                for eps_bin, n_rot in self.binned_rotation_epsilons.items()
+            }
+        )
+
+        return attrs.evolve(
+            self,
+            binned_rotation_epsilons=new_binned_rotation_epsilons,
+            eps_bin_prec=new_eps_bin_prec,
+        )
 
     @property
     def rotation(self):
+        # TODO return correct value and document precisely.
         from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
         return sum(
-            n_rotations * int(TComplexity.rotation_cost(eps))
-            for eps, n_rotations in self.rotation_epsilons.items()
+            n_rotations * int(TComplexity.rotation_cost(eps_bin / 2**self.eps_bin_prec))
+            for eps_bin, n_rotations in self.binned_rotation_epsilons.items()
         )
+
+    def iter_rotations_with_epsilon(self) -> Iterator[tuple[float, int]]:
+        """Iterate through the rotation precisions (epsilon) and their frequency."""
+        for eps_bin, n_rot in self.binned_rotation_epsilons.items():
+            yield eps_bin / 2**self.eps_bin_prec, n_rot
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
             raise TypeError(f"Can only add other `GateCounts` objects, not {self}")
 
+        eps_bin_prec = max(self.eps_bin_prec, other.eps_bin_prec)
+        this = self.with_rotation_eps_bin_prec(eps_bin_prec)
+        other = other.with_rotation_eps_bin_prec(other.eps_bin_prec)
+
         return GateCounts(
-            t=self.t + other.t,
-            toffoli=self.toffoli + other.toffoli,
-            cswap=self.cswap + other.cswap,
-            and_bloq=self.and_bloq + other.and_bloq,
-            clifford=self.clifford + other.clifford,
-            measurement=self.measurement + other.measurement,
-            rotation_epsilons=self.rotation_epsilons + other.rotation_epsilons,
+            t=this.t + other.t,
+            toffoli=this.toffoli + other.toffoli,
+            cswap=this.cswap + other.cswap,
+            and_bloq=this.and_bloq + other.and_bloq,
+            clifford=this.clifford + other.clifford,
+            measurement=this.measurement + other.measurement,
+            binned_rotation_epsilons=this.binned_rotation_epsilons + other.binned_rotation_epsilons,
+            eps_bin_prec=eps_bin_prec,
         )
 
     def __mul__(self, other):
@@ -165,7 +210,10 @@ class GateCounts:
             and_bloq=other * self.and_bloq,
             clifford=other * self.clifford,
             measurement=other * self.measurement,
-            rotation_epsilons=Counter({k: other * v for k, v in self.rotation_epsilons.items()}),
+            binned_rotation_epsilons=Counter(
+                {eps_bin: other * n_rot for eps_bin, n_rot in self.binned_rotation_epsilons.items()}
+            ),
+            eps_bin_prec=self.eps_bin_prec,
         )
 
     def __rmul__(self, other):
@@ -280,7 +328,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
         if bloq_is_rotation(bloq):
             assert isinstance(bloq, _HasEps)
-            return GateCounts(rotation_epsilons={bloq.eps: 1})
+            return GateCounts.from_rotation_with_eps(bloq.eps)
 
         # Recursive case
         totals = GateCounts()

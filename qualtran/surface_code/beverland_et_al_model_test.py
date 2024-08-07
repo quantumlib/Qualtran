@@ -38,8 +38,9 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=100,
-            n_logical_gates=GateCounts(
-                rotation_epsilons={1e-3 / 30_000: 30_000}, measurement=int(1.4e6)
+            n_logical_gates=(
+                GateCounts.from_rotation_with_eps(1e-3 / 30_000, n_rotations=30_000)
+                + GateCounts(measurement=int(1.4e6))
             ),
             n_rotation_layers=501,
         ),
@@ -52,11 +53,9 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=1318,
-            n_logical_gates=GateCounts(
-                t=int(5.53e7),
-                rotation_epsilons={1e-2 / 2.06e8: int(2.06e8)},
-                toffoli=int(1.35e11),
-                measurement=int(1.37e9),
+            n_logical_gates=(
+                GateCounts(t=int(5.53e7), toffoli=int(1.35e11), measurement=int(1.37e9))
+                + GateCounts.from_rotation_with_eps(1e-2 / 2.06e8, n_rotations=int(2.06e8))
             ),
             n_rotation_layers=int(2.05e8),
         ),
@@ -69,11 +68,9 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=12581,
-            n_logical_gates=GateCounts(
-                t=12,
-                rotation_epsilons={1 / 3 / 12: 12},
-                toffoli=int(3.73e9),
-                measurement=int(1.08e9),
+            n_logical_gates=(
+                GateCounts(t=12, toffoli=int(3.73e9), measurement=int(1.08e9))
+                + GateCounts.from_rotation_with_eps(1 / 3 / 12, n_rotations=12)
             ),
             n_rotation_layers=12,
         ),

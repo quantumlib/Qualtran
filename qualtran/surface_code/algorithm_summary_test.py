@@ -39,7 +39,7 @@ from qualtran.surface_code import AlgorithmSummary
         [
             basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
             AlgorithmSummary(
-                n_algo_qubits=1, n_logical_gates=GateCounts(rotation_epsilons={1e-11: 1})
+                n_algo_qubits=1, n_logical_gates=GateCounts.from_rotation_with_eps(1e-11)
             ),
         ],
         [
@@ -47,7 +47,7 @@ from qualtran.surface_code import AlgorithmSummary
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
             AlgorithmSummary(
-                n_algo_qubits=10, n_logical_gates=GateCounts(rotation_epsilons={1e-10: 10})
+                n_algo_qubits=10, n_logical_gates=GateCounts.from_rotation_with_eps(1e-10)
             ),
         ],
         [

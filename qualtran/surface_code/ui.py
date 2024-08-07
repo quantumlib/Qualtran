@@ -535,11 +535,9 @@ def update(
 
     algorithm = AlgorithmSummary(
         n_algo_qubits=qubits,
-        n_logical_gates=GateCounts(
-            measurement=measurements,
-            t=ts,
-            toffoli=toffolis,
-            rotation_epsilons={rotation_eps: rotations},
+        n_logical_gates=(
+            GateCounts(measurement=measurements, t=ts, toffoli=toffolis)
+            + GateCounts.from_rotation_with_eps(rotation_eps, n_rotations=rotations)
         ),
         n_rotation_layers=n_rotation_layers,
     )
