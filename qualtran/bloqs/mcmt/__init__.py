@@ -15,5 +15,5 @@
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
+from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlPauli, MultiControlX
 from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT

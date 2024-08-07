@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import cast, Dict, List, Tuple, Union
 
-import cirq
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
 from typing_extensions import Self
@@ -36,7 +35,7 @@ from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 
@@ -194,7 +193,7 @@ class Product(BlockEncoding):
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
                 controls = bb.split(cast(Soquet, anc_soq))
                 controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
-                    MultiControlPauli(tuple([0] * u.ancilla_bitsize), cirq.X),
+                    MultiControlX(tuple([0] * u.ancilla_bitsize)),
                     controls=controls[: u.ancilla_bitsize],
                     target=flag_bits_soq[i],
                 )

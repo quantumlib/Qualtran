@@ -50,8 +50,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt import MultiControlPauli, MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt

@@ -108,7 +108,8 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
-import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
+import qualtran.bloqs.mcmt.multi_control_pauli
+import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
@@ -752,7 +753,7 @@ OTHER: List[NotebookSpecV2] = [
         module=qualtran.bloqs.mcmt,
         bloq_specs=[
             qualtran.bloqs.mcmt.multi_target_cnot._C_MULTI_NOT_DOC,
-            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
+            qualtran.bloqs.mcmt.multi_control_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/mcmt/',
         path_stem='multi_control_multi_target_pauli',
