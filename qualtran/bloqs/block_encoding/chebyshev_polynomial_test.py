@@ -20,7 +20,7 @@ import pytest
 from attr import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, Signature, Soquet, SoquetT
+from qualtran import BloqBuilder, QAny, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
@@ -31,6 +31,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     ChebyshevPolynomial,
 )
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
@@ -190,7 +191,7 @@ class TestBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(1),)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
