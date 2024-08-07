@@ -260,6 +260,8 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         assert not is_symbolic(self.be_ancilla_bitsize)
         assert not is_symbolic(self.be_resource_bitsize)
+        assert not is_symbolic(self.prepare.junk_bitsize)
+        assert not is_symbolic(self.select.system_bitsize)
 
         # partition ancilla register
         be_system_soqs: Dict[str, SoquetT] = {"system": system}

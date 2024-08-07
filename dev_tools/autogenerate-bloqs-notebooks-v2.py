@@ -112,6 +112,7 @@ import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
@@ -131,6 +132,7 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
@@ -620,11 +622,7 @@ ROT_QFT_PE = [
     NotebookSpecV2(
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization.qubitization_walk_operator,
-        bloq_specs=[
-            qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC,
-            qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
-            qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
-        ],
+        bloq_specs=[qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
     ),
     NotebookSpecV2(
         title='Qubitization Phase Estimation',
@@ -686,6 +684,10 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
+            qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
+            qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
+            qualtran.bloqs.multiplexers.black_box_select._BLACK_BOX_SELECT_DOC,
+            qualtran.bloqs.state_preparation.black_box_prepare._BLACK_BOX_PREPARE_DOC,
         ],
     ),
 ]
