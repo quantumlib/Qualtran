@@ -279,7 +279,7 @@ class PrepareFirstQuantization(PrepareOracle):
         if self.sum_of_l1_coeffs is None:
             raise ValueError(
                 "sum_of_l1_coeffs not specified in PrepareFirstQuantization constructor."
-                )
+            )
         return self.sum_of_l1_coeffs
 
     def pretty_name(self) -> str:
