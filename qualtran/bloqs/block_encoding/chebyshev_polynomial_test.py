@@ -31,7 +31,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     ChebyshevPolynomial,
 )
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
@@ -189,7 +189,7 @@ class TestBlockEncoding(BlockEncoding):
         return Signature.build(system=1, ancilla=1, resource=1)
 
     @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         raise NotImplementedError
 
     def build_composite_bloq(
