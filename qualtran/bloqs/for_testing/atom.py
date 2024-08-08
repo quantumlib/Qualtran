@@ -28,6 +28,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -65,6 +66,11 @@ class TestAtom(Bloq):
                 tags=[str(self)],
             )
         ]
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if cost_key == QECGatesCost():
+            return GateCounts(t=100)
+        return NotImplemented
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(100)
