@@ -312,7 +312,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
 
 @bloq_example
-def _lcu_select_block() -> SelectBlockEncoding:
+def _select_block() -> SelectBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -321,8 +321,8 @@ def _lcu_select_block() -> SelectBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    lcu_select_block = SelectBlockEncoding(select=select, prepare=prepare)
-    return lcu_select_block
+    select_block = SelectBlockEncoding(select=select, prepare=prepare)
+    return select_block
 
 
 @bloq_example
@@ -376,7 +376,7 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
 
 
 _SELECT_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=SelectBlockEncoding, examples=(_lcu_select_block, _black_box_select_block)
+    bloq_cls=SelectBlockEncoding, examples=(_select_block, _black_box_select_block)
 )
 
 _LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
