@@ -37,7 +37,6 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
-from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     LCUBlockEncoding,
@@ -88,7 +87,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
         Babbush et. al. (2018). Figure 1.
     """
 
-    block_encoding: BlockEncoding
+    block_encoding: Union[LCUBlockEncoding, LCUBlockEncodingZeroState]
     control_val: Optional[int] = None
     uncompute: bool = False
 

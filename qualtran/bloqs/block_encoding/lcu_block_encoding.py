@@ -23,15 +23,11 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CtrlSpec,
-    QAny,
-    QBit,
     Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -134,6 +130,10 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
     @property
     def alpha(self) -> SymbolicFloat:
         return self.prepare.l1_norm_of_coeffs
+
+    @cached_property
+    def epsilon(self) -> SymbolicFloat:
+        return 0.0
 
     @cached_property
     def signature(self) -> Signature:
@@ -258,6 +258,10 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
         return self.prepare.l1_norm_of_coeffs
 
     @cached_property
+    def epsilon(self) -> SymbolicFloat:
+        return 0.0
+
+    @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
@@ -308,7 +312,6 @@ def _lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
     lcu_block = LCUBlockEncoding(select=select, prepare=prepare)
     return lcu_block
 
@@ -325,8 +328,6 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     black_box_lcu_block = LCUBlockEncoding(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
@@ -343,8 +344,6 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     lcu_zero_state_block = LCUBlockEncodingZeroState(select=select, prepare=prepare)
     return lcu_zero_state_block
 

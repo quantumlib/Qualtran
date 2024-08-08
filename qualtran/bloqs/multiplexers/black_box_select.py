@@ -64,6 +64,10 @@ class BlackBoxSelect(Bloq):
         return (Register(name='selection', dtype=QAny(self.selection_bitsize)),)
 
     @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.select.control_registers
+
+    @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return (Register(name='system', dtype=QAny(self.system_bitsize)),)
 
