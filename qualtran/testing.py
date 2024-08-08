@@ -37,6 +37,11 @@ from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
 from qualtran.drawing.musical_score import WireSymbol
 from qualtran.resource_counting import GeneralizerT
+from qualtran.simulation.classical_sim import (
+    _assert_out_vals_equal,
+    _iter_classical_values_for_signature,
+    _random_classical_values_for_signature,
+)
 from qualtran.symbolics import is_symbolic
 
 
@@ -686,6 +691,108 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
         assert_bloq_example_qtyping(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_classical_action(
+    bloq_ex: BloqExample, log2_n: int = 10, rng: Optional[np.random.Generator] = None
+) -> None:
+    """Assert that the BloqExample has consistent classical action, where applicable
+
+    Classical action can be annotated directly bia the `Bloq.on_classical_vals` override.
+    It can be derived from the bloq's decomposition. This function asserts that both
+    data sources are present, and they produce the same values over a variety of inputs.
+
+    If both paths are present, and they disagree, that results in a `FAIL`. If only one source
+    is present, an `UNVERIFIED` exception is raised. If neither are present, a `NA` result
+    is raised under the assumption that the bloq is fully quantum.
+
+    Returns:
+        None if the assertions are satisfied.
+
+    Raises:
+        BloqCheckException if any assertions are violated or unverifiable due to partial
+        or missing information.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    bloq = bloq_ex.make()
+
+    has_manual_classical: bool
+    has_decomp_classical: bool
+
+    # Notable implementation detail: since `bloq.on_classical_vals` has a default fallback
+    # that uses the decomposition, we could accidentally be comparing two identical code paths
+    # which isn't much of a check at all.
+    #
+    # To determine whether we have an independent source of bloq counts, we test whether
+    # the `on_classical_vals` method was overriden or not. This is not foolproof! The override
+    # could itself rely on the decomposition, and we wouldn't actually have two independent sources
+    # of data to compare against each other.
+    if bloq.on_classical_vals.__qualname__.startswith('Bloq.'):
+        has_manual_classical = False
+    else:
+        has_manual_classical = True
+
+    try:
+        cbloq = bloq.decompose_bloq()
+        # Try a random value to see if classical simulation is supported.
+        in_vals = _random_classical_values_for_signature(bloq.signature, rng=rng)
+        cbloq.call_classically(**in_vals)
+        has_decomp_classical = True
+    except (DecomposeTypeError, DecomposeNotImplementedError):
+        # Doesn't have a decomposition.
+        has_decomp_classical = False
+    except NotImplementedError:
+        # Couldn't use the decomposition to do classical simulation.
+        has_decomp_classical = False
+
+    if (not has_decomp_classical) and (not has_manual_classical):
+        raise BloqCheckException.na('No classical action.')
+
+    if has_decomp_classical and has_manual_classical:
+        for in_vals in _iter_classical_values_for_signature(bloq.signature, log2_n=log2_n, rng=rng):
+            out_vals1 = bloq.call_classically(**in_vals)
+            out_vals2 = cbloq.call_classically(**in_vals)
+            _assert_out_vals_equal(out_vals1, out_vals2)
+        return
+
+    assert has_manual_classical or has_decomp_classical
+    if has_manual_classical:
+        raise BloqCheckException.unverified(
+            f'{bloq_ex.name} only has annotated classical behavior.'
+        )
+    if has_decomp_classical:
+        raise BloqCheckException.unverified(
+            f'{bloq_ex.name} only has classical action from decomposition.'
+        )
+
+
+def check_bloq_example_classical_action(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Assert that the BloqExample has consistent classical action, where applicable
+
+    Classical action can be annotated directly bia the `Bloq.on_classical_vals` override.
+    It can be derived from the bloq's decomposition. This function asserts that both
+    data sources are present and they produce the same values over a variety of inputs.
+
+    If both paths are present, and they disagree, that results in a `FAIL`. If only one source
+    is present, an `UNVERIFIED` exception is raised. If neither are present, a `NA` result
+    is raised under the assumption that the bloq is fully quantum.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_classical_action(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except AssertionError as ae:
+        return BloqCheckResult.FAIL, str(ae)
     except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 

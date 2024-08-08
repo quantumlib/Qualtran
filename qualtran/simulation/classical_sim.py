@@ -14,7 +14,20 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from functools import lru_cache
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 import networkx as nx
 import numpy as np
@@ -27,6 +40,9 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QAny,
+    QDType,
+    QUInt,
     Register,
     RightDangle,
     Signature,
@@ -267,3 +283,160 @@ def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool 
             return (c + N // 2) % N - N // 2
         return c % N
     return c
+
+
+@lru_cache()
+def _concrete_dtype(dtype: QDType) -> QDType:
+    """Turn abstract qdtypes into a representative concrete subtype."""
+    if isinstance(dtype, QAny):
+        # We're allowed to use whatever we want for `QAny`, so choose unsigned ints.
+        return QUInt(dtype.num_qubits)
+    return dtype
+
+
+def _iter_exhaustive_arr_val(reg: Register, dtype: QDType) -> Iterator[NDArray]:
+    """Yield all possible arrays for shape > () registers."""
+    for vv in itertools.product(dtype.get_classical_domain(), repeat=np.prod(reg.shape)):
+        # TODO: data type python equivalent
+        arr = np.empty(shape=reg.shape, dtype=int)
+        for idx, v in zip(reg.all_idxs(), vv):
+            arr[idx] = v
+        yield arr
+
+
+def _iter_exhaustive_classical_values_for_signature(signature: Signature):
+    """Yield all possible (exhaustive) input values for a signature."""
+    names: List[str] = []
+    iters: List[Iterable] = []
+    for reg in signature.lefts():
+        names.append(reg.name)
+        if reg.shape:
+            iters.append(_iter_exhaustive_arr_val(reg, _concrete_dtype(reg.dtype)))
+        else:
+            iters.append(_concrete_dtype(reg.dtype).get_classical_domain())
+
+    for vv in itertools.product(*iters):
+        in_vals = dict(zip(names, vv))
+        yield in_vals
+
+
+def _random_classical_values_for_signature(signature: Signature, rng: np.random.Generator):
+    """Get one choice of random classical values for a given signature."""
+    return {
+        reg.name: _concrete_dtype(reg.dtype).get_random_classical_vals(
+            rng, size=reg.shape if reg.shape else None
+        )
+        for reg in signature.lefts()
+    }
+
+
+def _iter_random_classical_values_for_signature(
+    signature: Signature, n: int, rng: np.random.Generator
+) -> Iterator[Dict[str, Any]]:
+    """Yield `n` random classical input values for a signature."""
+    for _ in range(n):
+        yield _random_classical_values_for_signature(signature, rng=rng)
+
+
+def _iter_classical_values_for_signature(
+    signature: Signature, log2_n: int, rng: np.random.Generator
+):
+    """Dispatch between random and exhaustive classical val generation based on `log2_n` cutoff."""
+    n_input_bits = sum(reg.total_bits() for reg in signature.lefts())
+    if n_input_bits <= log2_n:
+        yield from _iter_exhaustive_classical_values_for_signature(signature)
+    else:
+        yield from _iter_random_classical_values_for_signature(signature, n=2**log2_n, rng=rng)
+
+
+def _assert_out_vals_equal(
+    out_vals1: Tuple[ClassicalValT, ...], out_vals2: Tuple[ClassicalValT, ...]
+):
+    assert len(out_vals1) == len(out_vals2)
+    for ov1, ov2 in zip(out_vals1, out_vals2):
+        np.testing.assert_array_equal(ov1, ov2)
+
+
+# def classical_check_exhaustive(bloq1: Bloq, bloq2: Bloq, max_input_bits: int = 10):
+#     """Exhaustively check that the classical action of two bloqs are the same.
+#
+#     The intended use of this function is to check that a bloq and its decomposition
+#     have the same classical action. See `qualtran.testing.TODO` for more checky.
+#
+#     Args:
+#          bloq1: The first bloq
+#          bloq2: The second bloq. This is likely `bloq1.decompose_bloq()`, but note that
+#             the default fallback for classical simulation is to go via the decomposition.
+#             Take care to ensure that `bloq1.call_classically` and `bloq2.call_classically`
+#             have meaningfully different code paths, or this function won't actually check
+#             anything.
+#         max_input_bits: This function exhaustively tries all possible inputs. This can lead
+#             to accidental exponentially-large runtimes, so we throw a `ValueError` for input
+#             signatures larger than this many bits.
+#     """
+#     if bloq1.signature != bloq2.signature:
+#         raise ValueError("The two bloqs must have matching signatures.")
+#
+#     signature = bloq1.signature
+#     n_input_bits = sum(reg.total_bits() for reg in signature.lefts())
+#     if n_input_bits > max_input_bits:
+#         raise ValueError(
+#             f"{n_input_bits} input bits is greater than the maximum of {max_input_bits}"
+#         )
+#
+#     start = time.perf_counter()
+#     for in_vals in _iter_exhaustive_classical_values_for_signature(signature):
+#         out_vals1 = bloq1.call_classically(**in_vals)
+#         out_vals2 = bloq2.call_classically(**in_vals)
+#         _assert_out_vals_equal(out_vals1, out_vals2)
+#
+#         # if time.perf_counter() - start > 20:
+#         #     raise ValueError("TOO LONG")
+#     end = time.perf_counter()
+
+
+# def classical_check_random(
+#     bloq1: Bloq, bloq2: Bloq, n: int = 2**10, rng: Optional[np.random.Generator] = None
+# ):
+#     """Check that the classical action of two bloqs are the same on random inputs.
+#
+#     The intended use of this function is to check that a bloq and its decomposition
+#     have the same classical action. See `qualtran.testing.TODO` for more checky.
+#
+#     Args:
+#          bloq1: The first bloq
+#          bloq2: The second bloq. This is likely `bloq1.decompose_bloq()`, but note that
+#             the default fallback for classical simulation is to go via the decomposition.
+#             Take care to ensure that `bloq1.call_classically` and `bloq2.call_classically`
+#             have meaningfully different code paths, or this function won't actually check
+#             anything.
+#         max_input_bits: This function exhaustively tries all possible inputs. This can lead
+#             to accidental exponentially-large runtimes, so we throw a `ValueError` for input
+#             signatures larger than this many bits.
+#     """
+#     if bloq1.signature != bloq2.signature:
+#         raise ValueError("The two bloqs must have matching signatures.")
+#     signature = bloq1.signature
+#
+#     if rng is None:
+#         rng = np.random.default_rng()
+#
+#     start = time.perf_counter()
+#     for in_vals in _iter_random_classical_values_for_signature(signature, n=n, rng=rng):
+#         out_vals1 = bloq1.call_classically(**in_vals)
+#         out_vals2 = bloq2.call_classically(**in_vals)
+#         _assert_out_vals_equal(out_vals1, out_vals2)
+#
+#     end = time.perf_counter()
+#
+#
+# def classical_check(
+#     bloq1: Bloq, bloq2: Bloq, log2_n: int = 10, rng: Optional[np.random.Generator] = None
+# ):
+#     if bloq1.signature != bloq2.signature:
+#         raise ValueError("The two bloqs must have matching signatures.")
+#     signature = bloq1.signature
+#     n_input_bits = sum(reg.total_bits() for reg in signature.lefts())
+#     if n_input_bits <= log2_n:
+#         return classical_check_exhaustive(bloq1, bloq2, max_input_bits=log2_n)
+#     return classical_check_random(bloq1, bloq2, n=2**log2_n, rng=rng)
