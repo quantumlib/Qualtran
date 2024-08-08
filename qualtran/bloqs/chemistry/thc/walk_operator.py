@@ -14,7 +14,7 @@
 """Function for building a walk operator for the THC hamiltonian."""
 from numpy.typing import NDArray
 
-from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
+from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.chemistry.thc import PrepareTHC, SelectTHC
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 
@@ -48,6 +48,6 @@ def get_walk_operator_for_thc_ham(
     num_mu = zeta.shape[-1]
     num_spin_orb = 2 * len(t_l)
     sel = SelectTHC(num_mu, num_spin_orb, num_bits_theta, prep.keep_bitsize, kr1=kr1, kr2=kr2)
-    block_encoding = LCUBlockEncoding(select=sel, prepare=prep)
+    block_encoding = SelectBlockEncoding(select=sel, prepare=prep)
     walk_op = QubitizationWalkOperator(block_encoding=block_encoding)
     return walk_op
