@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple
+from typing import Dict, Set
 
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Signature, SoquetT
 from qualtran.bloqs.basic_gates import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
@@ -79,19 +79,7 @@ class Phase(BlockEncoding):
         return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.signature.rights())
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
-
-    @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # GitHub issue: https://github.com/quantumlib/Qualtran/issues/1104

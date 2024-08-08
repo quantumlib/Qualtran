@@ -12,23 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Tuple
+import pytest
 
-from attrs import frozen
-
-from qualtran import QAny, QBit, Register
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
     _black_box_lcu_zero_state_block,
-    _black_box_prepare,
-    _black_box_select,
     _lcu_block,
     _lcu_zero_state_block,
-    BlackBoxPrepare,
-    BlackBoxSelect,
 )
-from qualtran.bloqs.multiplexers.select_base import SelectOracle
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.testing import execute_notebook
 
 
 def test_lcu_block_encoding(bloq_autotester):
@@ -47,47 +39,6 @@ def test_black_box_lcu_zero_state_bloq_encoding(bloq_autotester):
     bloq_autotester(_black_box_lcu_zero_state_block)
 
 
-def test_black_box_prepare(bloq_autotester):
-    bloq_autotester(_black_box_prepare)
-
-
-def test_black_box_select(bloq_autotester):
-    bloq_autotester(_black_box_select)
-
-
-@frozen
-class TestSelectOracle(SelectOracle):
-    @property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('z', QBit()),)
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('a', QAny(5)),)
-
-
-def test_select_oracle():
-    bloq = BlackBoxSelect(TestSelectOracle())
-    assert bloq.selection_registers == (Register('selection', QAny(1)),)
-    assert bloq.target_registers == (Register('system', QAny(5)),)
-
-
-@frozen
-class TestPrepareOracle(PrepareOracle):
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('z', QBit()),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register('a', QAny(5)),)
-
-
-def test_prepare_oracle():
-    bloq = BlackBoxPrepare(TestPrepareOracle())
-    assert bloq.selection_registers == (Register('selection', QAny(1)),)
-    assert bloq.junk_registers == (Register('junk', QAny(5)),)
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('lcu_block_encoding')

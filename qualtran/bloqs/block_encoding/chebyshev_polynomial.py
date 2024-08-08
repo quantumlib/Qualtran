@@ -31,7 +31,7 @@ from qualtran import (
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -108,19 +108,7 @@ class ChebyshevPolynomial(BlockEncoding):
         return self.block_encoding.epsilon * self.order
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.signature.rights())
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
-
-    @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
@@ -254,7 +242,7 @@ class ScaledChebyshevPolynomial(BlockEncoding):
         return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # Github issue: https://github.com/quantumlib/Qualtran/issues/1104

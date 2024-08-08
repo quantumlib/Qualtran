@@ -24,6 +24,7 @@ from qualtran.bloqs.block_encoding.unitary import (
     _unitary_block_encoding_properties,
     Unitary,
 )
+from qualtran.testing import execute_notebook
 
 
 def test_unitary(bloq_autotester):
@@ -82,3 +83,8 @@ def test_unitary_override_tensors():
     from_gate = TGate().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('unitary')

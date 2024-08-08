@@ -25,13 +25,12 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QAny,
-    Register,
     Signature,
     SoquetT,
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping import Partition
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, prod, ssum, SymbolicFloat, SymbolicInt
 
@@ -102,19 +101,7 @@ class TensorProduct(BlockEncoding):
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
-
-    @property
-    def signal_state(self) -> PrepareOracle:
+    def signal_state(self) -> BlackBoxPrepare:
         # This method will be implemented in the future after PrepareOracle
         # is updated for the BlockEncoding interface.
         # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
