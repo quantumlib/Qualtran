@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
-from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rz, ZPowGate
+from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rz
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
@@ -88,8 +88,8 @@ class SU2RotationGate(GateWithRegisters):
             ]
         )
 
-    @staticmethod
-    def from_matrix(mat: NDArray[np.complex_]) -> 'SU2RotationGate':
+    @classmethod
+    def from_matrix(cls, mat: NDArray[np.complex_]) -> 'SU2RotationGate':
         theta = np.arctan2(np.abs(mat[1, 0]), np.abs(mat[0, 0]))
         if np.isclose(np.cos(theta), 0):
             alpha = 0
@@ -104,7 +104,47 @@ class SU2RotationGate(GateWithRegisters):
                 phi = np.angle(mat[0, 1] / np.sin(theta) * np.exp(-1j * alpha))
                 lambd = np.angle(mat[1, 0] / np.sin(theta) * np.exp(-1j * alpha))
 
-        return SU2RotationGate(theta, phi, lambd, alpha)
+        return cls(theta, phi, lambd, alpha)
+
+    @classmethod
+    def from_euler_zxz_angles(
+        cls,
+        z_1: SymbolicFloat,
+        x: SymbolicFloat,
+        z_2: SymbolicFloat,
+        *,
+        global_shift: SymbolicFloat = 0,
+        eps: Optional[SymbolicFloat],
+    ) -> 'SU2RotationGate':
+        r"""SU(2) rotation from Z-X-Z Euler angles.
+
+        Corresponds to the matrix $e^{i \delta} Rz(\phi) Rx(\theta) Rz(\psi)$, i.e.
+
+        $$
+            e^{i \delta}
+            \begin{pmatrix}
+            \cos(\beta / 2)
+            \end{pmatrix}
+        $$
+
+        All angles are in radians.
+
+        Args:
+            z_1: angle $\psi$ of the first Rz.
+            x: angle $\theta$ of the middle Rx.
+            z_2: angle $\phi$ of the second Rz.
+            global_shift: global phase shift exponent $\delta$.
+            eps: precision of rotation.
+        """
+        su2_lambd = pi(z_1) / 2 - z_1
+        su2_theta = x / 2
+        su2_phi = pi(z_2) / 2 - z_2
+        su2_global_shift = global_shift + (z_1 + z_2) / 2 - pi(global_shift, z_1, z_2)
+
+        if eps is not None:
+            return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift, eps=eps)
+        else:
+            return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
