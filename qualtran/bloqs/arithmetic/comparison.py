@@ -201,16 +201,7 @@ def _lt_k() -> LessThanConstant:
     return lt_k
 
 
-@bloq_example
-def _lt_k_symb() -> LessThanConstant:
-    n, k = sympy.symbols("n k")
-    lt_k_symb = LessThanConstant(bitsize=n, less_than_val=k)
-    return lt_k_symb
-
-
-_LT_K_DOC = BloqDocSpec(
-    bloq_cls=LessThanConstant, examples=[_lt_k, _lt_k_symb]  # TODO: support symbolic call graph
-)
+_LT_K_DOC = BloqDocSpec(bloq_cls=LessThanConstant, examples=[_lt_k])
 
 
 @frozen
@@ -616,21 +607,12 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
 
 @bloq_example
-def _leq_symb() -> LessThanEqual:
-    n1, n2 = sympy.symbols('n1 n2')
-    leq_symb = LessThanEqual(x_bitsize=n1, y_bitsize=n2)
-    return leq_symb
-
-
-@bloq_example
 def _leq() -> LessThanEqual:
     leq = LessThanEqual(x_bitsize=4, y_bitsize=8)
     return leq
 
 
-_LEQ_DOC = BloqDocSpec(
-    bloq_cls=LessThanEqual, examples=[_leq, _leq_symb]  # TODO: support symbolic call graph
-)
+_LEQ_DOC = BloqDocSpec(bloq_cls=LessThanEqual, examples=[_leq])
 
 
 @frozen
@@ -749,6 +731,9 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
