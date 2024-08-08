@@ -13,7 +13,7 @@
 #  limitations under the License.
 import logging
 from collections import Counter, defaultdict
-from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import networkx as nx
@@ -21,7 +21,7 @@ import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import ceil, log2, ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, is_symbolic, log2, ssum, SymbolicFloat, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -116,7 +116,7 @@ class BloqCount(CostKey[BloqCountDict]):
         return f'{self.gateset_name} counts'
 
 
-FloatRepr_T = str
+FloatRepr_T = Union[str, sympy.Expr]
 """The type to represent floats as, to use as safe keys in mappings."""
 
 
@@ -145,22 +145,32 @@ class GateCounts:
     )
 
     @classmethod
-    def from_rotation_with_eps(cls, eps: float, *, n_rotations: int = 1, eps_repr_prec: int = 10):
+    def from_rotation_with_eps(
+        cls, eps: SymbolicFloat, *, n_rotations: int = 1, eps_repr_prec: int = 10
+    ):
         """Construct a GateCount with a rotation of precision `eps`.
+
+        Formats the value of `eps` as a string using `np.format_float_scientific`,
+        to use as a safe dictionary key. If `eps` is symbolic, it is used as-is.
 
         Args:
             eps: precision to synthesize the rotation(s).
             eps_repr_prec: number of digits to approximate `eps` to. Uses 10 by default.
                            See `np.format_float_scientific` for more details.
+                           If `eps` is symbolic, this parameter is ignored.
             n_rotations: number of rotations, defaults to 1.
         """
-        eps_bin = np.format_float_scientific(eps, precision=eps_repr_prec, unique=False)
+        if is_symbolic(eps):
+            eps_bin: FloatRepr_T = eps
+        else:
+            eps_bin = np.format_float_scientific(eps, precision=eps_repr_prec, unique=False)
         return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
 
-    def iter_rotations_with_epsilon(self) -> Iterator[tuple[float, SymbolicInt]]:
+    def iter_rotations_with_epsilon(self) -> Iterator[tuple[SymbolicFloat, SymbolicInt]]:
         """Iterate through the rotation precisions (epsilon) and their frequency."""
         for eps_bin, n_rot in self.binned_rotation_epsilons.items():
-            yield float(eps_bin), n_rot
+            eps: SymbolicFloat = eps_bin if is_symbolic(eps_bin) else float(eps_bin)
+            yield eps, n_rot
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
