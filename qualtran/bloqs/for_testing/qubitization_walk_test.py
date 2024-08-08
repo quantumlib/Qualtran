@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Tuple
 
 import attrs
 import cirq
@@ -20,6 +20,7 @@ import scipy
 from numpy.typing import NDArray
 
 from qualtran import Signature
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
@@ -33,7 +34,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
     cvs: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
-    qlambda: Optional[float] = None
+    qlambda: float = 0.0
 
     @cached_property
     def selection_registers(self) -> Signature:
@@ -44,7 +45,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
         return Signature.build()
 
     @cached_property
-    def l1_norm_of_coeffs(self) -> Optional['SymbolicFloat']:
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
         return self.qlambda
 
     def decompose_from_registers(
@@ -67,4 +68,6 @@ def get_uniform_pauli_qubitized_walk(target_bitsize: int):
     select = SelectPauliLCU(
         (len(ham_coeff) - 1).bit_length(), select_unitaries=ham_dps, target_bitsize=target_bitsize
     )
-    return ham, QubitizationWalkOperator(select=select, prepare=prepare)
+    return ham, QubitizationWalkOperator(
+        block_encoding=LCUBlockEncoding(select=select, prepare=prepare)
+    )

@@ -38,6 +38,7 @@ def test_state_prep_via_rotation(bloq_autotester):
     bloq_autotester(_state_prep_via_rotation)
 
 
+@pytest.mark.slow
 def test_state_prep_via_rotation_symb():
     bloq = _state_prep_via_rotation_symb.make()
     L, phase = bloq.n_coeff, bloq.phase_bitsize

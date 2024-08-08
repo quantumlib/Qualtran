@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import Dict, Set, Tuple
 
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -24,13 +25,13 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QAny,
-    Register,
     Signature,
     SoquetT,
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping import Partition
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, prod, ssum, SymbolicFloat, SymbolicInt
 
@@ -64,6 +65,11 @@ class TensorProduct(BlockEncoding):
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
 
+    @classmethod
+    def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `TensorProduct` from block encodings."""
+        return cls(block_encodings)
+
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
@@ -96,23 +102,12 @@ class TensorProduct(BlockEncoding):
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
-
-    @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        if all(isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings):
+            return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        else:
+            # TODO: implement by taking tensor product of component signal states
+            raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         return set(Counter(self.block_encodings).items())
@@ -230,7 +225,6 @@ def _tensor_product_block_encoding_symb() -> TensorProduct:
 
 _TENSOR_PRODUCT_DOC = BloqDocSpec(
     bloq_cls=TensorProduct,
-    import_line="from qualtran.bloqs.block_encoding import TensorProduct",
     examples=[
         _tensor_product_block_encoding,
         _tensor_product_block_encoding_properties,

@@ -41,7 +41,8 @@ from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.data_loading import QROM
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -209,23 +210,8 @@ class SparseMatrix(BlockEncoding):
         return self.eps
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     @cached_property
     def diffusion(self):
@@ -500,7 +486,6 @@ def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
 
 _SPARSE_MATRIX_DOC = BloqDocSpec(
     bloq_cls=SparseMatrix,
-    import_line="from qualtran.bloqs.block_encoding import SparseMatrix",
     examples=[
         _sparse_matrix_block_encoding,
         _sparse_matrix_symb_block_encoding,

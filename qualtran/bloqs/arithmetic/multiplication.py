@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     ConnectionT,
+    DecomposeTypeError,
     GateWithRegisters,
     QFxp,
     QUInt,
@@ -33,7 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.symbolics import HasLength, is_symbolic, smax, SymbolicInt
+from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -164,7 +165,7 @@ class Square(Bloq):
         Quantization](https://arxiv.org/abs/2105.12767). pg 76 for Toffoli complexity.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     uncompute: bool = False
 
     @property
@@ -199,6 +200,9 @@ class Square(Bloq):
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
+
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot get tensors for symbolic {self=}")
 
         n = self.bitsize
         N = 2**self.bitsize
@@ -252,8 +256,8 @@ class SumOfSquares(Bloq):
         complexity for squaring.
     """
 
-    bitsize: int
-    k: int
+    bitsize: SymbolicInt
+    k: SymbolicInt
 
     @property
     def signature(self):
@@ -309,8 +313,8 @@ class Product(Bloq):
         complexity for multiplying two numbers.
     """
 
-    a_bitsize: int
-    b_bitsize: int
+    a_bitsize: SymbolicInt
+    b_bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -368,8 +372,8 @@ class ScaleIntByReal(Bloq):
             https://arxiv.org/pdf/2007.07391.pdf) pg 70.
     """
 
-    r_bitsize: int
-    i_bitsize: int
+    r_bitsize: SymbolicInt
+    i_bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -428,7 +432,7 @@ class MultiplyTwoReals(Bloq):
         Appendix D. Section 5. (p. 71).
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -483,10 +487,10 @@ class SquareRealNumber(Bloq):
         Appendix D. Section 6. (p. 74).
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     def __attrs_post_init__(self):
-        if self.bitsize < 3:
+        if not is_symbolic(self.bitsize) and self.bitsize < 3:
             raise ValueError("bitsize must be at least 3 for SquareRealNumber bloq to make sense.")
 
     @property
@@ -539,8 +543,8 @@ class InvertRealNumber(Bloq):
         [Quantum Algorithms and Circuits for Scientific Computing](https://arxiv.org/pdf/1511.08253). Section 2.1.
     """
 
-    bitsize: int
-    num_frac: int
+    bitsize: SymbolicInt
+    num_frac: SymbolicInt
 
     def __attrs_post_init__(self):
         if self.num_frac == self.bitsize:
@@ -563,7 +567,7 @@ class InvertRealNumber(Bloq):
         num_int = self.bitsize - self.num_frac
         # Newton-Raphson: Eq. (1)
         # x' = -a * x^2 + 2 * x
-        num_iters = int(np.ceil(np.log2(self.bitsize)))
+        num_iters = ceil(log2(self.bitsize))
         # TODO: When decomposing we will potentially need to use larger registers.
         # Related issue: https://github.com/quantumlib/Qualtran/issues/655
         return {

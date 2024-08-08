@@ -43,4 +43,4 @@ from .gidney_fowler_model import (
     iter_ccz2t_factories,
     iter_simple_data_blocks,
 )
-from .reference import Reference
+from .physical_cost_model import PhysicalCostModel
