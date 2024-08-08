@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 import attrs
 
 from qualtran.resource_counting import GateCounts
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.surface_code import AlgorithmSummary, QECScheme, RotationCostModel
@@ -116,7 +117,7 @@ def n_discrete_logical_gates(
         rotation_model: Cost model used to compute the number of T gates
             needed to approximate rotations.
     """
-    n_rotations: int = alg.n_logical_gates.n_rotation_ignoring_eps()
+    n_rotations: SymbolicInt = alg.n_logical_gates.n_rotation_ignoring_eps()
     ret = attrs.evolve(alg.n_logical_gates, binned_rotation_epsilons={})
     if n_rotations > 0:
         ret = (

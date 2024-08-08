@@ -18,9 +18,10 @@ from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHEC
 import attrs
 import networkx as nx
 import numpy as np
+import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import ceil, log2, SymbolicFloat
+from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -129,12 +130,12 @@ class GateCounts:
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
     """
 
-    t: int = 0
-    toffoli: int = 0
-    cswap: int = 0
-    and_bloq: int = 0
-    clifford: int = 0
-    measurement: int = 0
+    t: SymbolicInt = 0
+    toffoli: SymbolicInt = 0
+    cswap: SymbolicInt = 0
+    and_bloq: SymbolicInt = 0
+    clifford: SymbolicInt = 0
+    measurement: SymbolicInt = 0
     binned_rotation_epsilons: Counter[int] = field(
         factory=Counter, converter=_mapping_to_counter, eq=lambda d: tuple(d.items())
     )
@@ -217,16 +218,19 @@ class GateCounts:
         return self.__mul__(other)
 
     def __str__(self):
-        strs = []
-        for k, v in self.asdict().items():
-            strs.append(f'{k}: {v}')
-
+        strs = [f'{k}: {v}' for k, v in self.asdict().items()]
         if strs:
             return ', '.join(strs)
         return '-'
 
-    def asdict(self):
+    def asdict(self) -> Dict[str, int]:
         d = attrs.asdict(self)
+
+        def _is_nonzero(v):
+            maybe_nonzero = sympy.sympify(v)
+            if maybe_nonzero is None:
+                return True
+            return maybe_nonzero
 
         def _keep(key, value) -> bool:
             if key == 'binned_rotation_epsilons':
@@ -234,7 +238,7 @@ class GateCounts:
             if key == 'eps_bin_prec':
                 # rotations non-empty
                 return len(self.binned_rotation_epsilons) > 0
-            return value > 0
+            return _is_nonzero(value)
 
         return {k: v for k, v in d.items() if _keep(k, v)}
 
@@ -277,7 +281,7 @@ class GateCounts:
             + self.rotation_to_t
         )
 
-    def total_t_and_ccz_count(self) -> Dict[str, int]:
+    def total_t_and_ccz_count(self) -> Dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
         n_t = self.t + self.rotation_to_t
         return {'n_t': n_t, 'n_ccz': n_ccz}
@@ -286,7 +290,7 @@ class GateCounts:
         """Total number of rotations, ignoring the individual precisions."""
         return sum(self.binned_rotation_epsilons.values())
 
-    def total_beverland_count(self) -> Dict[str, int]:
+    def total_beverland_count(self) -> Dict[str, SymbolicInt]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
