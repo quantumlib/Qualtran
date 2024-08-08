@@ -22,7 +22,6 @@ $$
 \mathrm{PREPARE}|0\rangle = |\mathcal{L}\rangle \\
 (\langle \mathcal{L} | \otimes \mathbb{1}) \mathrm{SELECT} (|\mathcal{L} \rangle \otimes \mathbb{1}) = H / \lambda
 $$.
-sum_of_l1
 We first document the SelectOracle and PrepareOracle abstract base bloqs, and then show
 how they can be combined in `QubitizationWalkOperator`.
 """
