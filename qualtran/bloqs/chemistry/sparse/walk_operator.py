@@ -13,6 +13,7 @@
 #  limitations under the License.
 from numpy.typing import NDArray
 
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 
@@ -44,5 +45,6 @@ def get_walk_operator_for_sparse_chem_ham(
         num_bits_rot_aa=num_bits_rot_aa,
     )
     select = SelectSparse(num_spin_orb)
-    walk_op = QubitizationWalkOperator(select=select, prepare=prepare)
+    block_encoding = LCUBlockEncoding(select=select, prepare=prepare)
+    walk_op = QubitizationWalkOperator(block_encoding=block_encoding)
     return walk_op

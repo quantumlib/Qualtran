@@ -217,9 +217,10 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     thc_dim = 450
     num_spat = num_spinorb // 2
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
-    t_l, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
+    t_l, eta, zeta = build_random_test_integrals(thc_dim, num_spinorb // 2, seed=7)
     walk = get_walk_operator_for_thc_ham(
         t_l,
+        eta,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_theta=num_bits_rot,
@@ -228,8 +229,7 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     )
 
     algo_eps = 0.0016
-    qlambda = 1201.5
-    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qpe_eps = algo_eps / (walk.block_encoding.alpha * 2**0.5)
     qubitization_qpe_chem_thc = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
     return qubitization_qpe_chem_thc
 

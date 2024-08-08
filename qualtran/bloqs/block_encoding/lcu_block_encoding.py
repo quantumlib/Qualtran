@@ -13,26 +13,38 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import attrs
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    CtrlSpec,
+    Register,
+    Signature,
+    SoquetT,
+)
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
-def _total_bits(registers: Tuple[Register, ...]) -> int:
+def _total_bits(registers: Union[Tuple[Register, ...], Signature]) -> int:
     """Get the bitsize of a collection of registers"""
     return sum(r.total_bits() for r in registers)
 
 
 @attrs.frozen
-class LCUBlockEncoding(BlockEncoding):
+class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the block encoding via
@@ -64,10 +76,6 @@ class LCUBlockEncoding(BlockEncoding):
     SELECT.
 
     Args:
-        alpha: The normalization constant upper bounding the spectral norm of
-            the Hamiltonian. Often called lambda.
-        epsilon: The precision to which the block encoding is performed.
-            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
 
@@ -85,10 +93,13 @@ class LCUBlockEncoding(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    alpha: SymbolicFloat
-    epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+    control_val: Optional[int] = None
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.select.control_registers
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -108,15 +119,31 @@ class LCUBlockEncoding(BlockEncoding):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.junk_registers
+        return ()
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return self.select.target_registers
 
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.prepare.l1_norm_of_coeffs
+
+    @cached_property
+    def epsilon(self) -> SymbolicFloat:
+        # TODO: implement https://github.com/quantumlib/Qualtran/issues/1247
+        return 0.0
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
+        return Signature(
+            [
+                *self.control_registers,
+                *self.selection_registers,
+                *self.junk_registers,
+                *self.target_registers,
+            ]
+        )
 
     @cached_property
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
@@ -127,9 +154,29 @@ class LCUBlockEncoding(BlockEncoding):
         soqs |= bb.add_d(self.select, **select_reg)
         return soqs
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'control':
+            return Circle(filled=bool(self.control_val))
+        else:
+            return TextBox('B[H]')
+
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        if self.control_val is not None:
+            raise ValueError(
+                "control_val is not None but trying to build controlled LCUBlockEncoding."
+            )
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
+        return attrs.evolve(self, select=c_select, control_val=control_val)
+
 
 @attrs.frozen
-class LCUBlockEncodingZeroState(BlockEncoding):
+class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the standard block encoding from an LCU as
@@ -160,10 +207,6 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     SELECT.
 
     Args:
-        alpha: The normalization constant upper bounding the spectral norm of
-            the Hamiltonian. Often called lambda.
-        epsilon: The precision to which the block encoding is performed.
-            Currently this isn't used: see https://github.com/quantumlib/Qualtran/issues/985
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
 
@@ -181,10 +224,13 @@ class LCUBlockEncodingZeroState(BlockEncoding):
             Chakraborty et al. 2018. Definition 3 page 8.
     """
 
-    alpha: SymbolicFloat
-    epsilon: SymbolicFloat
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
+    control_val: Optional[int] = None
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.select.control_registers
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -210,13 +256,30 @@ class LCUBlockEncodingZeroState(BlockEncoding):
     def target_registers(self) -> Tuple[Register, ...]:
         return self.select.target_registers
 
+    @property
+    def alpha(self) -> SymbolicFloat:
+        return self.prepare.l1_norm_of_coeffs
+
+    @cached_property
+    def epsilon(self) -> SymbolicFloat:
+        # TODO: Implement epsilon for all block encodings
+        # https://github.com/quantumlib/Qualtran/issues/1247
+        return 0.0
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
+        return Signature(
+            [
+                *self.control_registers,
+                *self.selection_registers,
+                *self.junk_registers,
+                *self.target_registers,
+            ]
+        )
 
     @cached_property
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
-        raise NotImplementedError("IdentityPrepareOracle not yet implemented.")
+        return PrepareIdentity(self.selection_registers)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
         def _extract_soqs(bloq: Bloq) -> Dict[str, 'SoquetT']:
@@ -226,6 +289,26 @@ class LCUBlockEncodingZeroState(BlockEncoding):
         soqs |= bb.add_d(self.select, **_extract_soqs(self.select))
         soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))
         return soqs
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'control':
+            return Circle(filled=bool(self.control_val))
+        else:
+            return TextBox('B[H]')
+
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncodingZeroState':
+        if self.control_val is not None:
+            raise ValueError(
+                "control_val is not None but trying to build controlled LCUBlockEncoding."
+            )
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
+        return attrs.evolve(self, select=c_select, control_val=control_val)
 
 
 @bloq_example
@@ -238,9 +321,7 @@ def _lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    lcu_block = LCUBlockEncoding(select=select, prepare=prepare, alpha=qlambda, epsilon=0.0)
+    lcu_block = LCUBlockEncoding(select=select, prepare=prepare)
     return lcu_block
 
 
@@ -256,10 +337,8 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     black_box_lcu_block = LCUBlockEncoding(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_block
 
@@ -274,11 +353,7 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
-    lcu_zero_state_block = LCUBlockEncodingZeroState(
-        select=select, prepare=prepare, alpha=qlambda, epsilon=0.0
-    )
+    lcu_zero_state_block = LCUBlockEncodingZeroState(select=select, prepare=prepare)
     return lcu_zero_state_block
 
 
@@ -294,10 +369,8 @@ def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    N = dim * dim * 2
-    qlambda = 2 * N * t + (N * U) // 2
     black_box_lcu_zero_state_block = LCUBlockEncodingZeroState(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare), alpha=qlambda, epsilon=0.0
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_zero_state_block
 
