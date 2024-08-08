@@ -44,7 +44,7 @@ def _total_bits(registers: Union[Tuple[Register, ...], Signature]) -> int:
 
 
 @attrs.frozen
-class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
+class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the block encoding via
@@ -162,10 +162,10 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
         else:
             return TextBox('B[H]')
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'SelectBlockEncoding':
         if self.control_val is not None:
             raise ValueError(
-                "control_val is not None but trying to build controlled LCUBlockEncoding."
+                "control_val is not None but trying to build controlled SelectBlockEncoding."
             )
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
         if not isinstance(c_select, SelectOracle):
@@ -176,7 +176,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
 
 @attrs.frozen
-class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledExtension):
+class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the standard block encoding from an LCU as
@@ -298,10 +298,10 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
         else:
             return TextBox('B[H]')
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncodingZeroState':
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
         if self.control_val is not None:
             raise ValueError(
-                "control_val is not None but trying to build controlled LCUBlockEncoding."
+                "control_val is not None but trying to build controlled SelectBlockEncoding."
             )
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
         if not isinstance(c_select, SelectOracle):
@@ -312,7 +312,7 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
 
 
 @bloq_example
-def _lcu_block() -> LCUBlockEncoding:
+def _lcu_block() -> SelectBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -321,12 +321,12 @@ def _lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    lcu_block = LCUBlockEncoding(select=select, prepare=prepare)
+    lcu_block = SelectBlockEncoding(select=select, prepare=prepare)
     return lcu_block
 
 
 @bloq_example
-def _black_box_lcu_block() -> LCUBlockEncoding:
+def _black_box_lcu_block() -> SelectBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
     from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
     from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
@@ -337,14 +337,14 @@ def _black_box_lcu_block() -> LCUBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    black_box_lcu_block = LCUBlockEncoding(
+    black_box_lcu_block = SelectBlockEncoding(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_block
 
 
 @bloq_example
-def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
+def _lcu_zero_state_block() -> LCUBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -353,12 +353,12 @@ def _lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    lcu_zero_state_block = LCUBlockEncodingZeroState(select=select, prepare=prepare)
+    lcu_zero_state_block = LCUBlockEncoding(select=select, prepare=prepare)
     return lcu_zero_state_block
 
 
 @bloq_example
-def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
+def _black_box_lcu_zero_state_block() -> LCUBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
     from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
     from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
@@ -369,17 +369,16 @@ def _black_box_lcu_zero_state_block() -> LCUBlockEncodingZeroState:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    black_box_lcu_zero_state_block = LCUBlockEncodingZeroState(
+    black_box_lcu_zero_state_block = LCUBlockEncoding(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_zero_state_block
 
 
 _LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=LCUBlockEncoding, examples=(_lcu_block, _black_box_lcu_block)
+    bloq_cls=SelectBlockEncoding, examples=(_lcu_block, _black_box_lcu_block)
 )
 
 _LCU_ZERO_STATE_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=LCUBlockEncodingZeroState,
-    examples=(_lcu_zero_state_block, _black_box_lcu_zero_state_block),
+    bloq_cls=LCUBlockEncoding, examples=(_lcu_zero_state_block, _black_box_lcu_zero_state_block)
 )
