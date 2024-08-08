@@ -37,6 +37,7 @@ from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 
@@ -87,6 +88,10 @@ class Product(BlockEncoding):
     def __attrs_post_init__(self):
         if not all(u.system_bitsize == self.system_bitsize for u in self.block_encodings):
             raise ValueError("All block encodings must have the same system size.")
+        if not all(
+            isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings
+        ):
+            raise ValueError("Cannot take product of block encodings with non-zero signal state.")
 
     @classmethod
     def of(cls, *block_encodings: BlockEncoding) -> Self:
@@ -126,10 +131,7 @@ class Product(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT

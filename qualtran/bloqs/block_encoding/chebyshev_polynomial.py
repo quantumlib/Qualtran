@@ -30,6 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
@@ -75,6 +76,10 @@ class ChebyshevPolynomial(BlockEncoding):
     def __attrs_post_init__(self):
         if self.order < 0:
             raise ValueError(f"order must be greater >= 0. Found {self.order}.")
+        if not isinstance(self.block_encoding.signal_state.prepare, PrepareIdentity):
+            raise ValueError(
+                "Cannot take Chebyshev polynomial of block encodings with non-zero signal state."
+            )
 
     @cached_property
     def signature(self) -> Signature:
@@ -109,10 +114,7 @@ class ChebyshevPolynomial(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     @cached_property
     def reflection_bloq(self):
@@ -197,6 +199,10 @@ class ScaledChebyshevPolynomial(BlockEncoding):
     def __attrs_post_init__(self):
         if self.order < 0:
             raise ValueError(f"order must be greater >= 0. Found {self.order}.")
+        if not isinstance(self.block_encoding.signal_state.prepare, PrepareIdentity):
+            raise ValueError(
+                "Cannot take Chebyshev polynomial of block encodings with non-zero signal state."
+            )
 
     @cached_property
     def signature(self) -> Signature:
@@ -243,10 +249,7 @@ class ScaledChebyshevPolynomial(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     @cached_property
     def linear_combination(self) -> Union[LinearCombination, ChebyshevPolynomial]:
