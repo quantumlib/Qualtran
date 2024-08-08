@@ -38,16 +38,6 @@ if TYPE_CHECKING:
 
 
 @frozen
-class ModAdd(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
-
-
-@frozen
 class ModSub(Bloq):
     n: int
     mod: int
@@ -84,18 +74,6 @@ class CModSub(Bloq):
         elif reg.name == 'y':
             return TextBox('x-y')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-
-@frozen
-class CModAdd(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature(
-            [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
-        )
 
 
 @frozen

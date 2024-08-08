@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import pytest
+import sympy
 
 from qualtran import QUInt
 from qualtran.bloqs.arithmetic import Add
@@ -69,3 +70,23 @@ def test_ctrl_mod_add_k():
 def test_mod_add_valid_decomp(bitsize, p):
     bloq = ModAdd(bitsize=bitsize, mod=p)
     assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize', list(range(1, 6)) + [sympy.Symbol('n')])
+def test_mod_add_symbolic_cost(bitsize):
+    tcomplexity = ModAdd(bitsize, sympy.Symbol('p')).t_complexity()
+    assert tcomplexity.t == 16 * bitsize - 4  # 4n toffoli
+    assert tcomplexity.rotations == 0
+
+
+@pytest.mark.parametrize(
+    ['prime', 'bitsize'],
+    [(p, bitsize) for p in [11, 13, 31] for bitsize in range(1 + p.bit_length(), 8)],
+)
+def test_classical_action_mod_add(prime, bitsize):
+    b = ModAdd(bitsize=bitsize, mod=prime)
+    cb = b.decompose_bloq()
+    valid_range = range(prime)
+    for x in valid_range:
+        for y in valid_range:
+            assert b.call_classically(x=x, y=y) == cb.call_classically(x=x, y=y)

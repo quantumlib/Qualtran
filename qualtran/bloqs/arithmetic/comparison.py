@@ -875,6 +875,25 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.bitsize == 1:
+            return {(MultiControlX(cvs=(1, 0)), 1)}
+        # Ignore Allocation and Deallocation bloqs for now.
+        if self.signed:
+            return {
+                (CNOT(), 6 * self.bitsize - 7),
+                (XGate(), 2 * self.bitsize + 2),
+                (And(), self.bitsize - 1),
+                (And(uncompute=True), self.bitsize - 1),
+            }
+
+        return {
+            (CNOT(), 6 * self.bitsize - 1),
+            (XGate(), 2 * self.bitsize + 4),
+            (And(), self.bitsize),
+            (And(uncompute=True), self.bitsize),
+        }
+
 
 @frozen
 class GreaterThanConstant(Bloq):

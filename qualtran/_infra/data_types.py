@@ -787,10 +787,11 @@ class QMontgomeryUInt(QDType):
         return range(2**self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
-        raise NotImplementedError(f"to_bits not implemented for {self}")
+        self.assert_valid_classical_val(x)
+        return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        raise NotImplementedError(f"from_bits not implemented for {self}")
+        return int("".join(str(x) for x in bits), 2)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
