@@ -193,11 +193,11 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
     $$
 
     The Hamiltonian can be extracted via
-
     $$
         \langle G | B[H] | G \rangle = H / \alpha,
     $$
-    where $|G\rangle_a = I_a |0\rangle_a$
+    where $|G\rangle_a = I_a |0\rangle_a$. This differs from the `SelectBlockEncoding` which uses
+    Prepare for the signal state.
 
     The ancilla register is at least of size $\log L$.
 
@@ -312,7 +312,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
 
 @bloq_example
-def _lcu_block() -> SelectBlockEncoding:
+def _lcu_select_block() -> SelectBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
 
     # 3x3 hubbard model U/t = 4
@@ -321,12 +321,12 @@ def _lcu_block() -> SelectBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    lcu_block = SelectBlockEncoding(select=select, prepare=prepare)
-    return lcu_block
+    lcu_select_block = SelectBlockEncoding(select=select, prepare=prepare)
+    return lcu_select_block
 
 
 @bloq_example
-def _black_box_lcu_block() -> SelectBlockEncoding:
+def _black_box_select_block() -> SelectBlockEncoding:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
     from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
     from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
@@ -337,48 +337,48 @@ def _black_box_lcu_block() -> SelectBlockEncoding:
     U = 4
     t = 1
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    black_box_lcu_block = SelectBlockEncoding(
+    black_box_select_block = SelectBlockEncoding(
+        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
+    )
+    return black_box_select_block
+
+
+@bloq_example
+def _lcu_block() -> LCUBlockEncoding:
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+
+    # 3x3 hubbard model U/t = 4
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    lcu_block = LCUBlockEncoding(select=select, prepare=prepare)
+    return lcu_block
+
+
+@bloq_example
+def _black_box_lcu_block() -> LCUBlockEncoding:
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
+    from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
+    from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
+
+    # 3x3 hubbard model U/t = 4
+    dim = 3
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    U = 4
+    t = 1
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
+    black_box_lcu_block = LCUBlockEncoding(
         select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
     )
     return black_box_lcu_block
 
 
-@bloq_example
-def _lcu_zero_state_block() -> LCUBlockEncoding:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
-
-    # 3x3 hubbard model U/t = 4
-    dim = 3
-    select = SelectHubbard(x_dim=dim, y_dim=dim)
-    U = 4
-    t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    lcu_zero_state_block = LCUBlockEncoding(select=select, prepare=prepare)
-    return lcu_zero_state_block
-
-
-@bloq_example
-def _black_box_lcu_zero_state_block() -> LCUBlockEncoding:
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard, SelectHubbard
-    from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
-    from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-
-    # 3x3 hubbard model U/t = 4
-    dim = 3
-    select = SelectHubbard(x_dim=dim, y_dim=dim)
-    U = 4
-    t = 1
-    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=t, u=U)
-    black_box_lcu_zero_state_block = LCUBlockEncoding(
-        select=BlackBoxSelect(select), prepare=BlackBoxPrepare(prepare)
-    )
-    return black_box_lcu_zero_state_block
-
-
-_LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=SelectBlockEncoding, examples=(_lcu_block, _black_box_lcu_block)
+_SELECT_BLOCK_ENCODING_DOC = BloqDocSpec(
+    bloq_cls=SelectBlockEncoding, examples=(_lcu_select_block, _black_box_select_block)
 )
 
-_LCU_ZERO_STATE_BLOCK_ENCODING_DOC = BloqDocSpec(
-    bloq_cls=LCUBlockEncoding, examples=(_lcu_zero_state_block, _black_box_lcu_zero_state_block)
+_LCU_BLOCK_ENCODING_DOC = BloqDocSpec(
+    bloq_cls=LCUBlockEncoding, examples=(_lcu_block, _black_box_lcu_block)
 )
