@@ -224,8 +224,7 @@ class GateCounts:
         """
         return ceil(1.149 * log2(1.0 / eps) + 9.2)
 
-    @property
-    def rotation_to_t(self) -> SymbolicInt:
+    def total_rotations_as_t(self) -> SymbolicInt:
         """Total number of T Gates for the rotations."""
         return ssum(
             n_rotations * self.rotation_t_cost(eps)
@@ -245,12 +244,12 @@ class GateCounts:
             + ts_per_toffoli * self.toffoli
             + ts_per_cswap * self.cswap
             + ts_per_and_bloq * self.and_bloq
-            + self.rotation_to_t
+            + self.total_rotations_as_t()
         )
 
     def total_t_and_ccz_count(self) -> Dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
-        n_t = self.t + self.rotation_to_t
+        n_t = self.t + self.total_rotations_as_t()
         return {'n_t': n_t, 'n_ccz': n_ccz}
 
     @property
