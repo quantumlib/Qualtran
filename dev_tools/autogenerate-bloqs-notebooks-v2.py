@@ -683,8 +683,8 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
         title='LCU Select/Prepare Oracles',
         module=qualtran.bloqs.block_encoding.lcu_block_encoding,
         bloq_specs=[
+            qualtran.bloqs.block_encoding.lcu_block_encoding._SELECT_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
             qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
             qualtran.bloqs.multiplexers.black_box_select._BLACK_BOX_SELECT_DOC,

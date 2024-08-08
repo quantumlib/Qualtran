@@ -35,8 +35,10 @@ from qualtran.bloqs.block_encoding.linear_combination import (
     _linear_combination_block_encoding,
     LinearCombination,
 )
+from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
 from qualtran.bloqs.block_encoding.unitary import Unitary
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.testing import execute_notebook
 
 
@@ -61,6 +63,8 @@ def test_linear_combination_checks():
         _ = LinearCombination((Unitary(TGate()), Unitary(CNOT())), (1.0,), lambd_bits=1)
     with pytest.raises(ValueError):
         _ = LinearCombination((Unitary(TGate()), Unitary(Hadamard())), (0.0, 0.0), lambd_bits=1)
+    with pytest.raises(ValueError):
+        _ = LinearCombination((Unitary(TGate()), TestBlockEncoding()), (1.0, 1.0), lambd_bits=1)
 
 
 def test_linear_combination_params():
@@ -212,6 +216,10 @@ def gen_test():
 @pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
 def test_linear_combination_approx_random(gates, lambd):
     run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
+
+
+def test_linear_combination_signal_state():
+    assert isinstance(_linear_combination_block_encoding().signal_state.prepare, PrepareIdentity)
 
 
 @pytest.mark.notebook

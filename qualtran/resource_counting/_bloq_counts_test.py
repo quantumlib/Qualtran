@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import pytest
+import sympy
 
 from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
@@ -53,6 +54,9 @@ def test_gate_counts():
     assert 2 * GateCounts(t=10) == GateCounts(t=20)
 
     assert GateCounts(toffoli=1, cswap=1, and_bloq=1).total_t_count() == 4 + 7 + 4
+
+    gc2 = GateCounts(t=sympy.Symbol('n'), toffoli=sympy.sympify('0'), cswap=2)
+    assert str(gc2) == 't: n, cswap: 2'
 
 
 def test_qec_gates_cost():

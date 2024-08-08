@@ -43,6 +43,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
+from qualtran.symbolics import SymbolicFloat
 from qualtran.symbolics.math_funcs import ceil, log2
 
 if TYPE_CHECKING:
@@ -178,6 +179,7 @@ class PrepareSparse(PrepareOracle):
     keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     is_adjoint: bool = False
+    sum_of_l1_coeffs: SymbolicFloat = 0.0
     qroam_block_size: Optional[int] = None
 
     @cached_property
@@ -244,6 +246,10 @@ class PrepareSparse(PrepareOracle):
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
+    @property
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
+        return self.sum_of_l1_coeffs
+
     @classmethod
     def from_hamiltonian_coeffs(
         cls,
@@ -305,6 +311,7 @@ class PrepareSparse(PrepareOracle):
             tuple([int(_) for _ in one_body]),
             tuple(keep),
             num_bits_rot_aa=num_bits_rot_aa,
+            sum_of_l1_coeffs=np.sum(np.abs(tpq_prime)) + 0.5 * np.sum(np.abs(eris)),
             qroam_block_size=qroam_block_size,
         )
 

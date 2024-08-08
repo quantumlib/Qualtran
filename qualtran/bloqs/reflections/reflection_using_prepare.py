@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -25,11 +25,13 @@ from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits,
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlZ
+from qualtran.bloqs.mcmt import MultiControlZ
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
     from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
@@ -73,7 +75,7 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
             Babbush et. al. (2018). Figure 1.
     """
 
-    prepare_gate: 'PrepareOracle'
+    prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
     control_val: Optional[int] = None
     global_phase: complex = 1
     eps: float = 1e-11
@@ -110,8 +112,6 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
             eps: precision for implementation of rotation. Only relevant if
                 global_phase is arbitrary angle and gate is not controlled.
         """
-        from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
-
         prepare_gate = PrepareIdentity.from_bitsizes(bitsizes=bitsizes)
         return ReflectionUsingPrepare(
             prepare_gate, control_val=control_val, global_phase=global_phase, eps=eps
