@@ -1,40 +1,50 @@
-from dev_tools.qualtran_dev_tools.bloq_finder import get_bloq_examples
-from qualtran.qref_interop import bloq_to_qref
 import pytest
-
 import sympy
-from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
-from qualtran.bloqs.data_loading.qrom import QROM
-
-from qualtran import DecomposeTypeError, DecomposeNotImplementedError
+from qref.schema_v1 import RoutineV1
 from qref.verification import verify_topology
 
 from qualtran import Bloq, BloqBuilder
-from qref.schema_v1 import RoutineV1
+from qualtran.bloqs.arithmetic.addition import _add_oop_large
+from qualtran.bloqs.arithmetic.comparison import LessThanEqual
+from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+    _black_box_lcu_zero_state_block,
+    _black_box_prepare,
+)
+from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
+from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.qref_interop import bloq_to_qref
+
+# This function could be replaced by get_bloq_examples from dev_tools.qualtran_dev_tools.bloq_finder
+# to run tests on all the available bloq examples, rather than a subset defined here.
+# This might require minor tweaks like adding `make()` calls.
+
+
+
+
+def get_bloq_examples():
+    return [
+        _add_oop_large,
+        _black_box_prepare,
+        _black_box_lcu_zero_state_block,
+        _df_one_body,
+        _df_block_encoding,
+    ]
 
 
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
 def test_bloq_examples_can_be_converted_to_qualtran(bloq_example):
     bloq = bloq_example.make()
-    try:
-        qref_routine = bloq_to_qref(bloq)
-    except:
-        pytest.xfail(f"QREF conversion failing for {bloq}")
-    verify_topology(qref_routine)
+    qref_routine = bloq_to_qref(bloq)
+    assert verify_topology(qref_routine)
 
 
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
 def test_bloq_examples_can_be_converted_to_qualtran_when_decomposed(bloq_example):
-    try:
-        bloq = bloq_example.make().decompose_bloq()
-    except (DecomposeTypeError, DecomposeNotImplementedError, ValueError) as e:
-        pytest.skip(f"QREF conversion not attempted, as bloq decomposition failed with {e}")
-    try:
-        qref_routine = bloq_to_qref(bloq)
-    except:
-        pytest.xfail(f"QREF conversion failing for {bloq}")
+    bloq = bloq_example.make().decompose_bloq()
+    qref_routine = bloq_to_qref(bloq)
+    assert verify_topology(qref_routine)
 
 
 def _cnot_routine(name: str) -> RoutineV1:

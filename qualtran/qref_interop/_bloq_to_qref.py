@@ -81,9 +81,7 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
         except AttributeError:
             pass
 
-    input_params = sorted(
-        list(_extract_input_params(bloq, ports, local_variables) - set(local_variables))
-    )
+    input_params = sorted(list(_extract_input_params(bloq, ports) - set(local_variables)))
 
     attributes = {
         "name": name,
@@ -292,8 +290,12 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     return resources
 
 
-def _extract_input_params(bloq: Bloq, ports: list[PortV1], local_variables) -> list[str]:
-    """Extracts input_params from bloq's t_complexity and port sizes."""
+def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> list[str]:
+    """Extracts input_params from bloq's t_complexity and port sizes.
+
+    In QREF `input_params` define the symbols that can be used to define port sizes
+    and resources of a particular routine.
+    """
     params_from_t_complexity = _extract_symbols_from_t_complexity(bloq)
     params_from_ports = _extract_symbols_from_port_sizes(ports)
     return set(params_from_t_complexity + params_from_ports)
