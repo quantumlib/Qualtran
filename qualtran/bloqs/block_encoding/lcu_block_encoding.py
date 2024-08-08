@@ -194,10 +194,10 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
     The Hamiltonian can be extracted via
     $$
-        \langle G | B[H] | G \rangle = H / \alpha,
+        \langle 0 | B[H] | 0 \rangle = H / \alpha,
     $$
-    where $|G\rangle_a = I_a |0\rangle_a$. This differs from the `SelectBlockEncoding` which uses
-    Prepare for the signal state.
+    This differs from the `SelectBlockEncoding` which uses Prepare for the signal state, while here
+    it is the identity operator.
 
     The ancilla register is at least of size $\log L$.
 
