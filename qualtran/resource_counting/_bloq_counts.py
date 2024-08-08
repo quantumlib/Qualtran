@@ -21,7 +21,7 @@ import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, log2, ssum, SymbolicFloat, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -176,7 +176,7 @@ class GateCounts:
             eps_bin_prec=new_eps_bin_prec,
         )
 
-    def iter_rotations_with_epsilon(self) -> Iterator[tuple[float, int]]:
+    def iter_rotations_with_epsilon(self) -> Iterator[tuple[float, SymbolicInt]]:
         """Iterate through the rotation precisions (epsilon) and their frequency."""
         for eps_bin, n_rot in self.binned_rotation_epsilons.items():
             yield eps_bin / 2**self.eps_bin_prec, n_rot
@@ -243,7 +243,7 @@ class GateCounts:
         return {k: v for k, v in d.items() if _keep(k, v)}
 
     @staticmethod
-    def rotation_t_cost(eps: SymbolicFloat) -> SymbolicFloat:
+    def rotation_t_cost(eps: SymbolicFloat) -> SymbolicInt:
         """T-cost of a single Z rotation with precision `eps`.
 
         References:
@@ -253,12 +253,10 @@ class GateCounts:
         return ceil(1.149 * log2(1.0 / eps) + 9.2)
 
     @property
-    def rotation_to_t(self) -> int:
+    def rotation_to_t(self) -> SymbolicInt:
         """Total number of T Gates for the rotations."""
-        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-        return sum(
-            n_rotations * int(TComplexity.rotation_cost(eps))
+        return ssum(
+            n_rotations * self.rotation_t_cost(eps)
             for eps, n_rotations in self.iter_rotations_with_epsilon()
         )
 
@@ -286,9 +284,9 @@ class GateCounts:
         n_t = self.t + self.rotation_to_t
         return {'n_t': n_t, 'n_ccz': n_ccz}
 
-    def n_rotation_ignoring_eps(self) -> int:
+    def n_rotation_ignoring_eps(self) -> SymbolicInt:
         """Total number of rotations, ignoring the individual precisions."""
-        return sum(self.binned_rotation_epsilons.values())
+        return ssum(self.binned_rotation_epsilons.values())
 
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
