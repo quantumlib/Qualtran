@@ -164,6 +164,8 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
     @cached_property
     def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
         """Get the Prepare bloq if appropriate from the block encoding."""
+        # TODO: This should use self.signal_state
+        # https://github.com/quantumlib/Qualtran/issues/1266
         if hasattr(self.block_encoding, 'prepare'):
             return self.block_encoding.prepare
         raise ValueError(

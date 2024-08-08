@@ -76,8 +76,6 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
     SELECT.
 
     Args:
-        alpha: The normalization constant upper bounding the spectral norm of
-            the Hamiltonian. Often called lambda.
         select: The bloq implementing the `SelectOracle` interface.
         prepare: The bloq implementing the `PrepareOracle` interface.
 
@@ -133,6 +131,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
+        # TODO: implement https://github.com/quantumlib/Qualtran/issues/1247
         return 0.0
 
     @cached_property
@@ -164,6 +163,10 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
             return TextBox('B[H]')
 
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
+        if self.control_val is not None:
+            raise ValueError(
+                "control_val is not None but trying to build controlled LCUBlockEncoding."
+            )
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
         if not isinstance(c_select, SelectOracle):
             raise TypeError(
@@ -259,6 +262,8 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
 
     @cached_property
     def epsilon(self) -> SymbolicFloat:
+        # TODO: Implement epsilon for all block encodings
+        # https://github.com/quantumlib/Qualtran/issues/1247
         return 0.0
 
     @cached_property
@@ -294,6 +299,10 @@ class LCUBlockEncodingZeroState(BlockEncoding, SpecializedSingleQubitControlledE
             return TextBox('B[H]')
 
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncodingZeroState':
+        if self.control_val is not None:
+            raise ValueError(
+                "control_val is not None but trying to build controlled LCUBlockEncoding."
+            )
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
         if not isinstance(c_select, SelectOracle):
             raise TypeError(

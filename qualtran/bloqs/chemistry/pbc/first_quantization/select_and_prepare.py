@@ -275,7 +275,11 @@ class PrepareFirstQuantization(PrepareOracle):
         return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
 
     @property
-    def l1_norm_coeffs(self) -> Optional[SymbolicFloat]:
+    def l1_norm_coeffs(self) -> SymbolicFloat:
+        if self.sum_of_l1_coeffs is None:
+            raise ValueError(
+                "sum_of_l1_coeffs not specified in PrepareFirstQuantization constructor."
+                )
         return self.sum_of_l1_coeffs
 
     def pretty_name(self) -> str:
