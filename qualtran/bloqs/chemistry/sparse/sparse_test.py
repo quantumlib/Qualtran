@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional, Union
+
 import attrs
 import numpy as np
 import pytest
@@ -27,6 +29,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import generalize_cswap_approx
+from qualtran.symbolics import SymbolicInt
 from qualtran.testing import execute_notebook
 
 
@@ -64,7 +67,7 @@ def qrom_cost(prep: PrepareSparse) -> int:
     return num_toff_qrom
 
 
-def get_toffoli_count(bloq: Bloq) -> int:
+def get_toffoli_count(bloq: Bloq) -> SymbolicInt:
     """Get the toffoli count of a bloq assuming no raw Ts."""
     counts = get_cost_value(bloq, QECGatesCost(), generalizer=generalize_cswap_approx)
     cost_dict = counts.total_t_and_ccz_count(ts_per_rotation=0)
@@ -72,7 +75,7 @@ def get_toffoli_count(bloq: Bloq) -> int:
     return cost_dict['n_ccz']
 
 
-def get_sel_swap_qrom_toff_count(prep: PrepareSparse) -> int:
+def get_sel_swap_qrom_toff_count(prep: PrepareSparse) -> SymbolicInt:
     """Utility function to pick out the SelectSwapQROM cost from the prepare call graph."""
 
     def keep_qrom(bloq):
@@ -81,7 +84,7 @@ def get_sel_swap_qrom_toff_count(prep: PrepareSparse) -> int:
         return False
 
     _, sigma = prep.call_graph(keep=keep_qrom)
-    qrom_bloq = None
+    qrom_bloq: Optional[Union[SelectSwapQROM, Adjoint]] = None
     for k in sigma.keys():
         if isinstance(k, SelectSwapQROM):
             qrom_bloq = k
