@@ -20,7 +20,7 @@ import pytest
 from attr import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran import BloqBuilder, QAny, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
@@ -31,10 +31,11 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     ChebyshevPolynomial,
 )
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
-from qualtran.testing import assert_equivalent_bloq_example_counts
+from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
 
 
 def test_chebyshev_poly_even(bloq_autotester):
@@ -51,6 +52,15 @@ def test_chebyshev_poly_odd(bloq_autotester):
 
 def test_chebyshev_poly_odd_counts():
     assert_equivalent_bloq_example_counts(_chebyshev_poly_odd)
+
+
+def test_chebyshev_checks():
+    from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
+
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(Unitary(XGate()), -1)
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(TestBlockEncoding(), 2)
 
 
 def test_chebyshev_alpha():
@@ -154,6 +164,11 @@ def test_scaled_chebyshev_odd_tensors():
     np.testing.assert_allclose(from_gate, from_tensors, atol=1e-14)
 
 
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('chebyshev_polynomial')
+
+
 @frozen
 class TestBlockEncoding(BlockEncoding):
     """Instance of `BlockEncoding` to block encode a matrix with one system qubit by adding one
@@ -184,20 +199,8 @@ class TestBlockEncoding(BlockEncoding):
         return Signature.build(system=1, ancilla=1, resource=1)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        raise NotImplementedError
-
-    @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        raise NotImplementedError
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        raise NotImplementedError
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity((QAny(1),)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
@@ -214,6 +217,10 @@ def test_chebyshev_matrix():
     bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=2e-15)
+
+
+def test_chebyshev_poly_signal_state():
+    assert isinstance(_chebyshev_poly_even().signal_state.prepare, PrepareIdentity)
 
 
 @pytest.mark.slow

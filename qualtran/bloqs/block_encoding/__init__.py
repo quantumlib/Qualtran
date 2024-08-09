@@ -18,12 +18,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     ChebyshevPolynomial,
     ScaledChebyshevPolynomial,
 )
-from qualtran.bloqs.block_encoding.lcu_block_encoding import (
-    BlackBoxPrepare,
-    BlackBoxSelect,
-    LCUBlockEncoding,
-    LCUBlockEncodingZeroState,
-)
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding, SelectBlockEncoding
 from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.block_encoding.product import Product

@@ -48,7 +48,7 @@ from qualtran._infra.gate_with_registers import (
     split_qubits,
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -110,7 +110,10 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         )
 
     def _t_complexity_(self) -> 'TComplexity':
-        return t_complexity(self.cirq_gate)
+        t_count = _from_directly_countable_cirq(self.cirq_gate)
+        if t_count is None:
+            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+        return t_count
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
@@ -335,6 +338,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         CZPowGate,
         GlobalPhase,
         Hadamard,
+        Identity,
         Rx,
         Ry,
         Rz,
@@ -380,6 +384,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.CZ: CZ(),
         cirq.SWAP: TwoBitSwap(),
         cirq.CSWAP: CSwap(1),
+        cirq.I: Identity(),
     }
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]

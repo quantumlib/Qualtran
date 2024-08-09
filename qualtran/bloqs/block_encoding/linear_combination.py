@@ -36,7 +36,8 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, Bl
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics import smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.types import is_symbolic
@@ -106,6 +107,12 @@ class LinearCombination(BlockEncoding):
             raise ValueError(
                 "If given, select oracle must have block encoding `system` register as target."
             )
+        if not all(
+            isinstance(u.signal_state.prepare, PrepareIdentity) for u in self._block_encodings
+        ):
+            raise ValueError(
+                "Cannot take linear combination of block encodings with non-zero signal state."
+            )
 
     @classmethod
     def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
@@ -170,23 +177,8 @@ class LinearCombination(BlockEncoding):
         )
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # GitHub issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     @cached_property
     def prepare(self) -> BlackBoxPrepare:
@@ -272,6 +264,8 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         assert not is_symbolic(self.be_ancilla_bitsize)
         assert not is_symbolic(self.be_resource_bitsize)
+        assert not is_symbolic(self.prepare.junk_bitsize)
+        assert not is_symbolic(self.select.system_bitsize)
 
         # partition ancilla register
         be_system_soqs: Dict[str, SoquetT] = {"system": system}
