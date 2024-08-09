@@ -73,7 +73,7 @@ def get_toffoli_count(bloq: Bloq) -> int:
     return cost_dict['n_ccz']
 
 
-def get_sel_swap_qrom_t_count(prep: PrepareSparse, cost_key: bool = False) -> int:
+def get_sel_swap_qrom_toff_count(prep: PrepareSparse) -> int:
     """Utility function to pick out the SelectSwapQROM cost from the prepare call graph."""
 
     def keep_qrom(bloq):
@@ -92,21 +92,14 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse, cost_key: bool = False) -> in
             break
     if qrom_bloq is None:
         return 0
-    if cost_key:
-        return get_toffoli_count(qrom_bloq)
-    else:
-        return int(
-            qrom_bloq.call_graph()[1].get(TGate(), 0)
-            + qrom_bloq.call_graph()[1].get(TGate().adjoint(), 0)
-        )
+    return get_toffoli_count(qrom_bloq)
 
 
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
-    bloq = SelectSparse(num_spin_orb)
-    _, sigma = bloq.call_graph()
-    cost = get_toffoli_count(bloq)
+    sel_sparse = SelectSparse(num_spin_orb)
+    cost = get_toffoli_count(sel_sparse)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     cost += get_toffoli_count(prep_sparse)
     prep_sparse_adj = attrs.evolve(
@@ -132,15 +125,15 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     # https://github.com/quantumlib/Qualtran/issues/574
     paper_qrom = qrom_cost(prep_sparse)
     paper_qrom += qrom_cost(prep_sparse_adj)
-    qual_qrom_cost = get_sel_swap_qrom_t_count(prep_sparse, cost_key=True)
-    qual_qrom_cost += get_sel_swap_qrom_t_count(prep_sparse_adj, cost_key=True)
+    qual_qrom_cost = get_sel_swap_qrom_toff_count(prep_sparse)
+    qual_qrom_cost += get_sel_swap_qrom_toff_count(prep_sparse_adj)
     delta_qrom = qual_qrom_cost - paper_qrom
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
-    t_count_lte = get_toffoli_count(lte) + get_toffoli_count(lte.adjoint())
-    t_count_lte_paper = prep_sparse.num_bits_state_prep  # inverted at zero cost
-    delta_ineq = t_count_lte - t_count_lte_paper  # 4 * (prep_sparse.num_bits_state_prep + 1)
+    lte_cost = get_toffoli_count(lte) + get_toffoli_count(lte.adjoint())
+    lte_cost_paper = prep_sparse.num_bits_state_prep  # inverted at zero cost
+    delta_ineq = lte_cost - lte_cost_paper
     swap_cost = 8 * (num_spin_orb // 2 - 1).bit_length() + 1  # inverted at zero cost
     adjusted_cost_qualtran = cost - delta_qrom - delta_uni_prep - delta_ineq - swap_cost
     cost_of = cost_sparse(
