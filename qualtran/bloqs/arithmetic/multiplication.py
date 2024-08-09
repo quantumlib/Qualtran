@@ -543,31 +543,34 @@ class InvertRealNumber(Bloq):
         [Quantum Algorithms and Circuits for Scientific Computing](https://arxiv.org/pdf/1511.08253). Section 2.1.
     """
 
-    bitsize: SymbolicInt
-    num_frac: SymbolicInt
+    a_dtype: QFxp
+    b_dtype: QFxp
 
     def __attrs_post_init__(self):
-        if self.num_frac == self.bitsize:
+        if (
+            is_symbolic(self.a_dtype.num_frac)
+            or is_symbolic(self.a_dtype.bitsize)
+            or is_symbolic(self.b_dtype.bitsize)
+        ):
+            return
+        if self.a_dtype.num_frac == self.a_dtype.bitsize:
             raise ValueError("num_frac must be < bitsize since a >= 1.")
+        if self.b_dtype.bitsize < self.a_dtype.bitsize:
+            raise ValueError("b_dtype too small")
 
     @property
     def signature(self):
-        return Signature(
-            [
-                Register("a", QFxp(self.bitsize, self.num_frac)),
-                Register("result", QFxp(self.bitsize, self.num_frac)),
-            ]
-        )
+        return Signature([Register("a", self.a_dtype), Register("result", self.b_dtype)])
 
     def pretty_name(self) -> str:
         return "1/a"
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # initial approximation: Figure 4
-        num_int = self.bitsize - self.num_frac
+        num_int = self.b_dtype.bitsize - self.b_dtype.num_frac
         # Newton-Raphson: Eq. (1)
         # x' = -a * x^2 + 2 * x
-        num_iters = ceil(log2(self.bitsize))
+        num_iters = ceil(log2(self.b_dtype.bitsize))
         # TODO: When decomposing we will potentially need to use larger registers.
         # Related issue: https://github.com/quantumlib/Qualtran/issues/655
         return {
@@ -575,16 +578,18 @@ class InvertRealNumber(Bloq):
             (CNOT(), 2 + num_int - 1),
             (MultiControlX(cvs=HasLength(num_int)), 1),
             (XGate(), 1),
-            (SquareRealNumber(self.bitsize), num_iters),  # x^2
-            (MultiplyTwoReals(self.bitsize), num_iters),  # a * x^2
-            (ScaleIntByReal(self.bitsize, 2), num_iters),  # 2 * x
-            (Subtract(QUInt(self.bitsize)), num_iters),  # 2 * x - a * x^2
+            (SquareRealNumber(self.b_dtype.bitsize), num_iters),  # x^2
+            (MultiplyTwoReals(self.b_dtype.bitsize), num_iters),  # a * x^2
+            (ScaleIntByReal(self.b_dtype.bitsize, 2), num_iters),  # 2 * x
+            (Subtract(QUInt(self.b_dtype.bitsize)), num_iters),  # 2 * x - a * x^2
         }
 
 
 @bloq_example
 def _invert_real_number() -> InvertRealNumber:
-    invert_real_number = InvertRealNumber(bitsize=10, num_frac=7)
+    from qualtran import QFxp
+
+    invert_real_number = InvertRealNumber(QFxp(bitsize=6, num_frac=3), QFxp(bitsize=10, num_frac=7))
     return invert_real_number
 
 
