@@ -23,7 +23,19 @@ to the and of its control registers. `And` will output the result into a fresh r
 """
 import itertools
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    cast,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -38,6 +50,7 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
+    CtrlSpec,
     GateWithRegisters,
     QBit,
     Register,
@@ -61,6 +74,8 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
+
+    from qualtran import AddControlledT, BloqBuilder, SoquetT
 
 
 @frozen
@@ -214,6 +229,23 @@ class And(GateWithRegisters):
     def _has_unitary_(self) -> bool:
         return not self.uncompute
 
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        if self.uncompute:
+            bloq = MultiAnd([1, self.cv1, self.cv2]).adjoint()
+        else:
+            bloq = MultiAnd([1, self.cv1, self.cv2])
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # TODO(#1272): implement this function.
+            raise NotImplementedError('_add_ctrled is not implemented for And')
+
+        return bloq, _add_ctrled
+
 
 @bloq_example(
     generalizer=[cirq_to_bloqs, ignore_cliffords, ignore_alloc_free, generalize_rotation_angle]
@@ -352,6 +384,23 @@ class MultiAnd(Bloq):
             pre_post_cliffords = {(XGate(), 2 * (self.n_ctrls - sum(self.concrete_cvs)))}
 
         return {(And(), self.n_ctrls - 1)} | pre_post_cliffords
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        if not isinstance(self.cvs, tuple):
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        bloq = MultiAnd((1,) + self.cvs)
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # TODO(#1272): implement this function.
+            raise NotImplementedError('_add_ctrled is not implemented for MultiAnd')
+
+        return bloq, _add_ctrled
 
 
 @bloq_example(generalizer=(ignore_cliffords, generalize_cvs))

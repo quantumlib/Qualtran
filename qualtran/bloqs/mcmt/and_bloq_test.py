@@ -290,3 +290,9 @@ def test_multi_and_t_complexity(gate):
 
     assert gate.t_complexity() == expected_complexity(gate)
     assert gate.adjoint().t_complexity() == expected_complexity(gate, adjoint=True)
+
+
+def test_controlled_and():
+    assert And(0, 0).controlled() == MultiAnd([1, 0, 0])
+    assert And(0, 1, True).controlled() == MultiAnd([1, 0, 1]).adjoint()
+    assert MultiAnd([0, 1, 0]).controlled() == MultiAnd([1, 0, 1, 0])
