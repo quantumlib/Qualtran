@@ -19,7 +19,6 @@ from openfermion.resource_estimates.utils import power_two, QI
 
 from qualtran import Adjoint, Bloq
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
 from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
