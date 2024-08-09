@@ -40,7 +40,7 @@ from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitContro
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     LCUBlockEncoding,
-    LCUBlockEncodingZeroState,
+    SelectBlockEncoding,
 )
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
@@ -87,7 +87,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
         Babbush et. al. (2018). Figure 1.
     """
 
-    block_encoding: Union[LCUBlockEncoding, LCUBlockEncodingZeroState]
+    block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]
     control_val: Optional[int] = None
     uncompute: bool = False
 
@@ -147,7 +147,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
         assert self.control_val is None
         c_block = self.block_encoding.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-        if not isinstance(c_block, (LCUBlockEncoding, LCUBlockEncodingZeroState)):
+        if not isinstance(c_block, (SelectBlockEncoding, LCUBlockEncoding)):
             raise TypeError(
                 f"controlled version of {self.block_encoding} = {c_block} must also be a SelectOracle"
             )

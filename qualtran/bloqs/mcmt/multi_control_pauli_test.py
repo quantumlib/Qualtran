@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+from qualtran.bloqs.mcmt.multi_control_pauli import (
     _ccpauli,
     _ccpauli_symb,
     MultiControlPauli,
