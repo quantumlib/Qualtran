@@ -50,8 +50,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
@@ -974,14 +974,12 @@ class EqualsAConstant(Bloq):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
 
         xs = bb.split(x)
-        xs, target = bb.add(
-            MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
-        )
+        xs, target = bb.add(MultiControlX(self.bits_k), controls=xs, target=target)
         x = bb.join(xs)
         return {'x': x, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(MultiControlPauli(self.bits_k, target_gate=cirq.X), 1)}
+        return {(MultiControlX(self.bits_k), 1)}
 
 
 def _make_equals_a_constant():
