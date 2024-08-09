@@ -25,9 +25,13 @@ dash
 # quimb simulation
 quimb
 
-#qsharp resource estimator interop
+# qsharp resource estimator interop
 qsharp
 qsharp-widgets
+
+# qref bartiq interop
+qref
+bartiq
 
 # serialization
 protobuf
