@@ -38,7 +38,10 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=100,
-            n_logical_gates=GateCounts(rotation=30_100, measurement=int(1.4e6)),
+            n_logical_gates=(
+                GateCounts.from_rotation_with_eps(0, n_rotations=30_000)
+                + GateCounts(measurement=int(1.4e6))
+            ),
             n_rotation_layers=501,
         ),
         error_budget=1e-3,
@@ -50,8 +53,9 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=1318,
-            n_logical_gates=GateCounts(
-                t=int(5.53e7), rotation=int(2.06e8), toffoli=int(1.35e11), measurement=int(1.37e9)
+            n_logical_gates=(
+                GateCounts(t=int(5.53e7), toffoli=int(1.35e11), measurement=int(1.37e9))
+                + GateCounts.from_rotation_with_eps(0, n_rotations=int(2.06e8))
             ),
             n_rotation_layers=int(2.05e8),
         ),
@@ -64,8 +68,9 @@ _TESTS = [
     Test(
         alg=AlgorithmSummary(
             n_algo_qubits=12581,
-            n_logical_gates=GateCounts(
-                t=12, rotation=12, toffoli=int(3.73e9), measurement=int(1.08e9)
+            n_logical_gates=(
+                GateCounts(t=12, toffoli=int(3.73e9), measurement=int(1.08e9))
+                + GateCounts.from_rotation_with_eps(0, n_rotations=12)
             ),
             n_rotation_layers=12,
         ),
@@ -106,5 +111,6 @@ def test_t_states(test: Test):
     assert got == pytest.approx(test.t_states, rel=0.1)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('beverland_et_al_model')

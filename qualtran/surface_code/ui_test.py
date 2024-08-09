@@ -29,7 +29,7 @@ def test_ensure_support_for_all_supported_models(estimation_model: str):
         qec_name='GidneyFowler',
         magic_name='FifteenToOne733',
         magic_count=1,
-        rotaion_model_name='BeverlandEtAlRotationCost',
+        rotation_model_name='BeverlandEtAlRotationCost',
     )
 
 
@@ -81,7 +81,7 @@ def test_update(estimation_model: str, desired):
         qec_name='GidneyFowler',
         magic_name='FifteenToOne733',
         magic_count=1,
-        rotaion_model_name='BeverlandEtAlRotationCost',
+        rotation_model_name='BeverlandEtAlRotationCost',
     )
     assert (
         display_runtime,
@@ -104,7 +104,7 @@ def test_update_bad_input():
             qec_name='GidneyFowler',
             magic_name='FifteenToOne733',
             magic_count=1,
-            rotaion_model_name='BeverlandEtAlRotationCost',
+            rotation_model_name='BeverlandEtAlRotationCost',
         )
 
 
