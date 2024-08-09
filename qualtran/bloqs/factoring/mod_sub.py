@@ -20,7 +20,7 @@ from attrs import frozen
 from qualtran import Bloq, QMontgomeryUInt, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mod_arithmetic import ModAdd
 
 if TYPE_CHECKING:

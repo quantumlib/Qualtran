@@ -109,7 +109,8 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
-import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
+import qualtran.bloqs.mcmt.multi_control_pauli
+import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
@@ -345,8 +346,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
     "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd": qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd,
     "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd,
-    "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
-    "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX,
+    "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli,
+    "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX,
+    "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlZ": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlZ,
     "qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT,
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,

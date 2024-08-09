@@ -43,7 +43,7 @@ from qualtran.bloqs.arithmetic import (
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -196,7 +196,7 @@ class UniformSuperpositionTHC(Bloq):
         )
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         (lte_nu_mp1, lte_mu_nu, junk), succ = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            MultiControlX(cvs=(1, 1, 1)),
             controls=np.array([lte_nu_mp1, lte_mu_nu, junk]),
             target=succ,
         )
@@ -441,9 +441,7 @@ class PrepareTHC(PrepareOracle):
         plus_b = bb.add(Hadamard(), q=plus_b)
         plus_mn = bb.add(Hadamard(), q=plus_mn)
         (nu_eq_mp1, plus_a), extra_ctrl = bb.add(
-            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
-            controls=np.array([nu_eq_mp1, plus_a]),
-            target=extra_ctrl,
+            MultiControlX(cvs=(0, 1)), controls=np.array([nu_eq_mp1, plus_a]), target=extra_ctrl
         )
         extra_ctrl, mu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=extra_ctrl, x=mu, y=nu)
         out_regs = {
