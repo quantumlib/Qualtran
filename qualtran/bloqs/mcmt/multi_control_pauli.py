@@ -194,3 +194,16 @@ class MultiControlX(MultiControlPauli):
     @target_gate.default
     def _X(self):
         return cirq.X
+
+
+@frozen
+class MultiControlZ(MultiControlPauli):
+    r"""Implements multi-control, single-target Z gate.
+
+    See :class:`MultiControlPauli` for implementation and costs.
+    """
+    target_gate: cirq.Pauli = field(init=False)
+
+    @target_gate.default
+    def _Z(self):
+        return cirq.Z

@@ -33,7 +33,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
-from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
@@ -151,7 +151,7 @@ class LPResourceState(GateWithRegisters):
         yield Ry(angle=-flag_angle).on(flag)
 
         yield XGate().on(flag)
-        yield MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z).on(*q, anc, flag)
+        yield MultiControlZ((0,) * (self.bitsize + 1)).on(*q, anc, flag)
         yield XGate().on(flag)
 
         yield LPRSInterimPrep(self.bitsize).on(*q, anc)
@@ -171,7 +171,7 @@ class LPResourceState(GateWithRegisters):
             (LPRSInterimPrep(self.bitsize), 2),
             (LPRSInterimPrep(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli(cvs, target_gate=cirq.Z), 1),
+            (MultiControlZ(cvs), 1),
             (XGate(), 4),
             (GlobalPhase(exponent=0.5), 1),
             (CZPowGate(), 1),

@@ -36,7 +36,7 @@ from qualtran.bloqs.arithmetic.multiplication import (
 )
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.symbolics import HasLength
 from qualtran.testing import execute_notebook
@@ -185,7 +185,7 @@ def test_invert_real_number():
     cost = (
         Toffoli().t_complexity() * (num_int - 1)
         + CNOT().t_complexity() * (2 + num_int - 1)
-        + MultiControlPauli(cvs=HasLength(num_int), target_gate=cirq.X).t_complexity()
+        + MultiControlX(cvs=HasLength(num_int)).t_complexity()
         + XGate().t_complexity()
         + num_iters * SquareRealNumber(bitsize).t_complexity()
         + num_iters * MultiplyTwoReals(bitsize).t_complexity()
