@@ -25,6 +25,7 @@ from qualtran.bloqs.mod_arithmetic import ModAdd
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -70,6 +71,8 @@ class MontgomeryModSub(Bloq):
         return {'x': x, 'y': y}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
         for i in range(self.bitsize):
@@ -98,7 +101,6 @@ class MontgomeryModSub(Bloq):
         return f'y = y - x mod {self.p}'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Ignore allocation, deallocation, splits and joins for now.
         return {
             (XGate(), 2 * self.bitsize),
             (AddK(self.bitsize, self.p + 1, signed=False), 1),
@@ -137,6 +139,8 @@ class MontgomeryModNeg(Bloq):
         return {'x': (-1 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
         # Initialize an ancilla qubit to |1>.
         ctrl = bb.allocate(n=1)
         ctrl = bb.add(XGate(), q=ctrl)
@@ -179,12 +183,13 @@ class MontgomeryModNeg(Bloq):
         return f'x = -x mod {self.p}'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Ignore allocation, deallocation, splits and joins for now.
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic call graph is not supported for {self}')
+
         # TODO: support symbolic cost
         return {
             (XGate(), 2),
-            (MultiControlX(cvs=[0] * self.bitsize), 1),
+            (MultiControlX(cvs=[0] * self.bitsize), 2),
             (CNOT(), self.bitsize),
             (AddK(bitsize=self.bitsize, k=self.p + 1, cvs=(1,), signed=False), 1),
-            (MultiControlX(cvs=[0] * self.bitsize), 1),
         }

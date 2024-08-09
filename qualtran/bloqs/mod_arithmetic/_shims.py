@@ -77,6 +77,18 @@ class CModSub(Bloq):
 
 
 @frozen
+class CModAdd(Bloq):
+    n: int
+    mod: int
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
+        )
+
+
+@frozen
 class _ModInvInner(Bloq):
     n: int
     mod: int

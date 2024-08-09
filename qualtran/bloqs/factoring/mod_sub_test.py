@@ -16,19 +16,22 @@ import pytest
 import sympy
 
 from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+from qualtran.testing import assert_equivalent_bloq_counts, assert_valid_bloq_decomposition
 
 
 @pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
 def test_montgomery_mod_neg_decomp(bitsize, p):
     bloq = MontgomeryModNeg(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)
+    assert_equivalent_bloq_counts(bloq, [ignore_alloc_free, ignore_split_join])
 
 
 @pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
 def test_montgomery_mod_sub_decomp(bitsize, p):
     bloq = MontgomeryModSub(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)
+    assert_equivalent_bloq_counts(bloq, [ignore_alloc_free, ignore_split_join])
 
 
 @pytest.mark.parametrize('bitsize', [*range(1, 5), sympy.Symbol('n')])
@@ -41,7 +44,7 @@ def test_montgomery_sub_complexity(bitsize):
 @pytest.mark.parametrize('bitsize', range(1, 5))
 def test_montgomery_neg_complexity(bitsize):
     tcomplexity = MontgomeryModNeg(bitsize, sympy.Symbol('p')).t_complexity()
-    assert tcomplexity.t == 8 * bitsize - 8  # 2n toffoli
+    assert tcomplexity.t == 12 * bitsize - 12  # 3n toffoli
     assert tcomplexity.rotations == 0
 
 
@@ -67,4 +70,4 @@ def test_classical_action_mod_neg(bitsize, prime):
     cb = b.decompose_bloq()
     valid_range = range(prime)
     for x in valid_range:
-        assert b.call_classically(x=x) == cb.call_classically(x=x)
+        assert b.call_classically(x=x) == cb.call_classically(x=x) == ((-x) % prime,)

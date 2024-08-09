@@ -726,7 +726,7 @@ class LinearDepthGreaterThan(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     signed: bool = False
 
     @property
@@ -749,6 +749,9 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
+
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
@@ -878,7 +881,7 @@ class LinearDepthGreaterThan(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.bitsize == 1:
             return {(MultiControlX(cvs=(1, 0)), 1)}
-        # Ignore Allocation and Deallocation bloqs for now.
+
         if self.signed:
             return {
                 (CNOT(), 6 * self.bitsize - 7),
