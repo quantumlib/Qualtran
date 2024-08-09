@@ -29,6 +29,10 @@ quimb
 qsharp
 qsharp-widgets
 
+#qref bartiq interop
+qref==0.7.0
+bartiq==0.5.0
+
 # serialization
 protobuf
 
