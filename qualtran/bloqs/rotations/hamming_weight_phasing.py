@@ -110,7 +110,7 @@ class HammingWeightPhasing(GateWithRegisters):
 @bloq_example
 def _hamming_weight_phasing() -> HammingWeightPhasing:
     hamming_weight_phasing = HammingWeightPhasing(4, np.pi / 2.0)
-    print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
+    # Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.
     return hamming_weight_phasing
 
 

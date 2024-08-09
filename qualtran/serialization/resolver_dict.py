@@ -115,6 +115,7 @@ import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
+import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
@@ -136,6 +137,7 @@ import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
@@ -227,10 +229,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
     "qualtran.bloqs.basic_gates.power.Power": qualtran.bloqs.basic_gates.power.Power,
+    "qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding,
-    "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncodingZeroState,
-    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxPrepare,
-    "qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect": qualtran.bloqs.block_encoding.lcu_block_encoding.BlackBoxSelect,
     "qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial": qualtran.bloqs.block_encoding.chebyshev_polynomial.ChebyshevPolynomial,
     "qualtran.bloqs.block_encoding.unitary.Unitary": qualtran.bloqs.block_encoding.unitary.Unitary,
     "qualtran.bloqs.block_encoding.tensor_product.TensorProduct": qualtran.bloqs.block_encoding.tensor_product.TensorProduct,
@@ -347,11 +347,12 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlPauli,
     "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiControlX,
-    "qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_control_multi_target_pauli.MultiTargetCNOT,
+    "qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT,
     "qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle": qualtran.bloqs.mean_estimation.complex_phase_oracle.ComplexPhaseOracle,
     "qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator": qualtran.bloqs.mean_estimation.mean_estimation_operator.MeanEstimationOperator,
     "qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit": qualtran.bloqs.multiplexers.apply_gate_to_lth_target.ApplyGateToLthQubit,
     "qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq": qualtran.bloqs.multiplexers.apply_lth_bloq.ApplyLthBloq,
+    "qualtran.bloqs.multiplexers.black_box_select.BlackBoxSelect": qualtran.bloqs.multiplexers.black_box_select.BlackBoxSelect,
     "qualtran.bloqs.multiplexers.select_base.SelectOracle": qualtran.bloqs.multiplexers.select_base.SelectOracle,
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
@@ -382,6 +383,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
     "qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient": qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
+    "qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare": qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare,
     "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.StatePreparationAliasSampling,
     "qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling": qualtran.bloqs.state_preparation.state_preparation_alias_sampling.SparseStatePreparationAliasSampling,
