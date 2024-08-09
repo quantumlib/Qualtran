@@ -65,7 +65,15 @@ def qrom_cost(prep: PrepareSparse) -> int:
     return num_toff_qrom
 
 
-def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
+def get_toffoli_count(bloq: Bloq) -> int:
+    """Get the toffoli count of a bloq assuming no raw Ts."""
+    counts = get_cost_value(bloq, QECGatesCost(), generalizer=generalize_cswap_approx)
+    cost_dict = counts.total_t_and_ccz_count(ts_per_rotation=0)
+    assert cost_dict['n_t'] == 0
+    return cost_dict['n_ccz']
+
+
+def get_sel_swap_qrom_t_count(prep: PrepareSparse, cost_key: bool = False) -> int:
     """Utility function to pick out the SelectSwapQROM cost from the prepare call graph."""
 
     def keep_qrom(bloq):
@@ -84,94 +92,61 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
             break
     if qrom_bloq is None:
         return 0
-    return int(
-        qrom_bloq.call_graph()[1].get(TGate(), 0)
-        + qrom_bloq.call_graph()[1].get(TGate().adjoint(), 0)
-    )
-
-
-def get_toffoli_count(bloq: Bloq) -> int:
-    counts = get_cost_value(bloq, QECGatesCost(), generalizer=generalize_cswap_approx)
-    cost_dict = counts.total_t_and_ccz_count(ts_per_rotation=0)
-    assert cost_dict['n_t'] == 0
-    return cost_dict['n_ccz']
+    if cost_key:
+        return get_toffoli_count(qrom_bloq)
+    else:
+        return int(
+            qrom_bloq.call_graph()[1].get(TGate(), 0)
+            + qrom_bloq.call_graph()[1].get(TGate().adjoint(), 0)
+        )
 
 
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
-    cost = 0
     bloq = SelectSparse(num_spin_orb)
     _, sigma = bloq.call_graph()
-    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
-    cost_acc = get_toffoli_count(bloq)
+    cost = get_toffoli_count(bloq)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
-    cost_acc += get_toffoli_count(prep_sparse)
-    _, sigma = prep_sparse.call_graph()
-    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
+    cost += get_toffoli_count(prep_sparse)
     prep_sparse_adj = attrs.evolve(
         prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
     )
-    cost_acc += get_toffoli_count(prep_sparse)
-    _, sigma = prep_sparse_adj.call_graph()
-    cost += sigma[TGate()] + sigma.get(TGate().adjoint(), 0)
+    cost += get_toffoli_count(prep_sparse_adj)
     unused_lambda = 10
     unused_de = 1e-3
     unused_stps = 10
     logd = (num_non_zero - 1).bit_length()
-    refl_cost = 4 * (num_bits_state_prep + logd + 4)  # page 40 listing 4
-    # Correct the swap cost:
-    # 1. For prepare swaps are costed as Toffolis which we convert to 4 T gates, but a swap costs 7 T gates.
-    # 2. The reference inverts the swaps at zero cost for Prep^, so we need to add this cost back.
-    delta_swap = (
-        8 * (7 - 4) * (num_spin_orb // 2 - 1).bit_length()
-        + (7 - 4)
-        + 8 * 7 * (num_spin_orb // 2 - 1).bit_length()
-        + 7
-    )
-    cost_of = cost_sparse(
-        num_spin_orb, unused_lambda, num_non_zero, unused_de, num_bits_state_prep, unused_stps
-    )[0]
+    refl_cost = num_bits_state_prep + logd + 4  # page 40 listing 4
     # correct the expected cost by using a different uniform superposition algorithm
     # see: https://github.com/quantumlib/Qualtran/issues/611
     eta = power_two(prep_sparse.num_non_zero)
-    cost_uni_prep = (
-        4
-        * 2
-        * (3 * (prep_sparse.num_non_zero - 1).bit_length() - 3 * eta + 2 * num_bits_rot_aa - 9)
+    cost_uni_prep = 2 * (
+        3 * (prep_sparse.num_non_zero - 1).bit_length() - 3 * eta + 2 * num_bits_rot_aa - 9
     )
-    prep = PrepareUniformSuperposition(prep_sparse.num_non_zero)
-    cost1a_mod = prep.call_graph()[1][TGate()] + prep.call_graph()[1].get(TGate().adjoint(), 0)
-    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] + prep.call_graph()[1].get(
-        TGate().adjoint(), 0
+    prep_uni = PrepareUniformSuperposition(prep_sparse.num_non_zero)
+    delta_uni_prep = (
+        get_toffoli_count(prep_uni) + get_toffoli_count(prep_uni.adjoint()) - cost_uni_prep
     )
     # correct for SelectSwapQROM vs QROAM
     # https://github.com/quantumlib/Qualtran/issues/574
-    our_qrom = get_sel_swap_qrom_t_count(prep_sparse)
-    our_qrom += get_sel_swap_qrom_t_count(prep_sparse_adj)
     paper_qrom = qrom_cost(prep_sparse)
     paper_qrom += qrom_cost(prep_sparse_adj)
-    delta_qrom = our_qrom - paper_qrom * 4
+    qual_qrom_cost = get_sel_swap_qrom_t_count(prep_sparse, cost_key=True)
+    qual_qrom_cost += get_sel_swap_qrom_t_count(prep_sparse_adj, cost_key=True)
+    delta_qrom = qual_qrom_cost - paper_qrom
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
-    t_count_lte = 2 * lte.call_graph()[1][TGate()]
-    t_count_lte_paper = 4 * prep_sparse.num_bits_state_prep  # inverted at zero cost
+    t_count_lte = get_toffoli_count(lte) + get_toffoli_count(lte.adjoint())
+    t_count_lte_paper = prep_sparse.num_bits_state_prep  # inverted at zero cost
     delta_ineq = t_count_lte - t_count_lte_paper  # 4 * (prep_sparse.num_bits_state_prep + 1)
-    print(
-        cost_acc
-        - our_qrom // 4
-        + paper_qrom // 4
-        - cost1a_mod // 4
-        + cost_uni_prep // 4
-        - delta_ineq
-        - (8 * (num_spin_orb // 2 - 1).bit_length() + 1),
-        cost_of - refl_cost,
-    )
-    adjusted_cost_qualtran = (
-        cost - cost1a_mod + cost_uni_prep + refl_cost - delta_swap - delta_qrom - delta_ineq
-    ) // 4
-    assert adjusted_cost_qualtran == cost_of
+    swap_cost = 8 * (num_spin_orb // 2 - 1).bit_length() + 1  # inverted at zero cost
+    adjusted_cost_qualtran = cost - delta_qrom - delta_uni_prep - delta_ineq - swap_cost
+    cost_of = cost_sparse(
+        num_spin_orb, unused_lambda, num_non_zero, unused_de, num_bits_state_prep, unused_stps
+    )[0]
+    assert adjusted_cost_qualtran == cost_of - refl_cost
 
 
 @pytest.mark.notebook
