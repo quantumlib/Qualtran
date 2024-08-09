@@ -29,7 +29,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
-from qualtran.symbolics import ssum, SymbolicInt
+from qualtran.symbolics import ssum, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -64,6 +64,10 @@ class BlackBoxPrepare(Bloq):
     @cached_property
     def selection_bitsize(self) -> SymbolicInt:
         return ssum(r.total_bits() for r in self.prepare.selection_registers)
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
+        return self.prepare.l1_norm_of_coeffs
 
     @cached_property
     def signature(self) -> Signature:

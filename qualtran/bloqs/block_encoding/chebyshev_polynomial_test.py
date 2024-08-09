@@ -20,7 +20,7 @@ import pytest
 from attr import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, Signature, Soquet, SoquetT
+from qualtran import BloqBuilder, QAny, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
@@ -31,6 +31,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     ChebyshevPolynomial,
 )
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.matrix import random_hermitian_matrix
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
@@ -51,6 +52,15 @@ def test_chebyshev_poly_odd(bloq_autotester):
 
 def test_chebyshev_poly_odd_counts():
     assert_equivalent_bloq_example_counts(_chebyshev_poly_odd)
+
+
+def test_chebyshev_checks():
+    from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
+
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(Unitary(XGate()), -1)
+    with pytest.raises(ValueError):
+        _ = ChebyshevPolynomial(TestBlockEncoding(), 2)
 
 
 def test_chebyshev_alpha():
@@ -190,7 +200,7 @@ class TestBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(1),)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
@@ -207,6 +217,10 @@ def test_chebyshev_matrix():
     bloq = ChebyshevPolynomial(TestBlockEncoding.from_matrix(a), order=4)
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=2e-15)
+
+
+def test_chebyshev_poly_signal_state():
+    assert isinstance(_chebyshev_poly_even().signal_state.prepare, PrepareIdentity)
 
 
 @pytest.mark.slow

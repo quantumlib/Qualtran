@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import cirq
 import pytest
+import sympy
 
 from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
@@ -55,6 +55,9 @@ def test_gate_counts():
 
     assert GateCounts(toffoli=1, cswap=1, and_bloq=1).total_t_count() == 4 + 7 + 4
 
+    gc2 = GateCounts(t=sympy.Symbol('n'), toffoli=sympy.sympify('0'), cswap=2)
+    assert str(gc2) == 't: n, cswap: 2'
+
 
 def test_qec_gates_cost():
     algo = make_example_costing_bloqs()
@@ -82,10 +85,7 @@ def test_qec_gates_cost():
             GateCounts(rotation=10),
         ],
         # Recursive
-        [
-            mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
-            GateCounts(and_bloq=2, measurement=2, clifford=3),
-        ],
+        [mcmt.MultiControlX(cvs=(1, 1, 1)), GateCounts(and_bloq=2, measurement=2, clifford=3)],
     ],
 )
 def test_algorithm_summary_counts(bloq, counts):

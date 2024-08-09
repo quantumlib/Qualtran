@@ -17,6 +17,7 @@ import cirq
 import numpy as np
 
 from qualtran._infra.gate_with_registers import total_bits
+from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.chemistry.ising.hamiltonian import get_1d_ising_hamiltonian_norm_upper_bound
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
@@ -148,8 +149,9 @@ def walk_operator_for_pauli_hamiltonian(
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
     )
+    block_encoding = SelectBlockEncoding(select=select, prepare=prepare)
 
-    return QubitizationWalkOperator(select=select, prepare=prepare)
+    return QubitizationWalkOperator(block_encoding=block_encoding)
 
 
 def get_walk_operator_for_1d_ising_model(
