@@ -47,12 +47,14 @@ class Allocate(_BookkeepingBloq):
 
     Args:
         dtype: the quantum data type of the allocated register.
+        dirty: If true, represents a borrowing operation where allocated qubits can be dirty.
 
     Registers:
         reg [right]: The allocated register.
     """
 
     dtype: QDType
+    dirty: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -64,7 +66,7 @@ class Allocate(_BookkeepingBloq):
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.free import Free
 
-        return Free(self.dtype)
+        return Free(self.dtype, self.dirty)
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
@@ -91,10 +93,12 @@ class Allocate(_BookkeepingBloq):
         self, qubit_manager: 'cirq.QubitManager'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         shape = (*self.signature[0].shape, self.signature[0].bitsize)
-        return (
-            None,
-            {'reg': np.array(qubit_manager.qalloc(self.signature.n_qubits())).reshape(shape)},
+        qubits = (
+            qubit_manager.qalloc(self.signature.n_qubits())
+            if self.dirty
+            else qubit_manager.qborrow(self.signature.n_qubits())
         )
+        return (None, {'reg': np.array(qubits).reshape(shape)})
 
 
 @bloq_example

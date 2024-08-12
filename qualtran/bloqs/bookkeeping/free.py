@@ -52,12 +52,16 @@ class Free(_BookkeepingBloq):
 
     Args:
         dtype: The quantum data type of the register to be freed.
+        dirty: If true, represents adjoint of a borrowing operation where deallocated qubits
+            were borrowed dirty from another part of the algorithm and must be free'd in the same
+            dirty state.
 
     Registers:
         reg [left]: The register to free.
     """
 
     dtype: QDType
+    dirty: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -69,10 +73,10 @@ class Free(_BookkeepingBloq):
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.allocate import Allocate
 
-        return Allocate(self.dtype)
+        return Allocate(self.dtype, self.dirty)
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        if reg != 0:
+        if reg != 0 and not self.dirty:
             raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
