@@ -94,9 +94,9 @@ class Allocate(_BookkeepingBloq):
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         shape = (*self.signature[0].shape, self.signature[0].bitsize)
         qubits = (
-            qubit_manager.qalloc(self.signature.n_qubits())
+            qubit_manager.qborrow(self.signature.n_qubits())
             if self.dirty
-            else qubit_manager.qborrow(self.signature.n_qubits())
+            else qubit_manager.qalloc(self.signature.n_qubits())
         )
         return (None, {'reg': np.array(qubits).reshape(shape)})
 

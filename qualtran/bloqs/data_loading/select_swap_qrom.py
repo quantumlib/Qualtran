@@ -25,7 +25,6 @@ from numpy.typing import ArrayLike, NDArray
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic.bitwise import Xor
-from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
