@@ -78,7 +78,7 @@ def test_classical_action_signed(control, a_bits, b_bits):
 
 
 @pytest.mark.parametrize('control', range(2))
-@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
 def test_symbolic_cost(control, dtype):
     n, m = sympy.symbols('n m')
     b = CAdd(dtype(n), dtype(m), control)
