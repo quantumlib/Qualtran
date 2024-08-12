@@ -14,7 +14,6 @@
 
 import abc
 from typing import (
-    Any,
     cast,
     Collection,
     Dict,
@@ -28,7 +27,6 @@ from typing import (
     Union,
 )
 
-import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
@@ -40,7 +38,7 @@ from qualtran._infra.registers import Register, Side
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
+    from qualtran import ConnectionT, CtrlSpec
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
@@ -315,7 +313,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(self.pretty_name())
+            return Text(str(self))
 
         return _wire_symbol_from_gate(self, self.signature, reg, idx)
 
@@ -368,7 +366,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         if abs(power) == 1:
             return bloq
         if all(reg.side == Side.THRU for reg in self.signature):
-            from qualtran.bloqs.util_bloqs import Power
+            from qualtran.bloqs.basic_gates import Power
 
             return Power(bloq, abs(power))
         raise NotImplementedError(f"{self} does not implemented __pow__ for {power=}.")
@@ -507,22 +505,15 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _unitary_(self):
         return NotImplemented
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: 'Any',
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         if not self._unitary_.__qualname__.startswith('GateWithRegisters.'):
-            from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+            from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-            _add_my_tensors_from_gate(
-                self, self.signature, str(self), tn, tag, incoming=incoming, outgoing=outgoing
-            )
+            return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
         else:
-            return super().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+            return super().my_tensors(incoming=incoming, outgoing=outgoing)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.
@@ -535,62 +526,3 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
         wire_symbols[0] = self.__class__.__name__
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-
-class SpecializedSingleQubitControlledGate(GateWithRegisters):
-    """Add a specialized single-qubit controlled version of a Bloq.
-
-    `control_val` is an optional single-bit control. When `control_val` is provided,
-     the `control_registers` property should return a single named qubit register,
-     and otherwise return an empty tuple.
-
-    Example usage:
-
-        @attrs.frozen
-        class MyGate(SpecializedSingleQubitControlledGate):
-            control_val: Optional[int] = None
-
-            @property
-            def control_registers() -> Tuple[Register, ...]:
-                return () if self.control_val is None else (Register('control', QBit()),)
-    """
-
-    control_val: Optional[int]
-
-    @property
-    @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]:
-        ...
-
-    def get_single_qubit_controlled_bloq(
-        self, control_val: int
-    ) -> 'SpecializedSingleQubitControlledGate':
-        """Override this to provide a custom controlled bloq"""
-        return attrs.evolve(self, control_val=control_val)  # type: ignore[misc]
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
-        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
-            control_val = int(ctrl_spec.cvs[0].item())
-            cbloq = self.get_single_qubit_controlled_bloq(control_val)
-
-            if not hasattr(cbloq, 'control_registers'):
-                raise TypeError("{cbloq} should have attribute `control_registers`")
-
-            (ctrl_reg,) = cbloq.control_registers
-
-            def adder(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-                soqs = bb.add_d(cbloq, **soqs)
-                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-                return ctrl_soqs, soqs.values()
-
-            return cbloq, adder
-
-        return super().get_ctrl_system(ctrl_spec)

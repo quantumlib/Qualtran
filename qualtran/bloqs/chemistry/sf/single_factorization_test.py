@@ -120,8 +120,10 @@ def test_compare_cost_to_openfermion():
         + QR2(num_aux + 1, nprime, bp)[-1]
         + QI2(num_aux + 1, nprime)[-1]
     )
+    # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+    delta_refl_missing_ctrl = 1
     of_cost += our_qrom_cost - cost2c
-    assert cost_qualtran == of_cost
+    assert cost_qualtran + delta_refl_missing_ctrl == of_cost
 
 
 @pytest.mark.notebook

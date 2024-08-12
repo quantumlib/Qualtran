@@ -29,8 +29,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
-from qualtran.bloqs.util_bloqs import Power
+from qualtran.bloqs.basic_gates import Power, XGate, YGate, ZGate
 from qualtran.testing import execute_notebook
 
 if TYPE_CHECKING:
@@ -142,11 +141,11 @@ def test_gate_with_registers_decompose_from_context_auto_generated():
     cirq.testing.assert_has_diagram(
         circuit,
         """
-l: ───BloqWithDecompose───X───────free───
+l: ───BloqWithDecompose───X───
       │
-r: ───r───────────────────alloc───Z──────
+r: ───r───────────────────Z───
       │
-t: ───t───────────────────Y──────────────
+t: ───t───────────────────Y───
 """,
     )
 

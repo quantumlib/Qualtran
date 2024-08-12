@@ -14,12 +14,12 @@
 """Bloq for building a Trotterized unitary"""
 
 from functools import cached_property
-from typing import Dict, Sequence, Union
+from typing import Dict, Sequence
 
 import attrs
-import sympy
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
+from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
@@ -83,8 +83,8 @@ class TrotterizedUnitary(Bloq):
 
     bloqs: Sequence[Bloq]
     indices: Sequence[int]
-    coeffs: Sequence[Union[float, sympy.Expr]]
-    timestep: Union[float, sympy.Expr]
+    coeffs: Sequence[SymbolicFloat]
+    timestep: SymbolicFloat
 
     def __attrs_post_init__(self):
         ref_sig = self.bloqs[0].signature

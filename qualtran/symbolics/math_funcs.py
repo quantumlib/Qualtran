@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, overload, Sized, Tuple, Union
+from typing import cast, Iterable, overload, Sized, Tuple, TypeVar, Union
 
 import numpy as np
 import sympy
 
 from qualtran.symbolics.types import (
+    HasLength,
     is_symbolic,
     Shaped,
     SymbolicComplex,
@@ -29,73 +30,256 @@ def pi(*args) -> SymbolicFloat:
     return sympy.pi if is_symbolic(*args) else np.pi
 
 
+@overload
+def log2(x: float) -> float:
+    ...
+
+
+@overload
+def log2(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
 def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
-    if not isinstance(x, sympy.Basic):
+    if not is_symbolic(x):
         return np.log2(x)
     return log2(x)
+
+
+@overload
+def sexp(x: complex) -> complex:
+    ...
+
+
+@overload
+def sexp(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
+def sexp(x: SymbolicComplex) -> SymbolicComplex:
+    if is_symbolic(x):
+        return sympy.exp(x)
+    return np.exp(x)
+
+
+@overload
+def sarg(x: complex) -> float:
+    ...
+
+
+@overload
+def sarg(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
+def sarg(x: SymbolicComplex) -> SymbolicFloat:
+    r"""Argument $t$ of a complex number $r e^{i t}$"""
+    if is_symbolic(x):
+        return sympy.arg(x)
+    return float(np.angle(x))
+
+
+@overload
+def sabs(x: float) -> float:
+    ...
+
+
+@overload
+def sabs(x: sympy.Expr) -> sympy.Expr:
+    ...
 
 
 def sabs(x: SymbolicFloat) -> SymbolicFloat:
     return cast(SymbolicFloat, abs(x))
 
 
+@overload
+def ssqrt(x: float) -> float:
+    ...
+
+
+@overload
+def ssqrt(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
+def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
+    if is_symbolic(x):
+        return sympy.sqrt(x)
+    return np.sqrt(x)
+
+
+@overload
+def ceil(x: float) -> int:
+    ...
+
+
+@overload
+def ceil(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
 def ceil(x: SymbolicFloat) -> SymbolicInt:
-    if not isinstance(x, sympy.Basic):
+    if not is_symbolic(x):
         return int(np.ceil(x))
     return sympy.ceiling(x)
 
 
+@overload
+def floor(x: float) -> int:
+    ...
+
+
+@overload
+def floor(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
 def floor(x: SymbolicFloat) -> SymbolicInt:
-    if not isinstance(x, sympy.Basic):
+    if not is_symbolic(x):
         return int(np.floor(x))
     return sympy.floor(x)
+
+
+@overload
+def bit_length(x: float) -> int:
+    ...
+
+
+@overload
+def bit_length(x: sympy.Expr) -> sympy.Expr:
+    ...
 
 
 def bit_length(x: SymbolicFloat) -> SymbolicInt:
     """Returns the number of bits required to represent the integer part of positive float `x`."""
     if not is_symbolic(x) and 0 <= x < 1:
         return 0
-    ret = ceil(log2(x))
-    if is_symbolic(ret):
-        return ret
-    return ret + 1 if ret == floor(log2(x)) else ret
+    return ceil(log2(floor(x) + 1))
 
 
 def smax(*args):
-    if any(isinstance(arg, sympy.Basic) for arg in args):
+    """Returns the maximum of the given arguments, which may be symbolic.
+
+    Args:
+        args: Either a pack of arguments or a single Iterable of arguments.
+              At least one argument must be provided in this pack or Iterable.
+
+    Returns:
+        The maximum of the given arguments.
+    """
+    if len(args) == 0:
+        raise ValueError("smax expected at least 1 argument, got 0")
+    if len(args) == 1:
+        (it,) = args
+        if isinstance(it, Iterable):
+            args = tuple(arg for arg in it)
+        if len(args) == 0:
+            raise ValueError("smax() arg is an empty sequence")
+    if len(args) == 1:
+        (arg,) = args
+        return arg
+    if is_symbolic(*args):
         return sympy.Max(*args)
     return max(*args)
 
 
 def smin(*args):
+    """Returns the minimum of the given arguments, which may be symbolic.
+
+    Args:
+        args: Either a pack of arguments or a single Iterable of arguments.
+              At least one argument must be provided in this pack or Iterable.
+
+    Returns:
+        The minimum of the given arguments.
+    """
+    if len(args) == 0:
+        raise ValueError("smin expected at least 1 argument, got 0")
+    if len(args) == 1:
+        (it,) = args
+        if isinstance(it, Iterable):
+            args = tuple(arg for arg in it)
+        if len(args) == 0:
+            raise ValueError("smin() arg is an empty sequence")
+    if len(args) == 1:
+        (arg,) = args
+        return arg
     if is_symbolic(*args):
         return sympy.Min(*args)
     return min(*args)
 
 
-def prod(*args: SymbolicInt) -> SymbolicInt:
-    ret: SymbolicInt = 1
+# This is only used in the type signature of functions that should be generic over different
+# symbolic types, in situations where Union and @overload are not sufficient.
+# The user should not need to invoke it directly. Rather, the user can use a function that
+# takes SymbolicT by calling it with e.g. a SymbolicInt. Correspondingly, if the type signature
+# of the function returns SymbolicT, then this call will then return a SymbolicInt.
+SymbolicT = TypeVar('SymbolicT', SymbolicInt, SymbolicFloat, SymbolicComplex)
+
+
+def prod(args: Iterable[SymbolicT]) -> SymbolicT:
+    ret: SymbolicT = 1
     for arg in args:
         ret = ret * arg
     return ret
 
 
+def ssum(args: Iterable[SymbolicT]) -> SymbolicT:
+    ret: SymbolicT = 0
+    for arg in args:
+        ret = ret + arg
+    return ret
+
+
+@overload
+def acos(x: float) -> float:
+    ...
+
+
+@overload
+def acos(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
 def acos(x: SymbolicFloat) -> SymbolicFloat:
-    if not isinstance(x, sympy.Basic):
+    if not is_symbolic(x):
         return np.arccos(x)
     return sympy.acos(x)
 
 
+@overload
+def sconj(x: complex) -> complex:
+    ...
+
+
+@overload
+def sconj(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
 def sconj(x: SymbolicComplex) -> SymbolicComplex:
     """Compute the complex conjugate."""
-    return sympy.conjugate(x) if isinstance(x, sympy.Expr) else np.conjugate(x)
+    return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
 
 
-def slen(x: Union[Sized, Shaped]) -> SymbolicInt:
+@overload
+def slen(x: Sized) -> int:
+    ...
+
+
+@overload
+def slen(x: Union[Shaped, HasLength]) -> sympy.Expr:
+    ...
+
+
+def slen(x: Union[Sized, Shaped, HasLength]) -> SymbolicInt:
     if isinstance(x, Shaped):
         return x.shape[0]
+    if isinstance(x, HasLength):
+        return x.n
     return len(x)
 
 

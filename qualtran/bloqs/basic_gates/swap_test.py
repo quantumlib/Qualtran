@@ -62,6 +62,11 @@ def test_two_bit_swap_unitary_vs_cirq():
     np.testing.assert_array_equal(swap.tensor_contract(), cirq.unitary(cirq.SWAP))
 
 
+def test_two_bit_cswap_unitary_vs_cirq():
+    swap = TwoBitCSwap()
+    np.testing.assert_allclose(swap.tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8)
+
+
 def test_two_bit_swap_as_cirq_op():
     q = cirq.LineQubit.range(2)
     expected_circuit = cirq.Circuit(cirq.SWAP(*q))
@@ -93,16 +98,16 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
 
 def test_two_bit_cswap():
     cswap = TwoBitCSwap()
-    np.testing.assert_array_equal(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP))
+    np.testing.assert_allclose(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8)
     np.testing.assert_allclose(
         cswap.decompose_bloq().tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8
     )
 
     # Zero ctrl -- it's identity
-    np.testing.assert_array_equal(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract())
+    np.testing.assert_allclose(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract(), atol=1e-8)
     # One ctrl -- it's swap
-    np.testing.assert_array_equal(
-        _swap_matrix().reshape(4, 4), _set_ctrl_two_bit_swap(1).tensor_contract()
+    np.testing.assert_allclose(
+        _swap_matrix().reshape(4, 4), _set_ctrl_two_bit_swap(1).tensor_contract(), atol=1e-8
     )
 
     # classical logic
@@ -159,13 +164,15 @@ def test_cswap_unitary():
     cswap = CSwap(bitsize=4)
 
     # Zero ctrl -- it's identity
-    np.testing.assert_array_equal(np.eye(2 ** (4 * 2)), _set_ctrl_swap(0, cswap).tensor_contract())
+    np.testing.assert_allclose(
+        np.eye(2 ** (4 * 2)), _set_ctrl_swap(0, cswap).tensor_contract(), atol=1e-8
+    )
 
     # One ctrl -- it's multi-swap
     qubits = cirq.LineQubit.range(8)
     q_x, q_y = qubits[:4], qubits[4:]
     unitary = cirq.unitary(cirq.Circuit(cirq.SWAP(x, y) for x, y in zip(q_x, q_y)))
-    np.testing.assert_array_equal(unitary, _set_ctrl_swap(1, cswap).tensor_contract())
+    np.testing.assert_allclose(unitary, _set_ctrl_swap(1, cswap).tensor_contract(), atol=1e-8)
 
 
 def test_cswap_classical():
@@ -191,6 +198,7 @@ def test_cswap_bloq_counts():
     assert counts1 == counts2
 
     assert t_complexity(CSwap(1)) == TComplexity(t=7, clifford=10)
+    assert t_complexity(CSwap(10)) == TComplexity(t=70, clifford=100)
     assert t_complexity(TwoBitCSwap()) == TComplexity(t=7, clifford=10)
 
 

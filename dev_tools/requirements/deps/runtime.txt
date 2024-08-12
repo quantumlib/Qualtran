@@ -4,7 +4,7 @@ cachetools>=5.3
 networkx
 numpy
 sympy
-cirq-core==1.4.0.dev20240430031656
+cirq-core==1.4
 fxpmath
 
 # qualtran/testing.py
@@ -12,6 +12,7 @@ nbconvert
 nbformat
 
 # drawing
+notebook
 pydot
 ipython
 matplotlib
@@ -24,11 +25,18 @@ dash
 # quimb simulation
 quimb
 
-#qsharp resource estimator interop
+# qsharp resource estimator interop
 qsharp
 qsharp-widgets
 
+# qref bartiq interop
+qref
+bartiq
+
 # serialization
 protobuf
+
+# typing
+typing_extensions>=4.10.0
 
 # Note: use `pipreqs` to generate a list of dependencies based on the imports in our files.

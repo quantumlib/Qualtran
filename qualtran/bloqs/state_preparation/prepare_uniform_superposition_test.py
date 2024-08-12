@@ -21,9 +21,11 @@ from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     _c_prep_uniform,
     _prep_uniform,
+    _prep_uniform_symb,
     PrepareUniformSuperposition,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
+from qualtran.symbolics import ceil, log2
 
 
 def test_prep_uniform(bloq_autotester):
@@ -32,6 +34,13 @@ def test_prep_uniform(bloq_autotester):
 
 def test_c_prep_uniform(bloq_autotester):
     bloq_autotester(_c_prep_uniform)
+
+
+def test_prep_uniform_symb():
+    bloq = _prep_uniform_symb.make()
+    # TODO: This should be 8logL instead because LessThanConst + LessThanConst.adjoint() should combined
+    # be n AND / AND^{dagger} gates. We are doing the work twice right now.
+    assert bloq.t_complexity().t == 12 * ceil(log2(bloq.n)) - 4
 
 
 @pytest.mark.notebook
@@ -95,3 +104,16 @@ def test_prepare_uniform_superposition_consistent_protocols():
         PrepareUniformSuperposition(5, cvs=()),
         PrepareUniformSuperposition(5, cvs=[]),
     )
+
+
+def test_prepare_uniform_superposition_adjoint():
+    n = 3
+    target = cirq.NamedQubit.range((n - 1).bit_length(), prefix='target')
+    control = [cirq.NamedQubit('control')]
+    op = PrepareUniformSuperposition(n, cvs=(0,)).on_registers(ctrl=control, target=target)
+    gqm = cirq.GreedyQubitManager(prefix="_ancilla", maximize_reuse=True)
+    context = cirq.DecompositionContext(gqm)
+    circuit = cirq.Circuit(op, cirq.decompose(cirq.inverse(op), context=context))
+    identity = cirq.Circuit(cirq.identity_each(*circuit.all_qubits())).final_state_vector()
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit)
+    np.testing.assert_allclose(result.final_state_vector, identity, atol=1e-8)

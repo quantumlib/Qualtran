@@ -20,9 +20,9 @@ import pytest
 import sympy
 
 from qualtran import Bloq
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
-from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook
@@ -84,6 +84,12 @@ def test_mod_exp_consistent_counts():
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
 
     assert counts1 == counts2
+
+
+def test_mod_exp_t_complexity():
+    bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
+    tcomp = bloq.t_complexity()
+    assert tcomp.t > 0
 
 
 def test_modexp(bloq_autotester):

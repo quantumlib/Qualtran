@@ -29,17 +29,17 @@ from qualtran import (
     Register,
     SoquetT,
 )
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import SGate
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
-from qualtran.bloqs.select_and_prepare import SelectOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectSparse(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
@@ -174,8 +174,4 @@ def _sel_sparse() -> SelectSparse:
     return sel_sparse
 
 
-_SPARSE_SELECT = BloqDocSpec(
-    bloq_cls=SelectSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse',
-    examples=(_sel_sparse,),
-)
+_SPARSE_SELECT = BloqDocSpec(bloq_cls=SelectSparse, examples=(_sel_sparse,))

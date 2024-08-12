@@ -23,8 +23,10 @@ requirements.
 
 from .cnot import CNOT
 from .global_phase import GlobalPhase
-from .hadamard import Hadamard
+from .hadamard import CHadamard, Hadamard
+from .identity import Identity
 from .on_each import OnEach
+from .power import Power
 from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from .s_gate import SGate
 from .su2_rotation import SU2RotationGate
@@ -32,5 +34,5 @@ from .swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
-from .y_gate import YGate
-from .z_basis import IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate
+from .y_gate import CYGate, YGate
+from .z_basis import CZ, IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate

@@ -17,16 +17,19 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.phase_estimation.lp_resource_state import (
     _lp_resource_state_small,
+    _lp_resource_state_symbolic,
     _lprs_interim_prep,
     LPResourceState,
     LPRSInterimPrep,
 )
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_alloc_free,
     ignore_split_join,
 )
+from qualtran.simulation.tensor import initialize_from_zero
 
 
 def test_lprs_interim_auto(bloq_autotester):
@@ -35,6 +38,11 @@ def test_lprs_interim_auto(bloq_autotester):
 
 def test_lp_resource_state_auto(bloq_autotester):
     bloq_autotester(_lp_resource_state_small)
+
+
+def test_lp_resource_state_symb():
+    bloq = _lp_resource_state_symbolic.make()
+    assert bloq.t_complexity().t == 4 * bloq.bitsize
 
 
 def get_interim_resource_state(m: int) -> np.ndarray:
@@ -50,18 +58,70 @@ def get_resource_state(m: int) -> np.ndarray:
     return np.sqrt(2 / (1 + N)) * np.sin(np.pi * (1 + np.arange(N)) / (1 + N))
 
 
-@pytest.mark.parametrize('n', [*range(1, 14, 2)])
-def test_intermediate_resource_state(n):
+def test_intermediate_resource_state_cirq_quick():
+    n = 3
     bloq = LPRSInterimPrep(n)
     state = GateHelper(bloq).circuit.final_state_vector()
     np.testing.assert_allclose(state, get_interim_resource_state(n))
 
 
+def test_intermediate_resource_state_tensor_quick():
+    n = 3
+    bloq = LPRSInterimPrep(n)
+    state_prep = initialize_from_zero(bloq)
+    state_vec = state_prep.tensor_contract()
+    pytest.xfail("https://github.com/quantumlib/Qualtran/issues/1068")
+    np.testing.assert_allclose(state_vec, get_interim_resource_state(n))
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
-def test_prepares_resource_state(n):
+def test_intermediate_resource_state_cirq(n):
+    bloq = LPRSInterimPrep(n)
+    state = GateHelper(bloq).circuit.final_state_vector()
+    np.testing.assert_allclose(state, get_interim_resource_state(n))
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('n', [*range(1, 14, 2)])
+def test_intermediate_resource_state_tensor(n):
+    bloq = LPRSInterimPrep(n)
+    state_prep = initialize_from_zero(bloq)
+    state_vec = state_prep.tensor_contract()
+    pytest.xfail("https://github.com/quantumlib/Qualtran/issues/1068")
+    np.testing.assert_allclose(state_vec, get_interim_resource_state(n))
+
+
+def test_prepares_resource_state_cirq_quick():
+    n = 3
     bloq = LPResourceState(n)
     state = GateHelper(bloq).circuit.final_state_vector()
     np.testing.assert_allclose(state, get_resource_state(n))
+
+
+def test_prepares_resource_state_tensor_quick():
+    n = 3
+    bloq = LPResourceState(n)
+    state_prep = initialize_from_zero(bloq)
+    state_vec = state_prep.tensor_contract()
+    np.testing.assert_allclose(state_vec, get_resource_state(n))
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('n', [*range(1, 14, 2)])
+def test_prepares_resource_state_cirq(n):
+    bloq = LPResourceState(n)
+    state = GateHelper(bloq).circuit.final_state_vector()
+    np.testing.assert_allclose(state, get_resource_state(n))
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('n', [*range(1, 14, 2)])
+def test_prepares_resource_state_tensor(n):
+    bloq = LPResourceState(n)
+    state_prep = initialize_from_zero(bloq)
+    state_vec = state_prep.tensor_contract()
+    np.testing.assert_allclose(state_vec, get_resource_state(n))
 
 
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
@@ -70,4 +130,15 @@ def test_t_complexity(n):
     qlt_testing.assert_equivalent_bloq_counts(
         bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
     )
-    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6
+    lprs_interim_count = 3 * TComplexity(rotations=2 * n + 1, clifford=2 + 3 * n)
+    multi_control_pauli_count = TComplexity(t=4 * n, clifford=17 * n + 5)
+    misc_count = TComplexity(rotations=3, clifford=5)
+
+    assert bloq.t_complexity() == (lprs_interim_count + multi_control_pauli_count + misc_count)
+
+
+@pytest.mark.parametrize('bitsize', [*range(1, 14, 2)])
+def test_interim_lp2s_interim_prep_t_complexity(bitsize: int):
+    assert t_complexity(LPRSInterimPrep(bitsize)) == TComplexity(
+        rotations=2 * bitsize + 1, clifford=2 + 3 * bitsize
+    )

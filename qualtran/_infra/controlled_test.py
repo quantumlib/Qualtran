@@ -22,6 +22,7 @@ import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     Controlled,
     CtrlSpec,
     QBit,
@@ -34,10 +35,12 @@ from qualtran import (
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
+    GlobalPhase,
     IntEffect,
     IntState,
     OneState,
     Swap,
+    TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
@@ -49,6 +52,7 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -70,7 +74,6 @@ def test_ctrl_spec():
     assert cspec3.qdtypes[0].num_qubits == 64
     assert cspec3.cvs[0] == 234234
     assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
@@ -127,6 +130,19 @@ def test_ctrl_bloq_as_cirq_op():
     circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # controlled composite subbloqs
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    cbloq = CompositeBloq.from_cirq_circuit(circuit).controlled().as_composite_bloq()
+    quregs = get_named_qubits(cbloq.signature.lefts())
+
+    circuit1 = cbloq.to_cirq_circuit(qubit_manager=None, cirq_quregs=quregs)
+    ctrl = quregs['ctrl'][0]
+    q = quregs['qubits'][0][0]
+    circuit2 = cirq.Circuit(
+        cirq.CircuitOperation(cirq.Circuit(cirq.X(q)).freeze()).controlled_by(ctrl)
     )
     cirq.testing.assert_same_circuits(circuit1, circuit2)
 
@@ -194,7 +210,7 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-Split(dtype=QAny(bitsize=3))<0>
+Split<0>
   LeftDangle.reg -> reg
   reg[0] -> C[TestAtom()]<1>.q
   reg[1] -> C[TestAtom()]<2>.q
@@ -202,23 +218,23 @@ Split(dtype=QAny(bitsize=3))<0>
 --------------------
 C[TestAtom()]<1>
   LeftDangle.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[0] -> q
+  Split<0>.reg[0] -> q
   ctrl -> C[TestAtom()]<2>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[0]
+  q -> Join<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[1] -> q
+  Split<0>.reg[1] -> q
   ctrl -> C[TestAtom()]<3>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[1]
+  q -> Join<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[2]
+  Split<0>.reg[2] -> q
+  q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join(dtype=QAny(bitsize=3))<4>
+Join<4>
   C[TestAtom()]<1>.q -> reg[0]
   C[TestAtom()]<2>.q -> reg[1]
   C[TestAtom()]<3>.q -> reg[2]
@@ -327,7 +343,7 @@ def test_notebook():
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     cbloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
-    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 interesting_ctrl_specs = [
@@ -347,6 +363,26 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
     _verify_ctrl_tensor_for_unitary(ctrl_spec, ZGate(), cirq.Z)
     # Test multi-qubit unitaries with non-trivial signature
     _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
+
+
+def test_controlled_tensor_without_decompose():
+    ctrl_spec = CtrlSpec()
+    bloq = TwoBitCSwap()
+    cbloq = Controlled(bloq, ctrl_spec)
+    cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
+
+    tn = cbloq_to_quimb(cbloq.as_composite_bloq())
+    # pylint: disable=unbalanced-tuple-unpacking
+    right, left = get_right_and_left_inds(tn, cbloq.signature)
+    # pylint: enable=unbalanced-tuple-unpacking
+    np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+
+
+def test_controlled_global_phase_tensor():
+    bloq = GlobalPhase.from_coefficient(1.0j).controlled()
+    should_be = np.diag([1, 1.0j])
+    np.testing.assert_allclose(bloq.tensor_contract(), should_be)
 
 
 @attrs.frozen

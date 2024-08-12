@@ -14,10 +14,9 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
@@ -27,6 +26,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
     Register,
@@ -38,10 +38,10 @@ from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
@@ -70,57 +70,49 @@ class CNOT(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        """Append tensors to `tn` that represent this operation.
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        # This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
+        # by an internal index.
+        # [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
+        import quimb.tensor as qtn
 
-        This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
-        by an internal index.
-
-        References:
-            [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
-        """
         internal = qtn.rand_uuid()
-        tn.add(
+        return [
             qtn.Tensor(
-                data=COPY, inds=(incoming['ctrl'], outgoing['ctrl'], internal), tags=['COPY', tag]
-            )
-        )
-        tn.add(
+                data=COPY,
+                inds=[(incoming['ctrl'], 0), (outgoing['ctrl'], 0), internal],
+                tags=['COPY'],
+            ),
             qtn.Tensor(
-                data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
-            )
-        )
+                data=XOR,
+                inds=[(incoming['target'], 0), (outgoing['target'], 0), internal],
+                tags=['XOR'],
+            ),
+        ]
 
     def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates.toffoli import Toffoli
 
-        if ctrl_spec is None or ctrl_spec == CtrlSpec():
-            bloq = Toffoli()
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-            def add_controlled(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-            ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                (c2,) = ctrl_soqs
-                (c1, c2), target = bb.add(
-                    bloq, ctrl=np.array([in_soqs['ctrl'], c2]), target=in_soqs['target']
-                )
-                return (c1,), (c2, target)
+        bloq = Toffoli()
 
-            return bloq, add_controlled
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (new_ctrl,) = ctrl_soqs
+            (new_ctrl, existing_ctrl), target = bb.add(
+                bloq, ctrl=np.array([new_ctrl, in_soqs['ctrl']]), target=in_soqs['target']
+            )
+            return (new_ctrl,), (existing_ctrl, target)
 
-        return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+        return bloq, add_controlled
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]

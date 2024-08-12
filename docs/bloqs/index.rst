@@ -14,8 +14,9 @@ Bloqs Library
     multiplexers/unary_iteration.ipynb
     arithmetic/t_complexity_of_comparison_gates.ipynb
     arithmetic/error_analysis_for_fxp_arithmetic.ipynb
-    phase_estimation_of_quantum_walk.ipynb
+    phase_estimation/phase_estimation_of_quantum_walk.ipynb
     chemistry/trotter/grid_ham/trotter_costs.ipynb
+    chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
@@ -29,11 +30,16 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
+    basic_gates/identity.ipynb
+    bookkeeping/bookkeeping.ipynb
+    mcmt/ctrl_spec_and.ipynb
+    mcmt/controlled_via_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -56,14 +62,27 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/negate.ipynb
+    arithmetic/subtraction.ipynb
+    arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
+    arithmetic/conversions/conversions.ipynb
     arithmetic/sorting.ipynb
-    arithmetic/conversions.ipynb
-    factoring/mod_exp.ipynb
+    arithmetic/conversions/contiguous_index.ipynb
+    arithmetic/permutation.ipynb
+    arithmetic/bitwise.ipynb
+    arithmetic/trigonometric/trigonometric.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Modular Arithmetic:
+
+    mod_arithmetic/mod_addition.ipynb
     factoring/mod_mul.ipynb
-    factoring/ecc/ecc.ipynb
+    factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
+    factoring/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -73,22 +92,43 @@ Bloqs Library
     basic_gates/su2_rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
+    rotations/phase_gradient.ipynb
+    rotations/hamming_weight_phasing.ipynb
+    rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
+    qft/qft_text_book.ipynb
+    qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
-    qubitization_walk_operator.ipynb
+    qubitization/qubitization_walk_operator.ipynb
     phase_estimation/qubitization_qpe.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Block Encoding:
+
+    block_encoding/block_encoding.ipynb
+    block_encoding/unitary.ipynb
+    block_encoding/tensor_product.ipynb
+    block_encoding/product.ipynb
+    block_encoding/phase.ipynb
+    block_encoding/linear_combination.ipynb
+    block_encoding/sparse_matrix.ipynb
+    block_encoding/chebyshev_polynomial.ipynb
+    block_encoding/lcu_block_encoding.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
+    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
+    multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
-    block_encoding.ipynb
-    reflection.ipynb
+    data_loading/select_swap_qrom.ipynb
+    reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb
     state_preparation/state_preparation_alias_sampling.ipynb

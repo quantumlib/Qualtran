@@ -17,7 +17,7 @@ from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import sympy
 
-from qualtran import Adjoint, Bloq
+from qualtran import Adjoint, Bloq, Controlled
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
@@ -26,7 +26,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import GeneralizerT
 
 
 def _get_basic_bloq_classification() -> Dict[str, str]:
@@ -103,5 +103,61 @@ def classify_t_count_by_bloq_type(
     classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
-        classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])
+        t_counts = t_counts_from_sigma(k.call_graph()[1])
+        if t_counts > 0:
+            classified_bloqs[classification] += v * t_counts
     return classified_bloqs
+
+
+def bloq_is_clifford(b: Bloq):
+    from qualtran.bloqs.basic_gates import (
+        CNOT,
+        CYGate,
+        CZ,
+        Hadamard,
+        SGate,
+        TwoBitSwap,
+        XGate,
+        YGate,
+        ZGate,
+    )
+    from qualtran.bloqs.bookkeeping import ArbitraryClifford
+    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+
+    if isinstance(b, Adjoint):
+        b = b.subbloq
+
+    if isinstance(
+        b,
+        (
+            TwoBitSwap,
+            Hadamard,
+            XGate,
+            ZGate,
+            YGate,
+            ArbitraryClifford,
+            CNOT,
+            MultiTargetCNOT,
+            CYGate,
+            CZ,
+            SGate,
+        ),
+    ):
+        return True
+
+    return False
+
+
+def bloq_is_rotation(b: Bloq):
+    from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
+    from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+
+    if isinstance(b, Controlled):
+        # TODO https://github.com/quantumlib/Qualtran/issues/878
+        #      explicit representation of all two-qubit rotations.
+        if isinstance(b.subbloq, (SGate, TGate, GlobalPhase)):
+            return True
+
+        return bloq_is_rotation(b.subbloq)
+
+    return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))

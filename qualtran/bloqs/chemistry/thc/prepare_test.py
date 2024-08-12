@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
 import networkx as nx
 import numpy as np
 import pytest
@@ -24,7 +26,8 @@ from qualtran.bloqs.chemistry.thc.prepare import (
     UniformSuperpositionTHC,
 )
 from qualtran.drawing.musical_score import get_musical_score_data, MusicalScoreData
-from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
+from qualtran.resource_counting.classify_bloqs import classify_t_count_by_bloq_type
 from qualtran.testing import execute_notebook
 
 
@@ -36,13 +39,34 @@ def test_thc_prepare(bloq_autotester):
     bloq_autotester(_thc_prep)
 
 
+def build_random_test_integrals(num_mu: int, num_spat: int, seed: Optional[int] = None):
+    """Build random THC integrals for testing / demonstration purposes.
+
+    Args:
+        num_mu: The THC auxiliary dimension.
+        num_spat: The number of spatial orbitals.
+        seed: If not None then seed the rng with this value. Otherwise seed is
+            not set explcitly in this function.
+
+    Retuns:
+        t_l: The eigenvalues of the one-body Hamiltonian.
+        eta: The THC leaf tensors (matrix) of size num_mu x num_spat.
+        zeta: The central tensor (matrix) of size num_mu x num_mu.
+    """
+    rs = np.random.RandomState(seed)
+    tpq = rs.normal(size=(num_spat, num_spat))
+    tpq = 0.5 * (tpq + tpq.T)
+    t_l = np.linalg.eigvalsh(tpq)
+    zeta = rs.normal(size=(num_mu, num_mu))
+    zeta = 0.5 * (zeta + zeta.T)
+    eta = rs.normal(size=(num_mu, num_spat))
+    return t_l, eta, zeta
+
+
 @pytest.mark.parametrize("num_mu, num_spat, mu", ((10, 4, 10), (40, 10, 17), (72, 31, 27)))
 def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
-    np.random.seed(7)
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
-    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=mu)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=mu)
     qlt_testing.assert_valid_bloq_decomposition(prep)
     # Test that the alt / keep values are correct
     qlt_testing.assert_valid_bloq_decomposition(prep)
@@ -53,8 +77,8 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     enlarged_matrix[:num_spat, num_mu] = np.abs(t_l)
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
     eps = 2**-mu / len(flat_data)
-    alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-        flat_data, eps
+    alternates, keep_numers, mu = preprocess_probabilities_for_reversible_sampling(
+        flat_data, sub_bit_precision=mu
     )
     keep_denom = 2**mu
     data_len = len(flat_data)
@@ -80,6 +104,19 @@ def test_prepare_graph():
     graph, sigma = uniform_bloq.call_graph(generalizer=THC_GENERALIZERS)
     assert isinstance(graph, nx.DiGraph)
     assert isinstance(sigma, dict)
+
+
+def test_prepare_qrom_counts():
+    num_spat = 4
+    num_mu = 8
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
+    binned_counts = classify_t_count_by_bloq_type(thc_prep)
+    assert binned_counts['data_loading'] == 304, binned_counts['data_loading']
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=23)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
+    binned_counts = classify_t_count_by_bloq_type(thc_prep)
+    assert binned_counts['data_loading'] == 296, binned_counts['data_loading']
 
 
 def test_musical_score():

@@ -38,7 +38,6 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -50,6 +49,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
@@ -57,15 +58,16 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
-from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class DoubleFactorizationOneBody(Bloq):
+class DoubleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of double factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -102,6 +104,7 @@ class DoubleFactorizationOneBody(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494)
     """
+
     num_aux: int
     num_spin_orb: int
     num_eig: int
@@ -116,6 +119,28 @@ class DoubleFactorizationOneBody(Bloq):
             Register("l_ne_zero", QBit()),
             Register("succ_p", QBit()),
         )
+
+    @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -140,6 +165,10 @@ class DoubleFactorizationOneBody(Bloq):
     def target_registers(self) -> Iterable[Register]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
+
     @cached_property
     def signature(self) -> Signature:
         return Signature(
@@ -152,7 +181,7 @@ class DoubleFactorizationOneBody(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return '$B[H_1]$'
+        return 'B[H_1]'
 
     def build_composite_bloq(
         self,
@@ -264,7 +293,7 @@ class DoubleFactorizationOneBody(Bloq):
 
 
 @frozen
-class DoubleFactorizationBlockEncoding(Bloq):
+class DoubleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of double factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -303,6 +332,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494)
     """
+
     num_spin_orb: int
     num_aux: int
     num_eig: int
@@ -338,6 +368,28 @@ class DoubleFactorizationBlockEncoding(Bloq):
         return (Register('ctrl', QBit(), shape=(4,)),)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("l", QAny(bitsize=self.num_aux.bit_length())),
@@ -360,6 +412,10 @@ class DoubleFactorizationBlockEncoding(Bloq):
     @property
     def target_registers(self) -> Iterable[Register]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
+
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:
@@ -426,8 +482,14 @@ class DoubleFactorizationBlockEncoding(Bloq):
             sys=sys,
         )
         # The last ctrl is the 'target' register for the MCP gate.
-        succ_l, l_ne_zero, p, spin = bb.add(
-            Reflection((1, 1, n_n, 1), (1, 1, 0, 0)), reg0=succ_l, reg1=l_ne_zero, reg2=p, reg3=spin
+        # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+        succ_l, p, spin = bb.add(
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(n_n, 1), control_val=1, global_phase=-1
+            ),
+            control=succ_l,
+            reg0_=p,
+            reg1_=spin,
         )
         succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,

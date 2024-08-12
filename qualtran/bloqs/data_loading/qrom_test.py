@@ -19,10 +19,10 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran import QUInt
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT, TGate
 from qualtran.bloqs.data_loading.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 from qualtran.resource_counting.generalizers import cirq_to_bloqs
@@ -56,7 +56,7 @@ def test_qrom_multi_dim(bloq_autotester):
         for num_controls in [0, 1, 2]
     ],
 )
-def test_qrom_1d_full(data, num_controls):
+def test_qrom_1d_full(data, num_controls: int):
     qrom = QROM.build_from_data(*data, num_controls=num_controls)
     assert_valid_bloq_decomposition(qrom)
 
@@ -72,13 +72,20 @@ def test_qrom_1d_full(data, num_controls):
     )
     assert inverse.all_qubits() == decomposed_circuit.all_qubits()
 
+    controls = {'control': 2**num_controls - 1} if num_controls else {}
+    zero_targets = {f'target{i}_': 0 for i in range(len(data))}
     for selection_integer in range(len(data[0])):
+
+        out = qrom.call_classically(**controls, selection=selection_integer, **zero_targets)
+        for i in range(len(data)):
+            assert out[-i - 1] == data[-i - 1][selection_integer]
+
         for cval in range(2):
             qubit_vals = {x: 0 for x in g.all_qubits}
             qubit_vals.update(
                 zip(
                     g.quregs.get('selection', ()),
-                    iter_bits(selection_integer, total_bits(qrom.selection_registers)),
+                    QUInt(total_bits(qrom.selection_registers)).to_bits(selection_integer),
                 )
             )
             if num_controls:
@@ -88,7 +95,7 @@ def test_qrom_1d_full(data, num_controls):
             if cval or not num_controls:
                 for ti, d in enumerate(data):
                     target = g.quregs[f"target{ti}_"]
-                    qubit_vals.update(zip(target, iter_bits(d[selection_integer], len(target))))
+                    qubit_vals.update(zip(target, QUInt(len(target)).to_bits(d[selection_integer])))
             final_state = [qubit_vals[x] for x in g.all_qubits]
 
             assert_circuit_inp_out_cirqsim(
@@ -364,13 +371,13 @@ def test_qrom_multi_dim_full(data, num_controls):
                 qubit_vals.update(zip(g.quregs['control'], [cval] * num_controls))
             for isel in range(len(idxs)):
                 qubit_vals.update(
-                    zip(g.quregs[f'selection{isel}'], iter_bits(idxs[isel], lens[isel]))
+                    zip(g.quregs[f'selection{isel}'], QUInt(lens[isel]).to_bits(idxs[isel]))
                 )
             initial_state = [qubit_vals[x] for x in g.all_qubits]
             if cval or not num_controls:
                 for ti, d in enumerate(data):
                     target = g.quregs[f"target{ti}_"]
-                    qubit_vals.update(zip(target, iter_bits(int(d[idxs]), len(target))))
+                    qubit_vals.update(zip(target, QUInt(len(target)).to_bits(int(d[idxs]))))
             final_state = [qubit_vals[x] for x in g.all_qubits]
             qubit_vals = {x: 0 for x in g.all_qubits}
             assert_circuit_inp_out_cirqsim(

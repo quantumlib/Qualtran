@@ -14,13 +14,13 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
 import sympy
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -33,9 +33,9 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
-from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import acos, is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -95,7 +95,10 @@ class LPRSInterimPrep(GateWithRegisters):
         return ret
 
     def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=self.bitsize + 1, clifford=2 + self.bitsize)
+        # Uses self.bitsize controlled-Rz rotations which decomposes into
+        # 2 single-qubit rotations and 3 cliffords
+        # TODO: Once a CRz exists, this can be updated.
+        return TComplexity(rotations=2 * self.bitsize + 1, clifford=2 + 3 * self.bitsize)
 
 
 @attrs.frozen
@@ -148,7 +151,7 @@ class LPResourceState(GateWithRegisters):
         yield Ry(angle=-flag_angle).on(flag)
 
         yield XGate().on(flag)
-        yield MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z).on(*q, anc, flag)
+        yield MultiControlZ((0,) * (self.bitsize + 1)).on(*q, anc, flag)
         yield XGate().on(flag)
 
         yield LPRSInterimPrep(self.bitsize).on(*q, anc)
@@ -156,19 +159,21 @@ class LPResourceState(GateWithRegisters):
 
         # Reset ancilla to |0> state.
         yield [XGate().on(flag), XGate().on(anc)]
-        yield GlobalPhase(1j).on()
+        yield GlobalPhase(exponent=0.5).on()
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         flag_angle = acos(1 / (1 + 2**self.bitsize))
-
+        cvs: Union[HasLength, Tuple[int, ...]] = (
+            HasLength(self.bitsize + 1) if is_symbolic(self.bitsize) else (0,) * (self.bitsize + 1)
+        )
         return {
             (LPRSInterimPrep(self.bitsize), 2),
             (LPRSInterimPrep(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
+            (MultiControlZ(cvs), 1),
             (XGate(), 4),
-            (GlobalPhase(1j), 1),
+            (GlobalPhase(exponent=0.5), 1),
             (CZPowGate(), 1),
         }
 
@@ -195,9 +200,6 @@ def _lp_resource_state_small() -> LPResourceState:
 @bloq_example
 def _lp_resource_state_symbolic() -> LPResourceState:
     import sympy
-
-    # Note: Symbolic callgraphs currently don't work due to
-    # https://github.com/quantumlib/Qualtran/issues/786
 
     lp_resource_state_symbolic = LPResourceState(sympy.Symbol('n'))
     return lp_resource_state_symbolic

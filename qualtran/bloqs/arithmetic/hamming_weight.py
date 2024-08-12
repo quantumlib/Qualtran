@@ -20,9 +20,8 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -101,13 +100,6 @@ class HammingWeightCompute(GateWithRegisters):
         junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
         yield self._decompose_using_three_to_two_adders(x, junk, out)
-
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        and_t = And(uncompute=adjoint).t_complexity()
-        junk_bitsize = self.bitsize - self.bitsize.bit_count()
-        num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
-        num_t = junk_bitsize * and_t.t
-        return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_and = self.bitsize - self.bitsize.bit_count()
