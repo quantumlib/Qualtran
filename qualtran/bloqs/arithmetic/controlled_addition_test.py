@@ -12,54 +12,33 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import cirq
-import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import QUInt
-from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran import QInt, QMontgomeryUInt, QUInt
+from qualtran.bloqs.arithmetic.controlled_addition import _cadd_large, _cadd_small, CAdd
+from qualtran.resource_counting import GateCounts, QECGatesCost, query_costs
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
 
-def iter_bits(x, w):
-    return [int(b) for b in np.binary_repr(x, width=w)]
+def test_examples(bloq_autotester):
+    bloq_autotester(_cadd_small)
+    bloq_autotester(_cadd_large)
 
 
-@pytest.mark.parametrize('a', [1, 2])
-@pytest.mark.parametrize('b', [1, 2, 3])
-@pytest.mark.parametrize('num_bits_a', [2, 3])
-@pytest.mark.parametrize('num_bits_b', [5])
-@pytest.mark.parametrize('controlled_on', [0, 1])
-@pytest.mark.parametrize('control', [0, 1])
-def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, control):
-    num_anc = num_bits_b - 1
-    gate = CAdd(QUInt(num_bits_a), QUInt(num_bits_b), cv=controlled_on)
-    qubits = cirq.LineQubit.range(num_bits_a + num_bits_b + 1)
-    op = gate.on_registers(ctrl=qubits[0], a=qubits[1 : num_bits_a + 1], b=qubits[num_bits_a + 1 :])
-    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    context = cirq.DecompositionContext(greedy_mm)
-    circuit = cirq.Circuit(cirq.decompose_once(op, context=context))
-    circuit0 = cirq.Circuit(op)
-    ancillas = sorted(circuit.all_qubits())[-num_anc:]
-    initial_state = [0] * (num_bits_a + num_bits_b + num_anc + 1)
-    initial_state[0] = control
-    initial_state[1 : num_bits_a + 1] = list(iter_bits(a, num_bits_a))
-    initial_state[num_bits_a + 1 : num_bits_a + num_bits_b + 1] = list(iter_bits(b, num_bits_b))
-    final_state = [0] * (num_bits_a + num_bits_b + num_anc + 1)
-    final_state[0] = control
-    final_state[1 : num_bits_a + 1] = list(iter_bits(a, num_bits_a))
-    if control == controlled_on:
-        final_state[num_bits_a + 1 : num_bits_a + num_bits_b + 1] = list(
-            iter_bits(a + b, num_bits_b)
-        )
-    else:
-        final_state[num_bits_a + 1 : num_bits_a + num_bits_b + 1] = list(iter_bits(b, num_bits_b))
-    assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
-    assert_circuit_inp_out_cirqsim(
-        circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
-    )
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('controlled_addition')
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(['a_bits', 'b_bits'], [(a, b) for a in range(1, 5) for b in range(a, 5)])
+def test_decomposition(control, dtype, a_bits, b_bits):
+    b = CAdd(dtype(a_bits), dtype(b_bits), cv=control)
+    qlt_testing.assert_valid_bloq_decomposition(b)
+    qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
 
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
@@ -67,8 +46,42 @@ def test_addition_gate_counts_controlled(n: int):
     add = CAdd(QUInt(n), cv=1)
     num_and = 2 * n - 1
     t_count = 4 * num_and
-
-    qlt_testing.assert_valid_bloq_decomposition(add)
-    assert add.t_complexity() == add.decompose_bloq().t_complexity()
     assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
     assert add.t_complexity().t == t_count
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(['a_bits', 'b_bits'], [(a, b) for a in range(1, 5) for b in range(a, 5)])
+def test_classical_action_unsigned(control, dtype, a_bits, b_bits):
+    b = CAdd(dtype(a_bits), dtype(b_bits), cv=control)
+    cb = b.decompose_bloq()
+    for c in range(2):
+        for x in range(2**a_bits):
+            for y in range(2**b_bits):
+                assert b.call_classically(ctrl=c, a=x, b=y) == cb.call_classically(
+                    ctrl=c, a=x, b=y
+                ), f'{c=} {x=} {y=}'
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize(['a_bits', 'b_bits'], [(a, b) for a in range(2, 5) for b in range(a, 5)])
+def test_classical_action_signed(control, a_bits, b_bits):
+    b = CAdd(QInt(a_bits), QInt(b_bits), cv=control)
+    cb = b.decompose_bloq()
+    for c in range(2):
+        for x in range(-(2 ** (a_bits - 1)), 2 ** (a_bits - 1)):
+            for y in range(-(2 ** (b_bits - 1)), 2 ** (b_bits - 1)):
+                assert b.call_classically(ctrl=c, a=x, b=y) == cb.call_classically(
+                    ctrl=c, a=x, b=y
+                ), f'{c=} {x=} {y=}'
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+def test_symbolic_cost(control, dtype):
+    n, m = sympy.symbols('n m')
+    b = CAdd(dtype(n), dtype(m), control)
+    target_cost = QECGatesCost()
+    gate_count: GateCounts = query_costs(b, [target_cost])[b][target_cost]
+    assert gate_count.total_t_count() == 4 * (m + n - 1)
