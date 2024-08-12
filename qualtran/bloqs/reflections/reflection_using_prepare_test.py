@@ -41,7 +41,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 gateset_to_keep = cirq.Gateset(
     And,
@@ -299,3 +299,8 @@ def test_call_graph_matches_decomp(global_phase, control_val):
         ]
     )
     assert cost_decomp == cost_call
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('reflections')

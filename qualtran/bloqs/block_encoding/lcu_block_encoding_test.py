@@ -16,9 +16,9 @@ import pytest
 
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
-    _black_box_lcu_zero_state_block,
+    _black_box_select_block,
     _lcu_block,
-    _lcu_zero_state_block,
+    _select_block,
 )
 from qualtran.testing import execute_notebook
 
@@ -31,12 +31,12 @@ def test_black_box_lcu_block_encoding(bloq_autotester):
     bloq_autotester(_black_box_lcu_block)
 
 
-def test_lcu_zero_state_block_encoding(bloq_autotester):
-    bloq_autotester(_lcu_zero_state_block)
+def test_select_block_encoding(bloq_autotester):
+    bloq_autotester(_select_block)
 
 
-def test_black_box_lcu_zero_state_bloq_encoding(bloq_autotester):
-    bloq_autotester(_black_box_lcu_zero_state_block)
+def test_black_box_select_block_encoding(bloq_autotester):
+    bloq_autotester(_black_box_select_block)
 
 
 @pytest.mark.notebook

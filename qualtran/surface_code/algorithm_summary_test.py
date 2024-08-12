@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import cirq
 import pytest
 
 from qualtran.bloqs import basic_gates, mcmt, rotations
@@ -52,7 +51,7 @@ from qualtran.surface_code import AlgorithmSummary
             ),
         ],
         [
-            mcmt.MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            mcmt.MultiControlX(cvs=(1, 1, 1)),
             AlgorithmSummary(
                 n_algo_qubits=6, n_logical_gates=GateCounts(and_bloq=2, measurement=2, clifford=3)
             ),

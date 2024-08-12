@@ -80,10 +80,7 @@ class Phase(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # GitHub issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+        return self.block_encoding.signal_state
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         return {(self.block_encoding, 1), (GlobalPhase(exponent=self.phi, eps=self.eps), 1)}

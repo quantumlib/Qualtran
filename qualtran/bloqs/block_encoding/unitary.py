@@ -19,6 +19,7 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Side, Signature, SoquetT
 from qualtran.bloqs.block_encoding import BlockEncoding
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
@@ -74,10 +75,7 @@ class Unitary(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         return {(self.U, 1)}
