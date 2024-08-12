@@ -42,7 +42,7 @@ class ZPowProgrammedAncilla(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         q = bb.allocate(dtype=QBit())
         q = bb.add(Hadamard(), q=q)
-        q = bb.add(ZPowGate(self.exponent, self.eps), q=q)
+        q = bb.add(ZPowGate(self.exponent, eps=self.eps), q=q)
         return {'q': q}
 
 
