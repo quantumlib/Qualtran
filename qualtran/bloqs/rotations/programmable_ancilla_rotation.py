@@ -16,18 +16,23 @@ from functools import cached_property
 
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, Rz, XGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Rz, XGate, ZPowGate
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 
 @frozen
-class RzResourceState(Bloq):
-    r"""Resource qubit with state $Rz(\phi) |+\rangle$"""
-    angle: SymbolicFloat
+class ZPowProgrammedAncilla(Bloq):
+    r"""Resource qubit with state $\frac1{\sqrt2} (|0\rangle + e^{i \pi t} |1\rangle)$.
+
+    Args:
+        exponent: value of $t$.
+        eps: precision of the synthesized state.
+    """
+    exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
 
     @cached_property
@@ -37,28 +42,28 @@ class RzResourceState(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         q = bb.allocate(dtype=QBit())
         q = bb.add(Hadamard(), q=q)
-        q = bb.add(Rz(self.angle, self.eps), q=q)
+        q = bb.add(ZPowGate(self.exponent, self.eps), q=q)
         return {'q': q}
 
 
 @bloq_example
-def _rz_resource_state() -> RzResourceState:
-    rz_resource_state = RzResourceState(np.pi / 4)
-    return rz_resource_state
+def _zpow_programmed_ancilla() -> ZPowProgrammedAncilla:
+    zpow_programmed_ancilla = ZPowProgrammedAncilla(np.pi / 4)
+    return zpow_programmed_ancilla
 
 
 @bloq_example
-def _rz_resource_state_symb() -> RzResourceState:
-    phi = sympy.Symbol(r"\phi")
-    rz_resource_state_symb = RzResourceState(phi)
-    return rz_resource_state_symb
+def _zpow_programmed_ancilla_symb() -> ZPowProgrammedAncilla:
+    t = sympy.Symbol(r"t")
+    zpow_programmed_ancilla_symb = ZPowProgrammedAncilla(t)
+    return zpow_programmed_ancilla_symb
 
 
 @frozen
-class RzViaProgrammableAncillaRotation(Bloq):
-    r"""Single qubit rotation using Rz resource states.
+class ZPowUsingProgrammedAncilla(Bloq):
+    r"""Single qubit ZPow rotation using resource states.
 
-    This bloq applies a single qubit Rz rotation only using Rz resource states and
+    This bloq applies a single qubit Z**t rotation only using ZPow resource states and
     clifford gates. It is designed to exit early as soon as a measurement succeeds.
 
     Notes:
@@ -72,10 +77,10 @@ class RzViaProgrammableAncillaRotation(Bloq):
           channel, instead set this parameter to True.
 
     Args:
-         angle: The angle $\phi$ to apply $Rz(\phi)$ on the input qubit.
-         n_rounds: The max number of rounds to attempt the rotation.
+         exponent: The value $t$ to apply $Z**t$ on the input qubit.
          eps: The precision of the synthesized rotation.
-         apply_final_correction: Whether to apply an expensive Rz rotation at
+         n_rounds: The max number of rounds to attempt the rotation.
+         apply_final_correction: Whether to apply an expensive ZPow rotation at
                  the end to correct the qubit in case all measurements failed.
 
     References:
@@ -83,10 +88,10 @@ class RzViaProgrammableAncillaRotation(Bloq):
         Jones et. al. 2012. Fig 4.
     """
 
-    angle: SymbolicFloat
-    n_rounds: SymbolicInt = 2
+    exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
-    apply_final_correction: bool = False
+    n_rounds: SymbolicInt = field(default=2, kw_only=True)
+    apply_final_correction: bool = field(default=False, kw_only=True)
 
     @cached_property
     def signature(self) -> Signature:
@@ -95,20 +100,20 @@ class RzViaProgrammableAncillaRotation(Bloq):
     @classmethod
     def from_failure_probability(
         cls,
-        angle: SymbolicFloat,
+        exponent: SymbolicFloat,
         *,
         max_fail_probability: SymbolicFloat,
         eps: SymbolicFloat = 1e-11,
-    ) -> 'RzViaProgrammableAncillaRotation':
+    ) -> 'ZPowUsingProgrammedAncilla':
         """Applies the rotation `Rz(angle)` except with some specified failure probability.
 
         Args:
-            angle: Rotation angle.
+            exponent: Rotation exponent.
             max_fail_probability: Upper bound on fail probability of the rotation gate.
             eps: The precision of the synthesized rotation.
         """
         n_rounds = ceil(log2(1 / max_fail_probability))
-        return cls(angle=angle, n_rounds=n_rounds, eps=eps)
+        return cls(exponent=exponent, eps=eps, n_rounds=n_rounds)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
         import cirq
@@ -122,13 +127,13 @@ class RzViaProgrammableAncillaRotation(Bloq):
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
             eps = ssa.new_symbol(r"\epsilon")
-            resources[RzResourceState(phi, eps)] += self.n_rounds
+            resources[ZPowProgrammedAncilla(phi, eps)] += self.n_rounds
         else:
             for i in range(int(self.n_rounds)):
-                resources[RzResourceState(2**i * self.angle, eps=self.eps / n_rz)] += 1
+                resources[ZPowProgrammedAncilla(2**i * self.exponent, eps=self.eps / n_rz)] += 1
 
         if self.apply_final_correction:
-            resources[Rz(2**self.n_rounds * self.angle, eps=self.eps / n_rz)] += 1
+            resources[Rz(2**self.n_rounds * self.exponent, eps=self.eps / n_rz)] += 1
 
         resources[CirqGateAsBloq(cirq.MeasurementGate(num_qubits=1))] += self.n_rounds
 
@@ -136,13 +141,13 @@ class RzViaProgrammableAncillaRotation(Bloq):
 
 
 @bloq_example
-def _rz_via_par() -> RzViaProgrammableAncillaRotation:
-    rz_via_par = RzViaProgrammableAncillaRotation(np.pi / 4)
-    return rz_via_par
+def _zpow_using_programmed_ancilla() -> ZPowUsingProgrammedAncilla:
+    zpow_using_programmed_ancilla = ZPowUsingProgrammedAncilla(np.pi / 4)
+    return zpow_using_programmed_ancilla
 
 
 @bloq_example
-def _rz_via_par_symb() -> RzViaProgrammableAncillaRotation:
+def _zpow_using_programmed_ancilla_symb() -> ZPowUsingProgrammedAncilla:
     """Paper example.
 
     References:
@@ -150,12 +155,14 @@ def _rz_via_par_symb() -> RzViaProgrammableAncillaRotation:
         Jones et. al. 2012. Fig 4.
     """
     phi, eps = sympy.symbols(r"\phi \epsilon")
-    rz_via_par_symb = RzViaProgrammableAncillaRotation(phi, eps=eps, n_rounds=3)
-    return rz_via_par_symb
+    zpow_using_programmed_ancilla_symb = ZPowUsingProgrammedAncilla(
+        phi / sympy.pi, eps=eps, n_rounds=3
+    )
+    return zpow_using_programmed_ancilla_symb
 
 
 @bloq_example
-def _rz_via_par_symb_rounds() -> RzViaProgrammableAncillaRotation:
+def _zpow_using_programmed_ancilla_symb_rounds() -> ZPowUsingProgrammedAncilla:
     """Paper example.
 
     References:
@@ -163,5 +170,7 @@ def _rz_via_par_symb_rounds() -> RzViaProgrammableAncillaRotation:
         Jones et. al. 2012. Fig 4.
     """
     phi, n = sympy.symbols(r"\phi n")
-    rz_via_par_symb_rounds = RzViaProgrammableAncillaRotation(phi, n_rounds=n)
-    return rz_via_par_symb_rounds
+    zpow_using_programmed_ancilla_symb_rounds = ZPowUsingProgrammedAncilla(
+        phi / sympy.pi, n_rounds=n
+    )
+    return zpow_using_programmed_ancilla_symb_rounds
