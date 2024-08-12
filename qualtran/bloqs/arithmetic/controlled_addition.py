@@ -24,8 +24,8 @@ from numpy.typing import NDArray
 from qualtran import Bloq, CompositeBloq, QBit, QInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class ControlledAdd(Bloq):
+class CAdd(Bloq):
     r"""An n-bit controlled-addition gate.
 
     Args:
@@ -178,11 +178,11 @@ class ControlledAdd(Bloq):
         yield CNOT().on(anc[depth - 1], anc[depth])
         if depth < len(inp):
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            yield MultiControlPauli((1, 1), cirq.X).on(control, inp[depth], out[depth])
+            yield MultiControlX((1, 1)).on(control, inp[depth], out[depth])
             yield CNOT().on(anc[depth - 1], inp[depth])
         else:
             yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
-            yield MultiControlPauli((1, 1), cirq.X).on(control, anc[depth - 1], out[depth])
+            yield MultiControlX((1, 1)).on(control, anc[depth - 1], out[depth])
         yield CNOT().on(anc[depth - 1], out[depth])
         yield from self._right_building_block(inp, out, anc, control, depth - 1)
 
@@ -202,14 +202,14 @@ class ControlledAdd(Bloq):
         yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
         yield CNOT().on(ancillas[-1], output_bits[-1])
         if len(input_bits) == len(output_bits):
-            yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[-1], output_bits[-1])
+            yield MultiControlX((1, 1)).on(control, input_bits[-1], output_bits[-1])
             yield CNOT().on(ancillas[-1], output_bits[-1])
         # right part of Fig.4
         yield from self._right_building_block(
             input_bits, output_bits, ancillas, control, self.b_dtype.bitsize - 2
         )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
-        yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[0], output_bits[0])
+        yield MultiControlX((1, 1)).on(control, input_bits[0], output_bits[0])
         if self.cv == 0:
             yield cirq.X(control)
         context.qubit_manager.qfree(ancillas)
@@ -224,7 +224,7 @@ class ControlledAdd(Bloq):
         n = self.b_dtype.bitsize
         n_cnot = (n - 2) * 6 + 2
         return {
-            (MultiControlPauli((1, 1), cirq.X), n),
+            (MultiControlX((1, 1)), n),
             (And(), n - 1),
             (And().adjoint(), n - 1),
             (CNOT(), n_cnot),
