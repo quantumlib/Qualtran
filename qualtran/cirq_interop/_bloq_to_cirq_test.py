@@ -20,7 +20,7 @@ from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, ConnectionT, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import Toffoli, XGate
+from qualtran.bloqs.basic_gates import Toffoli, XGate, YGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
@@ -206,9 +206,19 @@ def test_bloq_as_cirq_gate_left_register():
     q = bb.allocate(1)
     q = bb.add(XGate(), q=q)
     bb.free(q)
+    q = bb.allocate(1, dirty=True)
+    q = bb.add(YGate(), q=q)
+    bb.free(q, dirty=True)
     cbloq = bb.finalize()
     circuit = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, """_c(0): ───X───""")
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+_b(0): ───Y───
+
+_c(0): ───X───
+""",
+    )
 
 
 def test_bloq_as_cirq_gate_for_mod_exp():
