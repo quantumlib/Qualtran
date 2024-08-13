@@ -47,7 +47,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -120,6 +120,14 @@ class StatePreparationAliasSampling(PrepareOracle):
     keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_unnormalized_probabilities: SymbolicFloat
+
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.mu) and self.mu <= 0:
+            raise ValueError(f"{self.mu=} must be greater than 0.")
+        if len(self.selection_registers) != 1:
+            raise ValueError(
+                f"{type(self)} only supports 1D state preparation. Found multiple {self.selection_registers=}."
+            )
 
     @classmethod
     def from_probabilities(
@@ -233,14 +241,18 @@ class StatePreparationAliasSampling(PrepareOracle):
             (self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def build_composite_bloq(self, bb, **soqs):
-        soqs['selection'] = bb.add(
-            PrepareUniformSuperposition(self.n_coeff), target=soqs['selection']
-        )
-        if self.mu == 0:
-            return soqs
-        selection, less_than_equal = soqs['selection'], soqs['less_than_equal']
-        sigma_mu, alt, keep = soqs['sigma_mu'], soqs['alt'], soqs['keep']
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        sigma_mu: 'SoquetT',
+        alt: 'SoquetT',
+        keep: 'SoquetT',
+        less_than_equal: 'Soquet',
+        **soqs: 'SoquetT',
+    ):
+        selection = soqs.pop(self.selection_registers[0].name)
+        assert not soqs
+        selection = bb.add(PrepareUniformSuperposition(self.n_coeff), target=selection)
         sigma_mu = bb.add(OnEach(self.mu, Hadamard()), q=sigma_mu)
         selection, alt, keep = bb.add(
             self.qrom_bloq, selection=selection, target0_=alt, target1_=keep
@@ -252,7 +264,7 @@ class StatePreparationAliasSampling(PrepareOracle):
             CSwap(self.selection_bitsize), ctrl=less_than_equal, x=alt, y=selection
         )
         return {
-            'selection': selection,
+            self.selection_registers[0].name: selection,
             'less_than_equal': less_than_equal,
             'sigma_mu': sigma_mu,
             'alt': alt,

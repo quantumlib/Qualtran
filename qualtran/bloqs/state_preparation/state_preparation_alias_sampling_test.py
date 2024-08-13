@@ -35,6 +35,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
+    bloq_autotester(_state_prep_alias_symb)
 
 
 def test_sparse_state_prep_alias_sampling_autotest(bloq_autotester):
