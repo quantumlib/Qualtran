@@ -61,10 +61,10 @@ def test_select_swap_qrom(data, block_size):
     qrom_circuit = cirq.Circuit(
         cirq.decompose_once(qrom.on_registers(**qubit_regs), context=context)
     )
-
     dirty_target_ancilla = sorted(
         qrom_circuit.all_qubits() - set(q for qs in qubit_regs.values() for q in qs.flatten())
     )
+    assert greedy_mm._size == len(dirty_target_ancilla) == len(greedy_mm._free_qubits)
 
     circuit = cirq.Circuit(
         # Prepare dirty ancillas in an arbitrary state.

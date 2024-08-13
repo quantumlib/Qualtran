@@ -223,6 +223,9 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         n_cnot = prod(self.target_bitsizes) * prod(self.data_shape)
         return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
 
+    def adjoint(self) -> 'QROM':
+        return self
+
 
 @bloq_example
 def _qrom_small() -> QROM:
