@@ -18,6 +18,7 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions.contiguous_index
 import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
 import qualtran.bloqs.arithmetic.conversions.sign_extension
@@ -192,6 +193,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
     "qualtran.bloqs.arithmetic.subtraction.Subtract": qualtran.bloqs.arithmetic.subtraction.Subtract,
     "qualtran.bloqs.arithmetic.subtraction.SubtractFrom": qualtran.bloqs.arithmetic.subtraction.SubtractFrom,
+    "qualtran.bloqs.arithmetic.controlled_addition.CAdd": qualtran.bloqs.arithmetic.controlled_addition.CAdd,
     "qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin": qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin,
     "qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan": qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,

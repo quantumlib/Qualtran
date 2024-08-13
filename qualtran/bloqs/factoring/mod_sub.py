@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -25,7 +25,9 @@ from qualtran.bloqs.mod_arithmetic import ModAdd
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -49,8 +51,8 @@ class MontgomeryModSub(Bloq):
         Fig 6c and 8
     """
 
-    bitsize: int
-    p: int
+    bitsize: 'SymbolicInt'
+    p: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -64,9 +66,13 @@ class MontgomeryModSub(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'x': x, 'y': (y - x) % self.p}
+        if x < self.p and y < self.p:
+            return {'x': x, 'y': (y - x) % self.p}
+        return {'x': x, 'y': y}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
         for i in range(self.bitsize):
@@ -94,6 +100,14 @@ class MontgomeryModSub(Bloq):
     def pretty_name(self) -> str:
         return f'y = y - x mod {self.p}'
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (XGate(), 2 * self.bitsize),
+            (AddK(self.bitsize, self.p + 1, signed=False), 1),
+            (ModAdd(self.bitsize, self.p), 1),
+            (AddK(self.bitsize, self.p + 1, signed=False).adjoint(), 1),
+        }
+
 
 @frozen
 class MontgomeryModNeg(Bloq):
@@ -114,8 +128,8 @@ class MontgomeryModNeg(Bloq):
         Fig 6b and 8
     """
 
-    bitsize: int
-    p: int
+    bitsize: 'SymbolicInt'
+    p: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -125,6 +139,8 @@ class MontgomeryModNeg(Bloq):
         return {'x': (-1 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
         # Initialize an ancilla qubit to |1>.
         ctrl = bb.allocate(n=1)
         ctrl = bb.add(XGate(), q=ctrl)
@@ -165,3 +181,15 @@ class MontgomeryModNeg(Bloq):
 
     def pretty_name(self) -> str:
         return f'x = -x mod {self.p}'
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic call graph is not supported for {self}')
+
+        # TODO: support symbolic cost
+        return {
+            (XGate(), 2),
+            (MultiControlX(cvs=[0] * self.bitsize), 2),
+            (CNOT(), self.bitsize),
+            (AddK(bitsize=self.bitsize, k=self.p + 1, cvs=(1,), signed=False), 1),
+        }
