@@ -305,7 +305,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     ) -> Tuple[List['SoquetT'], List['SoquetT']]:
         for i, qrom_reg in enumerate(qrom_targets):
             assert isinstance(qrom_reg, np.ndarray)  # Make mypy happy.
-            idx = (0,) * len(qrom_reg.shape)
+            idx = np.unravel_index(0, qrom_reg.shape)
             qrom_reg[idx], target[i] = bb.add(
                 Xor(self.target_registers[i].dtype), x=qrom_reg[idx], y=target[i]
             )
