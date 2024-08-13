@@ -7,28 +7,17 @@ from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.arithmetic.addition import _add_oop_large
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.block_encoding.lcu_block_encoding import (
-    _black_box_lcu_zero_state_block,
-    _black_box_lcu_block,
-)
+from qualtran.bloqs.block_encoding.lcu_block_encoding import _black_box_lcu_block, _lcu_block
 from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.qref_interop import bloq_to_qref
 
-# This function could be replaced by get_bloq_examples from dev_tools.qualtran_dev_tools.bloq_finder
+
+# This function could be replaced by `get_bloq_examples` from `dev_tools.qualtran_dev_tools.bloq_finder`
 # to run tests on all the available bloq examples, rather than a subset defined here.
-# This might require minor tweaks like adding `make()` calls.
-
-
 def get_bloq_examples():
-    return [
-        _add_oop_large,
-        _black_box_lcu_block,
-        _black_box_lcu_zero_state_block,
-        _df_one_body,
-        _df_block_encoding,
-    ]
+    return [_add_oop_large, _black_box_lcu_block, _lcu_block, _df_one_body, _df_block_encoding]
 
 
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
