@@ -1,3 +1,29 @@
+#  Copyright 2024 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from functools import singledispatch
 from typing import Any, Iterable, Optional, Union
 
@@ -70,20 +96,15 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
 
     if name is None:
         name = bloq.__class__.__name__
-        try:
-            if bloq.uncompute:
-                name += "_uncompute"
-        except AttributeError:
-            pass
-        try:
-            if bloq.is_adjoint:
-                name += "_adjoint"
-        except AttributeError:
-            pass
+
+        if hasattr(bloq, "uncompute"):
+            name += "_uncompute"
+        if hasattr(bloq, "is_adjoint"):
+            name += "_adjoint"
 
     input_params = sorted(list(_extract_input_params(bloq, ports) - set(local_variables)))
 
-    attributes = {
+    attributes: dict[str, Any] = {
         "name": name,
         "type": _bloq_type(bloq),
         "ports": ports,
@@ -91,10 +112,6 @@ def _extract_common_bloq_attributes(bloq: Bloq, name: Optional[str] = None) -> d
         "input_params": input_params,
     }
     if len(local_variables) > 0:
-        print("\n")
-        print(local_variables)
-        print(_import_resources(bloq))
-        print("\n")
         attributes["local_variables"] = local_variables
     return attributes
 
@@ -103,7 +120,7 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
     """Infer unique (but readable) name for a BloqInstance.
 
     Child Bloqs in CompositeBloq (and some other places) are stored as BloqInstances,
-    which combine a Bloq with a unique ID. When converting such BloqInstance to Bartiq
+    which combine a Bloq with a unique ID. When converting such BloqInstance to QREF
     RoutineV1, the ID has to be incorporated into the name, because otherwise one could
     get several siblings having the same name.
     """
@@ -116,7 +133,7 @@ def bloq_to_qref(obj) -> SchemaV1:
 
 
 @singledispatch
-def bloq_to_routine(obj, name: Optional[str] = None):
+def bloq_to_routine(obj: Any, name: Optional[str] = None) -> RoutineV1:
     """Import object from Qualtran by converting it into corresponding QREF RoutineV1 object.
 
     Args:
@@ -126,7 +143,7 @@ def bloq_to_routine(obj, name: Optional[str] = None):
             know some good name for it.
 
     Return:
-        A Bartiq object corresponding to the source Qualtran object. For both Bloqs
+        A QREF object corresponding to the source Qualtran object. For both Bloqs
         and BloqInstances the returned object is of type RoutineV1.
 
     """
@@ -168,7 +185,7 @@ def _bloq_instance_to_routine(instance: BloqInstance) -> RoutineV1:
 
 
 def _names_and_dir_from_register(reg: Register) -> Iterable[tuple[str, str]]:
-    """Yield names and directions of Bartiq Ports corresponding to Qualtran Register.
+    """Yield names and directions of QREF Ports corresponding to Qualtran Register.
 
     For LEFT/RIGHT registers we yield one pair of name and direction corresponding
     of resp. output and input port. For THRU registers we yield both such pairs,
@@ -197,7 +214,7 @@ def _expand_name_if_needed(reg_name, shape) -> Iterable[str]:
 
 
 def _ports_from_register(reg: Register) -> Iterable[PortV1]:
-    """Given a Qualtran register, return iterable of corresponding Bartiq Ports.
+    """Given a Qualtran register, return iterable of corresponding QREF Ports.
 
     Intuitively, one would expect a one to one correspondence between ports and registers.
     However:
@@ -218,11 +235,11 @@ def _ports_from_register(reg: Register) -> Iterable[PortV1]:
             # Observe two loops:
             # - first one splits (if needed) any THRU register into two ports. It also takes care of
             #   correct naming based on port directions.
-            # - second one expands composite register (which have no counterpart in Bartiq) into
+            # - second one expands composite register (which have no counterpart in QREF) into
             #   required number of single ports.
             PortV1(
                 name=expanded_name,
-                direction=direction,
+                direction=direction,  # type: ignore
                 size=reg.bitsize if isinstance(reg.bitsize, int) else str(reg.bitsize),
             )
             for flat_name, direction in _names_and_dir_from_register(reg)
@@ -237,7 +254,7 @@ def _opposite(direction: str) -> str:
 
 
 def _relative_port_name(soquet: Soquet, direction) -> str:
-    """Given a Soquet and direction, determine the relative name of corresponding Bartiq Port.
+    """Given a Soquet and direction, determine the relative name of corresponding QREF Port.
 
     The relative name is always computed wrt. the parent RoutineV1.
     This function correctly recognizes the fact, that in any connection, the input parent
@@ -251,7 +268,7 @@ def _relative_port_name(soquet: Soquet, direction) -> str:
     # We add another suffix iff soquet references idx in composite register
     suffix = f"_{soquet.idx[0]}" if soquet.idx else ""
     return (
-        # If soquet references BlogqInstance, the corresponding object in Bartiq
+        # If soquet references BloqInstance, the corresponding object in QREF
         # references child - construct dotted relative name.
         # Otherwise, soquet references the parent port, and so for the output direction,
         # the port is in_parent_port, which is why we include _opposte here.
@@ -290,7 +307,7 @@ def _import_resources(bloq: Bloq) -> list[dict[str, Any]]:
     return resources
 
 
-def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> list[str]:
+def _extract_input_params(bloq: Bloq, ports: list[PortV1]) -> set[str]:
     """Extracts input_params from bloq's t_complexity and port sizes.
 
     In QREF `input_params` define the symbols that can be used to define port sizes
@@ -316,7 +333,7 @@ def _extract_symbols_from_t_complexity(bloq: Bloq) -> list[str]:
 
 def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
     """Extracts symbols from the expressions for port sizes."""
-    symbols = set()
+    symbols: set[sympy.Symbol] = set()
     for port in ports:
         symbols = symbols | sympy.sympify(port.size).free_symbols
 
