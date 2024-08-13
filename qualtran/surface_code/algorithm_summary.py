@@ -14,118 +14,35 @@
 
 from typing import Optional, TYPE_CHECKING
 
-from attrs import field, frozen
+from attrs import frozen
 
-from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
-from qualtran.surface_code.magic_count import MagicCount
-from qualtran.surface_code.rotation_cost_model import RotationCostModel
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost, QubitCount
 
 if TYPE_CHECKING:
     from qualtran import Bloq
 
-_PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
 
 _QUBIT_COUNT = QubitCount()
 _QEC_COUNT = QECGatesCost()
 
 
-@frozen
+@frozen(kw_only=True)
 class AlgorithmSummary:
-    """Properties of a quantum algorithm that impact its physical cost
+    """Logical costs of a quantum algorithm that impact modeling of its physical cost.
 
-    Counts of different properties that affect the physical cost of
-    running an algorithm (e.g. number of T gates).
-    All counts default to zero.
 
-    Attributes:
-        algorithm_qubits: Number of qubits used by the algorithm $Q_{alg}$.
-        measurements: Number of Measurements $M_R$.
-        t_gates: Number of T gates $M_T$.
-        toffoli_gates: Number of Toffoli gates $M_{Tof}$.
-        rotation_gates: Number of Rotations $M_R$.
-        rotation_circuit_depth: Depth of rotation circuit $D_R$.
+    n_rotation_layers: In Qualtran, we don't actually push all the cliffords out and count
+        the number of rotation layers, so this is just the number of rotations $M_R$ by default.
+        If you are trying to reproduce numbers exactly, you can provide an explicit
+        number of rotation layers.
     """
 
-    algorithm_qubits: float = _PRETTY_FLOAT
-    measurements: float = _PRETTY_FLOAT
-    t_gates: float = _PRETTY_FLOAT
-    toffoli_gates: float = _PRETTY_FLOAT
-    rotation_gates: float = _PRETTY_FLOAT
-    rotation_circuit_depth: float = _PRETTY_FLOAT
-
-    def __mul__(self, other: int) -> 'AlgorithmSummary':
-        if not isinstance(other, int):
-            raise TypeError(
-                f"Multiplication isn't supported between AlgorithmSummary and non integer type {type(other)}"
-            )
-
-        return AlgorithmSummary(
-            algorithm_qubits=self.algorithm_qubits * other,
-            measurements=self.measurements * other,
-            t_gates=self.t_gates * other,
-            toffoli_gates=self.toffoli_gates * other,
-            rotation_gates=self.rotation_gates * other,
-            rotation_circuit_depth=self.rotation_circuit_depth * other,
-        )
-
-    def __rmul__(self, other: int) -> 'AlgorithmSummary':
-        return self.__mul__(other)
-
-    def __add__(self, other: 'AlgorithmSummary') -> 'AlgorithmSummary':
-        if not isinstance(other, AlgorithmSummary):
-            raise TypeError(
-                f"Addition isn't supported between AlgorithmSummary and type {type(other)}"
-            )
-        return AlgorithmSummary(
-            algorithm_qubits=self.algorithm_qubits + other.algorithm_qubits,
-            measurements=self.measurements + other.measurements,
-            t_gates=self.t_gates + other.t_gates,
-            toffoli_gates=self.toffoli_gates + other.toffoli_gates,
-            rotation_gates=self.rotation_gates + other.rotation_gates,
-            rotation_circuit_depth=self.rotation_circuit_depth + other.rotation_circuit_depth,
-        )
-
-    def __sub__(self, other: 'AlgorithmSummary') -> 'AlgorithmSummary':
-        if not isinstance(other, AlgorithmSummary):
-            raise TypeError(
-                f"Subtraction isn't supported between AlgorithmSummary and type {type(other)}"
-            )
-        return AlgorithmSummary(
-            algorithm_qubits=self.algorithm_qubits - other.algorithm_qubits,
-            measurements=self.measurements - other.measurements,
-            t_gates=self.t_gates - other.t_gates,
-            toffoli_gates=self.toffoli_gates - other.toffoli_gates,
-            rotation_gates=self.rotation_gates - other.rotation_gates,
-            rotation_circuit_depth=self.rotation_circuit_depth - other.rotation_circuit_depth,
-        )
-
-    def to_magic_count(
-        self,
-        rotation_model: Optional[RotationCostModel] = None,
-        error_budget: Optional[float] = None,
-    ) -> MagicCount:
-        ret = MagicCount(n_t=self.t_gates, n_ccz=self.toffoli_gates)
-        if self.rotation_gates > 0:
-            if rotation_model is None or error_budget is None:
-                raise ValueError(
-                    'Rotation cost model and error budget must be provided to calculate rotation cost'
-                )
-            ret = (
-                ret
-                + rotation_model.prepartion_overhead(error_budget)
-                + self.rotation_gates
-                * rotation_model.rotation_cost(error_budget / self.rotation_gates)
-            )
-        return ret
+    n_algo_qubits: int
+    n_logical_gates: GateCounts
+    n_rotation_layers: Optional[int] = None
 
     @staticmethod
     def from_bloq(bloq: 'Bloq') -> 'AlgorithmSummary':
         gate_count = get_cost_value(bloq, _QEC_COUNT)
-        return AlgorithmSummary(
-            t_gates=gate_count.t,
-            toffoli_gates=gate_count.toffoli + gate_count.and_bloq + gate_count.cswap,
-            rotation_gates=gate_count.rotation,
-            measurements=gate_count.measurement,
-            rotation_circuit_depth=gate_count.depth,
-            algorithm_qubits=float(get_cost_value(bloq, _QUBIT_COUNT)),
-        )
+        qubit_count = int(get_cost_value(bloq, _QUBIT_COUNT))
+        return AlgorithmSummary(n_algo_qubits=qubit_count, n_logical_gates=gate_count)

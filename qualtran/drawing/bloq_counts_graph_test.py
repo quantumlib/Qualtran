@@ -15,6 +15,8 @@ import random
 import re
 from typing import List
 
+import networkx as nx
+
 from qualtran.bloqs.for_testing import TestBloqWithCallGraph
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.drawing import (
@@ -128,3 +130,47 @@ def test_graphviz_call_graph_with_data():
                 '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph</font></td></tr>\n'
                 '<tr><td>T count</td><td>100*_n0 + 600</td></tr><tr><td>clifford</td><td>0</td></tr><tr><td>rot</td><td>0</td></tr></table></font>>'
             )
+
+
+def test_graphviz_call_graph_from_bloq():
+    bloq = TestBloqWithCallGraph()
+    drawer = GraphvizCallGraph.from_bloq(bloq)
+
+    node_labels = _get_node_labels_from_pydot_graph(drawer)
+    for nl in node_labels:
+        # Spot check one of the nodes
+        if 'TestBloqWithCallGraph' in nl:
+            assert nl == (
+                '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph</font></td></tr>\n'
+                '<tr><td>Qubits</td><td>3</td></tr>'
+                '<tr><td>Ts</td><td>100*_n0 + 600</td></tr>'
+                '</table></font>>'
+            )
+
+
+def test_graphviz_call_graph_from_bloq_agg():
+    bloq = TestBloqWithCallGraph()
+    drawer = GraphvizCallGraph.from_bloq(bloq, agg_gate_counts='t_and_ccz')
+
+    node_labels = _get_node_labels_from_pydot_graph(drawer)
+    for nl in node_labels:
+        # Spot check one of the nodes
+        # Note the additional cell.
+        if 'TestBloqWithCallGraph' in nl:
+            assert nl == (
+                '<<font point-size="10"><table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n'
+                '<tr><td colspan="2"><font point-size="10">TestBloqWithCallGraph</font></td></tr>\n'
+                '<tr><td>Qubits</td><td>3</td></tr>'
+                '<tr><td>Ts</td><td>100*_n0 + 600</td></tr>'
+                '<tr><td>CCZs</td><td>0</td></tr>'
+                '</table></font>>'
+            )
+
+
+def test_graphviz_call_graph_from_bloq_max_depth():
+    bloq = TestBloqWithCallGraph()
+    drawer = GraphvizCallGraph.from_bloq(bloq)
+    assert len(list(nx.topological_generations(drawer.g))) == 3
+    drawer2 = GraphvizCallGraph.from_bloq(bloq, max_depth=1)
+    assert len(list(nx.topological_generations(drawer2.g))) == 2

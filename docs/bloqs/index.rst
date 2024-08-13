@@ -30,7 +30,8 @@ Bloqs Library
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
     basic_gates/cnot.ipynb
-    basic_gates/s_gate.ipynb
+    basic_gates/diag_gates.ipynb
+    basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
@@ -38,6 +39,7 @@ Bloqs Library
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
+    mcmt/controlled_via_and.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -60,13 +62,18 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/controlled_addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
+    arithmetic/controlled_add_or_subtract.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/comparison.ipynb
+    arithmetic/conversions/conversions.ipynb
     arithmetic/sorting.ipynb
-    arithmetic/conversions.ipynb
+    arithmetic/conversions/contiguous_index.ipynb
     arithmetic/permutation.ipynb
+    arithmetic/bitwise.ipynb
+    arithmetic/trigonometric/trigonometric.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -100,6 +107,20 @@ Bloqs Library
 
 .. toctree::
     :maxdepth: 2
+    :caption: Block Encoding:
+
+    block_encoding/block_encoding.ipynb
+    block_encoding/unitary.ipynb
+    block_encoding/tensor_product.ipynb
+    block_encoding/product.ipynb
+    block_encoding/phase.ipynb
+    block_encoding/linear_combination.ipynb
+    block_encoding/sparse_matrix.ipynb
+    block_encoding/chebyshev_polynomial.ipynb
+    block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
@@ -108,7 +129,6 @@ Bloqs Library
     multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
-    block_encoding/block_encoding.ipynb
     reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb

@@ -17,6 +17,7 @@ from typing import cast, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -32,10 +33,11 @@ from qualtran import (
 from qualtran._infra.bloq import DecomposeTypeError
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, BlackBoxSelect
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics import smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.types import is_symbolic
@@ -105,6 +107,17 @@ class LinearCombination(BlockEncoding):
             raise ValueError(
                 "If given, select oracle must have block encoding `system` register as target."
             )
+        if not all(
+            isinstance(u.signal_state.prepare, PrepareIdentity) for u in self._block_encodings
+        ):
+            raise ValueError(
+                "Cannot take linear combination of block encodings with non-zero signal state."
+            )
+
+    @classmethod
+    def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
+        """Construct a `LinearCombination` from pairs of (coefficient, block encoding)."""
+        return cls(tuple(t[1] for t in terms), tuple(t[0] for t in terms), lambd_bits)
 
     @cached_property
     def signed_block_encodings(self):
@@ -117,7 +130,7 @@ class LinearCombination(BlockEncoding):
     @cached_property
     def rescaled_lambd(self):
         """Rescaled and padded array of coefficients."""
-        x = np.abs(np.array(self._lambd))
+        x = np.abs(np.array(self._lambd) * np.array([be.alpha for be in self._block_encodings]))
         x /= np.linalg.norm(x, ord=1)
         x.resize(2 ** int(np.ceil(np.log2(len(x)))), refcheck=False)
         return x
@@ -139,9 +152,7 @@ class LinearCombination(BlockEncoding):
 
     @cached_property
     def alpha(self) -> SymbolicFloat:
-        return ssum(
-            abs(l) * be.alpha for be, l in zip(self.signed_block_encodings, self.rescaled_lambd)
-        )
+        return ssum(abs(l) * be.alpha for be, l in zip(self._block_encodings, self._lambd))
 
     @cached_property
     def be_ancilla_bitsize(self) -> SymbolicInt:
@@ -166,23 +177,8 @@ class LinearCombination(BlockEncoding):
         )
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # GitHub issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     @cached_property
     def prepare(self) -> BlackBoxPrepare:
@@ -192,8 +188,7 @@ class LinearCombination(BlockEncoding):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
-            unnormalized_probabilities=tuple(self.rescaled_lambd),
-            sub_bit_precision=cast(int, self.lambd_bits),
+            unnormalized_probabilities=tuple(self.rescaled_lambd), sub_bit_precision=self.lambd_bits
         )
         N = len(self.rescaled_lambd)
 
@@ -224,14 +219,14 @@ class LinearCombination(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        assert isinstance(self.be_ancilla_bitsize, int)
-        assert isinstance(self.be_resource_bitsize, int)
+        assert not is_symbolic(self.be_ancilla_bitsize)
+        assert not is_symbolic(self.be_resource_bitsize)
 
         # make all bloqs have same ancilla and resource registers
         bloqs = []
         for be in self.signed_block_encodings:
-            assert isinstance(be.ancilla_bitsize, int)
-            assert isinstance(be.resource_bitsize, int)
+            assert not is_symbolic(be.ancilla_bitsize)
+            assert not is_symbolic(be.resource_bitsize)
 
             partitions: List[Tuple[Register, List[Union[str, Unused]]]] = [
                 (Register("system", QAny(self.system_bitsize)), ["system"])
@@ -267,17 +262,17 @@ class LinearCombination(BlockEncoding):
             or is_symbolic(self.resource_bitsize)
         ):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        assert isinstance(self.be_ancilla_bitsize, int)
-        assert isinstance(self.ancilla_bitsize, int)
-        assert isinstance(self.be_resource_bitsize, int)
-        assert isinstance(self.resource_bitsize, int)
+        assert not is_symbolic(self.be_ancilla_bitsize)
+        assert not is_symbolic(self.be_resource_bitsize)
+        assert not is_symbolic(self.prepare.junk_bitsize)
+        assert not is_symbolic(self.select.system_bitsize)
 
         # partition ancilla register
         be_system_soqs: Dict[str, SoquetT] = {"system": system}
         anc_regs = [Register("selection", QAny(self.prepare.selection_bitsize))]
         if self.be_ancilla_bitsize > 0:
             anc_regs.append(Register("ancilla", QAny(self.be_ancilla_bitsize)))
-        anc_part = Partition(cast(int, self.ancilla_bitsize), tuple(anc_regs))
+        anc_part = Partition(self.ancilla_bitsize, tuple(anc_regs))
         anc_soqs = bb.add_d(anc_part, x=ancilla)
         if self.be_ancilla_bitsize > 0:
             be_system_soqs["ancilla"] = anc_soqs.pop("ancilla")
@@ -290,7 +285,7 @@ class LinearCombination(BlockEncoding):
                 res_regs.append(Register("resource", QAny(self.be_resource_bitsize)))
             if self.prepare.junk_bitsize > 0:
                 res_regs.append(Register("prepare_junk", QAny(self.prepare.junk_bitsize)))
-            res_part = Partition(cast(int, self.resource_bitsize), tuple(res_regs))
+            res_part = Partition(self.resource_bitsize, tuple(res_regs))
             res_soqs = bb.add_d(res_part, x=soqs.pop("resource"))
             if self.be_resource_bitsize > 0:
                 be_system_soqs["resource"] = res_soqs.pop("resource")
@@ -303,7 +298,7 @@ class LinearCombination(BlockEncoding):
             be_regs.append(Register("ancilla", QAny(self.be_ancilla_bitsize)))
         if self.be_resource_bitsize > 0:
             be_regs.append(Register("resource", QAny(self.be_resource_bitsize)))
-        be_part = Partition(cast(int, self.select.system_bitsize), tuple(be_regs))
+        be_part = Partition(self.select.system_bitsize, tuple(be_regs))
 
         prepare_soqs = bb.add_d(self.prepare, **prepare_in_soqs)
         select_out_soqs = bb.add_d(
@@ -351,7 +346,5 @@ def _linear_combination_block_encoding() -> LinearCombination:
 
 
 _LINEAR_COMBINATION_DOC = BloqDocSpec(
-    bloq_cls=LinearCombination,
-    import_line="from qualtran.bloqs.block_encoding import LinearCombination",
-    examples=[_linear_combination_block_encoding],
+    bloq_cls=LinearCombination, examples=[_linear_combination_block_encoding]
 )

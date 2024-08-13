@@ -35,7 +35,6 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
-from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -88,7 +87,7 @@ class Split(_BookkeepingBloq):
         return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
+        return {'reg': np.asarray(self.dtype.to_bits(reg))}
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

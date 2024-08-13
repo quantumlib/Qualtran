@@ -108,9 +108,8 @@ class PermutationCycle(Bloq):
         return is_symbolic(self.N, self.cycle)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycle):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
-        assert not isinstance(self.cycle, Shaped)
 
         a: 'SoquetT' = bb.allocate(dtype=QBit())
 
@@ -150,7 +149,7 @@ def _permutation_cycle_symb() -> PermutationCycle:
 
     from qualtran.symbolics import Shaped
 
-    N, L = sympy.symbols("N L")
+    N, L = sympy.symbols("N L", positive=True, integer=True)
     cycle = Shaped((L,))
     permutation_cycle_symb = PermutationCycle(N, cycle)
     return permutation_cycle_symb
@@ -253,10 +252,9 @@ class Permutation(Bloq):
         return cls(N, cycles)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycles):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
-        assert not isinstance(self.cycles, Shaped)
         for cycle in self.cycles:
             x = bb.add(PermutationCycle(self.N, cycle), x=x)
 
@@ -283,7 +281,7 @@ def _permutation_symb() -> Permutation:
 
     from qualtran.symbolics import Shaped
 
-    N, k = sympy.symbols("N k")
+    N, k = sympy.symbols("N k", positive=True, integer=True)
     permutation_symb = Permutation(N, Shaped((k,)))
     return permutation_symb
 
@@ -294,7 +292,7 @@ def _permutation_symb_with_cycles() -> Permutation:
 
     from qualtran.symbolics import Shaped
 
-    N = sympy.symbols("N")
+    N = sympy.symbols("N", positive=True, integer=True)
     n_cycles = 4
     d = sympy.IndexedBase('d', shape=(n_cycles,))
     permutation_symb_with_cycles = Permutation(N, tuple(Shaped((d[i],)) for i in range(n_cycles)))

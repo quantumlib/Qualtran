@@ -19,7 +19,7 @@ import pytest
 from qualtran import Adjoint
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import (
     _thc_walk_op,
@@ -88,7 +88,7 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         )
 
 
-@pytest.mark.slow()
+@pytest.mark.slow
 def test_qubitization_walk_operator_adjoint():
     num_sites, eps = 3, 0.5
     walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
@@ -111,23 +111,23 @@ def test_qubitization_walk_operator_diagrams():
     cirq.testing.assert_has_diagram(
         walk_circuit,
         '''
-selection0: ───In───────────────R_L───
-               │                │
-selection1: ───In───────────────R_L───
-               │                │
-selection2: ───In───────────────R_L───
+selection0: ───B[H]───R_L───
+               │      │
+selection1: ───B[H]───R_L───
+               │      │
+selection2: ───B[H]───R_L───
                │
-target0: ──────SelectPauliLCU─────────
+target0: ──────B[H]─────────
                │
-target1: ──────SelectPauliLCU─────────
+target1: ──────B[H]─────────
                │
-target2: ──────SelectPauliLCU─────────
+target2: ──────B[H]─────────
                │
-target3: ──────SelectPauliLCU─────────
+target3: ──────B[H]─────────
 ''',
     )
 
-    # 2. Diagram for $W^{2} = SELECT.R_{L}.SELCT.R_{L}$
+    # 2. Diagram for $W^{2} = B[H].R_{L}.B[H].R_{L}$
     def decompose_twice(op):
         ops = []
         for sub_op in cirq.decompose_once(op):
@@ -139,42 +139,42 @@ target3: ──────SelectPauliLCU─────────
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-selection0: ───In───────────────R_L───In───────────────R_L───
-               │                │     │                │
-selection1: ───In───────────────R_L───In───────────────R_L───
-               │                │     │                │
-selection2: ───In───────────────R_L───In───────────────R_L───
-               │                      │
-target0: ──────SelectPauliLCU─────────SelectPauliLCU─────────
-               │                      │
-target1: ──────SelectPauliLCU─────────SelectPauliLCU─────────
-               │                      │
-target2: ──────SelectPauliLCU─────────SelectPauliLCU─────────
-               │                      │
-target3: ──────SelectPauliLCU─────────SelectPauliLCU─────────
+selection0: ───B[H]───R_L───B[H]───R_L───
+               │      │     │      │
+selection1: ───B[H]───R_L───B[H]───R_L───
+               │      │     │      │
+selection2: ───B[H]───R_L───B[H]───R_L───
+               │            │
+target0: ──────B[H]─────────B[H]─────────
+               │            │
+target1: ──────B[H]─────────B[H]─────────
+               │            │
+target2: ──────B[H]─────────B[H]─────────
+               │            │
+target3: ──────B[H]─────────B[H]─────────
 ''',
     )
-    # 3. Diagram for $Ctrl-W = Ctrl-SELECT.Ctrl-R_{L}$
+    # 3. Diagram for $Ctrl-W = Ctrl-B[H].Ctrl-R_{L}$
     controlled_walk_op = walk.controlled().on_registers(**g.quregs, control=cirq.q('control'))
     circuit = cirq.Circuit(cirq.decompose_once(controlled_walk_op))
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-control: ──────@────────────────@─────
-               │                │
-selection0: ───In───────────────R_L───
-               │                │
-selection1: ───In───────────────R_L───
-               │                │
-selection2: ───In───────────────R_L───
+control: ──────@──────@─────
+               │      │
+selection0: ───B[H]───R_L───
+               │      │
+selection1: ───B[H]───R_L───
+               │      │
+selection2: ───B[H]───R_L───
                │
-target0: ──────SelectPauliLCU─────────
+target0: ──────B[H]─────────
                │
-target1: ──────SelectPauliLCU─────────
+target1: ──────B[H]─────────
                │
-target2: ──────SelectPauliLCU─────────
+target2: ──────B[H]─────────
                │
-target3: ──────SelectPauliLCU─────────
+target3: ──────B[H]─────────
 ''',
     )
     # 4. Diagram for $Ctrl-W = Ctrl-SELECT.Ctrl-R_{L}$ in terms of $Ctrl-SELECT$ and $PREPARE$.

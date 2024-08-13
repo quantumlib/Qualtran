@@ -681,6 +681,7 @@ def draw_musical_score(
     fig, ax = plt.subplots(figsize=(width, height))
 
     for hline in msd.hlines:
+        assert hline.seq_x_end is not None, hline
         ax.hlines(-hline.y, hline.seq_x_start, hline.seq_x_end, color='k', zorder=-1)
 
     for vline in msd.vlines:

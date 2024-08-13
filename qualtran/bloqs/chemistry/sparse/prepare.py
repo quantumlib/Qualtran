@@ -36,13 +36,14 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.basic_gates.z_basis import ZGate
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
+from qualtran.bloqs.basic_gates.z_basis import CZ, ZGate
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
+from qualtran.symbolics import SymbolicFloat
 from qualtran.symbolics.math_funcs import ceil, log2
 
 if TYPE_CHECKING:
@@ -178,6 +179,7 @@ class PrepareSparse(PrepareOracle):
     keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     is_adjoint: bool = False
+    sum_of_l1_coeffs: SymbolicFloat = 0.0
     qroam_block_size: Optional[int] = None
 
     @cached_property
@@ -244,6 +246,10 @@ class PrepareSparse(PrepareOracle):
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
+    @property
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
+        return self.sum_of_l1_coeffs
+
     @classmethod
     def from_hamiltonian_coeffs(
         cls,
@@ -305,6 +311,7 @@ class PrepareSparse(PrepareOracle):
             tuple([int(_) for _ in one_body]),
             tuple(keep),
             num_bits_rot_aa=num_bits_rot_aa,
+            sum_of_l1_coeffs=np.sum(np.abs(tpq_prime)) + 0.5 * np.sum(np.abs(eris)),
             qroam_block_size=qroam_block_size,
         )
 
@@ -333,6 +340,7 @@ class PrepareSparse(PrepareOracle):
             self.keep,
             target_bitsizes=target_bitsizes,
             log_block_sizes=log_block_sizes,
+            use_dirty_ancilla=False,
         )
         return qrom
 
@@ -398,7 +406,7 @@ class PrepareSparse(PrepareOracle):
         # prepare uniform superposition over sigma
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
-        less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
+        less_than, theta[1] = bb.add(CZ(), q1=less_than, q2=theta[1])
         ctrl_spec = CtrlSpec(QBit(), 0b0)
         less_than, theta[0] = bb.add(ZGate().controlled(ctrl_spec), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
@@ -468,8 +476,4 @@ def _prep_sparse() -> PrepareSparse:
     return prep_sparse
 
 
-_SPARSE_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse',
-    examples=(_prep_sparse,),
-)
+_SPARSE_PREPARE = BloqDocSpec(bloq_cls=PrepareSparse, examples=(_prep_sparse,))

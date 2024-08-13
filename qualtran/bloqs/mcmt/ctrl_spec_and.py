@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
-import numpy as np
 from attrs import frozen
 
 from qualtran import (
@@ -37,12 +36,12 @@ from qualtran import (
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import directional_text_box, Text, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -122,11 +121,10 @@ class CtrlSpecAnd(Bloq):
         if is_symbolic(self.ctrl_spec):
             return HasLength(self.n_ctrl_qubits)
 
-        # TODO use QDType features once https://github.com/quantumlib/Qualtran/pull/1142 is merged
-        flat_cvs = []
+        flat_cvs: list[int] = []
         for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
-            flat_cvs.extend([reg.dtype.to_bits(c) for c in cv.reshape(-1)])
-        return tuple(np.concatenate(flat_cvs).tolist())
+            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
+        return tuple(flat_cvs)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.n_ctrl_qubits):

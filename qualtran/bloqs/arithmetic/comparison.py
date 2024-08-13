@@ -50,8 +50,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
@@ -81,7 +81,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if reg.name == 'x':
             return TextBox("x")
         if reg.name == 'target':
-            return TextBox("z^(x<a)")
+            return TextBox("z∧(x<a)")
         raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
@@ -468,7 +468,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         if reg.name == "y":
             return TextBox('y')
         if reg.name == "target":
-            return TextBox('z^(x<=y)')
+            return TextBox('z∧(x<=y)')
         raise ValueError(f'Unknown register name {reg.name}')
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
@@ -726,7 +726,7 @@ class LinearDepthGreaterThan(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     signed: bool = False
 
     @property
@@ -749,13 +749,16 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if not isinstance(self.bitsize, int):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
+
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = np.asarray([a, b])
-            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
+            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), controls=ctrls, target=target)
             a, b = ctrls
             # Return the output registers.
             return {'a': a, 'b': b, 'target': target}
@@ -875,6 +878,25 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.bitsize == 1:
+            return {(MultiControlX(cvs=(1, 0)), 1)}
+
+        if self.signed:
+            return {
+                (CNOT(), 6 * self.bitsize - 7),
+                (XGate(), 2 * self.bitsize + 2),
+                (And(), self.bitsize - 1),
+                (And(uncompute=True), self.bitsize - 1),
+            }
+
+        return {
+            (CNOT(), 6 * self.bitsize - 1),
+            (XGate(), 2 * self.bitsize + 4),
+            (And(), self.bitsize),
+            (And(uncompute=True), self.bitsize),
+        }
+
 
 @frozen
 class GreaterThanConstant(Bloq):
@@ -962,11 +984,9 @@ class EqualsAConstant(Bloq):
 
     @property
     def bits_k(self) -> Union[tuple[int, ...], HasLength]:
-        if self.is_symbolic():
+        if is_symbolic(self.bitsize) or is_symbolic(self.val):
             return HasLength(self.bitsize)
 
-        assert not isinstance(self.bitsize, sympy.Expr)
-        assert not isinstance(self.val, sympy.Expr)
         return tuple(QUInt(self.bitsize).to_bits(self.val))
 
     def build_composite_bloq(
@@ -976,14 +996,12 @@ class EqualsAConstant(Bloq):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
 
         xs = bb.split(x)
-        xs, target = bb.add(
-            MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
-        )
+        xs, target = bb.add(MultiControlX(self.bits_k), controls=xs, target=target)
         x = bb.join(xs)
         return {'x': x, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(MultiControlPauli(self.bits_k, target_gate=cirq.X), 1)}
+        return {(MultiControlX(self.bits_k), 1)}
 
 
 def _make_equals_a_constant():

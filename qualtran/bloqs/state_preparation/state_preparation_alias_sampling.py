@@ -30,8 +30,8 @@ from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signatur
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -291,9 +291,7 @@ def _state_prep_alias_symb() -> StatePreparationAliasSampling:
 
 
 _STATE_PREP_ALIAS_DOC = BloqDocSpec(
-    bloq_cls=StatePreparationAliasSampling,
-    import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
-    examples=(_state_prep_alias, _state_prep_alias_symb),
+    bloq_cls=StatePreparationAliasSampling, examples=(_state_prep_alias, _state_prep_alias_symb)
 )
 
 

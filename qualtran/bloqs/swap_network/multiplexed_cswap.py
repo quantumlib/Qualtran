@@ -121,8 +121,4 @@ def _multiplexed_cswap() -> MultiplexedCSwap:
     return multiplexed_cswap
 
 
-_MULTIPLEXED_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=MultiplexedCSwap,
-    import_line='from qualtran.bloqs.swap_network import MultiplexedCSwap',
-    examples=(_multiplexed_cswap,),
-)
+_MULTIPLEXED_CSWAP_DOC = BloqDocSpec(bloq_cls=MultiplexedCSwap, examples=(_multiplexed_cswap,))
