@@ -438,6 +438,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
+            qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
         ],
     ),
     NotebookSpecV2(

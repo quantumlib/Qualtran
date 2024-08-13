@@ -170,6 +170,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LessThanEqual": qualtran.bloqs.arithmetic.comparison.LessThanEqual,
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
+    "qualtran.bloqs.arithmetic.comparison.CLinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.CLinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement,
