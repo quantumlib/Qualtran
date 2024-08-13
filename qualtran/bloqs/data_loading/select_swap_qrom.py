@@ -20,10 +20,8 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from numpy.typing import ArrayLike, NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, GateWithRegisters, Register, Signature
-from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic.bitwise import Xor
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading.qrom import QROM
@@ -33,6 +31,8 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
     from qualtran import Bloq, BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
@@ -254,16 +254,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
                 ret[swz] += toggle_overhead
                 ret[swz.adjoint()] += toggle_overhead
         return set(ret.items())
-
-    def _alloc_qrom_target_qubits(
-        self, reg: Register, qm: cirq.QubitManager
-    ) -> NDArray[cirq.Qid]:  # type:ignore[type-var]
-        qubits = (
-            qm.qborrow(total_bits([reg]))
-            if self.use_dirty_ancilla
-            else qm.qalloc(total_bits([reg]))
-        )
-        return np.array(qubits).reshape(reg.shape + (reg.bitsize,))
 
     def _alloc_anc_for_reg(self, reg: Register, bb: 'BloqBuilder') -> 'SoquetT':
         assert reg.shape, "Ancilla allocated for target must be nontrivial."
