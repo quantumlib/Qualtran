@@ -179,7 +179,7 @@ class Adjoint(GateWithRegisters):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(cast(Text, self.subbloq.wire_symbol(reg=None)).text + '†')
+            return self.subbloq.wire_symbol(reg=None).adjoint()
 
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
 
