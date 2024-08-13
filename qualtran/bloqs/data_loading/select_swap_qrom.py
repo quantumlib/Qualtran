@@ -32,7 +32,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, BloqBuilder, SoquetT
+    from qualtran import Bloq, BloqBuilder, QDType, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -58,6 +58,17 @@ def find_optimal_log_block_size(
 
     k_int = [np.floor(k), np.ceil(k)]  # restrict optimal k to integers
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
+
+
+def _alloc_anc_for_reg(
+    bb: 'BloqBuilder', dtype: 'QDType', shape: Tuple[int, ...], dirty: bool
+) -> 'SoquetT':
+    if not shape:
+        return bb.allocate(dtype=dtype, dirty=dirty)
+    soqs = np.empty(shape, dtype=object)
+    for idx in np.ndindex(shape):
+        soqs[idx] = bb.allocate(dtype=dtype, dirty=dirty)
+    return soqs
 
 
 @attrs.frozen
@@ -254,13 +265,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
                 ret[swz.adjoint()] += toggle_overhead
         return set(ret.items())
 
-    def _alloc_anc_for_reg(self, reg: Register, bb: 'BloqBuilder') -> 'SoquetT':
-        assert reg.shape, "Ancilla allocated for target must be nontrivial."
-        soqs = np.empty(reg.shape, dtype=object)
-        for idx in reg.all_idxs():
-            soqs[idx] = bb.allocate(dtype=reg.dtype, dirty=self.use_dirty_ancilla)
-        return soqs
-
     def _add_qrom_bloq(
         self,
         bb: 'BloqBuilder',
@@ -300,28 +304,47 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         self, bb: 'BloqBuilder', qrom_targets: List['SoquetT'], target: List['SoquetT']
     ) -> Tuple[List['SoquetT'], List['SoquetT']]:
         for i, qrom_reg in enumerate(qrom_targets):
-            assert isinstance(qrom_reg, np.ndarray)
+            assert isinstance(qrom_reg, np.ndarray)  # Make mypy happy.
             idx = (0,) * len(qrom_reg.shape)
             qrom_reg[idx], target[i] = bb.add(
                 Xor(self.target_registers[i].dtype), x=qrom_reg[idx], y=target[i]
             )
         return qrom_targets, target
 
+    @cached_property
+    def _partition_selection_reg_bloqs(self) -> List[Partition]:
+        partition_bloqs = []
+        for reg, k in zip(self.selection_registers, self.log_block_sizes):
+            preg = (
+                Register('l', BoundedQUInt(reg.bitsize - k, 2 ** (reg.bitsize - k))),
+                Register('k', BoundedQUInt(k, 2**k)),
+            )
+            partition_bloqs.append(Partition(reg.bitsize, preg))
+        return partition_bloqs
+
+    def _partition_sel_register(
+        self, bb: 'BloqBuilder', selection: List['SoquetT']
+    ) -> Tuple[List['SoquetT'], List['SoquetT']]:
+        sel_l, sel_k = [], []
+        for sel, pbloq in zip(selection, self._partition_selection_reg_bloqs):
+            sl, sk = bb.add(pbloq, x=sel)
+            sel_l.append(sl)
+            sel_k.append(sk)
+        return sel_l, sel_k
+
+    def _unpartition_sel_register(
+        self, bb: 'BloqBuilder', sel_l: List['SoquetT'], sel_k: List['SoquetT']
+    ) -> List['SoquetT']:
+        selection = []
+        for l, k, pbloq in zip(sel_l, sel_k, self._partition_selection_reg_bloqs):
+            selection.append(bb.add(pbloq.adjoint(), l=l, k=k))
+        return selection
+
     def _build_composite_bloq_with_swz(
         self, bb: 'BloqBuilder', ctrl, selection, target, qrom_targets
     ):
+        sel_l, sel_k = self._partition_sel_register(bb, selection)
         # Partition selection registers into l & k
-        sel_l, sel_k, partitioned_regs = [], [], []
-        for sel, reg, k in zip(selection, self.selection_registers, self.log_block_sizes):
-            partitioned_regs.append(
-                (
-                    Register('l', BoundedQUInt(reg.bitsize - k, 2 ** (reg.bitsize - k))),
-                    Register('k', BoundedQUInt(k, 2**k)),
-                )
-            )
-            sl, sk = bb.add(Partition(reg.bitsize, partitioned_regs[-1]), x=sel)
-            sel_l.append(sl)
-            sel_k.append(sk)
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
         sel_k, qrom_targets = self._add_swap_with_zero_bloq(bb, sel_k, qrom_targets)
         qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
@@ -336,10 +359,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
                 bb, sel_k, qrom_targets, uncompute=True
             )
         # UnPartition sel_l, sel_k into selection
-        for i, (l, k, reg, preg) in enumerate(
-            zip(sel_l, sel_k, self.selection_registers, partitioned_regs)
-        ):
-            selection[i] = bb.add(Partition(reg.bitsize, preg).adjoint(), l=l, k=k)
+        selection = self._unpartition_sel_register(bb, sel_l, sel_k)
         return ctrl, selection, target, qrom_targets
 
     def _build_composite_bloq_without_swz(
@@ -360,10 +380,23 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]
         target = [soqs.pop(reg.name) for reg in self.target_registers]
         # Allocate intermediate clean/dirty ancilla for the underlying QROM call.
-        qrom_targets = [self._alloc_anc_for_reg(reg, bb) for reg in self.qrom_bloq.target_registers]
+        if is_symbolic(*self.block_sizes):
+            raise ValueError(
+                f"Cannot decompose SelectSwapQROM bloq with symbolic block sizes. Found {self.block_sizes=}"
+            )
+        block_sizes = cast(Tuple[int, ...], self.block_sizes)
+        qrom_targets = [
+            _alloc_anc_for_reg(bb, reg.dtype, block_sizes, self.use_dirty_ancilla)
+            for reg in self.target_registers
+        ]
+        # Verify some of the assumptions are correct.
         assert not soqs, f"All registers must have been used by now. Found: {soqs}"
+        assert len(self.qrom_bloq.target_shapes) == len(self.target_registers)
+        for qrom_target, my_target in zip(self.qrom_bloq.target_registers, self.target_registers):
+            assert qrom_target.dtype == my_target.dtype
+            assert qrom_target.shape == block_sizes
         # Add the bloq decomposition
-        if any(is_symbolic(b) or b > 1 for b in self.block_sizes):
+        if any(b > 1 for b in block_sizes):
             ctrl, selection, target, qrom_targets = self._build_composite_bloq_with_swz(
                 bb, ctrl, selection, target, qrom_targets
             )

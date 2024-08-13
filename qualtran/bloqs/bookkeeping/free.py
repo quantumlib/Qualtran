@@ -77,7 +77,7 @@ class Free(_BookkeepingBloq):
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         if reg != 0 and not self.dirty:
-            raise ValueError(f"Tried to free a non-zero register: {reg}.")
+            raise ValueError(f"Tried to free a non-zero register: {reg} with {self.dirty=}")
         return {}
 
     def my_tensors(
