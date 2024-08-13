@@ -116,11 +116,11 @@ class BloqCount(CostKey[BloqCountDict]):
         return f'{self.gateset_name} counts'
 
 
-FloatRepr_T = Union[str, sympy.Expr]
+FloatReprT = Union[str, sympy.Expr]
 """The type to represent floats as, to use as safe keys in mappings."""
 
 
-def _mapping_to_counter(mapping: Mapping[FloatRepr_T, int]) -> Counter[FloatRepr_T]:
+def _mapping_to_counter(mapping: Mapping[FloatReprT, int]) -> Counter[FloatReprT]:
     if isinstance(mapping, Counter):
         return mapping
     return Counter(mapping)
@@ -140,7 +140,7 @@ class GateCounts:
     and_bloq: SymbolicInt = 0
     clifford: SymbolicInt = 0
     measurement: SymbolicInt = 0
-    binned_rotation_epsilons: Counter[FloatRepr_T] = field(
+    binned_rotation_epsilons: Counter[FloatReprT] = field(
         factory=Counter, converter=_mapping_to_counter, eq=lambda d: tuple(d.items())
     )
 
@@ -161,7 +161,7 @@ class GateCounts:
             n_rotations: number of rotations, defaults to 1.
         """
         if is_symbolic(eps):
-            eps_bin: FloatRepr_T = eps
+            eps_bin: FloatReprT = eps
         else:
             eps_bin = np.format_float_scientific(eps, precision=eps_repr_prec, unique=False)
         return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
