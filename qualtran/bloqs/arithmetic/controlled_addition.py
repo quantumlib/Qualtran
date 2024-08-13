@@ -11,23 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import itertools
-import math
-from typing import Any, Dict, Iterator, Set, TYPE_CHECKING, Union
 
-import cirq
+from typing import Dict, Set, TYPE_CHECKING, Union
+
 import numpy as np
 import sympy
 from attrs import field, frozen
-from numpy.typing import NDArray
 
-from qualtran import Bloq, CompositeBloq, QBit, QInt, QUInt, Register, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QBit,
+    QInt,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.arithmetic.addition import Add
+from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -91,50 +101,21 @@ class CAdd(Bloq):
             [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
         )
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
-            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N_a = 2**self.a_dtype.bitsize
-        N_b = 2**self.b_dtype.bitsize
-        inds = (
-            incoming['ctrl'],
-            incoming['a'],
-            incoming['b'],
-            outgoing['ctrl'],
-            outgoing['a'],
-            outgoing['b'],
-        )
-        unitary = np.zeros((2, N_a, N_b, 2, N_a, N_b), dtype=np.complex128)
-        for c, a, b in itertools.product(range(2), range(N_a), range(N_b)):
-            if c == self.cv:
-                unitary[c, a, b, c, a, int(math.fmod(a + b, N_b))] = 1
-            else:
-                unitary[c, a, b, c, a, b] = 1
-
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_style_method(self)
-
     def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
         a, b = kwargs['a'], kwargs['b']
-        unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
-        b_bitsize = self.b_dtype.bitsize
-        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
         ctrl = kwargs['ctrl']
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
         else:
-            return {'ctrl': ctrl, 'a': a, 'b': int(math.fmod(a + b, N))}
+            if not isinstance(self.b_dtype.bitsize, int):
+                raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
+            return {
+                'ctrl': ctrl,
+                'a': a,
+                'b': add_ints(
+                    a, b, num_bits=self.b_dtype.bitsize, is_signed=isinstance(self.b_dtype, QInt)
+                ),
+            }
 
     def short_name(self) -> str:
         return "a+b"
@@ -151,68 +132,29 @@ class CAdd(Bloq):
         else:
             raise ValueError()
 
-    def _left_building_block(self, inp, out, anc, depth):
-        if depth == self.b_dtype.bitsize - 1:
-            return
-        else:
-            if depth < 1:
-                raise ValueError(f"{depth=} is not a positive integer")
-            if depth < len(inp):
-                yield CNOT().on(anc[depth - 1], inp[depth])
-                control = inp[depth]
-            else:
-                # If inp[depth] doesn't exist, we treat it as a |0>,
-                # and therefore applying CNOT().on(anc[depth - 1], inp[depth])
-                # essentially "copies" anc[depth - 1] into inp[depth]
-                # in the classical basis. So therefore, on future operations,
-                # we can use anc[depth - 1] in its place.
-                control = anc[depth - 1]
-            yield CNOT().on(anc[depth - 1], out[depth])
-            yield And().on(control, out[depth], anc[depth])
-            yield CNOT().on(anc[depth - 1], anc[depth])
-            yield from self._left_building_block(inp, out, anc, depth + 1)
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        a_arr = bb.split(a)
+        ctrl_q = bb.split(ctrl)[0]
+        ancilla_arr = []
+        for i in range(len(a_arr)):
+            [ctrl_q, a_arr[i]], target = bb.add(And(self.cv, 1), ctrl=np.array([ctrl_q, a_arr[i]]))
+            ancilla_arr.append(target)
+        ancilla = bb.join(np.array(ancilla_arr), QUInt(len(ancilla_arr)))
+        ancilla = bb.add(Cast(QUInt(len(ancilla_arr)), self.a_dtype), reg=ancilla)
 
-    def _right_building_block(self, inp, out, anc, control, depth):
-        if depth == 0:
-            return
-        yield CNOT().on(anc[depth - 1], anc[depth])
-        if depth < len(inp):
-            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            yield MultiControlX((1, 1)).on(control, inp[depth], out[depth])
-            yield CNOT().on(anc[depth - 1], inp[depth])
-        else:
-            yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
-            yield MultiControlX((1, 1)).on(control, anc[depth - 1], out[depth])
-        yield CNOT().on(anc[depth - 1], out[depth])
-        yield from self._right_building_block(inp, out, anc, control, depth - 1)
+        ancilla, b = bb.add(Add(self.a_dtype, self.b_dtype), a=ancilla, b=b)
+        ancilla_arr = bb.split(ancilla).tolist()
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        # reverse the order of qubits for big endian-ness.
-        input_bits = quregs['a'][::-1]
-        output_bits = quregs['b'][::-1]
-        ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
-        control = quregs['ctrl'][0]
-        if self.cv == 0:
-            yield cirq.X(control)
-        # Start off the addition by anding into the ancilla
-        yield And().on(input_bits[0], output_bits[0], ancillas[0])
-        # Left part of Fig.4
-        yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
-        yield CNOT().on(ancillas[-1], output_bits[-1])
-        if len(input_bits) == len(output_bits):
-            yield MultiControlX((1, 1)).on(control, input_bits[-1], output_bits[-1])
-            yield CNOT().on(ancillas[-1], output_bits[-1])
-        # right part of Fig.4
-        yield from self._right_building_block(
-            input_bits, output_bits, ancillas, control, self.b_dtype.bitsize - 2
-        )
-        yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
-        yield MultiControlX((1, 1)).on(control, input_bits[0], output_bits[0])
-        if self.cv == 0:
-            yield cirq.X(control)
-        context.qubit_manager.qfree(ancillas)
+        for i in reversed(range(len(a_arr))):
+            ctrl_q, a_arr[i] = bb.add(
+                And(self.cv, 1).adjoint(), ctrl=np.array([ctrl_q, a_arr[i]]), target=ancilla_arr[i]
+            )
+
+        a = bb.join(a_arr, self.a_dtype)
+        ctrl = bb.join(np.array([ctrl_q]))
+        return {'ctrl': ctrl, 'a': a, 'b': b}
 
     def _t_complexity_(self):
         n = self.b_dtype.bitsize
@@ -221,11 +163,23 @@ class CAdd(Bloq):
         return TComplexity(t=4 * num_and, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        n = self.b_dtype.bitsize
-        n_cnot = (n - 2) * 6 + 2
         return {
-            (MultiControlX((1, 1)), n),
-            (And(), n - 1),
-            (And().adjoint(), n - 1),
-            (CNOT(), n_cnot),
+            (And(self.cv, 1), self.a_dtype.bitsize),
+            (Add(self.a_dtype, self.b_dtype), 1),
+            (And(self.cv, 1).adjoint(), self.a_dtype.bitsize),
         }
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _cadd_small() -> CAdd:
+    cadd_small = CAdd(QUInt(3))
+    return cadd_small
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _cadd_large() -> CAdd:
+    cadd_large = CAdd(QUInt(1000), QUInt(1000))
+    return cadd_large
+
+
+_CADD_DOC = BloqDocSpec(bloq_cls=CAdd, examples=[_cadd_small, _cadd_large])
