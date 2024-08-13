@@ -68,10 +68,9 @@ def qrom_cost(prep: PrepareSparse) -> int:
 
 
 def get_toffoli_count(bloq: Bloq) -> SymbolicInt:
-    """Get the toffoli count of a bloq assuming no raw Ts."""
+    """Get the toffoli count of a bloq ignoring raw Ts/Rotations."""
     counts = get_cost_value(bloq, QECGatesCost(), generalizer=generalize_cswap_approx)
-    cost_dict = counts.total_t_and_ccz_count(ts_per_rotation=0)
-    assert cost_dict['n_t'] == 0
+    cost_dict = counts.total_t_and_ccz_count()
     return cost_dict['n_ccz']
 
 
