@@ -24,6 +24,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     LessThanEqual,
     SingleQubitCompare,
 )
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.arithmetic.conversions import (
     SignedIntegerToTwosComplement,
     SignExtend,
