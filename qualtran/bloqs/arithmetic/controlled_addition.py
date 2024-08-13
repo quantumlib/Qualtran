@@ -108,9 +108,7 @@ class CAdd(Bloq):
             return {'ctrl': ctrl, 'a': a, 'b': b}
         else:
             if not isinstance(self.b_dtype.bitsize, int):
-                raise NotImplementedError(
-                    f'classical simulation is not supported for symbolic bloq {self}'
-                )
+                raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
             return {
                 'ctrl': ctrl,
                 'a': a,
