@@ -177,7 +177,9 @@ class GateCounts:
         if is_symbolic(eps):
             eps_bin: FloatReprT = eps
         else:
-            eps_bin = np.format_float_scientific(eps, precision=eps_repr_prec, unique=False)
+            eps_bin = np.format_float_scientific(
+                eps, precision=eps_repr_prec, min_digits=eps_repr_prec
+            )
         return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
 
     def iter_rotations_with_epsilon(self) -> Iterator[tuple[SymbolicFloat, SymbolicInt]]:
