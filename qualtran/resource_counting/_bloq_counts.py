@@ -132,6 +132,20 @@ class GateCounts:
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
+
+    Attributes:
+        t: number of `TGate` (and adjoint).
+        toffoli: number of `Toffoli`.
+        cswap: number of `TwoBitCSwap`.
+        and_bloq: number of `And`.
+        clifford: number of clifford bloqs.
+        measurement: number of 1-qubit measurements.
+        binned_rotation_epsilons: A Counter of rotation precision (epsilon) to the number of
+            rotations with that particular epsilon. The `epsilon` (used as the mapping key)
+            is formatted into a string using `np.format_float_scientific` for concrete values,
+            and stored as-is for symbolic values.
+            See constructor `from_rotation_with_eps` to construct a `GateCounts` object
+            given a precision `epsilon`.
     """
 
     t: SymbolicInt = 0
@@ -187,6 +201,7 @@ class GateCounts:
         )
 
     def __mul__(self, other):
+        """Multiplies the frequency of each operation with `other`."""
         return GateCounts(
             t=other * self.t,
             toffoli=other * self.toffoli,
