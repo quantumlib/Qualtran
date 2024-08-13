@@ -20,6 +20,7 @@ import attrs
 import cirq
 import numpy as np
 import sympy
+from numpy.typing import ArrayLike
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic.bitwise import Xor
@@ -31,8 +32,6 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
-
     from qualtran import Bloq, BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
