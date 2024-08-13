@@ -1149,8 +1149,8 @@ class CLinearDepthGreaterThan(Bloq):
 
 @bloq_example(generalizer=ignore_split_join)
 def _clineardepthgreaterthan_example() -> CLinearDepthGreaterThan:
-    c_greater_than = CLinearDepthGreaterThan(QInt(5))
-    return c_greater_than
+    clineardepthgreaterthan_example = CLinearDepthGreaterThan(QInt(5))
+    return clineardepthgreaterthan_example
 
 
 _CLinearDepthGreaterThan_DOC = BloqDocSpec(
