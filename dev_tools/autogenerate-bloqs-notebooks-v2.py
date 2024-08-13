@@ -56,6 +56,7 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
@@ -386,6 +387,11 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Controlled Addition',
+        module=qualtran.bloqs.arithmetic.controlled_addition,
+        bloq_specs=[qualtran.bloqs.arithmetic.controlled_addition._CADD_DOC],
     ),
     NotebookSpecV2(
         title='Negation',
