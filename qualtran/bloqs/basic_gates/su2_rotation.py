@@ -193,7 +193,7 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(rotations=3)
+        return TComplexity(rotations=3, clifford=2)
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)

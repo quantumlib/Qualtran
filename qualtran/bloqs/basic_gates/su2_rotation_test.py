@@ -16,16 +16,7 @@ import numpy as np
 import sympy
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import (
-    GlobalPhase,
-    Hadamard,
-    Ry,
-    TGate,
-    XGate,
-    YGate,
-    ZGate,
-    ZPowGate,
-)
+from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rz, TGate, XGate, YGate, ZGate
 from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
 
@@ -70,8 +61,10 @@ def test_su2_rotation_gates(bloq_autotester):
 
 
 def test_su2_rotation_gate_example_unitaries_match():
-    np.testing.assert_allclose(_t_gate().tensor_contract(), TGate().tensor_contract())
-    np.testing.assert_allclose(_hadamard().tensor_contract(), Hadamard().tensor_contract())
+    np.testing.assert_allclose(_t_gate().tensor_contract(), TGate().tensor_contract(), atol=1e-11)
+    np.testing.assert_allclose(
+        _hadamard().tensor_contract(), Hadamard().tensor_contract(), atol=1e-11
+    )
 
 
 def test_from_matrix_on_random_unitaries():
@@ -99,8 +92,9 @@ def test_call_graph():
     gate = SU2RotationGate(theta, phi, lambd, alpha, eps)
     _, sigma = gate.call_graph()
     assert sigma == {
-        GlobalPhase(exponent=1 + alpha / pi, eps=eps / 4): 1,
-        ZPowGate(-phi / pi, -1, eps / 4): 1,
-        ZPowGate(-lambd / pi + 1, -1, eps / 4): 1,
-        Ry(2 * theta, eps / 4): 1,
+        GlobalPhase(exponent=alpha / pi + lambd / (2 * pi) + phi / (2 * pi) + 0.5, eps=eps / 4): 1,
+        Rz(-phi + pi / 2, eps=eps / 4): 1,
+        Rz(-lambd + pi / 2, eps=eps / 4): 1,
+        Rz(2 * theta, eps / 4): 1,
+        Hadamard(): 2,
     }
