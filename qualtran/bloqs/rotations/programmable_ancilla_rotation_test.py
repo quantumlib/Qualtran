@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import cirq
 import numpy as np
 import sympy
 
@@ -37,11 +36,9 @@ def test_rz_resource_state_tensor_on_random_angles():
     rng = np.random.default_rng(42)
 
     for exponent in rng.random(size=5):
-        theta = 2 * np.pi * exponent
-        bloq = ZPowProgrammedAncilla(theta)
+        bloq = ZPowProgrammedAncilla(exponent=exponent)
         np.testing.assert_allclose(
-            bloq.tensor_contract(),
-            np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]) / np.sqrt(2),
+            bloq.tensor_contract(), np.array([1, np.exp(1j * np.pi * exponent)]) / np.sqrt(2)
         )
 
 
