@@ -341,8 +341,13 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return selection
 
     def _build_composite_bloq_with_swz(
-        self, bb: 'BloqBuilder', ctrl, selection, target, qrom_targets
-    ):
+        self,
+        bb: 'BloqBuilder',
+        ctrl: List['SoquetT'],
+        selection: List['SoquetT'],
+        target: List['SoquetT'],
+        qrom_targets: List['SoquetT'],
+    ) -> Tuple[List['SoquetT'], List['SoquetT'], List['SoquetT'], List['SoquetT']]:
         sel_l, sel_k = self._partition_sel_register(bb, selection)
         # Partition selection registers into l & k
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
@@ -363,8 +368,13 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return ctrl, selection, target, qrom_targets
 
     def _build_composite_bloq_without_swz(
-        self, bb: 'BloqBuilder', ctrl, selection, target, qrom_targets
-    ):
+        self,
+        bb: 'BloqBuilder',
+        ctrl: List['SoquetT'],
+        selection: List['SoquetT'],
+        target: List['SoquetT'],
+        qrom_targets: List['SoquetT'],
+    ) -> Tuple[List['SoquetT'], List['SoquetT'], List['SoquetT'], List['SoquetT']]:
         ctrl, selection, qrom_targets = self._add_qrom_bloq(bb, ctrl, selection, qrom_targets)
         qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
         ctrl, selection, qrom_targets = self._add_qrom_bloq(
