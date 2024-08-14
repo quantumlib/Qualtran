@@ -1200,20 +1200,22 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(
+        self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None, dirty: bool = False
+    ) -> Soquet:
         from qualtran.bloqs.bookkeeping import Allocate
 
         if dtype is not None:
-            return self.add(Allocate(dtype=dtype))
-        return self.add(Allocate(dtype=(QAny(n))))
+            return self.add(Allocate(dtype=dtype, dirty=dirty))
+        return self.add(Allocate(dtype=(QAny(n)), dirty=dirty))
 
-    def free(self, soq: Soquet) -> None:
+    def free(self, soq: Soquet, dirty: bool = False) -> None:
         from qualtran.bloqs.bookkeeping import Free
 
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(dtype=soq.reg.dtype), reg=soq)
+        self.add(Free(dtype=soq.reg.dtype, dirty=dirty), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""

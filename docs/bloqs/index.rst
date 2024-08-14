@@ -62,6 +62,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/controlled_addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
     arithmetic/controlled_add_or_subtract.ipynb

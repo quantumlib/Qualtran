@@ -20,10 +20,9 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
-import cirq
 import numpy as np
 from numpy.typing import NDArray
 
@@ -48,7 +47,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -81,24 +80,6 @@ class StatePreparationAliasSampling(PrepareOracle):
     selecting `l` uniformly at random and then returning it with probability `keep[l] / 2**mu`;
     otherwise returning `alt[l]`.
 
-    Args:
-        selection_registers: The input/output registers to prepare the state on (see Signature).
-        keep: The discretized `keep` probabilities for alias sampling.
-        alt: The alternate/alias values to swap.
-        mu: The number of bits to approximate the `keep` probabilities.
-        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
-            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
-
-    Signature:
-        selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
-            coefficient state is prepared.
-        temp: Work space comprised of sub signature:
-            - sigma: A mu-sized register containing uniform probabilities for comparison against
-                `keep`.
-            - alt: A lg(L)-sized register of alternate indices
-            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
-            - one bit for the result of the comparison.
-
     This gate corresponds to the following operations:
      - UNIFORM_L on the selection register
      - H^mu on the sigma register
@@ -109,6 +90,23 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
+
+    Registers:
+        selection: The input/output register $|\mathrm{ind}_l\rangle$ of size lg(L) where the desired
+            coefficient state is prepared. Default name is 'selection' if the builder methods on
+            the class are used. Or else, users can specify custom named registers
+        sigma_mu: A mu-sized register containing uniform probabilities for comparison against `keep`.
+        alt: A lg(L)-sized register of alternate indices
+        keep: a mu-sized register of probabilities of keeping the initially sampled index.
+        less_than_equal: one bit for the result of the comparison.
+
+    Args:
+        selection_registers: The input/output registers to prepare the state on (see Registers section).
+        keep: The discretized `keep` probabilities for alias sampling.
+        alt: The alternate/alias values to swap.
+        mu: The number of bits to approximate the `keep` probabilities.
+        sum_of_unnormalized_probabilities: The total of the input unnormalized probabilities,
+            i.e., $\lambda$. This is used as the `PrepareOracle.l1_norm_of_coeffs` property.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
@@ -122,6 +120,14 @@ class StatePreparationAliasSampling(PrepareOracle):
     keep: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
     mu: SymbolicInt
     sum_of_unnormalized_probabilities: SymbolicFloat
+
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.mu) and self.mu <= 0:
+            raise ValueError(f"{self.mu=} must be greater than 0.")
+        if len(self.selection_registers) != 1:
+            raise ValueError(
+                f"{type(self)} only supports 1D state preparation. Found multiple {self.selection_registers=}."
+            )
 
     @classmethod
     def from_probabilities(
@@ -235,21 +241,35 @@ class StatePreparationAliasSampling(PrepareOracle):
             (self.alternates_bitsize, self.keep_bitsize),
         )
 
-    def decompose_from_registers(
+    def build_composite_bloq(
         self,
-        *,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        yield PrepareUniformSuperposition(self.n_coeff).on(*quregs['selection'])
-        if self.mu == 0:
-            return
-        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
-        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
-        yield cirq.H.on_each(*sigma_mu)
-        yield self.qrom_bloq.on_registers(selection=selection, target0_=alt, target1_=keep)
-        yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
-        yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
+        bb: 'BloqBuilder',
+        sigma_mu: 'SoquetT',
+        alt: 'SoquetT',
+        keep: 'SoquetT',
+        less_than_equal: 'Soquet',
+        **soqs: 'SoquetT',
+    ):
+        selection = soqs.pop(self.selection_registers[0].name)
+        assert not soqs
+        selection = bb.add(PrepareUniformSuperposition(self.n_coeff), target=selection)
+        sigma_mu = bb.add(OnEach(self.mu, Hadamard()), q=sigma_mu)
+        selection, alt, keep = bb.add(
+            self.qrom_bloq, selection=selection, target0_=alt, target1_=keep
+        )
+        keep, sigma_mu, less_than_equal = bb.add(
+            LessThanEqual(self.mu, self.mu), x=keep, y=sigma_mu, target=less_than_equal
+        )
+        less_than_equal, alt, selection = bb.add(
+            CSwap(self.selection_bitsize), ctrl=less_than_equal, x=alt, y=selection
+        )
+        return {
+            self.selection_registers[0].name: selection,
+            'less_than_equal': less_than_equal,
+            'sigma_mu': sigma_mu,
+            'alt': alt,
+            'keep': keep,
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
