@@ -73,7 +73,7 @@ References:
 
 """
 
-from collections import defaultdict
+from collections import Counter
 from typing import cast, Dict, Iterable, List, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
@@ -225,13 +225,11 @@ class StatePreparationViaRotations(GateWithRegisters):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        ret: Dict['Bloq', SymbolicInt] = defaultdict(lambda: 0)
-        ret |= {
-            Rx(angle=-np.pi / 2): self.state_bitsize,
-            Rx(angle=np.pi / 2): self.state_bitsize,
-            XGate(): 2,
-            self.prga_prepare_phases: 1,
-        }
+        ret: 'Counter[Bloq]' = Counter()
+        ret[Rx(angle=-np.pi / 2)] += self.state_bitsize
+        ret[Rx(angle=np.pi / 2)] += self.state_bitsize
+        ret[XGate()] += 2
+        ret[self.prga_prepare_phases] += 1
         for bloq in self.prga_prepare_amplitude:
             ret[bloq] += 1
         return set(ret.items())
@@ -430,7 +428,11 @@ class PRGAViaPhaseGradient(Bloq):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self.qrom_bloq, 1), (self.qrom_bloq.adjoint(), 1), (self.add_into_phase_grad, 1)}
+        ret: 'Counter[Bloq]' = Counter()
+        ret[self.qrom_bloq] += 1
+        ret[self.qrom_bloq.adjoint()] += 1
+        ret[self.add_into_phase_grad] += 1
+        return set(ret.items())
 
     def __repr__(self):
         return (
