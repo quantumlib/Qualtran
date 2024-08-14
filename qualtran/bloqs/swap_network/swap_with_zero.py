@@ -53,6 +53,27 @@ def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> Tuple[SymbolicInt
 def _swap_with_zero_swap_sequence(
     selection_bitsizes: Tuple[int, ...], target_shape: Tuple[int, ...], idx: Tuple[int, ...] = ()
 ) -> Iterator[Tuple[int, int, Tuple[int, ...], Tuple[int, ...]]]:
+    """Yields tuples of indices that should be swapped in that order to realize a swap with zero.
+
+    The method recursively iterates over all combinations of `S = np.prod(selection_bitsizes)`
+    indices, where each index is multidimensional with `n=len(selection_bitsizes)` dimensions.
+    The method yields a sequence of O(S) pairs of target indices which should be swapped controlled
+    on a qubit from one of the `n` selection registers being True.
+
+    Args:
+        selection_bitsizes: Bitsizes of the selection index.
+        target_shape: Shape of the target register.
+        idx: A tuple representing a prefix of n-dimensional selection index,
+            used as part of the recursion.
+
+    Yields:
+        - i: Integer in range `[0, n)`, representing index of the selection register from which a qubit
+            should be used as a control.
+        - sel_idx: Little endian index of the qubit in the `i`'th selection register that should be
+            used as a control for the swap.
+        - idx_one: An n-dimensional tuple representing a unique selection index that should be swapped.
+        - idx_two: An n-dimensional tuple representing a unique selection index that should be swapped.
+    """
     if len(idx) == len(selection_bitsizes):
         return
     idx_len = len(idx)
