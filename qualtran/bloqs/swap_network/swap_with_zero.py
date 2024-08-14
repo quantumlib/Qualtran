@@ -148,7 +148,6 @@ class SwapWithZero(GateWithRegisters):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', targets: NDArray['Soquet'], **sel: 'Soquet'  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
-        # self.build_via_tree(bb, sel, targets, ())
         sel_soqs = [bb.split(sel[reg.name]) for reg in self.selection_registers]
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:
             sel_idx_big = self.selection_bitsizes[i] - sel_idx_small - 1
