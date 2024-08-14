@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Sequence, Tuple, TYPE_CHECKING
 
 from attrs import field, frozen
 
@@ -26,11 +26,6 @@ from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
-
-
-def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
-    """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
-    return tuple(x)
 
 
 @frozen

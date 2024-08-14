@@ -41,6 +41,7 @@ from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Text, TextBox, WireSymbol
+from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran import Soquet
@@ -206,6 +207,8 @@ class PrepareFirstQuantization(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
+        sum_of_l1_coeffs: The one-norm of the Hamiltonian coefficients to
+            prepare (often called lambda in the literature.)
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -237,6 +240,7 @@ class PrepareFirstQuantization(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
+    sum_of_l1_coeffs: Optional[SymbolicFloat] = None
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -269,6 +273,14 @@ class PrepareFirstQuantization(PrepareOracle):
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
+
+    @property
+    def l1_norm_coeffs(self) -> SymbolicFloat:
+        if self.sum_of_l1_coeffs is None:
+            raise ValueError(
+                "sum_of_l1_coeffs not specified in PrepareFirstQuantization constructor."
+            )
+        return self.sum_of_l1_coeffs
 
     def pretty_name(self) -> str:
         return r'PREP'

@@ -469,3 +469,10 @@ def test_fixed_point(val, width, signed):
             _ = QFxp(width, width).to_fixed_width_int(-val)
         bits_from_int = QUInt(width).to_bits(QFxp(width, width).to_fixed_width_int(val))
         assert bits == bits_from_int
+
+
+@pytest.mark.parametrize('bitsize', range(1, 6))
+def test_montgomery_bit_conversion(bitsize):
+    dtype = QMontgomeryUInt(bitsize)
+    for v in range(1 << bitsize):
+        assert v == dtype.from_bits(dtype.to_bits(v))

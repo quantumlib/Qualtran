@@ -17,7 +17,10 @@ from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
+import sympy
 from attrs import field, frozen
+
+from qualtran.symbolics import SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -120,13 +123,13 @@ class GateCounts:
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
     """
 
-    t: int = 0
-    toffoli: int = 0
-    cswap: int = 0
-    and_bloq: int = 0
-    clifford: int = 0
-    rotation: int = 0
-    measurement: int = 0
+    t: SymbolicInt = 0
+    toffoli: SymbolicInt = 0
+    cswap: SymbolicInt = 0
+    and_bloq: SymbolicInt = 0
+    clifford: SymbolicInt = 0
+    rotation: SymbolicInt = 0
+    measurement: SymbolicInt = 0
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -157,17 +160,21 @@ class GateCounts:
         return self.__mul__(other)
 
     def __str__(self):
-        strs = []
-        for k, v in self.asdict().items():
-            strs.append(f'{k}: {v}')
-
+        strs = [f'{k}: {v}' for k, v in self.asdict().items()]
         if strs:
             return ', '.join(strs)
         return '-'
 
-    def asdict(self):
+    def asdict(self) -> Dict[str, int]:
         d = attrs.asdict(self)
-        return {k: v for k, v in d.items() if v > 0}
+
+        def _is_nonzero(v):
+            maybe_nonzero = sympy.sympify(v)
+            if maybe_nonzero is None:
+                return True
+            return maybe_nonzero
+
+        return {k: v for k, v in d.items() if _is_nonzero(v)}
 
     def total_t_count(
         self,
@@ -192,12 +199,12 @@ class GateCounts:
             + ts_per_rotation * self.rotation
         )
 
-    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, int]:
+    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
         n_t = self.t + ts_per_rotation * self.rotation
         return {'n_t': n_t, 'n_ccz': n_ccz}
 
-    def total_beverland_count(self) -> Dict[str, int]:
+    def total_beverland_count(self) -> Dict[str, SymbolicInt]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
@@ -232,6 +239,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
@@ -241,6 +249,10 @@ class QECGatesCost(CostKey[GateCounts]):
         # Toffolis
         if isinstance(bloq, Toffoli):
             return GateCounts(toffoli=1)
+
+        # Measurement
+        if isinstance(bloq, Measure):
+            return GateCounts(measurement=1)
 
         # 'And' bloqs
         if isinstance(bloq, And):
