@@ -16,6 +16,7 @@ import numpy as np
 import sympy
 
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
     _zpow_programmed_ancilla,
     _zpow_programmed_ancilla_symb,
@@ -25,7 +26,6 @@ from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
     ZPowProgrammedAncilla,
     ZPowUsingProgrammedAncilla,
 )
-from qualtran.cirq_interop import CirqGateAsBloq
 
 
 def test_rz_resource_state_examples(bloq_autotester):
@@ -58,7 +58,7 @@ def test_rz_via_par_call_graphs():
         XGate(): 2,
         ZPowProgrammedAncilla(np.pi / 4, eps=1e-11 / 2): 1,
         ZPowProgrammedAncilla(np.pi / 2, eps=1e-11 / 2): 1,
-        CirqGateAsBloq(cirq.MeasurementGate(1)): 2,
+        Measure(): 2,
     }
 
     phi, eps = sympy.symbols(r"\phi \epsilon")
@@ -70,7 +70,7 @@ def test_rz_via_par_call_graphs():
         ZPowProgrammedAncilla(phi, eps / 3): 1,
         ZPowProgrammedAncilla(2 * phi, eps / 3): 1,
         ZPowProgrammedAncilla(4 * phi, eps / 3): 1,
-        CirqGateAsBloq(cirq.MeasurementGate(1)): 3,
+        Measure(): 3,
     }
 
     phi0, eps0, n = sympy.symbols(r"_\phi0 _\epsilon0 n")
@@ -81,5 +81,5 @@ def test_rz_via_par_call_graphs():
         CNOT(): n,
         XGate(): n,
         ZPowProgrammedAncilla(phi0, eps0): n,
-        CirqGateAsBloq(cirq.MeasurementGate(1)): n,
+        Measure(): n,
     }
