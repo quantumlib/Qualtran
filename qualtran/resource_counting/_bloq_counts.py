@@ -239,6 +239,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
@@ -248,6 +249,10 @@ class QECGatesCost(CostKey[GateCounts]):
         # Toffolis
         if isinstance(bloq, Toffoli):
             return GateCounts(toffoli=1)
+
+        # Measurement
+        if isinstance(bloq, Measure):
+            return GateCounts(measurement=1)
 
         # 'And' bloqs
         if isinstance(bloq, And):
