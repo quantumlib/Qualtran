@@ -48,6 +48,10 @@ class SparseStatePreparationViaRotations(Bloq):
 
     To achieve this, it first prepares a dense state on $\ceil{\log d}$ qubits, then
     permutes the basis s.t. $i \mapsto x_i$, where $x_i$ is the $i$-th element in S.
+
+    References:
+        [A simple quantum algorithm to efficiently prepare sparse states](https://arxiv.org/abs/2310.19309)
+        Ramacciotti et. al. Section 4 "Permutation Grover-Rudolph".
     """
     sparse_indices: Union[tuple[int, ...], HasLength] = field(converter=_to_tuple_or_has_length)
     nonzero_coeffs: Union[tuple[complex, ...], HasLength] = field(converter=_to_tuple_or_has_length)
