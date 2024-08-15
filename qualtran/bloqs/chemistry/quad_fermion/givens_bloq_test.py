@@ -19,12 +19,13 @@ from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, Toffoli, XGate
+from qualtran import QFxp
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
 from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
     ComplexGivensRotationByPhaseGradient,
     RealGivensRotationByPhaseGradient,
-    RzAddIntoPhaseGradient,
 )
+from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
 
 
 def test_circuit_decomposition_givens():
@@ -72,12 +73,8 @@ def test_circuit_decomposition_givens():
 
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_count_t_cliffords(x_bitsize: int):
-    add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled_by=1
-    )
-    bloq_counts = add_into_phasegrad_gate.bloq_counts()
-    # produces Toffoli costs given in chemistry papers
-    assert bloq_counts[Toffoli()] == (x_bitsize - 2)
+    dtype = QFxp(x_bitsize, x_bitsize, signed=False)
+    add_into_phasegrad_gate = RzViaPhaseGradient(angle_dtype=dtype, phasegrad_dtype=dtype)
 
     gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate_counts = gate.bloq_counts()
@@ -91,9 +88,8 @@ def test_count_t_cliffords(x_bitsize: int):
 
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_complex_givens_costs(x_bitsize: int):
-    add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled_by=1
-    )
+    dtype = QFxp(x_bitsize, x_bitsize, signed=False)
+    add_into_phasegrad_gate = RzViaPhaseGradient(angle_dtype=dtype, phasegrad_dtype=dtype)
     real_givens_gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate_counts = gate.bloq_counts()

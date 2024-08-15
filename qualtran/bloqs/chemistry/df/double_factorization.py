@@ -50,7 +50,6 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
@@ -61,6 +60,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -121,6 +121,28 @@ class DoubleFactorizationOneBody(BlockEncoding):
         )
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("p", QAny(bitsize=(self.num_spin_orb // 2 - 1).bit_length())),
@@ -144,8 +166,8 @@ class DoubleFactorizationOneBody(BlockEncoding):
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        return PrepareIdentity(self.selection_registers)
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:
@@ -346,6 +368,28 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         return (Register('ctrl', QBit(), shape=(4,)),)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("l", QAny(bitsize=self.num_aux.bit_length())),
@@ -370,8 +414,8 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        return PrepareIdentity(self.selection_registers)
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:

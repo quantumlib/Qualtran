@@ -12,9 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
 from typing import Dict
 
-import cirq
 import numpy as np
 import pytest
 from attrs import frozen
@@ -24,47 +24,11 @@ from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, S
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
-    bits_to_ints,
+    add_ints,
     call_cbloq_classically,
     ClassicalValT,
-    ints_to_bits,
 )
 from qualtran.testing import execute_notebook
-
-
-def test_bits_to_int():
-    rs = np.random.RandomState(52)
-    bitstrings = rs.choice([0, 1], size=(100, 23))
-
-    nums = bits_to_ints(bitstrings)
-    assert nums.shape == (100,)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
-        assert num == ref_num
-
-    # check one input bitstring instead of array of input bitstrings.
-    (num,) = bits_to_ints([1, 0])
-    assert num == 2
-
-
-def test_int_to_bits():
-    rs = np.random.RandomState(52)
-    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
-    bitstrings = ints_to_bits(nums, w=23)
-    assert bitstrings.shape == (100, 23)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
-        np.testing.assert_array_equal(ref_bs, bs)
-
-    # check one input int
-    (bitstring,) = ints_to_bits(2, w=8)
-    assert bitstring.tolist() == [0, 0, 0, 0, 0, 0, 1, 0]
-
-    # check bounds
-    with pytest.raises(AssertionError):
-        ints_to_bits([4, -2], w=8)
 
 
 def test_dtype_validation():
@@ -162,6 +126,23 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(x, xarr)
     np.testing.assert_array_equal(y, [1, 0, 1, 0, 1])
     np.testing.assert_array_equal(z, xarr)
+
+
+@pytest.mark.parametrize('n_bits', range(1, 5))
+def test_add_ints_unsigned(n_bits):
+    for x, y in itertools.product(range(1 << n_bits), repeat=2):
+        assert add_ints(x, y, num_bits=n_bits, is_signed=False) == (x + y) % (1 << n_bits)
+
+
+@pytest.mark.parametrize('n_bits', range(2, 5))
+def test_add_ints_signed(n_bits: int):
+    half_n = 1 << (n_bits - 1)
+    # Addition of signed ints `x` and `y` is a cyclic rotation of the interval [-2^(n-1), 2^(n-1)) by `y`.
+    interval = [*range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1))]
+    for x, y in itertools.product(range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1)), repeat=2):
+        i = x + half_n  # position of `x` in the interval
+        z = interval[(i + y) % len(interval)]  # rotate by `y`
+        assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
 
 
 @pytest.mark.notebook

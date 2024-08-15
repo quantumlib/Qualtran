@@ -27,24 +27,14 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, QBit, QUInt, Register, Signature
-from qualtran.bloqs.arithmetic import Add, AddK, Subtract
-from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate
+from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
+from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-
-@frozen
-class ModAdd(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
 
 
 @frozen
@@ -159,7 +149,7 @@ class ModInv(Bloq):
         # return {(Toffoli(), 32 * self.n**2 * log2(self.n))}
         return {
             (_ModInvInner(n=self.n, mod=self.mod), 2 * self.n),
-            (Negate(self.n), 1),
+            (Negate(QUInt(self.n)), 1),
             (AddK(self.n, k=self.mod), 1),
             (Swap(self.n), 1),
         }

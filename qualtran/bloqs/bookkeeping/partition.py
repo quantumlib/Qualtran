@@ -16,6 +16,7 @@ from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
+from numpy.typing import NDArray
 
 from qualtran import (
     bloq_example,
@@ -24,13 +25,13 @@ from qualtran import (
     ConnectionT,
     DecomposeTypeError,
     QAny,
+    QDType,
     Register,
     Side,
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
-from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -59,13 +60,23 @@ class Partition(_BookkeepingBloq):
     )
     partition: bool = True
 
+    def __attrs_post_init__(self):
+        if self.n != sum(r.total_bits() for r in self.regs):
+            raise ValueError("Total bitsize not equal to sum of registers to partition into")
+        if len(set(r.name for r in self.regs)) != len(self.regs):
+            raise ValueError("Duplicate register names")
+
+    @cached_property
+    def lumped_dtype(self) -> QDType:
+        return QAny(bitsize=self.n)
+
     @cached_property
     def signature(self) -> 'Signature':
         lumped = Side.LEFT if self.partition else Side.RIGHT
         partitioned = Side.RIGHT if self.partition else Side.LEFT
 
         return Signature(
-            [Register('x', QAny(bitsize=self.n), side=lumped)]
+            [Register('x', self.lumped_dtype, side=lumped)]
             + [evolve(reg, side=partitioned) for reg in self.regs]
         )
 
@@ -113,40 +124,35 @@ class Partition(_BookkeepingBloq):
 
     def _classical_partition(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         out_vals = {}
-        xbits = ints_to_bits(x, self.n)[0]
+        xbits = self.lumped_dtype.to_bits(x)
         start = 0
         for reg in self.regs:
             size = int(np.prod(reg.shape + (reg.bitsize,)))
             bits_reg = xbits[start : start + size]
             if reg.shape == ():
-                out_vals[reg.name] = bits_to_ints(bits_reg)[0]
+                out_vals[reg.name] = reg.dtype.from_bits(bits_reg)
             else:
-                ints_reg = bits_to_ints(
-                    [
-                        bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
-                        for i in range(np.prod(reg.shape))
-                    ]
+                out_vals[reg.name] = reg.dtype.from_bits_array(
+                    np.asarray(bits_reg).reshape(reg.shape + (reg.bitsize,))
                 )
-                out_vals[reg.name] = np.array(ints_reg).reshape(reg.shape)
             start += size
         return out_vals
 
-    def _classical_unpartition(self, **vals: 'ClassicalValT'):
-        out_vals = []
+    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
+        out_vals: list[NDArray[np.uint8]] = []
         for reg in self.regs:
-            reg_val = vals[reg.name]
-            if isinstance(reg_val, np.ndarray):
-                out_vals.append(ints_to_bits(reg_val.ravel(), reg.bitsize).ravel())
-            else:
-                out_vals.append(ints_to_bits(reg_val, reg.bitsize)[0])
-        big_int = np.concatenate(out_vals)
-        return {'x': bits_to_ints(big_int)[0]}
+            reg_val = np.asarray(vals[reg.name])
+            bitstrings = reg.dtype.to_bits_array(reg_val.ravel())
+            out_vals.append(bitstrings.ravel())
+        return np.concatenate(out_vals)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if self.partition:
             return self._classical_partition(vals['x'])
         else:
-            return self._classical_unpartition(**vals)
+            big_int_bits = self._classical_unpartition_to_bits(**vals)
+            big_int = self.lumped_dtype.from_bits(big_int_bits.tolist())
+            return {'x': big_int}
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

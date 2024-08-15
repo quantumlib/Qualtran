@@ -231,8 +231,4 @@ def _modmul_symb() -> CtrlModMul:
     return modmul_symb
 
 
-_MODMUL_DOC = BloqDocSpec(
-    bloq_cls=CtrlModMul,
-    import_line='from qualtran.bloqs.factoring.mod_mul import CtrlModMul',
-    examples=(_modmul_symb, _modmul),
-)
+_MODMUL_DOC = BloqDocSpec(bloq_cls=CtrlModMul, examples=(_modmul_symb, _modmul))

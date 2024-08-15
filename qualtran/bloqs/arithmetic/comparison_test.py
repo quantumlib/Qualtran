@@ -37,6 +37,7 @@ from qualtran.bloqs.arithmetic.comparison import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
 
 def test_greater_than(bloq_autotester):
@@ -240,6 +241,7 @@ def test_greater_than_manual():
 def test_linear_depth_greater_than_decomp(bitsize, signed):
     bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_equivalent_bloq_counts(bloq, [ignore_alloc_free, ignore_split_join])
 
 
 # TODO: write tests for signed integer comparison
@@ -298,7 +300,9 @@ def test_equals_a_constant():
     qlt_testing.assert_wire_symbols_match_expected(
         EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
     )
-    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(t=4 * (bitsize - 1))
+    assert t_complexity(EqualsAConstant(bitsize, 17)) == TComplexity(
+        t=4 * (bitsize - 1), clifford=65
+    )
 
 
 @pytest.mark.notebook

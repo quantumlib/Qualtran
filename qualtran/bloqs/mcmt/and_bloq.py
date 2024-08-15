@@ -223,9 +223,7 @@ def _and_bloq() -> And:
     return and_bloq
 
 
-_AND_DOC = BloqDocSpec(
-    bloq_cls=And, import_line='from qualtran.bloqs.mcmt import And', examples=(_and_bloq,)
-)
+_AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
@@ -260,7 +258,7 @@ class MultiAnd(Bloq):
     @cvs.validator
     def _validate_cvs(self, field, val):
         if not is_symbolic(val) and len(val) < 3:
-            raise ValueError("MultiAnd must cvshave at least 3 control values `cvs`.")
+            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
 
     @property
     def n_ctrls(self) -> SymbolicInt:
@@ -372,8 +370,4 @@ def _multi_and_symb() -> MultiAnd:
     return multi_and_symb
 
 
-_MULTI_AND_DOC = BloqDocSpec(
-    bloq_cls=MultiAnd,
-    import_line='from qualtran.bloqs.mcmt import MultiAnd',
-    examples=(_multi_and,),
-)
+_MULTI_AND_DOC = BloqDocSpec(bloq_cls=MultiAnd, examples=(_multi_and,))

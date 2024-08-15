@@ -38,9 +38,11 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -65,12 +67,17 @@ class ModAdd(Bloq):
         Construction from Figure 6a and cost summary in Figure 8.
     """
 
-    bitsize: int
-    mod: int
+    bitsize: 'SymbolicInt'
+    mod: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.bitsize)), Register('y', QUInt(self.bitsize))])
+        return Signature(
+            [
+                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('y', QMontgomeryUInt(self.bitsize)),
+            ]
+        )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -78,6 +85,8 @@ class ModAdd(Bloq):
         return {'x': x, 'y': (x + y) % self.mod}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)

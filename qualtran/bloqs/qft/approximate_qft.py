@@ -162,7 +162,5 @@ def _approximate_qft_from_epsilon() -> ApproximateQFT:
 
 
 _CC_AQFT_DOC = BloqDocSpec(
-    bloq_cls=ApproximateQFT,
-    import_line='from qualtran.bloqs.qft.approximate_qft import ApproximateQFT',
-    examples=(_approximate_qft_small, _approximate_qft_from_epsilon),
+    bloq_cls=ApproximateQFT, examples=(_approximate_qft_small, _approximate_qft_from_epsilon)
 )

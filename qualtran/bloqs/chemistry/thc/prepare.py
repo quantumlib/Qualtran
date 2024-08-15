@@ -42,14 +42,15 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
-from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
+from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -195,7 +196,7 @@ class UniformSuperpositionTHC(Bloq):
         )
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         (lte_nu_mp1, lte_mu_nu, junk), succ = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            MultiControlX(cvs=(1, 1, 1)),
             controls=np.array([lte_nu_mp1, lte_mu_nu, junk]),
             target=succ,
         )
@@ -267,15 +268,21 @@ class PrepareTHC(PrepareOracle):
     theta: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
+    sum_of_l1_coeffs: SymbolicFloat
 
     @classmethod
     def from_hamiltonian_coeffs(
-        cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], num_bits_state_prep: int = 8
+        cls,
+        t_l: NDArray[np.float64],
+        eta: NDArray[np.float64],
+        zeta: NDArray[np.float64],
+        num_bits_state_prep: int = 8,
     ) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 
         Args:
             t_l: One body hamiltonian eigenvalues.
+            eta: The THC leaf tensors.
             zeta: THC central tensor.
             num_bits_state_prep: The number of bits for the state prepared during alias sampling.
 
@@ -283,15 +290,18 @@ class PrepareTHC(PrepareOracle):
             Constructed PrepareTHC object.
         """
         assert len(t_l.shape) == 1
+        assert len(eta.shape) == 2
         assert len(zeta.shape) == 2
         num_mu = zeta.shape[0]
         num_spat = t_l.shape[0]
+        assert eta.shape == (num_mu, num_spat)
         triu_indices = np.triu_indices(num_mu)
         num_ut = len(triu_indices[0])
-        flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+        flat_data = np.concatenate([zeta[triu_indices], t_l])
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            flat_data, epsilon=2**-num_bits_state_prep / len(flat_data)
+        flat_data = np.abs(flat_data)
+        alt, keep, mu = preprocess_probabilities_for_reversible_sampling(
+            flat_data, sub_bit_precision=num_bits_state_prep
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []
@@ -307,6 +317,13 @@ class PrepareTHC(PrepareOracle):
                 alt_mu.append(int(k - num_ut))
                 alt_nu.append(int(num_mu))
             alt_theta.append(thetas[k])
+        # Compute the lambda value using the formula from the reference /
+        # OpenFermion: resource_estimates.thc.compute_lambda_thc
+        overlap = eta.dot(eta.T)
+        norm_fac = np.diag(np.diag(overlap))
+        zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
+        lambda_t = np.sum(np.abs(t_l))  # Eq. 19
+        lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
         return PrepareTHC(
             num_mu,
             2 * num_spat,
@@ -316,7 +333,12 @@ class PrepareTHC(PrepareOracle):
             theta=tuple(thetas),
             keep=tuple(keep),
             keep_bitsize=mu,
+            sum_of_l1_coeffs=lambda_t + lambda_z,
         )
+
+    @property
+    def l1_norm_of_coeffs(self) -> SymbolicFloat:
+        return self.sum_of_l1_coeffs
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -390,6 +412,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
@@ -418,9 +441,7 @@ class PrepareTHC(PrepareOracle):
         plus_b = bb.add(Hadamard(), q=plus_b)
         plus_mn = bb.add(Hadamard(), q=plus_mn)
         (nu_eq_mp1, plus_a), extra_ctrl = bb.add(
-            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
-            controls=np.array([nu_eq_mp1, plus_a]),
-            target=extra_ctrl,
+            MultiControlX(cvs=(0, 1)), controls=np.array([nu_eq_mp1, plus_a]), target=extra_ctrl
         )
         extra_ctrl, mu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=extra_ctrl, x=mu, y=nu)
         out_regs = {
@@ -452,6 +473,7 @@ class PrepareTHC(PrepareOracle):
         qroam = SelectSwapQROM.build_from_data(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
             target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
+            use_dirty_ancilla=False,
         )
         cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
@@ -471,23 +493,15 @@ def _thc_uni() -> UniformSuperpositionTHC:
 
 @bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
+    from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
+
     num_spat = 4
     num_mu = 8
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     return thc_prep
 
 
-_THC_UNI_PREP = BloqDocSpec(
-    bloq_cls=UniformSuperpositionTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import UniformSuperpositionTHC',
-    examples=(_thc_uni,),
-)
+_THC_UNI_PREP = BloqDocSpec(bloq_cls=UniformSuperpositionTHC, examples=(_thc_uni,))
 
-_THC_PREPARE = BloqDocSpec(
-    bloq_cls=PrepareTHC,
-    import_line='from qualtran.bloqs.chemistry.thc.prepare import PrepareTHC',
-    examples=(_thc_prep,),
-)
+_THC_PREPARE = BloqDocSpec(bloq_cls=PrepareTHC, examples=(_thc_prep,))

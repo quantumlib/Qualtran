@@ -23,22 +23,25 @@ from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, XGate, ZeroEffect, ZeroState
 from qualtran.bloqs.block_encoding.tensor_product import (
     _tensor_product_block_encoding,
-    _tensor_product_block_encoding_override,
+    _tensor_product_block_encoding_properties,
     _tensor_product_block_encoding_symb,
     TensorProduct,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.testing import execute_notebook
 
 
 def test_tensor_product(bloq_autotester):
     bloq_autotester(_tensor_product_block_encoding)
+    bloq_autotester(_tensor_product_block_encoding_properties)
     bloq_autotester(_tensor_product_block_encoding_symb)
 
 
 def test_tensor_product_signature():
     assert _tensor_product_block_encoding().signature == Signature([Register("system", QAny(2))])
-    assert _tensor_product_block_encoding_override().signature == Signature(
+    assert _tensor_product_block_encoding_properties().signature == Signature(
         [Register("system", QAny(3)), Register("ancilla", QAny(3)), Register("resource", QAny(2))]
     )
     assert _tensor_product_block_encoding_symb().signature == Signature(
@@ -59,7 +62,7 @@ def test_tensor_product_params():
     assert bloq.ancilla_bitsize == 0
     assert bloq.resource_bitsize == 0
 
-    bloq = _tensor_product_block_encoding_override()
+    bloq = _tensor_product_block_encoding_properties()
     assert bloq.system_bitsize == 1 + 2
     assert bloq.alpha == 0.5 * 0.5
     assert bloq.epsilon == 0.5 * 0.01 + 0.5 * 0.1
@@ -92,7 +95,10 @@ def test_tensor_product_override_tensors():
     ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState()), bb.add(ZeroState())]))
     resource = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
     system, ancilla, resource = bb.add_t(
-        _tensor_product_block_encoding_override(), system=system, ancilla=ancilla, resource=resource
+        _tensor_product_block_encoding_properties(),
+        system=system,
+        ancilla=ancilla,
+        resource=resource,
     )
     for q in bb.split(cast(Soquet, ancilla)):
         bb.add(ZeroEffect(), q=q)
@@ -121,3 +127,12 @@ def test_tensor_product_cirq():
     initial_state = [0, 1, 1, 1]
     final_state = [1, 0, 1, 0]
     assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
+
+
+def test_tensor_product_signal_state():
+    assert isinstance(_tensor_product_block_encoding().signal_state.prepare, PrepareIdentity)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('tensor_product')

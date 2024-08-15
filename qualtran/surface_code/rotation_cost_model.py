@@ -18,19 +18,18 @@ from typing import Optional
 
 from attrs import frozen
 
-from qualtran.surface_code.magic_count import MagicCount
-from qualtran.surface_code.reference import Reference
+from qualtran.resource_counting import GateCounts
 
 
-class RotationCostModel(abc.ABC):
+class RotationCostModel(metaclass=abc.ABCMeta):
     """Analytical estimate of the complexity of approximating a rotation given an error budget."""
 
     @abc.abstractmethod
-    def rotation_cost(self, error_budget: float) -> MagicCount:
+    def rotation_cost(self, error_budget: float) -> GateCounts:
         """Cost of a single rotation."""
 
     @abc.abstractmethod
-    def prepartion_overhead(self, error_budget) -> MagicCount:
+    def preparation_overhead(self, error_budget) -> GateCounts:
         """Cost of preparation circuit."""
 
 
@@ -46,21 +45,24 @@ class RotationLogarithmicModel(RotationCostModel):
         slope: The coefficient of $log_2{budget}$.
         overhead: The overhead.
         gateset: A human-readable description of the gate set (e.g. 'Clifford+T').
-        approximation_protocol: A description or reference to the approximation protocol
-        reference: A description of the source of the model.
+
+    References:
+        [https://arxiv.org/abs/2211.07629](Assessing requirements to scale to practical quantum advantage).
+        Beverland et. al. (2022).
+
+        [https://arxiv.org/abs/2203.10064](Shorter quantum circuits via single-qubit gate approximation).
+        Kliuchnikov. et. al. (2022). Used for the approximation protocol.
     """
 
     slope: float
     overhead: float
     gateset: Optional[str] = None
-    approximation_protocol: Optional[Reference] = None
-    reference: Optional[Reference] = None
 
-    def rotation_cost(self, error_budget: float) -> MagicCount:
-        return MagicCount(n_t=math.ceil(-self.slope * math.log2(error_budget) + self.overhead))
+    def rotation_cost(self, error_budget: float) -> GateCounts:
+        return GateCounts(t=math.ceil(-self.slope * math.log2(error_budget) + self.overhead))
 
-    def prepartion_overhead(self, error_budget) -> MagicCount:
-        return MagicCount()
+    def preparation_overhead(self, error_budget) -> GateCounts:
+        return GateCounts()
 
 
 @frozen
@@ -74,39 +76,27 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
     $$
     Where $b$ is the bitsize/number of digits of accuracy.
 
-    reference: https://doi.org/10.1103/PRXQuantum.1.020312
-
     Attributes:
         bitsize: Number of digits of accuracy for approximating a rotation.
         overhead_rotation_cost: The cost model of preparing the initial rotation.
-        reference: A description of the source of the model.
+
+    References:
+        [https://doi.org/10.1103/PRXQuantum.1.020312](Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization).
+        Sanders et. al. (2020).
     """
 
     bitsize: int
     overhead_rotation_cost: RotationCostModel
-    reference: Optional[Reference] = None
 
-    def rotation_cost(self, error_budget: float) -> MagicCount:
-        return MagicCount(n_ccz=max(self.bitsize - 2, 0))
+    def rotation_cost(self, error_budget: float) -> GateCounts:
+        return GateCounts(toffoli=max(self.bitsize - 2, 0))
 
-    def prepartion_overhead(self, error_budget) -> MagicCount:
+    def preparation_overhead(self, error_budget) -> GateCounts:
         return self.bitsize * self.overhead_rotation_cost.rotation_cost(error_budget / self.bitsize)
 
 
-BeverlandEtAlRotationCost = RotationLogarithmicModel(
-    slope=0.53,
-    overhead=5.3,
-    gateset='Clifford+T',
-    approximation_protocol=Reference(
-        url='https://arxiv.org/abs/2203.10064', comment='Mixed fallback'
-    ),
-    reference=Reference(url='https://arxiv.org/abs/2211.07629:D2'),
-)
+BeverlandEtAlRotationCost = RotationLogarithmicModel(slope=0.53, overhead=5.3, gateset='Clifford+T')
 
 SevenDigitsOfPrecisionConstantCost = ConstantWithOverheadRotationCost(
-    bitsize=7,
-    overhead_rotation_cost=BeverlandEtAlRotationCost,
-    reference=Reference(
-        url='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312'
-    ),
+    bitsize=7, overhead_rotation_cost=BeverlandEtAlRotationCost
 )

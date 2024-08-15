@@ -21,7 +21,21 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
-from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import (
+    _add_diff_size_regs,
+    _add_k,
+    _add_k_large,
+    _add_k_small,
+    _add_large,
+    _add_oop_large,
+    _add_oop_small,
+    _add_oop_symb,
+    _add_small,
+    _add_symb,
+    Add,
+    AddK,
+    OutOfPlaceAdder,
+)
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
@@ -30,6 +44,25 @@ from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
 )
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        _add_symb,
+        _add_small,
+        _add_large,
+        _add_diff_size_regs,
+        _add_oop_symb,
+        _add_oop_small,
+        _add_oop_large,
+        _add_k,
+        _add_k_small,
+        _add_k_large,
+    ],
+)
+def test_examples(bloq_autotester, bloq):
+    bloq_autotester(bloq)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -247,10 +280,12 @@ def test_add_classical():
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)
+    cbloq = gate.decompose_bloq()
     for x in range(2**3):
         for y in range(2**3):
             basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
             assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
+            assert cbloq.call_classically(a=x, b=y, c=0) == (x, y, x + y)
     op = GateHelper(gate).operation
     op_inv = cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
@@ -316,9 +351,16 @@ def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
     assert bloq_classical[-1] == result
 
 
-# TODO: write tests for signed integer addition (subtraction)
-# https://github.com/quantumlib/Qualtran/issues/606
-@pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_classical_add_signed_overflow(bitsize):
+    bloq = Add(QInt(bitsize))
+    mx = 2 ** (bitsize - 1) - 1
+    assert bloq.call_classically(a=mx, b=mx) == (mx, -2)
+
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2), (6, -3, 2, (), (), -1)]
+)
 def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
     bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     cbloq = bloq.decompose_bloq()

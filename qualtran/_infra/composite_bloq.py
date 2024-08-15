@@ -49,6 +49,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -1016,7 +1017,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[str]]],
+        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
         left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
@@ -1025,12 +1026,13 @@ class BloqBuilder:
 
         Args:
             bloq: The bloq representing the operation to add.
-            partitions: A sequence of pairs specifying each register that the wrapped bloq should
-            accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
+            partitions: A sequence of pairs specifying each register that is exposed in the external
+                signature of the `AutoPartition` and the corresponding register names from `bloq`
+                that concatenate to form the externally exposed register. See `AutoPartition`.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
-                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
-                as is required for the bloq to be fully wrapped on the left and right.
+                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT
+                registers, as is required for the bloq to be fully wrapped on the left and right.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
                 `Soquet`s. This is likely the output soquets from a prior operation.
 
@@ -1198,20 +1200,22 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(
+        self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None, dirty: bool = False
+    ) -> Soquet:
         from qualtran.bloqs.bookkeeping import Allocate
 
         if dtype is not None:
-            return self.add(Allocate(dtype=dtype))
-        return self.add(Allocate(dtype=(QAny(n))))
+            return self.add(Allocate(dtype=dtype, dirty=dirty))
+        return self.add(Allocate(dtype=(QAny(n)), dirty=dirty))
 
-    def free(self, soq: Soquet) -> None:
+    def free(self, soq: Soquet, dirty: bool = False) -> None:
         from qualtran.bloqs.bookkeeping import Free
 
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(dtype=soq.reg.dtype), reg=soq)
+        self.add(Free(dtype=soq.reg.dtype, dirty=dirty), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""

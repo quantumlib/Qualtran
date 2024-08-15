@@ -21,19 +21,22 @@ from qualtran import BloqBuilder, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import IntState, TGate, ZeroEffect, ZeroState
 from qualtran.bloqs.block_encoding.unitary import (
     _unitary_block_encoding,
-    _unitary_block_encoding_override,
+    _unitary_block_encoding_properties,
     Unitary,
 )
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.testing import execute_notebook
 
 
 def test_unitary(bloq_autotester):
     bloq_autotester(_unitary_block_encoding)
+    bloq_autotester(_unitary_block_encoding_properties)
 
 
 def test_unitary_signature():
     assert _unitary_block_encoding().signature == Signature([Register("system", QAny(1))])
 
-    assert _unitary_block_encoding_override().signature == Signature(
+    assert _unitary_block_encoding_properties().signature == Signature(
         [Register("system", QAny(1)), Register("ancilla", QAny(2)), Register("resource", QAny(1))]
     )
 
@@ -48,7 +51,7 @@ def test_unitary_params():
     assert bloq.ancilla_bitsize == 0
     assert bloq.resource_bitsize == 0
 
-    bloq = _unitary_block_encoding_override()
+    bloq = _unitary_block_encoding_properties()
     assert bloq.system_bitsize == 1
     assert bloq.alpha == 0.5
     assert bloq.epsilon == 0.01
@@ -68,7 +71,7 @@ def test_unitary_override_tensors():
     ancilla = bb.join(np.array([bb.add(ZeroState()), bb.add(ZeroState())]))
     resource = bb.add(ZeroState())
     system, ancilla, resource = bb.add_t(
-        _unitary_block_encoding_override(),
+        _unitary_block_encoding_properties(),
         system=system,
         ancilla=ancilla,
         resource=cast(Soquet, resource),
@@ -81,3 +84,12 @@ def test_unitary_override_tensors():
     from_gate = TGate().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+def test_unitary_signal_state():
+    assert isinstance(_unitary_block_encoding().signal_state.prepare, PrepareIdentity)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('unitary')

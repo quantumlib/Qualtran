@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
+from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
@@ -145,7 +145,5 @@ def _approx_cswap_large() -> CSwapApprox:
 
 
 _APPROX_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=CSwapApprox,
-    import_line='from qualtran.bloqs.swap_network import CSwapApprox',
-    examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large),
+    bloq_cls=CSwapApprox, examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large)
 )

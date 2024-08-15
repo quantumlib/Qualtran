@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import cast
+
 import numpy as np
 import pytest
 import sympy
@@ -62,12 +64,46 @@ def test_smax():
     assert smax(1, 2) == 2
     assert smax(1.1, 2.2) == 2.2
     assert smax(1, sympy.Symbol('x')) == sympy.Max(1, sympy.Symbol('x'))
+    with pytest.raises(ValueError):
+        _ = smax()
+    with pytest.raises(ValueError):
+        _ = smax(())
+    with pytest.raises(ValueError):
+        _ = smax(x for x in cast(list[int], []))
+    assert smax(1) == 1
+    assert smax([1]) == 1
+    assert smax((1, 2)) == 2
+    assert smax(None) == None
+    with pytest.raises(TypeError):
+        _ = smax(None, None)
+    with pytest.raises(TypeError):
+        _ = smax((None, None))
+    assert smax(x for x in [1]) == 1
+    assert smax(x for x in [1, 2]) == 2
+    assert smax(x for x in [1, sympy.Symbol('x')]) == sympy.Max(1, sympy.Symbol('x'))
 
 
 def test_smin():
     assert smin(1, 2) == 1
     assert smin(1.1, 2.2) == 1.1
     assert smin(1, sympy.Symbol('x')) == sympy.Min(1, sympy.Symbol('x'))
+    with pytest.raises(ValueError):
+        _ = smin()
+    with pytest.raises(ValueError):
+        _ = smin(())
+    with pytest.raises(ValueError):
+        _ = smin(x for x in cast(list[int], []))
+    assert smin(1) == 1
+    assert smin([1]) == 1
+    assert smin((1, 2)) == 1
+    assert smin(None) == None
+    with pytest.raises(TypeError):
+        _ = smin(None, None)
+    with pytest.raises(TypeError):
+        _ = smin((None, None))
+    assert smin(x for x in [1]) == 1
+    assert smin(x for x in [2, 1]) == 1
+    assert smin(x for x in [1, sympy.Symbol('x')]) == sympy.Min(1, sympy.Symbol('x'))
 
 
 def test_bit_length():
@@ -75,6 +111,22 @@ def test_bit_length():
         assert x.bit_length() == bit_length(x)
         assert x.bit_length() == bit_length(x + 0.5)
         assert x.bit_length() == bit_length(x + 0.0001)
+
+
+@pytest.mark.parametrize('val', [3, 4])
+def test_bit_length_symbolic(val: int):
+    n: sympy.Expr = sympy.Symbol("n")
+    b: sympy.Expr = bit_length(n)
+    assert b.subs({n: val}) == val.bit_length()
+
+
+def test_bit_length_symbolic_simplify():
+    """Most common use case of bit_length: bits to represent [0, N - 1]"""
+    n: sympy.Expr = sympy.Symbol("n", positive=True, integer=True)
+    N: sympy.Expr = sympy.Symbol("N", positive=True, integer=True)
+    b: sympy.Expr = bit_length(N - 1)
+    assert b == ceil(log2(N))
+    assert b.subs({N: 2**n}) == n
 
 
 @pytest.mark.parametrize(

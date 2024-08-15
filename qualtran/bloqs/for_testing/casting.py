@@ -34,9 +34,13 @@ from qualtran.bloqs.bookkeeping import Cast
 
 @frozen
 class TestCastToFrom(Bloq):
+    bitsize: int = 4
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('a', QUInt(4)), Register('b', QFxp(4, 4))])
+        return Signature(
+            [Register('a', QUInt(self.bitsize)), Register('b', QFxp(self.bitsize, self.bitsize))]
+        )
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, a: 'Soquet', b: 'Soquet'
