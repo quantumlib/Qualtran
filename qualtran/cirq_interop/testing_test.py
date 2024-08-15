@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Iterator
+from typing import Dict, Iterator
 
 import cirq
 import numpy as np
 import pytest
 
-from qualtran import QBit, Register, Side, Signature
+from qualtran import Bloq, BloqBuilder, QBit, Register, Side, Signature, SoquetT
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.cirq_interop import testing
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -84,19 +85,17 @@ class ConsistentDecompostion(cirq.Operation):
         pass
 
 
-class InconsistentDecompostion(cirq.Operation):
+class InconsistentDecompostion(Bloq):
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build(q=1)
+
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=1)
 
-    def _decompose_(self) -> Iterator[cirq.OP_TREE]:
-        yield cirq.X(self.qubits[0])
-
-    @property
-    def qubits(self):
-        return tuple(cirq.LineQubit(3).range(3))
-
-    def with_qubits(self, _):
-        pass
+    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        q = bb.add(XGate(), q=q)
+        return {'q': q}
 
 
 def test_assert_decompose_is_consistent_with_t_complexity():

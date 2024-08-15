@@ -38,7 +38,7 @@ from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 from qualtran.bloqs.basic_gates import OnEach, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
+from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 from qualtran.drawing import Text
 
 if TYPE_CHECKING:

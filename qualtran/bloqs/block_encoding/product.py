@@ -15,9 +15,9 @@
 from functools import cached_property
 from typing import cast, Dict, List, Tuple, Union
 
-import cirq
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from qualtran import (
     bloq_example,
@@ -35,8 +35,9 @@ from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 
 
@@ -86,6 +87,15 @@ class Product(BlockEncoding):
     def __attrs_post_init__(self):
         if not all(u.system_bitsize == self.system_bitsize for u in self.block_encodings):
             raise ValueError("All block encodings must have the same system size.")
+        if not all(
+            isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings
+        ):
+            raise ValueError("Cannot take product of block encodings with non-zero signal state.")
+
+    @classmethod
+    def of(cls, *block_encodings: BlockEncoding) -> Self:
+        """Construct a `Product` from block encodings."""
+        return cls(block_encodings)
 
     @cached_property
     def signature(self) -> Signature:
@@ -119,23 +129,8 @@ class Product(BlockEncoding):
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("system"),)
-
-    @property
-    def junk_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("resource"),)
-
-    @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (self.signature.get_right("ancilla"),)
-
-    @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
@@ -200,7 +195,7 @@ class Product(BlockEncoding):
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
                 controls = bb.split(cast(Soquet, anc_soq))
                 controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
-                    MultiControlPauli(tuple([0] * u.ancilla_bitsize), cirq.X),
+                    MultiControlX(tuple([0] * u.ancilla_bitsize)),
                     controls=controls[: u.ancilla_bitsize],
                     target=flag_bits_soq[i],
                 )

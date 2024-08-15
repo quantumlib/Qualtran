@@ -38,6 +38,15 @@ def test_state_prep_via_rotation(bloq_autotester):
     bloq_autotester(_state_prep_via_rotation)
 
 
+def test_state_prep_via_rotation_symb_quick():
+    bloq = _state_prep_via_rotation_symb.make()
+    L, phase = bloq.n_coeff, bloq.phase_bitsize
+    expected_t_count_expr = 16 * L + 8 * phase - 32
+    assert isinstance(expected_t_count_expr, sympy.Expr)
+    assert bloq.t_complexity().t == expected_t_count_expr
+
+
+@pytest.mark.slow
 def test_state_prep_via_rotation_symb():
     bloq = _state_prep_via_rotation_symb.make()
     L, phase = bloq.n_coeff, bloq.phase_bitsize

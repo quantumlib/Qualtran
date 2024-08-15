@@ -57,8 +57,6 @@ def qsp_complementary_polynomial(
     The method computes an auxillary polynomial R, whose roots are computed
     and re-interpolated to obtain the required polynomial Q.
 
-    TODO: Also implement the more efficient optimization-based method described in Eq. 52
-
     Args:
         P: Co-efficients of a complex polynomial.
         verify: sanity check the computed polynomial roots (defaults to False).

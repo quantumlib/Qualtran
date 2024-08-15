@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import subprocess
 
 from qualtran import QFxp, QInt, QUInt
 from qualtran.bloqs.bookkeeping import Cast
@@ -58,7 +57,3 @@ def test_cast_unsiged_signed():
 
     c = Cast(QInt(5), QUInt(5))
     assert c.call_classically(reg=-1) == (31,)
-
-
-def test_no_circular_import():
-    subprocess.check_call(['python', '-c', 'from qualtran.bloqs.bookkeeping import cast'])

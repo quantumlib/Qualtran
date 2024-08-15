@@ -371,6 +371,11 @@ class WireSymbol(metaclass=abc.ABCMeta):
         return {'symb_cls': self.__class__.__name__, 'symb_attributes': attrs.asdict(self)}
 
 
+def _text_adjoint(text: str) -> str:
+    """Add / Remove a dagger from the end of the text."""
+    return text.strip('†') if text.endswith('†') else text + '†'
+
+
 @frozen
 class TextBox(WireSymbol):
     text: str
@@ -386,6 +391,9 @@ class TextBox(WireSymbol):
             va='center',
             bbox={'boxstyle': 'round', 'fc': 'white'},
         )
+
+    def adjoint(self) -> 'TextBox':
+        return TextBox(_text_adjoint(self.text))
 
 
 @frozen
@@ -404,6 +412,9 @@ class Text(WireSymbol):
             va='center',
             bbox={'lw': 0, 'fc': 'white'},
         )
+
+    def adjoint(self) -> 'Text':
+        return Text(_text_adjoint(self.text), self.fontsize)
 
 
 @frozen

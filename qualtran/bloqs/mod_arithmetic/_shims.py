@@ -38,16 +38,6 @@ if TYPE_CHECKING:
 
 
 @frozen
-class ModAdd(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
-
-
-@frozen
 class ModSub(Bloq):
     n: int
     mod: int
