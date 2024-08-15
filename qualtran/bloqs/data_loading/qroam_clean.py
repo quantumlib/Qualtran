@@ -24,6 +24,7 @@ from numpy.typing import ArrayLike
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
+from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -76,6 +77,37 @@ def get_optimal_log_block_size_clean_ancilla(
 
 @attrs.frozen
 class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
+    r"""Measurement based uncomputation of a table lookup. Assumes target is left in |0> state.
+
+    Measurement based uncomputation of a table, as described in Ref[1]. Follows the usual API
+    of a QROM bloq. Assumes that the target register was initially in the $|0\rangle$ state before
+    the lookup was performed and must be deallocated and left in |0\rangle$ state after
+    uncomputation.
+
+    Reduces the problem of uncomputating a data lookup with $N$ elements and target bitsize $b$ to
+    doing another data lookup with $\frac{N}{2}$ elements, each of bitsize 2. The reduction is
+    explained in Ref[1] and uses X-basis measurements + classically controlled Cliffords. A variant
+    of `QROAM` bloq can be used to perform the resulting lookup and resulting junk registers can be
+    cleaned up with measurement based uncomputation of SwapWithZero.
+
+    Thus, cost of uncomputing a data lookup with $N$ elements and target bitsize $b$ is
+    $\frac{N}{K} + (K - 1)$ Toffoli gates (instead of $\frac{N}{K} + (K - 1) \times b$ used by the
+    original lookup).
+
+    Registers:
+        - control_registers: If control is specified, a THRU register to denote the control qubits.
+            Empty by default for uncontrolled version of the Bloq.
+        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+            classical datasets.
+        - target_registers: $M$ LEFT registers to load $M$ different classical datasets. Each target
+            register is of bitsize $b$ and shape described by a tuple of length $N + S$. Here $S$ is
+            a parameter that describes the shape of the output to be loaded for each selection index.
+
+
+    References:
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
+            Berry et. al. (2019). Appendix C.
+    """
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -143,10 +175,10 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        X = prod([2**k for k in self.log_block_sizes])
-        N = prod(self.data_shape)
-        B = 2
-        cost = qroam_cost(X, ceil(N / 2), B, adjoint=True)
+        block_sizes = prod([2**k for k in self.log_block_sizes])
+        data_size = prod(self.data_shape)
+        target_bitsize = 2
+        cost = qroam_cost(block_sizes, ceil(data_size / 2), target_bitsize, adjoint=True)
         return {(Toffoli(), cost)}
 
     @cached_property
@@ -158,9 +190,62 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def adjoint(self) -> 'QROAMClean':
         return QROAMClean(**attrs.asdict(self))
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('QROAM').adjoint()
+        name = reg.name
+        if name == 'selection':
+            return TextBox('In').adjoint()
+        elif 'target' in name:
+            trg_indx = int(name.replace('target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + trg_indx)
+            return LarrowTextBox(f'QROAM_{subscript}')
+        elif name == 'control':
+            return Circle()
+        raise ValueError(f'Unknown register name {name}')
+
 
 @attrs.frozen
 class QROAMClean(SelectSwapQROM):
+    r"""Lower cost variant of SelectSwapQROM. Assumes target register is initially in |0> state.
+
+    To load a classical dataset of $N$ elements, each of bitsize $b$, into a target register initialized
+    in the $|0\rangle$ state, this construction uses:
+        - $\frac{N}{K} + (K - 1) \times b$ Toffoli gates.
+        - $(K - 1)$ ancilla registers, each of bitsize $b$, left in a junk state and should be kept
+         around to get uncomputed by the adjoint bloq - `QROAMCleanAdjoint`.
+
+    Here $K=2^k$ is a configurable constant and should be set to $\sqrt{\frac{N}{b}}$ for optimal cost.
+
+    Similar to SelectSwapQROM, this bloq also supports loading multiple classical datasets,
+    each of which can be multidimensional. Factory methods `QROAMClean.build_from_data` and
+    `QROAMClean.build_from_bitsize` should be used to construct the bloq.
+
+    The adjoint of the bloq is performed via `QROAMCleanAdjoint`, and reduces to a problem of
+    uncomputing a table lookup with $N$ elements, each of target bitsize $K \times b$. The data to
+    be loaded for uncomputation is computed by this bloq in the `self.batched_data_permuted`
+    property.
+
+    `QROAMCleanAdjoint` uses measurement based uncomputation to uncompute a table lookup of $N$
+    elements and target bitsize $b$ using only $\frac{N}{K} + (K - 1)$ Toffoli gates
+    (instead of $\frac{N}{K} + (K - 1) \times b$ used by the original lookup). Thus, increasing the
+    target bitsize for uncomputation is preferred since complexity of uncomputation does not depend
+    upon the target bitsize of elements to be loaded.
+
+    Registers:
+        - control_registers: If control is specified, a THRU register to denote the control qubits.
+            Empty by default for uncontrolled version of the Bloq.
+        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+            classical datasets.
+        - target_registers: $M$ RIGHT registers to load $M$ different classical datasets. Each target
+            register is of bitsize $b$ and shape described by a tuple of length $N$.
+        - junk_registers: $K - 1$ RIGHT registers, each of bitsize $b$ used to load batches of size $K$
+
+    References:
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
+            Berry et. al. (2019). Appendix A. and B.
+    """
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -340,6 +425,26 @@ class QROAMClean(SelectSwapQROM):
                 target_bitsizes=self.target_bitsizes,
                 target_shapes=(self.block_sizes,) * len(self.target_bitsizes),
             )
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('QROAM')
+        name = reg.name
+        if name == 'selection':
+            return TextBox('In')
+        elif 'target' in name:
+            trg_indx = int(name.replace('target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + trg_indx)
+            return RarrowTextBox(f'QROAM_{subscript}')
+        elif 'junk' in name:
+            junk_idx = int(name.replace('junk_target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + junk_idx)
+            return RarrowTextBox(f'junk_{subscript}')
+        elif name == 'control':
+            return Circle()
+        raise ValueError(f'Unknown register name {name}')
 
 
 @bloq_example
