@@ -96,10 +96,14 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         cls,
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> 'QROM':
         return cls._build_from_data(
-            *data, target_bitsizes=target_bitsizes, num_controls=num_controls
+            *data,
+            target_bitsizes=target_bitsizes,
+            target_shapes=target_shapes,
+            num_controls=num_controls,
         )
 
     @classmethod
