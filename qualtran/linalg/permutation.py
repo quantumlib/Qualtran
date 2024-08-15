@@ -47,7 +47,7 @@ def decompose_permutation_map_into_cycles(permutation_map: dict[int, int]) -> It
 
         # compute the cycle starting at `i`
         cycle = []
-        while True:
+        while i not in seen:
             seen.add(i)
             cycle.append(i)
             if i not in permutation_map:
