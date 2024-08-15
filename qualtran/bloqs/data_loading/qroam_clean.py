@@ -177,9 +177,8 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
-        target_bitsize = 2
-        cost = qroam_cost(block_sizes, ceil(data_size / 2), target_bitsize, adjoint=True)
-        return {(Toffoli(), cost)}
+        n_toffoli = ceil(data_size / block_sizes) + block_sizes
+        return {(Toffoli(), n_toffoli)}
 
     @cached_property
     def signature(self) -> Signature:
@@ -451,44 +450,20 @@ class QROAMClean(SelectSwapQROM):
 def _qroam_clean_multi_data() -> QROAMClean:
     data1 = np.arange(5, dtype=int)
     data2 = np.arange(5, dtype=int) + 1
-    qroam_multi_data = QROAMClean.build_from_data(data1, data2, log_block_sizes=(2,))
-    return qroam_multi_data
+    qroam_clean_multi_data = QROAMClean.build_from_data(data1, data2, log_block_sizes=(1,))
+    return qroam_clean_multi_data
 
 
 @bloq_example
 def _qroam_clean_multi_dim() -> QROAMClean:
     data1 = np.arange(25, dtype=int).reshape((5, 5))
     data2 = (np.arange(25, dtype=int) + 1).reshape((5, 5))
-    qroam_multi_dim = QROAMClean.build_from_data(data1, data2, log_block_sizes=(2, 1))
-    return qroam_multi_dim
-
-
-@bloq_example
-def _qroam_clean_symb_1d() -> QROAMClean:
-    N, b, k, c = sympy.symbols('N b k c')
-    qroam_symb_clean_1d = QROAMClean.build_from_bitsize(
-        (N,), (b,), log_block_sizes=(k,), num_controls=c
-    )
-    return qroam_symb_clean_1d
-
-
-@bloq_example
-def _qroam_clean_symb_2d() -> QROAMClean:
-    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c')
-    log_block_sizes = (k1, k2)
-    qroam_symb_clean_2d = QROAMClean.build_from_bitsize(
-        (N, M), (b1, b2), log_block_sizes=log_block_sizes, num_controls=c
-    )
-    return qroam_symb_clean_2d
+    qroam_clean_multi_dim = QROAMClean.build_from_data(data1, data2, log_block_sizes=(1, 1))
+    return qroam_clean_multi_dim
 
 
 _QROAM_CLEAN_DOC = BloqDocSpec(
     bloq_cls=QROAMClean,
-    import_line='from qualtran.bloqs.data_loading.select_swap_qrom import QROAMClean',
-    examples=[
-        _qroam_clean_multi_data,
-        _qroam_clean_multi_dim,
-        _qroam_clean_symb_1d,
-        _qroam_clean_symb_2d,
-    ],
+    import_line='from qualtran.bloqs.data_loading.qroam_clean import QROAMClean',
+    examples=[_qroam_clean_multi_data, _qroam_clean_multi_dim],
 )

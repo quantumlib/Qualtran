@@ -41,7 +41,7 @@ def test_t_complexity_1d_data_symbolic():
     inv_k = sympy.symbols('kinv')
     inv_K = 2**inv_k
     bloq_inv = bloq_inv.with_log_block_sizes(log_block_sizes=(inv_k,))
-    expected_toffoli_inv = ceil(N / 2) / inv_K + inv_K
+    expected_toffoli_inv = ceil(N / inv_K) + inv_K
     assert bloq_inv.t_complexity().t == 4 * expected_toffoli_inv
 
 
@@ -57,7 +57,7 @@ def test_t_complexity_2d_data_symbolic():
     inv_k1, inv_k2 = sympy.symbols('kinv1, kinv2')
     inv_K1, inv_K2 = 2**inv_k1, 2**inv_k2
     bloq_inv = bloq_inv.with_log_block_sizes(log_block_sizes=(inv_k1, inv_k2))
-    expected_toffoli_inv = ceil(N1 * N2 / 2) / (inv_K1 * inv_K2) + inv_K1 * inv_K2
+    expected_toffoli_inv = ceil(N1 * N2 / (inv_K1 * inv_K2)) + inv_K1 * inv_K2
     assert bloq_inv.t_complexity().t == 4 * expected_toffoli_inv
 
 
