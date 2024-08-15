@@ -746,6 +746,14 @@ OTHER: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Advanced QROM (aka QROAM) using clean ancilla',
+        module=qualtran.bloqs.data_loading.qroam_clean,
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.qroam_clean._QROAM_CLEAN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Reflections',
         module=qualtran.bloqs.reflections,
         bloq_specs=[

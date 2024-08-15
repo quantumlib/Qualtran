@@ -23,7 +23,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BloqDocSpec, BoundedQUInt, QAny, Register
+from qualtran import BloqDocSpec, BoundedQUInt, QAny, Register, Side
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
 
@@ -221,16 +221,22 @@ class QROMBase(metaclass=abc.ABCMeta):
         cls: Type[QROM_T],
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> QROM_T:
         _data = [np.array(d, dtype=int) for d in data]
-        selection_bitsizes = tuple((s - 1).bit_length() for s in _data[0].shape)
         if target_bitsizes is None:
             target_bitsizes = tuple(max(int(np.max(d)).bit_length(), 1) for d in data)
+        assert isinstance(target_bitsizes, tuple)  # Make mypy happy.
+        if target_shapes == ():
+            target_shapes = ((),) * len(target_bitsizes)
+        selection_len = len(_data[0].shape) - len(target_shapes[0])
+        selection_bitsizes = tuple((s - 1).bit_length() for s in _data[0].shape[:selection_len])
         return cls(
             data_or_shape=_data,
             selection_bitsizes=selection_bitsizes,
             target_bitsizes=target_bitsizes,
+            target_shapes=target_shapes,
             num_controls=num_controls,
         )
 
@@ -288,9 +294,13 @@ class QROMBase(metaclass=abc.ABCMeta):
         return tuple(Register(f'selection{i}', qdtype) for i, qdtype in enumerate(types))
 
     @cached_property
+    def _target_reg_side(self) -> Side:
+        return Side.THRU
+
+    @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return tuple(
-            Register(f'target{i}_', QAny(l), shape=sh)
+            Register(f'target{i}_', QAny(l), shape=sh, side=self._target_reg_side)
             for i, (l, sh) in enumerate(zip(self.target_bitsizes, self.target_shapes))
             if is_symbolic(l) or l
         )
@@ -323,13 +333,15 @@ class QROMBase(metaclass=abc.ABCMeta):
 
         # Retrieve the data; bitwise add them in to the input target values
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
-        targets = {k: v ^ vals[k] for k, v in targets.items()}
+        targets = {k: v ^ vals.get(k, 0) for k, v in targets.items()}
+        if not (self._target_reg_side & Side.RIGHT):
+            for reg_name, reg_val in targets.items():
+                if np.any(reg_val):
+                    raise ValueError(
+                        f"Target register {reg_name} must be uncomputed before de-allocation. Found values {reg_val}"
+                    )
+            targets = {}
         return controls | selections | targets
-
-    def __pow__(self, power: int):
-        if power in [1, -1]:
-            return self
-        return NotImplemented  # pragma: no cover
 
 
 _QROM_BASE_DOC = BloqDocSpec(bloq_cls=QROMBase, import_line='', examples=[])
