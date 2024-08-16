@@ -107,5 +107,5 @@ def test_hamiltonian_simulation_by_gqsp_t_complexity():
 
     symbolic_hamsim_by_gqsp = _symbolic_hamsim_by_gqsp()
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
-    T = big_O(tau * t + sympy.log(inv_eps) / sympy.log(sympy.log(inv_eps)))
+    T = big_O(tau * t + sympy.log(2 * inv_eps) / sympy.log(sympy.log(2 * inv_eps)))
     assert symbolic_hamsim_by_gqsp.t_complexity() == TComplexity(t=T, clifford=T, rotations=T)  # type: ignore[arg-type]
