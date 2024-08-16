@@ -11,7 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import BoundedQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QUInt
+from qualtran import (
+    BoundedQUInt,
+    QAny,
+    QBit,
+    QDType,
+    QFxp,
+    QInt,
+    QIntOnesComp,
+    QMontgomeryUInt,
+    QUInt,
+)
 from qualtran.protos import data_types_pb2
 from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
@@ -29,6 +39,10 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
         return data_types_pb2.QDataType(qint_ones_comp=data_types_pb2.QIntOnesComp(bitsize=bitsize))
     elif isinstance(data, QUInt):
         return data_types_pb2.QDataType(quint=data_types_pb2.QUInt(bitsize=bitsize))
+    elif isinstance(data, QMontgomeryUInt):
+        return data_types_pb2.QDataType(
+            qmontgomery_uint=data_types_pb2.QMontgomeryUInt(bitsize=bitsize)
+        )
     elif isinstance(data, BoundedQUInt):
         iteration_length = int_or_sympy_to_proto(data.iteration_length)
         return data_types_pb2.QDataType(
@@ -46,7 +60,7 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
             f"Data type {type(data)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
             "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
-            "QFixedPoint"
+            "QFxp"
         )
 
 
@@ -66,6 +80,9 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
     elif serialized.HasField('quint'):
         bitsize = int_or_sympy_from_proto(serialized.quint.bitsize)
         return QUInt(bitsize=bitsize)
+    elif serialized.HasField('qmontgomery_uint'):
+        bitsize = int_or_sympy_from_proto(serialized.qmontgomery_uint.bitsize)
+        return QMontgomeryUInt(bitsize=bitsize)
     elif serialized.HasField('bounded_quint'):
         bitsize = int_or_sympy_from_proto(serialized.bounded_quint.bitsize)
         iteration_length = int_or_sympy_from_proto(serialized.bounded_quint.iteration_length)
@@ -79,5 +96,5 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
             f"Data type {type(serialized)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
             "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
-            "QFixedPoint"
+            "QFxp, QMontgomeryUInt"
         )
