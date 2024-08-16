@@ -22,20 +22,22 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqDocSpec,
-    GateWithRegisters,
-    QUInt,
-    Register,
-    Side,
-    Signature,
-)
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlZ
+from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import (
+    acos,
+    ceil,
+    HasLength,
+    is_symbolic,
+    log2,
+    pi,
+    SymbolicFloat,
+    SymbolicInt,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -102,7 +104,7 @@ class LPRSInterimPrep(GateWithRegisters):
 
 
 @attrs.frozen
-class LPResourceState(GateWithRegisters):
+class LPResourceState(QPEWindowStateBase):
     r"""Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
 
     Uses a single round of amplitude amplification, as described in Ref 2, to prepare the
@@ -126,15 +128,44 @@ class LPResourceState(GateWithRegisters):
 
     bitsize: SymbolicInt
 
+    # @cached_property
+    # def signature(self) -> 'Signature':
+    #     return Signature([Register('m', QUInt(self.bitsize), side=Side.THRU)])
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('m', QUInt(self.bitsize), side=Side.THRU)])
+        return Signature([self.m_register])
+
+    @classmethod
+    def from_standard_deviation_eps(cls, eps: SymbolicFloat):
+        r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
+
+        The standard deviation of phase estimation using optimal resource states scales as the
+        square of Holevo variance $\tan{\frac{\pi}{2^m}}$.
+        This bound can be used to estimate the size of the phase register s.t. the estimated phase
+        has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
+
+        ```
+            m = ceil(log2(pi/eps))
+        ```
+
+        Args:
+            walk: Walk operator to obtain phase estimate of.
+            eps: Maximum standard deviation of the estimated phase.
+        """
+        return LPResourceState(ceil(log2(pi(eps) / eps)))
+
+    @property
+    def m_bits(self) -> SymbolicInt:
+        return self.bitsize
+
+    def decompose_bloq(self):
+        return decompose_from_cirq_style_method(self)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         """Use the _LPResourceStateHelper and do a single round of amplitude amplification."""
-        q = quregs['m'].flatten().tolist()
+        q = quregs['qpe_reg'].flatten().tolist()
         anc, flag = context.qubit_manager.qalloc(2)
 
         flag_angle = np.arccos(1 / (1 + 2**self.bitsize))

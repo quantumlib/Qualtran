@@ -18,11 +18,12 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
+from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -72,42 +73,19 @@ class QubitizationQPE(GateWithRegisters):
     """
 
     walk: QubitizationWalkOperator
-    m_bits: SymbolicInt
-    ctrl_state_prep: Bloq = attrs.field()
+    ctrl_state_prep: QPEWindowStateBase
     qft_inv: Bloq = attrs.field()
-
-    @ctrl_state_prep.default
-    def _default_state_prep(self):
-        return LPResourceState(self.m_bits)
 
     @qft_inv.default
     def _default_inverse_qft(self):
         return QFTTextBook(self.m_bits, with_reverse=True).adjoint()
 
     def __attrs_post_init__(self):
-        assert is_symbolic(self.m_bits) or (
-            self.ctrl_state_prep.signature.n_qubits() == self.m_bits
-        )
+        assert is_symbolic(self.m_bits) or (self.qft_inv.signature.n_qubits() == self.m_bits)
 
-    @classmethod
-    def from_standard_deviation_eps(cls, walk: QubitizationWalkOperator, eps: SymbolicFloat):
-        r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
-
-        The standard deviation of phase estimation using optimal resource states scales as the
-        square of Holevo variance $\tan{\frac{\pi}{2^m}}$.
-        This bound can be used to estimate the size of the phase register s.t. the estimated phase
-        has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
-
-        ```
-            m = ceil(log2(pi/eps))
-        ```
-
-        Args:
-            walk: Walk operator to obtain phase estimate of.
-            eps: Maximum standard deviation of the estimated phase.
-        """
-        m_bits = ceil(log2(pi(eps) / eps))
-        return QubitizationQPE(walk=walk, m_bits=m_bits)
+    @cached_property
+    def m_bits(self) -> SymbolicInt:
+        return self.ctrl_state_prep.m_bits
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -115,7 +93,7 @@ class QubitizationQPE(GateWithRegisters):
 
     @cached_property
     def phase_registers(self) -> Tuple[Register, ...]:
-        return (Register('qpe_reg', QFxp(self.m_bits, self.m_bits)),)
+        return tuple(self.ctrl_state_prep.signature)
 
     @cached_property
     def signature(self) -> Signature:
@@ -174,8 +152,8 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
-        walk, qpe_eps
+    qubitization_qpe_hubbard_model_small = QubitizationQPE(
+        walk, LPResourceState.from_standard_deviation_eps(qpe_eps)
     )
     return qubitization_qpe_hubbard_model_small
 
@@ -197,8 +175,8 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
-        walk, qpe_eps
+    qubitization_qpe_hubbard_model_large = QubitizationQPE(
+        walk, LPResourceState.from_standard_deviation_eps(qpe_eps)
     )
     return qubitization_qpe_hubbard_model_large
 
@@ -230,7 +208,9 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
 
     algo_eps = 0.0016
     qpe_eps = algo_eps / (walk.block_encoding.alpha * 2**0.5)
-    qubitization_qpe_chem_thc = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    qubitization_qpe_chem_thc = QubitizationQPE(
+        walk, LPResourceState.from_standard_deviation_eps(qpe_eps)
+    )
     return qubitization_qpe_chem_thc
 
 
@@ -251,7 +231,9 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
     algo_eps = 0.0016
     qlambda = np.sum(np.abs(tpq)) + 0.5 * np.sum(np.abs(eris))
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_sparse_chem = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    qubitization_qpe_sparse_chem = QubitizationQPE(
+        walk, LPResourceState.from_standard_deviation_eps(qpe_eps)
+    )
     return qubitization_qpe_sparse_chem
 
 

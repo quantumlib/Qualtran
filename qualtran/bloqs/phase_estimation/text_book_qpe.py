@@ -18,9 +18,9 @@ import attrs
 import cirq
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
-from qualtran.bloqs.basic_gates import Hadamard, OnEach
+from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -123,9 +123,7 @@ class TextbookQPE(GateWithRegisters):
 
     Args:
         unitary: Bloq representing the unitary to run the phase estimation protocol on.
-        m_bits: Bitsize of the phase register to be used during phase estimation.
-        ctrl_state_prep: Bloq to prepare the control state on the phase register. Defaults to
-            `OnEach(self.m_bits, Hadamard())`.
+        ctrl_state_prep: Bloq to prepare the control state on the phase register.
         qft_inv: Bloq to apply inverse QFT on the phase register. Defaults to
             `QFTTextBook(self.m_bits).adjoint()`
 
@@ -144,61 +142,19 @@ class TextbookQPE(GateWithRegisters):
     """
 
     unitary: Bloq
-    m_bits: SymbolicInt
-    ctrl_state_prep: Bloq = attrs.field()
+    ctrl_state_prep: QPEWindowStateBase
     qft_inv: Bloq = attrs.field()
-
-    @ctrl_state_prep.default
-    def _default_state_prep(self):
-        return OnEach(self.m_bits, Hadamard())
 
     @qft_inv.default
     def _default_inverse_qft(self):
         return QFTTextBook(self.m_bits, with_reverse=True).adjoint()
 
     def __attrs_post_init__(self):
-        assert is_symbolic(self.m_bits) or (
-            self.ctrl_state_prep.signature.n_qubits() == self.m_bits
-        )
+        assert is_symbolic(self.m_bits) or (self.qft_inv.signature.n_qubits() == self.m_bits)
 
-    @classmethod
-    def from_precision_and_delta(cls, unitary: Bloq, precision: SymbolicInt, delta: SymbolicFloat):
-        r"""Estimate $\varphi$ to $precision$ bits with $1-\delta$ success probability.
-
-        Uses Eq 5.35 from Neilson and Chuang to estimate the size of phase register s.t. we can
-        estimate the phase $\varphi$ to $precision$ bits of accuracy with probability at least
-        $1 - \delta$. See the class docstring for more details.
-
-        ```
-            m = n + ceil(log2(2 + 1/(2*delta)))
-        ```
-
-        Args:
-            unitary: Unitary operation to obtain phase estimate of.
-            precision: Number of bits of precision
-            delta: Probability of success.
-        """
-        m_bits = precision + ceil(log2(2 + 1 / (2 * delta)))
-        return TextbookQPE(unitary=unitary, m_bits=m_bits)
-
-    @classmethod
-    def from_standard_deviation_eps(cls, unitary: Bloq, eps: SymbolicFloat):
-        r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
-
-        The standard deviation of textbook phase estimation scales as $\frac{2\pi}{\sqrt{2^{m}}}$.
-        This bound can be used to estimate the size of the phase register s.t. the estimated phase
-        has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
-
-        ```
-            m = ceil(2*log2(pi/eps))
-        ```
-
-        Args:
-            unitary: Unitary operation to obtain phase estimate of.
-            eps: Maximum standard deviation of the estimated phase.
-        """
-        m_bits = ceil(2 * log2(pi(eps) / eps))
-        return TextbookQPE(unitary=unitary, m_bits=m_bits)
+    @cached_property
+    def m_bits(self) -> SymbolicInt:
+        return self.ctrl_state_prep.m_bits
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -206,7 +162,7 @@ class TextbookQPE(GateWithRegisters):
 
     @cached_property
     def phase_registers(self) -> Tuple[Register, ...]:
-        return (Register('qpe_reg', QFxp(self.m_bits, self.m_bits)),)
+        return tuple(self.ctrl_state_prep.signature)
 
     @cached_property
     def signature(self) -> Signature:
@@ -217,7 +173,6 @@ class TextbookQPE(GateWithRegisters):
     ) -> Iterator[cirq.OP_TREE]:
         target_quregs = {reg.name: quregs[reg.name] for reg in self.target_registers}
         unitary_op = self.unitary.on_registers(**target_quregs)
-
         phase_qubits = quregs['qpe_reg']
 
         yield self.ctrl_state_prep.on(*phase_qubits)
@@ -227,11 +182,9 @@ class TextbookQPE(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Assumes self.unitary is not fast forwardable.
-        from qualtran import Controlled, CtrlSpec
-
         return {
             (self.ctrl_state_prep, 1),
-            (Controlled(self.unitary, CtrlSpec()), (2**self.m_bits) - 1),
+            (self.unitary.controlled(), (2**self.m_bits) - 1),
             (self.qft_inv, 1),
         }
 
