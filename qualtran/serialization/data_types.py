@@ -60,7 +60,7 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
             f"Data type {type(data)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
             "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
-            "QFxp"
+            "QFxp, QMontgomeryUInt"
         )
 
 
