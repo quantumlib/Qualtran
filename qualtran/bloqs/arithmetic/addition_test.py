@@ -377,3 +377,16 @@ def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('addition')
+
+
+@pytest.mark.parametrize('bitsize', range(1, 5))
+def test_outofplaceadder_classical_action(bitsize):
+    b = OutOfPlaceAdder(bitsize)
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y) == cb.call_classically(a=x, b=y)
+
+    b = OutOfPlaceAdder(bitsize).adjoint()
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y, c=x + y) == cb.call_classically(a=x, b=y, c=x + y)

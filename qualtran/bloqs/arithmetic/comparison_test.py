@@ -17,16 +17,19 @@ import itertools
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QUInt
+from qualtran import BloqBuilder, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
+    _clineardepthgreaterthan_example,
     _eq_k,
     _greater_than,
     _gt_k,
     _leq_symb,
     _lt_k_symb,
     BiQubitsMixer,
+    CLinearDepthGreaterThan,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -38,6 +41,10 @@ from qualtran.bloqs.arithmetic.comparison import (
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+
+
+def test_clineardepthgreaterthan_example(bloq_autotester):
+    bloq_autotester(_clineardepthgreaterthan_example)
 
 
 def test_greater_than(bloq_autotester):
@@ -321,3 +328,55 @@ def test_decomposition_frees_ancilla(gate):
     qubit_manager = cirq.ops.GreedyQubitManager(prefix='_test')
     _ = cirq.decompose(op, context=cirq.DecompositionContext(qubit_manager))
     assert len(qubit_manager._used_qubits) == 0
+
+
+@pytest.mark.parametrize('ctrl', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(1, 5))
+def test_clineardepthgreaterthan_classical_action_unsigned(ctrl, dtype, bitsize):
+    b = CLinearDepthGreaterThan(dtype(bitsize), ctrl)
+    cb = b.decompose_bloq()
+    for c, target in itertools.product(range(2), repeat=2):
+        for (x, y) in itertools.product(range(2**bitsize), repeat=2):
+            print(f'{c=} {target=} {x=} {y=}')
+            assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
+                ctrl=c, a=x, b=y, target=target
+            )
+
+
+@pytest.mark.parametrize('ctrl', range(2))
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_clineardepthgreaterthan_classical_action_signed(ctrl, bitsize):
+    b = CLinearDepthGreaterThan(QInt(bitsize), ctrl)
+    cb = b.decompose_bloq()
+    for c, target in itertools.product(range(2), repeat=2):
+        for (x, y) in itertools.product(range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1)), repeat=2):
+            print(f'{c=} {target=} {x=} {y=}')
+            assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
+                ctrl=c, a=x, b=y, target=target
+            )
+
+
+@pytest.mark.parametrize('ctrl', range(2))
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_clineardepthgreaterthan_decomposition(ctrl, dtype, bitsize):
+    b = CLinearDepthGreaterThan(dtype(bitsize), ctrl)
+    qlt_testing.assert_valid_bloq_decomposition(b)
+
+
+@pytest.mark.parametrize('ctrl', range(2))
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_clineardepthgreaterthan_bloq_counts(ctrl, dtype, bitsize):
+    b = CLinearDepthGreaterThan(dtype(bitsize), ctrl)
+    qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
+
+
+@pytest.mark.parametrize('ctrl', range(2))
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+def test_clineardepthgreaterthan_tcomplexity(ctrl, dtype):
+    n = sympy.Symbol('n')
+    c = CLinearDepthGreaterThan(dtype(n), ctrl).t_complexity()
+    assert c.t == 4 * (n + 2)
+    assert c.rotations == 0

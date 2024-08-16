@@ -56,6 +56,7 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
@@ -388,6 +389,11 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Controlled Addition',
+        module=qualtran.bloqs.arithmetic.controlled_addition,
+        bloq_specs=[qualtran.bloqs.arithmetic.controlled_addition._CADD_DOC],
+    ),
+    NotebookSpecV2(
         title='Negation',
         module=qualtran.bloqs.arithmetic.negate,
         bloq_specs=[qualtran.bloqs.arithmetic.negate._NEGATE_DOC],
@@ -432,6 +438,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
+            qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -737,6 +744,14 @@ OTHER: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
             qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Advanced QROM (aka QROAM) using clean ancilla',
+        module=qualtran.bloqs.data_loading.qroam_clean,
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.qroam_clean._QROAM_CLEAN_DOC,
         ],
     ),
     NotebookSpecV2(

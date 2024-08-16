@@ -62,6 +62,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/controlled_addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
     arithmetic/controlled_add_or_subtract.ipynb
@@ -128,6 +129,7 @@ Bloqs Library
     multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
+    data_loading/qroam_clean.ipynb
     reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb

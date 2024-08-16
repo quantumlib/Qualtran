@@ -18,6 +18,7 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions.contiguous_index
 import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
 import qualtran.bloqs.arithmetic.conversions.sign_extension
@@ -93,6 +94,7 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.mod_exp
@@ -169,6 +171,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.comparison.LessThanEqual": qualtran.bloqs.arithmetic.comparison.LessThanEqual,
     "qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.LinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.comparison.SingleQubitCompare": qualtran.bloqs.arithmetic.comparison.SingleQubitCompare,
+    "qualtran.bloqs.arithmetic.comparison.CLinearDepthGreaterThan": qualtran.bloqs.arithmetic.comparison.CLinearDepthGreaterThan,
     "qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract": qualtran.bloqs.arithmetic.controlled_add_or_subtract.ControlledAddOrSubtract,
     "qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex": qualtran.bloqs.arithmetic.conversions.contiguous_index.ToContiguousIndex,
     "qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement": qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement.SignedIntegerToTwosComplement,
@@ -192,6 +195,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.ParallelComparators": qualtran.bloqs.arithmetic.sorting.ParallelComparators,
     "qualtran.bloqs.arithmetic.subtraction.Subtract": qualtran.bloqs.arithmetic.subtraction.Subtract,
     "qualtran.bloqs.arithmetic.subtraction.SubtractFrom": qualtran.bloqs.arithmetic.subtraction.SubtractFrom,
+    "qualtran.bloqs.arithmetic.controlled_addition.CAdd": qualtran.bloqs.arithmetic.controlled_addition.CAdd,
     "qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin": qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin,
     "qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan": qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
@@ -315,6 +319,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTileHWP": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTileHWP,
     "qualtran.bloqs.chemistry.trotter.trotterized_unitary": qualtran.bloqs.chemistry.trotter.trotterized_unitary,
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMClean": qualtran.bloqs.data_loading.qroam_clean.QROAMClean,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
     "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK": qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK,

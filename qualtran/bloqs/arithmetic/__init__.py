@@ -16,6 +16,7 @@ from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
+    CLinearDepthGreaterThan,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -23,6 +24,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     LessThanEqual,
     SingleQubitCompare,
 )
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.arithmetic.conversions import (
     SignedIntegerToTwosComplement,
     SignExtend,
