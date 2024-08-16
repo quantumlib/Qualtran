@@ -210,7 +210,7 @@ class BitwiseNot(Bloq):
         return self
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> dict[str, 'SoquetT']:
-        x = bb.add(OnEach(self.dtype.num_qubits, XGate()), q=x)
+        x = bb.add(OnEach(self.dtype.num_qubits, XGate(), self.dtype), q=x)
         return {'x': x}
 
     def wire_symbol(

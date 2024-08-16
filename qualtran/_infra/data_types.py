@@ -543,7 +543,7 @@ class QFxp(QDType):
     to represent classical values during simulation, and convert to and from bits
     for intermediate values.
 
-    For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
+    For example, QFxp(6, 4) has 2 int bits and 4 frac bits, and the corresponding
     int type is QUInt(6). So a true classical value of `10.0011` will have a raw
     integer representation of `100011`.
 

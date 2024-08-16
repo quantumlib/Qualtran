@@ -291,10 +291,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
-        self, *, a: 'ClassicalValT', b: 'ClassicalValT'
+        self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: Optional['ClassicalValT'] = None
     ) -> Dict[str, 'ClassicalValT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        if self.is_adjoint:
+            assert c is not None
+            return {'a': a, 'b': b}
+        assert c is None
         return {
             'a': a,
             'b': b,
