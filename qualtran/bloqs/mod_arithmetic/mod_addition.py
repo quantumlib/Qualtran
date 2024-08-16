@@ -346,6 +346,29 @@ class CtrlScaleModAdd(Bloq):
 
 @frozen
 class CModAdd(Bloq):
+    r"""Controlled Modular Addition.
+
+    Implements $\ket{c}\ket{x}\ket{y} \xrightarrow[]{} \ket{c}\ket{x}\ket{(cx+y)\%p}$
+    using $5n+1$ Toffoli gates.
+
+    Note: The true toffoli count is $5n$ however we have an extra toffoli
+    due to how our OutOfPlaceAdder works.
+
+    Args:
+        dtype: Type of the input registers.
+        mod: The modulus for the addition.
+        cv: Control value for which the gate is active.
+
+    Registers:
+        ctrl: The control qubit.
+        x: A dtype register.
+        y: A dtype register.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
+        Construction from Figure 6a and cost summary in Figure 8.
+    """
+
     dtype: Union[QUInt, QMontgomeryUInt]
     mod: 'SymbolicInt'
     cv: int = 1
