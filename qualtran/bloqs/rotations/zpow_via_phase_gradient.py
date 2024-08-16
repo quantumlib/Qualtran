@@ -98,7 +98,7 @@ class ZPowConstViaPhaseGradient(Bloq):
         }
 
     def __str__(self) -> str:
-        return f'Z**{self.exponent}'
+        return f'ZPow({self.exponent})'
 
 
 @bloq_example(generalizer=ignore_alloc_free)
