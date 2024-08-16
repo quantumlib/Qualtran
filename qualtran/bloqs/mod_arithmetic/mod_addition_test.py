@@ -15,11 +15,18 @@
 import pytest
 import sympy
 
-from qualtran import QUInt
+from qualtran import QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.mod_arithmetic import CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
+from qualtran.bloqs.mod_arithmetic import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
+from qualtran.bloqs.mod_arithmetic.mod_addition import _cmodadd_example
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.resource_counting import GateCounts, QECGatesCost, query_costs
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+from qualtran.testing import (
+    assert_equivalent_bloq_counts,
+    assert_valid_bloq_decomposition,
+    execute_notebook,
+)
 
 
 def identity_map(n: int):
@@ -90,3 +97,51 @@ def test_classical_action_mod_add(prime, bitsize):
     for x in valid_range:
         for y in valid_range:
             assert b.call_classically(x=x, y=y) == cb.call_classically(x=x, y=y)
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize(
+    ['prime', 'bitsize'],
+    [(p, bitsize) for p in [11, 13, 31] for bitsize in range(1 + p.bit_length(), 8)],
+)
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+def test_classical_action_cmodadd(control, prime, dtype, bitsize):
+    b = CModAdd(dtype(bitsize), mod=prime, cv=control)
+    cb = b.decompose_bloq()
+    valid_range = range(prime)
+    for c in range(2):
+        for x in valid_range:
+            for y in valid_range:
+                assert b.call_classically(ctrl=c, x=x, y=y) == cb.call_classically(ctrl=c, x=x, y=y)
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize(
+    ['prime', 'bitsize'],
+    [(p, bitsize) for p in [11, 13, 31] for bitsize in range(1 + p.bit_length(), 8)],
+)
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+def test_cmodadd_decomposition(control, prime, dtype, bitsize):
+    b = CModAdd(dtype(bitsize), mod=prime, cv=control)
+    assert_valid_bloq_decomposition(b)
+    assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
+
+
+@pytest.mark.parametrize('control', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+def test_cmodadd_cost(control, dtype):
+    prime = sympy.Symbol('p')
+    n = sympy.Symbol('n')
+    b = CModAdd(dtype(n), mod=prime, cv=control)
+    cost: GateCounts = query_costs(b, [QECGatesCost()])[b][QECGatesCost()]
+    n_toffolis = 5 * n + 1
+    assert cost.total_t_count() == 4 * n_toffolis
+
+
+def test_cmodadd_example(bloq_autotester):
+    bloq_autotester(_cmodadd_example)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('mod_addition')
