@@ -59,7 +59,7 @@ from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.drawing.musical_score import Circle, Text, TextBox
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
@@ -1030,13 +1030,14 @@ _EQUALS_K_DOC = BloqDocSpec(bloq_cls=EqualsAConstant, examples=[_eq_k])
 class CLinearDepthGreaterThan(Bloq):
     r"""Controlled greater than between two integers.
 
-    Implements |c>|a>|b>|t> => |a>|b>|t ⨁ ((a > b)c)> using $n+2$ Toffoli gates.
+    Implements $\ket{c}\ket{a}\ket{b}\ket{t} \xrightarrow[]{} \ket{c}\ket{a}\ket{b}\ket{t ⨁ ((a > b)c)}>$
+    using $n+2$ Toffoli gates.
 
     Note: the true cost is $n+1$ but an extra Toffoli comes from OutOfPlaceAdder which operates
     on $n+1$ qubits rather than $n$. Changing the definition of OutOfPlaceAdder will remove this
     extra Toffoli.
 
-    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    This comparator relies on the fact that ~(~b + a) = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
     copying out the carry, and uncomputing the addition circuit.
 
@@ -1052,7 +1053,8 @@ class CLinearDepthGreaterThan(Bloq):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
 
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+            page 7.
     """
 
     dtype: Union[QInt, QUInt, QMontgomeryUInt]
@@ -1068,7 +1070,7 @@ class CLinearDepthGreaterThan(Bloq):
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':
-            return TextBox('c')
+            return Circle(filled=self.cv == 1)
         if reg.name == "a":
             return TextBox('a')
         if reg.name == "b":
@@ -1097,11 +1099,13 @@ class CLinearDepthGreaterThan(Bloq):
 
         # Update `target`
         c_arr = bb.split(c)
-        (ctrl_q,) = bb.split(ctrl)
-        (ctrl_q, c_arr[1]), target = bb.add(
-            MultiControlX((self.cv, 1)), controls=np.array([ctrl_q, c_arr[1]]), target=target
+        # The sign bit is usually the 0th bit however since we already appended an extra bit
+        # to the input registers and OutOfPlaceAdder is unsigned and stores the result in
+        # number bits + 1 (i.e. we are adding two extra bits), the sign bit becomes the 1st bit
+        # with the 0th bit indicating whether an overflow happened or not.
+        (ctrl, c_arr[1]), target = bb.add(
+            MultiControlX((self.cv, 1)), controls=np.array([ctrl, c_arr[1]]), target=target
         )
-        ctrl = bb.join(np.array([ctrl_q]))
         c = bb.join(c_arr)
 
         # Uncompute
