@@ -12,15 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, List
 
 import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QUInt, Signature, Soquet, SoquetT
 from qualtran.bloqs.for_testing.atom import TestAtom
-from qualtran.bloqs.mcmt import And, MultiAnd
+from qualtran.bloqs.mcmt import And
 
 
 @frozen
@@ -34,7 +33,7 @@ class LargeBloq(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', select, target) -> Dict[str, 'SoquetT']:
         sel = bb.split(select)
-        ancs = [None] * self.n_select
+        ancs: List[Soquet] = [None] * self.n_select  # type: ignore
         ancs[0] = sel[0]
 
         cvs = QUInt(self.n_select - 1).to_bits_array(np.arange(self.n_ops) % (self.n_select - 1))
