@@ -37,7 +37,7 @@ class QubitizationQPE(GateWithRegisters):
     for learning eigenphases of the `walk` operator with `m` bits of accuracy. The
     circuit is implemented as given in Fig.2 of Ref-1.
 
-        ```
+    ```
            ┌─────────┐                                     ┌─────────┐
       |0> -│         │-------------------------(0)---(0)---│         │---M--- [m1]:highest bit
            │         │                          |     |    │         │
@@ -48,7 +48,8 @@ class QubitizationQPE(GateWithRegisters):
       |0> -│         │---@----+-----+--+-----+--+-----+----│         │---M--- [m4]:lowest bit
            └─────────┘   |    |     |  |     |  |     |    └─────────┘
     |Psi> ---------------W----R-W^2-R--R-W^4-R--R-W^8-R---------------------- |Psi>
-        ```
+
+    ```
 
     TODO: Note that there are slight differences between the Fig2 of the Ref[1] and the circuit
           implemented here. Further investigation is required to reconcile the difference.
@@ -142,7 +143,7 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
         get_walk_operator_for_hubbard_model,
     )
-    from qualtran.bloqs.phase_estimation import QubitizationQPE
+    from qualtran.bloqs.phase_estimation import LPResourceState, QubitizationQPE
 
     x_dim, y_dim, t = 2, 2, 2
     u = 4 * t
@@ -165,7 +166,7 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
         get_walk_operator_for_hubbard_model,
     )
-    from qualtran.bloqs.phase_estimation import QubitizationQPE
+    from qualtran.bloqs.phase_estimation import LPResourceState, QubitizationQPE
 
     x_dim, y_dim, t = 20, 20, 20
     u = 4 * t
@@ -187,6 +188,7 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
 
     from qualtran.bloqs.chemistry.thc.prepare_test import build_random_test_integrals
     from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
+    from qualtran.bloqs.phase_estimation import LPResourceState, QubitizationQPE
 
     # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
     num_spinorb = 152
@@ -220,7 +222,7 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
 
     from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
     from qualtran.bloqs.chemistry.sparse.walk_operator import get_walk_operator_for_sparse_chem_ham
-    from qualtran.bloqs.phase_estimation import QubitizationQPE
+    from qualtran.bloqs.phase_estimation import LPResourceState, QubitizationQPE
 
     num_spatial = 6
     tpq, eris = build_random_test_integrals(num_spatial // 2, seed=7)
