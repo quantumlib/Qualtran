@@ -17,7 +17,7 @@ from typing import Iterator, Set, Tuple, TYPE_CHECKING
 import attrs
 import cirq
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -192,9 +192,9 @@ class TextbookQPE(GateWithRegisters):
 @bloq_example
 def _textbook_qpe_small() -> TextbookQPE:
     from qualtran.bloqs.basic_gates import ZPowGate
-    from qualtran.bloqs.phase_estimation import TextbookQPE
+    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
 
-    textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), 3)
+    textbook_qpe_small = TextbookQPE(ZPowGate(exponent=2 * 0.234), RectangularWindowState(3))
     return textbook_qpe_small
 
 
@@ -203,11 +203,13 @@ def _textbook_qpe_using_m_bits() -> TextbookQPE:
     import sympy
 
     from qualtran.bloqs.basic_gates import ZPowGate
-    from qualtran.bloqs.phase_estimation import TextbookQPE
+    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
 
     theta = sympy.Symbol('theta')
     m_bits = sympy.Symbol('m')
-    textbook_qpe_using_m_bits = TextbookQPE(ZPowGate(exponent=2 * theta), m_bits)
+    textbook_qpe_using_m_bits = TextbookQPE(
+        ZPowGate(exponent=2 * theta), RectangularWindowState(m_bits)
+    )
     return textbook_qpe_using_m_bits
 
 
@@ -216,12 +218,13 @@ def _textbook_qpe_from_precision_and_delta() -> TextbookQPE:
     import sympy
 
     from qualtran.bloqs.basic_gates import ZPowGate
-    from qualtran.bloqs.phase_estimation import TextbookQPE
+    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
 
     theta = sympy.Symbol('theta')
     precision, delta = sympy.symbols('n, delta')
-    textbook_qpe_from_precision_and_delta = TextbookQPE.from_precision_and_delta(
-        ZPowGate(exponent=2 * theta), precision, delta
+    textbook_qpe_from_precision_and_delta = TextbookQPE(
+        ZPowGate(exponent=2 * theta),
+        RectangularWindowState.from_precision_and_delta(precision, delta),
     )
     return textbook_qpe_from_precision_and_delta
 
@@ -231,12 +234,12 @@ def _textbook_qpe_from_standard_deviation_eps() -> TextbookQPE:
     import sympy
 
     from qualtran.bloqs.basic_gates import ZPowGate
-    from qualtran.bloqs.phase_estimation import TextbookQPE
+    from qualtran.bloqs.phase_estimation import RectangularWindowState, TextbookQPE
 
     theta = sympy.Symbol('theta')
     epsilon = sympy.symbols('epsilon')
-    textbook_qpe_from_standard_deviation_eps = TextbookQPE.from_standard_deviation_eps(
-        ZPowGate(exponent=2 * theta), epsilon
+    textbook_qpe_from_standard_deviation_eps = TextbookQPE(
+        ZPowGate(exponent=2 * theta), RectangularWindowState.from_standard_deviation_eps(epsilon)
     )
     return textbook_qpe_from_standard_deviation_eps
 

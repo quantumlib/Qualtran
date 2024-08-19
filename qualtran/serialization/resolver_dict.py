@@ -233,6 +233,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZGate": qualtran.bloqs.basic_gates.z_basis.ZGate,
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
+    "qualtran.bloqs.basic_gates.z_basis.CZ": qualtran.bloqs.basic_gates.z_basis.CZ,
     "qualtran.bloqs.basic_gates.power.Power": qualtran.bloqs.basic_gates.power.Power,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding,

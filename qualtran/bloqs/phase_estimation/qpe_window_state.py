@@ -13,13 +13,16 @@
 #  limitations under the License.
 import abc
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import attrs
 
-from qualtran import Bloq, QFxp, Register, Signature
+from qualtran import Bloq, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.symbolics import ceil, log2, pi, SymbolicFloat, SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 @attrs.frozen
@@ -28,7 +31,7 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
 
     @cached_property
     def m_register(self) -> 'Register':
-        return Register('qpe_reg', QFxp(self.m_bits, self.m_bits))
+        return Register('qpe_reg', QFxp(self.m_bits, self.m_bits), side=Side.RIGHT)
 
     @property
     @abc.abstractmethod
@@ -38,7 +41,7 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
 
 @attrs.frozen
 class RectangularWindowState(QPEWindowStateBase):
-    """Window state used in Textbook version of QPE."""
+    """Window state used in Textbook version of QPE. Applies Hadamard on all qubits."""
 
     bitsize: SymbolicInt
 
@@ -81,13 +84,11 @@ class RectangularWindowState(QPEWindowStateBase):
         ```
 
         Args:
-            unitary: Unitary operation to obtain phase estimate of.
             eps: Maximum standard deviation of the estimated phase.
         """
         return cls(ceil(2 * log2(pi(eps) / eps)))
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, qpe_reg: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        qpe_reg = bb.allocate(dtype=self.m_register.dtype)
         qpe_reg = bb.add(OnEach(self.m_bits, Hadamard()), q=qpe_reg)
         return {'qpe_reg': qpe_reg}
