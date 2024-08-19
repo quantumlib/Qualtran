@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
-import attrs
 import cirq
 import numpy as np
 import pytest
@@ -21,41 +20,31 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
-    BloqBuilder,
     CompositeBloq,
     Controlled,
     CtrlSpec,
     QBit,
     QInt,
     QUInt,
-    Register,
-    Side,
-    Signature,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
     GlobalPhase,
-    IntEffect,
-    IntState,
-    OneState,
     Swap,
     TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
-    ZeroState,
     ZGate,
 )
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.mcmt import And
-from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
 
 if TYPE_CHECKING:
-    from qualtran import SoquetT
+    pass
 
 
 def test_ctrl_spec():
