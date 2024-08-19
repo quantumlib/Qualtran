@@ -151,7 +151,7 @@ t: ───t───────────────────Y───
 
 
 def test_non_unitary_controlled():
-    bloq = BloqWithDecompose()
+    bloq = _TestGate()
     assert bloq.controlled(control_values=[0]) == Controlled(bloq, CtrlSpec(cvs=0))
 
 

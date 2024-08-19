@@ -312,6 +312,11 @@ class Controlled(GateWithRegisters):
     subbloq: 'Bloq'
     ctrl_spec: 'CtrlSpec'
 
+    def __attrs_post_init__(self):
+        for reg in self.subbloq.signature:
+            if reg.side != Side.THRU:
+                raise ValueError(f"Cannot control non-thru bloqs. Found {reg} in {self.subbloq}")
+
     @classmethod
     def make_ctrl_system(cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec') -> Tuple[Bloq, AddControlledT]:
         """A factory method for creating both the Controlled and the adder function.
