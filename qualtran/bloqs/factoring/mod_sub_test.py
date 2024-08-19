@@ -18,7 +18,7 @@ import sympy
 from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.testing import assert_equivalent_bloq_counts, assert_valid_bloq_decomposition
-
+from qualtran.resource_counting import query_costs, QECGatesCost, GateCounts
 
 @pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
 def test_montgomery_mod_neg_decomp(bitsize, p):
@@ -71,3 +71,12 @@ def test_classical_action_mod_neg(bitsize, prime):
     valid_range = range(prime)
     for x in valid_range:
         assert b.call_classically(x=x) == cb.call_classically(x=x) == ((-x) % prime,)
+
+def test_montgomerymodneg_symbolic_cost():
+    n = sympy.Symbol('n')
+    p = 13
+    b = MontgomeryModNeg(n, p)
+    target_cost = QECGatesCost()
+    cost:GateCounts = query_costs(b, [target_cost])[b][target_cost]
+    toffoli_count = 3*(n-1)
+    assert cost.total_t_count() == 4*toffoli_count

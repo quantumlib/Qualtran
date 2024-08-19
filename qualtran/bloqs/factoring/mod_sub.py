@@ -22,6 +22,7 @@ from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mod_arithmetic import ModAdd
+from qualtran.symbolics import HasLength
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -183,13 +184,13 @@ class MontgomeryModNeg(Bloq):
         return f'x = -x mod {self.p}'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if not isinstance(self.bitsize, int):
-            raise NotImplementedError(f'symbolic call graph is not supported for {self}')
-
-        # TODO: support symbolic cost
+        if isinstance(self.bitsize, int):
+            cvs = [0]*self.bitsize
+        else:
+            cvs = HasLength(self.bitsize)
         return {
             (XGate(), 2),
-            (MultiControlX(cvs=[0] * self.bitsize), 2),
+            (MultiControlX(cvs=cvs), 2),
             (CNOT(), self.bitsize),
             (AddK(bitsize=self.bitsize, k=self.p + 1, cvs=(1,), signed=False), 1),
         }
