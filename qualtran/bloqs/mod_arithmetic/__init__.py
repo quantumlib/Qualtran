@@ -14,4 +14,4 @@
 
 from ._shims import CModAdd, CModSub, ModDbl, ModInv, ModMul, ModSub
 from .mod_addition import CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
-from .mod_subtraction import ModNeg, CModNeg
+from .mod_subtraction import CModNeg, ModNeg

@@ -11,29 +11,54 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import TYPE_CHECKING, Tuple, Union, Set, Dict, Optional
 from functools import cached_property
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+
 import sympy
 from attrs import frozen
-from qualtran import (
-    Bloq, QUInt, QMontgomeryUInt,  QBit,
-    Register, Signature, Soquet, SoquetT, BloqBuilder,
-        bloq_example,
-    BloqDocSpec,
 
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QBit,
+    QMontgomeryUInt,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
 )
-from qualtran.drawing import Circle, Text, TextBox, WireSymbol
-from qualtran.bloqs.arithmetic import  AddK
-from qualtran.bloqs.mcmt import MultiControlX, MultiTargetCNOT, And
+from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.mcmt import And, MultiControlX, MultiTargetCNOT
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import HasLength
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
 class ModNeg(Bloq):
+    r"""Performs modular negation.
+
+    Applies the operation $\ket{x} \xrightarrow[]{} \ket{-x \% p}$
+
+    Args:
+        dtype: Datatype of the register.
+        p: The modulus for the negation.
+
+    Registers:
+        x: A dtype input register.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6b and 8
+    """
+
     dtype: Union[QUInt, QMontgomeryUInt]
     mod: 'SymbolicInt'
 
@@ -44,37 +69,42 @@ class ModNeg(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
             raise ValueError(f'symbolic decomposition is not supported for {self}')
-        
+
         ancilla = bb.allocate(1)
         ancilla = bb.add(XGate(), q=ancilla)
 
         x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(MultiControlX(cvs=[0]*self.dtype.bitsize), controls=x_arr, target=ancilla)
+        x_arr, ancilla = bb.add(
+            MultiControlX(cvs=[0] * self.dtype.bitsize), controls=x_arr, target=ancilla
+        )
         x = bb.join(x_arr)
 
         ancilla, x = bb.add(MultiTargetCNOT(self.dtype.bitsize), control=ancilla, targets=x)
-        (ancilla,), x = bb.add(AddK(self.dtype.bitsize, self.mod+1, cvs=(1,), signed=False), ctrls=(ancilla,), x=x)
+        (ancilla,), x = bb.add(
+            AddK(self.dtype.bitsize, self.mod + 1, cvs=(1,), signed=False), ctrls=(ancilla,), x=x
+        )
 
         x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(MultiControlX(cvs=[0]*self.dtype.bitsize).adjoint(), controls=x_arr, target=ancilla)
+        x_arr, ancilla = bb.add(
+            MultiControlX(cvs=[0] * self.dtype.bitsize).adjoint(), controls=x_arr, target=ancilla
+        )
         x = bb.join(x_arr)
 
         ancilla = bb.add(XGate(), q=ancilla)
         bb.free(ancilla)
-        return {
-            'x': x,
-        }
+        return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cvs: Union[list[int], HasLength]
         if isinstance(self.dtype.bitsize, int):
-            cvs = [0]*self.dtype.bitsize
+            cvs = [0] * self.dtype.bitsize
         else:
             cvs = HasLength(self.dtype.bitsize)
         return {
             (MultiControlX(cvs), 1),
             (MultiControlX(cvs).adjoint(), 1),
             (MultiTargetCNOT(self.dtype.bitsize), 1),
-            (AddK(self.dtype.bitsize, k=self.mod+1, cvs=(1), signed=False), 1),
+            (AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1), signed=False), 1),
             (XGate(), 2),
         }
 
@@ -90,6 +120,23 @@ class ModNeg(Bloq):
 
 @frozen
 class CModNeg(Bloq):
+    r"""Performs controlled modular negation.
+
+    Applies the operation $\ket{c}\ket{x} \xrightarrow[]{} \ket{c}\ket{(-1)^c x\%p}$
+
+    Args:
+        dtype: Datatype of the register.
+        p: The modulus for the negation.
+        cv: value at which the gate is active.
+
+    Registers:
+        x: A dtype input register.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6b and 8
+    """
+
     dtype: Union[QUInt, QMontgomeryUInt]
     mod: 'SymbolicInt'
     cv: int = 1
@@ -98,39 +145,44 @@ class CModNeg(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', self.dtype)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet
+    ) -> Dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
             raise ValueError(f'symbolic decomposition is not supported for {self}')
-        
+
         ancilla = bb.allocate(1)
         ancilla = bb.add(XGate(), q=ancilla)
 
         x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(MultiControlX(cvs=[0]*self.dtype.bitsize), controls=x_arr, target=ancilla)
+        x_arr, ancilla = bb.add(
+            MultiControlX(cvs=[0] * self.dtype.bitsize), controls=x_arr, target=ancilla
+        )
         x = bb.join(x_arr)
 
         (ctrl, ancilla), apply_op = bb.add(And(self.cv, 1), ctrl=(ctrl, ancilla))
 
         apply_op, x = bb.add(MultiTargetCNOT(self.dtype.bitsize), control=apply_op, targets=x)
-        (apply_op,), x = bb.add(AddK(self.dtype.bitsize, self.mod+1, cvs=(1,), signed=False), ctrls=(apply_op,), x=x)
+        (apply_op,), x = bb.add(
+            AddK(self.dtype.bitsize, self.mod + 1, cvs=(1,), signed=False), ctrls=(apply_op,), x=x
+        )
 
         ctrl, ancilla = bb.add(And(self.cv, 1).adjoint(), ctrl=(ctrl, ancilla), target=apply_op)
 
         x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(MultiControlX(cvs=[0]*self.dtype.bitsize).adjoint(), controls=x_arr, target=ancilla)
+        x_arr, ancilla = bb.add(
+            MultiControlX(cvs=[0] * self.dtype.bitsize).adjoint(), controls=x_arr, target=ancilla
+        )
         x = bb.join(x_arr)
 
         ancilla = bb.add(XGate(), q=ancilla)
         bb.free(ancilla)
-        return {
-            'ctrl': ctrl,
-            'x': x,
-        }
-
+        return {'ctrl': ctrl, 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cvs: Union[list[int], HasLength]
         if isinstance(self.dtype.bitsize, int):
-            cvs = [0]*self.dtype.bitsize
+            cvs = [0] * self.dtype.bitsize
         else:
             cvs = HasLength(self.dtype.bitsize)
         return {
@@ -139,10 +191,9 @@ class CModNeg(Bloq):
             (And(self.cv, 1), 1),
             (And(self.cv, 1).adjoint(), 1),
             (MultiTargetCNOT(self.dtype.bitsize), 1),
-            (AddK(self.dtype.bitsize, k=self.mod+1, cvs=(1,), signed=False), 1),
+            (AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1,), signed=False), 1),
             (XGate(), 2),
         }
-
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -150,7 +201,7 @@ class CModNeg(Bloq):
         if reg is None:
             return Text("")
         if reg.name == 'ctrl':
-            return Circle(filled=self.cv==1)
+            return Circle(filled=self.cv == 1)
         elif reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
@@ -160,7 +211,7 @@ class CModNeg(Bloq):
 def _mod_neg() -> ModNeg:
     n = 32
     prime = sympy.Symbol('p')
-    mod_add = ModNeg(QMontgomeryUInt(n), mod=prime)
+    mod_add = ModNeg(QUInt(n), mod=prime)
     return mod_add
 
 
@@ -171,10 +222,8 @@ _MOD_NEG_DOC = BloqDocSpec(bloq_cls=ModNeg, examples=[_mod_neg])
 def _cmod_neg() -> CModNeg:
     n = 32
     prime = sympy.Symbol('p')
-    cmod_add = CModNeg(QMontgomeryUInt(n), mod=prime)
+    cmod_add = CModNeg(QUInt(n), mod=prime)
     return cmod_add
 
 
-_MOD_NEG_DOC = BloqDocSpec(bloq_cls=CModNeg, examples=[_cmod_neg])
-
-
+_CMOD_NEG_DOC = BloqDocSpec(bloq_cls=CModNeg, examples=[_cmod_neg])

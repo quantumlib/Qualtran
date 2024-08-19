@@ -19,17 +19,8 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic._shims import MultiCToffoli
-from qualtran.bloqs.mod_arithmetic import ModAdd
-from qualtran.bloqs.mod_arithmetic._shims import (
-    CModAdd,
-    CModNeg,
-    CModSub,
-    ModDbl,
-    ModInv,
-    ModMul,
-    ModNeg,
-    ModSub,
-)
+from qualtran.bloqs.mod_arithmetic import CModNeg, ModAdd, ModNeg
+from qualtran.bloqs.mod_arithmetic._shims import CModAdd, CModSub, ModDbl, ModInv, ModMul, ModSub
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -81,8 +72,8 @@ class ECAdd(Bloq):
             (CModAdd(n=self.n, mod=self.mod), 2),
             (ModSub(n=self.n, mod=self.mod), 2),
             (CModSub(n=self.n, mod=self.mod), 4),
-            (ModNeg(n=self.n, mod=self.mod), 2),
-            (CModNeg(n=self.n, mod=self.mod), 1),
+            (ModNeg(QUInt(self.n), mod=self.mod), 2),
+            (CModNeg(QUInt(self.n), mod=self.mod), 1),
             (ModDbl(n=self.n, mod=self.mod), 2),
             (ModMul(n=self.n, mod=self.mod), 10),
             (ModInv(n=self.n, mod=self.mod), 4),

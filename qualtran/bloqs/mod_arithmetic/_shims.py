@@ -219,5 +219,3 @@ class ModDbl(Bloq):
         elif reg.name == 'out':
             return TextBox('$2x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-

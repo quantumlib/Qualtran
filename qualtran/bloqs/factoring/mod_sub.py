@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 from attrs import frozen
 
@@ -184,8 +184,9 @@ class MontgomeryModNeg(Bloq):
         return f'x = -x mod {self.p}'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cvs: Union[list[int], HasLength]
         if isinstance(self.bitsize, int):
-            cvs = [0]*self.bitsize
+            cvs = [0] * self.bitsize
         else:
             cvs = HasLength(self.bitsize)
         return {
