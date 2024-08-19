@@ -19,7 +19,6 @@ import cirq
 import numpy as np
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
-from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
