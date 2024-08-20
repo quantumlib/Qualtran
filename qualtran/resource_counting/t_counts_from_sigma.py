@@ -13,7 +13,7 @@
 #  limitations under the License.
 import inspect
 import sys
-from typing import cast, Mapping, Optional, Tuple, Type, TYPE_CHECKING
+from typing import cast, Mapping, Optional, Protocol, runtime_checkable, Tuple, Type, TYPE_CHECKING
 
 import cirq
 
@@ -21,13 +21,18 @@ from qualtran.symbolics import ceil, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq
-    from qualtran.bloqs.basic_gates.rotation import _HasEps
+
+
+@runtime_checkable
+class _HasEps(Protocol):
+    """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
+
+    eps: float
 
 
 def _get_all_rotation_types() -> Tuple[Type['_HasEps'], ...]:
     """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
     from qualtran.bloqs.basic_gates import GlobalPhase
-    from qualtran.bloqs.basic_gates.rotation import _HasEps
 
     bloqs_to_exclude = [GlobalPhase]
 

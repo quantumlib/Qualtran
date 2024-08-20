@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Protocol, runtime_checkable, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -25,13 +25,6 @@ from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
-
-
-@runtime_checkable
-class _HasEps(Protocol):
-    """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
-
-    eps: float
 
 
 @frozen
