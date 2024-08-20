@@ -127,6 +127,7 @@ _CLIFFORD_ANGLES = np.array(
 _CLIFFORD_EXPONENTS = np.array([1.0, 0.5, 1.5, -1.0, -0.5, -1.5, 0.0, -2, 2])
 _T_ANGLES = np.array([np.pi / 4, -np.pi / 4])
 _T_EXPONENTS = np.array([0.25, -0.25])
+_ANGLE_ATOL = 1e-12
 
 
 def bloq_is_t_gate(b: Bloq) -> bool:
@@ -144,14 +145,14 @@ def bloq_is_t_gate(b: Bloq) -> bool:
     if isinstance(b, (Rz, Rx, Ry)):
         if is_symbolic(b.angle):
             return False  # Symbolic rotation
-        if np.any(np.abs(b.angle - _T_ANGLES) < b.eps):
+        if np.any(np.abs(b.angle - _T_ANGLES) < _ANGLE_ATOL):
             return True  # T hidden in a rotation bloq
         return False
 
     if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
         if is_symbolic(b.exponent):
             return False  # Symbolic rotation
-        if np.any(np.abs(b.exponent - _T_EXPONENTS) < b.eps):
+        if np.any(np.abs(b.exponent - _T_EXPONENTS) < _ANGLE_ATOL):
             return True  # T hidden in a rotation bloq
         return False
 
@@ -206,14 +207,14 @@ def bloq_is_clifford(b: Bloq) -> bool:
     if isinstance(b, (Rz, Rx, Ry)):
         if is_symbolic(b.angle):
             return False  # Symbolic rotation
-        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < b.eps):
+        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < _ANGLE_ATOL):
             return True  # Clifford hidden in a rotation bloq
         return False
 
     if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
         if is_symbolic(b.exponent):
             return False  # Symbolic rotation
-        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < b.eps):
+        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < _ANGLE_ATOL):
             return True  # Clifford hidden in a rotation bloq
         return False
 
@@ -254,18 +255,18 @@ def bloq_is_rotation(b: Bloq) -> bool:
     if isinstance(b, (Rz, Rx, Ry)):
         if is_symbolic(b.angle):
             return True
-        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < b.eps):
+        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < _ANGLE_ATOL):
             return False  # Clifford
-        if np.any(np.abs(b.angle - _T_ANGLES) < b.eps):
+        if np.any(np.abs(b.angle - _T_ANGLES) < _ANGLE_ATOL):
             return False  # T gate
         return True
 
     if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
         if is_symbolic(b.exponent):
             return True
-        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < b.eps):
+        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < _ANGLE_ATOL):
             return False  # Clifford
-        if np.any(np.abs(b.exponent - _T_EXPONENTS) < b.eps):
+        if np.any(np.abs(b.exponent - _T_EXPONENTS) < _ANGLE_ATOL):
             return False  # T gate
         return True
 
