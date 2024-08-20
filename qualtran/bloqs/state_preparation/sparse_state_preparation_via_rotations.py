@@ -104,7 +104,7 @@ class SparseStatePreparationViaRotations(Bloq):
 
         Args:
             coeffs: A vector of coefficients `c_i`, either as a sequence/numpy array,
-                    or a scipy sparse array.
+                or a scipy sparse array.
             phase_bitsize: size of the phase-gradient register.
         """
         import scipy
