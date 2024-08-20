@@ -155,6 +155,8 @@ def bloq_is_t_gate(b: Bloq) -> bool:
             return True  # T hidden in a rotation bloq
         return False
 
+    return False
+
 
 def bloq_is_clifford(b: Bloq) -> bool:
     """Whether the bloq represents a clifford operation.
@@ -218,7 +220,7 @@ def bloq_is_clifford(b: Bloq) -> bool:
     return False
 
 
-def bloq_is_rotation(b: Bloq):
+def bloq_is_rotation(b: Bloq) -> bool:
     """Whether a bloq represents a rotation operation.
 
     This inspects the single qubit rotation bloqs and returns `True` unless the angle
@@ -266,3 +268,5 @@ def bloq_is_rotation(b: Bloq):
         if np.any(np.abs(b.exponent - _T_EXPONENTS) < b.eps):
             return False  # T gate
         return True
+
+    return False
