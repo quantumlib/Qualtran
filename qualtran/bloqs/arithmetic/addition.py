@@ -452,7 +452,12 @@ class AddK(Bloq):
         if self.signed:
             binary_rep = QInt(self.bitsize).to_bits(self.k)
         else:
-            binary_rep = QUInt(self.bitsize).to_bits(self.k % (2**self.bitsize))
+            k = self.k
+            if k < 0:
+                # Since this is unsigned addition adding -v is equivalent to
+                # adding 2^bitsize - v
+                self.k %= 2**self.bitsize
+            binary_rep = QUInt(self.bitsize).to_bits(k)
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
