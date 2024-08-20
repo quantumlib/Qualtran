@@ -33,10 +33,13 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add, AddK
-from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.arithmetic.comparison import CLinearDepthGreaterThan, LinearDepthGreaterThan
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.bookkeeping import Cast
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
 
@@ -339,3 +342,109 @@ class CtrlScaleModAdd(Bloq):
         if reg.name == 'y':
             return TextBox(f'y += x*{self.k}')
         raise ValueError(f"Unknown register {reg}")
+
+
+@frozen
+class CModAdd(Bloq):
+    r"""Controlled Modular Addition.
+
+    Implements $\ket{c}\ket{x}\ket{y} \rightarrow \ket{c}\ket{x}\ket{(cx+y)\%p}$
+    using $5n+1$ Toffoli gates.
+
+    Note: The reference reports $5n$ toffolis. Our construction has an extra toffoli gate due
+    to the current implementaiton of `OutOfPlaceAdder`.
+
+    Args:
+        dtype: Type of the input registers.
+        mod: The modulus for the addition.
+        cv: Control value for which the gate is active.
+
+    Registers:
+        ctrl: The control qubit.
+        x: A dtype register.
+        y: A dtype register.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
+        Construction from Figure 6a and cost summary in Figure 8.
+    """
+
+    dtype: Union[QUInt, QMontgomeryUInt]
+    mod: 'SymbolicInt'
+    cv: int = 1
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('ctrl', QBit()), Register('x', self.dtype), Register('y', self.dtype)]
+        )
+
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl != self.cv:
+            return {'ctrl': ctrl, 'x': x, 'y': y}
+
+        return {'ctrl': ctrl, 'x': x, 'y': (x + y) % self.mod}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        y_arr = bb.split(y)
+        ancilla = bb.allocate(1)
+        x = bb.add(Cast(self.dtype, QUInt(self.dtype.bitsize)), reg=x)
+        y = bb.join(np.concatenate([[ancilla], y_arr]), QUInt(self.dtype.bitsize + 1))
+
+        ctrl, x, y = bb.add(
+            CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv),
+            ctrl=ctrl,
+            a=x,
+            b=y,
+        )
+        y = bb.add(AddK(self.dtype.bitsize + 1, -self.mod, signed=False), x=y)
+        y_arr = bb.split(y)
+        ancilla, y_arr = y_arr[0], y_arr[1:]
+        y = bb.join(y_arr)
+        (ancilla,), y = bb.add(
+            AddK(self.dtype.bitsize, self.mod, signed=False, cvs=(1,)), ctrls=(ancilla,), x=y
+        )
+
+        ctrl, x, y, ancilla = bb.add(
+            CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv),
+            ctrl=ctrl,
+            a=x,
+            b=y,
+            target=ancilla,
+        )
+        ancilla = bb.add(XGate(), q=ancilla)
+        bb.free(ancilla)
+
+        x = bb.add(Cast(QUInt(self.dtype.bitsize), self.dtype), reg=x)
+        y = bb.add(Cast(QUInt(self.dtype.bitsize), self.dtype), reg=y)
+
+        return {'ctrl': ctrl, 'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv), 1),
+            (AddK(self.dtype.bitsize + 1, -self.mod, signed=False), 1),
+            (AddK(self.dtype.bitsize, self.mod, cvs=(1,), signed=False), 1),
+            (CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv), 1),
+            (XGate(), 1),
+        }
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _cmodadd_symbolic() -> CModAdd:
+    n, p = sympy.symbols('n p')
+    cmodadd_symbolic = CModAdd(QUInt(n), p)
+    return cmodadd_symbolic
+
+
+@bloq_example
+def _cmodadd_example() -> CModAdd:
+    cmodadd_example = CModAdd(QUInt(32), 10**9 + 7)
+    return cmodadd_example
+
+
+_C_MOD_ADD_DOC = BloqDocSpec(bloq_cls=CModAdd, examples=[_cmodadd_example, _cmodadd_symbolic])
