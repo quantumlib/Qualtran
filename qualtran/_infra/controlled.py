@@ -390,9 +390,11 @@ class Controlled(GateWithRegisters):
         try:
             sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         except DecomposeTypeError as e1:
-            raise DecomposeTypeError(f"Could not build call graph for {self}: {e1}")
+            raise DecomposeTypeError(f"Could not build call graph for {self}: {e1}") from e1
         except DecomposeNotImplementedError as e2:
-            raise DecomposeNotImplementedError(f"Could not build call graph for {self}: {e2}")
+            raise DecomposeNotImplementedError(
+                f"Could not build call graph for {self}: {e2}"
+            ) from e2
 
         return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
 
