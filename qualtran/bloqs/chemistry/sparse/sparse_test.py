@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional, Union
 
 import attrs
-import numpy as np
 import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
 from openfermion.resource_estimates.utils import power_two, QI
@@ -23,11 +21,6 @@ from qualtran import Bloq
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
 from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
-from qualtran.bloqs.data_loading.qroam_clean import (
-    get_optimal_log_block_size_clean_ancilla,
-    QROAMClean,
-    QROAMCleanAdjoint,
-)
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
