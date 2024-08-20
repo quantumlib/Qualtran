@@ -52,7 +52,7 @@ class ModNeg(Bloq):
         p: The modulus for the negation.
 
     Registers:
-        x: A dtype input register.
+        x: The register contraining the integer we negate.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -130,7 +130,8 @@ class CModNeg(Bloq):
         cv: value at which the gate is active.
 
     Registers:
-        x: A dtype input register.
+        ctrl: Control bit.
+        x: The register contraining the integer we negate.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -211,8 +212,8 @@ class CModNeg(Bloq):
 def _mod_neg() -> ModNeg:
     n = 32
     prime = sympy.Symbol('p')
-    mod_add = ModNeg(QUInt(n), mod=prime)
-    return mod_add
+    mod_neg = ModNeg(QUInt(n), mod=prime)
+    return mod_neg
 
 
 _MOD_NEG_DOC = BloqDocSpec(bloq_cls=ModNeg, examples=[_mod_neg])
@@ -222,8 +223,8 @@ _MOD_NEG_DOC = BloqDocSpec(bloq_cls=ModNeg, examples=[_mod_neg])
 def _cmod_neg() -> CModNeg:
     n = 32
     prime = sympy.Symbol('p')
-    cmod_add = CModNeg(QUInt(n), mod=prime)
-    return cmod_add
+    cmod_neg = CModNeg(QUInt(n), mod=prime)
+    return cmod_neg
 
 
 _CMOD_NEG_DOC = BloqDocSpec(bloq_cls=CModNeg, examples=[_cmod_neg])
