@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import cirq
 import numpy as np
@@ -27,6 +38,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     ConnectionT,
+    CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
     Register,
@@ -46,7 +58,7 @@ from .t_gate import TGate
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import CompositeBloq
+    from qualtran import AddControlledT, CompositeBloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -102,6 +114,21 @@ class TwoBitSwap(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        cbloq = TwoBitCSwap()
+
+        def adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            ctrl, x, y = bb.add(cbloq, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
+            return [ctrl], [x, y]
+
+        return cbloq, adder
 
 
 @frozen
@@ -242,6 +269,21 @@ class Swap(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        cbloq = CSwap(self.bitsize)
+
+        def adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            ctrl, x, y = bb.add(cbloq, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
+            return [ctrl], [x, y]
+
+        return cbloq, adder
 
 
 @bloq_example(generalizer=ignore_split_join)
