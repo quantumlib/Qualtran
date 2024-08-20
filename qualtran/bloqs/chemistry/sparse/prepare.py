@@ -500,7 +500,7 @@ class PrepareSparse(PrepareOracle):
         # Inequality test for alias sampling
         lte_bloq = LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep)
         soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
-            lte_bloq, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
+            lte_bloq.adjoint(), x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
         )
         # prepare uniform superposition over sigma
         soqs['sigma'] = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=soqs['sigma'])
