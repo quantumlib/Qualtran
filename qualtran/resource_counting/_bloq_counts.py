@@ -24,7 +24,7 @@ from qualtran.symbolics import SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
+from .classify_bloqs import bloq_is_clifford, bloq_is_rotation, bloq_is_t_gate
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -238,12 +238,13 @@ class QECGatesCost(CostKey[GateCounts]):
     """
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
-        from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
         from qualtran.bloqs.basic_gates._shims import Measure
+        from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
-        if isinstance(bloq, TGate):
+        if bloq_is_t_gate(bloq):
             return GateCounts(t=1)
 
         # Toffolis
@@ -267,6 +268,10 @@ class QECGatesCost(CostKey[GateCounts]):
         # Cliffords
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
+
+        # Bookkeeping, empty bloqs
+        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):
+            return GateCounts()
 
         if bloq_is_rotation(bloq):
             return GateCounts(rotation=1)

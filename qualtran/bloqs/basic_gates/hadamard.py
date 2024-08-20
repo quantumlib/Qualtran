@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import CostKey
 
 _HADAMARD = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
 
@@ -179,6 +180,17 @@ class CHadamard(Bloq):
         # The other two are considered 'rotations'.
         # https://github.com/quantumlib/Qualtran/issues/237
         return TComplexity(rotations=2, clifford=4)
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        from qualtran.resource_counting import GateCounts, QECGatesCost
+
+        if cost_key == QECGatesCost():
+            # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
+            # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
+            # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
+            # The other two are considered 'rotations'.
+            # https://github.com/quantumlib/Qualtran/issues/237
+            return GateCounts(rotation=2, clifford=4)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
