@@ -18,6 +18,7 @@ import sympy
 from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_data,
     _qroam_clean_multi_dim,
+    get_optimal_log_block_size_clean_ancilla,
     QROAMClean,
     QROAMCleanAdjoint,
 )
@@ -59,6 +60,19 @@ def test_t_complexity_2d_data_symbolic():
     bloq_inv = bloq_inv.with_log_block_sizes(log_block_sizes=(inv_k1, inv_k2))
     expected_toffoli_inv = ceil(N1 * N2 / (inv_K1 * inv_K2)) + inv_K1 * inv_K2
     assert bloq_inv.t_complexity().t == 4 * expected_toffoli_inv
+
+
+@pytest.mark.parametrize('n', range(3, 8))
+def test_qroam_default_log_block_sizes(n: int):
+    data = np.arange(2**n)
+    bloq = QROAMClean.build_from_data(data, data, target_bitsizes=(n.bit_length(), n.bit_length()))
+    bs = get_optimal_log_block_size_clean_ancilla(len(data), sum(bloq.target_bitsizes))
+    assert bs == bloq.log_block_sizes[0]
+    bloq = bloq.adjoint()
+    bs = get_optimal_log_block_size_clean_ancilla(
+        len(data), sum(bloq.target_bitsizes), adjoint=True
+    )
+    assert bs == bloq.log_block_sizes[0]
 
 
 def test_qroam_clean_classical_sim():
