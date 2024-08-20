@@ -155,8 +155,8 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @log_block_sizes.default
     def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
-        target_bitsize = sum(self.target_bitsizes) * sum(
-            prod(shape) for shape in self.target_shapes
+        target_bitsize = sum(
+            bs * prod(shape) for (bs, shape) in zip(self.target_bitsizes, self.target_shapes)
         )
         return tuple(
             get_optimal_log_block_size_clean_ancilla(ilen, target_bitsize, adjoint=True)
@@ -256,8 +256,8 @@ class QROAMClean(SelectSwapQROM):
 
     @log_block_sizes.default
     def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
-        target_bitsize = sum(self.target_bitsizes) * sum(
-            prod(shape) for shape in self.target_shapes
+        target_bitsize = sum(
+            bs * prod(shape) for (bs, shape) in zip(self.target_bitsizes, self.target_shapes)
         )
         return tuple(
             get_optimal_log_block_size_clean_ancilla(ilen, target_bitsize)
@@ -431,7 +431,7 @@ class QROAMClean(SelectSwapQROM):
         name = reg.name
         if name == 'selection':
             return TextBox('In')
-        elif 'target' in name:
+        elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)

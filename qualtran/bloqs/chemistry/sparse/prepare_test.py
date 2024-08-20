@@ -17,12 +17,20 @@ from typing import Optional
 import numpy as np
 import pytest
 
+from qualtran import Bloq
+from qualtran._infra.bloq import _decompose_from_build_composite_bloq
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse.prepare import _prep_sparse, get_sparse_inputs_from_integrals
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def test_prep_inner(bloq_autotester):
+def test_prep_sparse(bloq_autotester):
     bloq_autotester(_prep_sparse)
+
+
+def test_prep_sparse_adj():
+    bloq: Bloq = _prep_sparse.make()
+    bloq.adjoint().decompose_bloq()
 
 
 def reconstruct_eris(eris, indx, nb):
