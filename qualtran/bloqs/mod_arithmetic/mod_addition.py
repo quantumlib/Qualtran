@@ -352,7 +352,7 @@ class CModAdd(Bloq):
     using $5n+1$ Toffoli gates.
 
     Note: The reference reports $5n$ toffolis. Our construction has an extra toffoli gate due
-    to the current implementaiton of OutOfPlaceAdder
+    to the current implementaiton of `OutOfPlaceAdder`.
 
     Args:
         dtype: Type of the input registers.
