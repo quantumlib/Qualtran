@@ -108,7 +108,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -173,7 +173,7 @@ class XPowGate(CirqGateAsBloqBase):
     """
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -243,7 +243,7 @@ class YPowGate(CirqGateAsBloqBase):
     """
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -311,7 +311,7 @@ class Rz(CirqGateAsBloqBase):
 @frozen
 class Rx(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -332,7 +332,7 @@ class Rx(CirqGateAsBloqBase):
 @frozen
 class Ry(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
