@@ -13,7 +13,6 @@
 #  limitations under the License.
 import pytest
 
-from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr, QuantumVariableRotation
 
 

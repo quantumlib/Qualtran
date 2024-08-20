@@ -20,7 +20,6 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

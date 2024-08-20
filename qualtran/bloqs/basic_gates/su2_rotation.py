@@ -174,9 +174,7 @@ class SU2RotationGate(GateWithRegisters):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             if self.is_symbolic():
-                return Text(
-                    f'({self.theta},{self.phi},{self.lambd},{self.global_shift})'
-                )
+                return Text(f'({self.theta},{self.phi},{self.lambd},{self.global_shift})')
             return Text(
                 f'({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
             )

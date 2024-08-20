@@ -34,7 +34,6 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlZ
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
