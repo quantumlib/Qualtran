@@ -273,7 +273,7 @@ class QECGatesCost(CostKey[GateCounts]):
 
         # Recursive case
         totals = GateCounts()
-        callees = get_bloq_callee_counts(bloq)
+        callees = get_bloq_callee_counts(bloq, ignore_decomp_failure=False)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)
