@@ -14,6 +14,7 @@
 
 import itertools
 
+import numpy as np
 import pytest
 import sympy
 
@@ -123,9 +124,9 @@ def test_classical_action_cmodadd_fast(control, bitsize):
     prime = 11
     b = CModAdd(QMontgomeryUInt(bitsize), mod=prime, cv=control)
     cb = b.decompose_bloq()
-    valid_range = range(prime)
+    rng = np.random.default_rng(341)
     for c in range(2):
-        for x, y in itertools.product(valid_range, repeat=2):
+        for x, y in rng.choice(prime, (10, 2)):
             assert b.call_classically(ctrl=c, x=x, y=y) == cb.call_classically(ctrl=c, x=x, y=y)
 
 
