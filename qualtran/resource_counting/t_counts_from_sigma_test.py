@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import pytest
 import sympy
 
+from qualtran import Bloq
 from qualtran.bloqs.basic_gates import (
     CZPowGate,
     Rx,
@@ -27,33 +28,37 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
+from qualtran.symbolics import SymbolicFloat
+
+EPS: SymbolicFloat = sympy.Symbol("eps")
 
 
-def test_t_counts_from_sigma():
-    z_eps1, z_eps2, x_eps, y_eps, cz_eps = sympy.symbols('z_eps1, z_eps2, x_eps, y_eps, cz_eps')
-    sigma = {
-        ZPowGate(eps=z_eps1): 1,
-        ZPowGate(eps=z_eps2): 2,
-        ZPowGate(0.01, eps=z_eps1): 1,
-        ZPowGate(0.01, eps=z_eps2): 2,
-        Rz(0.01, eps=z_eps2): 3,
-        Rx(0.01, eps=x_eps): 4,
-        XPowGate(eps=x_eps): 5,
-        XPowGate(0.01, eps=x_eps): 5,
-        Ry(0.01, eps=y_eps): 6,
-        YPowGate(eps=y_eps): 7,
-        YPowGate(0.01, eps=y_eps): 7,
-        CZPowGate(eps=cz_eps): 20,
-        CZPowGate(0.01, eps=cz_eps): 20,
-        TGate(): 100,
-        Toffoli(): 200,
-    }
-    expected_t_count = (
-        +100
-        + 1 * TComplexity.rotation_cost(z_eps1)
-        + 5 * TComplexity.rotation_cost(z_eps2)
-        + 9 * TComplexity.rotation_cost(x_eps)
-        + 13 * TComplexity.rotation_cost(y_eps)
-        + 20 * TComplexity.rotation_cost(cz_eps)
-    )
-    assert t_counts_from_sigma(sigma) == expected_t_count
+@pytest.mark.parametrize(
+    ("bloq", "t_count"), [(TGate(), 1), pytest.param(Toffoli(), 4, marks=pytest.mark.xfail)]
+)
+def test_t_counts_from_sigma_known(bloq: Bloq, t_count: int):
+    assert t_counts_from_sigma({bloq: 1}) == t_count
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        ZPowGate(0.01, eps=EPS),
+        Rz(0.01, eps=EPS),
+        Rx(0.01, eps=EPS),
+        XPowGate(0.01, eps=EPS),
+        Ry(0.01, eps=EPS),
+        YPowGate(0.01, eps=EPS),
+        CZPowGate(0.01, eps=EPS),
+    ],
+)
+def test_t_counts_from_sigma_for_rotation_with_eps(bloq: Bloq):
+    expected_t_count = TComplexity.rotation_cost(EPS)
+    assert t_counts_from_sigma({bloq: 1}) == expected_t_count
+
+
+@pytest.mark.parametrize(
+    "bloq", [ZPowGate(eps=EPS), XPowGate(eps=EPS), YPowGate(eps=EPS), CZPowGate(eps=EPS)]
+)
+def test_t_counts_from_sigma_zero(bloq: Bloq):
+    assert t_counts_from_sigma({bloq: 1}) == 0
