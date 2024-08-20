@@ -98,8 +98,8 @@ class SparseStatePreparationViaRotations(Bloq):
         import scipy
 
         N = len(coeffs)
-        sparse_coeffs = scipy.sparse.dok_array(coeffs)
-        sparse_coeffs_as_dict = dict(sparse_coeffs.items())
+        sparse_coeffs = scipy.sparse.dok_array(np.atleast_2d(coeffs))
+        sparse_coeffs_as_dict = {i: c for ((_, i), c) in sparse_coeffs.items()}
 
         return cls.from_coefficient_map(N, sparse_coeffs_as_dict, phase_bitsize)
 
