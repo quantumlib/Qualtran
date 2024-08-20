@@ -162,7 +162,7 @@ class PrepareSparse(PrepareOracle):
         alt_pqrs: the register to store the alternate values for the spatial orbital indices.
         theta: A two qubit register for the sign bit and it's alternate value.
         keep: The register containing the keep values for alias sampling.
-        soqs['less_than']: A single qubit for the result of the inequality test during alias sampling.
+        less_than: A single qubit for the result of the inequality test during alias sampling.
         flag_1b: a single qubit register indicating whether to apply only the one-body SELECT.
         alt_flag_1b: alternate value for flag_1b
 
@@ -308,7 +308,7 @@ class PrepareSparse(PrepareOracle):
         alt_theta = theta[alt]
         alt_one_body = one_body[alt]
         if qroam_block_size is None:
-            n_n = self.num_bits_spat_orb
+            n_n = (num_spin_orb // 2 - 1).bit_length()
             target_bitsizes = (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (num_bits_state_prep,)
             log_block_sizes = get_optimal_log_block_size_clean_ancilla(
                 num_non_zero, sum(target_bitsizes)
