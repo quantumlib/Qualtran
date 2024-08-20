@@ -122,6 +122,13 @@ def test_signature():
         assert flat_named_qubits == expected_qubits
 
 
+def test_signature_symbolic():
+    n_x, n_y = sympy.symbols('n_x n_y')
+    signature = Signature.build(x=n_x, y=n_y)
+    assert signature.n_qubits() == n_x + n_y
+    assert str(signature.n_qubits()) == 'n_x + n_y'
+
+
 def test_signature_build():
     sig1 = Signature([Register("r1", QAny(5)), Register("r2", QAny(2))])
     sig2 = Signature.build(r1=5, r2=2)
