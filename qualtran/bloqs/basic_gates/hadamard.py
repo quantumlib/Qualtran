@@ -192,6 +192,8 @@ class CHadamard(Bloq):
             # https://github.com/quantumlib/Qualtran/issues/237
             return GateCounts(rotation=2, clifford=4)
 
+        return NotImplemented
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
