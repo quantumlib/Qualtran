@@ -97,7 +97,7 @@ class SparseStatePreparationViaRotations(Bloq):
     @classmethod
     def from_sparse_array(
         cls,
-        coeffs: Union[Sequence[complex], NDArray[np.complex_], 'scipy.sparse.sparray'],
+        coeffs: Union[Sequence[complex], NDArray[np.complex128], 'scipy.sparse.sparray'],
         phase_bitsize: SymbolicInt,
     ):
         """Factory to construct sparse state given the coefficients.

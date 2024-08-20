@@ -28,7 +28,7 @@ def test_examples(bloq_autotester):
     bloq_autotester(_sparse_state_prep_via_rotations)
 
 
-def get_prepared_state_vector(bloq: SparseStatePreparationViaRotations) -> NDArray[np.complex_]:
+def get_prepared_state_vector(bloq: SparseStatePreparationViaRotations) -> NDArray[np.complex128]:
     bb = BloqBuilder()
     state = bb.add(IntState(0, bloq.target_bitsize))
     phase_gradient = bb.add(PhaseGradientState(bloq.phase_bitsize))
