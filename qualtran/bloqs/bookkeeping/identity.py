@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
@@ -28,7 +27,7 @@ from qualtran import (
     Register,
     Signature,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -40,11 +39,11 @@ if TYPE_CHECKING:
 
 
 @frozen
-class Identity(Bloq):
+class Identity(_BookkeepingBloq):
     r"""The identity gate on one qubit.
 
     Registers:
-        q: The qubit
+        q: the qubit
     """
 
     @cached_property
@@ -76,15 +75,12 @@ class Identity(Bloq):
         (q,) = q
         return cirq.I(q), {'q': np.array([q])}
 
-    def _t_complexity_(self):
-        return TComplexity()
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         return TextBox('I')
 
-    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, q: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'q': q}
 
     def pretty_name(self) -> str:

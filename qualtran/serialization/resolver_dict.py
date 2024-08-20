@@ -31,7 +31,6 @@ import qualtran.bloqs.arithmetic.subtraction
 import qualtran.bloqs.arithmetic.trigonometric
 import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
-import qualtran.bloqs.basic_gates.identity
 import qualtran.bloqs.basic_gates.on_each
 import qualtran.bloqs.basic_gates.rotation
 import qualtran.bloqs.basic_gates.s_gate
@@ -56,6 +55,7 @@ import qualtran.bloqs.bookkeeping.arbitrary_clifford
 import qualtran.bloqs.bookkeeping.auto_partition
 import qualtran.bloqs.bookkeeping.cast
 import qualtran.bloqs.bookkeeping.free
+import qualtran.bloqs.bookkeeping.identity
 import qualtran.bloqs.bookkeeping.join
 import qualtran.bloqs.bookkeeping.partition
 import qualtran.bloqs.bookkeeping.split
@@ -199,7 +199,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin": qualtran.bloqs.arithmetic.trigonometric.arcsin.ArcSin,
     "qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan": qualtran.bloqs.arithmetic.trigonometric.arctan.ArcTan,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
-    "qualtran.bloqs.basic_gates.identity.Identity": qualtran.bloqs.basic_gates.identity.Identity,
     "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
     "qualtran.bloqs.basic_gates.hadamard.CHadamard": qualtran.bloqs.basic_gates.hadamard.CHadamard,
@@ -251,6 +250,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
     "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
     "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
+    "qualtran.bloqs.bookkeeping.identity.Identity": qualtran.bloqs.bookkeeping.identity.Identity,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
     "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
     "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,

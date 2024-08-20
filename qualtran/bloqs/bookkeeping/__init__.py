@@ -18,6 +18,7 @@ from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.bookkeeping.cast import Cast
 from qualtran.bloqs.bookkeeping.free import Free
+from qualtran.bloqs.bookkeeping.identity import Identity
 from qualtran.bloqs.bookkeeping.join import Join
 from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.bookkeeping.split import Split

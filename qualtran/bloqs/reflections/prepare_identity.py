@@ -18,8 +18,8 @@ from typing import Dict, Sequence, Tuple, TYPE_CHECKING
 from attrs import field, frozen
 
 from qualtran import bloq_example, BloqDocSpec, QAny, Register, Soquet
-from qualtran.bloqs.basic_gates import Identity
 from qualtran.bloqs.basic_gates.on_each import OnEach
+from qualtran.bloqs.bookkeeping import Identity
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt

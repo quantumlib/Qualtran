@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import OneState
-from qualtran.bloqs.basic_gates.identity import _identity, Identity
+from qualtran.bloqs.bookkeeping.identity import _identity, Identity
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,

@@ -232,11 +232,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.global_phase._GLOBAL_PHASE_DOC],
     ),
     NotebookSpecV2(
-        title='Identity Gate',
-        module=qualtran.bloqs.basic_gates.identity,
-        bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
-    ),
-    NotebookSpecV2(
         title='Bookkeeping Bloqs',
         module=qualtran.bloqs.bookkeeping,
         bloq_specs=[
@@ -247,6 +242,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
             qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
+            qualtran.bloqs.bookkeeping.identity._IDENTITY_DOC,
         ],
     ),
     NotebookSpecV2(
