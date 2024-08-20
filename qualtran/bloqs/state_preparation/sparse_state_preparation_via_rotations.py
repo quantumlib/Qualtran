@@ -85,7 +85,13 @@ class SparseStatePreparationViaRotations(Bloq):
     def from_coefficient_map(
         cls, N: SymbolicInt, coeff_map: dict[int, complex], phase_bitsize: SymbolicInt
     ):
-        """Factory"""
+        """Factory to construct sparse state from a dictionary of coefficients.
+
+        Args:
+            N: the total size of the state `N`.
+            coeff_map: dictionary mapping index `i` to non-zero coefficient `c_i`
+            phase_bitsize: size of the phase-gradient register.
+        """
         return cls(tuple(coeff_map.keys()), tuple(coeff_map.values()), N, phase_bitsize)
 
     @classmethod
@@ -94,7 +100,13 @@ class SparseStatePreparationViaRotations(Bloq):
         coeffs: Union[Sequence[complex], NDArray[np.complex_], 'scipy.sparse.sparray'],
         phase_bitsize: SymbolicInt,
     ):
-        """Factory"""
+        """Factory to construct sparse state given the coefficients.
+
+        Args:
+            coeffs: A vector of coefficients `c_i`, either as a sequence/numpy array,
+                or a scipy sparse array.
+            phase_bitsize: size of the phase-gradient register.
+        """
         import scipy
 
         N = len(coeffs)
@@ -107,7 +119,13 @@ class SparseStatePreparationViaRotations(Bloq):
     def from_n_coeffs(
         cls, n_coeffs: SymbolicInt, n_nonzero_coeffs: SymbolicInt, phase_bitsize: SymbolicInt
     ):
-        """Factory"""
+        """Factory to construct a sparse state of `d` non-zero coefficients over `[0, N - 1]`.
+
+        Args:
+            n_coeffs: the total size of the state `N`
+            n_nonzero_coeffs: the number of non-zero coefficients `d`.
+            phase_bitsize: size of the phase-gradient register.
+        """
         return cls(
             HasLength(n_nonzero_coeffs), HasLength(n_nonzero_coeffs), n_coeffs, phase_bitsize
         )
