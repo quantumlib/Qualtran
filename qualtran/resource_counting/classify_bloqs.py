@@ -130,7 +130,7 @@ _T_EXPONENTS = np.array([0.25, -0.25])
 _ANGLE_ATOL = 1e-12
 
 
-def bloq_is_t_gate(b: Bloq) -> bool:
+def bloq_is_t_like(b: Bloq) -> bool:
     """Whether a bloq should be counted as a T gate.
 
     This will return `True` for any instance of `TGate`. It will also consider

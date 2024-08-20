@@ -24,7 +24,7 @@ from qualtran.symbolics import SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford, bloq_is_rotation, bloq_is_t_gate
+from .classify_bloqs import bloq_is_clifford, bloq_is_rotation, bloq_is_t_like
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -244,7 +244,7 @@ class QECGatesCost(CostKey[GateCounts]):
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
-        if bloq_is_t_gate(bloq):
+        if bloq_is_t_like(bloq):
             return GateCounts(t=1)
 
         # Toffolis
