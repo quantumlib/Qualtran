@@ -30,5 +30,6 @@ def t_counts_from_sigma(sigma: Mapping['Bloq', SymbolicInt]) -> SymbolicInt:
     ret = sigma.get(TGate(), 0) + sigma.get(TGate().adjoint(), 0)
     for bloq, counts in sigma.items():
         if bloq_is_rotation(bloq) and not cirq.has_stabilizer_effect(bloq):
+            assert hasattr(bloq, 'eps')
             ret += ceil(TComplexity.rotation_cost(bloq.eps)) * counts
     return ret
