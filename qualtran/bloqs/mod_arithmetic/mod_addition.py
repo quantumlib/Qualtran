@@ -348,11 +348,11 @@ class CtrlScaleModAdd(Bloq):
 class CModAdd(Bloq):
     r"""Controlled Modular Addition.
 
-    Implements $\ket{c}\ket{x}\ket{y} \xrightarrow[]{} \ket{c}\ket{x}\ket{(cx+y)\%p}$
+    Implements $\ket{c}\ket{x}\ket{y} \rightarrow \ket{c}\ket{x}\ket{(cx+y)\%p}$
     using $5n+1$ Toffoli gates.
 
-    Note: The true toffoli count is $5n$ however we have an extra toffoli
-    due to how our OutOfPlaceAdder works.
+    Note: The reference reports $5n$ toffolis. Our construction has an extra toffoli gate due
+    to the current implementaiton of OutOfPlaceAdder
 
     Args:
         dtype: Type of the input registers.
