@@ -29,7 +29,6 @@ from qualtran import (
     BloqBuilder,
     CompositeBloq,
     ConnectionT,
-    Controlled,
     CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
