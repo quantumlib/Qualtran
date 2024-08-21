@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from qualtran.protos import args_pb2 as qualtran_dot_protos_dot_args__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n qualtran/protos/data_types.proto\x12\x08qualtran\x1a\x1aqualtran/protos/args.proto\"\x06\n\x04QBit\">\n\x04QAny\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\">\n\x04QInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"F\n\x0cQIntOnesComp\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"?\n\x05QUInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"\x90\x01\n\x0c\x42oundedQUInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x12\x33\n\x10iteration_length\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x01\x88\x01\x01\x42\n\n\x08_bitsizeB\x13\n\x11_iteration_length\"\x98\x01\n\x04QFxp\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x12+\n\x08num_frac\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x01\x88\x01\x01\x12\x13\n\x06signed\x18\x03 \x01(\x08H\x02\x88\x01\x01\x42\n\n\x08_bitsizeB\x0b\n\t_num_fracB\t\n\x07_signed\"\x97\x02\n\tQDataType\x12\x1e\n\x04qbit\x18\x01 \x01(\x0b\x32\x0e.qualtran.QBitH\x00\x12\x1e\n\x04qany\x18\x02 \x01(\x0b\x32\x0e.qualtran.QAnyH\x00\x12\x1e\n\x04qint\x18\x03 \x01(\x0b\x32\x0e.qualtran.QIntH\x00\x12\x30\n\x0eqint_ones_comp\x18\x04 \x01(\x0b\x32\x16.qualtran.QIntOnesCompH\x00\x12 \n\x05quint\x18\x05 \x01(\x0b\x32\x0f.qualtran.QUIntH\x00\x12/\n\rbounded_quint\x18\x06 \x01(\x0b\x32\x16.qualtran.BoundedQUIntH\x00\x12\x1e\n\x04qfxp\x18\x07 \x01(\x0b\x32\x0e.qualtran.QFxpH\x00\x42\x05\n\x03valb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n qualtran/protos/data_types.proto\x12\x08qualtran\x1a\x1aqualtran/protos/args.proto\"\x06\n\x04QBit\">\n\x04QAny\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\">\n\x04QInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"F\n\x0cQIntOnesComp\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"?\n\x05QUInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"I\n\x0fQMontgomeryUInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x42\n\n\x08_bitsize\"\x90\x01\n\x0c\x42oundedQUInt\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x12\x33\n\x10iteration_length\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x01\x88\x01\x01\x42\n\n\x08_bitsizeB\x13\n\x11_iteration_length\"\x98\x01\n\x04QFxp\x12*\n\x07\x62itsize\x18\x01 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x00\x88\x01\x01\x12+\n\x08num_frac\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympyH\x01\x88\x01\x01\x12\x13\n\x06signed\x18\x03 \x01(\x08H\x02\x88\x01\x01\x42\n\n\x08_bitsizeB\x0b\n\t_num_fracB\t\n\x07_signed\"\xce\x02\n\tQDataType\x12\x1e\n\x04qbit\x18\x01 \x01(\x0b\x32\x0e.qualtran.QBitH\x00\x12\x1e\n\x04qany\x18\x02 \x01(\x0b\x32\x0e.qualtran.QAnyH\x00\x12\x1e\n\x04qint\x18\x03 \x01(\x0b\x32\x0e.qualtran.QIntH\x00\x12\x30\n\x0eqint_ones_comp\x18\x04 \x01(\x0b\x32\x16.qualtran.QIntOnesCompH\x00\x12 \n\x05quint\x18\x05 \x01(\x0b\x32\x0f.qualtran.QUIntH\x00\x12/\n\rbounded_quint\x18\x06 \x01(\x0b\x32\x16.qualtran.BoundedQUIntH\x00\x12\x1e\n\x04qfxp\x18\x07 \x01(\x0b\x32\x0e.qualtran.QFxpH\x00\x12\x35\n\x10qmontgomery_uint\x18\x08 \x01(\x0b\x32\x19.qualtran.QMontgomeryUIntH\x00\x42\x05\n\x03valb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,10 +32,12 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_QINTONESCOMP']._serialized_end=280
   _globals['_QUINT']._serialized_start=282
   _globals['_QUINT']._serialized_end=345
-  _globals['_BOUNDEDQUINT']._serialized_start=348
-  _globals['_BOUNDEDQUINT']._serialized_end=492
-  _globals['_QFXP']._serialized_start=495
-  _globals['_QFXP']._serialized_end=647
-  _globals['_QDATATYPE']._serialized_start=650
-  _globals['_QDATATYPE']._serialized_end=929
+  _globals['_QMONTGOMERYUINT']._serialized_start=347
+  _globals['_QMONTGOMERYUINT']._serialized_end=420
+  _globals['_BOUNDEDQUINT']._serialized_start=423
+  _globals['_BOUNDEDQUINT']._serialized_end=567
+  _globals['_QFXP']._serialized_start=570
+  _globals['_QFXP']._serialized_end=722
+  _globals['_QDATATYPE']._serialized_start=725
+  _globals['_QDATATYPE']._serialized_end=1059
 # @@protoc_insertion_point(module_scope)

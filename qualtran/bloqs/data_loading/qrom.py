@@ -224,7 +224,9 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
-        n_cnot = prod(self.target_bitsizes) * prod(self.data_shape)
+        n_cnot = prod(
+            bitsize * prod(sh) for bitsize, sh in zip(self.target_bitsizes, self.target_shapes)
+        ) * prod(self.data_shape)
         return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
 
     def adjoint(self) -> 'QROM':

@@ -31,7 +31,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from .bloq import Bloq
+from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import QBit, QDType
 from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
@@ -387,10 +387,16 @@ class Controlled(GateWithRegisters):
         return fsoqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (bloq.controlled(self.ctrl_spec), n)
-            for bloq, n in self.subbloq.build_call_graph(ssa=ssa)
-        }
+        try:
+            sub_cg = self.subbloq.build_call_graph(ssa=ssa)
+        except DecomposeTypeError as e1:
+            raise DecomposeTypeError(f"Could not build call graph for {self}: {e1}") from e1
+        except DecomposeNotImplementedError as e2:
+            raise DecomposeNotImplementedError(
+                f"Could not build call graph for {self}: {e2}"
+            ) from e2
+
+        return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
