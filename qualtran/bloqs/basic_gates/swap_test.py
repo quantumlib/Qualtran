@@ -36,6 +36,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _cswap_symb,
     _swap_matrix,
     _swap_small,
+    Swap,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -81,6 +82,10 @@ def test_two_bit_swap_call_classically():
     x, y = swap.call_classically(x=0, y=1)
     assert x == 1
     assert y == 0
+
+
+def test_two_bit_swap_controlled():
+    assert TwoBitSwap().controlled() == TwoBitCSwap()
 
 
 def _set_ctrl_two_bit_swap(ctrl_bit):
@@ -210,6 +215,11 @@ def test_cswap_symbolic():
     assert counts[TwoBitCSwap()] == n
     with pytest.raises(DecomposeTypeError):
         cswap.decompose_bloq()
+
+
+def test_swap_controlled():
+    bitsize = 4
+    assert Swap(bitsize).controlled() == CSwap(bitsize)
 
 
 def test_swap_small(bloq_autotester):

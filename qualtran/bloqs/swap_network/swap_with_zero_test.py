@@ -142,14 +142,38 @@ targets[2, 1][1]: ───swap_2_1───────────────
 
 
 def test_swap_with_zero_classically():
-    data = np.array([131, 255, 92, 2])
-    swz = SwapWithZero(selection_bitsizes=2, target_bitsize=8, n_target_registers=4)
-
-    for sel_in in range(2**2):
-        sel_out, out_data = swz.call_classically(selection=sel_in, targets=data)  # type: ignore[assignment]
-        assert sel_in == sel_out
-        assert isinstance(out_data, np.ndarray)
-        assert out_data[0] == data[sel_in]
+    rng = np.random.default_rng(42)
+    # 1D data
+    N, max_N = 50, 2**20
+    data = rng.integers(max_N, size=N)
+    bloq = SwapWithZero((N.bit_length(),), max_N.bit_length(), (N,))
+    bloq_inv = bloq.adjoint()
+    cbloq = bloq.decompose_bloq()
+    for x in range(N):
+        x_out, d_out = bloq.call_classically(selection=x, targets=np.copy(data))
+        cx_out, cd_out = cbloq.call_classically(selection=x, targets=np.copy(data))
+        ix_out, id_out = bloq_inv.call_classically(selection=x_out, targets=np.copy(d_out))
+        assert isinstance(d_out, np.ndarray)  # Make mypy happy
+        assert np.array_equal(d_out, cd_out) and np.array_equal(id_out, data)
+        assert x == x_out == cx_out == ix_out
+        assert d_out[0] == data[x]
+    # 2D data
+    N, M, max_NM = 7, 9, 2**10
+    data = rng.integers(max_NM, size=(N, M))
+    bloq = SwapWithZero((N.bit_length(), M.bit_length()), max_NM.bit_length(), (N, M))
+    bloq_inv = bloq.adjoint()
+    cbloq = bloq.decompose_bloq()
+    for x in range(N):
+        for y in range(M):
+            vals = bloq.call_classically(selection0_=x, selection1_=y, targets=np.copy(data))
+            cvals = cbloq.call_classically(selection0_=x, selection1_=y, targets=np.copy(data))
+            ivals = bloq_inv.call_classically(
+                selection0_=x, selection1_=y, targets=np.copy(vals[2])
+            )
+            assert np.array_equal(vals[2], cvals[2]) and np.array_equal(ivals[2], data)
+            assert vals[:2] == cvals[:2] == ivals[:2] == (x, y)
+            assert isinstance(vals[2], np.ndarray)  # Make mypy happy
+            assert vals[2][0, 0] == data[x, y]
 
 
 @pytest.mark.parametrize(

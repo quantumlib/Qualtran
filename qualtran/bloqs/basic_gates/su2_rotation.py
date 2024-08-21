@@ -69,7 +69,7 @@ class SU2RotationGate(GateWithRegisters):
         return Signature.build(q=1)
 
     @cached_property
-    def rotation_matrix(self) -> NDArray[np.complex_]:
+    def rotation_matrix(self) -> NDArray[np.complex128]:
         if isinstance(self.lambd, sympy.Expr):
             raise ValueError(f'Symbolic lambda not allowed: {self.lambd}')
         if isinstance(self.phi, sympy.Expr):
@@ -89,7 +89,8 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     @classmethod
-    def from_matrix(cls, mat: NDArray[np.complex_]) -> 'SU2RotationGate':
+    def from_matrix(cls, mat: NDArray[np.complex128]) -> 'SU2RotationGate':
+
         theta = np.arctan2(np.abs(mat[1, 0]), np.abs(mat[0, 0]))
         if np.isclose(np.cos(theta), 0):
             alpha = 0

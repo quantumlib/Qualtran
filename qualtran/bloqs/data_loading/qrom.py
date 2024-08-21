@@ -96,10 +96,14 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         cls,
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> 'QROM':
         return cls._build_from_data(
-            *data, target_bitsizes=target_bitsizes, num_controls=num_controls
+            *data,
+            target_bitsizes=target_bitsizes,
+            target_shapes=target_shapes,
+            num_controls=num_controls,
         )
 
     @classmethod
@@ -220,7 +224,9 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
-        n_cnot = prod(self.target_bitsizes) * prod(self.data_shape)
+        n_cnot = prod(
+            bitsize * prod(sh) for bitsize, sh in zip(self.target_bitsizes, self.target_shapes)
+        ) * prod(self.data_shape)
         return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
 
     def adjoint(self) -> 'QROM':

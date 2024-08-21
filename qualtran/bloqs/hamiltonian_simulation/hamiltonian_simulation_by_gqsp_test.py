@@ -70,7 +70,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
 
 def verify_hamiltonian_simulation_by_gqsp(
-    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, precision: float
+    W: QubitizationWalkOperator, H: NDArray[np.complex128], *, t: float, precision: float
 ):
     N = H.shape[0]
 

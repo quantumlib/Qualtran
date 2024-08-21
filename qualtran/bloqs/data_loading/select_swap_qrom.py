@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, Type, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Set, Tuple, Type, TYPE_CHECKING, TypeVar, Union
 
 import attrs
 import cirq
@@ -34,6 +34,8 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
 
 def find_optimal_log_block_size(
@@ -136,7 +138,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     # Builder methods and helpers.
     @log_block_sizes.default
-    def _default_block_sizes(self) -> Tuple[SymbolicInt, ...]:
+    def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
         target_bitsize = sum(self.target_bitsizes) * sum(
             prod(shape) for shape in self.target_shapes
         )
@@ -181,8 +183,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     def with_log_block_sizes(
-        self, log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None
-    ) -> 'SelectSwapQROM':
+        self: SelSwapQROM_T,
+        log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+    ) -> 'SelSwapQROM_T':
         if log_block_sizes is None:
             return self
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
@@ -222,7 +225,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         #
         # For data[N1][N2] with block sizes (k1, k2), you load batches of size `(k1, k2)` at once.
         # Thus, you load batch[N1/k1][N2/k2] where batch[i][j] = data[i*k1:(i + 1)*k1][j*k2:(j + 1)*k2]
-        batched_data = [np.empty(self.batched_data_shape) for _ in range(len(self.target_bitsizes))]
+        batched_data = [np.zeros(self.batched_data_shape, dtype=int) for _ in self.target_bitsizes]
         block_slices = [slice(0, k) for k in self.block_sizes]
         for i, data in enumerate(self.padded_data):
             for batch_idx in np.ndindex(cast(Tuple[int, ...], self.batched_qrom_shape)):
@@ -341,8 +344,13 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return selection
 
     def _build_composite_bloq_with_swz(
-        self, bb: 'BloqBuilder', ctrl, selection, target, qrom_targets
-    ):
+        self,
+        bb: 'BloqBuilder',
+        ctrl: List['SoquetT'],
+        selection: List['SoquetT'],
+        target: List['SoquetT'],
+        qrom_targets: List['SoquetT'],
+    ) -> Tuple[List['SoquetT'], List['SoquetT'], List['SoquetT'], List['SoquetT']]:
         sel_l, sel_k = self._partition_sel_register(bb, selection)
         # Partition selection registers into l & k
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
@@ -363,8 +371,13 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return ctrl, selection, target, qrom_targets
 
     def _build_composite_bloq_without_swz(
-        self, bb: 'BloqBuilder', ctrl, selection, target, qrom_targets
-    ):
+        self,
+        bb: 'BloqBuilder',
+        ctrl: List['SoquetT'],
+        selection: List['SoquetT'],
+        target: List['SoquetT'],
+        qrom_targets: List['SoquetT'],
+    ) -> Tuple[List['SoquetT'], List['SoquetT'], List['SoquetT'], List['SoquetT']]:
         ctrl, selection, qrom_targets = self._add_qrom_bloq(bb, ctrl, selection, qrom_targets)
         qrom_targets, target = self._add_cnot(bb, qrom_targets, target)
         ctrl, selection, qrom_targets = self._add_qrom_bloq(
@@ -441,7 +454,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 def _qroam_multi_data() -> SelectSwapQROM:
     data1 = np.arange(5)
     data2 = np.arange(5) + 1
-    qroam_multi_data = SelectSwapQROM.build_from_data([data1, data2])
+    qroam_multi_data = SelectSwapQROM.build_from_data(data1, data2)
     return qroam_multi_data
 
 
@@ -449,7 +462,7 @@ def _qroam_multi_data() -> SelectSwapQROM:
 def _qroam_multi_dim() -> SelectSwapQROM:
     data1 = np.arange(25).reshape((5, 5))
     data2 = (np.arange(25) + 1).reshape((5, 5))
-    qroam_multi_dim = SelectSwapQROM.build_from_data([data1, data2])
+    qroam_multi_dim = SelectSwapQROM.build_from_data(data1, data2)
     return qroam_multi_dim
 
 
