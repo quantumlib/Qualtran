@@ -32,6 +32,9 @@ class ZPowProgrammedAncilla(Bloq):
     Args:
         exponent: value of $t$.
         eps: precision of the synthesized state.
+
+    Signature:
+        q: the ancilla qubit prepared in the above state.
     """
     exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
@@ -64,8 +67,14 @@ def _zpow_programmed_ancilla_symb() -> ZPowProgrammedAncilla:
 class ZPowUsingProgrammedAncilla(Bloq):
     r"""Single qubit ZPow rotation using resource states.
 
-    This bloq applies a single qubit Z**t rotation only using ZPow resource states and
+    This bloq applies a single qubit `Z**t` rotation only using ZPow resource states and
     clifford gates. It is designed to exit early as soon as a measurement succeeds.
+
+    The circuit is described in Fig. 4 of Ref [1].
+    The `k`-th round uses an ancilla in state `Z**(2^k t)|+>` and cliffords+measurement to
+    probabilistically apply either a `Z**(2^k t)` or `Z**(-2^k t)` with equal probability.
+    In the first case we stop, and in the second, we continue with `k+1` to correct the
+    wrong sign.
 
     Notes:
         - This bloq uses measurements.
@@ -73,6 +82,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
           expected during execution. As Qualtran does not support analyzing measurement-based
           post-selection circuits, the complexity of this Bloq is the worst-case for the
           chosen number of rounds.
+          See issue https://github.com/quantumlib/Qualtran/issues/445.
         - `apply_final_correction` defaults to False, therefore the resource estimates assume
           that one of the measurements succeeded and the process quit early. To get an exact
           channel, instead set this parameter to True.
@@ -106,11 +116,14 @@ class ZPowUsingProgrammedAncilla(Bloq):
         max_fail_probability: SymbolicFloat,
         eps: SymbolicFloat = 1e-11,
     ) -> 'ZPowUsingProgrammedAncilla':
-        """Applies the rotation `Rz(angle)` except with some specified failure probability.
+        r"""Applies the rotation `Z**t` except with some specified failure probability.
+
+        As each round has success probability 1/2, to achieve a max failure probability $p$,
+        the number of rounds is picked as $\ceil{\log_2(1/p)}$.
 
         Args:
-            exponent: Rotation exponent.
-            max_fail_probability: Upper bound on fail probability of the rotation gate.
+            exponent: Rotation exponent `t`.
+            max_fail_probability: Upper bound $p$ on fail probability of the rotation gate.
             eps: The precision of the synthesized rotation.
         """
         n_rounds = ceil(log2(1 / max_fail_probability))
@@ -130,7 +143,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
                 resources[ZPowProgrammedAncilla(2**i * self.exponent, eps=self.eps / n_rz)] += 1
 
         if self.apply_final_correction:
-            resources[Rz(2**self.n_rounds * self.exponent, eps=self.eps / n_rz)] += 1
+            resources[ZPowGate(2**self.n_rounds * self.exponent, eps=self.eps / n_rz)] += 1
 
         resources[Measure()] += self.n_rounds
 
