@@ -166,6 +166,7 @@ class SU2RotationGate(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         # TODO implement controlled version, and pass eps/4 to each rotation (incl. global phase)
+        #      https://github.com/quantumlib/Qualtran/issues/1330
         bb.add(
             GlobalPhase(
                 exponent=(
