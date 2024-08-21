@@ -25,6 +25,7 @@ from qualtran.simulation.classical_sim import (
     get_classical_truth_table,
 )
 from qualtran.symbolics import SymbolicInt
+from qualtran.testing import execute_notebook
 
 
 def test_to_cirq():
@@ -122,3 +123,8 @@ def test_identity_get_ctrl_system(n: SymbolicInt, ctrl_spec: CtrlSpec):
 
     _, sigma = ctrl_bloq.call_graph()
     assert sigma == {Identity(n + m): 2}
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('identity')
