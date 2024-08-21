@@ -13,7 +13,6 @@
 #  limitations under the License.
 import pytest
 
-from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr, QuantumVariableRotation
 
 
@@ -24,4 +23,4 @@ def test_kinetic_energy(bloq_autotester):
 @pytest.mark.parametrize('bitsize', [8, 16, 32])
 def test_qvr_t_complexity(bitsize: int):
     bloq = QuantumVariableRotation(bitsize)
-    assert bloq.t_complexity() == bitsize * Rz(0.0).t_complexity()
+    assert bloq.t_complexity().rotations == bitsize

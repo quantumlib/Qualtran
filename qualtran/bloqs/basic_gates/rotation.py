@@ -136,6 +136,9 @@ class CZPowGate(CirqGateAsBloqBase):
     def adjoint(self) -> 'CZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
 
+    def __str__(self):
+        return f'CZ**{self.exponent}'
+
 
 @frozen
 class XPowGate(CirqGateAsBloqBase):
