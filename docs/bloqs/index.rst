@@ -102,6 +102,7 @@ Bloqs Library
     qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
+    phase_estimation/kaiser_window_state.ipynb
     qubitization/qubitization_walk_operator.ipynb
     phase_estimation/qubitization_qpe.ipynb
 
