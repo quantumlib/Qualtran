@@ -63,7 +63,7 @@ def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFl
     return d
 
 
-def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex_]:
+def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex128]:
     r"""Laurent Polynomial approximation for $e^{i\theta} \mapsto e^{it\cos\theta}$.
 
     The approximation is given by
@@ -82,7 +82,7 @@ def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.compl
     return 1j**coeff_indices * scipy.special.jv(coeff_indices, t)
 
 
-def approx_exp_sin_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex_]:
+def approx_exp_sin_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex128]:
     r"""Laurent Polynomial approximation for $e^{i\theta} \mapsto e^{it\cos\theta}$.
 
     The approximation is given by

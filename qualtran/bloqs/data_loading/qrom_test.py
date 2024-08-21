@@ -224,11 +224,21 @@ def test_t_complexity(data):
 def test_t_complexity_symbolic():
     N, M = sympy.symbols('N M')
     b1, b2 = sympy.symbols('b1 b2')
+    t1, t2 = sympy.symbols('t1 t2')
     c = sympy.Symbol('c')
-    qrom_symb = QROM.build_from_bitsize((N, M), (b1, b2), num_controls=c)
+    qrom_symb = QROM.build_from_bitsize(
+        (N, M), (b1, b2), target_shapes=((t1,), (t2,)), num_controls=c
+    )
     t_counts = qrom_symb.t_complexity()
-    assert t_counts.t == 4 * (N * M - 2 + c)
-    assert t_counts
+    n_and = N * M - 2 + c
+    assert t_counts.t == 4 * n_and
+    from qualtran.bloqs.mcmt import And
+
+    assert (
+        t_counts.clifford
+        == N * M * b1 * b2 * t1 * t2
+        + (And().t_complexity().clifford + And().adjoint().t_complexity().clifford) * n_and
+    )
 
 
 def _assert_qrom_has_diagram(qrom: QROM, expected_diagram: str):
