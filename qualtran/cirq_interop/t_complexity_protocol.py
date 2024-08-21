@@ -18,7 +18,7 @@ import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq, Controlled, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
@@ -94,7 +94,7 @@ def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
 
 def _from_directly_countable_bloqs(bloq: Bloq) -> Optional[TComplexity]:
     """Directly count a clifford, T or Rotation (if it is one)."""
-    from qualtran.bloqs.basic_gates import Identity, TGate
+    from qualtran.bloqs.basic_gates import TGate
     from qualtran.resource_counting.classify_bloqs import bloq_is_clifford, bloq_is_rotation
 
     if isinstance(bloq, TGate):
@@ -105,11 +105,6 @@ def _from_directly_countable_bloqs(bloq: Bloq) -> Optional[TComplexity]:
 
     if bloq_is_rotation(bloq):
         return TComplexity(rotations=1)
-
-    # TODO: https://github.com/quantumlib/Qualtran/issues/1207). This logic should
-    #       be implemented by `Identity` directly
-    if isinstance(bloq, Controlled) and bloq.subbloq == Identity():
-        return TComplexity()
 
     # Else
     return None
