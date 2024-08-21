@@ -109,7 +109,7 @@ def _rectangular_window_state_small() -> RectangularWindowState:
 
 
 @bloq_example
-def _rectangular_window_state_symbolic_symbolic() -> RectangularWindowState:
+def _rectangular_window_state_symbolic() -> RectangularWindowState:
     import sympy
 
     rectangular_window_state_symbolic = RectangularWindowState(sympy.Symbol('n'))
@@ -119,5 +119,5 @@ def _rectangular_window_state_symbolic_symbolic() -> RectangularWindowState:
 _CC_RECTANGULAR_WINDOW_STATE_DOC = BloqDocSpec(
     bloq_cls=RectangularWindowState,
     import_line='from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState',
-    examples=(_rectangular_window_state_small, _rectangular_window_state_symbolic_symbolic),
+    examples=(_rectangular_window_state_small, _rectangular_window_state_symbolic),
 )

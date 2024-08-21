@@ -15,7 +15,7 @@ import numpy as np
 
 from qualtran.bloqs.phase_estimation.qpe_window_state import (
     _rectangular_window_state_small,
-    _rectangular_window_state_symbolic_symbolic,
+    _rectangular_window_state_symbolic,
     RectangularWindowState,
 )
 
@@ -28,4 +28,4 @@ def test_rectangular_window_state_tensor():
 
 def test_rectangular_window_state(bloq_autotester):
     bloq_autotester(_rectangular_window_state_small)
-    bloq_autotester(_rectangular_window_state_symbolic_symbolic)
+    bloq_autotester(_rectangular_window_state_symbolic)
