@@ -19,7 +19,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, GateWithRegisters, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, Signature, Soquet
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class HamiltonianSimulationByGQSP(GateWithRegisters):
+class HamiltonianSimulationByGQSP(Bloq):
     r"""Hamiltonian simulation using Generalized QSP given a qubitized quantum walk operator.
 
     Given the Szegedy Quantum Walk Operator for a Hamiltonian $H$ constructed from SELECT and PREPARE oracles,
@@ -160,7 +160,6 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return gqsp_soqs, prepare_out_soqs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        # TODO open issue: alloc/free does not work with cirq api
         state_prep_ancilla: Dict[str, 'SoquetT'] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
