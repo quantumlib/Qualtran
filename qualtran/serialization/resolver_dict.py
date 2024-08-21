@@ -138,6 +138,7 @@ import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
@@ -388,6 +389,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.phase_gradient.PhaseGradientState": qualtran.bloqs.rotations.phase_gradient.PhaseGradientState,
     "qualtran.bloqs.rotations.phase_gradient.PhaseGradientUnitary": qualtran.bloqs.rotations.phase_gradient.PhaseGradientUnitary,
     "qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFunction": qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFunction,
+    "qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowProgrammedAncilla": qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowProgrammedAncilla,
+    "qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowUsingProgrammedAncilla": qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowUsingProgrammedAncilla,
     "qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArray": qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArray,
     "qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArrayBase": qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArrayBase,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
