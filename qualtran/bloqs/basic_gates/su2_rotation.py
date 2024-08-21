@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
-from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rz
+from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
@@ -166,6 +166,7 @@ class SU2RotationGate(GateWithRegisters):
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        # TODO implement controlled version, and pass eps/4 to each rotation (incl. global phase)
         bb.add(
             GlobalPhase(
                 exponent=(
@@ -173,15 +174,12 @@ class SU2RotationGate(GateWithRegisters):
                     + self.global_shift / pi(self.global_shift)
                     + self.lambd / (2 * pi(self.lambd))
                     + self.phi / (2 * pi(self.phi))
-                ),
-                eps=self.eps / 4,
+                )
             )
         )
-        q = bb.add(Rz(pi(self.lambd) / 2 - self.lambd, eps=self.eps / 4), q=q)
-        q = bb.add(Hadamard(), q=q)
-        q = bb.add(Rz(2 * self.theta, eps=self.eps / 4), q=q)
-        q = bb.add(Hadamard(), q=q)
-        q = bb.add(Rz(pi(self.phi) / 2 - self.phi, eps=self.eps / 4), q=q)
+        q = bb.add(Rz(pi(self.lambd) / 2 - self.lambd, eps=self.eps / 3), q=q)
+        q = bb.add(Rx(2 * self.theta, eps=self.eps / 3), q=q)
+        q = bb.add(Rz(pi(self.phi) / 2 - self.phi, eps=self.eps / 3), q=q)
         return {'q': q}
 
     def adjoint(self) -> 'SU2RotationGate':
@@ -192,9 +190,6 @@ class SU2RotationGate(GateWithRegisters):
             global_shift=-self.global_shift,
             eps=self.eps,
         )
-
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(rotations=3, clifford=2)
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
