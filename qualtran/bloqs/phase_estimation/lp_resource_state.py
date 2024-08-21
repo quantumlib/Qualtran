@@ -25,7 +25,6 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, S
 from qualtran.bloqs.basic_gates import CZ, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
