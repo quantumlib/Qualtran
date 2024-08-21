@@ -322,9 +322,9 @@ def test_notebook():
 
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
-    cbloq = Controlled(bloq, ctrl_spec)
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
-    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 interesting_ctrl_specs = [
@@ -349,15 +349,15 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
 def test_controlled_tensor_without_decompose():
     ctrl_spec = CtrlSpec()
     bloq = TwoBitCSwap()
-    cbloq = Controlled(bloq, ctrl_spec)
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
 
-    tn = cbloq_to_quimb(cbloq.as_composite_bloq())
+    tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
     # pylint: disable=unbalanced-tuple-unpacking
-    right, left = get_right_and_left_inds(tn, cbloq.signature)
+    right, left = get_right_and_left_inds(tn, ctrl_bloq.signature)
     # pylint: enable=unbalanced-tuple-unpacking
     np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
-    np.testing.assert_allclose(cbloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 def test_controlled_global_phase_tensor():

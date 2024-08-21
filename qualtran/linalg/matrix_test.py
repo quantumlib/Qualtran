@@ -12,20 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import numpy as np
-from numpy.typing import NDArray
+import pytest
+from cirq.testing import random_unitary
 
 from qualtran.linalg.matrix import unitary_distance_ignoring_global_phase
 
 
-def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
-    r"""Asserts that two matrices are close to each other by bounding the matrix norm of their difference.
-
-    Asserts that $\|A - B\| \le \mathrm{atol}$.
-    """
-    assert A.shape == B.shape
-    assert np.linalg.norm(A - B) <= atol
-
-
-def assert_unitaries_equivalent_upto_global_phase(U: NDArray, V: NDArray, *, atol: float = 1e-5):
-    d = unitary_distance_ignoring_global_phase(U, V)
-    assert d <= atol, f"unitaries are not equivalent: distance={d} ({atol=})"
+@pytest.mark.parametrize("dim", [2, 3])
+def test_unitary_distance_zero(dim: int):
+    rs = np.random.RandomState(1234)
+    for _ in range(3):
+        U = random_unitary(dim, random_state=rs)
+        V = np.exp(1j * rs.random()) * U
+        d = unitary_distance_ignoring_global_phase(U, V)
+        np.testing.assert_almost_equal(d, 0)
