@@ -129,4 +129,20 @@ def _identity() -> Identity:
     return identity
 
 
-_IDENTITY_DOC = BloqDocSpec(bloq_cls=Identity, examples=[_identity])
+@bloq_example
+def _identity_n() -> Identity:
+    n = 4
+    identity_n = Identity(n)
+    return identity_n
+
+
+@bloq_example
+def _identity_symb() -> Identity:
+    import sympy
+
+    n = sympy.Symbol("n")
+    identity_symb = Identity(n)
+    return identity_symb
+
+
+_IDENTITY_DOC = BloqDocSpec(bloq_cls=Identity, examples=[_identity_symb, _identity, _identity_n])

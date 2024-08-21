@@ -19,7 +19,7 @@ from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, CtrlSpec, QInt, QUInt, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import OneState
-from qualtran.bloqs.basic_gates.identity import _identity, Identity
+from qualtran.bloqs.basic_gates.identity import _identity, _identity_n, _identity_symb, Identity
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
@@ -55,6 +55,11 @@ q2: ───I───
 
 def test_identity(bloq_autotester):
     bloq_autotester(_identity)
+    bloq_autotester(_identity_n)
+
+
+def test_examples_symb(bloq_autotester):
+    bloq_autotester(_identity_symb)
 
 
 def test_unitary_vs_cirq():
