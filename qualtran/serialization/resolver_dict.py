@@ -124,6 +124,7 @@ import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
 import qualtran.bloqs.phase_estimation.lp_resource_state
+import qualtran.bloqs.phase_estimation.qpe_window_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
 import qualtran.bloqs.phase_estimation.text_book_qpe
 import qualtran.bloqs.qft.approximate_qft
@@ -137,6 +138,7 @@ import qualtran.bloqs.reflections.reflection_using_prepare
 import qualtran.bloqs.rotations.hamming_weight_phasing
 import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
@@ -233,6 +235,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.z_basis.ZGate": qualtran.bloqs.basic_gates.z_basis.ZGate,
     "qualtran.bloqs.basic_gates.z_basis.ZeroEffect": qualtran.bloqs.basic_gates.z_basis.ZeroEffect,
     "qualtran.bloqs.basic_gates.z_basis.ZeroState": qualtran.bloqs.basic_gates.z_basis.ZeroState,
+    "qualtran.bloqs.basic_gates.z_basis.CZ": qualtran.bloqs.basic_gates.z_basis.CZ,
     "qualtran.bloqs.basic_gates.power.Power": qualtran.bloqs.basic_gates.power.Power,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.SelectBlockEncoding,
     "qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding": qualtran.bloqs.block_encoding.lcu_block_encoding.LCUBlockEncoding,
@@ -366,6 +369,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
+    "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState": qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep": qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState": qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState,
     "qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE": qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE,
@@ -385,6 +389,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.phase_gradient.PhaseGradientState": qualtran.bloqs.rotations.phase_gradient.PhaseGradientState,
     "qualtran.bloqs.rotations.phase_gradient.PhaseGradientUnitary": qualtran.bloqs.rotations.phase_gradient.PhaseGradientUnitary,
     "qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFunction": qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFunction,
+    "qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowProgrammedAncilla": qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowProgrammedAncilla,
+    "qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowUsingProgrammedAncilla": qualtran.bloqs.rotations.programmable_ancilla_rotation.ZPowUsingProgrammedAncilla,
     "qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArray": qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArray,
     "qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArrayBase": qualtran.bloqs.rotations.programmable_rotation_gate_array.ProgrammableRotationGateArrayBase,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface": qualtran.bloqs.rotations.quantum_variable_rotation.QvrInterface,
