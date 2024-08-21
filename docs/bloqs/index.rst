@@ -36,7 +36,6 @@ Bloqs Library
     basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
-    basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
     mcmt/controlled_via_and.ipynb
