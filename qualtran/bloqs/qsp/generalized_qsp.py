@@ -21,8 +21,10 @@ from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
     QBit,
@@ -31,7 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.linalg.polynomial.qsp_testing import assert_is_qsp_polynomial
-from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
+from qualtran.symbolics import is_symbolic, is_zero, Shaped, slen, smax, smin, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -350,29 +352,17 @@ class GeneralizedQSP(GateWithRegisters):
         return is_symbolic(self.P, self.Q, self.negative_power)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if isinstance(self.P, Shaped) or self.is_symbolic():
-            degree = slen(self.P) - 1
+        counts = Counter[Bloq]()
 
-            return {
-                (self.U.controlled(control_values=[0]), smax(0, degree - self.negative_power)),
-                (self.U.adjoint(), smax(0, self.negative_power - degree)),
-                (self.U.adjoint().controlled(), smin(degree, self.negative_power)),
-                (SU2RotationGate.arbitrary(ssa), degree + 1),
-            }
+        degree = slen(self.P) - 1
+        counts[SU2RotationGate.arbitrary(ssa)] += degree + 1
+        counts[self.U.controlled(ctrl_spec=CtrlSpec(cvs=0))] += smax(
+            0, degree - self.negative_power
+        )
+        counts[self.U.adjoint()] += smax(0, self.negative_power - degree)
+        counts[self.U.adjoint().controlled()] += smin(degree, self.negative_power)
 
-        degree = len(self.P) - 1
-
-        counts: Set['BloqCountT'] = set(Counter(self.signal_rotations).items())
-
-        if degree > self.negative_power:
-            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
-        elif self.negative_power > degree:
-            counts.add((self.U.adjoint(), self.negative_power - degree))
-
-        if isinstance(self.negative_power, int) and self.negative_power > 0:
-            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
-
-        return counts
+        return set((bloq, count) for bloq, count in counts.items() if not is_zero(count))
 
 
 @bloq_example

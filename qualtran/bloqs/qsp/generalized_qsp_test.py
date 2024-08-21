@@ -198,12 +198,15 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
 
     _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    assert sigma == {
-        arbitrary_rotation: degree + 1,
-        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
-        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
-        U.adjoint(): max(0, negative_power - degree),
-    }
+    expected_sigma: dict[Bloq, int] = {arbitrary_rotation: degree + 1}
+    if degree > negative_power:
+        expected_sigma[Controlled(U, CtrlSpec(cvs=0))] = degree - negative_power
+    if negative_power > 0:
+        expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
+    if negative_power > degree:
+        expected_sigma[U.adjoint()] = negative_power - degree
+
+    assert sigma == expected_sigma
 
 
 @define(slots=False)
