@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import cast, Dict, Set, Tuple, TYPE_CHECKING, Union
 
@@ -18,7 +19,8 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, GateWithRegisters, Signature, Soquet
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.polynomial.jacobi_anger_approximations import (
@@ -179,19 +181,16 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
-            from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+        counts = Counter[Bloq]()
 
-            d = self.degree
-            return {
-                (self.walk_operator.prepare, 1),
-                (self.walk_operator.prepare.adjoint(), 1),
-                (self.walk_operator.controlled(control_values=[0]), d),
-                (self.walk_operator.adjoint().controlled(), d),
-                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
-            }
+        d = self.degree
+        counts[self.walk_operator.prepare] += 1
+        counts[self.walk_operator.prepare.adjoint()] += 1
+        counts[self.walk_operator.controlled(ctrl_spec=CtrlSpec(cvs=0))] += d
+        counts[self.walk_operator.adjoint().controlled()] += d
+        counts[SU2RotationGate.arbitrary(ssa)] += 2 * d + 1
 
-        return super().build_call_graph(ssa)
+        return set(counts.items())
 
 
 @bloq_example
