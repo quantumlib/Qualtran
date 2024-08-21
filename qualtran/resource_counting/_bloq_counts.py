@@ -238,7 +238,7 @@ class QECGatesCost(CostKey[GateCounts]):
     """
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
-        from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates import GlobalPhase, Toffoli, TwoBitCSwap
         from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And
@@ -270,7 +270,7 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(clifford=1)
 
         # Bookkeeping, empty bloqs
-        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):
+        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, GlobalPhase):
             return GateCounts()
 
         if bloq_is_rotation(bloq):
