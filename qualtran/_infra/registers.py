@@ -23,7 +23,7 @@ import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import is_symbolic, smax, SymbolicInt
 
 from .data_types import QAny, QBit, QDType
 
@@ -204,7 +204,7 @@ class Signature:
         """
         left_size = sum(reg.total_bits() for reg in self.lefts())
         right_size = sum(reg.total_bits() for reg in self.rights())
-        return max(left_size, right_size)
+        return smax(left_size, right_size)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
