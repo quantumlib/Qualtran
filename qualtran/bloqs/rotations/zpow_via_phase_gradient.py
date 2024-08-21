@@ -46,8 +46,10 @@ class ZPowConstViaPhaseGradient(Bloq):
 
     See :class:`PhaseGradientState` for details on phase gradients.
 
-    This bloq loads an approximation of `t/2` to `phase_grad_bitsize` bits,
-    and has a Tofolli cost of `phase_grad_bitsize - 2`.
+    It loads an approximation of `t/2` to `phase_grad_bitsize` bits,
+    which is loaded using `phase_grad_bitsize` clean ancilla.
+
+    The total Tofolli cost is `phase_grad_bitsize - 2`.
 
 
     Args:
