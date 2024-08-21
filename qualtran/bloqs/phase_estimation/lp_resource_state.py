@@ -25,7 +25,6 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, S
 from qualtran.bloqs.basic_gates import CZ, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -86,12 +85,6 @@ class LPRSInterimPrep(GateWithRegisters):
             for i in range(self.bitsize):
                 ret[Rz(angle=rz_angle * (2**i)).controlled()] += 1
         return set(ret.items())
-
-    def _t_complexity_(self) -> 'TComplexity':
-        # Uses self.bitsize controlled-Rz rotations which decomposes into
-        # 2 single-qubit rotations and 3 cliffords
-        # TODO: Once a CRz exists, this can be updated.
-        return TComplexity(rotations=2 * self.bitsize + 1, clifford=2 + 3 * self.bitsize)
 
 
 @attrs.frozen
