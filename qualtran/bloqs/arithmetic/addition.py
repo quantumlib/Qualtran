@@ -291,10 +291,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
-        self, *, a: 'ClassicalValT', b: 'ClassicalValT'
+        self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: Optional['ClassicalValT'] = None
     ) -> Dict[str, 'ClassicalValT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
+        if self.is_adjoint:
+            assert c is not None
+            return {'a': a, 'b': b}
+        assert c is None
         return {
             'a': a,
             'b': b,
@@ -448,7 +452,12 @@ class AddK(Bloq):
         if self.signed:
             binary_rep = QInt(self.bitsize).to_bits(self.k)
         else:
-            binary_rep = QUInt(self.bitsize).to_bits(self.k)
+            val = self.k
+            if val < 0:
+                # Since this is unsigned addition adding -v is equivalent to
+                # adding 2^bitsize - v
+                val %= 2**self.bitsize
+            binary_rep = QUInt(self.bitsize).to_bits(val)
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
