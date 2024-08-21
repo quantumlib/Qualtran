@@ -11,16 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import Signature
-from qualtran.bloqs.basic_gates import Identity
-from qualtran.bloqs.reflections.prepare_identity import _prepare_identity, PrepareIdentity
+import numpy as np
+
+from qualtran.bloqs.phase_estimation.qpe_window_state import (
+    _rectangular_window_state_small,
+    _rectangular_window_state_symbolic,
+    RectangularWindowState,
+)
 
 
-def test_prepare_identity(bloq_autotester):
-    bloq_autotester(_prepare_identity)
+def test_rectangular_window_state_tensor():
+    n = 4
+    bloq = RectangularWindowState(n)
+    np.testing.assert_allclose(bloq.tensor_contract(), np.zeros(2**n) + 1 / 2 ** (n / 2))
 
 
-def test_prepare_identity_call_graph():
-    bloq = PrepareIdentity(tuple(Signature.build(a=4, b=4, c=5)))
-    _, sigma = bloq.call_graph()
-    assert sigma == {Identity(4): 2, Identity(5): 1}
+def test_rectangular_window_state(bloq_autotester):
+    bloq_autotester(_rectangular_window_state_small)
+    bloq_autotester(_rectangular_window_state_symbolic)
