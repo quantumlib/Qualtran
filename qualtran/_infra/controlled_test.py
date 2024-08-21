@@ -18,15 +18,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import (
-    Bloq,
-    CompositeBloq,
-    Controlled,
-    CtrlSpec,
-    QBit,
-    QInt,
-    QUInt,
-)
+from qualtran import Bloq, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
