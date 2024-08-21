@@ -19,7 +19,7 @@ import sympy
 from attrs import field, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, Rz, XGate, ZPowGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate, ZPowGate
 from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
