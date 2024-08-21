@@ -73,10 +73,9 @@ class Identity(Bloq):
 
         return [
             qtn.Tensor(
-                data=np.eye(2**self.bitsize),
-                inds=[(outgoing['q'], 0), (incoming['q'], 0)],
-                tags=[str(self)],
+                data=np.eye(2), inds=[(outgoing['q'], i), (incoming['q'], i)], tags=[str(self)]
             )
+            for i in range(int(self.bitsize))
         ]
 
     def as_cirq_op(

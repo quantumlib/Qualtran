@@ -70,6 +70,12 @@ def test_unitary_vs_cirq():
     np.testing.assert_allclose(unitary, cirq_unitary)
 
 
+@pytest.mark.parametrize("n", [1, 2, 3])
+def test_tensor(n: int):
+    tensor = Identity(n).tensor_contract()
+    np.testing.assert_allclose(tensor, np.eye(2**n))
+
+
 def test_i_truth_table():
     classical_truth_table = format_classical_truth_table(*get_classical_truth_table(Identity()))
     assert (
