@@ -119,16 +119,16 @@ class TwoBitSwap(Bloq):
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        cbloq = TwoBitCSwap()
+        cswap = TwoBitCSwap()
 
         def adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl,) = ctrl_soqs
-            ctrl, x, y = bb.add(cbloq, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
+            ctrl, x, y = bb.add(cswap, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
             return [ctrl], [x, y]
 
-        return cbloq, adder
+        return cswap, adder
 
 
 @frozen
@@ -274,16 +274,16 @@ class Swap(Bloq):
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        cbloq = CSwap(self.bitsize)
+        cswap = CSwap(self.bitsize)
 
         def adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl,) = ctrl_soqs
-            ctrl, x, y = bb.add(cbloq, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
+            ctrl, x, y = bb.add(cswap, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
             return [ctrl], [x, y]
 
-        return cbloq, adder
+        return cswap, adder
 
 
 @bloq_example(generalizer=ignore_split_join)
