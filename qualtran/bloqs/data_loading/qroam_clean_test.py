@@ -20,7 +20,6 @@ from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_dim,
     get_optimal_log_block_size_clean_ancilla,
     QROAMClean,
-    QROAMCleanAdjoint,
     QROAMCleanAdjointWrapper,
 )
 from qualtran.symbolics import ceil
