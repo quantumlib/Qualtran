@@ -21,7 +21,6 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
 
