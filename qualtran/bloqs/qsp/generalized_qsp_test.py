@@ -43,6 +43,7 @@ from qualtran.linalg.polynomial.qsp_testing import (
 from qualtran.linalg.testing import assert_matrices_almost_equal
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import Shaped
+from qualtran.testing import execute_notebook
 
 
 def test_gqsp_example(bloq_autotester):
@@ -307,3 +308,8 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
         list(P), Q, random_state=random_state, rtol=precision
     )
     verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('generalized_qsp')
