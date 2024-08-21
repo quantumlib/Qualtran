@@ -124,7 +124,7 @@ class LPResourceState(QPEWindowStateBase):
         return Signature([self.m_register])
 
     @classmethod
-    def from_standard_deviation_eps(cls, eps: SymbolicFloat):
+    def from_standard_deviation_eps(cls, eps: SymbolicFloat) -> 'LPResourceState':
         r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
 
         The standard deviation of phase estimation using optimal resource states scales as the
@@ -132,9 +132,9 @@ class LPResourceState(QPEWindowStateBase):
         This bound can be used to estimate the size of the phase register s.t. the estimated phase
         has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
 
-        ```
-            m = ceil(log2(pi/eps))
-        ```
+        $$
+            m = \lceil\log_2{\pi/\epsilon}\rceil
+        $$
 
         Args:
             eps: Maximum standard deviation of the estimated phase.

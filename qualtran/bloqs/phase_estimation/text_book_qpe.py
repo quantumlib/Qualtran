@@ -96,8 +96,8 @@ class TextbookQPE(GateWithRegisters):
 
     Here $\varphi$ is the true phase and $\tilde{\varphi}$ is the estimated phase.
 
-    `TextbookQPE.from_precision_and_delta` method can be used to instantiate the Bloq with
-    parameters $m$ and $\delta$ as described above.
+    `TextbookQPE(unitary, RectangularWindow.from_precision_and_delta(precision, delta))` method
+    can be used to instantiate the Bloq with parameters $m$ and $\delta$ as described above.
 
     ### Dependence of $m$ using standard deviation $\epsilon$ as the measure of uncertainty
     A stronger way to bound the uncertainty in the obtained phase is to bound the variance of the
@@ -117,8 +117,8 @@ class TextbookQPE(GateWithRegisters):
         m = \left\lceil2\log_2 \left(\frac{\pi}{\epsilon}\right)\right\rceil
     $$
 
-    `TextbookQPE.from_standard_deviation_eps` method can be used to instantiate the Bloq with
-    parameter $\epsilon$ as described above.
+    `TextbookQPE(unitary, RectangularWindow.from_standard_deviation_eps(eps))` method can be
+    used to instantiate the Bloq with parameter $\epsilon$ as described above.
 
 
     Args:

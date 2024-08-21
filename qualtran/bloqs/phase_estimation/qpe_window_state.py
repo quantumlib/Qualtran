@@ -17,7 +17,7 @@ from typing import Dict, TYPE_CHECKING
 
 import attrs
 
-from qualtran import Bloq, QFxp, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.symbolics import ceil, log2, pi, SymbolicFloat, SymbolicInt
 
@@ -41,7 +41,14 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
 
 @attrs.frozen
 class RectangularWindowState(QPEWindowStateBase):
-    """Window state used in Textbook version of QPE. Applies Hadamard on all qubits."""
+    """Window state used in Textbook version of QPE. Applies Hadamard on all qubits.
+
+    Args:
+        bitsize: Size of the control register to prepare window state on.
+
+    Registers:
+        qpe_reg: A `bitsize` sized RIGHT register.
+    """
 
     bitsize: SymbolicInt
 
@@ -59,7 +66,7 @@ class RectangularWindowState(QPEWindowStateBase):
 
         Uses Eq 5.35 from Neilson and Chuang to estimate the size of phase register s.t. we can
         estimate the phase $\varphi$ to $precision$ bits of accuracy with probability at least
-        $1 - \delta$. See the class docstring for more details.
+        $1 - \delta$. See the class docstring of `TextbookQPE` bloq for more details.
 
         ```
             m = n + ceil(log2(2 + 1/(2*delta)))
@@ -77,7 +84,8 @@ class RectangularWindowState(QPEWindowStateBase):
 
         The standard deviation of textbook phase estimation scales as $\frac{2\pi}{\sqrt{2^{m}}}$.
         This bound can be used to estimate the size of the phase register s.t. the estimated phase
-        has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
+        has a standard deviation of at-most $\epsilon$. See the class docstring of `TextbookQPE`
+        bloq for more details.
 
         ```
             m = ceil(2*log2(pi/eps))
@@ -92,3 +100,24 @@ class RectangularWindowState(QPEWindowStateBase):
         qpe_reg = bb.allocate(dtype=self.m_register.dtype)
         qpe_reg = bb.add(OnEach(self.m_bits, Hadamard()), q=qpe_reg)
         return {'qpe_reg': qpe_reg}
+
+
+@bloq_example
+def _rectangular_window_state_small() -> RectangularWindowState:
+    rectangular_window_state_small = RectangularWindowState(5)
+    return rectangular_window_state_small
+
+
+@bloq_example
+def _rectangular_window_state_symbolic_symbolic() -> RectangularWindowState:
+    import sympy
+
+    rectangular_window_state_symbolic = RectangularWindowState(sympy.Symbol('n'))
+    return rectangular_window_state_symbolic
+
+
+_CC_RECTANGULAR_WINDOW_STATE_DOC = BloqDocSpec(
+    bloq_cls=RectangularWindowState,
+    import_line='from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState',
+    examples=(_rectangular_window_state_small, _rectangular_window_state_symbolic_symbolic),
+)

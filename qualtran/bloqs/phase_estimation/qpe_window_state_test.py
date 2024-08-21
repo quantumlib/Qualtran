@@ -13,10 +13,19 @@
 #  limitations under the License.
 import numpy as np
 
-from qualtran.bloqs.phase_estimation import RectangularWindowState
+from qualtran.bloqs.phase_estimation.qpe_window_state import (
+    _rectangular_window_state_small,
+    _rectangular_window_state_symbolic_symbolic,
+    RectangularWindowState,
+)
 
 
-def test_rectangular_window_state():
+def test_rectangular_window_state_tensor():
     n = 4
     bloq = RectangularWindowState(n)
     np.testing.assert_allclose(bloq.tensor_contract(), np.zeros(2**n) + 1 / 2 ** (n / 2))
+
+
+def test_rectangular_window_state(bloq_autotester):
+    bloq_autotester(_rectangular_window_state_small)
+    bloq_autotester(_rectangular_window_state_symbolic_symbolic)
