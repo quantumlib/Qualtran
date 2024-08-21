@@ -37,7 +37,31 @@ from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, Symbo
 
 @frozen
 class ZPowConstViaPhaseGradient(Bloq):
-    r"""Apply an $ZPow(t)$ using a phase gradient state."""
+    r"""Apply an $Z**t$ on a qubit using a phase gradient state.
+
+    This bloq implements a `Z**t` by conditionally loading `t/2` into a quantum
+    register, conditioned on the qubit `q` (rotation target), and then adding
+    this value to the phase gradient to get a phase kickback, and uncomputes the load.
+    This controlled-load trick is taken from Ref. [2], Fig 2a.
+
+    See :class:`PhaseGradientState` for details on phase gradients.
+
+    This bloq loads an approximation of `t/2` to `phase_grad_bitsize` bits,
+    and has a Tofolli cost of `phase_grad_bitsize - 2`.
+
+
+    Args:
+        exponent: value of `t` to apply `Z**t`
+        phase_grad_bitsize: number of qubits of the phase gradient state.
+
+    Registers:
+        q: qubit to apply rotation on.
+        phase_grad: phase gradient state of type `QFxp` with `phase_grad_bitsize` fractional bits.
+
+    References:
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
+        Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
+    """
     exponent: SymbolicFloat
     phase_grad_bitsize: SymbolicInt
 
@@ -49,6 +73,14 @@ class ZPowConstViaPhaseGradient(Bloq):
     def from_precision(
         cls, exponent: SymbolicFloat, *, eps: SymbolicFloat
     ) -> 'ZPowConstViaPhaseGradient':
+        r"""Apply a ZPow(t) with precision `eps`.
+
+        Uses a phase gradient of size $\ceil(\log(2\pi / \epsilon)$.
+
+        Args:
+            exponent: value of `t` to apply `Z**t`
+            eps: precision to approximate the unitary to.
+        """
         b_grad = ceil(log2(2 * pi(eps) / eps))
         return cls(exponent, b_grad)
 
@@ -69,8 +101,6 @@ class ZPowConstViaPhaseGradient(Bloq):
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.exponent):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.exponent=}")
-
-        # TODO this could use `AddK` once it supports QFxp.
 
         # load the angle
         t = bb.allocate(dtype=self.phase_grad_dtype)
