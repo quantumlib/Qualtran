@@ -247,13 +247,15 @@ class QROAMCleanAdjointWrapper(Bloq):
             )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        for target, junk, adj_target in zip(
-            self.qroam_clean.target_registers,
-            self.qroam_clean.junk_registers,
-            self.qroam_clean_adjoint_bloq.target_registers,
+        block_sizes = cast(Tuple[int, ...], self.qroam_clean.block_sizes)
+        for target, adj_target in zip(
+            self.qroam_clean.target_registers, self.qroam_clean_adjoint_bloq.target_registers
         ):
-            soqs[adj_target.name] = np.array([soqs.pop(target.name), *soqs.pop(junk.name)]).reshape(
-                self.qroam_clean.block_sizes
+            junk_name = 'junk_' + target.name
+            junk_soqs = soqs.pop(junk_name) if junk_name in soqs else np.array([])
+            assert isinstance(junk_soqs, np.ndarray)
+            soqs[adj_target.name] = np.array([soqs.pop(target.name), *junk_soqs]).reshape(
+                block_sizes
             )
         soqs = bb.add_d(self.qroam_clean_adjoint_bloq, **soqs)
         return soqs
