@@ -90,6 +90,7 @@ def get_bloq_callee_counts(
     bloq: 'Bloq',
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
     ssa: Optional[SympySymbolAllocator] = None,
+    ignore_decomp_failure: bool = True,
 ) -> List[BloqCountT]:
     """Get the direct callees of a bloq and the number of times they are called.
 
@@ -103,6 +104,9 @@ def get_bloq_callee_counts(
             generalizers is provided, each generalizer will be run in order.
         ssa: A sympy symbol allocator that can be provided if one already exists in your
             computation.
+        ignore_decomp_failure: If set to True, failing to find callees will be returned as an
+            empty list. Otherwise, raise the `DecomposeNotImplementedError` or `DecomposeTypeError`
+            causing the failure.
 
     Returns:
         A list of (bloq, n) bloq counts.
@@ -116,8 +120,11 @@ def get_bloq_callee_counts(
 
     try:
         return _generalize_callees(bloq.build_call_graph(ssa), cast(GeneralizerT, generalizer))
-    except (DecomposeNotImplementedError, DecomposeTypeError):
-        return []
+    except (DecomposeNotImplementedError, DecomposeTypeError) as e:
+        if ignore_decomp_failure:
+            return []
+        else:
+            raise e
 
 
 def _build_call_graph(

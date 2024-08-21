@@ -15,6 +15,7 @@ import collections.abc as abc
 from collections import defaultdict
 from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 
+import numpy as np
 import sympy
 
 from qualtran import Adjoint, Bloq, Controlled
@@ -24,6 +25,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_split_join,
 )
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import GeneralizerT
@@ -109,7 +111,63 @@ def classify_t_count_by_bloq_type(
     return classified_bloqs
 
 
-def bloq_is_clifford(b: Bloq):
+_CLIFFORD_ANGLES = np.array(
+    [
+        np.pi,
+        np.pi / 2,
+        3 * np.pi / 2,
+        -np.pi,
+        -np.pi / 2,
+        -3 * np.pi / 2,
+        0.0,
+        -2 * np.pi,
+        2 * np.pi,
+    ]
+)
+_CLIFFORD_EXPONENTS = np.array([1.0, 0.5, 1.5, -1.0, -0.5, -1.5, 0.0, -2, 2])
+_T_ANGLES = np.array([np.pi / 4, -np.pi / 4])
+_T_EXPONENTS = np.array([0.25, -0.25])
+_ANGLE_ATOL = 1e-12
+
+
+def bloq_is_t_like(b: Bloq) -> bool:
+    """Whether a bloq should be counted as a T gate.
+
+    This will return `True` for any instance of `TGate`. It will also consider
+    single-qubit rotations and return True if the angle corresponds to a T gate
+    (up to clifford reference frame).
+    """
+    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate, XPowGate, YPowGate, ZPowGate
+
+    if isinstance(b, TGate):
+        return True
+
+    if isinstance(b, (Rz, Rx, Ry)):
+        if is_symbolic(b.angle):
+            return False  # Symbolic rotation
+        if np.any(np.abs(b.angle - _T_ANGLES) < _ANGLE_ATOL):
+            return True  # T hidden in a rotation bloq
+        return False
+
+    if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
+        if is_symbolic(b.exponent):
+            return False  # Symbolic rotation
+        if np.any(np.abs(b.exponent - _T_EXPONENTS) < _ANGLE_ATOL):
+            return True  # T hidden in a rotation bloq
+        return False
+
+    return False
+
+
+def bloq_is_clifford(b: Bloq) -> bool:
+    """Whether the bloq represents a clifford operation.
+
+    This checks against an explicit list of clifford bloqs in the Qualtran standard library,
+    so it may return `False` for an unknown gate.
+
+    This inspects single qubit rotations. If the angles correspond to Clifford angles, this
+    returns `True`.
+    """
     from qualtran.bloqs.basic_gates import (
         CNOT,
         CYGate,
@@ -121,6 +179,7 @@ def bloq_is_clifford(b: Bloq):
         YGate,
         ZGate,
     )
+    from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 
@@ -145,12 +204,42 @@ def bloq_is_clifford(b: Bloq):
     ):
         return True
 
+    if isinstance(b, (Rz, Rx, Ry)):
+        if is_symbolic(b.angle):
+            return False  # Symbolic rotation
+        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < _ANGLE_ATOL):
+            return True  # Clifford hidden in a rotation bloq
+        return False
+
+    if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
+        if is_symbolic(b.exponent):
+            return False  # Symbolic rotation
+        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < _ANGLE_ATOL):
+            return True  # Clifford hidden in a rotation bloq
+        return False
+
     return False
 
 
-def bloq_is_rotation(b: Bloq):
+def bloq_is_rotation(b: Bloq) -> bool:
+    """Whether a bloq represents a rotation operation.
+
+    This inspects the single qubit rotation bloqs and returns `True` unless the angle
+    represents a clifford or T-gate angle.
+
+    This function has a shim for counting Controlled[Rotation] gates as a rotation, which
+    will be remediated when the Qualtran standard library gains a bespoke bloq for each CRot.
+    """
     from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
-    from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+    from qualtran.bloqs.basic_gates.rotation import (
+        CZPowGate,
+        Rx,
+        Ry,
+        Rz,
+        XPowGate,
+        YPowGate,
+        ZPowGate,
+    )
 
     if isinstance(b, Controlled):
         # TODO https://github.com/quantumlib/Qualtran/issues/878
@@ -160,4 +249,25 @@ def bloq_is_rotation(b: Bloq):
 
         return bloq_is_rotation(b.subbloq)
 
-    return isinstance(b, (Rz, Rx, Ry, ZPowGate, XPowGate, YPowGate))
+    if isinstance(b, CZPowGate):
+        return True
+
+    if isinstance(b, (Rz, Rx, Ry)):
+        if is_symbolic(b.angle):
+            return True
+        if np.any(np.abs(b.angle - _CLIFFORD_ANGLES) < _ANGLE_ATOL):
+            return False  # Clifford
+        if np.any(np.abs(b.angle - _T_ANGLES) < _ANGLE_ATOL):
+            return False  # T gate
+        return True
+
+    if isinstance(b, (ZPowGate, XPowGate, YPowGate)):
+        if is_symbolic(b.exponent):
+            return True
+        if np.any(np.abs(b.exponent - _CLIFFORD_EXPONENTS) < _ANGLE_ATOL):
+            return False  # Clifford
+        if np.any(np.abs(b.exponent - _T_EXPONENTS) < _ANGLE_ATOL):
+            return False  # T gate
+        return True
+
+    return False
