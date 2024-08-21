@@ -76,6 +76,8 @@ class ZPowUsingProgrammedAncilla(Bloq):
     In the first case we stop, and in the second, we continue with `k+1` to correct the
     wrong sign.
 
+    The T-cost of this bloq is the sum of T-cost of preparing the `n_rounds` ancilla.
+
     Notes:
         - This bloq uses measurements.
         - To use this Bloq in costing, use the precise number of rounds that are actually
