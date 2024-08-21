@@ -86,7 +86,7 @@ def _polynomial_max_abs_value_on_unit_circle(
 
 def scale_down_to_qsp_polynomial(
     P: Sequence[complex], *, n_points: int = 2**17
-) -> NDArray[np.complex_]:
+) -> NDArray[np.complex128]:
     r"""Scale down the polynomial to be a valid QSP Polynomial
 
     $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
