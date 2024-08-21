@@ -21,7 +21,7 @@ from attr import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, QAny, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
+from qualtran.bloqs.basic_gates import Hadamard, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     _chebyshev_poly_even,
@@ -30,6 +30,7 @@ from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
     _scaled_chebyshev_poly_odd,
     ChebyshevPolynomial,
 )
+from qualtran.bloqs.bookkeeping import Identity
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare

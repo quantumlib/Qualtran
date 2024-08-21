@@ -32,7 +32,6 @@ from qualtran.bloqs.basic_gates import (
     CNOT,
     CZ,
     Hadamard,
-    Identity,
     IntEffect,
     IntState,
     OneEffect,
@@ -43,7 +42,7 @@ from qualtran.bloqs.basic_gates import (
     ZeroState,
     ZGate,
 )
-from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
+from qualtran.bloqs.bookkeeping import ArbitraryClifford, Identity
 from qualtran.bloqs.multiplexers.apply_lth_bloq import _apply_lth_bloq, ApplyLthBloq
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.testing import assert_valid_bloq_decomposition

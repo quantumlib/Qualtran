@@ -338,7 +338,6 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         CZPowGate,
         GlobalPhase,
         Hadamard,
-        Identity,
         Rx,
         Ry,
         Rz,
@@ -353,6 +352,7 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         ZGate,
         ZPowGate,
     )
+    from qualtran.bloqs.bookkeeping import Identity
     from qualtran.cirq_interop import CirqGateAsBloq
     from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
