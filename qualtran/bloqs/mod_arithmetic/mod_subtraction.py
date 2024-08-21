@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 class ModNeg(Bloq):
     r"""Performs modular negation.
 
-    Applies the operation $\ket{x} \xrightarrow[]{} \ket{-x \% p}$
+    Applies the operation $\ket{x} \rightarrow \ket{-x \% p}$
 
     Args:
         dtype: Datatype of the register.
@@ -122,7 +122,7 @@ class ModNeg(Bloq):
 class CModNeg(Bloq):
     r"""Performs controlled modular negation.
 
-    Applies the operation $\ket{c}\ket{x} \xrightarrow[]{} \ket{c}\ket{(-1)^c x\%p}$
+    Applies the operation $\ket{c}\ket{x} \rightarrow \ket{c}\ket{(-1)^c x\%p}$
 
     Args:
         dtype: Datatype of the register.

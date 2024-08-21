@@ -91,6 +91,10 @@ def test_modneg_cost():
     n, p = sympy.symbols('n p')
     b = ModNeg(QMontgomeryUInt(n), p)
     counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+    # Litinski 2023 https://arxiv.org/abs/2306.08585
+    # Figure/Table 8. Lists n-qubit controlled modular addition as 2n toffoli.
+    #     Note: We have $n$ extra toffolis because we are not using measurement base uncomputation
+    #       because this will add random phase flips.
     assert counts['n_t'] == 0, 'all toffoli'
     assert counts['n_ccz'] == 3 * (n - 1)
 
@@ -101,8 +105,10 @@ def test_cmodneg_cost():
         b = CModNeg(QMontgomeryUInt(n), p, cv)
         counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
 
-        assert counts['n_t'] == 0, 'all toffoli'
-        assert counts['n_ccz'] == 3 * (n - 1) + 1
+    # Litinski 2023 https://arxiv.org/abs/2306.08585
+    # Figure/Table 8. Lists n-qubit controlled modular addition as 3n toffoli.
+    assert counts['n_t'] == 0, 'all toffoli'
+    assert counts['n_ccz'] == 3 * (n - 1) + 1
 
 
 @pytest.mark.notebook
