@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Iterable, List, Set, TYPE_CHECKING
+from typing import Dict, List, Set, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -60,7 +60,8 @@ class KaiserWindowState(QPEWindowStateBase, GateWithRegisters):  # type: ignore[
 
     References:
         [Analyzing Prospects for Quantum Advantage in Topological Data
-        Analysis](https://arxiv.org/abs/2209.13581), Appendix D
+        Analysis](https://arxiv.org/abs/2209.13581).
+        Berry et. al. (2022). Appendix D
     """
 
     bitsize: SymbolicInt
@@ -116,18 +117,6 @@ class KaiserWindowState(QPEWindowStateBase, GateWithRegisters):  # type: ignore[
                 tags=[str(self)],
             )
         ]
-
-    def _kraus_(self) -> Iterable[np.ndarray]:
-        """Returns the Kraus operator for this gate to support cirq simulations.
-
-        The Kraus Operator is |Psi><i| for all |i>, where |Psi> is the target state.
-        This allows is to take any input state to the target state.
-        The operator satisfies the completeness relation Sum(E^ E) = I.
-        """
-        operator = np.zeros(shape=(2**self.bitsize,) * 3, dtype=np.complex128)
-        for i in range(len(operator)):
-            operator[i, :, i] = self.kaiser_state_coeff
-        return operator
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
