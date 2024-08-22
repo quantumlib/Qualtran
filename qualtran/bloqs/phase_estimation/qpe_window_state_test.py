@@ -11,34 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import numpy as np
+
+from qualtran.bloqs.phase_estimation.qpe_window_state import (
+    _rectangular_window_state_small,
+    _rectangular_window_state_symbolic,
+    RectangularWindowState,
+)
 
 
-from qualtran.symbolics.math_funcs import (
-    acos,
-    bit_length,
-    ceil,
-    floor,
-    is_zero,
-    ln,
-    log2,
-    pi,
-    prod,
-    sabs,
-    sarg,
-    sconj,
-    sexp,
-    shape,
-    slen,
-    smax,
-    smin,
-    ssqrt,
-    ssum,
-)
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    Shaped,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+def test_rectangular_window_state_tensor():
+    n = 4
+    bloq = RectangularWindowState(n)
+    np.testing.assert_allclose(bloq.tensor_contract(), np.zeros(2**n) + 1 / 2 ** (n / 2))
+
+
+def test_rectangular_window_state(bloq_autotester):
+    bloq_autotester(_rectangular_window_state_small)
+    bloq_autotester(_rectangular_window_state_symbolic)

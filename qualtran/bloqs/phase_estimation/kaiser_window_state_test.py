@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,8 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.phase_estimation.kaiser_window_state import KaiserWindowState
-from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
-from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
-from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE
-from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+from qualtran.bloqs.phase_estimation.kaiser_window_state import (
+    _kaiser_window_state_small,
+    _kaiser_window_state_symbolic,
+)
+
+
+def test_kaiser_window_state_auto(bloq_autotester):
+    bloq_autotester(_kaiser_window_state_small)
+    bloq_autotester(_kaiser_window_state_symbolic)
