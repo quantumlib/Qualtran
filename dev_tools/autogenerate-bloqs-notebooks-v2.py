@@ -640,6 +640,13 @@ ROT_QFT_PE = [
         ],
     ),
     NotebookSpecV2(
+        title='Kaiser Window State for Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.kaiser_window_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.kaiser_window_state._CC_KAISER_WINDOW_STATE_DOC
+        ],
+    ),
+    NotebookSpecV2(
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization.qubitization_walk_operator,
         bloq_specs=[qualtran.bloqs.qubitization.qubitization_walk_operator._QUBITIZATION_WALK_DOC],

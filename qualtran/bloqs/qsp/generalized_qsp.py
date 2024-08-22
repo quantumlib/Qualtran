@@ -31,7 +31,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.linalg.polynomial.qsp_testing import assert_is_qsp_polynomial
-from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
+from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -263,6 +263,8 @@ class GeneralizedQSP(GateWithRegisters):
         P: Co-efficients of a complex QSP polynomial.
         Q: Co-efficients of a complex QSP polynomial.
         negative_power: value of $k$, which effectively applies $z^{-k} P(z)$. defaults to 0.
+        precision: The error in the synthesized unitary. This is used to compute the required
+                   precision for each single qubit SU2 rotation.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -273,6 +275,7 @@ class GeneralizedQSP(GateWithRegisters):
     P: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
     Q: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
     negative_power: SymbolicInt = field(default=0, kw_only=True)
+    precision: SymbolicFloat = field(default=1e-11, kw_only=True)
 
     @P.validator
     @Q.validator
@@ -292,6 +295,7 @@ class GeneralizedQSP(GateWithRegisters):
         P: Union[NDArray[np.number], Sequence[complex], Shaped],
         *,
         negative_power: SymbolicInt = 0,
+        precision: SymbolicFloat = 0,
         verify: bool = False,
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
@@ -301,7 +305,7 @@ class GeneralizedQSP(GateWithRegisters):
         if verify:
             assert_is_qsp_polynomial(P)
         Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
-        return GeneralizedQSP(U, P, Q, negative_power=negative_power)
+        return GeneralizedQSP(U, P, Q, negative_power=negative_power, precision=precision)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[NDArray[np.floating], NDArray[np.floating], float]:
@@ -312,12 +316,17 @@ class GeneralizedQSP(GateWithRegisters):
         return qsp_phase_factors(self.P, self.Q)
 
     @cached_property
+    def _eps_per_rotation(self):
+        """precision to synthesize each SU2 rotation."""
+        return self.precision / (slen(self.P) + 1)
+
+    @cached_property
     def signal_rotations(self) -> NDArray[SU2RotationGate]:  # type: ignore[type-var]
         thetas, phis, lambd = self._qsp_phases
 
         return np.array(
             [
-                SU2RotationGate(theta, phi, lambd if i == 0 else 0)
+                SU2RotationGate(theta, phi, lambd if i == 0 else 0, eps=self._eps_per_rotation)
                 for i, (theta, phi) in enumerate(zip(thetas, phis))
             ]
         )
