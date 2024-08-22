@@ -43,7 +43,9 @@ from qualtran.surface_code import AlgorithmSummary
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            AlgorithmSummary(n_algo_qubits=10, n_logical_gates=GateCounts(rotation=10)),
+            AlgorithmSummary(
+                n_algo_qubits=10, n_logical_gates=GateCounts(clifford=2, t=1, rotation=7)
+            ),
         ],
         [
             mcmt.MultiControlX(cvs=(1, 1, 1)),

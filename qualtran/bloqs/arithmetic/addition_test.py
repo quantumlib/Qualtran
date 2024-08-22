@@ -39,6 +39,7 @@ from qualtran.bloqs.arithmetic.addition import (
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
@@ -275,6 +276,12 @@ def test_add_classical():
     ret1 = bloq.call_classically(a=10, b=3)
     ret2 = bloq.decompose_bloq().call_classically(a=10, b=3)
     assert ret1 == ret2
+
+
+def test_add_symb():
+    bloq = _add_symb()
+    assert bloq.signature.n_qubits() == sympy.sympify('2*n')
+    assert get_cost_value(bloq, QubitCount()) == sympy.sympify('Max(3, 2*n)')
 
 
 def test_out_of_place_adder():

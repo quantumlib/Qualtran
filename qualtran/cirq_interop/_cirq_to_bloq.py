@@ -29,7 +29,6 @@ from qualtran import (
     BloqBuilder,
     CompositeBloq,
     ConnectionT,
-    Controlled,
     CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
@@ -390,8 +389,8 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
 
     if isinstance(gate, cirq.ControlledGate):
-        return Controlled(
-            cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
+        return cirq_gate_to_bloq(gate.sub_gate).controlled(
+            ctrl_spec=CtrlSpec.from_cirq_cv(gate.control_values)
         )
 
     # Check specific basic gates types.

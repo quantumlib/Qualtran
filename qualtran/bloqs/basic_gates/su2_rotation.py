@@ -20,8 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
-from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
 
@@ -69,7 +68,7 @@ class SU2RotationGate(GateWithRegisters):
         return Signature.build(q=1)
 
     @cached_property
-    def rotation_matrix(self) -> NDArray[np.complex_]:
+    def rotation_matrix(self) -> NDArray[np.complex128]:
         if isinstance(self.lambd, sympy.Expr):
             raise ValueError(f'Symbolic lambda not allowed: {self.lambd}')
         if isinstance(self.phi, sympy.Expr):
@@ -88,8 +87,9 @@ class SU2RotationGate(GateWithRegisters):
             ]
         )
 
-    @staticmethod
-    def from_matrix(mat: NDArray[np.complex_]) -> 'SU2RotationGate':
+    @classmethod
+    def from_matrix(cls, mat: NDArray[np.complex128]) -> 'SU2RotationGate':
+
         theta = np.arctan2(np.abs(mat[1, 0]), np.abs(mat[0, 0]))
         if np.isclose(np.cos(theta), 0):
             alpha = 0
@@ -104,7 +104,47 @@ class SU2RotationGate(GateWithRegisters):
                 phi = np.angle(mat[0, 1] / np.sin(theta) * np.exp(-1j * alpha))
                 lambd = np.angle(mat[1, 0] / np.sin(theta) * np.exp(-1j * alpha))
 
-        return SU2RotationGate(theta, phi, lambd, alpha)
+        return cls(theta, phi, lambd, alpha)
+
+    @classmethod
+    def from_euler_zxz_angles(
+        cls,
+        z_1: SymbolicFloat,
+        x: SymbolicFloat,
+        z_2: SymbolicFloat,
+        *,
+        global_shift: SymbolicFloat = 0,
+        eps: Optional[SymbolicFloat],
+    ) -> 'SU2RotationGate':
+        r"""SU(2) rotation from Z-X-Z Euler angles.
+
+        Corresponds to the matrix $e^{i \delta} Rz(\phi) Rx(\theta) Rz(\psi)$, i.e.
+
+        $$
+            e^{i \delta}
+            \begin{pmatrix}
+            \cos(\beta / 2)
+            \end{pmatrix}
+        $$
+
+        All angles are in radians.
+
+        Args:
+            z_1: angle $\psi$ of the first Rz.
+            x: angle $\theta$ of the middle Rx.
+            z_2: angle $\phi$ of the second Rz.
+            global_shift: global phase shift exponent $\delta$.
+            eps: precision of rotation.
+        """
+        su2_lambd = pi(z_1) / 2 - z_1
+        su2_theta = x / 2
+        su2_phi = pi(z_2) / 2 - z_2
+        su2_global_shift = global_shift + (z_1 + z_2) / 2 - pi(global_shift, z_1, z_2)
+
+        if eps is not None:
+            return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift, eps=eps)
+        else:
+            return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -125,17 +165,21 @@ class SU2RotationGate(GateWithRegisters):
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        # TODO implement controlled version, and pass eps/4 to each rotation (incl. global phase)
+        #      https://github.com/quantumlib/Qualtran/issues/1330
         bb.add(
-            GlobalPhase(exponent=1 + self.global_shift / pi(self.global_shift), eps=self.eps / 4)
+            GlobalPhase(
+                exponent=(
+                    0.5
+                    + self.global_shift / pi(self.global_shift)
+                    + self.lambd / (2 * pi(self.lambd))
+                    + self.phi / (2 * pi(self.phi))
+                )
+            )
         )
-        q = bb.add(
-            ZPowGate(exponent=1 - self.lambd / pi(self.lambd), global_shift=-1, eps=self.eps / 4),
-            q=q,
-        )
-        q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
-        q = bb.add(
-            ZPowGate(exponent=-self.phi / pi(self.phi), global_shift=-1, eps=self.eps / 4), q=q
-        )
+        q = bb.add(Rz(pi(self.lambd) / 2 - self.lambd, eps=self.eps / 3), q=q)
+        q = bb.add(Rx(2 * self.theta, eps=self.eps / 3), q=q)
+        q = bb.add(Rz(pi(self.phi) / 2 - self.phi, eps=self.eps / 3), q=q)
         return {'q': q}
 
     def adjoint(self) -> 'SU2RotationGate':
@@ -146,9 +190,6 @@ class SU2RotationGate(GateWithRegisters):
             global_shift=-self.global_shift,
             eps=self.eps,
         )
-
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(rotations=3)
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
@@ -167,10 +208,14 @@ class SU2RotationGate(GateWithRegisters):
         return 'SU_2'
 
     def __str__(self):
+        if self.is_symbolic():
+            return f'SU_2({self.theta},{self.phi},{self.lambd},{self.global_shift})'
         return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
+            if self.is_symbolic():
+                return Text(f'({self.theta},{self.phi},{self.lambd},{self.global_shift})')
             return Text(
                 f'({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
             )
