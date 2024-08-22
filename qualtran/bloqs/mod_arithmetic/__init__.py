@@ -12,5 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ._shims import CModNeg, CModSub, ModDbl, ModInv, ModMul, ModNeg, ModSub
+from ._shims import CModSub, ModDbl, ModInv, ModMul, ModSub
 from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
+from .mod_subtraction import CModNeg, ModNeg

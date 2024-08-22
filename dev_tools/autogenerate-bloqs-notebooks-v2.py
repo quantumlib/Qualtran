@@ -500,6 +500,14 @@ MOD_ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Modular Subtraction',
+        module=qualtran.bloqs.mod_arithmetic.mod_subtraction,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_NEG_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Modular Multiplication',
         module=qualtran.bloqs.factoring.mod_mul,
         bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],

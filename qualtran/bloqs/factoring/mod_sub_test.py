@@ -16,6 +16,7 @@ import pytest
 import sympy
 
 from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.testing import assert_equivalent_bloq_counts, assert_valid_bloq_decomposition
 
@@ -71,3 +72,12 @@ def test_classical_action_mod_neg(bitsize, prime):
     valid_range = range(prime)
     for x in valid_range:
         assert b.call_classically(x=x) == cb.call_classically(x=x) == ((-x) % prime,)
+
+
+def test_montgomerymodneg_symbolic_cost():
+    n = sympy.Symbol('n')
+    p = 13
+    b = MontgomeryModNeg(n, p)
+    cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+    assert cost['n_t'] == 0
+    assert cost['n_ccz'] == 3 * (n - 1)
