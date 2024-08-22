@@ -12,32 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import networkx as nx
+import pytest
 
-from qualtran.symbolics.math_funcs import (
-    acos,
-    bit_length,
-    ceil,
-    floor,
-    ln,
-    log2,
-    pi,
-    prod,
-    sabs,
-    sarg,
-    sconj,
-    sexp,
-    shape,
-    slen,
-    smax,
-    smin,
-    ssqrt,
-    ssum,
-)
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    Shaped,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from .all_call_graph import get_all_call_graph
+from .bloq_finder import get_bloq_examples
+
+
+@pytest.mark.slow
+def test_get_all_call_graph():
+    # This test generates a union of the call graphs of every bloq example in the library.
+    # This test makes sure that there aren't any bloq examples with broken call graphs.
+    bes = get_bloq_examples()
+    g = get_all_call_graph(bes)
+    res = list(nx.simple_cycles(g))
+    assert res == []

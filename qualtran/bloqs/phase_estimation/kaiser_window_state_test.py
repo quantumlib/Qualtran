@@ -12,32 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.bloqs.phase_estimation.kaiser_window_state import (
+    _kaiser_window_state_small,
+    _kaiser_window_state_symbolic,
+)
 
-from qualtran.symbolics.math_funcs import (
-    acos,
-    bit_length,
-    ceil,
-    floor,
-    ln,
-    log2,
-    pi,
-    prod,
-    sabs,
-    sarg,
-    sconj,
-    sexp,
-    shape,
-    slen,
-    smax,
-    smin,
-    ssqrt,
-    ssum,
-)
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    Shaped,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+
+def test_kaiser_window_state_auto(bloq_autotester):
+    bloq_autotester(_kaiser_window_state_small)
+    bloq_autotester(_kaiser_window_state_symbolic)
