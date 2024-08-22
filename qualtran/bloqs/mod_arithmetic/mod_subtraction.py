@@ -38,6 +38,7 @@ from qualtran.symbolics import HasLength
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
 
