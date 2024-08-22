@@ -244,10 +244,12 @@ def bloq_is_rotation(b: Bloq) -> bool:
     if isinstance(b, Controlled):
         # TODO https://github.com/quantumlib/Qualtran/issues/878
         #      explicit representation of all two-qubit rotations.
-        if isinstance(b.subbloq, (SGate, TGate, GlobalPhase)):
+        if isinstance(b.subbloq, (SGate, TGate)):
             return True
 
-        return bloq_is_rotation(b.subbloq)
+        # For historical reasons, this hacky solution for controlled rotations does *not*
+        # do clifford, T angle simplification.
+        return isinstance(b.subbloq, (Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate))
 
     if isinstance(b, CZPowGate):
         return True
