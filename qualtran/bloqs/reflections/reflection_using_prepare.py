@@ -28,7 +28,7 @@ from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
@@ -164,10 +164,11 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
+        cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
         costs: Set['BloqCountT'] = {
             (self.prepare_gate, 1),
             (self.prepare_gate.adjoint(), 1),
-            (MultiControlZ([0] * n_phase_control), 1),
+            (MultiControlZ(cvs), 1),
         }
         if self.control_val is None:
             costs.add((XGate(), 2))

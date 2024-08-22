@@ -271,3 +271,10 @@ def bloq_is_rotation(b: Bloq) -> bool:
         return True
 
     return False
+
+
+def bloq_is_state_or_effect(b: Bloq) -> bool:
+    from qualtran.bloqs.basic_gates.x_basis import _XVector
+    from qualtran.bloqs.basic_gates.z_basis import _ZVector
+
+    return isinstance(b, (_XVector, _ZVector))

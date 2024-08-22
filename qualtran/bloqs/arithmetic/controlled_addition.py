@@ -158,7 +158,7 @@ class CAdd(Bloq):
 
     def _t_complexity_(self):
         n = self.b_dtype.bitsize
-        num_and = 2 * n - 1
+        num_and = self.a_dtype.bitsize + self.b_dtype.bitsize - 1
         num_clifford = 33 * (n - 2) + 43
         return TComplexity(t=4 * num_and, clifford=num_clifford)
 

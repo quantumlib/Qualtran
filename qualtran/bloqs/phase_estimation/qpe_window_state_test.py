@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,16 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
+import numpy as np
 
-from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr, QuantumVariableRotation
+from qualtran.bloqs.phase_estimation.qpe_window_state import (
+    _rectangular_window_state_small,
+    _rectangular_window_state_symbolic,
+    RectangularWindowState,
+)
 
 
-def test_kinetic_energy(bloq_autotester):
-    bloq_autotester(_qvr)
+def test_rectangular_window_state_tensor():
+    n = 4
+    bloq = RectangularWindowState(n)
+    np.testing.assert_allclose(bloq.tensor_contract(), np.zeros(2**n) + 1 / 2 ** (n / 2))
 
 
-@pytest.mark.parametrize('bitsize', [8, 16, 32])
-def test_qvr_t_complexity(bitsize: int):
-    bloq = QuantumVariableRotation(bitsize)
-    assert bloq.t_complexity().rotations == bitsize
+def test_rectangular_window_state(bloq_autotester):
+    bloq_autotester(_rectangular_window_state_small)
+    bloq_autotester(_rectangular_window_state_symbolic)

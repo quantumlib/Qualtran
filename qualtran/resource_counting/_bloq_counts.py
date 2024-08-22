@@ -24,7 +24,12 @@ from qualtran.symbolics import SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford, bloq_is_rotation, bloq_is_t_like
+from .classify_bloqs import (
+    bloq_is_clifford,
+    bloq_is_rotation,
+    bloq_is_state_or_effect,
+    bloq_is_t_like,
+)
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -268,6 +273,10 @@ class QECGatesCost(CostKey[GateCounts]):
         # Cliffords
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
+
+        # States and effects
+        if bloq_is_state_or_effect(bloq):
+            return GateCounts()
 
         # Bookkeeping, empty bloqs
         if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):

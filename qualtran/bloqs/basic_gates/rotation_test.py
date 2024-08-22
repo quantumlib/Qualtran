@@ -96,6 +96,9 @@ def test_pretty_name():
     assert _rx().pretty_name() == "Rx"
     assert _rz().pretty_name() == "Rz"
 
+    assert str(CZPowGate(1.0)) == 'CZ**1.0'
+    assert str(CZPowGate(0.9)) == 'CZ**0.9'
+
 
 def test_rx(bloq_autotester):
     bloq_autotester(_rx)
