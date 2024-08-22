@@ -80,6 +80,7 @@ Bloqs Library
     :caption: Modular Arithmetic:
 
     mod_arithmetic/mod_addition.ipynb
+    mod_arithmetic/mod_subtraction.ipynb
     factoring/mod_mul.ipynb
     factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
