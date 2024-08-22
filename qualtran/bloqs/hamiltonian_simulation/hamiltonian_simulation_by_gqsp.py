@@ -113,7 +113,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision / 2)
 
     @cached_property
-    def approx_cos(self) -> Union[NDArray[np.complex_], Shaped]:
+    def approx_cos(self) -> Union[NDArray[np.complex128], Shaped]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))

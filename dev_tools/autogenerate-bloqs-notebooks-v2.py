@@ -496,6 +496,15 @@ MOD_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._C_MOD_ADD_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Modular Subtraction',
+        module=qualtran.bloqs.mod_arithmetic.mod_subtraction,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_NEG_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -624,7 +633,15 @@ ROT_QFT_PE = [
         title='Textbook Quantum Phase Estimation',
         module=qualtran.bloqs.phase_estimation.text_book_qpe,
         bloq_specs=[
-            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
+            qualtran.bloqs.phase_estimation.qpe_window_state._CC_RECTANGULAR_WINDOW_STATE_DOC,
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Kaiser Window State for Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.kaiser_window_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.kaiser_window_state._CC_KAISER_WINDOW_STATE_DOC
         ],
     ),
     NotebookSpecV2(
