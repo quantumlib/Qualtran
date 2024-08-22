@@ -140,17 +140,15 @@ def test_shaped(shape: tuple[int, ...]):
     assert slen(shaped) == shape[0]
 
 
-def test_is_zero_true():
+def test_is_zero():
     assert is_zero(0)
-
-    n = sympy.Symbol("n")
-    assert is_zero(n - n)
-    assert is_zero(n * 0)
-    assert is_zero(n * 2 - n - n)
-
-
-def test_is_zero_false():
     assert not is_zero(1)
 
     n = sympy.Symbol("n")
     assert not is_zero(n)
+    assert is_zero(n - n)
+    assert is_zero(n * 0)
+    assert is_zero(n * 2 - n - n)
+
+    assert is_zero(sympy.sympify("0"))
+    assert not is_zero(sympy.sympify("1"))
