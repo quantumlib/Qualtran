@@ -16,6 +16,7 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import MinusState, PlusEffect, PlusState, XGate
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
@@ -43,6 +44,8 @@ def test_plus_effect():
     # Everything is squeezed. Keep track manually or use compositebloq.
     should_be = np.array([1, 1]) / np.sqrt(2)
     np.testing.assert_allclose(should_be, vector)
+
+    assert get_cost_value(bloq, QECGatesCost()) == GateCounts()
 
 
 def test_plus_state_effect():

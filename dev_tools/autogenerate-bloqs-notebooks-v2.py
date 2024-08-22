@@ -633,7 +633,8 @@ ROT_QFT_PE = [
         title='Textbook Quantum Phase Estimation',
         module=qualtran.bloqs.phase_estimation.text_book_qpe,
         bloq_specs=[
-            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
+            qualtran.bloqs.phase_estimation.qpe_window_state._CC_RECTANGULAR_WINDOW_STATE_DOC,
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC,
         ],
     ),
     NotebookSpecV2(

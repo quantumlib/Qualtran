@@ -19,7 +19,6 @@ from attrs import field, frozen
 
 from qualtran import bloq_example, BloqDocSpec, QAny, Register, Soquet
 from qualtran.bloqs.basic_gates import Identity
-from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
@@ -65,7 +64,7 @@ class PrepareIdentity(PrepareOracle):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: Soquet) -> Dict[str, Soquet]:
         for label, soq in soqs.items():
-            soqs[label] = bb.add(OnEach(soq.reg.bitsize, Identity()), q=soq)
+            soqs[label] = bb.add(Identity(soq.reg.bitsize), q=soq)
         return soqs
 
 
