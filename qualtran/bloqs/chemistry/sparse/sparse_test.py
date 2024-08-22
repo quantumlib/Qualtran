@@ -77,7 +77,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     )
     # correct for SelectSwapQROM vs QROAM
     # https://github.com/quantumlib/Qualtran/issues/574
-    # TODO: Not quite sure why at the moment.
+    # The -2 comes from a more accurate calculation of the QROAM costs in Qualtran.
     delta_qrom = -2
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
