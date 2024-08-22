@@ -85,7 +85,9 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
         t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
-        precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
+        precision: the precision $\epsilon$ of the final block encoded $e^{-iHt}$. Split into two:
+                   half to approximate $e^{it\cos\theta}$ to a polynomial, and half to synthesize
+                   the underlying GQSP rotations.
     """
 
     walk_operator: QubitizationWalkOperator
@@ -108,7 +110,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def degree(self) -> SymbolicInt:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
+        return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision / 2)
 
     @cached_property
     def approx_cos(self) -> Union[NDArray[np.complex128], Shaped]:
@@ -128,6 +130,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
             self.walk_operator,
             self.approx_cos,
             negative_power=self.degree,
+            precision=self.precision / 2,
             verify=True,
             verify_precision=1e-4,
         )
