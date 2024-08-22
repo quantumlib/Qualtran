@@ -47,9 +47,8 @@ class ModNeg(Bloq):
 
     Applies the operation $\ket{x} \rightarrow \ket{-x \% p}$
 
-    Note: This implements the decomposition from Fig 6 in https://arxiv.org/abs/2306.08585
-    but doesn't match table 8 since we don't use measurement based uncompution because
-    it will introduce random phase flips.
+    Note: This implements the decomposition from Fig 6 in but doesn't match table 8
+    since we don't use measurement based uncompution because that introduces random phase flips.
 
     Args:
         dtype: Datatype of the register.
@@ -128,8 +127,8 @@ class CModNeg(Bloq):
 
     Applies the operation $\ket{c}\ket{x} \rightarrow \ket{c}\ket{(-1)^c x\%p}$
 
-    Note: while this matches the count from Fig 8 in https://arxiv.org/abs/2306.08585, it's a different
-    decomposition that controls only the Add operation instead of turning the CNOTs into toffolis.
+    Note: while this matches the count from Fig 8, it's a different decomposition that controls
+    only the Add operation instead of turning the CNOTs into toffolis.
 
     Args:
         dtype: Datatype of the register.
