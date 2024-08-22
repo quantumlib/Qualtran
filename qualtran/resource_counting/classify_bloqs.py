@@ -230,7 +230,7 @@ def bloq_is_rotation(b: Bloq) -> bool:
     This function has a shim for counting Controlled[Rotation] gates as a rotation, which
     will be remediated when the Qualtran standard library gains a bespoke bloq for each CRot.
     """
-    from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
+    from qualtran.bloqs.basic_gates import SGate, TGate
     from qualtran.bloqs.basic_gates.rotation import (
         CZPowGate,
         Rx,
