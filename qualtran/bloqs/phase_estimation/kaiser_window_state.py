@@ -18,7 +18,7 @@ import attrs
 import numpy as np
 import scipy
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, Signature
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.symbolics import (
     ceil,
