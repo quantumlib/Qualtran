@@ -47,6 +47,10 @@ class ModNeg(Bloq):
 
     Applies the operation $\ket{x} \rightarrow \ket{-x \% p}$
 
+    Note: This implements the decomposition from Fig 6 in https://arxiv.org/abs/2306.08585
+    but doesn't match the table 8 since we don't use measurement based uncompution here because
+    it will introduce random phase flips.
+
     Args:
         dtype: Datatype of the register.
         p: The modulus for the negation.
@@ -56,7 +60,7 @@ class ModNeg(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6b and 8
+        Fig 6b
     """
 
     dtype: Union[QUInt, QMontgomeryUInt]
@@ -123,6 +127,9 @@ class CModNeg(Bloq):
     r"""Performs controlled modular negation.
 
     Applies the operation $\ket{c}\ket{x} \rightarrow \ket{c}\ket{(-1)^c x\%p}$
+
+    Note: while this matches the count from Fig 8 in https://arxiv.org/abs/2306.08585, it's a different
+    decomposition that controls only the Add operation instead of turning the CNOTs into toffolis.
 
     Args:
         dtype: Datatype of the register.
