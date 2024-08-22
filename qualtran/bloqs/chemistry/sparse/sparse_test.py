@@ -52,8 +52,6 @@ def get_toffoli_count(bloq: Bloq) -> SymbolicInt:
     return cost_dict['n_ccz']
 
 
-# slow as of https://github.com/quantumlib/Qualtran/issues/1292
-@pytest.mark.slow
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
@@ -61,9 +59,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     cost = get_toffoli_count(sel_sparse)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     cost += get_toffoli_count(prep_sparse)
-    prep_sparse_adj = attrs.evolve(
-        prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
-    )
+    prep_sparse_adj = prep_sparse.adjoint()
     cost += get_toffoli_count(prep_sparse_adj)
     unused_lambda = 10
     unused_de = 1e-3

@@ -182,7 +182,6 @@ class PrepareSparse(PrepareOracle):
     one_body: Tuple[int, ...] = attrs.field(repr=False)
     keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
-    is_adjoint: bool = False
     sum_of_l1_coeffs: SymbolicFloat = 0.0
     qroam_block_size: int = 1
 
@@ -206,13 +205,6 @@ class PrepareSparse(PrepareOracle):
             Register("swap_pqrs", BoundedQUInt(1)),
         )
 
-    def adjoint(self) -> 'PrepareSparse':
-        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
-
-    @cached_property
-    def _side(self) -> Side:
-        return Side.RIGHT if not self.is_adjoint else Side.LEFT
-
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         extra_junk = (Register("less_than", QBit()),)
@@ -223,19 +215,19 @@ class PrepareSparse(PrepareOracle):
         """Target registers for QROAMClean."""
         bs = (self.num_spin_orb // 2 - 1).bit_length()
         return (
-            Register("p", QUInt(bitsize=bs), side=self._side),
-            Register("q", QUInt(bitsize=bs), side=self._side),
-            Register("r", QUInt(bitsize=bs), side=self._side),
-            Register("s", QUInt(bitsize=bs), side=self._side),
-            Register('theta', QBit(), side=self._side),
-            Register("flag_1b", QBit(), side=self._side),
-            Register('alt_p', QAny(bitsize=bs), side=self._side),
-            Register('alt_q', QAny(bitsize=bs), side=self._side),
-            Register('alt_r', QAny(bitsize=bs), side=self._side),
-            Register('alt_s', QAny(bitsize=bs), side=self._side),
-            Register('alt_theta', QBit(), side=self._side),
-            Register("alt_flag_1b", QBit(), side=self._side),
-            Register('keep', QAny(bitsize=self.num_bits_state_prep), side=self._side),
+            Register("p", QUInt(bitsize=bs), side=Side.RIGHT),
+            Register("q", QUInt(bitsize=bs), side=Side.RIGHT),
+            Register("r", QUInt(bitsize=bs), side=Side.RIGHT),
+            Register("s", QUInt(bitsize=bs), side=Side.RIGHT),
+            Register('theta', QBit(), side=Side.RIGHT),
+            Register("flag_1b", QBit(), side=Side.RIGHT),
+            Register('alt_p', QAny(bitsize=bs), side=Side.RIGHT),
+            Register('alt_q', QAny(bitsize=bs), side=Side.RIGHT),
+            Register('alt_r', QAny(bitsize=bs), side=Side.RIGHT),
+            Register('alt_s', QAny(bitsize=bs), side=Side.RIGHT),
+            Register('alt_theta', QBit(), side=Side.RIGHT),
+            Register("alt_flag_1b", QBit(), side=Side.RIGHT),
+            Register('keep', QAny(bitsize=self.num_bits_state_prep), side=Side.RIGHT),
         )
 
     @cached_property
@@ -246,7 +238,7 @@ class PrepareSparse(PrepareOracle):
                 name=f'jnk_{reg.name}',
                 dtype=reg.dtype,
                 shape=reg.shape + (self.qroam_block_size - 1,),
-                side=self._side,
+                side=Side.RIGHT,
             )
             for reg in self.qroam_junk_regs
         )
@@ -354,44 +346,26 @@ class PrepareSparse(PrepareOracle):
             target_bitsizes=target_bitsizes,
             log_block_sizes=log_block_sizes,
         )
-        if self.is_adjoint:
-            return qrom.adjoint()
+        # if self.is_adjoint:
+        #     return qrom.adjoint()
         return qrom
 
     def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
-        if soqs.get(self.qroam_junk_regs[0].name) is not None:
-            # doing the adjoint prepare
-            # Need to merge target and junk target LEFT registers which will be eaten by QROAM^
-            qroam_in_soqs = {'selection': soqs['d']}
-            for ireg, (reg, jnk_reg) in enumerate(
-                zip(self.qroam_junk_regs, self.qroam_extra_junk_regs)
-            ):
-                soq = soqs.pop(reg.name)
-                jnk_soq = soqs.pop(jnk_reg.name)
-                qroam_in_soqs |= {
-                    f'target{ireg}_': np.concatenate(
-                        [[soq], jnk_soq]
-                    )  # merge target and junk_target
-                }
-            qroam_out_soqs = bb.add_d(qrom, **qroam_in_soqs)
-            return soqs | {'d': qroam_out_soqs.pop('selection')}
-        else:
-            # doing prepare
-            qroam_out_soqs = bb.add_d(qrom, selection=soqs['d'])
-            out_soqs: Dict[str, 'SoquetT'] = {'d': qroam_out_soqs.pop('selection')}
-            # map output soqs to Prepare junk registers names
-            out_soqs |= {
-                reg.name: qroam_out_soqs.pop(f'target{i}_')
-                for (i, reg) in enumerate(self.qroam_junk_regs)
-            }
-            out_soqs |= {
-                reg.name: qroam_out_soqs.pop(f'junk_target{i}_')
-                for (i, reg) in enumerate(self.qroam_extra_junk_regs)
-            }
-            return soqs | out_soqs
+        qroam_out_soqs = bb.add_d(qrom, selection=soqs['d'])
+        out_soqs: Dict[str, 'SoquetT'] = {'d': qroam_out_soqs.pop('selection')}
+        # map output soqs to Prepare junk registers names
+        out_soqs |= {
+            reg.name: qroam_out_soqs.pop(f'target{i}_')
+            for (i, reg) in enumerate(self.qroam_junk_regs)
+        }
+        out_soqs |= {
+            reg.name: qroam_out_soqs.pop(f'junk_target{i}_')
+            for (i, reg) in enumerate(self.qroam_extra_junk_regs)
+        }
+        return soqs | out_soqs
 
     def _build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         n_n = self.num_bits_spat_orb
@@ -456,67 +430,8 @@ class PrepareSparse(PrepareOracle):
         )
         return soqs
 
-    def _build_composite_bloq_adj(
-        self, bb: 'BloqBuilder', **soqs: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
-        n_n = self.num_bits_spat_orb
-        soqs['swap_rs'], soqs['r'], soqs['s'] = bb.add(
-            CSwap(n_n), ctrl=soqs['swap_rs'], x=soqs['r'], y=soqs['s']
-        )
-        soqs['swap_pq'], soqs['p'], soqs['q'] = bb.add(
-            CSwap(n_n), ctrl=soqs['swap_pq'], x=soqs['p'], y=soqs['q']
-        )
-        soqs['swap_pqrs'], soqs['q'], soqs['s'] = bb.add(
-            CSwap(n_n), ctrl=soqs['swap_pqrs'], x=soqs['q'], y=soqs['s']
-        )
-        soqs['swap_pqrs'], soqs['p'], soqs['r'] = bb.add(
-            CSwap(n_n), ctrl=soqs['swap_pqrs'], x=soqs['p'], y=soqs['r']
-        )
-        soqs['swap_pqrs'] = bb.add(Hadamard(), q=soqs['swap_pqrs'])
-        soqs['swap_rs'] = bb.add(Hadamard(), q=soqs['swap_rs'])
-        soqs['swap_pq'] = bb.add(Hadamard(), q=soqs['swap_pq'])
-        soqs['less_than'], soqs['flag_1b'], soqs['alt_flag_1b'] = bb.add(
-            CSwap(1), ctrl=soqs['less_than'], x=soqs['flag_1b'], y=soqs['alt_flag_1b']
-        )
-        soqs['less_than'], soqs['alt_s'], soqs['s'] = bb.add(
-            CSwap(n_n), ctrl=soqs['less_than'], x=soqs['alt_s'], y=soqs['s']
-        )
-        soqs['less_than'], soqs['alt_r'], soqs['r'] = bb.add(
-            CSwap(n_n), ctrl=soqs['less_than'], x=soqs['alt_r'], y=soqs['r']
-        )
-        soqs['less_than'], soqs['alt_q'], soqs['q'] = bb.add(
-            CSwap(n_n), ctrl=soqs['less_than'], x=soqs['alt_q'], y=soqs['q']
-        )
-        soqs['less_than'], soqs['alt_p'], soqs['p'] = bb.add(
-            CSwap(n_n), ctrl=soqs['less_than'], x=soqs['alt_p'], y=soqs['p']
-        )
-        ctrl_spec = CtrlSpec(QBit(), 0b0)
-        soqs['less_than'], soqs['theta'] = bb.add(
-            ZGate().controlled(ctrl_spec), ctrl=soqs['less_than'], q=soqs['theta']
-        )
-        soqs['less_than'], soqs['alt_theta'] = bb.add(
-            CZ(), q1=soqs['less_than'], q2=soqs['alt_theta']
-        )
-        # Inequality test for alias sampling
-        lte_bloq = LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep)
-        soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
-            lte_bloq.adjoint(), x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
-        )
-        # prepare uniform superposition over sigma
-        soqs['sigma'] = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=soqs['sigma'])
-        # 2. QROM the ind_d alt_d values
-        soqs = self.add_qrom(bb, **soqs)
-        # 1. Prepare \sum_d |d\rangle
-        soqs['d'] = bb.add(
-            PrepareUniformSuperposition(self.num_non_zero).adjoint(), target=soqs['d']
-        )
-        return soqs
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        if self.is_adjoint:
-            return self._build_composite_bloq_adj(bb, **soqs)
-        else:
-            return self._build_composite_bloq(bb, **soqs)
+        return self._build_composite_bloq(bb, **soqs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
