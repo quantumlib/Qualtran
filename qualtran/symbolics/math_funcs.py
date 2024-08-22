@@ -49,6 +49,24 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
+def ln(x: float) -> float:
+    ...
+
+
+@overload
+def ln(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
+def ln(x: SymbolicFloat) -> SymbolicFloat:
+    from sympy.codegen.cfunctions import log
+
+    if not is_symbolic(x):
+        return np.log(x)
+    return log(x)
+
+
+@overload
 def sexp(x: complex) -> complex:
     ...
 
