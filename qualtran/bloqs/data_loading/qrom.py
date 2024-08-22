@@ -14,18 +14,7 @@
 
 """Quantum read-only memory."""
 import numbers
-from typing import (
-    Callable,
-    cast,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import cast, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -140,9 +129,6 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                 yield XorK(QUInt(target_bitsize), data_to_load).on(*target[idx]).controlled_by(
                     *ctrl_qubits
                 )
-                # for q, bit in zip(target[idx], f'{data_to_load:0{target_bitsize}b}'):
-                #     if int(bit):
-                #         yield gate(q)
 
     def decompose_zero_selection(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
