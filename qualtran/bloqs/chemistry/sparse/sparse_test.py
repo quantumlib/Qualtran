@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import attrs
 import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
-from openfermion.resource_estimates.utils import power_two, QI
+from openfermion.resource_estimates.utils import power_two
 
 from qualtran import Bloq
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
