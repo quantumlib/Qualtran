@@ -120,6 +120,11 @@ class ModNeg(Bloq):
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        if 0 < x < self.mod:
+            x = self.mod - x
+        return {'x': x}
+
 
 @frozen
 class CModNeg(Bloq):
@@ -212,6 +217,13 @@ class CModNeg(Bloq):
         elif reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
+
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == self.cv and 0 < x < self.mod:
+            x = self.mod - x
+        return {'ctrl': ctrl, 'x': x}
 
 
 @bloq_example
