@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class KaiserWindowState(QPEWindowStateBase, GateWithRegisters):  # type: ignore[misc]
+class KaiserWindowState(QPEWindowStateBase):
     r"""Bloq to prepare a Kaiser window state for high confidence Quantum Phase Estimation.
 
     Kaiser window states are optimal to minimize the probability of error outside a given
