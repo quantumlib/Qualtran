@@ -367,7 +367,7 @@ class PrepareSparse(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def _build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         n_n = self.num_bits_spat_orb
         # 1. Prepare \sum_d |d\rangle
         soqs['d'] = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=soqs['d'])
@@ -429,9 +429,6 @@ class PrepareSparse(PrepareOracle):
             CSwap(n_n), ctrl=soqs['swap_rs'], x=soqs['r'], y=soqs['s']
         )
         return soqs
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        return self._build_composite_bloq(bb, **soqs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
