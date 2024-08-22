@@ -48,7 +48,7 @@ class ModNeg(Bloq):
     Applies the operation $\ket{x} \rightarrow \ket{-x \% p}$
 
     Note: This implements the decomposition from Fig 6 in https://arxiv.org/abs/2306.08585
-    but doesn't match the table 8 since we don't use measurement based uncompution here because
+    but doesn't match table 8 since we don't use measurement based uncompution here because
     it will introduce random phase flips.
 
     Args:
