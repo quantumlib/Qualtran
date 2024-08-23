@@ -72,9 +72,6 @@ class ArcSin(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "arcsin(x)"
-
     def on_classical_vals(
         self, x: ClassicalValT, result: ClassicalValT
     ) -> Dict[str, ClassicalValT]:

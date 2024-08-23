@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -30,6 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -81,9 +82,6 @@ class PrepareUVFirstQuantization(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP UV'
-
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
@@ -100,6 +98,13 @@ class PrepareUVFirstQuantization(Bloq):
             (PrepareNuState(self.num_bits_p, self.m_param), 1),
             (PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), 1),
         }
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('PREP UV')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example

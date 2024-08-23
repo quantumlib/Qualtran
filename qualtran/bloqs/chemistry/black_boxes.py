@@ -104,10 +104,6 @@ class QROAM(Bloq):
     is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f"QROAM{dag}"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
@@ -123,6 +119,10 @@ class QROAM(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
+    def __str__(self) -> str:
+        dag = '†' if self.is_adjoint else ''
+        return f"QROAM{dag}"
 
 
 @frozen
@@ -152,10 +152,6 @@ class QROAMTwoRegs(Bloq):
     target_bitsize: int
     is_adjoint: bool = False
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f"QROAM{dag}"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_a_size - 1).bit_length(), trg=self.target_bitsize)
@@ -171,6 +167,10 @@ class QROAMTwoRegs(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
+    def __str__(self) -> str:
+        dag = '†' if self.is_adjoint else ''
+        return f"QROAM{dag}"
 
 
 @frozen

@@ -89,12 +89,12 @@ def test_as_cirq_op():
 
 
 def test_pretty_name():
-    assert ZPowGate().pretty_name() == "ZPowGate"
-    assert XPowGate().pretty_name() == "XPowGate"
-    assert YPowGate().pretty_name() == "YPowGate"
-    assert _ry().pretty_name() == "Ry"
-    assert _rx().pretty_name() == "Rx"
-    assert _rz().pretty_name() == "Rz"
+    assert str(ZPowGate()) == "ZPowGate"
+    assert str(XPowGate()) == "XPowGate"
+    assert str(YPowGate()) == "YPowGate"
+    assert str(_ry()) == "Ry"
+    assert str(_rx()) == "Rx"
+    assert str(_rz()) == "Rz"
 
     assert str(CZPowGate(1.0)) == 'CZ**1.0'
     assert str(CZPowGate(0.9)) == 'CZ**0.9'

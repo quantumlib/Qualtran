@@ -63,9 +63,6 @@ class HammingWeightCompute(GateWithRegisters):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "out = x.bit_count()"
-
     def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
         return [
             [cirq.CX(a, b), cirq.CX(a, c)],

@@ -100,7 +100,7 @@ class _XVector(Bloq):
 
         return op, {'q': np.array([q])}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = '-' if self.bit else '+'
         return f'|{s}>' if self.state else f'<{s}|'
 

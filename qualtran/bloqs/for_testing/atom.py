@@ -82,13 +82,9 @@ class TestAtom(Bloq):
             return 'TestAtom()'
 
     def __str__(self):
-        return repr(self)
-
-    def pretty_name(self) -> str:
         if self.tag:
-            return self.tag
-        else:
-            return 'TestAtom'
+            return f'TestAtom({self.tag})'
+        return 'TestAtom'
 
 
 @frozen
@@ -120,9 +116,6 @@ class TestTwoBitOp(Bloq):
                 tags=[str(self)],
             )
         ]
-
-    def pretty_name(self) -> str:
-        return 'TestTwoBitOp'
 
 
 @frozen(repr=False)
@@ -169,8 +162,7 @@ class TestGWRAtom(GateWithRegisters):
         dagger = '†' if self.is_adjoint else ''
         return f'TestGWRAtom({tag}){dagger}'
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         if self.tag:
-            return self.tag
-        else:
-            return 'GWRAtom'
+            return f'GWRAtom({self.tag})'
+        return 'GWRAtom'

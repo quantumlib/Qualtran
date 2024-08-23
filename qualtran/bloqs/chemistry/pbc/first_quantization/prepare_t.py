@@ -13,15 +13,16 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -55,11 +56,15 @@ class PreparePowerTwoState(Bloq):
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize)
 
-    def pretty_name(self) -> str:
-        return r'PREP 2^(r/2) |r⟩'
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.bitsize - 2))}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'PREP 2^(r/2) |r⟩')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -101,9 +106,6 @@ class PrepareTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(w=2, r=self.num_bits_p, s=self.num_bits_p)
 
-    def pretty_name(self) -> str:
-        return r'PREP T'
-
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
     ) -> Dict[str, 'SoquetT']:
@@ -120,6 +122,13 @@ class PrepareTFirstQuantization(Bloq):
         uni_prep_w = (Toffoli(), 13)
         # Factor of two for r and s registers.
         return {uni_prep_w, (PreparePowerTwoState(bitsize=self.num_bits_p), 2)}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'PREP T')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example

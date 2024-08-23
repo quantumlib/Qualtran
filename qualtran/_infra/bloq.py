@@ -105,7 +105,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
 
     def pretty_name(self) -> str:
-        return self.__class__.__name__
+        return str(self)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.

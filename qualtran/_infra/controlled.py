@@ -471,11 +471,6 @@ class Controlled(GateWithRegisters):
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
-    def pretty_name(self) -> str:
-        num_ctrls = self.ctrl_spec.num_qubits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
-        return f'{ctrl_string}[{self.subbloq.pretty_name()}]'
-
     def __str__(self) -> str:
         num_ctrls = self.ctrl_spec.num_qubits
         ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'

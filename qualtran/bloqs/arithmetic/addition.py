@@ -308,9 +308,6 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
 
-    def pretty_name(self) -> str:
-        return "c = a + b"
-
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
@@ -339,6 +336,11 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         if power == -1:
             return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('c=a+b')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example(generalizer=ignore_split_join)
