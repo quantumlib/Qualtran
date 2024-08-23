@@ -692,7 +692,7 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
     return BloqCheckResult.PASS, ''
 
 
-def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges: Dict[str, Sequence[int]]):
+def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges: Sequence[int]):
     """Check that the bloq has a classical action consistent with its decomposition.
 
     Args:
@@ -700,9 +700,9 @@ def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges: Dict[str,
         parameter_ranges: named arguments giving ranges for each of the registers of the bloq.
     """
     cb = bloq.decompose_bloq()
-    parameters = tuple(parameter_ranges.keys())
-    for vals in itertools.product(*[parameter_ranges[p] for p in parameters]):
-        call_with = {p: v for p, v in zip(parameters, vals)}
+    parameter_names = tuple(parameter_ranges.keys())
+    for vals in itertools.product(*[parameter_ranges[p] for p in parameter_names]):
+        call_with = {p: v for p, v in zip(parameter_names, vals)}
         bloq_res = bloq.call_classically(**call_with)
         decomposed_res = cb.call_classically(**call_with)
         assert bloq_res == decomposed_res, f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
