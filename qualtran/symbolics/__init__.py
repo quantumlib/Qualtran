@@ -18,6 +18,7 @@ from qualtran.symbolics.math_funcs import (
     bit_length,
     ceil,
     floor,
+    is_zero,
     ln,
     log2,
     pi,

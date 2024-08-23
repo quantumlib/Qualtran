@@ -43,6 +43,7 @@ from qualtran.linalg.polynomial.qsp_testing import (
 from qualtran.linalg.testing import assert_matrices_almost_equal
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import Shaped
+from qualtran.testing import execute_notebook
 
 
 def test_gqsp_example(bloq_autotester):
@@ -198,12 +199,15 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
 
     _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    assert sigma == {
-        arbitrary_rotation: degree + 1,
-        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
-        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
-        U.adjoint(): max(0, negative_power - degree),
-    }
+    expected_sigma: dict[Bloq, int] = {arbitrary_rotation: degree + 1}
+    if degree > negative_power:
+        expected_sigma[Controlled(U, CtrlSpec(cvs=0))] = degree - negative_power
+    if negative_power > 0:
+        expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
+    if negative_power > degree:
+        expected_sigma[U.adjoint()] = negative_power - degree
+
+    assert sigma == expected_sigma
 
 
 @define(slots=False)
@@ -304,3 +308,8 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
         list(P), Q, random_state=random_state, rtol=precision
     )
     verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('generalized_qsp')

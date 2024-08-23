@@ -33,6 +33,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O, BloqCount, get_cost_value
 from qualtran.symbolics import Shaped
@@ -75,7 +76,9 @@ def verify_hamiltonian_simulation_by_gqsp(
     N = H.shape[0]
 
     W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
-    result_unitary = cirq.unitary(W_e_iHt)
+    # TODO This cirq.unitary call is 4-5x faster than tensor_contract.
+    #      https://github.com/quantumlib/Qualtran/issues/1336
+    result_unitary = cirq.unitary(BloqAsCirqGate(W_e_iHt))
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N]
