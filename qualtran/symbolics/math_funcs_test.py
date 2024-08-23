@@ -22,6 +22,7 @@ from qualtran.symbolics import (
     bit_length,
     ceil,
     is_symbolic,
+    is_zero,
     log2,
     sarg,
     sexp,
@@ -137,3 +138,17 @@ def test_shaped(shape: tuple[int, ...]):
     shaped = Shaped(shape=shape)
     assert is_symbolic(shaped)
     assert slen(shaped) == shape[0]
+
+
+def test_is_zero():
+    assert is_zero(0)
+    assert not is_zero(1)
+
+    n = sympy.Symbol("n")
+    assert not is_zero(n)
+    assert is_zero(n - n)
+    assert is_zero(n * 0)
+    assert is_zero(n * 2 - n - n)
+
+    assert is_zero(sympy.sympify("0"))
+    assert not is_zero(sympy.sympify("1"))
