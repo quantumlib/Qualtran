@@ -69,19 +69,21 @@ def test_moddbl_cost():
     assert cost['n_ccz'] == 2 * n + 1
 
 
-# @pytest.mark.slow
-# @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
-# @pytest.mark.parametrize(
-#     ['prime', 'bitsize', 'k'], [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)]
-# )
-# def test_cmodmulk_classical_action(dtype, bitsize, prime, k):
-#     b = CModMulK(dtype(bitsize), k=k, mod=prime)
-#     qlt_testing.assert_consistent_classical_action(b, x=range(prime))
+@pytest.mark.slow
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['prime', 'bitsize', 'k'],
+    [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)],
+)
+def test_cmodmulk_classical_action(dtype, bitsize, prime, k):
+    b = CModMulK(dtype(bitsize), k=k, mod=prime)
+    qlt_testing.assert_consistent_classical_action(b, ctrl=(0, 1), x=range(prime))
 
-# @pytest.mark.parametrize('k', range(13))
-# def test_cmodmulk_classical_action_fast(k):
-#     b = CModMulK(QMontgomeryUInt(4), k=k, mod=13)
-#     qlt_testing.assert_consistent_classical_action(b, x=range(13))
+
+@pytest.mark.parametrize('k', range(1, 13))
+def test_cmodmulk_classical_action_fast(k):
+    b = CModMulK(QMontgomeryUInt(4), k=k, mod=13)
+    qlt_testing.assert_consistent_classical_action(b, ctrl=(0, 1), x=range(13))
 
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])

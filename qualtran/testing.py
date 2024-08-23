@@ -697,6 +697,6 @@ def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges):
     parameters = tuple(parameter_ranges.keys())
     for vals in itertools.product(*[parameter_ranges[p] for p in parameters]):
         call_with = {p: v for p, v in zip(parameters, vals)}
-        assert bloq.call_classically(**call_with) == cb.call_classically(
-            **call_with
-        ), f'{call_with=}'
+        bloq_res = bloq.call_classically(**call_with)
+        decomposed_res = cb.call_classically(**call_with)
+        assert bloq_res == decomposed_res, f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'

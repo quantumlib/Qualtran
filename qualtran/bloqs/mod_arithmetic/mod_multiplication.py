@@ -185,7 +185,7 @@ class CModMulK(Bloq):
         if isinstance(self.mod, sympy.Expr):
             return
 
-        assert self.k < self.mod
+        assert 0 < self.k < self.mod
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -226,10 +226,8 @@ class CModMulK(Bloq):
         return {(self._Add(k=k), 2), (CSwap(self.dtype.bitsize), 1)}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
-        if x < self.mod:
+        if ctrl and x < self.mod:
             return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
-
-        assert ctrl == 1, f'{ctrl=}'
         return {'ctrl': ctrl, 'x': x}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
