@@ -83,8 +83,6 @@ def test_mod_exp_consistent_counts():
         return b
 
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
-    print('spit')
-    print(counts1)
     assert counts1 == counts2
 
 
