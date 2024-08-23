@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import math
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, Union
 
@@ -68,6 +69,10 @@ class ModExp(Bloq):
     mod: Union[int, sympy.Expr]
     exp_bitsize: Union[int, sympy.Expr]
     x_bitsize: Union[int, sympy.Expr]
+
+    def __post_init__(self):
+        if isinstance(self.base, int) and isinstance(self.mod, int):
+            assert math.gcd(self.base, self.mod) == 1
 
     @cached_property
     def signature(self) -> 'Signature':
