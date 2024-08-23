@@ -48,7 +48,7 @@ from qualtran.symbolics import is_symbolic
 class ModDbl(Bloq):
     r"""An n-bit modular doubling gate.
 
-    Implements $\ket{x} \rightarrow \ket{2x \% mod}$ using $2n$ Toffoli gates.
+    Implements $\ket{x} \rightarrow \ket{2x \mod p}$ using $2n$ Toffoli gates.
 
     Args:
         dtype: Dtype of the number to double.
@@ -161,13 +161,14 @@ _MOD_DBL_DOC = BloqDocSpec(bloq_cls=ModDbl, examples=[_moddbl_small, _moddbl_lar
 
 @frozen
 class CModMulK(Bloq):
-    """Perform controlled `x *= k mod m` for constant k, m and variable x.
+    r"""Perform controlled modular multiplication by a constant.
+
+    Applies $\ket{c}\ket{c} \rightarrow \ket{c} \ket{x*k^c \mod p}$.
 
     Args:
         dtype: Dtype of the register.
         k: The integer multiplicative constant.
         mod: The integer modulus.
-        cv: value at which the bloq is active.
 
     Registers:
         ctrl: The control bit
@@ -225,11 +226,11 @@ class CModMulK(Bloq):
         return {(self._Add(k=k), 2), (CSwap(self.dtype.bitsize), 1)}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
-        if ctrl == 0:
-            return {'ctrl': ctrl, 'x': x}
+        if x < self.mod:
+            return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
-        assert ctrl == 1, ctrl
-        return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
+        assert ctrl == 1, f'{ctrl=}'
+        return {'ctrl': ctrl, 'x': x}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
