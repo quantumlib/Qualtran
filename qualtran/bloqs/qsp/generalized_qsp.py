@@ -33,7 +33,16 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.linalg.polynomial.qsp_testing import assert_is_qsp_polynomial
-from qualtran.symbolics import is_symbolic, is_zero, Shaped, slen, smax, smin, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import (
+    is_symbolic,
+    is_zero,
+    Shaped,
+    slen,
+    smax,
+    smin,
+    SymbolicFloat,
+    SymbolicInt,
+)
 
 if TYPE_CHECKING:
     import cirq
