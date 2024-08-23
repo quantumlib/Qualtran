@@ -30,6 +30,7 @@ def t_counts_from_sigma(sigma: Mapping['Bloq', SymbolicInt]) -> SymbolicInt:
         if bloq_is_rotation(bloq) and not cirq.has_stabilizer_effect(bloq):
             if isinstance(bloq, Controlled):
                 # TODO native controlled rotation bloqs missing (CRz, CRy etc.)
+                #      https://github.com/quantumlib/Qualtran/issues/878
                 bloq = bloq.subbloq
             assert hasattr(bloq, 'eps')
             ret += ceil(TComplexity.rotation_cost(bloq.eps)) * counts
