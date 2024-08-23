@@ -174,23 +174,15 @@ class CHadamard(Bloq):
         }
 
     def _t_complexity_(self) -> 'TComplexity':
-        # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
-        # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
-        # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
-        # The other two are considered 'rotations'.
-        # https://github.com/quantumlib/Qualtran/issues/237
-        return TComplexity(rotations=2, clifford=4)
+        # https://github.com/quantumlib/Qualtran/issues/878#issuecomment-2257237443
+        return TComplexity(t=2, clifford=9)
 
     def my_static_costs(self, cost_key: 'CostKey'):
         from qualtran.resource_counting import GateCounts, QECGatesCost
 
         if cost_key == QECGatesCost():
-            # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
-            # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
-            # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
-            # The other two are considered 'rotations'.
-            # https://github.com/quantumlib/Qualtran/issues/237
-            return GateCounts(rotation=2, clifford=4)
+            # https://github.com/quantumlib/Qualtran/issues/878#issuecomment-2257237443
+            return GateCounts(t=2, clifford=9)
 
         return NotImplemented
 
