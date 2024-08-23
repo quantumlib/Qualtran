@@ -38,6 +38,7 @@ from qualtran.bloqs.basic_gates.z_basis import (
     _zgate,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
 
 
@@ -79,6 +80,8 @@ def test_zero_state_manual():
 
     (x,) = bloq.call_classically()
     assert x == 0
+
+    assert get_cost_value(bloq, QECGatesCost()) == GateCounts()
 
 
 def test_multiq_zero_state():
