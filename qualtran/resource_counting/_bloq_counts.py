@@ -366,7 +366,7 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts()
 
         if bloq_is_rotation(bloq):
-            assert isinstance(bloq, _HasEps)
+            assert hasattr(bloq, 'eps')
             return GateCounts.from_rotation_with_eps(bloq.eps)
 
         # Recursive case
