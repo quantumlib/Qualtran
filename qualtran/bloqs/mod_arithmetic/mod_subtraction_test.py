@@ -12,12 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
+
+import numpy as np
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import QMontgomeryUInt, QUInt
-from qualtran.bloqs.mod_arithmetic.mod_subtraction import _cmod_neg, _mod_neg, CModNeg, ModNeg
+from qualtran.bloqs.mod_arithmetic.mod_subtraction import (
+    _cmod_neg,
+    _mod_neg,
+    CModNeg,
+    CModSub,
+    ModNeg,
+    ModSub,
+)
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
@@ -92,9 +102,10 @@ def test_modneg_cost():
     b = ModNeg(QMontgomeryUInt(n), p)
     counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
     # Litinski 2023 https://arxiv.org/abs/2306.08585
-    # Figure/Table 8. Lists n-qubit controlled modular addition as 2n toffoli.
-    #     Note: We have $n$ extra toffolis because we are not using measurement base uncomputation
-    #       because this will add random phase flips.
+    # The construction in Figure 6b, has toffoli count of 3n which is what we use here.
+    # Figure/Table 8. Lists n-qubit modular negation as 2n toffoli because it assumes the last $n$
+    # toffolis are replaced by measurement based uncomputation. We don't use this optimization since
+    # it introduces random phase flips.
     assert counts['n_t'] == 0, 'all toffoli'
     assert counts['n_ccz'] == 3 * (n - 1)
 
@@ -106,7 +117,8 @@ def test_cmodneg_cost():
         counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
-    # Figure/Table 8. Lists n-qubit controlled modular addition as 3n toffoli.
+    # Figure/Table 8. Lists n-qubit controlled modular negation as 3n toffoli.
+    #   Note: While this bloq has the same toffoli count it uses a different decomposition.
     assert counts['n_t'] == 0, 'all toffoli'
     assert counts['n_ccz'] == 3 * (n - 1) + 1
 
@@ -119,3 +131,117 @@ def test_notebook():
 @pytest.mark.parametrize('example', [_mod_neg, _cmod_neg])
 def test_examples(bloq_autotester, example):
     bloq_autotester(example)
+
+
+def test_modsub_cost():
+    n, p = sympy.symbols('n p')
+    b = ModSub(QMontgomeryUInt(n), p)
+    counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+
+    # Litinski 2023 https://arxiv.org/abs/2306.08585
+    # Figure/Table 8. Lists modular subtraction as 6n toffoli.
+    assert counts['n_t'] == 0
+    assert counts['n_ccz'] == 6 * n - 3
+
+
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+)
+def test_modsub_decomposition(dtype, bitsize, prime):
+    b = ModSub(dtype(bitsize), prime)
+    qlt_testing.assert_valid_bloq_decomposition(b)
+
+
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+)
+def test_modsub_bloq_counts(dtype, bitsize, prime):
+    b = ModSub(dtype(bitsize), prime)
+    qlt_testing.assert_equivalent_bloq_counts(b)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+)
+def test_modsub_classical_action(dtype, bitsize, prime):
+    b = ModSub(dtype(bitsize), prime)
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(prime), repeat=2):
+        assert b.call_classically(x=x, y=y) == cb.call_classically(x=x, y=y) == (x, (y - x) % prime)
+
+
+def test_modsub_classical_action_fast():
+    bitsize = 10
+    prime = 541
+    rng = np.random.default_rng(13214)
+    b = ModSub(QUInt(bitsize), prime)
+    cb = b.decompose_bloq()
+    for x, y in rng.choice(prime, (10, 2)):
+        assert b.call_classically(x=x, y=y) == cb.call_classically(x=x, y=y) == (x, (y - x) % prime)
+
+
+def test_cmodsub_cost():
+    n, p = sympy.symbols('n p')
+    b = CModSub(QMontgomeryUInt(n), p)
+    counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+
+    # Litinski 2023 https://arxiv.org/abs/2306.08585
+    # Figure/Table 8. Lists controlled modular subtraction as 7n toffoli.
+    assert counts['n_t'] == 0
+    assert counts['n_ccz'] == 7 * n - 1
+
+
+@pytest.mark.parametrize('cv', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+)
+def test_cmodsub_decomposition(cv, dtype, bitsize, prime):
+    b = CModSub(dtype(bitsize), prime, cv)
+    qlt_testing.assert_valid_bloq_decomposition(b)
+
+
+@pytest.mark.parametrize('cv', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+)
+def test_cmodsub_bloq_counts(cv, dtype, bitsize, prime):
+    b = CModSub(dtype(bitsize), prime, cv)
+    qlt_testing.assert_equivalent_bloq_counts(b)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('cv', range(2))
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize(
+    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length() - 1, 6)]
+)
+def test_cmodsub_classical_action(cv, dtype, bitsize, prime):
+    b = CModSub(dtype(bitsize), prime, cv)
+    cb = b.decompose_bloq()
+    for ctrl in range(2):
+        for x, y in itertools.product(range(prime), repeat=2):
+            assert (
+                b.call_classically(ctrl=ctrl, x=x, y=y)
+                == cb.call_classically(ctrl=ctrl, x=x, y=y)
+                == (ctrl, x, (y - (ctrl == cv) * x) % prime)
+            )
+
+
+def test_cmodsub_classical_action_fast():
+    bitsize = 10
+    prime = 541
+    rng = np.random.default_rng(13214)
+    b = CModSub(QUInt(bitsize), prime)
+    cb = b.decompose_bloq()
+    for x, y in rng.choice(prime, (10, 2)):
+        assert (
+            b.call_classically(ctrl=1, x=x, y=y)
+            == cb.call_classically(ctrl=1, x=x, y=y)
+            == (1, x, (y - x) % prime)
+        )

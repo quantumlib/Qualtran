@@ -26,54 +26,15 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QUInt, Register, Signature
+from qualtran import Bloq, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
-from qualtran.drawing import Circle, Text, TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-
-@frozen
-class ModSub(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
-
-
-@frozen
-class CModSub(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature(
-            [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Roetteler
-        return {(Toffoli(), ceil(16 * self.n * log2(self.n) - 23.8 * self.n))}
-
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
-        if reg is None:
-            return Text("")
-        if reg.name == 'ctrl':
-            return Circle()
-        elif reg.name == 'x':
-            return TextBox('x')
-        elif reg.name == 'y':
-            return TextBox('x-y')
-        raise ValueError(f'Unrecognized register name {reg.name}')
 
 
 @frozen
