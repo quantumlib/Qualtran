@@ -230,7 +230,7 @@ def bloq_is_rotation(b: Bloq) -> bool:
     This function has a shim for counting Controlled[Rotation] gates as a rotation, which
     will be remediated when the Qualtran standard library gains a bespoke bloq for each CRot.
     """
-    from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
+    from qualtran.bloqs.basic_gates import SGate, TGate
     from qualtran.bloqs.basic_gates.rotation import (
         CZPowGate,
         Rx,
@@ -242,12 +242,17 @@ def bloq_is_rotation(b: Bloq) -> bool:
     )
 
     if isinstance(b, Controlled):
+        if b.ctrl_spec.num_qubits > 1:
+            return False
+
         # TODO https://github.com/quantumlib/Qualtran/issues/878
         #      explicit representation of all two-qubit rotations.
-        if isinstance(b.subbloq, (SGate, TGate, GlobalPhase)):
+        if isinstance(b.subbloq, (SGate, TGate)):
             return True
 
-        return bloq_is_rotation(b.subbloq)
+        # For historical reasons, this hacky solution for controlled rotations does *not*
+        # do clifford, T angle simplification.
+        return isinstance(b.subbloq, (Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate))
 
     if isinstance(b, CZPowGate):
         return True
