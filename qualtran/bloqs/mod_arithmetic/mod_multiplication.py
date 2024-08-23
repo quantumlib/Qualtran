@@ -12,10 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numbers
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, Union
 
-import numbers
 import attrs
 import numpy as np
 import sympy
@@ -23,25 +23,25 @@ from attrs import frozen
 
 from qualtran import (
     Bloq,
-    QBit,
-    QUInt,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QBit,
     QMontgomeryUInt,
+    QUInt,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import AddK
-from qualtran.bloqs.basic_gates import CNOT, XGate, CSwap
-from qualtran.drawing import Text, WireSymbol, directional_text_box, Circle
+from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
+from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
-from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
-from qualtran.resource_counting.generalizers import ignore_split_join, ignore_alloc_free
 
 
 @frozen
@@ -69,7 +69,7 @@ class ModDbl(Bloq):
     def _validate_mod(self, attribute, value):
         assert isinstance(value, numbers.Integral) or is_symbolic(value)
         if isinstance(value, numbers.Integral):
-            assert value%2 == 1 
+            assert value % 2 == 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -77,7 +77,7 @@ class ModDbl(Bloq):
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if x < self.mod:
-            x = (x + x)%self.mod
+            x = (x + x) % self.mod
         return {'x': x}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
@@ -89,7 +89,8 @@ class ModDbl(Bloq):
         # significant bits.
         x_split = bb.split(x)
         x = bb.join(
-            np.concatenate([[sign], x_split, [lower_bit]]), dtype=attrs.evolve(self.dtype, bitsize=self.dtype.bitsize+2)
+            np.concatenate([[sign], x_split, [lower_bit]]),
+            dtype=attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 2),
         )
 
         # Add constant -p to the x register.
@@ -103,7 +104,9 @@ class ModDbl(Bloq):
 
         # Add constant p to the x register if the result of the last modular reduction is negative.
         (sign,), x = bb.add(
-            AddK(bitsize=self.dtype.bitsize + 1, k=self.mod, signed=False, cvs=(1,)), ctrls=(sign,), x=x
+            AddK(bitsize=self.dtype.bitsize + 1, k=self.mod, signed=False, cvs=(1,)),
+            ctrls=(sign,),
+            x=x,
         )
 
         # Split the lower bit ancilla from the x register for use in resetting the other ancilla bit
@@ -115,9 +118,7 @@ class ModDbl(Bloq):
         lower_bit = bb.add(XGate(), q=lower_bit)
 
         free_bit = x_split[0]
-        x = bb.join(
-            np.concatenate([x_split[1:-1], [lower_bit]]), dtype=self.dtype,
-        )
+        x = bb.join(np.concatenate([x_split[1:-1], [lower_bit]]), dtype=self.dtype)
 
         # Free the ancilla bits.
         bb.free(free_bit)
@@ -135,16 +136,18 @@ class ModDbl(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (AddK(self.dtype.bitsize+2, -self.mod, signed=False), 1),
-            (AddK(self.dtype.bitsize+1, self.mod, cvs=(1,), signed=False), 1),
+            (AddK(self.dtype.bitsize + 2, -self.mod, signed=False), 1),
+            (AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False), 1),
             (CNOT(), 1),
             (XGate(), 2),
         }
+
 
 @bloq_example
 def _moddbl_small() -> ModDbl:
     moddbl_small = ModDbl(QUInt(4), 13)
     return moddbl_small
+
 
 @bloq_example
 def _moddbl_large() -> ModDbl:
@@ -152,9 +155,8 @@ def _moddbl_large() -> ModDbl:
     moddbl_large = ModDbl(QUInt(32), prime)
     return moddbl_large
 
-_MOD_DBL_DOC = BloqDocSpec(
-    bloq_cls=ModDbl, examples=[_moddbl_small, _moddbl_large]
-)
+
+_MOD_DBL_DOC = BloqDocSpec(bloq_cls=ModDbl, examples=[_moddbl_small, _moddbl_large])
 
 
 @frozen
@@ -186,10 +188,7 @@ class CModMulK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([
-            Register('ctrl', QBit()),
-            Register('x', self.dtype),
-        ])
+        return Signature([Register('ctrl', QBit()), Register('x', self.dtype)])
 
     def _Add(self, k: Union[int, sympy.Expr]):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""

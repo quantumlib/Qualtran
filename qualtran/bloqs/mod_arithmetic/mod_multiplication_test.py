@@ -12,22 +12,24 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import attrs
 import pytest
 import sympy
-import attrs
 
-from qualtran import (
-    QUInt, QMontgomeryUInt
-)
-from qualtran.resource_counting import SympySymbolAllocator
-
-from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
-from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 import qualtran.testing as qlt_testing
+from qualtran import QMontgomeryUInt, QUInt
+from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import (
-    ModDbl, _moddbl_small, _moddbl_large, _modmul_symb, _modmul, CModMulK
+    _moddbl_large,
+    _moddbl_small,
+    _modmul,
+    _modmul_symb,
+    CModMulK,
+    ModDbl,
 )
-from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.resource_counting import get_cost_value, QECGatesCost, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
@@ -37,6 +39,7 @@ def test_moddbl_classical_action(dtype, bitsize, prime):
     b = ModDbl(dtype(bitsize), mod=prime)
     qlt_testing.assert_consistent_classical_action(b, x=range(prime))
 
+
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
     ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
@@ -44,6 +47,7 @@ def test_moddbl_classical_action(dtype, bitsize, prime):
 def test_moddbl_decomposition(dtype, bitsize, prime):
     b = ModDbl(dtype(bitsize), prime)
     qlt_testing.assert_valid_bloq_decomposition(b)
+
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
@@ -62,7 +66,7 @@ def test_moddbl_cost():
     # Litinski 2023 https://arxiv.org/abs/2306.08585
     # Figure/Table 8. Lists modular doubling as 2n toffoli.
     assert cost['n_t'] == 0
-    assert cost['n_ccz'] == 2*n + 1
+    assert cost['n_ccz'] == 2 * n + 1
 
 
 # @pytest.mark.slow
@@ -79,34 +83,42 @@ def test_moddbl_cost():
 #     b = CModMulK(QMontgomeryUInt(4), k=k, mod=13)
 #     qlt_testing.assert_consistent_classical_action(b, x=range(13))
 
+
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['prime', 'bitsize', 'k'], [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)]
+    ['prime', 'bitsize', 'k'],
+    [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)],
 )
 def test_cmodmulk_decomposition(dtype, bitsize, prime, k):
     b = CModMulK(dtype(bitsize), k, prime)
     qlt_testing.assert_valid_bloq_decomposition(b)
 
+
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['prime', 'bitsize', 'k'], [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)]
+    ['prime', 'bitsize', 'k'],
+    [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 10) for k in range(1, p)],
 )
 def test_cmodmulk_bloq_counts(dtype, bitsize, prime, k):
     b = CModMulK(dtype(bitsize), k, prime)
     ssa = SympySymbolAllocator()
     my_k = ssa.new_symbol('k')
+
     def generalizer(bloq):
         if isinstance(bloq, CtrlScaleModAdd):
             return attrs.evolve(bloq, k=my_k)
         return bloq
-    qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join, generalizer])
+
+    qlt_testing.assert_equivalent_bloq_counts(
+        b, [ignore_alloc_free, ignore_split_join, generalizer]
+    )
 
 
 @pytest.mark.parametrize('example', [_moddbl_small, _moddbl_large, _modmul_symb, _modmul])
 def test_examples(bloq_autotester, example):
     bloq_autotester(example)
 
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('mod_multiplication')
-
