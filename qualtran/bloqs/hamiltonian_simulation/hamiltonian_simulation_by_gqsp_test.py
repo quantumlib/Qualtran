@@ -76,7 +76,8 @@ def verify_hamiltonian_simulation_by_gqsp(
     N = H.shape[0]
 
     W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
-    # This cirq.unitary call is 4-5x faster than tensor_contract.
+    # TODO This cirq.unitary call is 4-5x faster than tensor_contract.
+    #      https://github.com/quantumlib/Qualtran/issues/1336
     result_unitary = cirq.unitary(BloqAsCirqGate(W_e_iHt))
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
