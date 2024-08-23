@@ -102,9 +102,10 @@ def test_modneg_cost():
     b = ModNeg(QMontgomeryUInt(n), p)
     counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
     # Litinski 2023 https://arxiv.org/abs/2306.08585
-    # Figure/Table 8. Lists n-qubit controlled modular addition as 2n toffoli.
-    #     Note: We have $n$ extra toffolis because we are not using measurement base uncomputation
-    #       because this will add random phase flips.
+    # The construction in Figure 6b, has toffoli count of 3n which is what we use here.
+    # Figure/Table 8. Lists n-qubit modular negation as 2n toffoli because it assumes the last $n$
+    # toffolis are replaced by measurement based uncomputation. We don't use this optimization since
+    # it introduces random phase flips.
     assert counts['n_t'] == 0, 'all toffoli'
     assert counts['n_ccz'] == 3 * (n - 1)
 
@@ -116,7 +117,8 @@ def test_cmodneg_cost():
         counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
-    # Figure/Table 8. Lists n-qubit controlled modular addition as 3n toffoli.
+    # Figure/Table 8. Lists n-qubit controlled modular negation as 3n toffoli.
+    #   Note: While this bloq has the same toffoli count it uses a different decomposition.
     assert counts['n_t'] == 0, 'all toffoli'
     assert counts['n_ccz'] == 3 * (n - 1) + 1
 
@@ -188,7 +190,7 @@ def test_cmodsub_cost():
     counts = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
-    # Figure/Table 8. Lists modular subtraction as 7n toffoli.
+    # Figure/Table 8. Lists controlled modular subtraction as 7n toffoli.
     assert counts['n_t'] == 0
     assert counts['n_ccz'] == 7 * n - 1
 

@@ -267,7 +267,7 @@ class ModSub(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6b and 8
+        Fig 6c and 8
     """
 
     dtype: Union[QUInt, QMontgomeryUInt]
@@ -315,13 +315,13 @@ class ModSub(Bloq):
 
 
 @bloq_example
-def _symb_modsub() -> ModSub:
+def _modsub_symb() -> ModSub:
     n, p = sympy.symbols('n p')
-    symb_modsub = ModSub(QUInt(n), p)
-    return symb_modsub
+    modsub_symb = ModSub(QUInt(n), p)
+    return modsub_symb
 
 
-_MOD_SUB_DOC = BloqDocSpec(bloq_cls=ModSub, examples=[_symb_modsub])
+_MOD_SUB_DOC = BloqDocSpec(bloq_cls=ModSub, examples=[_modsub_symb])
 
 
 @frozen
@@ -342,7 +342,7 @@ class CModSub(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6b and 8
+        Fig 6c and 8
     """
 
     dtype: Union[QUInt, QMontgomeryUInt]
@@ -397,10 +397,10 @@ class CModSub(Bloq):
 
 
 @bloq_example
-def _symb_cmodsub() -> CModSub:
+def _cmodsub_symb() -> CModSub:
     n, p = sympy.symbols('n p')
-    symb_cmodsub = CModSub(QUInt(n), p)
-    return symb_cmodsub
+    cmodsub_symb = CModSub(QUInt(n), p)
+    return cmodsub_symb
 
 
-_CMOD_SUB_DOC = BloqDocSpec(bloq_cls=CModSub, examples=[_symb_cmodsub])
+_CMOD_SUB_DOC = BloqDocSpec(bloq_cls=CModSub, examples=[_cmodsub_symb])
