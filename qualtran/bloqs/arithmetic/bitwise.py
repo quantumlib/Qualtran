@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Signature,
@@ -222,9 +223,10 @@ class BitwiseNot(Bloq):
         return TextBox("~x")
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        if hasattr(self.dtype, 'bitsize'):
-            return {'x': (2**self.dtype.bitsize - 1) ^ x}
-        return super().on_classical_vals(x=x)
+        x = -x - 1
+        if isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
+            x %= 2**self.dtype.bitsize
+        return {'x': x}
 
 
 @bloq_example
