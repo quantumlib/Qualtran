@@ -99,7 +99,6 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_mul
-import qualtran.bloqs.factoring.mod_sub
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
@@ -339,8 +338,6 @@ RESOLVER_DICT = {
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.factoring.mod_mul.CtrlModMul": qualtran.bloqs.factoring.mod_mul.CtrlModMul,
     "qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl": qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl,
-    "qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg": qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg,
-    "qualtran.bloqs.factoring.mod_sub.MontgomeryModSub": qualtran.bloqs.factoring.mod_sub.MontgomeryModSub,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,
