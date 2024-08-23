@@ -690,3 +690,14 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
+
+
+def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges):
+    cb = bloq.decompose_bloq()
+    parameters = tuple(parameter_ranges.keys())
+    for vals in itertools.product(*[parameter_ranges[p] for p in parameters]):
+        call_with = {p: v for p, v in zip(parameters, vals)}
+        print(call_with)
+        assert bloq.call_classically(**call_with) == cb.call_classically(
+            **call_with
+        ), f'{call_with=}'

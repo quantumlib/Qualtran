@@ -22,7 +22,7 @@ import sympy
 from qualtran import Bloq
 from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
-from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook
@@ -59,7 +59,7 @@ def test_modexp_symb_manual():
     counts = modexp.bloq_counts()
     counts_by_bloq = {bloq.pretty_name(): n for bloq, n in counts.items()}
     assert counts_by_bloq['|1>'] == 1
-    assert counts_by_bloq['CtrlModMul'] == n_e
+    assert counts_by_bloq['CModMulK'] == n_e
 
     b, x = modexp.call_classically(exponent=sympy.Symbol('b'))
     assert str(x) == 'Mod(g**b, N)'
@@ -67,14 +67,15 @@ def test_modexp_symb_manual():
 
 def test_mod_exp_consistent_counts():
     bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
+
     counts1 = bloq.bloq_counts()
 
     ssa = SympySymbolAllocator()
     my_k = ssa.new_symbol('k')
 
     def generalize(b: Bloq) -> Optional[Bloq]:
-        if isinstance(b, CtrlModMul):
-            # Symbolic k in `CtrlModMul`.
+        if isinstance(b, CModMulK):
+            # Symbolic k in `CModMulK`.
             return attrs.evolve(b, k=my_k)
         if isinstance(b, (Split, Join)):
             # Ignore these
@@ -82,7 +83,8 @@ def test_mod_exp_consistent_counts():
         return b
 
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
-
+    print('spit')
+    print(counts1)
     assert counts1 == counts2
 
 

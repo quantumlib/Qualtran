@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -96,8 +96,8 @@ class ModExp(Bloq):
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
     def _CtrlModMul(self, k: Union[int, sympy.Expr]):
-        """Helper method to return a `CtrlModMul` with attributes forwarded."""
-        return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
+        """Helper method to return a `CModMulK` with attributes forwarded."""
+        return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if isinstance(self.exp_bitsize, sympy.Expr):
@@ -135,7 +135,7 @@ _K = sympy.Symbol('k_exp')
 
 
 def _generalize_k(b: Bloq) -> Optional[Bloq]:
-    if isinstance(b, CtrlModMul):
+    if isinstance(b, CModMulK):
         return attrs.evolve(b, k=_K)
 
     return b

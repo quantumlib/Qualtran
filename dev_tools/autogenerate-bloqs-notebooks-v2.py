@@ -511,9 +511,11 @@ MOD_ARITHMETIC = [
     ),
     NotebookSpecV2(
         title='Modular Multiplication',
-        module=qualtran.bloqs.factoring.mod_mul,
-        bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
+        module=qualtran.bloqs.mod_arithmetic.mod_multiplication,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._MOD_DBL_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._C_MOD_MUL_K_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',

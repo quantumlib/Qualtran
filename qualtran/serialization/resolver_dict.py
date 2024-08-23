@@ -98,7 +98,6 @@ import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.factoring.mod_mul
 import qualtran.bloqs.factoring.mod_sub
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
@@ -116,6 +115,7 @@ import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
+import qualtran.bloqs.mod_arithmetic.mod_multiplication
 import qualtran.bloqs.mod_arithmetic.mod_subtraction
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
@@ -336,9 +336,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.CModSub": qualtran.bloqs.mod_arithmetic.CModSub,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg,
+    "qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl": qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl,
+    "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK": qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
-    "qualtran.bloqs.factoring.mod_mul.CtrlModMul": qualtran.bloqs.factoring.mod_mul.CtrlModMul,
-    "qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl": qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl,
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg": qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg,
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModSub": qualtran.bloqs.factoring.mod_sub.MontgomeryModSub,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
