@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Protocol, runtime_checkable, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -25,13 +25,6 @@ from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
-
-
-@runtime_checkable
-class _HasEps(Protocol):
-    """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
-
-    eps: float
 
 
 @frozen
@@ -115,7 +108,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -183,7 +176,7 @@ class XPowGate(CirqGateAsBloqBase):
     """
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -253,7 +246,7 @@ class YPowGate(CirqGateAsBloqBase):
     """
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -321,7 +314,7 @@ class Rz(CirqGateAsBloqBase):
 @frozen
 class Rx(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -342,7 +335,7 @@ class Rx(CirqGateAsBloqBase):
 @frozen
 class Ry(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
