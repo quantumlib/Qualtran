@@ -47,7 +47,8 @@ from qualtran.surface_code import AlgorithmSummary
             ),
             AlgorithmSummary(
                 n_algo_qubits=10,
-                n_logical_gates=GateCounts.from_rotation_with_eps(1e-11, n_rotations=10),
+                n_logical_gates=GateCounts(clifford=2, t=1)
+                + GateCounts.from_rotation_with_eps(1e-11, n_rotations=10),
             ),
         ],
         [

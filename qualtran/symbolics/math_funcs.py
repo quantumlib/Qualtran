@@ -49,6 +49,24 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
+def ln(x: float) -> float:
+    ...
+
+
+@overload
+def ln(x: sympy.Expr) -> sympy.Expr:
+    ...
+
+
+def ln(x: SymbolicFloat) -> SymbolicFloat:
+    from sympy.codegen.cfunctions import log
+
+    if not is_symbolic(x):
+        return np.log(x)
+    return log(x)
+
+
+@overload
 def sexp(x: complex) -> complex:
     ...
 
@@ -295,3 +313,15 @@ def shape(x: Shaped) -> Tuple[SymbolicInt, ...]:
 
 def shape(x: Union[np.ndarray, Shaped]):
     return x.shape
+
+
+def is_zero(x: SymbolicInt) -> bool:
+    """check if a symbolic integer is zero
+
+    If it returns True, then the value is definitely 0.
+    If it returns False, then the value is either non-zero,
+    or could not be symbolically symplified to a zero.
+    """
+    if is_symbolic(x):
+        return x.equals(0)
+    return x == 0

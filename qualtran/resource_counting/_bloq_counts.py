@@ -25,7 +25,12 @@ from qualtran.symbolics import ceil, is_symbolic, log2, ssum, SymbolicFloat, Sym
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
+from .classify_bloqs import (
+    bloq_is_clifford,
+    bloq_is_rotation,
+    bloq_is_state_or_effect,
+    bloq_is_t_like,
+)
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -321,13 +326,13 @@ class QECGatesCost(CostKey[GateCounts]):
     """
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
-        from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
         from qualtran.bloqs.basic_gates._shims import Measure
-        from qualtran.bloqs.basic_gates.rotation import _HasEps
+        from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
-        if isinstance(bloq, TGate):
+        if bloq_is_t_like(bloq):
             return GateCounts(t=1)
 
         # Toffolis
@@ -352,13 +357,21 @@ class QECGatesCost(CostKey[GateCounts]):
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
 
+        # States and effects
+        if bloq_is_state_or_effect(bloq):
+            return GateCounts()
+
+        # Bookkeeping, empty bloqs
+        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):
+            return GateCounts()
+
         if bloq_is_rotation(bloq):
             assert isinstance(bloq, _HasEps)
             return GateCounts.from_rotation_with_eps(bloq.eps)
 
         # Recursive case
         totals = GateCounts()
-        callees = get_bloq_callee_counts(bloq)
+        callees = get_bloq_callee_counts(bloq, ignore_decomp_failure=False)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)

@@ -107,7 +107,7 @@ def test_qec_gates_cost():
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            GateCounts.from_rotation_with_eps(1e-11, n_rotations=10),
+            GateCounts(clifford=2, t=1) + GateCounts.from_rotation_with_eps(1e-11, n_rotations=7),
         ],
         # Recursive
         [mcmt.MultiControlX(cvs=(1, 1, 1)), GateCounts(and_bloq=2, measurement=2, clifford=3)],
