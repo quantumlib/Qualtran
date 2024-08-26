@@ -201,21 +201,16 @@ def test_linear_combination_approx5(lambd):
     )
 
 
-random.seed(1234)
-
-
-def gen_test():
-    n = random.randint(3, 6)
-    bitsize = random.randint(1, 3)
-    gates = [MatrixGate.random(bitsize, random_state=1234) for _ in range(n)]
-    lambd = [random.uniform(-10, 10) for _ in range(n)]
-    return gates, lambd
-
-
 @pytest.mark.slow
-@pytest.mark.parametrize('gates,lambd', [gen_test() for _ in range(10)])
-def test_linear_combination_approx_random(gates, lambd):
-    run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
+def test_linear_combination_approx_random():
+    random_state = np.random.RandomState(1234)
+
+    for _ in range(10):
+        n = random_state.randint(3, 6)
+        bitsize = random_state.randint(1, 3)
+        gates = [MatrixGate.random(bitsize, random_state=random_state) for _ in range(n)]
+        lambd = [random.uniform(-10, 10) for _ in range(n)]
+        run_gate_test(gates, lambd, lambd_bits=9, atol=0.02)
 
 
 def test_linear_combination_signal_state():
