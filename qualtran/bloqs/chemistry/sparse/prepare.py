@@ -146,7 +146,7 @@ class PrepareSparse(PrepareOracle):
             rotation for amplitude amplification during the uniform state
             preparation. Default 8.
         is_adjoint: Whether we are apply PREPARE or PREPARE^dag
-        qroam_block_size: qroam blocking factor.
+        log_block_size: qroam (log) block size.
 
     Registers:
         d: the register indexing non-zero matrix elements.
@@ -183,12 +183,10 @@ class PrepareSparse(PrepareOracle):
     keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     sum_of_l1_coeffs: SymbolicFloat = 0.0
-    qroam_block_size: int = 1
+    log_block_size: int = 1
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        # issue here in that pqrs should not be reflected on.
-        # See: https://github.com/quantumlib/Qualtran/issues/549
         return (
             Register(
                 "d",
@@ -208,10 +206,10 @@ class PrepareSparse(PrepareOracle):
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         extra_junk = (Register("less_than", QBit()),)
-        return extra_junk + self.qroam_junk_regs + self.qroam_extra_junk_regs
+        return extra_junk + self.qroam_target_registers + self.qroam_extra_target_registers
 
     @cached_property
-    def qroam_junk_regs(self) -> Tuple[Register, ...]:
+    def qroam_target_registers(self) -> Tuple[Register, ...]:
         """Target registers for QROAMClean."""
         bs = (self.num_spin_orb // 2 - 1).bit_length()
         return (
@@ -231,13 +229,13 @@ class PrepareSparse(PrepareOracle):
         )
 
     @cached_property
-    def qroam_extra_junk_regs(self) -> Tuple[Register, ...]:
-        """Extra junk registers required for QROAMClean."""
+    def qroam_extra_target_regigsters(self) -> Tuple[Register, ...]:
+        """Extra registers required for QROAMClean."""
         return tuple(
             Register(
                 name=f'jnk_{reg.name}',
                 dtype=reg.dtype,
-                shape=reg.shape + (self.qroam_block_size - 1,),
+                shape=reg.shape + (2**self.log_block_sizes - 1,),
                 side=Side.RIGHT,
             )
             for reg in self.qroam_junk_regs
@@ -260,7 +258,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_state_prep: int = 8,
         num_bits_rot_aa: int = 8,
         drop_element_thresh: float = 0.0,
-        qroam_block_size: Optional[int] = None,
+        log_block_size: Optional[int] = None,
     ) -> 'PrepareSparse':
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 
@@ -274,7 +272,7 @@ class PrepareSparse(PrepareOracle):
                 preparation. Default 8.
             drop_element_thresh: Threshold for considering an ERI element as zero.
                 Default 0, i.e. don't threshold the elements.
-            qroam_block_size: Block size for qroam (called $k$ in the reference).
+            log_block_size: (log) Block size for qroam.
 
         Returns:
             Constructed PrepareSparse object.
@@ -299,14 +297,12 @@ class PrepareSparse(PrepareOracle):
         alt_pqrs = indicies[alt]
         alt_theta = theta[alt]
         alt_one_body = one_body[alt]
-        if qroam_block_size is None:
+        if log_block_size is None:
             n_n = (num_spin_orb // 2 - 1).bit_length()
             target_bitsizes = (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (num_bits_state_prep,)
             log_block_sizes = get_optimal_log_block_size_clean_ancilla(
                 num_non_zero, sum(target_bitsizes)
             )
-        else:
-            log_block_sizes = ceil(log2(qroam_block_size))
         return PrepareSparse(
             num_spin_orb,
             num_non_zero,
@@ -320,7 +316,7 @@ class PrepareSparse(PrepareOracle):
             tuple(keep),
             num_bits_rot_aa=num_bits_rot_aa,
             sum_of_l1_coeffs=np.sum(np.abs(tpq_prime)) + 0.5 * np.sum(np.abs(eris)),
-            qroam_block_size=2**log_block_sizes,
+            log_block_size=log_block_sizes,
         )
 
     def build_qrom_bloq(self) -> 'Bloq':
@@ -346,8 +342,6 @@ class PrepareSparse(PrepareOracle):
             target_bitsizes=target_bitsizes,
             log_block_sizes=log_block_sizes,
         )
-        # if self.is_adjoint:
-        #     return qrom.adjoint()
         return qrom
 
     def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -359,11 +353,11 @@ class PrepareSparse(PrepareOracle):
         # map output soqs to Prepare junk registers names
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'target{i}_')
-            for (i, reg) in enumerate(self.qroam_junk_regs)
+            for (i, reg) in enumerate(self.qroam_target_registers)
         }
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'junk_target{i}_')
-            for (i, reg) in enumerate(self.qroam_extra_junk_regs)
+            for (i, reg) in enumerate(self.qroam_extra_target_regigsters)
         }
         return soqs | out_soqs
 
@@ -449,7 +443,7 @@ def _prep_sparse() -> PrepareSparse:
     num_spin_orb = 6
     tpq, eris = build_random_test_integrals(num_spin_orb // 2)
     prep_sparse = PrepareSparse.from_hamiltonian_coeffs(
-        num_spin_orb, tpq, eris, num_bits_state_prep=4, qroam_block_size=2
+        num_spin_orb, tpq, eris, num_bits_state_prep=4, log_block_size=1
     )
     return prep_sparse
 

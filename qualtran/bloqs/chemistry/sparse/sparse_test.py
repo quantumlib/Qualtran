@@ -35,7 +35,7 @@ def make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa):
         num_spin_orb,
         tpq,
         eris,
-        qroam_block_size=32,
+        log_block_size=5,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot_aa,
     )
@@ -75,9 +75,9 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     delta_uni_prep = (
         get_toffoli_count(prep_uni) + get_toffoli_count(prep_uni.adjoint()) - cost_uni_prep
     )
-    # correct for SelectSwapQROM vs QROAM
-    # https://github.com/quantumlib/Qualtran/issues/574
-    # The -2 comes from a more accurate calculation of the QROAM costs in Qualtran.
+    # The -2 comes from a more accurate calculation of the QROAM costs in
+    # Qualtran (constants are not ignored).  The difference arises from
+    # uncontrolled unary iteration used by QROM, which QROAMClean delegates to.
     delta_qrom = -2
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
