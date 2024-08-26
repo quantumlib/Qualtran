@@ -48,7 +48,6 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.symbolics import SymbolicFloat
-from qualtran.symbolics.math_funcs import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -229,16 +228,16 @@ class PrepareSparse(PrepareOracle):
         )
 
     @cached_property
-    def qroam_extra_target_regigsters(self) -> Tuple[Register, ...]:
+    def qroam_extra_target_registers(self) -> Tuple[Register, ...]:
         """Extra registers required for QROAMClean."""
         return tuple(
             Register(
                 name=f'jnk_{reg.name}',
                 dtype=reg.dtype,
-                shape=reg.shape + (2**self.log_block_sizes - 1,),
+                shape=reg.shape + (2**self.log_block_size - 1,),
                 side=Side.RIGHT,
             )
-            for reg in self.qroam_junk_regs
+            for reg in self.qroam_target_registers
         )
 
     @property
@@ -300,7 +299,7 @@ class PrepareSparse(PrepareOracle):
         if log_block_size is None:
             n_n = (num_spin_orb // 2 - 1).bit_length()
             target_bitsizes = (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (num_bits_state_prep,)
-            log_block_sizes = get_optimal_log_block_size_clean_ancilla(
+            log_block_size = get_optimal_log_block_size_clean_ancilla(
                 num_non_zero, sum(target_bitsizes)
             )
         return PrepareSparse(
@@ -316,7 +315,7 @@ class PrepareSparse(PrepareOracle):
             tuple(keep),
             num_bits_rot_aa=num_bits_rot_aa,
             sum_of_l1_coeffs=np.sum(np.abs(tpq_prime)) + 0.5 * np.sum(np.abs(eris)),
-            log_block_size=log_block_sizes,
+            log_block_size=log_block_size,
         )
 
     def build_qrom_bloq(self) -> 'Bloq':
@@ -324,7 +323,6 @@ class PrepareSparse(PrepareOracle):
         target_bitsizes = (
             (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
         )
-        log_block_sizes = ceil(log2(self.qroam_block_size))
         qrom = QROAMClean.build_from_data(
             self.ind_pqrs[0],
             self.ind_pqrs[1],
@@ -340,7 +338,7 @@ class PrepareSparse(PrepareOracle):
             self.alt_one_body,
             self.keep,
             target_bitsizes=target_bitsizes,
-            log_block_sizes=log_block_sizes,
+            log_block_sizes=self.log_block_size,
         )
         return qrom
 
@@ -357,7 +355,7 @@ class PrepareSparse(PrepareOracle):
         }
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'junk_target{i}_')
-            for (i, reg) in enumerate(self.qroam_extra_target_regigsters)
+            for (i, reg) in enumerate(self.qroam_extra_target_registers)
         }
         return soqs | out_soqs
 
