@@ -11,19 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional, Union
 
-import attrs
-import numpy as np
 import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
-from openfermion.resource_estimates.utils import power_two, QI
+from openfermion.resource_estimates.utils import power_two
 
-from qualtran import Adjoint, Bloq
+from qualtran import Bloq
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
 from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
-from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -39,32 +35,12 @@ def make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa):
         num_spin_orb,
         tpq,
         eris,
-        qroam_block_size=32,
+        log_block_size=5,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot_aa,
     )
     num_nnz = len(prep_sparse.alt_pqrs[0])
     return prep_sparse, num_nnz
-
-
-def qrom_cost(prep: PrepareSparse) -> int:
-    """Get the paper qrom cost."""
-    n_n = (prep.num_spin_orb // 2 - 1).bit_length()
-    if prep.qroam_block_size is None:
-        target_bitsizes = (
-            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (prep.num_bits_state_prep,)
-        )
-        block_size = 2 ** find_optimal_log_block_size(prep.num_non_zero, sum(target_bitsizes))
-    else:
-        block_size = prep.qroam_block_size
-    if prep.is_adjoint:
-        num_toff_qrom = int(np.ceil(prep.num_non_zero / block_size)) + block_size  # A15
-    else:
-        output_size = prep.num_bits_state_prep + 8 * n_n + 4
-        num_toff_qrom = int(np.ceil(prep.num_non_zero / block_size)) + output_size * (
-            block_size - 1
-        )  # A14
-    return num_toff_qrom
 
 
 def get_toffoli_count(bloq: Bloq) -> SymbolicInt:
@@ -75,28 +51,6 @@ def get_toffoli_count(bloq: Bloq) -> SymbolicInt:
     return cost_dict['n_ccz']
 
 
-def get_sel_swap_qrom_toff_count(prep: PrepareSparse) -> SymbolicInt:
-    """Utility function to pick out the SelectSwapQROM cost from the prepare call graph."""
-
-    def keep_qrom(bloq):
-        if isinstance(bloq, SelectSwapQROM):
-            return True
-        return False
-
-    _, sigma = prep.call_graph(keep=keep_qrom)
-    qrom_bloq: Optional[Union[SelectSwapQROM, Adjoint]] = None
-    for k in sigma.keys():
-        if isinstance(k, SelectSwapQROM):
-            qrom_bloq = k
-            break
-        if isinstance(k, Adjoint) and isinstance(k.subbloq, SelectSwapQROM):
-            qrom_bloq = k
-            break
-    if qrom_bloq is None:
-        return 0
-    return get_toffoli_count(qrom_bloq)
-
-
 @pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (12, 4), (16, 3)))
 def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
@@ -104,9 +58,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     cost = get_toffoli_count(sel_sparse)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     cost += get_toffoli_count(prep_sparse)
-    prep_sparse_adj = attrs.evolve(
-        prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
-    )
+    prep_sparse_adj = prep_sparse.adjoint()
     cost += get_toffoli_count(prep_sparse_adj)
     unused_lambda = 10
     unused_de = 1e-3
@@ -123,13 +75,10 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     delta_uni_prep = (
         get_toffoli_count(prep_uni) + get_toffoli_count(prep_uni.adjoint()) - cost_uni_prep
     )
-    # correct for SelectSwapQROM vs QROAM
-    # https://github.com/quantumlib/Qualtran/issues/574
-    paper_qrom = qrom_cost(prep_sparse)
-    paper_qrom += qrom_cost(prep_sparse_adj)
-    qual_qrom_cost = get_sel_swap_qrom_toff_count(prep_sparse)
-    qual_qrom_cost += get_sel_swap_qrom_toff_count(prep_sparse_adj)
-    delta_qrom = qual_qrom_cost - paper_qrom
+    # The -2 comes from a more accurate calculation of the QROAM costs in
+    # Qualtran (constants are not ignored).  The difference arises from
+    # uncontrolled unary iteration used by QROM, which QROAMClean delegates to.
+    delta_qrom = -2
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
