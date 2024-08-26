@@ -116,9 +116,20 @@ def test_cmodmulk_bloq_counts(dtype, bitsize, prime, k):
     )
 
 
-@pytest.mark.parametrize('example', [_moddbl_small, _moddbl_large, _modmul_symb, _modmul])
-def test_examples(bloq_autotester, example):
-    bloq_autotester(example)
+def test_examples_moddbl_small(bloq_autotester):
+    bloq_autotester(_moddbl_small)
+
+
+def test_examples_moddbl_large(bloq_autotester):
+    bloq_autotester(_moddbl_large)
+
+
+def test_examples_modmul_symb(bloq_autotester):
+    bloq_autotester(_modmul_symb)
+
+
+def test_examples_modmul(bloq_autotester):
+    bloq_autotester(_modmul)
 
 
 @pytest.mark.notebook
