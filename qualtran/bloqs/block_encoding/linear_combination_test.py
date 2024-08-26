@@ -220,6 +220,7 @@ def test_linear_combination_approx_random(gates, lambd):
 
 def test_linear_combination_signal_state():
     assert isinstance(_linear_combination_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _linear_combination_block_encoding().signal_state.decompose_bloq()
 
 
 @pytest.mark.notebook

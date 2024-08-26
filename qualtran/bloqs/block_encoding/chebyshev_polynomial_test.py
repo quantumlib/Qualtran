@@ -221,6 +221,7 @@ def test_chebyshev_matrix():
 
 def test_chebyshev_poly_signal_state():
     assert isinstance(_chebyshev_poly_even().signal_state.prepare, PrepareIdentity)
+    _ = _chebyshev_poly_even().signal_state.decompose_bloq()
 
 
 @pytest.mark.slow
