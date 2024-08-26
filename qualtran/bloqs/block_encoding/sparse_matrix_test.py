@@ -103,36 +103,33 @@ def test_sparse_matrix_tensors():
     np.testing.assert_allclose(from_gate, from_tensors)
 
 
-rs = np.random.RandomState(1234)
-
-
-def gen_test():
-    n = rs.randint(1, 3)
-    N = 2**n
-    data = rs.rand(N, N)
-    return n, data
-
-
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    "n,data", [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
-)
-def test_explicit_entry_oracle(n, data):
-    row_oracle = TopLeftRowColumnOracle(n)
-    col_oracle = TopLeftRowColumnOracle(n)
-    entry_oracle = ExplicitEntryOracle(n, data=data, entry_bitsize=10)
-    bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+def test_explicit_entry_oracle():
+    rs = np.random.RandomState(1234)
 
-    alpha = bloq.alpha
-    bb = BloqBuilder()
-    system = bb.add_register("system", n)
-    ancilla = cast(Soquet, bb.add(IntState(0, n + 1)))
-    system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
-    bb.add(IntEffect(0, n + 1), val=ancilla)
-    bloq = bb.finalize(system=system)
+    def gen_test():
+        n = rs.randint(1, 3)
+        N = 2**n
+        data = rs.rand(N, N)
+        return n, data
 
-    from_tensors = bloq.tensor_contract() * alpha
-    np.testing.assert_allclose(data, from_tensors, atol=0.003)
+    tests = [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
+    for n, data in tests:
+        row_oracle = TopLeftRowColumnOracle(n)
+        col_oracle = TopLeftRowColumnOracle(n)
+        entry_oracle = ExplicitEntryOracle(n, data=data, entry_bitsize=10)
+        bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
+
+        alpha = bloq.alpha
+        bb = BloqBuilder()
+        system = bb.add_register("system", n)
+        ancilla = cast(Soquet, bb.add(IntState(0, n + 1)))
+        system, ancilla = bb.add_t(bloq, system=system, ancilla=ancilla)
+        bb.add(IntEffect(0, n + 1), val=ancilla)
+        bloq = bb.finalize(system=system)
+
+        from_tensors = bloq.tensor_contract() * alpha
+        np.testing.assert_allclose(data, from_tensors, atol=0.003)
 
 
 topleft_matrix = [
