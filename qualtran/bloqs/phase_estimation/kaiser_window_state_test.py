@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,6 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ._shims import ModDbl, ModInv, ModMul
-from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
-from .mod_subtraction import CModNeg, CModSub, ModNeg, ModSub
+from qualtran.bloqs.phase_estimation.kaiser_window_state import (
+    _kaiser_window_state_small,
+    _kaiser_window_state_symbolic,
+)
+
+
+def test_kaiser_window_state_auto(bloq_autotester):
+    bloq_autotester(_kaiser_window_state_small)
+    bloq_autotester(_kaiser_window_state_symbolic)

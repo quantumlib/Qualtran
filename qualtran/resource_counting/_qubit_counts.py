@@ -110,6 +110,10 @@ class QubitCount(CostKey[SymbolicInt]):
             return _cbloq_max_width(cbloq._binst_graph, get_callee_cost)
         except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
+        except Exception as e:
+            raise RuntimeError(
+                f"An unexpected error occurred when trying to compute {self} for {bloq}: {e}"
+            ) from e
 
         # Fallback:
         # Use the simple maximum of callees and of this bloq's signature. If there

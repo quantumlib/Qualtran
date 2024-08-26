@@ -99,7 +99,6 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_mul
-import qualtran.bloqs.factoring.mod_sub
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
@@ -124,6 +123,7 @@ import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
+import qualtran.bloqs.phase_estimation.kaiser_window_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qpe_window_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
@@ -331,13 +331,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK": qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd": qualtran.bloqs.mod_arithmetic.CtrlScaleModAdd,
     "qualtran.bloqs.mod_arithmetic.ModAdd": qualtran.bloqs.mod_arithmetic.ModAdd,
+    "qualtran.bloqs.mod_arithmetic.ModSub": qualtran.bloqs.mod_arithmetic.ModSub,
+    "qualtran.bloqs.mod_arithmetic.CModSub": qualtran.bloqs.mod_arithmetic.CModSub,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.factoring.mod_mul.CtrlModMul": qualtran.bloqs.factoring.mod_mul.CtrlModMul,
     "qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl": qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl,
-    "qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg": qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg,
-    "qualtran.bloqs.factoring.mod_sub.MontgomeryModSub": qualtran.bloqs.factoring.mod_sub.MontgomeryModSub,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,
@@ -372,6 +372,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
+    "qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState": qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState,
     "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState": qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep": qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState": qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState,

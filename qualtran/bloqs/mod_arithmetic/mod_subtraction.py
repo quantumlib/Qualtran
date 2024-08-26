@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QBit,
     QMontgomeryUInt,
     QUInt,
@@ -30,9 +31,10 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic import AddK
+from qualtran.bloqs.arithmetic import AddK, BitwiseNot
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt import And, MultiControlX, MultiTargetCNOT
+from qualtran.bloqs.mod_arithmetic.mod_addition import CModAdd, ModAdd
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import HasLength
 
@@ -72,7 +74,7 @@ class ModNeg(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
-            raise ValueError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
         ancilla = bb.allocate(1)
         ancilla = bb.add(XGate(), q=ancilla)
@@ -162,7 +164,7 @@ class CModNeg(Bloq):
         self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet
     ) -> Dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
-            raise ValueError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
         ancilla = bb.allocate(1)
         ancilla = bb.add(XGate(), q=ancilla)
@@ -247,3 +249,158 @@ def _cmod_neg() -> CModNeg:
 
 
 _CMOD_NEG_DOC = BloqDocSpec(bloq_cls=CModNeg, examples=[_cmod_neg])
+
+
+@frozen
+class ModSub(Bloq):
+    r"""Performs modular subtraction.
+
+    Applies the operation $\ket{x} \ket{y} \rightarrow \ket{x} \ket{y-x \% p}$
+
+    Args:
+        dtype: Datatype of the register.
+        p: The modulus for the negation.
+
+    Registers:
+        x: The register contraining the first integer.
+        y: The register contraining the second integer.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6c and 8
+    """
+
+    dtype: Union[QUInt, QMontgomeryUInt]
+    mod: 'SymbolicInt'
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', self.dtype), Register('y', self.dtype)])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+        x = bb.add(BitwiseNot(self.dtype), x=x)
+        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False), x=x)
+        x, y = bb.add(ModAdd(self.dtype.bitsize, self.mod), x=x, y=y)
+        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), x=x)
+        x = bb.add(BitwiseNot(self.dtype), x=x)
+        return {'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (BitwiseNot(self.dtype), 2),
+            (AddK(self.dtype.bitsize, self.mod + 1, signed=False), 1),
+            (AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), 1),
+            (ModAdd(self.dtype.bitsize, self.mod), 1),
+        }
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
+        if reg.name == 'x':
+            return TextBox('$x$')
+        if reg.name == 'y':
+            return TextBox('$y-x$')
+        raise ValueError(f'Unrecognized register name {reg.name}')
+
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if 0 <= x < self.mod and 0 <= y < self.mod:
+            y -= x
+            if y < 0:
+                y += self.mod
+        return {'x': x, 'y': y}
+
+
+@bloq_example
+def _modsub_symb() -> ModSub:
+    n, p = sympy.symbols('n p')
+    modsub_symb = ModSub(QUInt(n), p)
+    return modsub_symb
+
+
+_MOD_SUB_DOC = BloqDocSpec(bloq_cls=ModSub, examples=[_modsub_symb])
+
+
+@frozen
+class CModSub(Bloq):
+    r"""Performs controlled modular subtraction.
+
+    Applies the operation $\ket{c}\ket{x} \ket{y} \rightarrow \ket{c}\ket{x} \ket{y-cx \% p}$
+
+    Args:
+        dtype: Datatype of the register.
+        p: The modulus for the negation.
+        cv: value at which the bloq is active.
+
+    Registers:
+        ctrl: control register.
+        x: The register contraining the first integer.
+        y: The register contraining the second integer.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6c and 8
+    """
+
+    dtype: Union[QUInt, QMontgomeryUInt]
+    mod: 'SymbolicInt'
+    cv: int = 1
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('ctrl', QBit()), Register('x', self.dtype), Register('y', self.dtype)]
+        )
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        x = bb.add(BitwiseNot(self.dtype), x=x)
+        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False), x=x)
+        ctrl, x, y = bb.add(CModAdd(self.dtype, self.mod, self.cv), ctrl=ctrl, x=x, y=y)
+        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), x=x)
+        x = bb.add(BitwiseNot(self.dtype), x=x)
+        return {'ctrl': ctrl, 'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (BitwiseNot(self.dtype), 2),
+            (AddK(self.dtype.bitsize, self.mod + 1, signed=False), 1),
+            (AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), 1),
+            (CModAdd(self.dtype, self.mod, self.cv), 1),
+        }
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
+        if reg.name == 'ctrl':
+            return Circle(filled=self.cv == 1)
+        if reg.name == 'x':
+            return TextBox('$x$')
+        if reg.name == 'y':
+            return TextBox('$y-x$')
+        raise ValueError(f'Unrecognized register name {reg.name}')
+
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == self.cv and 0 <= x < self.mod and 0 <= y < self.mod:
+            y -= x
+            if y < 0:
+                y += self.mod
+        return {'ctrl': ctrl, 'x': x, 'y': y}
+
+
+@bloq_example
+def _cmodsub_symb() -> CModSub:
+    n, p = sympy.symbols('n p')
+    cmodsub_symb = CModSub(QUInt(n), p)
+    return cmodsub_symb
+
+
+_CMOD_SUB_DOC = BloqDocSpec(bloq_cls=CModSub, examples=[_cmodsub_symb])

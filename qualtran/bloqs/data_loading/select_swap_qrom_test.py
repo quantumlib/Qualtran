@@ -27,7 +27,7 @@ from qualtran.bloqs.data_loading.select_swap_qrom import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -187,8 +187,9 @@ def test_qroam_t_complexity():
     qroam = SelectSwapQROM.build_from_data(
         [1, 2, 3, 4, 5, 6, 7, 8], target_bitsizes=(4,), log_block_sizes=(2,)
     )
-    _, sigma = qroam.call_graph()
-    assert t_counts_from_sigma(sigma) == qroam.t_complexity().t == 192
+    gate_counts = get_cost_value(qroam, QECGatesCost())
+    assert gate_counts == GateCounts(t=192, clifford=1082)
+    assert qroam.t_complexity() == TComplexity(t=192, clifford=1082)
 
 
 def test_qroam_many_registers():
