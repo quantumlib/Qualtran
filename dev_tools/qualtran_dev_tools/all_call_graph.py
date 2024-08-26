@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Generate the library-wide call graph from all bloq examples."""
+import logging
 import warnings
 from typing import Iterable
 
@@ -30,6 +31,8 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_all_call_graph(bes: Iterable[BloqExample]):
@@ -70,6 +73,7 @@ def get_all_call_graph(bes: Iterable[BloqExample]):
     ssa = SympySymbolAllocator()
 
     for be in bes:
+        logger.info("Building call graph for: %s", be.name)
         bloq = be.make()
         _build_call_graph(
             bloq=bloq, generalizer=generalize, ssa=ssa, keep=keep, max_depth=None, g=g, depth=0
