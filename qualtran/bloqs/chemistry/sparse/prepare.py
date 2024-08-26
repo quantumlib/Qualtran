@@ -47,7 +47,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -182,7 +182,7 @@ class PrepareSparse(PrepareOracle):
     keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     sum_of_l1_coeffs: SymbolicFloat = 0.0
-    log_block_size: int = 1
+    log_block_size: SymbolicInt = 1
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -257,7 +257,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_state_prep: int = 8,
         num_bits_rot_aa: int = 8,
         drop_element_thresh: float = 0.0,
-        log_block_size: Optional[int] = None,
+        log_block_size: Optional[SymbolicInt] = None,
     ) -> 'PrepareSparse':
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 
