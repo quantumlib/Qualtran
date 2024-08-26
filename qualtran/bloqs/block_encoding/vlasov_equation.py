@@ -37,8 +37,8 @@ from qualtran.bloqs.arithmetic.trigonometric import ArcSin
 from qualtran.bloqs.basic_gates import Ry, Swap, Toffoli
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding.sparse_matrix import EntryOracle, SparseMatrix
-from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.rotations.phase_gradient import _fxp
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
