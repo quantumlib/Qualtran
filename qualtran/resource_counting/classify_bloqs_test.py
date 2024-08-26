@@ -73,7 +73,7 @@ class TestBundleOfBloqs(Bloq):
 def test_default_classification(bloq_count, classification):
     bloq = TestBundleOfBloqs(bloq_count)
     classified_bloqs = classify_t_count_by_bloq_type(bloq)
-    assert classified_bloqs[classification] == get_cost_value(bloq, QECGatesCost()).total_t_count()
+    assert classified_bloqs == {classification: get_cost_value(bloq, QECGatesCost()).total_t_count()}
 
 
 def test_dont_return_zeros():
