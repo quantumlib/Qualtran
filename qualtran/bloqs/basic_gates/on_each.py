@@ -43,6 +43,7 @@ class OnEach(Bloq):
     Args:
         n: the number of qubits to add the bloq to.
         gate: A single qubit gate. The single qubit register must be named q.
+        target_dtype: optional dtype of the register. If not provided, default to QAny.
 
     Registers:
      - q: an n-qubit register.

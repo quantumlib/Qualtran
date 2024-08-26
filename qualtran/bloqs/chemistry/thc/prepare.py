@@ -356,8 +356,8 @@ class PrepareTHC(PrepareOracle):
             Register("plus_b", BoundedQUInt(bitsize=1)),
             Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
             Register("rot", BoundedQUInt(bitsize=1)),
-            Register('succ', QBit()),
-            Register('nu_eq_mp1', QBit()),
+            Register('succ', BoundedQUInt(bitsize=1)),
+            Register('nu_eq_mp1', BoundedQUInt(bitsize=1)),
         )
 
     @cached_property

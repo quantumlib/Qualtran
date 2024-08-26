@@ -115,7 +115,7 @@ class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtensi
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.selection_registers
+        return self.select.selection_registers
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
