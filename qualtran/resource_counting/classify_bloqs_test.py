@@ -15,12 +15,13 @@ from functools import cached_property
 from typing import Set, Tuple, TYPE_CHECKING
 
 import attrs
+import numpy as np
 import pytest
 
-from qualtran import Bloq, QInt, Signature
+from qualtran import Bloq, CtrlSpec, QInt, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.arithmetic.comparison import LessThanConstant
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import CSwap, Rx, Rz, TGate, YPowGate
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
@@ -32,6 +33,8 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 from qualtran.resource_counting import BloqCountT
 from qualtran.resource_counting.classify_bloqs import (
     _get_basic_bloq_classification,
+    bloq_is_rotation,
+    bloq_is_t_like,
     classify_bloq,
     classify_t_count_by_bloq_type,
 )
@@ -108,3 +111,21 @@ def test_classify_bloq_counts_with_custom_bloq_classification():
     )
     assert classified_bloqs == {'swaps': 42 * 10 * 7, 'other': 3 * 4 * (4 - 1)}
     assert test_bloq.call_graph()[1].get(TGate()) == sum(classified_bloqs.values())
+
+
+def test_bloq_is_rotation():
+    assert bloq_is_rotation(Rx(np.pi * 0.123))
+    assert not bloq_is_rotation(Rx(np.pi / 2))
+    assert bloq_is_rotation(Rx(np.pi * 0.123).controlled())
+    assert bloq_is_rotation(Rx(np.pi / 2).controlled())
+    assert not bloq_is_rotation(Rx(np.pi).controlled(ctrl_spec=CtrlSpec(cvs=(1, 1))))
+
+
+def test_bloq_is_t_like():
+    assert bloq_is_t_like(TGate())
+    assert bloq_is_t_like(TGate().adjoint())
+    assert bloq_is_t_like(TGate(is_adjoint=True))
+    assert bloq_is_t_like(Rx(np.pi / 4))
+    assert bloq_is_t_like(YPowGate(1.0 / 4))
+    assert not bloq_is_t_like(Rz(np.pi / 2))
+    assert not bloq_is_t_like(And())

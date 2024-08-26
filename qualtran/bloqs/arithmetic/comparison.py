@@ -42,6 +42,8 @@ from qualtran import (
     GateWithRegisters,
     QAny,
     QBit,
+    QInt,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Side,
@@ -49,11 +51,16 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.bookkeeping import Cast
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.drawing.musical_score import Circle, Text, TextBox
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -726,7 +733,7 @@ class LinearDepthGreaterThan(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     signed: bool = False
 
     @property
@@ -749,6 +756,9 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
@@ -875,6 +885,25 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.bitsize == 1:
+            return {(MultiControlX(cvs=(1, 0)), 1)}
+
+        if self.signed:
+            return {
+                (CNOT(), 6 * self.bitsize - 7),
+                (XGate(), 2 * self.bitsize + 2),
+                (And(), self.bitsize - 1),
+                (And(uncompute=True), self.bitsize - 1),
+            }
+
+        return {
+            (CNOT(), 6 * self.bitsize - 1),
+            (XGate(), 2 * self.bitsize + 4),
+            (And(), self.bitsize),
+            (And(uncompute=True), self.bitsize),
+        }
+
 
 @frozen
 class GreaterThanConstant(Bloq):
@@ -974,14 +1003,12 @@ class EqualsAConstant(Bloq):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
 
         xs = bb.split(x)
-        xs, target = bb.add(
-            MultiControlPauli(self.bits_k, target_gate=cirq.X), controls=xs, target=target
-        )
+        xs, target = bb.add(MultiControlX(self.bits_k), controls=xs, target=target)
         x = bb.join(xs)
         return {'x': x, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(MultiControlPauli(self.bits_k, target_gate=cirq.X), 1)}
+        return {(MultiControlX(self.bits_k), 1)}
 
 
 def _make_equals_a_constant():
@@ -997,3 +1024,139 @@ def _eq_k() -> EqualsAConstant:
 
 
 _EQUALS_K_DOC = BloqDocSpec(bloq_cls=EqualsAConstant, examples=[_eq_k])
+
+
+@frozen
+class CLinearDepthGreaterThan(Bloq):
+    r"""Controlled greater than between two integers.
+
+    Implements $\ket{c}\ket{a}\ket{b}\ket{t} \xrightarrow[]{} \ket{c}\ket{a}\ket{b}\ket{t ⨁ ((a > b)c)}>$
+    using $n+2$ Toffoli gates.
+
+    Note: the true cost is $n+1$ but an extra Toffoli comes from OutOfPlaceAdder which operates
+    on $n+1$ qubits rather than $n$. Changing the definition of OutOfPlaceAdder will remove this
+    extra Toffoli.
+
+    This comparator relies on the fact that ~(~b + a) = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and uncomputing the addition circuit.
+
+    Args:
+        dtype: type of the integer registers.
+        cv: ctrl value at which the bloq is active.
+
+    Registers:
+        a: dtype input registers.
+        b: dtype input registers.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+            page 7.
+    """
+
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    cv: int = 1
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(ctrl=QBit(), a=self.dtype, b=self.dtype, target=QBit())
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
+            return Circle(filled=self.cv == 1)
+        if reg.name == "a":
+            return TextBox('a')
+        if reg.name == "b":
+            return TextBox('b')
+        if reg.name == "target":
+            return TextBox('t⨁((a>b)c)')
+        raise ValueError(f'Unknown register name {reg.name}')
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
+        else:
+            a = bb.join(np.concatenate([[bb.allocate(1)], bb.split(a)]))
+            b = bb.join(np.concatenate([[bb.allocate(1)], bb.split(b)]))
+
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        b = bb.add(BitwiseNot(dtype), x=b)  # b := -b-1
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=b)
+        a, b, c = bb.add(OutOfPlaceAdder(self.dtype.bitsize + 1), a=a, b=b)  # c := a - b - 1
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize + 1)), x=c)  # c := b - a
+
+        # Update `target`
+        c_arr = bb.split(c)
+        # The sign bit is usually the 0th bit however since we already appended an extra bit
+        # to the input registers and OutOfPlaceAdder is unsigned and stores the result in
+        # number bits + 1 (i.e. we are adding two extra bits), the sign bit becomes the 1st bit
+        # with the 0th bit indicating whether an overflow happened or not.
+        (ctrl, c_arr[1]), target = bb.add(
+            MultiControlX((self.cv, 1)), controls=np.array([ctrl, c_arr[1]]), target=target
+        )
+        c = bb.join(c_arr)
+
+        # Uncompute
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize + 1)), x=c)
+        a, b = bb.add(OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(), a=a, b=b, c=c)
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=b)
+        b = bb.add(BitwiseNot(dtype), x=b)
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=b)
+        else:
+            a_arr = bb.split(a)
+            a = bb.join(a_arr[1:])
+            b_arr = bb.split(b)
+            b = bb.join(b_arr[1:])
+            bb.free(a_arr[0])
+            bb.free(b_arr[0])
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
+
+    def on_classical_vals(
+        self, ctrl: int, a: int, b: int, target: int
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == self.cv:
+            return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target ^ (a > b)}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        signed_ops = []
+        if isinstance(self.dtype, QInt):
+            signed_ops = [
+                (SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), 2),
+                (SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), 2),
+            ]
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        return {
+            (BitwiseNot(dtype), 2),
+            (BitwiseNot(QUInt(dtype.bitsize + 1)), 2),
+            (OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(), 1),
+            (OutOfPlaceAdder(self.dtype.bitsize + 1), 1),
+            (MultiControlX((self.cv, 1)), 1),
+        }.union(signed_ops)
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _clineardepthgreaterthan_example() -> CLinearDepthGreaterThan:
+    clineardepthgreaterthan_example = CLinearDepthGreaterThan(QInt(5))
+    return clineardepthgreaterthan_example
+
+
+_CLinearDepthGreaterThan_DOC = BloqDocSpec(
+    bloq_cls=CLinearDepthGreaterThan, examples=[_clineardepthgreaterthan_example]
+)

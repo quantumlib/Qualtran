@@ -33,7 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
-from qualtran.bloqs.mcmt import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
 if TYPE_CHECKING:
@@ -576,7 +576,7 @@ class InvertRealNumber(Bloq):
         return {
             (Toffoli(), num_int - 1),
             (CNOT(), 2 + num_int - 1),
-            (MultiControlPauli(cvs=HasLength(num_int), target_gate=cirq.X), 1),
+            (MultiControlX(cvs=HasLength(num_int)), 1),
             (XGate(), 1),
             (SquareRealNumber(self.b_dtype.bitsize), num_iters),  # x^2
             (MultiplyTwoReals(self.b_dtype.bitsize), num_iters),  # a * x^2

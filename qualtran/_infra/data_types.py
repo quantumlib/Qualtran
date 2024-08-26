@@ -543,7 +543,7 @@ class QFxp(QDType):
     to represent classical values during simulation, and convert to and from bits
     for intermediate values.
 
-    For example, QFxp(6, 2) has 2 int bits and 4 frac bits, and the corresponding
+    For example, QFxp(6, 4) has 2 int bits and 4 frac bits, and the corresponding
     int type is QUInt(6). So a true classical value of `10.0011` will have a raw
     integer representation of `100011`.
 
@@ -787,10 +787,11 @@ class QMontgomeryUInt(QDType):
         return range(2**self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
-        raise NotImplementedError(f"to_bits not implemented for {self}")
+        self.assert_valid_classical_val(x)
+        return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        raise NotImplementedError(f"from_bits not implemented for {self}")
+        return int("".join(str(x) for x in bits), 2)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):

@@ -60,7 +60,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -166,8 +166,8 @@ class DoubleFactorizationOneBody(BlockEncoding):
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        return PrepareIdentity(self.selection_registers)
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:
@@ -414,8 +414,8 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        return PrepareIdentity(self.selection_registers)
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:

@@ -56,6 +56,7 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.bitwise
 import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
+import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
@@ -108,7 +109,8 @@ import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
-import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
+import qualtran.bloqs.mcmt.multi_control_pauli
+import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.apply_lth_bloq
@@ -387,6 +389,11 @@ ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Controlled Addition',
+        module=qualtran.bloqs.arithmetic.controlled_addition,
+        bloq_specs=[qualtran.bloqs.arithmetic.controlled_addition._CADD_DOC],
+    ),
+    NotebookSpecV2(
         title='Negation',
         module=qualtran.bloqs.arithmetic.negate,
         bloq_specs=[qualtran.bloqs.arithmetic.negate._NEGATE_DOC],
@@ -431,6 +438,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
+            qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -488,6 +496,17 @@ MOD_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._C_MOD_ADD_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Modular Subtraction',
+        module=qualtran.bloqs.mod_arithmetic.mod_subtraction,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_SUB_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_SUB_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -616,7 +635,15 @@ ROT_QFT_PE = [
         title='Textbook Quantum Phase Estimation',
         module=qualtran.bloqs.phase_estimation.text_book_qpe,
         bloq_specs=[
-            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
+            qualtran.bloqs.phase_estimation.qpe_window_state._CC_RECTANGULAR_WINDOW_STATE_DOC,
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Kaiser Window State for Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.kaiser_window_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.kaiser_window_state._CC_KAISER_WINDOW_STATE_DOC
         ],
     ),
     NotebookSpecV2(
@@ -682,8 +709,8 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
         title='LCU Select/Prepare Oracles',
         module=qualtran.bloqs.block_encoding.lcu_block_encoding,
         bloq_specs=[
+            qualtran.bloqs.block_encoding.lcu_block_encoding._SELECT_BLOCK_ENCODING_DOC,
             qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_BLOCK_ENCODING_DOC,
-            qualtran.bloqs.block_encoding.lcu_block_encoding._LCU_ZERO_STATE_BLOCK_ENCODING_DOC,
             qualtran.bloqs.multiplexers.select_base._SELECT_ORACLE_DOC,
             qualtran.bloqs.state_preparation.prepare_base._PREPARE_ORACLE_DOC,
             qualtran.bloqs.multiplexers.black_box_select._BLACK_BOX_SELECT_DOC,
@@ -739,6 +766,14 @@ OTHER: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Advanced QROM (aka QROAM) using clean ancilla',
+        module=qualtran.bloqs.data_loading.qroam_clean,
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.qroam_clean._QROAM_CLEAN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Reflections',
         module=qualtran.bloqs.reflections,
         bloq_specs=[
@@ -749,12 +784,13 @@ OTHER: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
-        module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
+        module=qualtran.bloqs.mcmt,
         bloq_specs=[
-            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
-            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
+            qualtran.bloqs.mcmt.multi_target_cnot._C_MULTI_NOT_DOC,
+            qualtran.bloqs.mcmt.multi_control_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/mcmt/',
+        path_stem='multi_control_multi_target_pauli',
     ),
     NotebookSpecV2(
         title='Generic Select',

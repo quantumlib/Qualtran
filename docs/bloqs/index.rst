@@ -62,6 +62,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/addition.ipynb
+    arithmetic/controlled_addition.ipynb
     arithmetic/negate.ipynb
     arithmetic/subtraction.ipynb
     arithmetic/controlled_add_or_subtract.ipynb
@@ -79,6 +80,7 @@ Bloqs Library
     :caption: Modular Arithmetic:
 
     mod_arithmetic/mod_addition.ipynb
+    mod_arithmetic/mod_subtraction.ipynb
     factoring/mod_mul.ipynb
     factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
@@ -101,6 +103,7 @@ Bloqs Library
     qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
+    phase_estimation/kaiser_window_state.ipynb
     qubitization/qubitization_walk_operator.ipynb
     phase_estimation/qubitization_qpe.ipynb
 
@@ -128,6 +131,7 @@ Bloqs Library
     multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
     data_loading/select_swap_qrom.ipynb
+    data_loading/qroam_clean.ipynb
     reflections/reflections.ipynb
     mcmt/multi_control_multi_target_pauli.ipynb
     multiplexers/select_pauli_lcu.ipynb

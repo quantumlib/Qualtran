@@ -39,6 +39,7 @@ from qualtran.bloqs.arithmetic.addition import (
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
@@ -277,6 +278,12 @@ def test_add_classical():
     assert ret1 == ret2
 
 
+def test_add_symb():
+    bloq = _add_symb()
+    assert bloq.signature.n_qubits() == sympy.sympify('2*n')
+    assert get_cost_value(bloq, QubitCount()) == sympy.sympify('Max(3, 2*n)')
+
+
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)
@@ -377,3 +384,16 @@ def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('addition')
+
+
+@pytest.mark.parametrize('bitsize', range(1, 5))
+def test_outofplaceadder_classical_action(bitsize):
+    b = OutOfPlaceAdder(bitsize)
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y) == cb.call_classically(a=x, b=y)
+
+    b = OutOfPlaceAdder(bitsize).adjoint()
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y, c=x + y) == cb.call_classically(a=x, b=y, c=x + y)

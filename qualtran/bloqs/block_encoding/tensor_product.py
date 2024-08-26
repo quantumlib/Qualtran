@@ -30,7 +30,8 @@ from qualtran import (
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping import Partition
-from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, prod, ssum, SymbolicFloat, SymbolicInt
 
@@ -101,11 +102,12 @@ class TensorProduct(BlockEncoding):
         return ssum(u.alpha * u.epsilon for u in self.block_encodings)
 
     @property
-    def signal_state(self) -> PrepareOracle:
-        # This method will be implemented in the future after PrepareOracle
-        # is updated for the BlockEncoding interface.
-        # Github issue: https://github.com/quantumlib/Qualtran/issues/1104
-        raise NotImplementedError
+    def signal_state(self) -> BlackBoxPrepare:
+        if all(isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings):
+            return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        else:
+            # TODO: implement by taking tensor product of component signal states
+            raise NotImplementedError
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         return set(Counter(self.block_encodings).items())

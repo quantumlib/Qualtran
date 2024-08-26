@@ -224,11 +224,21 @@ def test_t_complexity(data):
 def test_t_complexity_symbolic():
     N, M = sympy.symbols('N M')
     b1, b2 = sympy.symbols('b1 b2')
+    t1, t2 = sympy.symbols('t1 t2')
     c = sympy.Symbol('c')
-    qrom_symb = QROM.build_from_bitsize((N, M), (b1, b2), num_controls=c)
+    qrom_symb = QROM.build_from_bitsize(
+        (N, M), (b1, b2), target_shapes=((t1,), (t2,)), num_controls=c
+    )
     t_counts = qrom_symb.t_complexity()
-    assert t_counts.t == 4 * (N * M - 2 + c)
-    assert t_counts
+    n_and = N * M - 2 + c
+    assert t_counts.t == 4 * n_and
+    from qualtran.bloqs.mcmt import And
+
+    assert (
+        t_counts.clifford
+        == N * M * b1 * b2 * t1 * t2
+        + (And().t_complexity().clifford + And().adjoint().t_complexity().clifford) * n_and
+    )
 
 
 def _assert_qrom_has_diagram(qrom: QROM, expected_diagram: str):
@@ -275,11 +285,11 @@ def test_qrom_variable_spacing():
     _assert_qrom_has_diagram(
         qrom,
         r'''
-selection00: ───X───@───X───@───
-                    │       │
-target0_0: ─────────┼───────X───
-                    │
-target0_1: ─────────X───────────
+selection00: ───X───@────X───@────
+                    │        │
+target0_0: ─────────⊕1───────⊕2───
+                    │        │
+target0_1: ─────────⊕1───────⊕2───
     ''',
     )
     # When inner loop range is not a power of 2, the inner segment tree cannot be skipped.
@@ -292,16 +302,16 @@ target0_1: ─────────X───────────
     _assert_qrom_has_diagram(
         qrom,
         r'''
-selection00: ───X───@─────────@───────@──────X───@─────────@───────@──────
-                    │         │       │          │         │       │
-selection10: ───────(0)───────┼───────@──────────(0)───────┼───────@──────
-                    │         │       │          │         │       │
-anc_1: ─────────────And───@───X───@───And†───────And───@───X───@───And†───
-                          │       │                    │       │
-target0_0: ───────────────┼───────┼────────────────────X───────X──────────
-                          │       │
-target0_1: ───────────────X───────X───────────────────────────────────────
-        ''',
+selection00: ───X───@──────────@────────@──────X───@──────────@────────@──────
+                    │          │        │          │          │        │
+selection10: ───────(0)────────┼────────@──────────(0)────────┼────────@──────
+                    │          │        │          │          │        │
+anc_1: ─────────────And───@────X───@────And†───────And───@────X───@────And†───
+                          │        │                     │        │
+target0_0: ───────────────⊕1───────⊕1────────────────────⊕2───────⊕2──────────
+                          │        │                     │        │
+target0_1: ───────────────⊕1───────⊕1────────────────────⊕2───────⊕2──────────
+''',
     )
     # No T-gates needed if all elements to load are identical.
     assert t_complexity(QROM.build_from_data([3, 3, 3, 3])).t == 0

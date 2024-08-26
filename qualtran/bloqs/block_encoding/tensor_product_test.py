@@ -28,6 +28,7 @@ from qualtran.bloqs.block_encoding.tensor_product import (
     TensorProduct,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import execute_notebook
 
@@ -126,6 +127,10 @@ def test_tensor_product_cirq():
     initial_state = [0, 1, 1, 1]
     final_state = [1, 0, 1, 0]
     assert_circuit_inp_out_cirqsim(circuit, qubits, initial_state, final_state)
+
+
+def test_tensor_product_signal_state():
+    assert isinstance(_tensor_product_block_encoding().signal_state.prepare, PrepareIdentity)
 
 
 @pytest.mark.notebook

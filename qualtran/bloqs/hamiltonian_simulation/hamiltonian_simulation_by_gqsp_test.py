@@ -33,6 +33,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O, BloqCount, get_cost_value
 from qualtran.symbolics import Shaped
@@ -70,12 +71,14 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
 
 def verify_hamiltonian_simulation_by_gqsp(
-    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, precision: float
+    W: QubitizationWalkOperator, H: NDArray[np.complex128], *, t: float, precision: float
 ):
     N = H.shape[0]
 
     W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
-    result_unitary = cirq.unitary(W_e_iHt)
+    # TODO This cirq.unitary call is 4-5x faster than tensor_contract.
+    #      https://github.com/quantumlib/Qualtran/issues/1336
+    result_unitary = cirq.unitary(BloqAsCirqGate(W_e_iHt))
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N]
@@ -107,5 +110,5 @@ def test_hamiltonian_simulation_by_gqsp_t_complexity():
 
     symbolic_hamsim_by_gqsp = _symbolic_hamsim_by_gqsp()
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
-    T = big_O(tau * t + sympy.log(inv_eps) / sympy.log(sympy.log(inv_eps)))
+    T = big_O(tau * t + sympy.log(2 * inv_eps) / sympy.log(sympy.log(2 * inv_eps)))
     assert symbolic_hamsim_by_gqsp.t_complexity() == TComplexity(t=T, clifford=T, rotations=T)  # type: ignore[arg-type]
