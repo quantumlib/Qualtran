@@ -15,7 +15,8 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder, QAny, QUInt
+import qualtran.testing as qlt_testing
+from qualtran import BloqBuilder, QAny, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.bitwise import (
     _bitwise_not,
     _bitwise_not_symb,
@@ -172,3 +173,14 @@ x2: ───~x───
 x3: ───~x───
     ''',
     )
+
+
+@pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt, QInt])
+@pytest.mark.parametrize('bitsize', range(2, 6))
+def test_bitwisenot_classical_action(dtype, bitsize):
+    b = BitwiseNot(dtype(bitsize))
+    if dtype is QInt:
+        valid_range = range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1))
+    else:
+        valid_range = range(2**bitsize)
+    qlt_testing.assert_consistent_classical_action(b, x=valid_range)

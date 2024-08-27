@@ -212,6 +212,7 @@ def test_product_random():
 
 def test_product_signal_state():
     assert isinstance(_product_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _product_block_encoding().signal_state.decompose_bloq()
 
 
 @pytest.mark.notebook

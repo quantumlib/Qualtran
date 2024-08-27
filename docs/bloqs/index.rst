@@ -81,7 +81,7 @@ Bloqs Library
 
     mod_arithmetic/mod_addition.ipynb
     mod_arithmetic/mod_subtraction.ipynb
-    factoring/mod_mul.ipynb
+    mod_arithmetic/mod_multiplication.ipynb
     factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
     factoring/ecc/ecc.ipynb

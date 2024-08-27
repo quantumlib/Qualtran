@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -37,11 +37,9 @@ def test_prepare_nu_t_counts():
     eq_90 = 3 * num_bits_p**2 + 15 * num_bits_p - 7 + 4 * num_bits_m * (num_bits_p + 1)
     assert expected_cost == eq_90 + 5
     prep = PrepareNuState(num_bits_p, m_param)
-    _, counts = prep.call_graph()
-    qual_cost = counts[TGate()]
+    qual_cost = get_cost_value(prep, QECGatesCost()).total_t_count()
     prep = PrepareNuState(num_bits_p, m_param).adjoint()
-    _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_t_count()
     qual_cost //= 4
     comp_diff = 1
     assert qual_cost == expected_cost - comp_diff

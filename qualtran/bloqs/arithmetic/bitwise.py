@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Dict, Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Signature,
@@ -220,6 +221,12 @@ class BitwiseNot(Bloq):
             return TextBox("")
 
         return TextBox("~x")
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        x = -x - 1
+        if isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
+            x %= 2**self.dtype.bitsize
+        return {'x': x}
 
 
 @bloq_example
