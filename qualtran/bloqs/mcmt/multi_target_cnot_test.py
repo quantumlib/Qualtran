@@ -39,3 +39,9 @@ def test_multi_target_cnot(num_targets):
     optimal_circuit = cirq.Circuit(cirq.decompose_once(op))
     assert len(optimal_circuit) == 2 * np.ceil(np.log2(num_targets)) + 1
     qlt_testing.assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize', range(1, 5))
+def test_multitargetcnot_classical_action(bitsize):
+    b = MultiTargetCNOT(bitsize)
+    qlt_testing.assert_consistent_classical_action(b, targets=range(2**bitsize), control=range(2))

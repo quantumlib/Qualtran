@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator
+from typing import Dict, Iterator
 
 import cirq
 import sympy
@@ -20,6 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import SymbolicInt
 
 
@@ -63,6 +64,13 @@ class MultiTargetCNOT(GateWithRegisters):
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
+
+    def on_classical_vals(
+        self, control: 'ClassicalValT', targets: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if control:
+            targets = (2**self.bitsize - 1) ^ targets
+        return {'control': control, 'targets': targets}
 
 
 @bloq_example

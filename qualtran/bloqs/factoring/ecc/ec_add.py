@@ -74,7 +74,7 @@ class ECAdd(Bloq):
             (CModSub(QUInt(self.n), mod=self.mod), 4),
             (ModNeg(QUInt(self.n), mod=self.mod), 2),
             (CModNeg(QUInt(self.n), mod=self.mod), 1),
-            (ModDbl(n=self.n, mod=self.mod), 2),
+            (ModDbl(QUInt(self.n), mod=self.mod), 2),
             (ModMul(n=self.n, mod=self.mod), 10),
             (ModInv(n=self.n, mod=self.mod), 4),
         }

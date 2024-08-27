@@ -36,9 +36,7 @@ from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
     _ctrl_add_or_sub_unsigned,
     ControlledAddOrSubtract,
 )
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.resource_counting import get_cost_value
-from qualtran.resource_counting._bloq_counts import BloqCount
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_examples(bloq_autotester):
@@ -107,4 +105,6 @@ def test_t_complexity():
     dtype = QUInt(n)
     bloq = ControlledAddOrSubtract(dtype, dtype)
 
-    assert get_cost_value(bloq, BloqCount.for_gateset('t')) == {TGate(): 4 * n - 4}
+    counts = get_cost_value(bloq, QECGatesCost()).total_t_and_ccz_count()
+    assert counts['n_t'] == 0, 'toffoli only'
+    assert counts['n_ccz'] == n - 1

@@ -22,6 +22,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepa
     PrepareFirstQuantizationWithProj,
     SelectFirstQuantizationWithProj,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -45,13 +46,12 @@ def test_select_t_costs():
     num_atoms = 10
     lambda_zeta = 10
     num_bits_nuc_pos = 41
-    cost = 0
 
     sel_first_quant = SelectFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
     )
     assert_valid_bloq_decomposition(sel_first_quant)
-    cost += sel_first_quant.call_graph()[1][TGate()]
+    cost = get_cost_value(sel_first_quant, QECGatesCost()).total_t_count()
 
     # Swaps
     expected_cost = 7 * (12 * eta * num_bits_p + 6 * num_bits_n) + 4 * (4 * eta - 6)  #
