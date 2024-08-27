@@ -200,7 +200,7 @@ class TestBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(1),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([1]))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
