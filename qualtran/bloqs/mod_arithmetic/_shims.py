@@ -30,6 +30,7 @@ from qualtran import Bloq, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
+from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
 
@@ -60,7 +61,7 @@ class _ModInvInner(Bloq):
             (Subtract(QUInt(self.n)), 1),
             (Add(QUInt(self.n)), 1),
             (CNOT(), 1),
-            (ModDbl(self.n, self.mod), 1),
+            (ModDbl(QUInt(self.n), self.mod), 1),
             (CHalf(self.n), 1),
             (CSwap(self.n), 2),
             (CNOT(), 1),
@@ -147,24 +148,3 @@ class ModMul(Bloq):
 
     def __str__(self):
         return self.__class__.__name__
-
-
-@frozen
-class ModDbl(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
-
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
-        if reg is None:
-            return Text("")
-        if reg.name == 'x':
-            return TextBox('x')
-        elif reg.name == 'out':
-            return TextBox('$2x$')
-        raise ValueError(f'Unrecognized register name {reg.name}')

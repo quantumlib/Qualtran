@@ -44,6 +44,7 @@ from qualtran.testing import (
     assert_bloq_example_decompose,
     assert_bloq_example_make,
     assert_connections_compatible,
+    assert_consistent_classical_action,
     assert_registers_match_dangling,
     assert_registers_match_parent,
     assert_soquets_belong_to_registers,
@@ -226,3 +227,21 @@ def test_assert_connections_compatible(dtype_a, dtype_b, expect_raise):
     if expect_raise:
         with pytest.raises(BloqError, match=r'.*QDTypes are incompatible.*'):
             assert_connections_compatible(cbloq)
+
+
+def test_assert_valid_classical_action_valid_bloq():
+    bitsize = 3
+    valid_range = range(-(2**2), 2**2)
+    assert_consistent_classical_action(Add(QInt(bitsize)), a=valid_range, b=valid_range)
+
+
+def test_assert_valid_classical_action_valid_invalid_bloq():
+    class BloqWithInvalidClassicaAction(Add):
+        def on_classical_vals(self, a, b):
+            return {'a': a, 'b': b}
+
+    bitsize = 3
+    valid_range = range(-(2**2), 2**2)
+    b = BloqWithInvalidClassicaAction(QInt(bitsize))
+    with pytest.raises(AssertionError):
+        assert_consistent_classical_action(b, a=valid_range, b=valid_range)
