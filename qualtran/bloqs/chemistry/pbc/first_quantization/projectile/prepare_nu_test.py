@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
     _prep_mu_proj,
     _prep_nu_proj,
     PrepareNuStateWithProj,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prepare_num(bloq_autotester):
@@ -44,11 +44,9 @@ def test_prepare_nu_with_proj_t_counts():
     )
     assert expected_cost == eq_c6 + 5
     prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param)
-    _, counts = prep.call_graph()
-    qual_cost = counts[TGate()]
+    qual_cost = get_cost_value(prep, QECGatesCost()).total_t_count()
     prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param).adjoint()
-    _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_t_count()
     qual_cost //= 4
     comp_diff = 1
     assert qual_cost == expected_cost - comp_diff

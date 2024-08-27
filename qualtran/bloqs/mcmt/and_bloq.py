@@ -38,6 +38,7 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     Register,
@@ -47,6 +48,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
@@ -61,6 +63,9 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
+
+# TODO: https://github.com/quantumlib/Qualtran/issues/1346
+FLAG_AND_AS_LEAF = False
 
 
 @frozen
@@ -98,7 +103,15 @@ class And(GateWithRegisters):
     def adjoint(self) -> 'And':
         return attrs.evolve(self, uncompute=not self.uncompute)
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        if FLAG_AND_AS_LEAF:
+            raise DecomposeTypeError(f"{self} is atomic.")
+        return decompose_from_cirq_style_method(self)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if FLAG_AND_AS_LEAF:
+            raise DecomposeTypeError(f"{self} is atomic.")
+
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
             pre_post_cliffords: Union[sympy.Order, int] = big_O(1)
         else:
@@ -107,6 +120,19 @@ class And(GateWithRegisters):
             return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
 
         return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        if not FLAG_AND_AS_LEAF:
+            return NotImplemented
+
+        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
+            pre_post_cliffords: Union[sympy.Order, int] = 0
+        else:
+            pre_post_cliffords = 2 - self.cv1 - self.cv2
+        if self.uncompute:
+            return TComplexity(clifford=4 + 2 * pre_post_cliffords)
+
+        return TComplexity(t=4, clifford=9 + 2 * pre_post_cliffords)
 
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
@@ -194,6 +220,41 @@ class And(GateWithRegisters):
             yield [cirq.CNOT(target, c1), cirq.CNOT(target, c2)]
             yield [cirq.H(target), cirq.S(target)]
         yield pre_post_ops
+
+    def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+        """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
+
+        * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
+        * And(cv, adjoint=True).on(c1, c2, target) uses measurement based un-computation
+            (0 T-gates) and will always leave the target in |0> state.
+        """
+        c1 = cirq.NamedQubit('ctrl_0')
+        c2 = cirq.NamedQubit('ctrl_1')
+        target = cirq.NamedQubit('target')
+        pre_post_ops = [cirq.X(q) for (q, v) in zip([c1, c2], [self.cv1, self.cv2]) if v == 0]
+        circuit = cirq.Circuit(pre_post_ops)
+        if self.uncompute:
+            circuit += cirq.Circuit(
+                [
+                    cirq.H(target),
+                    cirq.measure(target, key=f"{target}"),
+                    cirq.CZ(c1, c2).with_classical_controls(f"{target}"),
+                    cirq.reset(target),
+                ]
+            )
+        else:
+            circuit += cirq.Circuit(
+                [
+                    [cirq.H(target), cirq.T(target)],
+                    [cirq.CNOT(c1, target), cirq.CNOT(c2, target)],
+                    [cirq.CNOT(target, c1), cirq.CNOT(target, c2)],
+                    [cirq.T(c1) ** -1, cirq.T(c2) ** -1, cirq.T(target)],
+                    [cirq.CNOT(target, c1), cirq.CNOT(target, c2)],
+                    [cirq.H(target), cirq.S(target)],
+                ]
+            )
+        circuit += pre_post_ops
+        return circuit.freeze()
 
     def __pow__(self, power: int) -> 'And':
         if power == 1:

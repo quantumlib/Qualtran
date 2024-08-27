@@ -499,8 +499,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
             only_decomp = set(decomp_counts.keys()) - set(manual_counts.keys())
             if only_decomp:
                 msg.append(f"Bloq's missing from annotation: {only_decomp}")
-            msg.append(f'Annotation: {manual_counts}')
-            msg.append(f'Decomp:     {decomp_counts}')
+            msg.append(f'Annotation: {sorted(manual_counts.items(), key=str)}')
+            msg.append(f'Decomp:     {sorted(decomp_counts.items(), key=str)}')
             raise BloqCheckException.fail('\n'.join(msg))
 
     assert has_manual_counts or has_decomp_counts
