@@ -131,6 +131,7 @@ def test_tensor_product_cirq():
 
 def test_tensor_product_signal_state():
     assert isinstance(_tensor_product_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _tensor_product_block_encoding().signal_state.decompose_bloq()
 
 
 @pytest.mark.notebook

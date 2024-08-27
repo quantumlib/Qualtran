@@ -511,7 +511,7 @@ class QROAMClean(SelectSwapQROM):
         name = reg.name
         if name == 'selection':
             return TextBox('In')
-        elif 'target' in name:
+        elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)

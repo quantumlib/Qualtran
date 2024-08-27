@@ -34,7 +34,7 @@ from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_sp
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_valid_modneg_decomposition(dtype, bitsize, prime):
     b = ModNeg(dtype(bitsize), prime)
@@ -45,7 +45,7 @@ def test_valid_modneg_decomposition(dtype, bitsize, prime):
 @pytest.mark.parametrize('cv', range(2))
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_valid_cmodneg_decomposition(dtype, bitsize, prime, cv):
     b = CModNeg(dtype(bitsize), prime, cv)
@@ -56,7 +56,7 @@ def test_valid_cmodneg_decomposition(dtype, bitsize, prime, cv):
 @pytest.mark.slow
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_modneg_classical_action(dtype, bitsize, prime):
     b = ModNeg(dtype(bitsize), prime)
@@ -69,7 +69,7 @@ def test_modneg_classical_action(dtype, bitsize, prime):
 @pytest.mark.parametrize('cv', range(2))
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_cmodneg_classical_action(dtype, bitsize, prime, cv):
     b = CModNeg(dtype(bitsize), prime, cv)
@@ -146,7 +146,7 @@ def test_modsub_cost():
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_modsub_decomposition(dtype, bitsize, prime):
     b = ModSub(dtype(bitsize), prime)
@@ -155,7 +155,7 @@ def test_modsub_decomposition(dtype, bitsize, prime):
 
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_modsub_bloq_counts(dtype, bitsize, prime):
     b = ModSub(dtype(bitsize), prime)
@@ -165,13 +165,24 @@ def test_modsub_bloq_counts(dtype, bitsize, prime):
 @pytest.mark.slow
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
 )
 def test_modsub_classical_action(dtype, bitsize, prime):
     b = ModSub(dtype(bitsize), prime)
     cb = b.decompose_bloq()
     for x, y in itertools.product(range(prime), repeat=2):
         assert b.call_classically(x=x, y=y) == cb.call_classically(x=x, y=y) == (x, (y - x) % prime)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('prime', (10**9 + 7, 10**9 + 9))
+@pytest.mark.parametrize('bitsize', (32, 33))
+def test_modsub_classical_action_large(bitsize, prime):
+    b = ModSub(QMontgomeryUInt(bitsize), prime)
+    rng = np.random.default_rng(13324)
+    qlt_testing.assert_consistent_classical_action(
+        b, x=rng.choice(prime, 5).tolist(), y=rng.choice(prime, 5).tolist()
+    )
 
 
 def test_modsub_classical_action_fast():
@@ -198,7 +209,7 @@ def test_cmodsub_cost():
 @pytest.mark.parametrize('cv', range(2))
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_cmodsub_decomposition(cv, dtype, bitsize, prime):
     b = CModSub(dtype(bitsize), prime, cv)
@@ -208,7 +219,7 @@ def test_cmodsub_decomposition(cv, dtype, bitsize, prime):
 @pytest.mark.parametrize('cv', range(2))
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length(), 10)]
 )
 def test_cmodsub_bloq_counts(cv, dtype, bitsize, prime):
     b = CModSub(dtype(bitsize), prime, cv)
@@ -219,18 +230,22 @@ def test_cmodsub_bloq_counts(cv, dtype, bitsize, prime):
 @pytest.mark.parametrize('cv', range(2))
 @pytest.mark.parametrize('dtype', [QUInt, QMontgomeryUInt])
 @pytest.mark.parametrize(
-    ['bitsize', 'prime'], [(p, n) for p in (13, 17, 23) for n in range(p.bit_length() - 1, 6)]
+    ['prime', 'bitsize'], [(p, n) for p in (13, 17) for n in range(p.bit_length(), 6)]
 )
 def test_cmodsub_classical_action(cv, dtype, bitsize, prime):
     b = CModSub(dtype(bitsize), prime, cv)
-    cb = b.decompose_bloq()
-    for ctrl in range(2):
-        for x, y in itertools.product(range(prime), repeat=2):
-            assert (
-                b.call_classically(ctrl=ctrl, x=x, y=y)
-                == cb.call_classically(ctrl=ctrl, x=x, y=y)
-                == (ctrl, x, (y - (ctrl == cv) * x) % prime)
-            )
+    qlt_testing.assert_consistent_classical_action(b, ctrl=range(2), x=range(prime), y=range(prime))
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('prime', (10**9 + 7, 10**9 + 9))
+@pytest.mark.parametrize('bitsize', (32, 33))
+def test_cmodsub_classical_action_large(bitsize, prime):
+    b = CModSub(QMontgomeryUInt(bitsize), prime)
+    rng = np.random.default_rng(13324)
+    qlt_testing.assert_consistent_classical_action(
+        b, ctrl=(1,), x=rng.choice(prime, 5).tolist(), y=rng.choice(prime, 5).tolist()
+    )
 
 
 def test_cmodsub_classical_action_fast():

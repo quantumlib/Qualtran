@@ -14,11 +14,11 @@
 
 import numpy as np
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
     _prep_uv_proj,
     PrepareUVFirstQuantizationWithProj,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prep_uv_proj(bloq_autotester):
@@ -42,13 +42,11 @@ def test_prepare_uv_t_counts():
     prep = PrepareUVFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
-    _, counts = prep.call_graph()
-    qual_cost = counts[TGate()]
+    qual_cost = get_cost_value(prep, QECGatesCost()).total_t_count()
     prep = PrepareUVFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     ).adjoint()
-    _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_t_count()
     qual_cost //= 4
     comp_diff = 1
     assert qual_cost == expected_cost - comp_diff

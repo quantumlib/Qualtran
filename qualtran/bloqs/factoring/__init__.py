@@ -13,4 +13,3 @@
 #  limitations under the License.
 
 from .mod_exp import ModExp
-from .mod_mul import CtrlModMul
