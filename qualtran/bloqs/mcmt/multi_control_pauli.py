@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import abc
 from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
@@ -28,15 +28,17 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
 from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
-from qualtran.symbolics import HasLength, SymbolicInt
+from qualtran.symbolics import HasLength, slen, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -184,26 +186,97 @@ _CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlPauli, examples=(_ccpauli,))
 
 
 @frozen
-class MultiControlX(MultiControlPauli):
+class _MultiControlPauli(Bloq):
+    """Abstract base class for a generalized implementation of Multi-Control Pauli"""
+
+    cvs: CtrlSpec
+
+    @property
+    @abc.abstractmethod
+    def _target_gate(self) -> cirq.Pauli:
+        ...
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([*self.ctrl_regs, Register('target', QBit())])
+
+    @cached_property
+    def ctrl_regs(self) -> Tuple[Register, ...]:
+        ctrl_regs = []
+        for i, (dtype, shape) in enumerate(self.cvs.activation_function_dtypes()):
+            if is_symbolic(dtype.num_qubits) or dtype.num_qubits > 0:
+                ctrl_regs.append(Register(f'ctrl{i}_', dtype=dtype, shape=shape))
+        return tuple(ctrl_regs)
+
+    @cached_property
+    def flat_cvs(self) -> Union[HasLength, Tuple[int, ...]]:
+        return tuple(
+            b
+            for cvs, qdtype in zip(self.cvs.cvs, self.cvs.qdtypes)
+            for cv in tuple(cvs.reshape(-1))
+            for b in qdtype.to_bits(cv)
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        flat_ctrls = []
+        for reg in self.ctrl_regs:
+            if reg.shape:
+                for soq in soqs[reg.name].reshape(-1):
+                    flat_ctrls += bb.split(soq).tolist() if reg.bitsize > 1 else [soq]
+            else:
+                soq = soqs[reg.name]
+                assert isinstance(soq, Soquet)
+                flat_ctrls += bb.split(soq).tolist() if reg.bitsize > 1 else [soq]
+        print(self.flat_cvs)
+        print(flat_ctrls)
+        flat_ctrls, target = bb.add(
+            MultiControlPauli(self.flat_cvs, self._target_gate),
+            controls=flat_ctrls,
+            target=soqs['target'],
+        )
+        ctrls = {}
+        st = 0
+        for reg in self.ctrl_regs:
+            if reg.shape:
+                curr_soqs = np.empty(reg.shape, dtype=object)
+                for idx in reg.all_idxs():
+                    if reg.bitsize > 1:
+                        curr_soqs[idx] = bb.join(flat_ctrls[st : st + reg.bitsize], dtype=reg.dtype)
+                    else:
+                        curr_soqs[idx] = flat_ctrls[st]
+                    st += reg.bitsize
+                ctrls[reg.name] = curr_soqs
+            else:
+                if reg.bitsize > 1:
+                    ctrls[reg.name] = bb.join(flat_ctrls[st : st + reg.bitsize], dtype=reg.dtype)
+                else:
+                    ctrls[reg.name] = flat_ctrls[st]
+                st += reg.bitsize
+        return ctrls | {'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(MultiControlPauli(self.flat_cvs, self._target_gate), 1)}
+
+
+@frozen
+class MultiControlX(_MultiControlPauli):
     r"""Implements multi-control, single-target X gate.
 
     See :class:`MultiControlPauli` for implementation and costs.
     """
-    target_gate: cirq.Pauli = field(init=False)
 
-    @target_gate.default
-    def _X(self):
+    @property
+    def _target_gate(self) -> cirq.Pauli:
         return cirq.X
 
 
 @frozen
-class MultiControlZ(MultiControlPauli):
+class MultiControlZ(_MultiControlPauli):
     r"""Implements multi-control, single-target Z gate.
 
     See :class:`MultiControlPauli` for implementation and costs.
     """
-    target_gate: cirq.Pauli = field(init=False)
 
-    @target_gate.default
-    def _Z(self):
+    @property
+    def _target_gate(self) -> cirq.Pauli:
         return cirq.Z

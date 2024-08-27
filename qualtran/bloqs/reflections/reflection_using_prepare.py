@@ -13,24 +13,25 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Side, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits, total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
-from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.basic_gates.x_basis import XGate
+from qualtran.bloqs.basic_gates import GlobalPhase, XGate, ZPowGate
 from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.drawing import Circle, ModPlus, TextBox
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, pi, sarg, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
     from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -78,7 +79,7 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
     prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
     control_val: Optional[int] = None
     global_phase: complex = 1
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -89,8 +90,12 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
         return self.prepare_gate.selection_registers
 
     @cached_property
+    def junk_registers(self) -> Tuple[Register, ...]:
+        return self.prepare_gate.junk_registers
+
+    @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.control_registers, *self.selection_registers])
+        return Signature([*self.control_registers, *self.selection_registers, *self.junk_registers])
 
     @classmethod
     def reflection_around_zero(
@@ -117,58 +122,79 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
             prepare_gate, control_val=control_val, global_phase=global_phase, eps=eps
         )
 
-    def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        qm = context.qubit_manager
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         # 0. Allocate new ancillas, if needed.
-        phase_target = qm.qalloc(1)[0] if self.control_val is None else quregs.pop('control')[0]
-        state_prep_ancilla = {
-            reg.name: np.array(qm.qalloc(reg.total_bits())).reshape(reg.shape + (reg.bitsize,))
-            for reg in self.prepare_gate.junk_registers
-        }
-        state_prep_selection_regs = quregs
-        prepare_op = self.prepare_gate.on_registers(
-            **state_prep_selection_regs, **state_prep_ancilla
+        phase_target = (
+            bb.allocate(dtype=QBit()) if self.control_val is None else soqs.pop('control')
         )
+        # prep_soqs =
+        # state_prep_junk = {
+        #     reg.name: soqs.pop(reg.name)
+        #     for reg in self.prepare_gate.junk_registers
+        #     if reg.side & Side.LEFT
+        # }
+        # state_prep_sel = soqs
+        # state_prep_ancilla = {
+        #     reg.name: np.array(bb.qalloc(reg.total_bits())).reshape(reg.shape + (reg.bitsize,))
+        #     for reg in self.prepare_gate.junk_registers
+        # }
+        # state_prep_selection_regs = quregs
+        # prepare_op = self.prepare_gate.on_registers(
+        #     **state_prep_selection_regs, **state_prep_ancilla
+        # )
         # 1. PREPARE†
-        yield cirq.inverse(prepare_op)
+        soqs = bb.add_d(self.prepare_gate.adjoint(), **soqs)
+        # yield cirq.inverse(prepare_op)
         # 2. MultiControlled Z, controlled on |000..00> state.
-        phase_control = np.array(
-            merge_qubits(self.selection_registers, **state_prep_selection_regs)
-        )
-        yield cirq.X(phase_target) if not self.control_val else []
-        yield MultiControlZ([0] * len(phase_control)).on_registers(
-            controls=phase_control.reshape(phase_control.shape + (1,)), target=phase_target
-        )
-        if self.global_phase != 1:
-            if self.control_val is None:
-                yield cirq.global_phase_operation(self.global_phase, atol=self.eps)
-            else:
-                yield cirq.Z(phase_target) ** (np.angle(self.global_phase) / np.pi)
-        yield cirq.X(phase_target) if not self.control_val else []
-        # 3. PREPARE
-        yield prepare_op
-
-        # 4. Deallocate ancilla.
-        qm.qfree([q for anc in state_prep_ancilla.values() for q in anc.flatten()])
+        # phase_control = np.array(
+        #     merge_qubits(self.selection_registers, **state_prep_selection_regs)
+        # )
         if self.control_val is None:
-            qm.qfree([phase_target])
+            phase_target = bb.add(XGate(), q=phase_target)
+        multi_ctrl_soqs = {
+            ctrl_reg.name: soqs.pop(sel_reg.name)
+            for ctrl_reg, sel_reg in zip(self._multi_ctrl_z.ctrl_regs, self.selection_registers)
+        }
+        multi_ctrl_soqs = bb.add_d(self._multi_ctrl_z, **multi_ctrl_soqs, target=phase_target)
+        for ctrl_reg, sel_reg in zip(self._multi_ctrl_z.ctrl_regs, self.selection_registers):
+            soqs[sel_reg.name] = multi_ctrl_soqs.pop(ctrl_reg.name)
+        phase_target = multi_ctrl_soqs.pop('target')
+        assert not multi_ctrl_soqs
+        if self.global_phase != 1:
+            exponent = sarg(self.global_phase) / pi(self.global_phase)
+            if self.control_val is None:
+                bb.add(GlobalPhase(exponent=exponent, eps=self.eps))
+            else:
+                phase_target = bb.add(ZPowGate(exponent=exponent, eps=self.eps), q=phase_target)
+        # 3. PREPARE
+        soqs = bb.add_d(self.prepare_gate, **soqs)
+        # 4. Deallocate phase_target.
+        if self.control_val is None:
+            phase_target = bb.add(XGate(), q=phase_target)
+            bb.free(phase_target)
+        else:
+            soqs['control'] = phase_target
+        return soqs
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
-        wire_symbols += ['R_L'] * total_bits(self.selection_registers)
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'control':
+            return Circle(filled=True)
+        if reg.name in {reg.name for reg in self.selection_registers}:
+            return f'R_L[{",".join(str(i) for i in idx)}]'
+        return self.prepare_gate.wire_symbol(reg, idx)
+
+    # def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    #     wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
+    #     wire_symbols += ['R_L'] * total_bits(self.selection_registers)
+    #     return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
-        cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
+        # n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
+        # cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
         costs: Set['BloqCountT'] = {
             (self.prepare_gate, 1),
             (self.prepare_gate.adjoint(), 1),
-            (MultiControlZ(cvs), 1),
+            (self._multi_ctrl_z, 1),
         }
         if self.control_val is None:
             costs.add((XGate(), 2))
@@ -178,6 +204,14 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
                 phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
             costs.add((phase_op, 1))
         return costs
+
+    @cached_property
+    def _multi_ctrl_z(self) -> MultiControlZ:
+        ctrl_soqs, dtypes, cvs = {}, [], []
+        for reg in self.selection_registers:
+            dtypes.append(reg.dtype)
+            cvs.append(np.zeros(reg.shape, dtype=int))
+        return MultiControlZ(CtrlSpec(tuple(dtypes), tuple(cvs)))
 
 
 @bloq_example(generalizer=ignore_split_join)
