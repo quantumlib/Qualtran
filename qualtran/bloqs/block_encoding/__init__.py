@@ -14,10 +14,14 @@
 r"""High level bloqs for defining bloq encodings and operations on block encodings."""
 
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
-from qualtran.bloqs.block_encoding.chebyshev_polynomial import ChebyshevPolynomial
-from qualtran.bloqs.block_encoding.lcu_block_encoding import (
-    BlackBoxPrepare,
-    BlackBoxSelect,
-    LCUBlockEncoding,
-    LCUBlockEncodingZeroState,
+from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
+    ChebyshevPolynomial,
+    ScaledChebyshevPolynomial,
 )
+from qualtran.bloqs.block_encoding.lcu_block_encoding import LCUBlockEncoding, SelectBlockEncoding
+from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
+from qualtran.bloqs.block_encoding.phase import Phase
+from qualtran.bloqs.block_encoding.product import Product
+from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
+from qualtran.bloqs.block_encoding.tensor_product import TensorProduct
+from qualtran.bloqs.block_encoding.unitary import Unitary

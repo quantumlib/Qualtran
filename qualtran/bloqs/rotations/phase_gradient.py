@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -25,6 +25,7 @@ from numpy.typing import NDArray
 from qualtran import (
     bloq_example,
     BloqDocSpec,
+    ConnectionT,
     GateWithRegisters,
     QBit,
     QFxp,
@@ -35,11 +36,12 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
@@ -66,6 +68,20 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     Registers:
         phase_grad: A THRU register which the phase gradient is applied to.
+        (optional) ctrl: A THRU register which specifies the control for this gate. Must have
+            `is_controlled` set to `True` to use this register.
+
+    Arguments:
+        bitsize: The number of qubits of the register being acted on
+        exponent: $t$ in the above expression for $\omega_{n, t}$, a multiplicative factor
+            for the phases applied to each state. Defaults to 1.0.
+        is_controlled: `bool` which determines if the unitary is controlled via a `ctrl` register.
+        eps: The precision for the total unitary, each underlying rotation is synthesized to a precision of `eps` / `bitsize`.
+
+    Costs:
+        qubits: 0 ancilla qubits are allocated.
+        T-gates: Only uses 1 T gate explicitly but does rely on more costly Z rotations.
+        rotations: Uses $n$ rotations with angles varying from 1/2 (for a single T-gate) to 1/(2^n).
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
@@ -82,10 +98,14 @@ class PhaseGradientUnitary(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
+            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=self.phase_dtype)
             if self.is_controlled
-            else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
+            else Signature.build_from_dtypes(phase_grad=self.phase_dtype)
         )
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
@@ -106,9 +126,29 @@ class PhaseGradientUnitary(GateWithRegisters):
     def __pow__(self, power):
         if power == 1:
             return self
-        return PhaseGradientUnitary(
-            self.bitsize, self.exponent * power, self.is_controlled, self.eps
-        )
+        return attrs.evolve(self, exponent=self.exponent * power)
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+        gate = CZPowGate if self.is_controlled else ZPowGate
+        if is_symbolic(self.bitsize):
+            return {
+                (
+                    gate(exponent=self.exponent / 2 ** (self.bitsize), eps=self.eps / self.bitsize),
+                    self.bitsize,
+                )
+            }
+
+        ret: Set['BloqCountT'] = set()
+        for i in range(self.bitsize):
+            ret.add((gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize), 1))
+        return ret
+
+
+@bloq_example
+def _phase_gradient_unitary_symbolic() -> PhaseGradientUnitary:
+    n = sympy.symbols('n')
+    phase_gradient_unitary_symbolic = PhaseGradientUnitary(bitsize=n)
+    return phase_gradient_unitary_symbolic
 
 
 @bloq_example
@@ -120,7 +160,7 @@ def _phase_gradient_unitary() -> PhaseGradientUnitary:
 _PHASE_GRADIENT_UNITARY_DOC = BloqDocSpec(
     bloq_cls=PhaseGradientUnitary,
     import_line='from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary',
-    examples=(_phase_gradient_unitary,),
+    examples=(_phase_gradient_unitary, _phase_gradient_unitary_symbolic),
 )
 
 
@@ -152,9 +192,11 @@ class PhaseGradientState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=Side.RIGHT)]
-        )
+        return Signature([Register('phase_grad', self.phase_dtype, side=Side.RIGHT)])
+
+    @property
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -225,17 +267,14 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build_from_dtypes(
-                ctrl=QBit(),
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            Signature.build_from_dtypes(ctrl=QBit(), x=self.x_dtype, phase_grad=self.phase_dtype)
             if self.controlled_by is not None
-            else Signature.build_from_dtypes(
-                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
-            )
+            else Signature.build_from_dtypes(x=self.x_dtype, phase_grad=self.phase_dtype)
         )
+
+    @cached_property
+    def x_dtype(self) -> QFxp:
+        return QFxp(self.x_bitsize, self.x_bitsize, signed=False)
 
     @cached_property
     def phase_dtype(self) -> QFxp:
@@ -292,35 +331,15 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         return {(Toffoli(), num_toffoli)}
 
-    def adjoint(self) -> 'Bloq':
-        return AddIntoPhaseGrad(
-            self.x_bitsize,
-            self.phase_bitsize,
-            self.right_shift,
-            sign=-1 * self.sign,
-            controlled_by=self.controlled_by,
-        )
+    def adjoint(self) -> 'AddIntoPhaseGrad':
+        return attrs.evolve(self, sign=-self.sign)
 
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return self.adjoint()
-        raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
+        return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
 
 @bloq_example
@@ -428,7 +447,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
 
     @cached_method
     def scaled_val(self, x: int) -> int:
@@ -442,7 +461,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
         # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
         # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
+        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_template().dtype)
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
@@ -450,7 +469,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
-        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_str
+        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_template().dtype
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
@@ -507,20 +526,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)
         return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
 
 
 @bloq_example

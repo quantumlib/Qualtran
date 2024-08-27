@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -24,6 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    ConnectionT,
     CtrlSpec,
     QBit,
     Register,
@@ -72,24 +73,15 @@ class _XVector(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         side = outgoing if self.state else incoming
-        tn.add(
-            qtn.Tensor(
-                data=_MINUS if self.bit else _PLUS,
-                inds=(side['q'],),
-                tags=[self.pretty_name(), tag],
-            )
-        )
+        return [
+            qtn.Tensor(data=_MINUS if self.bit else _PLUS, inds=[(side['q'], 0)], tags=[str(self)])
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
@@ -222,28 +214,21 @@ class XGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(
+        return [
             qtn.Tensor(
-                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
+                data=_PAULIX, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)]
             )
-        )
+        ]
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates import CNOT, Toffoli
 
-        if ctrl_spec is None or ctrl_spec == CtrlSpec():
+        if ctrl_spec == CtrlSpec():
             bloq: 'Bloq' = CNOT()
         elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
             bloq = Toffoli()

@@ -14,6 +14,8 @@
 import numpy as np
 from numpy.typing import NDArray
 
+from qualtran.linalg.matrix import unitary_distance_ignoring_global_phase
+
 
 def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
     r"""Asserts that two matrices are close to each other by bounding the matrix norm of their difference.
@@ -22,3 +24,8 @@ def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
     """
     assert A.shape == B.shape
     assert np.linalg.norm(A - B) <= atol
+
+
+def assert_unitaries_equivalent_upto_global_phase(U: NDArray, V: NDArray, *, atol: float = 1e-5):
+    d = unitary_distance_ignoring_global_phase(U, V)
+    assert d <= atol, f"unitaries are not equivalent: distance={d} ({atol=})"

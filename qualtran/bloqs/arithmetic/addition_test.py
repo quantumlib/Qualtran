@@ -21,15 +21,49 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
-from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import (
+    _add_diff_size_regs,
+    _add_k,
+    _add_k_large,
+    _add_k_small,
+    _add_large,
+    _add_oop_large,
+    _add_oop_small,
+    _add_oop_symb,
+    _add_small,
+    _add_symb,
+    Add,
+    AddK,
+    OutOfPlaceAdder,
+)
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
 )
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        _add_symb,
+        _add_small,
+        _add_large,
+        _add_diff_size_regs,
+        _add_oop_symb,
+        _add_oop_small,
+        _add_oop_large,
+        _add_k,
+        _add_k_small,
+        _add_k_large,
+    ],
+)
+def test_examples(bloq_autotester, bloq):
+    bloq_autotester(bloq)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -171,7 +205,7 @@ def test_addition_gate_counts(n: int):
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
-def test_add_no_decompose(a, b):
+def test_add_tensor_contract(a, b):
     num_bits = 5
     bloq = Add(QUInt(num_bits))
 
@@ -184,7 +218,7 @@ def test_add_no_decompose(a, b):
     assert true_out_int == int(out_bin, 2)
 
     unitary = bloq.tensor_contract()
-    assert unitary[output_int, input_int] == 1
+    np.testing.assert_allclose(unitary[output_int, input_int], 1)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -244,13 +278,21 @@ def test_add_classical():
     assert ret1 == ret2
 
 
+def test_add_symb():
+    bloq = _add_symb()
+    assert bloq.signature.n_qubits() == sympy.sympify('2*n')
+    assert get_cost_value(bloq, QubitCount()) == sympy.sympify('Max(3, 2*n)')
+
+
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)
+    cbloq = gate.decompose_bloq()
     for x in range(2**3):
         for y in range(2**3):
             basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
             assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
+            assert cbloq.call_classically(a=x, b=y, c=0) == (x, y, x + y)
     op = GateHelper(gate).operation
     op_inv = cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
@@ -316,9 +358,16 @@ def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
     assert bloq_classical[-1] == result
 
 
-# TODO: write tests for signed integer addition (subtraction)
-# https://github.com/quantumlib/Qualtran/issues/606
-@pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_classical_add_signed_overflow(bitsize):
+    bloq = Add(QInt(bitsize))
+    mx = 2 ** (bitsize - 1) - 1
+    assert bloq.call_classically(a=mx, b=mx) == (mx, -2)
+
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2), (6, -3, 2, (), (), -1)]
+)
 def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
     bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     cbloq = bloq.decompose_bloq()
@@ -335,3 +384,16 @@ def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('addition')
+
+
+@pytest.mark.parametrize('bitsize', range(1, 5))
+def test_outofplaceadder_classical_action(bitsize):
+    b = OutOfPlaceAdder(bitsize)
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y) == cb.call_classically(a=x, b=y)
+
+    b = OutOfPlaceAdder(bitsize).adjoint()
+    cb = b.decompose_bloq()
+    for x, y in itertools.product(range(2**bitsize), repeat=2):
+        assert b.call_classically(a=x, b=y, c=x + y) == cb.call_classically(a=x, b=y, c=x + y)

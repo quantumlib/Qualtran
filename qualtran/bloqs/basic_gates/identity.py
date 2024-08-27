@@ -13,16 +13,20 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
+    CtrlSpec,
     DecomposeTypeError,
     Register,
     Signature,
@@ -30,6 +34,7 @@ from qualtran import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -41,15 +46,19 @@ if TYPE_CHECKING:
 
 @frozen
 class Identity(Bloq):
-    r"""The identity gate on one qubit.
+    r"""The identity gate on `n` qubits.
+
+    Args:
+        bitsize: number of qubits `n`, defaults to 1.
 
     Registers:
-        q: The qubit
+        q: register of `n` qubits
     """
+    bitsize: SymbolicInt = 1
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=self.bitsize)
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -57,25 +66,27 @@ class Identity(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(qtn.Tensor(data=np.eye(2), inds=(outgoing['q'], incoming['q']), tags=["I", tag]))
+        return [
+            qtn.Tensor(
+                data=np.eye(2), inds=[(outgoing['q'], i), (incoming['q'], i)], tags=[str(self)]
+            )
+            for i in range(int(self.bitsize))
+        ]
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
-        (q,) = q
-        return cirq.I(q), {'q': np.array([q])}
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"cirq.IdentityGate does not support symbolic {self.bitsize=}")
+
+        return cirq.IdentityGate(self.bitsize).on(*q), {'q': q}
 
     def _t_complexity_(self):
         return TComplexity()
@@ -94,6 +105,22 @@ class Identity(Bloq):
     def __str__(self) -> str:
         return 'I'
 
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        ctrl_I = Identity(ctrl_spec.num_qubits + self.bitsize)
+
+        def ctrl_adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            parts = [
+                (Register(f'ctrl_{i}', dtype=dtype, shape=shape), 'q')
+                for i, (dtype, shape) in enumerate(ctrl_spec.activation_function_dtypes())
+            ] + [(reg, 'q') for reg in self.signature]
+            all_soqs = in_soqs | {f'ctrl_{i}': ctrl_soq for i, ctrl_soq in enumerate(ctrl_soqs)}
+            out_soqs = bb.add_and_partition(ctrl_I, partitions=parts, left_only=False, **all_soqs)
+            return out_soqs[:-1], out_soqs[-1:]
+
+        return ctrl_I, ctrl_adder
+
 
 @bloq_example
 def _identity() -> Identity:
@@ -101,8 +128,20 @@ def _identity() -> Identity:
     return identity
 
 
-_IDENTITY_DOC = BloqDocSpec(
-    bloq_cls=Identity,
-    import_line='from qualtran.bloqs.basic_gates import Identity',
-    examples=[_identity],
-)
+@bloq_example
+def _identity_n() -> Identity:
+    n = 4
+    identity_n = Identity(n)
+    return identity_n
+
+
+@bloq_example
+def _identity_symb() -> Identity:
+    import sympy
+
+    n = sympy.Symbol("n")
+    identity_symb = Identity(n)
+    return identity_symb
+
+
+_IDENTITY_DOC = BloqDocSpec(bloq_cls=Identity, examples=[_identity_symb, _identity, _identity_n])

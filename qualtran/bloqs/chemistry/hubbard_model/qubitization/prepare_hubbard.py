@@ -22,9 +22,9 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import CSwap
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.bloqs.mod_arithmetic import ModAddK
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -152,8 +152,4 @@ def _prep_hubb() -> PrepareHubbard:
     return prep_hubb
 
 
-_PREPARE_HUBBARD = BloqDocSpec(
-    bloq_cls=PrepareHubbard,
-    import_line='from qualtran.bloqs.chemistry.hubbard_model.qubitization import PrepareHubbard',
-    examples=(_prep_hubb,),
-)
+_PREPARE_HUBBARD = BloqDocSpec(bloq_cls=PrepareHubbard, examples=(_prep_hubb,))

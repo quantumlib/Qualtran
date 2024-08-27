@@ -17,11 +17,19 @@ from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
+import sympy
 from attrs import field, frozen
+
+from qualtran.symbolics import SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .classify_bloqs import bloq_is_clifford, bloq_is_rotation
+from .classify_bloqs import (
+    bloq_is_clifford,
+    bloq_is_rotation,
+    bloq_is_state_or_effect,
+    bloq_is_t_like,
+)
 
 if TYPE_CHECKING:
     from qualtran import Bloq
@@ -118,18 +126,15 @@ class GateCounts:
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
-    In addition to this, the class holds a heuristic approximation for the depth of the
-    circuit `depth` which we compute as the depth of the call graph.
     """
 
-    t: int = 0
-    toffoli: int = 0
-    cswap: int = 0
-    and_bloq: int = 0
-    clifford: int = 0
-    rotation: int = 0
-    measurement: int = 0
-    depth: int = 0
+    t: SymbolicInt = 0
+    toffoli: SymbolicInt = 0
+    cswap: SymbolicInt = 0
+    and_bloq: SymbolicInt = 0
+    clifford: SymbolicInt = 0
+    rotation: SymbolicInt = 0
+    measurement: SymbolicInt = 0
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -143,7 +148,6 @@ class GateCounts:
             clifford=self.clifford + other.clifford,
             rotation=self.rotation + other.rotation,
             measurement=self.measurement + other.measurement,
-            depth=self.depth + other.depth,
         )
 
     def __mul__(self, other):
@@ -155,22 +159,27 @@ class GateCounts:
             clifford=other * self.clifford,
             rotation=other * self.rotation,
             measurement=other * self.measurement,
-            depth=other * self.depth,
         )
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     def __str__(self):
-        strs = []
-        for f in attrs.fields(self.__class__):
-            val = getattr(self, f.name)
-            if val != 0:
-                strs.append(f'{f.name}: {val}')
-
+        strs = [f'{k}: {v}' for k, v in self.asdict().items()]
         if strs:
             return ', '.join(strs)
         return '-'
+
+    def asdict(self) -> Dict[str, int]:
+        d = attrs.asdict(self)
+
+        def _is_nonzero(v):
+            maybe_nonzero = sympy.sympify(v)
+            if maybe_nonzero is None:
+                return True
+            return maybe_nonzero
+
+        return {k: v for k, v in d.items() if _is_nonzero(v)}
 
     def total_t_count(
         self,
@@ -195,6 +204,36 @@ class GateCounts:
             + ts_per_rotation * self.rotation
         )
 
+    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, SymbolicInt]:
+        n_ccz = self.toffoli + self.cswap + self.and_bloq
+        n_t = self.t + ts_per_rotation * self.rotation
+        return {'n_t': n_t, 'n_ccz': n_ccz}
+
+    def total_beverland_count(self) -> Dict[str, SymbolicInt]:
+        r"""Counts used by Beverland. et. al. using notation from the reference.
+
+         - $M_\mathrm{meas}$ is the number of measurements.
+         - $M_R$ is the number of rotations.
+         - $M_T$ is the number of T operations.
+         - $3*M_mathrm{Tof}$ is the number of Toffoli operations.
+         - $D_R$ is the number of layers containing at least one rotation. This can be smaller than
+           the total number of non-Clifford layers since it excludes layers consisting only of T or
+           Toffoli gates. Since we don't compile the 'layers' explicitly, we set this to be the
+           number of rotations.
+
+        Reference:
+            https://arxiv.org/abs/2211.07629.
+            Equation D3.
+        """
+        toffoli = self.toffoli + self.and_bloq + self.cswap
+        return {
+            'meas': self.measurement,
+            'R': self.rotation,
+            'T': self.t,
+            'Tof': toffoli,
+            'D_R': self.rotation,
+        }
+
 
 @frozen
 class QECGatesCost(CostKey[GateCounts]):
@@ -204,16 +243,22 @@ class QECGatesCost(CostKey[GateCounts]):
     """
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
-        from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates._shims import Measure
+        from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt.and_bloq import And
 
         # T gates
-        if isinstance(bloq, TGate):
+        if bloq_is_t_like(bloq):
             return GateCounts(t=1)
 
         # Toffolis
         if isinstance(bloq, Toffoli):
             return GateCounts(toffoli=1)
+
+        # Measurement
+        if isinstance(bloq, Measure):
+            return GateCounts(measurement=1)
 
         # 'And' bloqs
         if isinstance(bloq, And):
@@ -229,19 +274,24 @@ class QECGatesCost(CostKey[GateCounts]):
         if bloq_is_clifford(bloq):
             return GateCounts(clifford=1)
 
+        # States and effects
+        if bloq_is_state_or_effect(bloq):
+            return GateCounts()
+
+        # Bookkeeping, empty bloqs
+        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):
+            return GateCounts()
+
         if bloq_is_rotation(bloq):
             return GateCounts(rotation=1)
 
         # Recursive case
         totals = GateCounts()
-        callees = get_bloq_callee_counts(bloq)
+        callees = get_bloq_callee_counts(bloq, ignore_decomp_failure=False)
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
-        depth = 0
         for callee, n_times_called in callees:
             callee_cost = get_callee_cost(callee)
             totals += n_times_called * callee_cost
-            depth = max(depth, callee_cost.depth + 1)
-        totals = attrs.evolve(totals, depth=depth)
         return totals
 
     def zero(self) -> GateCounts:

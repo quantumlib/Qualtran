@@ -40,6 +40,7 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
+from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import check_dtypes_consistent, QAny, QBit, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
@@ -48,6 +49,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -65,6 +67,11 @@ This type alias is used for input argument to parts of the library that are more
 permissive about the types they accept. Under-the-hood, such functions will
 canonicalize and return `SoquetT`.
 """
+
+_ConnectionType = TypeVar('_ConnectionType', bound=np.generic)
+
+ConnectionT = Union[Connection, NDArray[_ConnectionType]]
+"""A `Connection` or array of connections."""
 
 
 def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
@@ -248,7 +255,7 @@ class CompositeBloq(Bloq):
             a predecessor and again as a successor.
         """
         g = self._binst_graph
-        for binst in nx.topological_sort(g):
+        for binst in greedy_topological_sort(g):
             if isinstance(binst, DanglingT):
                 continue
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
@@ -280,7 +287,7 @@ class CompositeBloq(Bloq):
         """
 
         for binst, preds, succs in self.iter_bloqnections():
-            in_soqs = _cxn_to_soq_dict(
+            in_soqs = _cxns_to_soq_dict(
                 binst.bloq.signature.lefts(),
                 preds,
                 get_me=lambda x: x.right,
@@ -297,7 +304,7 @@ class CompositeBloq(Bloq):
         if RightDangle not in self._binst_graph:
             return {}
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
-        return _cxn_to_soq_dict(
+        return _cxns_to_soq_dict(
             self.signature.rights(),
             final_preds,
             get_me=lambda x: x.right,
@@ -341,6 +348,9 @@ class CompositeBloq(Bloq):
                 the bloqs have decompositions.
 
         """
+        if len(self.bloq_instances) == 0:
+            raise DidNotFlattenAnythingError()
+
         bb, _ = BloqBuilder.from_signature(self.signature)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
@@ -498,13 +508,13 @@ def _binst_to_cxns(
     return pred_cxns, succ_cxns
 
 
-def _cxn_to_soq_dict(
+def _cxns_to_soq_dict(
     regs: Iterable[Register],
     cxns: Iterable[Connection],
     get_me: Callable[[Connection], Soquet],
     get_assign: Callable[[Connection], Soquet],
 ) -> Dict[str, SoquetT]:
-    """Helper function to get a dictionary of incoming or outgoing soquets from a connection.
+    """Helper function to get a dictionary of soquets from a list of connections.
 
     Args:
         regs: Left or right registers (used as a reference to initialize multidimensional
@@ -513,9 +523,12 @@ def _cxn_to_soq_dict(
         get_me: A function that says which soquet is used to derive keys for the returned
             dictionary. Generally: if `cxns` is predecessor connections, this will return the
             `right` element of the connection and opposite of successor connections.
-        get_assign: A function that says which soquet is used to dervice the values for the
+        get_assign: A function that says which soquet is used to derive the values for the
             returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
             do something fancier in `cbloq_to_quimb`.
+
+    Returns:
+        soqdict: A dictionary mapping register name to the selected soquets.
     """
     soqdict: Dict[str, SoquetT] = {}
 
@@ -538,7 +551,42 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-def _get_dangling_soquets(signature: Signature, right=True) -> Dict[str, SoquetT]:
+def _cxns_to_cxn_dict(
+    regs: Iterable[Register], cxns: Iterable[Connection], get_me: Callable[[Connection], Soquet]
+) -> Dict[str, ConnectionT]:
+    """Helper function to get a dictionary of connections from a list of connections
+
+    Args:
+        regs: Left or right registers (used as a reference to initialize multidimensional
+            registers correctly).
+        cxns: Predecessor or successor connections from which we get the connections of interest.
+        get_me: A function that says which soquet is used to derive keys for the returned
+            dictionary. Generally: if `cxns` is predecessor connections, this will return the
+            `right` element of the connection (opposite for successor connections).
+
+    Returns:
+        cxndict: A dictionary mapping register name to the selected connections.
+    """
+    cxndict: Dict[str, ConnectionT] = {}
+
+    # Initialize multi-dimensional dictionary values.
+    for reg in regs:
+        if reg.shape:
+            cxndict[reg.name] = np.empty(reg.shape, dtype=object)
+
+    # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
+    # keys and handle multi-dimensional registers.
+    for cxn in cxns:
+        me = get_me(cxn)
+        if me.reg.shape:
+            cxndict[me.reg.name][me.idx] = cxn  # type: ignore[index]
+        else:
+            cxndict[me.reg.name] = cxn
+
+    return cxndict
+
+
+def _get_dangling_soquets(signature: Signature, right: bool = True) -> Dict[str, SoquetT]:
     """Get instantiated dangling soquets from a `Signature`.
 
     Args:
@@ -969,7 +1017,7 @@ class BloqBuilder:
     def add_and_partition(
         self,
         bloq: Bloq,
-        partitions: Sequence[Tuple[Register, Sequence[str]]],
+        partitions: Sequence[Tuple[Register, Sequence[Union[str, 'Unused']]]],
         left_only: bool = False,
         **in_soqs: SoquetInT,
     ):
@@ -978,12 +1026,13 @@ class BloqBuilder:
 
         Args:
             bloq: The bloq representing the operation to add.
-            partitions: A sequence of pairs specifying each register that the wrapped bloq should
-            accept and the register names from `bloq.signature.lefts()` that concatenate to form it.
+            partitions: A sequence of pairs specifying each register that is exposed in the external
+                signature of the `AutoPartition` and the corresponding register names from `bloq`
+                that concatenate to form the externally exposed register. See `AutoPartition`.
             left_only: If False, the output soquets will also follow `partition`.
                 Otherwise, the output soquets will follow `bloq.signature.rights()`.
-                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT registers,
-                as is required for the bloq to be fully wrapped on the left and right.
+                This flag must be set to True if `bloq` does not have the same LEFT and RIGHT
+                registers, as is required for the bloq to be fully wrapped on the left and right.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
                 `Soquet`s. This is likely the output soquets from a prior operation.
 
@@ -1151,20 +1200,22 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(
+        self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None, dirty: bool = False
+    ) -> Soquet:
         from qualtran.bloqs.bookkeeping import Allocate
 
         if dtype is not None:
-            return self.add(Allocate(dtype=dtype))
-        return self.add(Allocate(dtype=(QAny(n))))
+            return self.add(Allocate(dtype=dtype, dirty=dirty))
+        return self.add(Allocate(dtype=(QAny(n)), dirty=dirty))
 
-    def free(self, soq: Soquet) -> None:
+    def free(self, soq: Soquet, dirty: bool = False) -> None:
         from qualtran.bloqs.bookkeeping import Free
 
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(dtype=soq.reg.dtype), reg=soq)
+        self.add(Free(dtype=soq.reg.dtype, dirty=dirty), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""

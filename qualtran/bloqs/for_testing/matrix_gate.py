@@ -11,12 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Tuple
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import ConnectionT, GateWithRegisters, Signature
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -26,6 +29,7 @@ class MatrixGate(GateWithRegisters):
     Args:
         bitsize: number of qubits $n$
         matrix: a $2^n \times 2^n$ complex unitary matrix
+        atol: tolerance to use for unitarity checking
 
     Registers:
         q: $n$-qubit register
@@ -35,12 +39,17 @@ class MatrixGate(GateWithRegisters):
     matrix: Tuple[Tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)
     )
+    atol: float = 1e-10
 
     def __attrs_post_init__(self):
         # verify that matrix is unitary
         matrix = np.array(self.matrix)
-        np.testing.assert_allclose(matrix @ matrix.conj().T, np.eye(2**self.bitsize), atol=1e-10)
-        np.testing.assert_allclose(matrix.conj().T @ matrix, np.eye(2**self.bitsize), atol=1e-10)
+        np.testing.assert_allclose(
+            matrix @ matrix.conj().T, np.eye(2**self.bitsize), atol=self.atol
+        )
+        np.testing.assert_allclose(
+            matrix.conj().T @ matrix, np.eye(2**self.bitsize), atol=self.atol
+        )
 
     @property
     def signature(self) -> Signature:
@@ -54,8 +63,23 @@ class MatrixGate(GateWithRegisters):
         matrix = random_unitary(2**bitsize, random_state=random_state)
         return cls(bitsize, matrix)
 
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        data = np.array(self.matrix).reshape((2,) * (self.bitsize * 2))
+        return [
+            qtn.Tensor(
+                data=data,
+                inds=[(outgoing['q'], j) for j in range(self.bitsize)]
+                + [(incoming['q'], j) for j in range(self.bitsize)],
+                tags=[str(self)],
+            )
+        ]
+
     def _unitary_(self):
         return np.array(self.matrix)
 
     def adjoint(self) -> 'MatrixGate':
-        return MatrixGate(self.bitsize, np.conj(self.matrix).T)
+        return MatrixGate(self.bitsize, np.conj(self.matrix).T, self.atol)

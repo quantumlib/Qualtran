@@ -19,7 +19,17 @@ from typing import Dict, Optional, Set, Tuple
 import attrs
 import sympy
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    DecomposeTypeError,
+    QAny,
+    QDType,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.drawing import Text, WireSymbol
 from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -33,6 +43,7 @@ class OnEach(Bloq):
     Args:
         n: the number of qubits to add the bloq to.
         gate: A single qubit gate. The single qubit register must be named q.
+        target_dtype: optional dtype of the register. If not provided, default to QAny.
 
     Registers:
      - q: an n-qubit register.
@@ -40,24 +51,32 @@ class OnEach(Bloq):
 
     n: SymbolicInt
     gate: Bloq
+    target_dtype: Optional[QDType] = None
 
     def __attrs_post_init__(self):
         assert len(self.gate.signature) == 1, "Gate must only have a single register."
         assert self.gate.signature[0].bitsize == 1, "Must be single qubit gate."
         assert self.gate.signature[0].name == 'q', "Register must be named q."
+        assert (
+            self.target_dtype is None
+            or not hasattr(self.target_dtype, 'bitsize')
+            or self.target_dtype.bitsize == self.n
+        )
 
     @cached_property
     def signature(self) -> Signature:
-        reg = Register('q', QAny(bitsize=self.n))
+        reg = Register(
+            'q', QAny(bitsize=self.n) if self.target_dtype is None else self.target_dtype
+        )
         return Signature([reg])
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
-            raise ValueError(f'Symbolic n not allowed {self.n}')
+            raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
         qs = bb.split(q)
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
-        return {'q': bb.join(qs)}
+        return {'q': bb.join(qs, self.target_dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(self.gate, self.n)}

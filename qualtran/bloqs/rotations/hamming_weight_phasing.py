@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -73,7 +73,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float = 1
-    eps: Union[SymbolicFloat] = 1e-10
+    eps: SymbolicFloat = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -110,7 +110,7 @@ class HammingWeightPhasing(GateWithRegisters):
 @bloq_example
 def _hamming_weight_phasing() -> HammingWeightPhasing:
     hamming_weight_phasing = HammingWeightPhasing(4, np.pi / 2.0)
-    print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
+    # Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.
     return hamming_weight_phasing
 
 
@@ -198,7 +198,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 @bloq_example
 def _hamming_weight_phasing_via_phase_gradient() -> HammingWeightPhasingViaPhaseGradient:
     hamming_weight_phasing_via_phase_gradient = HammingWeightPhasingViaPhaseGradient(4, np.pi / 2.0)
-    print("Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.")
+    # Applying this unitary to |1111> should be the identity, and |0101> will flip the sign.
     return hamming_weight_phasing_via_phase_gradient
 
 

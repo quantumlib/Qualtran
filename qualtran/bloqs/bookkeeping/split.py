@@ -13,16 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QBit,
     QDType,
@@ -30,11 +32,9 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
-from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -87,29 +87,20 @@ class Split(_BookkeepingBloq):
         return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
+        return {'reg': np.asarray(self.dtype.to_bits(reg))}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        if not isinstance(outgoing['reg'], np.ndarray):
-            raise ValueError('Outgoing register must be a numpy array')
-        tn.add(
-            qtn.Tensor(
-                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
-                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
-                ),
-                inds=outgoing['reg'].tolist() + [incoming['reg']],
-                tags=['Split', tag],
-            )
-        )
+        eye = np.eye(2)
+        incoming = incoming['reg']
+        outgoing = cast(NDArray, outgoing['reg'])
+        return [
+            qtn.Tensor(data=eye, inds=[(outgoing[i], 0), (incoming, i)], tags=[str(self)])
+            for i in range(self.dtype.num_qubits)
+        ]
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -23,19 +23,22 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QDType,
     QUInt,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
+
+    from qualtran.cirq_interop import CirqQuregT
 
 
 @frozen
@@ -44,12 +47,14 @@ class Allocate(_BookkeepingBloq):
 
     Args:
         dtype: the quantum data type of the allocated register.
+        dirty: If true, represents a borrowing operation where allocated qubits can be dirty.
 
     Registers:
         reg [right]: The allocated register.
     """
 
     dtype: QDType
+    dirty: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -61,30 +66,39 @@ class Allocate(_BookkeepingBloq):
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.bookkeeping.free import Free
 
-        return Free(self.dtype)
+        return Free(self.dtype, self.dirty)
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        data = np.zeros(1 << self.dtype.num_qubits)
-        data[0] = 1
-        tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
+        from qualtran.bloqs.basic_gates.z_basis import _ZERO
+
+        return [
+            qtn.Tensor(data=_ZERO, inds=[(outgoing['reg'], i)], tags=[str(self)])
+            for i in range(self.dtype.num_qubits)
+        ]
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        shape = (*self.signature[0].shape, self.signature[0].bitsize)
+        qubits = (
+            qubit_manager.qborrow(self.signature.n_qubits())
+            if self.dirty
+            else qubit_manager.qalloc(self.signature.n_qubits())
+        )
+        return (None, {'reg': np.array(qubits).reshape(shape)})
 
 
 @bloq_example

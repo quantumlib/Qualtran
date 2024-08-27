@@ -13,19 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
-from numpy.typing import NDArray
 
-from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
+from .composite_bloq import _binst_to_cxns, _cxns_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, CompositeBloq, Register, Signature, Soquet, SoquetT
+    from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
@@ -35,7 +34,7 @@ def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dic
     if LeftDangle not in cbloq._binst_graph:
         return {}
     _, init_succs = _binst_to_cxns(LeftDangle, binst_graph=cbloq._binst_graph)
-    return _cxn_to_soq_dict(
+    return _cxns_to_soq_dict(
         new_signature.rights(), init_succs, get_me=lambda x: x.left, get_assign=lambda x: x.right
     )
 
@@ -68,7 +67,7 @@ def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
     for binst, preds, succs in bloqnections:
         # Instead of get_me returning the right element of a predecessor connection,
         # it's the left element of a successor connection.
-        soqs = _cxn_to_soq_dict(
+        soqs = _cxns_to_soq_dict(
             binst.bloq.signature.rights(),
             succs,
             get_me=lambda x: x.left,
@@ -142,13 +141,6 @@ class Adjoint(GateWithRegisters):
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
-        if isinstance(self.subbloq, GateWithRegisters):
-            return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
-        return super().decompose_from_registers(context=context, **quregs)
-
     def _circuit_diagram_info_(
         self, args: 'cirq.CircuitDiagramInfoArgs'
     ) -> cirq.CircuitDiagramInfo:
@@ -184,10 +176,8 @@ class Adjoint(GateWithRegisters):
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.
-        from qualtran.drawing import Text
-
         if reg is None:
-            return Text(cast(Text, self.subbloq.wire_symbol(reg=None)).text + '†')
+            return self.subbloq.wire_symbol(reg=None).adjoint()
 
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
 

@@ -13,24 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, Sequence, Tuple, TYPE_CHECKING
 
 from attrs import field, frozen
 
 from qualtran import bloq_example, BloqDocSpec, QAny, Register, Soquet
 from qualtran.bloqs.basic_gates import Identity
-from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.block_encoding.lcu_block_encoding import PrepareOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics.types import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
-
-
-def _to_tuple(x: Iterable[SymbolicInt]) -> Sequence[SymbolicInt]:
-    """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
-    return tuple(x)
 
 
 @frozen
@@ -70,7 +64,7 @@ class PrepareIdentity(PrepareOracle):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: Soquet) -> Dict[str, Soquet]:
         for label, soq in soqs.items():
-            soqs[label] = bb.add(OnEach(soq.reg.bitsize, Identity()), q=soq)
+            soqs[label] = bb.add(Identity(soq.reg.bitsize), q=soq)
         return soqs
 
 

@@ -22,6 +22,7 @@ from attrs import define
 
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qsp.generalized_qsp import (
@@ -31,9 +32,6 @@ from qualtran.bloqs.qsp.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
-)
-from qualtran.bloqs.qubitization.qubitization_walk_operator_test import (
-    get_walk_operator_for_1d_ising_model,
 )
 from qualtran.linalg.polynomial.basic import evaluate_polynomial_of_unitary_matrix
 from qualtran.linalg.polynomial.qsp_testing import (
@@ -45,6 +43,7 @@ from qualtran.linalg.polynomial.qsp_testing import (
 from qualtran.linalg.testing import assert_matrices_almost_equal
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics import Shaped
+from qualtran.testing import execute_notebook
 
 
 def test_gqsp_example(bloq_autotester):
@@ -63,7 +62,7 @@ def test_complementary_polynomial(degree: int):
         check_gqsp_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
-@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
+@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, pytest.param(100, marks=pytest.mark.slow)])
 def test_real_polynomial_has_real_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
 
@@ -174,7 +173,7 @@ def test_call_graph(negative_power: int):
 
 @bloq_example
 def _gqsp_1d_ising() -> GeneralizedQSP:
-    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    W, _ = get_walk_operator_for_1d_ising_model(2, 1e-4)
     gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
     return gqsp_1d_ising
 
@@ -200,12 +199,15 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
 
     _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    assert sigma == {
-        arbitrary_rotation: degree + 1,
-        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
-        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
-        U.adjoint(): max(0, negative_power - degree),
-    }
+    expected_sigma: dict[Bloq, int] = {arbitrary_rotation: degree + 1}
+    if degree > negative_power:
+        expected_sigma[Controlled(U, CtrlSpec(cvs=0))] = degree - negative_power
+    if negative_power > 0:
+        expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
+    if negative_power > degree:
+        expected_sigma[U.adjoint()] = negative_power - degree
+
+    assert sigma == expected_sigma
 
 
 @define(slots=False)
@@ -266,7 +268,6 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
     "degree",
     [
@@ -307,3 +308,8 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
         list(P), Q, random_state=random_state, rtol=precision
     )
     verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('generalized_qsp')

@@ -91,6 +91,20 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     return _ignore_wrapper(generalize_cvs, b)
 
 
+def generalize_cswap_approx(b: Bloq) -> Optional[Bloq]:
+    """A generalizer to replace CSwapApprox with a regular-old CSwap."""
+    from qualtran import Adjoint
+    from qualtran.bloqs.basic_gates import CSwap
+    from qualtran.bloqs.swap_network import CSwapApprox
+
+    if isinstance(b, CSwapApprox):
+        return CSwap(b.bitsize)
+    if isinstance(b, Adjoint) and isinstance(b.subbloq, CSwapApprox):
+        return CSwap(b.subbloq.bitsize).adjoint()
+
+    return _ignore_wrapper(generalize_cswap_approx, b)
+
+
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
     from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
@@ -103,9 +117,9 @@ def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
 def cirq_to_bloqs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces Cirq gates with their equivalent bloq, where possible."""
     from qualtran.cirq_interop import CirqGateAsBloq
-    from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     if not isinstance(b, CirqGateAsBloq):
         return _ignore_wrapper(cirq_to_bloqs, b)
 
-    return _cirq_gate_to_bloq(b.gate)
+    return cirq_gate_to_bloq(b.gate)

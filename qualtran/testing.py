@@ -37,6 +37,7 @@ from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
 from qualtran.drawing.musical_score import WireSymbol
 from qualtran.resource_counting import GeneralizerT
+from qualtran.symbolics import is_symbolic
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -113,6 +114,11 @@ def assert_connections_compatible(cbloq: CompositeBloq):
     for cxn in cbloq.connections:
         lr = cxn.left.reg
         rr = cxn.right.reg
+
+        if not is_symbolic(lr.dtype.num_qubits) and lr.dtype.num_qubits <= 0:
+            raise BloqError(f"{cxn} has an invalid number of qubits: {lr.dtype}")
+        if not is_symbolic(rr.dtype.num_qubits) and rr.dtype.num_qubits <= 0:
+            raise BloqError(f"{cxn} has an invalid number of qubits: {rr.dtype}")
 
         if not check_dtypes_consistent(lr.dtype, rr.dtype):
             raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
@@ -493,8 +499,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
             only_decomp = set(decomp_counts.keys()) - set(manual_counts.keys())
             if only_decomp:
                 msg.append(f"Bloq's missing from annotation: {only_decomp}")
-            msg.append(f'Annotation: {manual_counts}')
-            msg.append(f'Decomp:     {decomp_counts}')
+            msg.append(f'Annotation: {sorted(manual_counts.items(), key=str)}')
+            msg.append(f'Decomp:     {sorted(decomp_counts.items(), key=str)}')
             raise BloqCheckException.fail('\n'.join(msg))
 
     assert has_manual_counts or has_decomp_counts
