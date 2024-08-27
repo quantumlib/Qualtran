@@ -39,17 +39,17 @@ def test_get_flame_graph_data_multi_and():
     bloq = MultiAnd([0, 1] * 6)
     data = get_flame_graph_data(bloq)
     assert data == [
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
-        'MultiAnd[12](T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
+        'MultiAnd(n=12)(T:44);And(T:4)\t4',
     ]
 
 
@@ -58,25 +58,25 @@ def test_get_flame_graph_data_qft_textbook():
     data = get_flame_graph_data(bloq)
     assert sorted(data) == sorted(
         [
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZPowGate[0.12][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZ**0.125(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZPowGate[0.25][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZ**0.25(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZPowGate[0.5][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZ**0.5(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZPowGate[0.062][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[4][0.5][True][0](T:200);CZ**0.0625(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZPowGate[0.25][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZ**0.25(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZPowGate[0.5][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZ**0.5(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZPowGate[0.12][0][0](T:50)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[3][0.5][True][0](T:150);CZ**0.125(T:50)\t'
             '50',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[1][0.5][True][0](T:48);CZPowGate[0.5][0][0](T:48)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[1][0.5][True][0](T:48);CZ**0.5(T:48)\t'
             '48',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[2][0.5][True][0](T:98);CZPowGate[0.25][0][0](T:49)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[2][0.5][True][0](T:98);CZ**0.25(T:49)\t'
             '49',
-            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[2][0.5][True][0](T:98);CZPowGate[0.5][0][0](T:49)\t'
+            'QFTTextBook[5][True](T:496);PhaseGradientUnitary[2][0.5][True][0](T:98);CZ**0.5(T:49)\t'
             '49',
         ]
     )
@@ -91,8 +91,8 @@ def test_get_flame_graph_data_prep_uniform():
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
-            'PrepareUniformSuperposition[12][0](T:124);Rz[1.2][0](T:52)\t52',
-            'PrepareUniformSuperposition[12][0](T:124);Rz[1.2][0](T:52)\t52',
+            'PrepareUniformSuperposition[12][0](T:124);Rz(0.39182655203060723π)(T:52)\t52',
+            'PrepareUniformSuperposition[12][0](T:124);Rz(0.39182655203060723π)(T:52)\t52',
             'PrepareUniformSuperposition[12][0](T:124);And(T:4)\t4',
         ]
     )
