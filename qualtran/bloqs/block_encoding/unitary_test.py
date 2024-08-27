@@ -88,6 +88,7 @@ def test_unitary_override_tensors():
 
 def test_unitary_signal_state():
     assert isinstance(_unitary_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _unitary_block_encoding().signal_state.decompose_bloq()
 
 
 @pytest.mark.notebook

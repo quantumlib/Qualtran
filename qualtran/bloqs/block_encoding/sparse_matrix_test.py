@@ -315,6 +315,7 @@ def test_symmetric_banded_counts():
 
 def test_sparse_matrix_signal_state():
     assert isinstance(_sparse_matrix_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _sparse_matrix_block_encoding().signal_state.decompose_bloq()
 
 
 @pytest.mark.notebook

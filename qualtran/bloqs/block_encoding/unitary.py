@@ -75,7 +75,7 @@ class Unitary(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         return {(self.U, 1)}
