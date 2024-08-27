@@ -24,7 +24,6 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
@@ -88,6 +87,8 @@ def classify_t_count_by_bloq_type(
     Returns
         classified_bloqs: dictionary containing the T count for different types of bloqs.
     """
+    from qualtran.resource_counting import get_cost_value, QECGatesCost
+
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
@@ -105,10 +106,10 @@ def classify_t_count_by_bloq_type(
     classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
-        t_counts = t_counts_from_sigma(k.call_graph()[1])
+        t_counts = get_cost_value(k, QECGatesCost()).total_t_count()
         if t_counts > 0:
             classified_bloqs[classification] += v * t_counts
-    return classified_bloqs
+    return dict(classified_bloqs)
 
 
 _CLIFFORD_ANGLES = np.array(
