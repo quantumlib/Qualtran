@@ -83,7 +83,7 @@ class TestAtom(Bloq):
 
     def __str__(self):
         if self.tag:
-            return f'TestAtom({self.tag})'
+            return f'TestAtom({self.tag!r})'
         return 'TestAtom'
 
 

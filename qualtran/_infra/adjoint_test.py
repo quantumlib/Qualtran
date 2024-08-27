@@ -148,13 +148,12 @@ def test_call_graph():
 
 def test_names():
     atom = TestAtom()
-    assert atom.pretty_name() == "TestAtom"
+    assert str(atom) == "TestAtom"
     assert cast(Text, atom.wire_symbol(reg=None)).text == "TestAtom"
 
     adj_atom = Adjoint(atom)
-    assert adj_atom.pretty_name() == "TestAtom†"
+    assert str(adj_atom) == "Adjoint(subbloq=TestAtom)"
     assert cast(Text, adj_atom.wire_symbol(reg=None)).text == "TestAtom†"
-    assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
 def test_wire_symbol():
