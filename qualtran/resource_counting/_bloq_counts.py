@@ -12,15 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-from collections import defaultdict
-from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
+from collections import Counter, defaultdict
+from typing import Callable, Dict, Iterator, Mapping, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import networkx as nx
+import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics import ceil, is_symbolic, log2, ssum, SymbolicFloat, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -120,12 +121,36 @@ class BloqCount(CostKey[BloqCountDict]):
         return f'{self.gateset_name} counts'
 
 
+FloatReprT = Union[str, sympy.Expr]
+"""The type to represent floats as, to use as safe keys in mappings."""
+
+
+def _mapping_to_counter(mapping: Mapping[FloatReprT, int]) -> Counter[FloatReprT]:
+    if isinstance(mapping, Counter):
+        return mapping
+    return Counter(mapping)
+
+
 @frozen(kw_only=True)
 class GateCounts:
     """A data class of counts of the typical target gates in a compilation.
 
     Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
     `TwoBitCSwap`, `And`, clifford bloqs, single qubit rotations, and measurements.
+
+    Attributes:
+        t: number of `TGate` (and adjoint).
+        toffoli: number of `Toffoli`.
+        cswap: number of `TwoBitCSwap`.
+        and_bloq: number of `And`.
+        clifford: number of clifford bloqs.
+        measurement: number of 1-qubit measurements.
+        binned_rotation_epsilons: A Counter of rotation precision (epsilon) to the number of
+            rotations with that particular epsilon. The `epsilon` (used as the mapping key)
+            is formatted into a string using `np.format_float_scientific` for concrete values,
+            and stored as-is for symbolic values.
+            See constructor `from_rotation_with_eps` to construct a `GateCounts` object
+            given a precision `epsilon`.
     """
 
     t: SymbolicInt = 0
@@ -133,8 +158,40 @@ class GateCounts:
     cswap: SymbolicInt = 0
     and_bloq: SymbolicInt = 0
     clifford: SymbolicInt = 0
-    rotation: SymbolicInt = 0
     measurement: SymbolicInt = 0
+    binned_rotation_epsilons: Counter[FloatReprT] = field(
+        factory=Counter, converter=_mapping_to_counter, eq=lambda d: tuple(d.items())
+    )
+
+    @classmethod
+    def from_rotation_with_eps(
+        cls, eps: SymbolicFloat, *, n_rotations: int = 1, eps_repr_prec: int = 10
+    ):
+        """Construct a GateCount with a rotation of precision `eps`.
+
+        Formats the value of `eps` as a string using `np.format_float_scientific`,
+        to use as a safe dictionary key. If `eps` is symbolic, it is used as-is.
+
+        Args:
+            eps: precision to synthesize the rotation(s).
+            eps_repr_prec: number of digits to approximate `eps` to. Uses 10 by default.
+                           See `np.format_float_scientific` for more details.
+                           If `eps` is symbolic, this parameter is ignored.
+            n_rotations: number of rotations, defaults to 1.
+        """
+        if is_symbolic(eps):
+            eps_bin: FloatReprT = eps
+        else:
+            eps_bin = np.format_float_scientific(
+                eps, precision=eps_repr_prec, min_digits=eps_repr_prec
+            )
+        return cls(binned_rotation_epsilons=Counter({eps_bin: n_rotations}))
+
+    def iter_rotations_with_epsilon(self) -> Iterator[tuple[SymbolicFloat, SymbolicInt]]:
+        """Iterate through the rotation precisions (epsilon) and their frequency."""
+        for eps_bin, n_rot in self.binned_rotation_epsilons.items():
+            eps: SymbolicFloat = eps_bin if is_symbolic(eps_bin) else float(eps_bin)
+            yield eps, n_rot
 
     def __add__(self, other):
         if not isinstance(other, GateCounts):
@@ -146,19 +203,22 @@ class GateCounts:
             cswap=self.cswap + other.cswap,
             and_bloq=self.and_bloq + other.and_bloq,
             clifford=self.clifford + other.clifford,
-            rotation=self.rotation + other.rotation,
             measurement=self.measurement + other.measurement,
+            binned_rotation_epsilons=self.binned_rotation_epsilons + other.binned_rotation_epsilons,
         )
 
     def __mul__(self, other):
+        """Multiplies the frequency of each operation with `other`."""
         return GateCounts(
             t=other * self.t,
             toffoli=other * self.toffoli,
             cswap=other * self.cswap,
             and_bloq=other * self.and_bloq,
             clifford=other * self.clifford,
-            rotation=other * self.rotation,
             measurement=other * self.measurement,
+            binned_rotation_epsilons=Counter(
+                {eps_bin: other * n_rot for eps_bin, n_rot in self.binned_rotation_epsilons.items()}
+            ),
         )
 
     def __rmul__(self, other):
@@ -179,35 +239,55 @@ class GateCounts:
                 return True
             return maybe_nonzero
 
-        return {k: v for k, v in d.items() if _is_nonzero(v)}
+        def _keep(key, value) -> bool:
+            if key == 'binned_rotation_epsilons':
+                return value
+            return _is_nonzero(value)
+
+        return {k: v for k, v in d.items() if _keep(k, v)}
+
+    @staticmethod
+    def rotation_t_cost(eps: SymbolicFloat) -> SymbolicInt:
+        """T-cost of a single Z rotation with precision `eps`.
+
+        References:
+            [Efficient synthesis of universal Repeat-Until-Success circuits](https://arxiv.org/abs/1404.5320)
+            Bocharov et. al. 2014. Page 4, Paragraph "Simulation Results."
+        """
+        return ceil(1.149 * log2(1.0 / eps) + 9.2)
+
+    def total_rotations_as_t(self) -> SymbolicInt:
+        """Total number of T Gates for the rotations."""
+        return ssum(
+            n_rotations * self.rotation_t_cost(eps)
+            for eps, n_rotations in self.iter_rotations_with_epsilon()
+        )
 
     def total_t_count(
-        self,
-        ts_per_toffoli: int = 4,
-        ts_per_cswap: int = 7,
-        ts_per_and_bloq: int = 4,
-        ts_per_rotation: int = 11,
+        self, ts_per_toffoli: int = 4, ts_per_cswap: int = 7, ts_per_and_bloq: int = 4
     ) -> int:
         """Get the total number of T Gates for the `GateCounts` object.
 
         This simply multiplies each gate type by its cost in terms of T gates, which is configurable
         via the arguments to this method.
-
-        The default value for `ts_per_rotation` assumes the rotation is approximated using
-        `Mixed fallback` protocol with error budget 1e-3.
         """
         return (
             self.t
             + ts_per_toffoli * self.toffoli
             + ts_per_cswap * self.cswap
             + ts_per_and_bloq * self.and_bloq
-            + ts_per_rotation * self.rotation
+            + self.total_rotations_as_t()
         )
 
-    def total_t_and_ccz_count(self, ts_per_rotation: int = 11) -> Dict[str, SymbolicInt]:
+    def total_t_and_ccz_count(self) -> Dict[str, SymbolicInt]:
         n_ccz = self.toffoli + self.cswap + self.and_bloq
-        n_t = self.t + ts_per_rotation * self.rotation
+        n_t = self.t + self.total_rotations_as_t()
         return {'n_t': n_t, 'n_ccz': n_ccz}
+
+    @property
+    def rotations_ignoring_eps(self) -> SymbolicInt:
+        """Total number of rotations, ignoring the individual precisions."""
+        return ssum(self.binned_rotation_epsilons.values())
 
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
@@ -221,17 +301,20 @@ class GateCounts:
            Toffoli gates. Since we don't compile the 'layers' explicitly, we set this to be the
            number of rotations.
 
+        Note: This costing method ignores the individual rotation precisions (`eps`).
+
         Reference:
             https://arxiv.org/abs/2211.07629.
             Equation D3.
         """
         toffoli = self.toffoli + self.and_bloq + self.cswap
+        rotation = self.rotations_ignoring_eps
         return {
             'meas': self.measurement,
-            'R': self.rotation,
+            'R': rotation,
             'T': self.t,
             'Tof': toffoli,
-            'D_R': self.rotation,
+            'D_R': rotation,
         }
 
 
@@ -283,7 +366,8 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts()
 
         if bloq_is_rotation(bloq):
-            return GateCounts(rotation=1)
+            assert hasattr(bloq, 'eps')
+            return GateCounts.from_rotation_with_eps(bloq.eps)
 
         # Recursive case
         totals = GateCounts()

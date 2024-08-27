@@ -19,6 +19,7 @@ from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
 from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.bloqs.for_testing.costing import make_example_costing_bloqs
 from qualtran.resource_counting import BloqCount, GateCounts, get_cost_value, QECGatesCost
+from qualtran.symbolics import ceil, log2
 
 
 def test_bloq_count():
@@ -60,6 +61,24 @@ def test_gate_counts():
     assert str(gc2) == 't: n, cswap: 2'
 
 
+def test_gate_counts_rotations():
+    gc = GateCounts.from_rotation_with_eps(1e-10, n_rotations=4)
+    assert gc == GateCounts(binned_rotation_epsilons={'1.0000000000e-10': 4})
+
+    eps = sympy.Symbol(r"\epsilon")
+    gc_symb = GateCounts.from_rotation_with_eps(eps, n_rotations=6)
+    assert gc_symb == GateCounts(binned_rotation_epsilons={eps: 6})
+
+
+def test_gate_counts_rotations_to_t():
+    gc = GateCounts.from_rotation_with_eps(1e-10, n_rotations=4)
+    assert gc.total_rotations_as_t() == 192
+
+    eps = sympy.Symbol(r"\epsilon")
+    gc_symb = GateCounts.from_rotation_with_eps(eps, n_rotations=6)
+    assert gc_symb.total_rotations_as_t() == 6 * ceil(1.149 * log2(1.0 / eps) + 9.2)
+
+
 def test_qec_gates_cost():
     algo = make_example_costing_bloqs()
     gc = get_cost_value(algo, QECGatesCost())
@@ -80,12 +99,15 @@ def test_qec_gates_cost():
         # And
         [mcmt.And(), GateCounts(and_bloq=1)],
         # Rotations
-        [basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11), GateCounts(rotation=1)],
+        [
+            basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
+            GateCounts.from_rotation_with_eps(1e-11),
+        ],
         [
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10
             ),
-            GateCounts(clifford=2, t=1, rotation=7),
+            GateCounts(clifford=2, t=1) + GateCounts.from_rotation_with_eps(1e-11, n_rotations=7),
         ],
         # Recursive
         [mcmt.MultiControlX(cvs=(1, 1, 1)), GateCounts(and_bloq=2, measurement=2, clifford=3)],
