@@ -97,7 +97,17 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return self.block_encoding.selection_registers
+        regs = tuple(
+            set(self.block_encoding.selection_registers + self.reflect.selection_registers)
+        )
+        names = [r.name for r in regs]
+        if len(names) != len(set(names)):
+            msg = ''.join(f"{reg.name=}: {reg.dtype=} {reg.shape=}\n" for reg in regs)
+            raise ValueError(
+                "Found duplicate registers when creating union of block encoding selection "
+                f"registers and reflection selection registers. Possible dtype mismatch. \n {msg}"
+            )
+        return regs
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

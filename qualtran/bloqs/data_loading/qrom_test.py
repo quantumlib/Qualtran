@@ -19,18 +19,13 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QUInt
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
-from qualtran.bloqs.basic_gates import CNOT, TGate
 from qualtran.bloqs.data_loading.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.resource_counting.generalizers import cirq_to_bloqs
-from qualtran.testing import (
-    assert_valid_bloq_decomposition,
-    assert_wire_symbols_match_expected,
-    execute_notebook,
-)
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_qrom_small(bloq_autotester):
@@ -58,7 +53,7 @@ def test_qrom_multi_dim(bloq_autotester):
 )
 def test_qrom_1d_full(data, num_controls: int):
     qrom = QROM.build_from_data(*data, num_controls=num_controls)
-    assert_valid_bloq_decomposition(qrom)
+    qlt_testing.assert_valid_bloq_decomposition(qrom)
 
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
@@ -209,7 +204,7 @@ def test_qrom_diagram():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('qrom')
+    qlt_testing.execute_notebook('qrom')
 
 
 @pytest.mark.parametrize(
@@ -224,11 +219,21 @@ def test_t_complexity(data):
 def test_t_complexity_symbolic():
     N, M = sympy.symbols('N M')
     b1, b2 = sympy.symbols('b1 b2')
+    t1, t2 = sympy.symbols('t1 t2')
     c = sympy.Symbol('c')
-    qrom_symb = QROM.build_from_bitsize((N, M), (b1, b2), num_controls=c)
+    qrom_symb = QROM.build_from_bitsize(
+        (N, M), (b1, b2), target_shapes=((t1,), (t2,)), num_controls=c
+    )
     t_counts = qrom_symb.t_complexity()
-    assert t_counts.t == 4 * (N * M - 2 + c)
-    assert t_counts
+    n_and = N * M - 2 + c
+    assert t_counts.t == 4 * n_and
+    from qualtran.bloqs.mcmt import And
+
+    assert (
+        t_counts.clifford
+        == N * M * b1 * b2 * t1 * t2
+        + (And().t_complexity().clifford + And().adjoint().t_complexity().clifford) * n_and
+    )
 
 
 def _assert_qrom_has_diagram(qrom: QROM, expected_diagram: str):
@@ -275,11 +280,11 @@ def test_qrom_variable_spacing():
     _assert_qrom_has_diagram(
         qrom,
         r'''
-selection00: ───X───@───X───@───
-                    │       │
-target0_0: ─────────┼───────X───
-                    │
-target0_1: ─────────X───────────
+selection00: ───X───@────X───@────
+                    │        │
+target0_0: ─────────⊕1───────⊕2───
+                    │        │
+target0_1: ─────────⊕1───────⊕2───
     ''',
     )
     # When inner loop range is not a power of 2, the inner segment tree cannot be skipped.
@@ -292,16 +297,16 @@ target0_1: ─────────X───────────
     _assert_qrom_has_diagram(
         qrom,
         r'''
-selection00: ───X───@─────────@───────@──────X───@─────────@───────@──────
-                    │         │       │          │         │       │
-selection10: ───────(0)───────┼───────@──────────(0)───────┼───────@──────
-                    │         │       │          │         │       │
-anc_1: ─────────────And───@───X───@───And†───────And───@───X───@───And†───
-                          │       │                    │       │
-target0_0: ───────────────┼───────┼────────────────────X───────X──────────
-                          │       │
-target0_1: ───────────────X───────X───────────────────────────────────────
-        ''',
+selection00: ───X───@──────────@────────@──────X───@──────────@────────@──────
+                    │          │        │          │          │        │
+selection10: ───────(0)────────┼────────@──────────(0)────────┼────────@──────
+                    │          │        │          │          │        │
+anc_1: ─────────────And───@────X───@────And†───────And───@────X───@────And†───
+                          │        │                     │        │
+target0_0: ───────────────⊕1───────⊕1────────────────────⊕2───────⊕2──────────
+                          │        │                     │        │
+target0_1: ───────────────⊕1───────⊕1────────────────────⊕2───────⊕2──────────
+''',
     )
     # No T-gates needed if all elements to load are identical.
     assert t_complexity(QROM.build_from_data([3, 3, 3, 3])).t == 0
@@ -309,16 +314,18 @@ target0_1: ───────────────X───────X�
 
 def test_qrom_wire_symbols():
     qrom = QROM.build_from_data([3, 3, 3, 3])
-    assert_wire_symbols_match_expected(qrom, ['In', 'QROM_a'])
+    qlt_testing.assert_wire_symbols_match_expected(qrom, ['In', 'QROM_a'])
 
     qrom = QROM.build_from_data([3, 3, 3, 3], [2, 2, 2, 2])
-    assert_wire_symbols_match_expected(qrom, ['In', 'QROM_a', 'QROM_b'])
+    qlt_testing.assert_wire_symbols_match_expected(qrom, ['In', 'QROM_a', 'QROM_b'])
 
     qrom = QROM.build_from_data([[3, 3], [3, 3]], [[2, 2], [2, 2]], [[1, 1], [2, 2]])
-    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'QROM_a', 'QROM_b', 'QROM_c'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        qrom, ['In_i', 'In_j', 'QROM_a', 'QROM_b', 'QROM_c']
+    )
 
     qrom = QROM.build_from_data(np.arange(27).reshape(3, 3, 3))
-    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'In_k', 'QROM_a'])
+    qlt_testing.assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'In_k', 'QROM_a'])
 
 
 @pytest.mark.slow
@@ -349,7 +356,7 @@ def test_qrom_multi_dim_full(data, num_controls):
         target_bitsizes=target_bitsizes,
         num_controls=num_controls,
     )
-    assert_valid_bloq_decomposition(qrom)
+    qlt_testing.assert_valid_bloq_decomposition(qrom)
 
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
@@ -406,25 +413,22 @@ def test_qrom_call_graph_matches_decomposition(num_controls):
     # Base case
     arr = np.arange(50)
     qrom = QROM.build_from_data(arr, num_controls=num_controls)
-    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
-    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
-    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
-    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+    cost_call = get_cost_value(qrom, QECGatesCost())
+    cost_dcmp = get_cost_value(qrom.decompose_bloq(), QECGatesCost())
+    assert cost_call.total_t_and_ccz_count() == cost_dcmp.total_t_and_ccz_count()
 
     # Multiple Multi dimensional arrays
     arr_a = np.arange(64).reshape(8, 8)
     arr_b = 10 * np.arange(64).reshape(8, 8)
     qrom = QROM.build_from_data(arr_a, arr_b, num_controls=num_controls)
-    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
-    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
-    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
-    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+    cost_call = get_cost_value(qrom, QECGatesCost())
+    cost_dcmp = get_cost_value(qrom.decompose_bloq(), QECGatesCost())
+    assert cost_call.total_t_and_ccz_count() == cost_dcmp.total_t_and_ccz_count()
 
     # Variable QROM case.
     arr_a = np.array([1, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5])
     arr_b = 10 * arr_a
     qrom = QROM.build_from_data(arr_a, arr_b, num_controls=num_controls)
-    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
-    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
-    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
-    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+    cost_call = get_cost_value(qrom, QECGatesCost())
+    cost_dcmp = get_cost_value(qrom.decompose_bloq(), QECGatesCost())
+    assert cost_call.total_t_and_ccz_count() == cost_dcmp.total_t_and_ccz_count()

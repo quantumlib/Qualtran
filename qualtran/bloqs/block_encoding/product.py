@@ -130,7 +130,7 @@ class Product(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT

@@ -438,6 +438,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
+            qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -495,13 +496,26 @@ MOD_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._C_MOD_ADD_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Modular Subtraction',
+        module=qualtran.bloqs.mod_arithmetic.mod_subtraction,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_SUB_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_SUB_DOC,
         ],
     ),
     NotebookSpecV2(
         title='Modular Multiplication',
-        module=qualtran.bloqs.factoring.mod_mul,
-        bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
+        module=qualtran.bloqs.mod_arithmetic.mod_multiplication,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._MOD_DBL_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._C_MOD_MUL_K_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -623,7 +637,15 @@ ROT_QFT_PE = [
         title='Textbook Quantum Phase Estimation',
         module=qualtran.bloqs.phase_estimation.text_book_qpe,
         bloq_specs=[
-            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
+            qualtran.bloqs.phase_estimation.qpe_window_state._CC_RECTANGULAR_WINDOW_STATE_DOC,
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Kaiser Window State for Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.kaiser_window_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.kaiser_window_state._CC_KAISER_WINDOW_STATE_DOC
         ],
     ),
     NotebookSpecV2(
@@ -743,6 +765,14 @@ OTHER: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
             qualtran.bloqs.data_loading.select_swap_qrom._SELECT_SWAP_QROM_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Advanced QROM (aka QROAM) using clean ancilla',
+        module=qualtran.bloqs.data_loading.qroam_clean,
+        bloq_specs=[
+            qualtran.bloqs.data_loading.qrom_base._QROM_BASE_DOC,
+            qualtran.bloqs.data_loading.qroam_clean._QROAM_CLEAN_DOC,
         ],
     ),
     NotebookSpecV2(

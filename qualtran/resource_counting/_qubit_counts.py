@@ -101,13 +101,7 @@ class QubitCount(CostKey[SymbolicInt]):
 
         See the class docstring for more information.
         """
-        # Base case: No callees; use the signature
-        min_bloq_size = bloq.signature.n_qubits()
-        callees = get_bloq_callee_counts(bloq)
-        if len(callees) == 0:
-            logger.info("Computing %s for %s from signature", self, bloq)
-            return min_bloq_size
-
+        # Most accurate:
         # Compute the number of qubits ("width") from the bloq's decomposition. We forward
         # the `get_callee_cost` function so this can recurse into subbloqs.
         try:
@@ -116,9 +110,17 @@ class QubitCount(CostKey[SymbolicInt]):
             return _cbloq_max_width(cbloq._binst_graph, get_callee_cost)
         except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
+        except Exception as e:
+            raise RuntimeError(
+                f"An unexpected error occurred when trying to compute {self} for {bloq}: {e}"
+            ) from e
 
-        # No decomposition specified, but callees present. Take the simple maximum of
-        # all the callees' sizes. This is likely an under-estimate.
+        # Fallback:
+        # Use the simple maximum of callees and of this bloq's signature. If there
+        # are no callees, this will be the number of qubits implied by the signature.
+        # In any case, this strategy is likely an under-estimate of the qubit count.
+        min_bloq_size = bloq.signature.n_qubits()
+        callees = get_bloq_callee_counts(bloq)
         tot: int = min_bloq_size
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
         for callee, n in callees:

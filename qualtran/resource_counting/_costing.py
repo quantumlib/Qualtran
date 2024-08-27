@@ -29,6 +29,8 @@ from typing import (
     Union,
 )
 
+from qualtran import CompositeBloq
+
 from ._generalization import _make_composite_generalizer, GeneralizerT
 
 if TYPE_CHECKING:
@@ -122,7 +124,7 @@ def _get_cost_value(
         return cost_key.zero()
 
     # Strategy 1: Use cached value
-    if bloq in costs_cache:
+    if not isinstance(bloq, CompositeBloq) and bloq in costs_cache:
         logger.debug("Using cached %s for %s", cost_key, bloq)
         return costs_cache[bloq]
 
@@ -144,7 +146,8 @@ def _get_cost_value(
     computed_cost = cost_key.compute(bloq, _get_cost_val_internal)
     tdur = time.perf_counter() - tstart
     logger.info("Computed %s for %s in %g s", cost_key, bloq, tdur)
-    costs_cache[bloq] = computed_cost
+    if not isinstance(bloq, CompositeBloq):
+        costs_cache[bloq] = computed_cost
     return computed_cost
 
 

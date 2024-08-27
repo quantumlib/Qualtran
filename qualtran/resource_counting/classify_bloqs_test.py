@@ -15,12 +15,13 @@ from functools import cached_property
 from typing import Set, Tuple, TYPE_CHECKING
 
 import attrs
+import numpy as np
 import pytest
 
-from qualtran import Bloq, QInt, Signature
+from qualtran import Bloq, CtrlSpec, QInt, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.arithmetic.comparison import LessThanConstant
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import CSwap, Rx, Rz, TGate, YPowGate
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
@@ -29,13 +30,14 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.resource_counting import BloqCountT
+from qualtran.resource_counting import BloqCountT, get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import (
     _get_basic_bloq_classification,
+    bloq_is_rotation,
+    bloq_is_t_like,
     classify_bloq,
     classify_t_count_by_bloq_type,
 )
-from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -71,7 +73,9 @@ class TestBundleOfBloqs(Bloq):
 def test_default_classification(bloq_count, classification):
     bloq = TestBundleOfBloqs(bloq_count)
     classified_bloqs = classify_t_count_by_bloq_type(bloq)
-    assert classified_bloqs[classification] == t_counts_from_sigma(bloq.call_graph()[1])
+    assert classified_bloqs == {
+        classification: get_cost_value(bloq, QECGatesCost()).total_t_count()
+    }
 
 
 def test_dont_return_zeros():
@@ -107,4 +111,24 @@ def test_classify_bloq_counts_with_custom_bloq_classification():
         test_bloq, bloq_classification=bloq_classification
     )
     assert classified_bloqs == {'swaps': 42 * 10 * 7, 'other': 3 * 4 * (4 - 1)}
-    assert test_bloq.call_graph()[1].get(TGate()) == sum(classified_bloqs.values())
+    assert get_cost_value(test_bloq, QECGatesCost()).total_t_count() == sum(
+        classified_bloqs.values()
+    )
+
+
+def test_bloq_is_rotation():
+    assert bloq_is_rotation(Rx(np.pi * 0.123))
+    assert not bloq_is_rotation(Rx(np.pi / 2))
+    assert bloq_is_rotation(Rx(np.pi * 0.123).controlled())
+    assert bloq_is_rotation(Rx(np.pi / 2).controlled())
+    assert not bloq_is_rotation(Rx(np.pi).controlled(ctrl_spec=CtrlSpec(cvs=(1, 1))))
+
+
+def test_bloq_is_t_like():
+    assert bloq_is_t_like(TGate())
+    assert bloq_is_t_like(TGate().adjoint())
+    assert bloq_is_t_like(TGate(is_adjoint=True))
+    assert bloq_is_t_like(Rx(np.pi / 4))
+    assert bloq_is_t_like(YPowGate(1.0 / 4))
+    assert not bloq_is_t_like(Rz(np.pi / 2))
+    assert not bloq_is_t_like(And())

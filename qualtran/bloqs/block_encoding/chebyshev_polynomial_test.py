@@ -20,7 +20,7 @@ import pytest
 from attr import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, QAny, Signature, Soquet, SoquetT
+from qualtran import BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, Identity, IntEffect, IntState, XGate
 from qualtran.bloqs.block_encoding import BlockEncoding, Unitary
 from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
@@ -200,7 +200,7 @@ class TestBlockEncoding(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(1),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([1]))
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, resource: Soquet
@@ -221,6 +221,7 @@ def test_chebyshev_matrix():
 
 def test_chebyshev_poly_signal_state():
     assert isinstance(_chebyshev_poly_even().signal_state.prepare, PrepareIdentity)
+    _ = _chebyshev_poly_even().signal_state.decompose_bloq()
 
 
 @pytest.mark.slow

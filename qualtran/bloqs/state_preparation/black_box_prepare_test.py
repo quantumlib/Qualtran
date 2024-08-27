@@ -40,3 +40,4 @@ def test_prepare_oracle():
     bloq = BlackBoxPrepare(TestPrepareOracle())
     assert bloq.selection_registers == (Register('selection', QAny(1)),)
     assert bloq.junk_registers == (Register('junk', QAny(5)),)
+    _ = bloq.decompose_bloq()

@@ -104,7 +104,7 @@ class TensorProduct(BlockEncoding):
     @property
     def signal_state(self) -> BlackBoxPrepare:
         if all(isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings):
-            return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+            return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
         else:
             # TODO: implement by taking tensor product of component signal states
             raise NotImplementedError
