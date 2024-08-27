@@ -1080,6 +1080,8 @@ class CLinearDepthGreaterThan(Bloq):
             a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
             b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
         else:
+            if self.dtype.is_symbolic():
+                raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
             a = bb.join(np.concatenate([[bb.allocate(1)], bb.split(a)]))
             b = bb.join(np.concatenate([[bb.allocate(1)], bb.split(b)]))
 

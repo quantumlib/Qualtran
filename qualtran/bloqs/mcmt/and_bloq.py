@@ -386,6 +386,8 @@ class MultiAnd(Bloq):
         yield self._decompose_via_tree(control, self.concrete_cvs, ancilla, *target)
 
     def decompose_bloq(self) -> 'CompositeBloq':
+        if is_symbolic(self.cvs):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
         return decompose_from_cirq_style_method(self)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':

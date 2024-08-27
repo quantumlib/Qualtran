@@ -22,7 +22,15 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike
 
-from qualtran import bloq_example, BloqDocSpec, BQUInt, GateWithRegisters, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    DecomposeTypeError,
+    GateWithRegisters,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.arithmetic.bitwise import Xor
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading.qrom import QROM
@@ -394,7 +402,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         target = [soqs.pop(reg.name) for reg in self.target_registers]
         # Allocate intermediate clean/dirty ancilla for the underlying QROM call.
         if is_symbolic(*self.block_sizes):
-            raise ValueError(
+            raise DecomposeTypeError(
                 f"Cannot decompose SelectSwapQROM bloq with symbolic block sizes. Found {self.block_sizes=}"
             )
         block_sizes = cast(Tuple[int, ...], self.block_sizes)
