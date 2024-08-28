@@ -54,13 +54,11 @@ class HammingWeightCompute(GateWithRegisters):
 
     @cached_property
     def signature(self):
-        jnk_size = self.junk_bitsize
-        out_size = self.out_bitsize
         return Signature(
             [
                 Register('x', QUInt(self.bitsize)),
-                Register('junk', QAny(jnk_size), side=Side.RIGHT),
-                Register('out', QUInt(out_size), side=Side.RIGHT),
+                Register('junk', QAny(self.junk_bitsize), side=Side.RIGHT),
+                Register('out', QUInt(self.out_bitsize), side=Side.RIGHT),
             ]
         )
 
