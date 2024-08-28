@@ -41,6 +41,7 @@ from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import is_zero
 
@@ -175,9 +176,6 @@ class Product(BlockEncoding):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
         counts = Counter[Bloq]()
-        if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
-            counts[self.anc_part] += 1
-            counts[self.anc_part.adjoint()] += 1
         for bloq in self.constituents:
             counts[bloq] += 1
         n = len(self.block_encodings)
@@ -253,7 +251,7 @@ class Product(BlockEncoding):
         return out
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _product_block_encoding() -> Product:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
