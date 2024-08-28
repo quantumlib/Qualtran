@@ -121,10 +121,3 @@ class HammingWeightCompute(GateWithRegisters):
         num_and = self.junk_bitsize
         num_clifford = num_and * 5 + self.bit_count_of_bitsize
         return {(And(), num_and), (CNOT(), num_clifford)}
-
-    def __pow__(self, power: int):
-        if power == 1:
-            return self
-        if power == -1:
-            return self.adjoint()
-        raise NotImplementedError("HammingWeightCompute.__pow__ defined only for +1/-1.")
