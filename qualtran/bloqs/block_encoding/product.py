@@ -16,7 +16,7 @@ from collections import Counter
 from functools import cached_property
 from typing import cast, Dict, List, Sequence, Set, Tuple, Union
 
-from attrs import evolve, field, frozen, validators
+from attrs import field, frozen, validators
 from numpy.typing import NDArray
 from typing_extensions import Self
 
@@ -42,6 +42,7 @@ from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics.math_funcs import is_zero
 
 
 @frozen
@@ -142,7 +143,7 @@ class Product(BlockEncoding):
         if n - 1 > 0:
             anc_regs.append(Register("flag_bits", dtype=QBit(), shape=(n - 1,)))
         anc_bits = self.ancilla_bitsize - (n - 1)
-        if is_symbolic(anc_bits) or anc_bits > 0:
+        if not is_zero(anc_bits):
             anc_regs.append(Register("ancilla", dtype=QAny(anc_bits)))
         return Partition(cast(int, self.ancilla_bitsize), tuple(anc_regs))
 
@@ -164,7 +165,7 @@ class Product(BlockEncoding):
                 ):
                     regs.append(Unused(anc_bits - u.ancilla_bitsize))
                 partition.append((Register("ancilla", dtype=QAny(anc_bits)), regs))
-            if is_symbolic(u.resource_bitsize) or u.resource_bitsize > 0:
+            if not is_zero(u.resource_bitsize):
                 regs = ["resource"]
                 if is_symbolic(self.resource_bitsize) or self.resource_bitsize > u.resource_bitsize:
                     regs.append(Unused(self.resource_bitsize - u.resource_bitsize))
@@ -176,16 +177,12 @@ class Product(BlockEncoding):
         counts = Counter[Bloq]()
         if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
             counts[self.anc_part] += 1
-            counts[evolve(self.anc_part, partition=False)] += 1
+            counts[self.anc_part.adjoint()] += 1
         for bloq in self.constituents:
             counts[bloq] += 1
         n = len(self.block_encodings)
         for i, u in enumerate(reversed(self.block_encodings)):
-            if (
-                (is_symbolic(u.ancilla_bitsize) or u.ancilla_bitsize > 0)
-                and n - 1 > 0
-                and i != n - 1
-            ):
+            if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
                 counts[MultiControlX(HasLength(u.ancilla_bitsize))] += 1
                 counts[XGate()] += 1
         return set(counts.items())
@@ -252,9 +249,7 @@ class Product(BlockEncoding):
                 anc_soqs["flag_bits"] = flag_bits_soq
             if anc_bits > 0:
                 anc_soqs["ancilla"] = anc_soq
-            out["ancilla"] = cast(
-                Soquet, bb.add(evolve(self.anc_part, partition=False), **anc_soqs)
-            )
+            out["ancilla"] = cast(Soquet, bb.add(self.anc_part.adjoint(), **anc_soqs))
         return out
 
 
