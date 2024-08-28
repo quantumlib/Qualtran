@@ -32,6 +32,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
+from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -54,14 +55,14 @@ class Partition(_BookkeepingBloq):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: int
+    n: SymbolicInt
     regs: Tuple[Register, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
     partition: bool = True
 
     def __attrs_post_init__(self):
-        if self.n != sum(r.total_bits() for r in self.regs):
+        if self.n != ssum(r.total_bits() for r in self.regs):
             raise ValueError("Total bitsize not equal to sum of registers to partition into")
         if len(set(r.name for r in self.regs)) != len(self.regs):
             raise ValueError("Duplicate register names")
@@ -103,6 +104,9 @@ class Partition(_BookkeepingBloq):
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
+
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"cannot compute tensors for symbolic {self}")
 
         grouped = incoming['x'] if self.partition else outgoing['x']
         partitioned = outgoing if self.partition else incoming
