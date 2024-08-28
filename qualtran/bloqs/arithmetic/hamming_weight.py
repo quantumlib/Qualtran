@@ -20,8 +20,9 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -49,12 +50,12 @@ class HammingWeightCompute(GateWithRegisters):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self):
-        jnk_size = self.bitsize - self.bitsize.bit_count()
-        out_size = self.bitsize.bit_length()
+        jnk_size = self.junk_bitsize
+        out_size = self.out_bitsize
         return Signature(
             [
                 Register('x', QUInt(self.bitsize)),
@@ -62,6 +63,21 @@ class HammingWeightCompute(GateWithRegisters):
                 Register('out', QUInt(out_size), side=Side.RIGHT),
             ]
         )
+
+    @cached_property
+    def junk_bitsize(self) -> SymbolicInt:
+        return self.bitsize - self.bit_count_of_bitsize
+
+    @cached_property
+    def out_bitsize(self) -> SymbolicInt:
+        return bit_length(self.bitsize)
+
+    @cached_property
+    def bit_count_of_bitsize(self) -> SymbolicInt:
+        """lower bound on number of 1s in bitsize"""
+        if is_symbolic(self.bitsize):
+            return 1  # worst case
+        return self.bitsize.bit_count()
 
     def pretty_name(self) -> str:
         return "out = x.bit_count()"
@@ -102,9 +118,9 @@ class HammingWeightCompute(GateWithRegisters):
         yield self._decompose_using_three_to_two_adders(x, junk, out)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_and = self.bitsize - self.bitsize.bit_count()
-        num_clifford = num_and * 5 + self.bitsize.bit_count()
-        return {(And(), num_and), (ArbitraryClifford(n=2), num_clifford)}
+        num_and = self.junk_bitsize
+        num_clifford = num_and * 5 + self.bit_count_of_bitsize
+        return {(And(), num_and), (CNOT(), num_clifford)}
 
     def __pow__(self, power: int):
         if power == 1:
