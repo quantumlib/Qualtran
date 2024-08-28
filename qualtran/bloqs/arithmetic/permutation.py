@@ -125,7 +125,9 @@ class PermutationCycle(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.is_symbolic():
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
@@ -260,7 +262,9 @@ class Permutation(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.is_symbolic():
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))

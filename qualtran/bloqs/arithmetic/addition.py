@@ -500,7 +500,9 @@ class AddK(Bloq):
         else:
             return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         loading_cost: Tuple[Bloq, SymbolicInt]
         if len(self.cvs) == 0:
             loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.

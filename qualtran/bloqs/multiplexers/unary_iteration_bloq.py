@@ -591,7 +591,9 @@ class UnaryIterationGate(GateWithRegisters):
             f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Union['BloqCountDictT', Set['BloqCountT']]:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
