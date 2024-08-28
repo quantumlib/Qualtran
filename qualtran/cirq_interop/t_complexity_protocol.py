@@ -19,7 +19,7 @@ import cachetools
 import cirq
 
 from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 from .decompose_protocol import _decompose_once_considering_known_decomposition
@@ -163,7 +163,11 @@ def _from_bloq_build_call_graph(bloq: Bloq) -> Optional[TComplexity]:
         return None
 
     ret = TComplexity()
-    for callee, n in callee_counts:
+    if isinstance(callee_counts, dict):
+        callee_iterator:Iterable[BloqCountT] = callee_counts.items()
+    else:
+        callee_iterator = callee_counts
+    for callee, n in callee_iterator:
         r = t_complexity(callee)
         if r is None:
             return None

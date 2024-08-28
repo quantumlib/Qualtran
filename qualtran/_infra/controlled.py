@@ -268,8 +268,7 @@ class AddControlledT(Protocol):
 
     def __call__(
         self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-        ...
+    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
 
 
 def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
@@ -396,7 +395,10 @@ class Controlled(GateWithRegisters):
                 f"Could not build call graph for {self}: {e2}"
             ) from e2
 
-        return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
+        if isinstance(sub_cg, dict):
+            return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg.items()}
+        else:
+            return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]

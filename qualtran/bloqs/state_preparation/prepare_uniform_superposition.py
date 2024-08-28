@@ -37,7 +37,7 @@ from qualtran.symbolics import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -148,7 +148,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Union['BloqCountDictT', Set['BloqCountT']]:
         if not is_symbolic(self.n, self.cvs):
             # build from decomposition
             return super().build_call_graph(ssa)
