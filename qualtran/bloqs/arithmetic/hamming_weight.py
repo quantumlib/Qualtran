@@ -75,6 +75,8 @@ class HammingWeightCompute(GateWithRegisters):
     @cached_property
     def bit_count_of_bitsize(self) -> SymbolicInt:
         """lower bound on number of 1s in bitsize"""
+        # TODO https://github.com/quantumlib/Qualtran/issues/1357
+        #      add explicit support for symbolic functions without relying on pre-computed bounds.
         if is_symbolic(self.bitsize):
             return 1  # worst case
         return self.bitsize.bit_count()
@@ -119,5 +121,5 @@ class HammingWeightCompute(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_and = self.junk_bitsize
-        num_clifford = num_and * 5 + self.bit_count_of_bitsize
-        return {(And(), num_and), (CNOT(), num_clifford)}
+        num_cnot = num_and * 5 + self.bit_count_of_bitsize
+        return {(And(), num_and), (CNOT(), num_cnot)}
