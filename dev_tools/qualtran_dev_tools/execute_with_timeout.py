@@ -11,14 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 import multiprocessing.connection
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from attrs import define
-
-from qualtran import Bloq
-from qualtran.simulation.tensor import cbloq_to_quimb
 
 
 @define
@@ -123,30 +121,3 @@ class ExecuteWithTimeout:
             self._submit_from_queue()
 
         return (finished.kwargs, result)
-
-
-def report_on_tensors(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
-    """Get timing information for tensor functionality.
-
-    This should be used with `ExecuteWithTimeout`. The resultant
-    record dictionary is sent over `cxn`.
-    """
-    record: Dict[str, Any] = {'name': name, 'cls': cls_name}
-
-    try:
-        start = time.perf_counter()
-        flat = bloq.as_composite_bloq().flatten()
-        record['flat_dur'] = time.perf_counter() - start
-
-        start = time.perf_counter()
-        tn = cbloq_to_quimb(flat)
-        record['tn_dur'] = time.perf_counter() - start
-
-        start = time.perf_counter()
-        record['width'] = tn.contraction_width()
-        record['width_dur'] = time.perf_counter() - start
-
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        record['err'] = str(e)
-
-    cxn.send(record)
