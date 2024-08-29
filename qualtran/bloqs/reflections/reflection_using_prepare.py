@@ -179,6 +179,9 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
             costs.add((phase_op, 1))
         return costs
 
+    def adjoint(self) -> 'ReflectionUsingPrepare':
+        return self
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _refl_using_prep() -> ReflectionUsingPrepare:
