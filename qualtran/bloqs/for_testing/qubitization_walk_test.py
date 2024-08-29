@@ -19,7 +19,7 @@ import cirq
 import scipy
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register
+from qualtran import BQUInt, Register
 from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -38,7 +38,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt((self.n - 1).bit_length(), self.n)),)
+        return (Register('selection', BQUInt((self.n - 1).bit_length(), self.n)),)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:

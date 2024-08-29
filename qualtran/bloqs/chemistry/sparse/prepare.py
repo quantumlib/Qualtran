@@ -25,7 +25,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     CtrlSpec,
     QAny,
     QBit,
@@ -189,17 +189,17 @@ class PrepareSparse(PrepareOracle):
         return (
             Register(
                 "d",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_non_zero - 1).bit_length(), iteration_length=self.num_non_zero
                 ),
             ),
-            Register("sigma", BoundedQUInt(self.num_bits_state_prep)),
-            Register("alpha", BoundedQUInt(1)),
-            Register("beta", BoundedQUInt(1)),
-            Register("rot_aa", BoundedQUInt(1)),
-            Register("swap_pq", BoundedQUInt(1)),
-            Register("swap_rs", BoundedQUInt(1)),
-            Register("swap_pqrs", BoundedQUInt(1)),
+            Register("sigma", BQUInt(self.num_bits_state_prep)),
+            Register("alpha", BQUInt(1)),
+            Register("beta", BQUInt(1)),
+            Register("rot_aa", BQUInt(1)),
+            Register("swap_pq", BQUInt(1)),
+            Register("swap_rs", BQUInt(1)),
+            Register("swap_pqrs", BQUInt(1)),
         )
 
     @cached_property
