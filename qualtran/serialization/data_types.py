@@ -11,17 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import (
-    BoundedQUInt,
-    QAny,
-    QBit,
-    QDType,
-    QFxp,
-    QInt,
-    QIntOnesComp,
-    QMontgomeryUInt,
-    QUInt,
-)
+from qualtran import BQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
 from qualtran.protos import data_types_pb2
 from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
@@ -43,12 +33,10 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
         return data_types_pb2.QDataType(
             qmontgomery_uint=data_types_pb2.QMontgomeryUInt(bitsize=bitsize)
         )
-    elif isinstance(data, BoundedQUInt):
+    elif isinstance(data, BQUInt):
         iteration_length = int_or_sympy_to_proto(data.iteration_length)
         return data_types_pb2.QDataType(
-            bounded_quint=data_types_pb2.BoundedQUInt(
-                bitsize=bitsize, iteration_length=iteration_length
-            )
+            bounded_quint=data_types_pb2.BQUInt(bitsize=bitsize, iteration_length=iteration_length)
         )
     elif isinstance(data, QFxp):
         num_frac = int_or_sympy_to_proto(data.num_frac)
@@ -59,7 +47,7 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
         raise TypeError(
             f"Data type {type(data)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
-            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
+            "QAny, QInt, QIntOnesComp, QUInt, BQUInt, "
             "QFxp, QMontgomeryUInt"
         )
 
@@ -86,7 +74,7 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
     elif serialized.HasField('bounded_quint'):
         bitsize = int_or_sympy_from_proto(serialized.bounded_quint.bitsize)
         iteration_length = int_or_sympy_from_proto(serialized.bounded_quint.iteration_length)
-        return BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
+        return BQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif serialized.HasField('qfxp'):
         bitsize = int_or_sympy_from_proto(serialized.qfxp.bitsize)
         num_frac = int_or_sympy_from_proto(serialized.qfxp.num_frac)
@@ -95,6 +83,6 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
         raise TypeError(
             f"Data type {type(serialized)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
-            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
+            "QAny, QInt, QIntOnesComp, QUInt, BQUInt, "
             "QFxp, QMontgomeryUInt"
         )

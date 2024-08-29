@@ -32,7 +32,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     DecomposeTypeError,
     QBit,
     QUInt,
@@ -98,7 +98,7 @@ class PermutationCycle(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):
@@ -199,7 +199,7 @@ class Permutation(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):

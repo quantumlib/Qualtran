@@ -17,16 +17,7 @@ from typing import cast
 import numpy as np
 import pytest
 
-from qualtran import (
-    BloqBuilder,
-    BoundedQUInt,
-    Controlled,
-    CtrlSpec,
-    QBit,
-    Register,
-    Signature,
-    Soquet,
-)
+from qualtran import BloqBuilder, BQUInt, Controlled, CtrlSpec, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CNOT,
@@ -55,11 +46,7 @@ def test_apply_lth_bloq(bloq_autotester):
 
 def test_signature():
     assert _apply_lth_bloq().signature == Signature(
-        [
-            Register("control", QBit()),
-            Register("selection", BoundedQUInt(2, 4)),
-            Register("q", QBit()),
-        ]
+        [Register("control", QBit()), Register("selection", BQUInt(2, 4)), Register("q", QBit())]
     )
 
     with pytest.raises(ValueError):
@@ -156,8 +143,8 @@ def test_ndim(i, j, ctrl):
     assert bloq.signature == Signature(
         [
             Register("control", QBit()),
-            Register("selection0", BoundedQUInt(1, 2)),
-            Register("selection1", BoundedQUInt(1, 2)),
+            Register("selection0", BQUInt(1, 2)),
+            Register("selection1", BQUInt(1, 2)),
             Register("q", QBit()),
         ]
     )
