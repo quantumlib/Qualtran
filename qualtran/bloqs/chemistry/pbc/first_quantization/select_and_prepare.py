@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     QBit,
     Register,
@@ -126,7 +126,7 @@ class MultiplexedCSwap3D(Bloq):
         n_eta = (self.eta - 1).bit_length()
         return Signature(
             [
-                Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+                Register('sel', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
                 Register('targets', QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
                 Register('junk', QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
@@ -255,19 +255,19 @@ class PrepareFirstQuantization(PrepareOracle):
         # overflow: 3 * 2 qubits are missing.
         # l: should not be reflected on.
         return (
-            Register('tuv', BoundedQUInt(bitsize=1, iteration_length=2)),
-            Register('uv', BoundedQUInt(bitsize=1, iteration_length=2)),
-            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register("w", BoundedQUInt(iteration_length=3, bitsize=2)),
-            Register("r", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("s", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("mu", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
-            Register("m", BoundedQUInt(bitsize=n_m)),
-            Register("l", BoundedQUInt(bitsize=n_at, iteration_length=n_at)),
+            Register('tuv', BQUInt(bitsize=1, iteration_length=2)),
+            Register('uv', BQUInt(bitsize=1, iteration_length=2)),
+            Register('i', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", BQUInt(iteration_length=3, bitsize=2)),
+            Register("r", BQUInt(bitsize=self.num_bits_p)),
+            Register("s", BQUInt(bitsize=self.num_bits_p)),
+            Register("mu", BQUInt(bitsize=self.num_bits_p)),
+            Register("nu_x", BQUInt(bitsize=n_nu)),
+            Register("nu_y", BQUInt(bitsize=n_nu)),
+            Register("nu_z", BQUInt(bitsize=n_nu)),
+            Register("m", BQUInt(bitsize=n_m)),
+            Register("l", BQUInt(bitsize=n_at, iteration_length=n_at)),
         )
 
     @cached_property
@@ -424,17 +424,17 @@ class SelectFirstQuantization(SelectOracle):
         n_at = (self.num_atoms - 1).bit_length()
         n_m = (self.m_param - 1).bit_length()
         return (
-            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register("w", BoundedQUInt(bitsize=3)),
-            Register("r", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("s", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("mu", BoundedQUInt(bitsize=self.num_bits_p)),
-            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
-            Register("m", BoundedQUInt(bitsize=n_m)),
-            Register("l", BoundedQUInt(bitsize=n_at)),
+            Register('i', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", BQUInt(bitsize=3)),
+            Register("r", BQUInt(bitsize=self.num_bits_p)),
+            Register("s", BQUInt(bitsize=self.num_bits_p)),
+            Register("mu", BQUInt(bitsize=self.num_bits_p)),
+            Register("nu_x", BQUInt(bitsize=n_nu)),
+            Register("nu_y", BQUInt(bitsize=n_nu)),
+            Register("nu_z", BQUInt(bitsize=n_nu)),
+            Register("m", BQUInt(bitsize=n_m)),
+            Register("l", BQUInt(bitsize=n_at)),
         )
 
     @cached_property

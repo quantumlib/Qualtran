@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     QBit,
     Register,
@@ -168,21 +168,19 @@ class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # typ
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("succ", BoundedQUInt(bitsize=1)),
-            Register("nu_eq_mp1", BoundedQUInt(bitsize=1)),
+            Register("succ", BQUInt(bitsize=1)),
+            Register("nu_eq_mp1", BQUInt(bitsize=1)),
             Register(
-                "mu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "mu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
             Register(
-                "nu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "nu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
-            Register("plus_mn", BoundedQUInt(bitsize=1)),
-            Register("plus_a", BoundedQUInt(bitsize=1)),
-            Register("plus_b", BoundedQUInt(bitsize=1)),
-            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
-            Register("rot", BoundedQUInt(bitsize=1)),
+            Register("plus_mn", BQUInt(bitsize=1)),
+            Register("plus_a", BQUInt(bitsize=1)),
+            Register("plus_b", BQUInt(bitsize=1)),
+            Register("sigma", BQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BQUInt(bitsize=1)),
         )
 
     @cached_property

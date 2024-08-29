@@ -22,7 +22,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, GateWithRegisters, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic.bitwise import Xor
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading.qrom import QROM
@@ -319,8 +319,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         partition_bloqs = []
         for reg, k in zip(self.selection_registers, self.log_block_sizes):
             preg = (
-                Register('l', BoundedQUInt(reg.bitsize - k, 2 ** (reg.bitsize - k))),
-                Register('k', BoundedQUInt(k, 2**k)),
+                Register('l', BQUInt(reg.bitsize - k, 2 ** (reg.bitsize - k))),
+                Register('k', BQUInt(k, 2**k)),
             )
             partition_bloqs.append(Partition(reg.bitsize, preg))
         return partition_bloqs
