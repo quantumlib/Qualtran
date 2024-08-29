@@ -402,7 +402,7 @@ class Controlled(GateWithRegisters):
             counts = Counter['Bloq']()
             for bloq, n in sub_cg:
                 counts[bloq.controlled(self.ctrl_spec)] += n
-            return counts
+            return dict(counts)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]

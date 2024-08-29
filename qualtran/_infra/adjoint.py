@@ -168,7 +168,7 @@ class Adjoint(GateWithRegisters):
             counts = Counter['Bloq']()
             for bloq, n in sub_cg:
                 counts[bloq.adjoint()] += n
-            return counts
+            return dict(counts)
 
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""
