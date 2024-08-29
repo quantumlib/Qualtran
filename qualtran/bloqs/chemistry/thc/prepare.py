@@ -328,7 +328,7 @@ class PrepareTHC(PrepareOracle):
         lambda_t = np.sum(np.abs(t_l))  # Eq. 19
         lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
         if log_block_size is None:
-            target_bitsizes = ((1, 1, num_mu.bit_length(), num_mu.bit_length(), mu),)
+            target_bitsizes = (1, 1, num_mu.bit_length(), num_mu.bit_length(), mu)
             log_block_size = get_optimal_log_block_size_clean_ancilla(
                 len(alt_mu), sum(target_bitsizes)
             )
@@ -384,8 +384,9 @@ class PrepareTHC(PrepareOracle):
         """Target registers for QROAMClean."""
         return (
             Register('theta', QBit(), side=Side.RIGHT),
-            Register('alt_mn', QAny(bitsize=self.num_mu.bit_length()), shape=(2,), side=Side.RIGHT),
             Register('alt_theta', QBit(), side=Side.RIGHT),
+            Register('alt_mu', QAny(bitsize=self.num_mu.bit_length()), side=Side.RIGHT),
+            Register('alt_nu', QAny(bitsize=self.num_mu.bit_length()), side=Side.RIGHT),
             Register('keep', QAny(bitsize=self.keep_bitsize), side=Side.RIGHT),
         )
 
@@ -470,7 +471,6 @@ class PrepareTHC(PrepareOracle):
         soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
             lte_gate, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
         )
-        # delete the QROM
         # Select expects three plus states so set them up here.
         soqs['plus_a'] = bb.add(Hadamard(), q=soqs['plus_a'])
         soqs['plus_b'] = bb.add(Hadamard(), q=soqs['plus_b'])
