@@ -164,7 +164,7 @@ class Adjoint(GateWithRegisters):
         if isinstance(sub_cg, dict):
             return {bloq.adjoint(): n for bloq, n in sub_cg.items()}
         else:
-            rtn = {}
+            rtn: 'BloqCountDictT' = {}
             for bloq, n in sub_cg:
                 adj = bloq.adjoint()
                 rtn[adj] = n + rtn.get(adj, 0)

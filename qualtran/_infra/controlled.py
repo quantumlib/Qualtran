@@ -398,7 +398,7 @@ class Controlled(GateWithRegisters):
         if isinstance(sub_cg, dict):
             return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
         else:
-            rtn = {}
+            rtn: 'BloqCountDictT' = {}
             for bloq, n in sub_cg:
                 controlled = bloq.controlled(self.ctrl_spec)
                 rtn[controlled] = n + rtn.get(controlled, 0)
