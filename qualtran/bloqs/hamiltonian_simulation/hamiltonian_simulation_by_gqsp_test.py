@@ -35,7 +35,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import big_O, BloqCount, get_cost_value
+from qualtran.resource_counting import big_O, BloqCount, get_cost_value, QubitCount
 from qualtran.symbolics import Shaped
 
 
@@ -45,6 +45,11 @@ def test_examples(bloq_autotester):
 
 def test_symbolic_examples(bloq_autotester):
     bloq_autotester(_symbolic_hamsim_by_gqsp)
+
+
+def test_qubit_count_symbolic():
+    bloq = _symbolic_hamsim_by_gqsp()
+    _ = get_cost_value(bloq, QubitCount())
 
 
 @pytest.mark.parametrize("bitsize", [1, 2])
