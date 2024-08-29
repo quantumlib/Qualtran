@@ -34,7 +34,6 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.cirq_interop import BloqAsCirqGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O, BloqCount, get_cost_value, QECGatesCost, QubitCount
 from qualtran.symbolics import Shaped
 
