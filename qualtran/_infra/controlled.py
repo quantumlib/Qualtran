@@ -398,7 +398,11 @@ class Controlled(GateWithRegisters):
         if isinstance(sub_cg, dict):
             return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
         else:
-            return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg}
+            rtn = {}
+            for bloq, n in sub_cg:
+                controlled = bloq.controlled(self.ctrl_spec)
+                rtn[controlled] = n + rtn.get(controlled, 0)
+            return rtn
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
