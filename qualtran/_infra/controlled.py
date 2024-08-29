@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from qualtran import BloqBuilder, CompositeBloq, ConnectionT, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -386,7 +386,7 @@ class Controlled(GateWithRegisters):
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
         return fsoqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         try:
             sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         except DecomposeTypeError as e1:
@@ -397,9 +397,9 @@ class Controlled(GateWithRegisters):
             ) from e2
 
         if isinstance(sub_cg, dict):
-            return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg.items()}
+            return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
         else:
-            return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
+            return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]

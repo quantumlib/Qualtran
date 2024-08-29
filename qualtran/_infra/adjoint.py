@@ -26,7 +26,7 @@ from .registers import Signature
 if TYPE_CHECKING:
     from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, 'SoquetT']:
@@ -158,13 +158,13 @@ class Adjoint(GateWithRegisters):
         """The 'double adjoint' brings you back to the original bloq."""
         return self.subbloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
         sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         if isinstance(sub_cg, dict):
-            return {(bloq.adjoint(), n) for bloq, n in sub_cg.items()}
+            return {bloq.adjoint(): n for bloq, n in sub_cg.items()}
         else:
-            return {(bloq.adjoint(), n) for bloq, n in sub_cg}
+            return {bloq.adjoint(): n for bloq, n in sub_cg}
 
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""
