@@ -50,12 +50,10 @@ def test_outerprep_t_counts():
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     )
     toff = get_cost_value(outer_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
-    print(toff)
     outer_prep = OuterPrepareDoubleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
     toff += get_cost_value(outer_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
-    print(toff)
     # The output size for the QROM for the first state preparation in Eq. (C27)
     eta = power_two(num_aux + 1)
     nl = num_aux.bit_length()
