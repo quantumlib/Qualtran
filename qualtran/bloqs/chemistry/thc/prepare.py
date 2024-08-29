@@ -28,8 +28,8 @@ from qualtran import (
     QAny,
     QBit,
     Register,
+    Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
@@ -42,7 +42,10 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
-from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.data_loading.qroam_clean import (
+    get_optimal_log_block_size_clean_ancilla,
+    QROAMClean,
+)
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
@@ -50,7 +53,7 @@ from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
-from qualtran.symbolics import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -153,7 +156,6 @@ class UniformSuperpositionTHC(Bloq):
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         # 6. Reflect on comparitors, rotated qubit and |+>.
-        # ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
         rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
             ReflectionUsingPrepare.reflection_around_zero(bitsizes=(1, 1, 1, 1), global_phase=1),
             reg0_=rot,
@@ -161,7 +163,6 @@ class UniformSuperpositionTHC(Bloq):
             reg2_=lte_mu_nu,
             reg3_=junk,
         )
-        # (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
@@ -183,7 +184,6 @@ class UniformSuperpositionTHC(Bloq):
             reg1_=nu,
             reg2_=rot,
         )
-        # amp = trg[0]
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
@@ -269,6 +269,7 @@ class PrepareTHC(PrepareOracle):
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
     sum_of_l1_coeffs: SymbolicFloat
+    log_block_size: SymbolicInt = 0
 
     @classmethod
     def from_hamiltonian_coeffs(
@@ -277,6 +278,7 @@ class PrepareTHC(PrepareOracle):
         eta: NDArray[np.float64],
         zeta: NDArray[np.float64],
         num_bits_state_prep: int = 8,
+        log_block_size: Optional[SymbolicInt] = None,
     ) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 
@@ -285,6 +287,7 @@ class PrepareTHC(PrepareOracle):
             eta: The THC leaf tensors.
             zeta: THC central tensor.
             num_bits_state_prep: The number of bits for the state prepared during alias sampling.
+            log_block_size: (log) Block size for qroam.
 
         Returns:
             Constructed PrepareTHC object.
@@ -324,6 +327,11 @@ class PrepareTHC(PrepareOracle):
         zeta_normalized = norm_fac.dot(zeta).dot(norm_fac)  # Eq. 11 & 12
         lambda_t = np.sum(np.abs(t_l))  # Eq. 19
         lambda_z = 0.5 * np.sum(np.abs(zeta_normalized))  # Eq. 20
+        if log_block_size is None:
+            target_bitsizes = ((1, 1, num_mu.bit_length(), num_mu.bit_length(), mu),)
+            log_block_size = get_optimal_log_block_size_clean_ancilla(
+                len(alt_mu), sum(target_bitsizes)
+            )
         return PrepareTHC(
             num_mu,
             2 * num_spat,
@@ -334,6 +342,7 @@ class PrepareTHC(PrepareOracle):
             keep=tuple(keep),
             keep_bitsize=mu,
             sum_of_l1_coeffs=lambda_t + lambda_z,
+            log_block_size=log_block_size,
         )
 
     @property
@@ -363,106 +372,118 @@ class PrepareTHC(PrepareOracle):
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
-        log_mu = self.num_mu.bit_length()
-        return (
-            Register('theta', QBit()),
+        junk = (
             Register('s', QAny(bitsize=(data_size - 1).bit_length())),
-            Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
-            Register('alt_theta', QBit()),
-            Register('keep', QAny(bitsize=self.keep_bitsize)),
             Register('less_than', QBit()),
             Register('extra_ctrl', QBit()),
         )
+        return junk + self.qroam_target_registers + self.qroam_extra_target_registers
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        mu: SoquetT,
-        nu: SoquetT,
-        plus_mn: SoquetT,
-        plus_a: SoquetT,
-        plus_b: SoquetT,
-        sigma: SoquetT,
-        rot: SoquetT,
-        succ: SoquetT,
-        nu_eq_mp1: SoquetT,
-        theta: SoquetT,
-        s: SoquetT,
-        alt_mn: NDArray[Soquet],  # type: ignore[type-var]
-        alt_theta: SoquetT,
-        keep: SoquetT,
-        less_than: SoquetT,
-        extra_ctrl: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    @cached_property
+    def qroam_target_registers(self) -> Tuple[Register, ...]:
+        """Target registers for QROAMClean."""
+        return (
+            Register('theta', QBit(), side=Side.RIGHT),
+            Register('alt_mn', QAny(bitsize=self.num_mu.bit_length()), shape=(2,), side=Side.RIGHT),
+            Register('alt_theta', QBit(), side=Side.RIGHT),
+            Register('keep', QAny(bitsize=self.keep_bitsize), side=Side.RIGHT),
+        )
+
+    @cached_property
+    def qroam_extra_target_registers(self) -> Tuple[Register, ...]:
+        """Extra registers required for QROAMClean."""
+        return tuple(
+            Register(
+                name=f'jnk_{reg.name}',
+                dtype=reg.dtype,
+                shape=reg.shape + (2**self.log_block_size - 1,),
+                side=Side.RIGHT,
+            )
+            for reg in self.qroam_target_registers
+        )
+
+    def build_qrom_bloq(self) -> 'Bloq':
+        log_mu = self.num_mu.bit_length()
+        qroam = QROAMClean.build_from_data(
+            self.theta,
+            self.alt_theta,
+            self.alt_mu,
+            self.alt_nu,
+            self.keep,
+            target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+        )
+        return qroam
+
+    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        qrom = self.build_qrom_bloq()
+        # The qroam_junk_regs won't be present initially when building the
+        # composite bloq as they're RIGHT registers.
+        qroam_out_soqs = bb.add_d(qrom, selection=soqs['s'])
+        out_soqs: Dict[str, 'SoquetT'] = {'s': qroam_out_soqs.pop('selection')}
+        # map output soqs to Prepare junk registers names
+        out_soqs |= {
+            reg.name: qroam_out_soqs.pop(f'target{i}_')
+            for (i, reg) in enumerate(self.qroam_target_registers)
+        }
+        out_soqs |= {
+            reg.name: qroam_out_soqs.pop(f'junk_target{i}_')
+            for (i, reg) in enumerate(self.qroam_extra_target_registers)
+        }
+        return soqs | out_soqs
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
-        mu, nu, succ, nu_eq_mp1, rot = bb.add(
+        soqs['mu'], soqs['nu'], soqs['succ'], soqs['nu_eq_mp1'], soqs['rot'] = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),
-            mu=mu,
-            nu=nu,
-            succ=succ,
-            nu_eq_mp1=nu_eq_mp1,
-            rot=rot,
+            mu=soqs['mu'],
+            nu=soqs['nu'],
+            succ=soqs['succ'],
+            nu_eq_mp1=soqs['nu_eq_mp1'],
+            rot=soqs['rot'],
         )
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         log_d = (data_size - 1).bit_length()
         # 2. Make contiguous register from mu and nu and store in register `s`.
-        mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
+        soqs['mu'], soqs['nu'], soqs['s'] = bb.add(
+            ToContiguousIndex(log_mu, log_d), mu=soqs['mu'], nu=soqs['nu'], s=soqs['s']
+        )
         # 3. Load alt / keep values
-        qroam = SelectSwapQROM.build_from_data(
-            *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-            target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
-            use_dirty_ancilla=False,
-        )
-        alt_mu, alt_nu = alt_mn
-        s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
-            qroam,
-            selection=s,
-            target0_=theta,
-            target1_=alt_theta,
-            target2_=alt_mu,
-            target3_=alt_nu,
-            target4_=keep,
-        )
-        sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
+        soqs |= self.add_qrom(bb, **soqs)
+        soqs['sigma'] = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=soqs['sigma'])
         lte_gate = LessThanEqual(self.keep_bitsize, self.keep_bitsize)
-        keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
+        soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
+            lte_gate, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
+        )
+        # TODO remove these
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
-        alt_theta, less_than = bb.add(cz, q=[alt_theta, less_than])
+        soqs['alt_theta'], soqs['less_than'] = bb.add(cz, q=[soqs['alt_theta'], soqs['less_than']])
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z, control_values=(0,)))
         # negative control on the less_than register
-        less_than, theta = bb.add(cz, q=[less_than, theta])
-        less_than, alt_mu, mu = bb.add(CSwap(bitsize=log_mu), ctrl=less_than, x=alt_mu, y=mu)
-        less_than, alt_nu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=less_than, x=alt_nu, y=nu)
-        keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
+        soqs['less_than'], soqs['theta'] = bb.add(cz, q=[soqs['less_than'], soqs['theta']])
+        soqs['less_than'], soqs['alt_mu'], soqs['mu'] = bb.add(
+            CSwap(bitsize=log_mu), ctrl=soqs['less_than'], x=soqs['alt_mu'], y=soqs['mu']
+        )
+        soqs['less_than'], soqs['alt_nu'], soqs['nu'] = bb.add(
+            CSwap(bitsize=log_mu), ctrl=soqs['less_than'], x=soqs['alt_nu'], y=soqs['nu']
+        )
+        soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
+            lte_gate, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
+        )
         # delete the QROM
         # Select expects three plus states so set them up here.
-        plus_a = bb.add(Hadamard(), q=plus_a)
-        plus_b = bb.add(Hadamard(), q=plus_b)
-        plus_mn = bb.add(Hadamard(), q=plus_mn)
-        (nu_eq_mp1, plus_a), extra_ctrl = bb.add(
-            MultiControlX(cvs=(0, 1)), controls=np.array([nu_eq_mp1, plus_a]), target=extra_ctrl
+        soqs['plus_a'] = bb.add(Hadamard(), q=soqs['plus_a'])
+        soqs['plus_b'] = bb.add(Hadamard(), q=soqs['plus_b'])
+        soqs['plus_mn'] = bb.add(Hadamard(), q=soqs['plus_mn'])
+        (soqs['nu_eq_mp1'], soqs['plus_a']), soqs['extra_ctrl'] = bb.add(
+            MultiControlX(cvs=(0, 1)),
+            controls=np.array([soqs['nu_eq_mp1'], soqs['plus_a']]),
+            target=soqs['extra_ctrl'],
         )
-        extra_ctrl, mu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=extra_ctrl, x=mu, y=nu)
-        out_regs = {
-            'mu': mu,
-            'nu': nu,
-            'plus_mn': plus_mn,
-            'plus_a': plus_a,
-            'plus_b': plus_b,
-            'sigma': sigma,
-            'rot': rot,
-            'succ': succ,
-            'nu_eq_mp1': nu_eq_mp1,
-            'theta': theta,
-            's': s,
-            'alt_mn': [alt_mu, alt_nu],
-            'alt_theta': alt_theta,
-            'keep': keep,
-            'less_than': less_than,
-            'extra_ctrl': extra_ctrl,
-        }
-        return out_regs
+        soqs['extra_ctrl'], soqs['mu'], soqs['nu'] = bb.add(
+            CSwap(bitsize=log_mu), ctrl=soqs['extra_ctrl'], x=soqs['mu'], y=soqs['nu']
+        )
+        return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
@@ -470,11 +491,7 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
-        qroam = SelectSwapQROM.build_from_data(
-            *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-            target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
-            use_dirty_ancilla=False,
-        )
+        qroam = self.build_qrom_bloq()
         cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
