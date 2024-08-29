@@ -52,9 +52,14 @@ if TYPE_CHECKING:
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
 
-    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
-    out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
-    return bb.finalize(**out_soqs)
+    try:
+        bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+        out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+        return bb.finalize(**out_soqs)
+    except (DecomposeTypeError, DecomposeNotImplementedError) as ex:
+        raise ex
+    except Exception as ex:
+        raise RuntimeError(f"Unexpected error when decomposing {bloq}: {ex}") from ex
 
 
 class DecomposeNotImplementedError(NotImplementedError):

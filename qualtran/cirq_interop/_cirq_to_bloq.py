@@ -602,8 +602,12 @@ def decompose_from_cirq_style_method(
         return cirq_optree_to_cbloq(
             decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
         )
+    except (DecomposeNotImplementedError, DecomposeTypeError) as exc:
+        raise exc
     except ValueError as exc:
         if "Only gate operations are supported" in str(exc):
             raise DecomposeNotImplementedError(str(exc)) from exc
         else:
-            raise exc
+            raise RuntimeError(f"Unexpected error when decomposing {bloq}: {exc}") from exc
+    except Exception as exc:
+        raise RuntimeError(f"Unexpected error when decomposing {bloq}: {exc}") from exc
