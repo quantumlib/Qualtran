@@ -72,8 +72,8 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
         bitsize = int_or_sympy_from_proto(serialized.qmontgomery_uint.bitsize)
         return QMontgomeryUInt(bitsize=bitsize)
     elif serialized.HasField('bquint'):
-        bitsize = int_or_sympy_from_proto(serialized.bounded_quint.bitsize)
-        iteration_length = int_or_sympy_from_proto(serialized.bounded_quint.iteration_length)
+        bitsize = int_or_sympy_from_proto(serialized.bquint.bitsize)
+        iteration_length = int_or_sympy_from_proto(serialized.bquint.iteration_length)
         return BQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif serialized.HasField('qfxp'):
         bitsize = int_or_sympy_from_proto(serialized.qfxp.bitsize)
