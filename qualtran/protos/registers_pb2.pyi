@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
 import builtins
 import collections.abc
 import google.protobuf.descriptor
@@ -34,7 +35,7 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class Register(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -62,11 +63,11 @@ class Register(google.protobuf.message.Message):
     SHAPE_FIELD_NUMBER: builtins.int
     SIDE_FIELD_NUMBER: builtins.int
     name: builtins.str
+    side: global___Register.Side.ValueType
     @property
     def dtype(self) -> qualtran.protos.data_types_pb2.QDataType: ...
     @property
     def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.IntOrSympy]: ...
-    side: global___Register.Side.ValueType
     def __init__(
         self,
         *,
@@ -75,12 +76,12 @@ class Register(google.protobuf.message.Message):
         shape: collections.abc.Iterable[qualtran.protos.args_pb2.IntOrSympy] | None = ...,
         side: global___Register.Side.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
+    def HasField(self, field_name: typing.Literal["dtype", b"dtype"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["dtype", b"dtype", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
 
 global___Register = Register
 
-@typing_extensions.final
+@typing.final
 class Registers(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -88,11 +89,12 @@ class Registers(google.protobuf.message.Message):
     @property
     def registers(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Register]:
         """A collection of Registers."""
+
     def __init__(
         self,
         *,
         registers: collections.abc.Iterable[global___Register] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["registers", b"registers"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["registers", b"registers"]) -> None: ...
 
 global___Registers = Registers

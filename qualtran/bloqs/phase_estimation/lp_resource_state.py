@@ -13,31 +13,22 @@
 #  limitations under the License.
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
+from collections import Counter
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
-import cirq
 import numpy as np
 import sympy
-from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqDocSpec,
-    GateWithRegisters,
-    QUInt,
-    Register,
-    Side,
-    Signature,
-)
-from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
-from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import acos, HasLength, is_symbolic, pi, SymbolicInt
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, Signature
+from qualtran.bloqs.basic_gates import CZ, Hadamard, OnEach, Ry, Rz, XGate
+from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -67,39 +58,37 @@ class LPRSInterimPrep(GateWithRegisters):
     def pretty_name(self) -> str:
         return 'LPRS'
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', *, m: 'SoquetT', anc: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        q, anc = quregs['m'].tolist()[::-1], quregs['anc']
-        yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
+        m = bb.add(OnEach(self.bitsize, Hadamard()), q=m)
+        q = bb.split(m)[::-1]
+        anc = bb.add(Hadamard(), q=anc)
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
-        yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
-        yield Hadamard().on(*anc)
+            q[i], anc = bb.add(Rz(angle=rz_angle).controlled(), ctrl=q[i], q=anc)
+        anc = bb.add(Rz(angle=-2 * np.pi / (2**self.bitsize + 1)), q=anc)
+        anc = bb.add(Hadamard(), q=anc)
+        return {'m': bb.join(q[::-1]), 'anc': anc}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
-        ret: Set[Tuple[Bloq, SymbolicInt]] = {
-            (Rz(angle=rz_angle), 1),
-            (Hadamard(), 2 + self.bitsize),
-        }
+        ret: Counter['Bloq'] = Counter()
+        ret[Rz(angle=rz_angle)] += 1
+        ret[OnEach(self.bitsize, Hadamard())] += 1
+        ret[Hadamard()] += 2
         if is_symbolic(self.bitsize):
-            ret |= {(Rz(angle=rz_angle).controlled(), self.bitsize)}
+            ret[Rz(angle=rz_angle).controlled()] += self.bitsize
         else:
-            ret |= {
-                (Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(int(self.bitsize))
-            }
-        return ret
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=self.bitsize + 1, clifford=2 + self.bitsize)
+            for i in range(self.bitsize):
+                ret[Rz(angle=rz_angle * (2**i)).controlled()] += 1
+        return set(ret.items())
 
 
 @attrs.frozen
-class LPResourceState(GateWithRegisters):
+class LPResourceState(QPEWindowStateBase):
     r"""Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
 
     Uses a single round of amplitude amplification, as described in Ref 2, to prepare the
@@ -125,53 +114,77 @@ class LPResourceState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('m', QUInt(self.bitsize), side=Side.THRU)])
+        return Signature([self.m_register])
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> Iterator[cirq.OP_TREE]:
-        """Use the _LPResourceStateHelper and do a single round of amplitude amplification."""
-        q = quregs['m'].flatten().tolist()
-        anc, flag = context.qubit_manager.qalloc(2)
+    @classmethod
+    def from_standard_deviation_eps(cls, eps: SymbolicFloat) -> 'LPResourceState':
+        r"""Estimate the phase $\phi$ with uncertainty in standard deviation bounded by $\epsilon$.
+
+        The standard deviation of phase estimation using optimal resource states scales as the
+        square of Holevo variance $\tan{\frac{\pi}{2^m}}$.
+        This bound can be used to estimate the size of the phase register s.t. the estimated phase
+        has a standard deviation of at-most $\epsilon$. See the class docstring for more details.
+
+        $$
+            m = \lceil\log_2{\pi/\epsilon}\rceil
+        $$
+
+        Args:
+            eps: Maximum standard deviation of the estimated phase.
+        """
+        return LPResourceState(ceil(log2(pi(eps) / eps)))
+
+    @property
+    def m_bits(self) -> SymbolicInt:
+        return self.bitsize
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        qpe_reg = bb.allocate(dtype=self.m_register.dtype)
+        anc, flag = bb.allocate(dtype=QBit()), bb.allocate(dtype=QBit())
 
         flag_angle = np.arccos(1 / (1 + 2**self.bitsize))
 
         # Prepare initial state
-        yield Ry(angle=flag_angle).on(flag)
-        yield LPRSInterimPrep(self.bitsize).on(*q, anc)
+        flag = bb.add(Ry(angle=flag_angle), q=flag)
+        qpe_reg, anc = bb.add(LPRSInterimPrep(self.bitsize), m=qpe_reg, anc=anc)
 
         # Reflect around the target state
-        yield CZPowGate().on(flag, anc)
+        flag, anc = bb.add(CZ(), q1=flag, q2=anc)
 
         # Reflect around the initial state
-        yield LPRSInterimPrep(self.bitsize).adjoint().on(*q, anc)
-        yield Ry(angle=-flag_angle).on(flag)
+        qpe_reg, anc = bb.add(LPRSInterimPrep(self.bitsize).adjoint(), m=qpe_reg, anc=anc)
+        flag = bb.add(Ry(angle=-flag_angle), q=flag)
 
-        yield XGate().on(flag)
-        yield MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z).on(*q, anc, flag)
-        yield XGate().on(flag)
+        flag, anc, qpe_reg = bb.add(
+            ReflectionUsingPrepare.reflection_around_zero([1, 1, self.bitsize], global_phase=1j),
+            reg0_=flag,
+            reg1_=anc,
+            reg2_=qpe_reg,
+        )
 
-        yield LPRSInterimPrep(self.bitsize).on(*q, anc)
-        yield Ry(angle=flag_angle).on(flag)
+        qpe_reg, anc = bb.add(LPRSInterimPrep(self.bitsize), m=qpe_reg, anc=anc)
+        flag = bb.add(Ry(angle=flag_angle), q=flag)
 
         # Reset ancilla to |0> state.
-        yield [XGate().on(flag), XGate().on(anc)]
-        yield GlobalPhase(1j).on()
-        context.qubit_manager.qfree([flag, anc])
+        flag = bb.add(XGate(), q=flag)
+        anc = bb.add(XGate(), q=anc)
+        bb.free(flag)
+        bb.free(anc)
+        return {'qpe_reg': qpe_reg}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         flag_angle = acos(1 / (1 + 2**self.bitsize))
-        cvs: Union[HasLength, Tuple[int, ...]] = (
-            HasLength(self.bitsize + 1) if is_symbolic(self.bitsize) else (0,) * (self.bitsize + 1)
+        reflection_bloq: 'Bloq' = ReflectionUsingPrepare.reflection_around_zero(
+            [1, 1, self.bitsize], global_phase=1j
         )
         return {
             (LPRSInterimPrep(self.bitsize), 2),
             (LPRSInterimPrep(self.bitsize).adjoint(), 1),
-            (Ry(angle=flag_angle), 3),
-            (MultiControlPauli(cvs, target_gate=cirq.Z), 1),
-            (XGate(), 4),
-            (GlobalPhase(1j), 1),
-            (CZPowGate(), 1),
+            (Ry(angle=flag_angle), 2),
+            (Ry(angle=-1 * flag_angle), 1),
+            (reflection_bloq, 1),
+            (XGate(), 2),
+            (CZ(), 1),
         }
 
 

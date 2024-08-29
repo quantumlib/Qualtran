@@ -15,6 +15,7 @@
 
 from qualtran.bloqs.bookkeeping.allocate import Allocate
 from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
+from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.bookkeeping.cast import Cast
 from qualtran.bloqs.bookkeeping.free import Free
 from qualtran.bloqs.bookkeeping.join import Join

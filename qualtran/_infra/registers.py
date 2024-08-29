@@ -19,11 +19,10 @@ from collections import defaultdict
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
-import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicInt
 
 from .data_types import QAny, QBit, QDType
 
@@ -99,7 +98,7 @@ class Register:
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
-        return self.bitsize * int(np.prod(self.shape))
+        return self.bitsize * prod(self.shape_symbolic)
 
     def adjoint(self) -> 'Register':
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
@@ -202,9 +201,9 @@ class Signature:
         is taken to be the greater of the number of left or right qubits. A bloq with this
         signature uses at least this many qubits.
         """
-        left_size = sum(reg.total_bits() for reg in self.lefts())
-        right_size = sum(reg.total_bits() for reg in self.rights())
-        return max(left_size, right_size)
+        left_size = ssum(reg.total_bits() for reg in self.lefts())
+        right_size = ssum(reg.total_bits() for reg in self.rights())
+        return smax(left_size, right_size)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'

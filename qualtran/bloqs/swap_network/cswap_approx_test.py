@@ -11,16 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import random
 from typing import Dict, Tuple, Union
 
+import cirq
+import numpy as np
 import pytest
 import sympy
 
-import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,
@@ -39,6 +39,17 @@ def test_cswap_approx_decomp():
     assert_valid_bloq_decomposition(csa)
 
 
+def test_cswap_approx_decomposition():
+    csa = CSwapApprox(4)
+    circuit = (
+        csa.as_composite_bloq().to_cirq_circuit()
+        + csa.adjoint().as_composite_bloq().to_cirq_circuit()
+    )
+    initial_state = cirq.testing.random_superposition(2**9, random_state=1234)
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit, initial_state=initial_state)
+    np.testing.assert_allclose(result.final_state_vector, initial_state)
+
+
 @pytest.mark.parametrize('n', [5, 32])
 def test_approx_cswap_t_count(n):
     cswap = CSwapApprox(bitsize=n)
@@ -54,11 +65,6 @@ def get_t_count_and_clifford(
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
     t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])
     return t_cost, cliff_cost
-
-
-@pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity_cswap(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])

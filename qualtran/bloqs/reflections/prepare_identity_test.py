@@ -11,9 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from qualtran.bloqs.reflections.prepare_identity import _prepare_identity
+from qualtran import Signature
+from qualtran.bloqs.basic_gates import Identity
+from qualtran.bloqs.reflections.prepare_identity import _prepare_identity, PrepareIdentity
 
 
 def test_prepare_identity(bloq_autotester):
     bloq_autotester(_prepare_identity)
+
+
+def test_prepare_identity_call_graph():
+    bloq = PrepareIdentity(tuple(Signature.build(a=4, b=4, c=5)))
+    _, sigma = bloq.call_graph()
+    assert sigma == {Identity(4): 2, Identity(5): 1}

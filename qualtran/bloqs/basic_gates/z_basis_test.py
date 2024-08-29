@@ -19,6 +19,7 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import (
+    CZ,
     IntEffect,
     IntState,
     OneEffect,
@@ -36,6 +37,9 @@ from qualtran.bloqs.basic_gates.z_basis import (
     _zero_state,
     _zgate,
 )
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
+from qualtran.resource_counting.classify_bloqs import bloq_is_clifford
 
 
 def test_zero_state(bloq_autotester):
@@ -76,6 +80,8 @@ def test_zero_state_manual():
 
     (x,) = bloq.call_classically()
     assert x == 0
+
+    assert get_cost_value(bloq, QECGatesCost()) == GateCounts()
 
 
 def test_multiq_zero_state():
@@ -202,3 +208,27 @@ def test_to_cirq():
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
     np.testing.assert_allclose(vec1, vec2)
+
+
+def test_zgate_manual():
+    z = ZGate()
+
+    np.testing.assert_allclose(cirq.unitary(cirq.Z), z.tensor_contract())
+    (op,) = list(z.as_composite_bloq().to_cirq_circuit().all_operations())
+    assert op.gate == cirq.Z
+
+    assert bloq_is_clifford(z)
+    assert t_complexity(z) == TComplexity(clifford=1)
+
+
+def test_cz_manual():
+    cz = CZ()
+
+    np.testing.assert_allclose(cirq.unitary(cirq.CZ), cz.tensor_contract())
+    (op,) = list(cz.as_composite_bloq().to_cirq_circuit().all_operations())
+    assert op.gate == cirq.CZ
+
+    assert bloq_is_clifford(cz)
+
+    assert ZGate().controlled() == CZ()
+    assert t_complexity(cz) == TComplexity(clifford=1)

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import cast, Dict, Set, Tuple, TYPE_CHECKING, Union
 
@@ -18,13 +19,15 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
-from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, Signature, Soquet
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.linalg.jacobi_anger_approximations import (
+from qualtran.linalg.polynomial.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
+from qualtran.linalg.polynomial.qsp_testing import scale_down_to_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -33,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class HamiltonianSimulationByGQSP(GateWithRegisters):
+class HamiltonianSimulationByGQSP(Bloq):
     r"""Hamiltonian simulation using Generalized QSP given a qubitized quantum walk operator.
 
     Given the Szegedy Quantum Walk Operator for a Hamiltonian $H$ constructed from SELECT and PREPARE oracles,
@@ -84,7 +87,9 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
         t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
-        precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
+        precision: the precision $\epsilon$ of the final block encoded $e^{-iHt}$. Split into two:
+                   half to approximate $e^{it\cos\theta}$ to a polynomial, and half to synthesize
+                   the underlying GQSP rotations.
     """
 
     walk_operator: QubitizationWalkOperator
@@ -107,10 +112,10 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def degree(self) -> SymbolicInt:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
+        return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision / 2)
 
     @cached_property
-    def approx_cos(self) -> Union[NDArray[np.complex_], Shaped]:
+    def approx_cos(self) -> Union[NDArray[np.complex128], Shaped]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))
@@ -127,6 +132,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
             self.walk_operator,
             self.approx_cos,
             negative_power=self.degree,
+            precision=self.precision / 2,
             verify=True,
             verify_precision=1e-4,
         )
@@ -157,7 +163,6 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return gqsp_soqs, prepare_out_soqs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        # TODO open issue: alloc/free does not work with cirq api
         state_prep_ancilla: Dict[str, 'SoquetT'] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
@@ -178,19 +183,16 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
-            from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+        counts = Counter[Bloq]()
 
-            d = self.degree
-            return {
-                (self.walk_operator.prepare, 1),
-                (self.walk_operator.prepare.adjoint(), 1),
-                (self.walk_operator.controlled(control_values=[0]), d),
-                (self.walk_operator.adjoint().controlled(), d),
-                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
-            }
+        d = self.degree
+        counts[self.walk_operator.prepare] += 1
+        counts[self.walk_operator.prepare.adjoint()] += 1
+        counts[self.walk_operator.controlled(ctrl_spec=CtrlSpec(cvs=0))] += d
+        counts[self.walk_operator.adjoint().controlled()] += d
+        counts[SU2RotationGate.arbitrary(ssa)] += 2 * d + 1
 
-        return super().build_call_graph(ssa)
+        return set(counts.items())
 
 
 @bloq_example

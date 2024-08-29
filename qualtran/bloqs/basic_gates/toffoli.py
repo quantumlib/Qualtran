@@ -13,13 +13,13 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqDocSpec, Connection, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -62,14 +62,11 @@ class Toffoli(Bloq):
     def _t_complexity_(self):
         return TComplexity(t=4)
 
-    def add_my_tensors(
+    def my_tensors(
         self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
-        outgoing: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
-    ):
+        incoming: Dict[str, NDArray[Connection]],  # type: ignore[type-var]
+        outgoing: Dict[str, NDArray[Connection]],  # type: ignore[type-var]
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         from qualtran.bloqs.basic_gates.cnot import XOR
@@ -77,24 +74,26 @@ class Toffoli(Bloq):
         # Set up the CTRL tensor which copies inputs to outputs and activates
         # when a==1 and b==1
         internal = qtn.rand_uuid()
-        inds = (
-            incoming['ctrl'][0],
-            incoming['ctrl'][1],
-            outgoing['ctrl'][0],
-            outgoing['ctrl'][1],
+        inds = [
+            (incoming['ctrl'][0], 0),
+            (incoming['ctrl'][1], 0),
+            (outgoing['ctrl'][0], 0),
+            (outgoing['ctrl'][1], 0),
             internal,
-        )
+        ]
         CTRL = np.zeros((2,) * 5, dtype=np.complex128)
         for a, b in itertools.product([0, 1], repeat=2):
             CTRL[a, b, a, b, int(a == 1 and b == 1)] = 1.0
 
         # Wire up the CTRL tensor to XOR to flip `target` when active.
-        tn.add(qtn.Tensor(data=CTRL, inds=inds, tags=['COPY', tag]))
-        tn.add(
+        return [
+            qtn.Tensor(data=CTRL, inds=inds, tags=['COPY']),
             qtn.Tensor(
-                data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
-            )
-        )
+                data=XOR,
+                inds=[(incoming['target'], 0), (outgoing['target'], 0), internal],
+                tags=['XOR'],
+            ),
+        ]
 
     def on_classical_vals(
         self, ctrl: NDArray[np.integer], target: 'ClassicalValT'
@@ -132,8 +131,4 @@ def _toffoli() -> Toffoli:
     return toffoli
 
 
-_TOFFOLI_DOC = BloqDocSpec(
-    bloq_cls=Toffoli,
-    import_line='from qualtran.bloqs.basic_gates import Toffoli',
-    examples=[_toffoli],
-)
+_TOFFOLI_DOC = BloqDocSpec(bloq_cls=Toffoli, examples=[_toffoli])

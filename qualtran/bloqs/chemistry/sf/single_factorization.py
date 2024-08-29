@@ -44,19 +44,22 @@ from qualtran import (
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class SingleFactorizationOneBody(Bloq):
+class SingleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of single factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -117,6 +120,28 @@ class SingleFactorizationOneBody(Bloq):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register(
@@ -149,6 +174,10 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return ()
+
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:
@@ -250,7 +279,7 @@ class SingleFactorizationOneBody(Bloq):
 
 
 @frozen
-class SingleFactorizationBlockEncoding(Bloq):
+class SingleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of single factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -301,6 +330,28 @@ class SingleFactorizationBlockEncoding(Bloq):
         return (Register('ctrl', QBit(), shape=(3,)),)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("l", QAny(bitsize=self.num_aux.bit_length())),
@@ -328,6 +379,10 @@ class SingleFactorizationBlockEncoding(Bloq):
                 *self.target_registers,
             ]
         )
+
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     def build_composite_bloq(
         self,

@@ -30,7 +30,6 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
-    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -504,12 +503,14 @@ def test_flatten():
     cbloq2 = cbloq.flatten_once(lambda binst: True)
     assert len(cbloq2.bloq_instances) == 5 * 2
 
-    with pytest.raises(DecomposeTypeError):
-        # Will keep trying to flatten non-decomposable things
-        cbloq.flatten(lambda x: True)
-
-    cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    cbloq3 = cbloq.flatten(lambda binst: True)
     assert len(cbloq3.bloq_instances) == 5 * 2
+
+    cbloq4 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    assert len(cbloq4.bloq_instances) == 5 * 2
+
+    cbloq5 = cbloq.flatten()
+    assert len(cbloq5.bloq_instances) == 5 * 2
 
 
 def test_type_error():
@@ -553,6 +554,47 @@ def test_t_complexity():
 
     assert TestSerialCombo().t_complexity().t == 3 * 100
     assert TestParallelCombo().t_complexity().t == 3 * 100
+
+
+def test_add_and_partition():
+    from qualtran import Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates import Swap
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
+
+    bb = BloqBuilder()
+    bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
+    a = bb.add_register_from_dtype('a', QAny(7))
+    b = bb.add_register_from_dtype('b', QAny(3))
+    assert a is not None
+    assert b is not None
+    a, b = bb.add_and_partition(
+        bloq, [(Register('a', QAny(7)), ['y', 'ctrl']), (Register('b', QAny(3)), ['x'])], a=a, b=b
+    )
+    cbloq = bb.finalize(a=a, b=b)
+    assert isinstance(cbloq, CompositeBloq)
+    assert len(cbloq.bloq_instances) == 1
+
+    bb = BloqBuilder()
+    a = bb.add_register_from_dtype('a', QAny(8))
+    b = bb.add_register_from_dtype('b', QAny(3))
+    c = bb.add_register_from_dtype('c', QAny(4))
+    assert a is not None
+    assert b is not None
+    assert c is not None
+    a, b, c = bb.add_and_partition(
+        bloq,
+        [
+            (Register('a', QAny(8)), ['y', 'ctrl', Unused(1)]),
+            (Register('b', QAny(3)), ['x']),
+            (Register('c', QAny(4)), [Unused(4)]),
+        ],
+        a=a,
+        b=b,
+        c=c,
+    )
+    cbloq = bb.finalize(a=a, b=b, c=c)
+    assert isinstance(cbloq, CompositeBloq)
+    assert len(cbloq.bloq_instances) == 1
 
 
 @pytest.mark.notebook

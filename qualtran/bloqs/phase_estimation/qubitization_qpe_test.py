@@ -15,9 +15,9 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
+from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
 from qualtran.bloqs.phase_estimation.qubitization_qpe import (
     _qubitization_qpe_chem_thc,
     _qubitization_qpe_hubbard_model_small,
@@ -44,6 +44,7 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_sparse_chem)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
@@ -61,8 +62,10 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
 
     # 1. Construct QPE bloq
 
-    state_prep = LPResourceState(precision) if use_resource_state else OnEach(precision, Hadamard())
-    gh = GateHelper(QubitizationQPE(walk, precision, ctrl_state_prep=state_prep))
+    state_prep = (
+        LPResourceState(precision) if use_resource_state else RectangularWindowState(precision)
+    )
+    gh = GateHelper(QubitizationQPE(walk, ctrl_state_prep=state_prep))
     qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
     for eig_idx, eig_val in enumerate(eigen_values):
         # Apply QPE to determine eigenvalue for walk operator W on initial state |L>|k>

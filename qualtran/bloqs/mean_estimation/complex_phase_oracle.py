@@ -21,8 +21,8 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import SelectOracle
-from qualtran.bloqs.mean_estimation.arctan import ArcTan
+from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 
 
 @attrs.frozen

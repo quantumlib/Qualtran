@@ -13,33 +13,31 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import (
-    merge_qubits,
-    SpecializedSingleQubitControlledGate,
-    total_bits,
-)
+from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
+from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits, total_bits
+from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
-from qualtran.bloqs.block_encoding.lcu_select_and_prepare import PrepareOracle
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlZ
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
+    from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
+class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =
@@ -77,7 +75,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             Babbush et. al. (2018). Figure 1.
     """
 
-    prepare_gate: PrepareOracle
+    prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
     control_val: Optional[int] = None
     global_phase: complex = 1
     eps: float = 1e-11
@@ -114,8 +112,6 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             eps: precision for implementation of rotation. Only relevant if
                 global_phase is arbitrary angle and gate is not controlled.
         """
-        from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
-
         prepare_gate = PrepareIdentity.from_bitsizes(bitsizes=bitsizes)
         return ReflectionUsingPrepare(
             prepare_gate, control_val=control_val, global_phase=global_phase, eps=eps
@@ -144,7 +140,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
             merge_qubits(self.selection_registers, **state_prep_selection_regs)
         )
         yield cirq.X(phase_target) if not self.control_val else []
-        yield MultiControlPauli([0] * len(phase_control), target_gate=cirq.Z).on_registers(
+        yield MultiControlZ([0] * len(phase_control)).on_registers(
             controls=phase_control.reshape(phase_control.shape + (1,)), target=phase_target
         )
         if self.global_phase != 1:
@@ -168,21 +164,23 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
+        cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
         costs: Set['BloqCountT'] = {
             (self.prepare_gate, 1),
             (self.prepare_gate.adjoint(), 1),
-            (MultiControlPauli([0] * n_phase_control, target_gate=cirq.Z), 1),
+            (MultiControlZ(cvs), 1),
         }
         if self.control_val is None:
             costs.add((XGate(), 2))
         if self.global_phase != 1:
-            if self.control_val is None:
-                costs.add((GlobalPhase(self.global_phase, self.eps), 1))
-            else:
-                costs.add(
-                    (ZPowGate(exponent=float(np.angle(self.global_phase)) / np.pi, eps=self.eps), 1)
-                )
+            phase_op: Bloq = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
+            if self.control_val is not None:
+                phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
+            costs.add((phase_op, 1))
         return costs
+
+    def adjoint(self) -> 'ReflectionUsingPrepare':
+        return self
 
 
 @bloq_example(generalizer=ignore_split_join)
@@ -191,7 +189,7 @@ def _refl_using_prep() -> ReflectionUsingPrepare:
 
     data = [1] * 5
     eps = 1e-2
-    prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
+    prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
 
     refl_using_prep = ReflectionUsingPrepare(prepare_gate)
     return refl_using_prep

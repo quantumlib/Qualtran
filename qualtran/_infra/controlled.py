@@ -31,7 +31,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from .bloq import Bloq
+from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import QBit, QDType
 from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
@@ -39,7 +39,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
+    from qualtran import BloqBuilder, CompositeBloq, ConnectionT, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -358,15 +358,19 @@ class Controlled(GateWithRegisters):
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
+        return Bloq.decompose_bloq(self)
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
-        from qualtran import BloqBuilder, CompositeBloq
+        from qualtran import CompositeBloq
 
         if isinstance(self.subbloq, CompositeBloq):
             cbloq = self.subbloq
         else:
             cbloq = self.subbloq.decompose_bloq()
 
-        bb, initial_soqs = BloqBuilder.from_signature(self.signature)
         ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -380,13 +384,19 @@ class Controlled(GateWithRegisters):
 
         fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
-        return bb.finalize(**fsoqs)
+        return fsoqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (bloq.controlled(self.ctrl_spec), n)
-            for bloq, n in self.subbloq.build_call_graph(ssa=ssa)
-        }
+        try:
+            sub_cg = self.subbloq.build_call_graph(ssa=ssa)
+        except DecomposeTypeError as e1:
+            raise DecomposeTypeError(f"Could not build call graph for {self}: {e1}") from e1
+        except DecomposeNotImplementedError as e2:
+            raise DecomposeNotImplementedError(
+                f"Could not build call graph for {self}: {e2}"
+            ) from e2
+
+        return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
@@ -400,17 +410,7 @@ class Controlled(GateWithRegisters):
 
         return vals
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
-
-        from qualtran._infra.composite_bloq import _flatten_soquet_collection
+    def _tensor_data(self):
         from qualtran.simulation.tensor._tensor_data_manipulation import (
             active_space_for_ctrl_spec,
             eye_tensor_for_signature,
@@ -419,17 +419,15 @@ class Controlled(GateWithRegisters):
 
         # Create an identity tensor corresponding to the signature of current Bloq
         data = eye_tensor_for_signature(self.signature)
-        # Verify it has the right shape
-        in_ind = _flatten_soquet_collection(incoming[reg.name] for reg in self.signature.lefts())
-        out_ind = _flatten_soquet_collection(outgoing[reg.name] for reg in self.signature.rights())
-        assert data.shape == tuple(2**soq.reg.bitsize for ind in [out_ind, in_ind] for soq in ind)
         # Figure out the ctrl indexes for which the ctrl is "active"
-        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
-        # Put the subbloq tensor at indices where ctrl is active.
         subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
-        data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
-        # Add the data to the tensor network.
-        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.pretty_name(), tag]))
+        subbloq_tensor = self.subbloq.tensor_contract()
+        if subbloq_shape:
+            subbloq_tensor = subbloq_tensor.reshape(subbloq_shape)
+        # Put the subbloq tensor at indices where ctrl is active.
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
+        data[active_idx] = subbloq_tensor
+        return data
 
     def _unitary_(self):
         if isinstance(self.subbloq, GateWithRegisters):
@@ -444,11 +442,24 @@ class Controlled(GateWithRegisters):
         # Unable to determine the unitary effect.
         return NotImplemented
 
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+
+        inds = _order_incoming_outgoing_indices(
+            self.signature, incoming=incoming, outgoing=outgoing
+        )
+        data = self._tensor_data().reshape((2,) * len(inds))
+        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(f'C[{self.subbloq.wire_symbol(reg=None)}]')
+            return Text(f'C[{self.subbloq}]')
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
             return self.subbloq.wire_symbol(reg, idx)

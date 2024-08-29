@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -30,11 +30,10 @@ if TYPE_CHECKING:
         Adjoint,
         BloqBuilder,
         CompositeBloq,
+        ConnectionT,
         CtrlSpec,
-        GateWithRegisters,
         Register,
         Signature,
-        Soquet,
         SoquetT,
     )
     from qualtran.cirq_interop import CirqQuregT
@@ -246,38 +245,39 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return bloq_to_dense(self)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         """Override this method to support native quimb simulation of this Bloq.
 
-        This method is responsible for adding a tensor corresponding to the unitary, state, or
-        effect of the bloq to the provided tensor network `tn`. Often, this method will add
-        one tensor for a given Bloq, but some bloqs can be represented in a factorized form
-        requiring the addition of more than one tensor.
+        This method is responsible for returning tensors corresponding to the unitary, state, or
+        effect of the bloq. Often, this method will return one tensor for a given Bloq, but
+        some bloqs can be represented in a factorized form using more than one tensor.
 
-        If this method is not overriden, the default implementation will try to use the bloq's
-        decomposition to find a dense representation for this bloq.
+        By default, calls to `Bloq.tensor_contract()` will first decompose and flatten the bloq
+        before initiating the conversion to a tensor network. This has two consequences:
+         1) Overriding this method is only necessary if this bloq does not define a decomposition
+            or if the fully-decomposed form contains a bloq that does not define its tensors.
+         2) Even if you override this method to provide custom tensors, they may not be used
+            (by default) because we prefer the flat-decomposed version. This is usually desirable
+            for contraction performance; but for finer-grained control see
+            `qualtran.simulation.tensor.cbloq_to_quimb`.
+
+        Quimb defines a connection between two tensors by a shared index. The returned tensors
+        from this method must use the Qualtran-Quimb index convention:
+         - Each tensor index is a tuple `(cxn, j)`
+         - The `cxn: qualtran.Connection` entry identifies the connection between bloq instances.
+         - The second integer `j` is the bit index within high-bitsize registers,
+           which is necessary due to technical restrictions.
 
         Args:
-            tn: The tensor network to which we add our tensor(s)
-            tag: An arbitrary tag that must be forwarded to `qtn.Tensor`'s `tag` attribute.
-            incoming: A mapping from register name to SoquetT to order left indices for
-                the tensor network.
-            outgoing: A mapping from register name to SoquetT to order right indices for
-                the tensor network.
+            incoming: A mapping from register name to Connection (or an array thereof) to use as
+                left indices for the tensor network. The shape of the array matches the register's
+                shape.
+            outgoing: A mapping from register name to Connection (or an array thereof) to use as
+                right indices for the tensor network.
         """
-        from qualtran.simulation.tensor import cbloq_as_contracted_tensor
-
-        cbloq = self.decompose_bloq()
-        tn.add(
-            cbloq_as_contracted_tensor(cbloq, incoming, outgoing, tags=[self.pretty_name(), tag])
-        )
+        raise NotImplementedError(f"{self} does not support tensor simulation.")
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         """Override this method to build the bloq call graph.
@@ -360,12 +360,11 @@ class Bloq(metaclass=abc.ABCMeta):
         Returns:
             A dictionary mapping subbloq to the number of times they appear in the decomposition.
         """
-        _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
-        return sigma
+        from qualtran.resource_counting import get_bloq_callee_counts
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+        return dict(get_bloq_callee_counts(self, generalizer=generalizer))
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         """Get a controlled version of this bloq and a function to wire it up correctly.
 
         Users should likely call `Bloq.controlled(...)` which uses this method behind-the-scenes.
@@ -399,10 +398,7 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
+        from qualtran import Controlled
 
         return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
@@ -422,6 +418,11 @@ class Bloq(metaclass=abc.ABCMeta):
         Returns:
             A controlled version of the bloq.
         """
+        from qualtran import CtrlSpec
+
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
         controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
         return controlled_bloq
 

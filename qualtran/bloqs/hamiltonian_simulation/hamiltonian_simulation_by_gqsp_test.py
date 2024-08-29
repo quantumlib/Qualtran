@@ -29,10 +29,11 @@ from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import
 )
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
-    check_polynomial_pair_on_random_points_on_unit_circle,
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle,
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O, BloqCount, get_cost_value
 from qualtran.symbolics import Shaped
@@ -46,9 +47,8 @@ def test_symbolic_examples(bloq_autotester):
     bloq_autotester(_symbolic_hamsim_by_gqsp)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2])
-@pytest.mark.parametrize("t", [2, 3, 5, 10])
+@pytest.mark.parametrize("t", [2, 3, 5, pytest.param(10, marks=pytest.mark.slow)])
 @pytest.mark.parametrize("precision", [1e-5, 1e-7])
 def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     bitsize: int, t: float, precision: float
@@ -61,7 +61,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
         gqsp = HamiltonianSimulationByGQSP(W, t=t, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=2 * precision
         )
         assert not isinstance(U, Shaped)
@@ -71,22 +71,23 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
 
 def verify_hamiltonian_simulation_by_gqsp(
-    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, precision: float
+    W: QubitizationWalkOperator, H: NDArray[np.complex128], *, t: float, precision: float
 ):
     N = H.shape[0]
 
     W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
-    result_unitary = cirq.unitary(W_e_iHt)
+    # TODO This cirq.unitary call is 4-5x faster than tensor_contract.
+    #      https://github.com/quantumlib/Qualtran/issues/1336
+    result_unitary = cirq.unitary(BloqAsCirqGate(W_e_iHt))
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=1e-4)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("select_bitsize", [1])
 @pytest.mark.parametrize("target_bitsize", [1, 2])
-@pytest.mark.parametrize("t", [2, 3, 5])
+@pytest.mark.parametrize("t", [2, 5])
 @pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-9])
 def test_hamiltonian_simulation_by_gqsp(
     select_bitsize: int, target_bitsize: int, t: float, precision: float
@@ -109,5 +110,5 @@ def test_hamiltonian_simulation_by_gqsp_t_complexity():
 
     symbolic_hamsim_by_gqsp = _symbolic_hamsim_by_gqsp()
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
-    T = big_O(tau * t + sympy.log(inv_eps) / sympy.log(sympy.log(inv_eps)))
+    T = big_O(tau * t + sympy.log(2 * inv_eps) / sympy.log(sympy.log(2 * inv_eps)))
     assert symbolic_hamsim_by_gqsp.t_complexity() == TComplexity(t=T, clifford=T, rotations=T)  # type: ignore[arg-type]

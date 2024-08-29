@@ -12,14 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
+
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
-    _black_box_lcu_zero_state_block,
-    _black_box_prepare,
-    _black_box_select,
+    _black_box_select_block,
     _lcu_block,
-    _lcu_zero_state_block,
+    _select_block,
 )
+from qualtran.testing import execute_notebook
 
 
 def test_lcu_block_encoding(bloq_autotester):
@@ -30,17 +31,14 @@ def test_black_box_lcu_block_encoding(bloq_autotester):
     bloq_autotester(_black_box_lcu_block)
 
 
-def test_lcu_zero_state_block_encoding(bloq_autotester):
-    bloq_autotester(_lcu_zero_state_block)
+def test_select_block_encoding(bloq_autotester):
+    bloq_autotester(_select_block)
 
 
-def test_black_box_lcu_zero_state_bloq_encoding(bloq_autotester):
-    bloq_autotester(_black_box_lcu_zero_state_block)
+def test_black_box_select_block_encoding(bloq_autotester):
+    bloq_autotester(_black_box_select_block)
 
 
-def test_black_box_prepare(bloq_autotester):
-    bloq_autotester(_black_box_prepare)
-
-
-def test_black_box_select(bloq_autotester):
-    bloq_autotester(_black_box_select)
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('lcu_block_encoding')

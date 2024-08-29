@@ -35,10 +35,12 @@ from qualtran import (
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
+    GlobalPhase,
     IntEffect,
     IntState,
     OneState,
     Swap,
+    TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
@@ -50,6 +52,7 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -338,9 +341,9 @@ def test_notebook():
 
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
-    cbloq = Controlled(bloq, ctrl_spec)
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
-    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 interesting_ctrl_specs = [
@@ -362,6 +365,26 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
     _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
 
 
+def test_controlled_tensor_without_decompose():
+    ctrl_spec = CtrlSpec()
+    bloq = TwoBitCSwap()
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
+    cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
+
+    tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
+    # pylint: disable=unbalanced-tuple-unpacking
+    right, left = get_right_and_left_inds(tn, ctrl_bloq.signature)
+    # pylint: enable=unbalanced-tuple-unpacking
+    np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+
+
+def test_controlled_global_phase_tensor():
+    bloq = GlobalPhase.from_coefficient(1.0j).controlled()
+    should_be = np.diag([1, 1.0j])
+    np.testing.assert_allclose(bloq.tensor_contract(), should_be)
+
+
 @attrs.frozen
 class TestCtrlStatePrepAnd(Bloq):
     """Decomposes into a Controlled-AND gate + int effects & targets where ctrl is active.
@@ -379,10 +402,10 @@ class TestCtrlStatePrepAnd(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
         one_or_zero = [ZeroState(), OneState()]
-        cbloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
+        ctrl_bloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
 
         ctrl_soqs = {}
-        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
             soqs = np.empty(shape=reg.shape, dtype=object)
             for idx in reg.all_idxs():
                 soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
@@ -390,10 +413,10 @@ class TestCtrlStatePrepAnd(Bloq):
 
         and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
 
-        ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
+        ctrl_soqs = bb.add_d(ctrl_bloq, **ctrl_soqs, ctrl=and_ctrl)
         out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
 
-        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
             for idx in reg.all_idxs():
                 ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
                 bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
@@ -401,8 +424,8 @@ class TestCtrlStatePrepAnd(Bloq):
 
 
 def _verify_ctrl_tensor_for_and(ctrl_spec: CtrlSpec, and_ctrl: Tuple[int, int]):
-    cbloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
-    bloq_tensor = cbloq.tensor_contract()
+    bloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
+    bloq_tensor = bloq.tensor_contract()
     cirq_state_vector = GateHelper(And(*and_ctrl)).circuit.final_state_vector(
         initial_state=and_ctrl + (0,)
     )

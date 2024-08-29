@@ -12,26 +12,27 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
-import attrs
 import numpy as np
-from attrs import frozen
+from attrs import evolve, field, frozen, validators
+from numpy.typing import NDArray
 
 from qualtran import (
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
     DecomposeTypeError,
     QAny,
+    QDType,
     Register,
     Side,
     Signature,
-    SoquetT,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
-from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
+from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -54,9 +55,21 @@ class Partition(_BookkeepingBloq):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: int
-    regs: Tuple[Register, ...]
+    n: SymbolicInt
+    regs: Tuple[Register, ...] = field(
+        converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
+    )
     partition: bool = True
+
+    def __attrs_post_init__(self):
+        if self.n != ssum(r.total_bits() for r in self.regs):
+            raise ValueError("Total bitsize not equal to sum of registers to partition into")
+        if len(set(r.name for r in self.regs)) != len(self.regs):
+            raise ValueError("Duplicate register names")
+
+    @cached_property
+    def lumped_dtype(self) -> QDType:
+        return QAny(bitsize=self.n)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -64,15 +77,15 @@ class Partition(_BookkeepingBloq):
         partitioned = Side.RIGHT if self.partition else Side.LEFT
 
         return Signature(
-            [Register('x', QAny(bitsize=self.n), side=lumped)]
-            + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
+            [Register('x', self.lumped_dtype, side=lumped)]
+            + [evolve(reg, side=partitioned) for reg in self.regs]
         )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f'{self} is atomic')
 
     def adjoint(self):
-        return attrs.evolve(self, partition=not self.partition)
+        return evolve(self, partition=not self.partition)
 
     def as_cirq_op(self, qubit_manager, **cirq_quregs) -> Tuple[None, Dict[str, 'CirqQuregT']]:
         if self.partition:
@@ -87,75 +100,63 @@ class Partition(_BookkeepingBloq):
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        unitary_shape = []
-        soquets = []
-        _incoming = incoming if self.partition else outgoing
-        _outgoing = outgoing if self.partition else incoming
-        for reg in self.regs:
-            for i in range(int(np.prod(reg.shape))):
-                unitary_shape.append(2**reg.bitsize)
-                outgoing_reg = _outgoing[reg.name]
-                if isinstance(outgoing_reg, np.ndarray):
-                    soquets.append(outgoing_reg.ravel()[i])
-                else:
-                    soquets.append(outgoing_reg)
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"cannot compute tensors for symbolic {self}")
 
-        tn.add(
-            qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape(
-                    tuple(unitary_shape) + (2**self.n,)
-                ),
-                inds=soquets + [_incoming['x']],
-                tags=['Partition', tag],
-            )
-        )
+        grouped = incoming['x'] if self.partition else outgoing['x']
+        partitioned = outgoing if self.partition else incoming
+
+        partitioned_inds = []
+        for reg in self.regs:
+            part_ind = partitioned[reg.name]
+            for idx in reg.all_idxs():
+                for j in range(reg.bitsize):
+                    if isinstance(part_ind, np.ndarray):
+                        partitioned_inds.append((part_ind[idx], j))
+                    else:
+                        partitioned_inds.append((part_ind, j))
+
+        return [
+            qtn.Tensor(data=np.eye(2), inds=[partitioned_inds[j], (grouped, j)], tags=[str(self)])
+            for j in range(self.n)
+        ]
 
     def _classical_partition(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         out_vals = {}
-        xbits = ints_to_bits(x, self.n)[0]
+        xbits = self.lumped_dtype.to_bits(x)
         start = 0
         for reg in self.regs:
             size = int(np.prod(reg.shape + (reg.bitsize,)))
             bits_reg = xbits[start : start + size]
             if reg.shape == ():
-                out_vals[reg.name] = bits_to_ints(bits_reg)[0]
+                out_vals[reg.name] = reg.dtype.from_bits(bits_reg)
             else:
-                ints_reg = bits_to_ints(
-                    [
-                        bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
-                        for i in range(np.prod(reg.shape))
-                    ]
+                out_vals[reg.name] = reg.dtype.from_bits_array(
+                    np.asarray(bits_reg).reshape(reg.shape + (reg.bitsize,))
                 )
-                out_vals[reg.name] = np.array(ints_reg).reshape(reg.shape)
             start += size
         return out_vals
 
-    def _classical_unpartition(self, **vals: 'ClassicalValT'):
-        out_vals = []
+    def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
+        out_vals: list[NDArray[np.uint8]] = []
         for reg in self.regs:
-            reg_val = vals[reg.name]
-            if isinstance(reg_val, np.ndarray):
-                out_vals.append(ints_to_bits(reg_val.ravel(), reg.bitsize).ravel())
-            else:
-                out_vals.append(ints_to_bits(reg_val, reg.bitsize)[0])
-        big_int = np.concatenate(out_vals)
-        return {'x': bits_to_ints(big_int)[0]}
+            reg_val = np.asarray(vals[reg.name])
+            bitstrings = reg.dtype.to_bits_array(reg_val.ravel())
+            out_vals.append(bitstrings.ravel())
+        return np.concatenate(out_vals)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if self.partition:
             return self._classical_partition(vals['x'])
         else:
-            return self._classical_unpartition(**vals)
+            big_int_bits = self._classical_unpartition_to_bits(**vals)
+            big_int = self.lumped_dtype.from_bits(big_int_bits.tolist())
+            return {'x': big_int}
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
