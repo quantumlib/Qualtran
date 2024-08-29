@@ -67,6 +67,9 @@ class PrepareIdentity(PrepareOracle):
             soqs[label] = bb.add(Identity(soq.reg.bitsize), q=soq)
         return soqs
 
+    def adjoint(self) -> 'PrepareIdentity':
+        return self
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _prepare_identity() -> PrepareIdentity:
