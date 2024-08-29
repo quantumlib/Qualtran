@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import Counter
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
@@ -164,11 +165,10 @@ class Adjoint(GateWithRegisters):
         if isinstance(sub_cg, dict):
             return {bloq.adjoint(): n for bloq, n in sub_cg.items()}
         else:
-            rtn: 'BloqCountDictT' = {}
+            counts = Counter['Bloq']()
             for bloq, n in sub_cg:
-                adj = bloq.adjoint()
-                rtn[adj] = n + rtn.get(adj, 0)
-            return rtn
+                counts[bloq.adjoint()] += n
+            return counts
 
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""

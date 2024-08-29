@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import (
     Any,
@@ -38,7 +39,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, CompositeBloq, ConnectionT, SoquetT
+    from qualtran import Bloq, BloqBuilder, CompositeBloq, ConnectionT, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -398,11 +399,10 @@ class Controlled(GateWithRegisters):
         if isinstance(sub_cg, dict):
             return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
         else:
-            rtn: 'BloqCountDictT' = {}
+            counts = Counter['Bloq']()
             for bloq, n in sub_cg:
-                controlled = bloq.controlled(self.ctrl_spec)
-                rtn[controlled] = n + rtn.get(controlled, 0)
-            return rtn
+                counts[bloq.controlled(self.ctrl_spec)] += n
+            return counts
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
