@@ -24,7 +24,7 @@ from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import bloq_is_rotation, bloq_is_t_like
 
 
-def test_rotation_gates():
+def test_t_like_rotation_gates():
     angle = np.pi / 4.0
     # In prior versions of the library, only Rz(pi/4) would simplify to a T gate in gate counts.
     # The others would report the synthesis cost for an arbitrary angle, which was reported as
