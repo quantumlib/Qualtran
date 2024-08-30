@@ -23,7 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     Register,
     Signature,
@@ -198,7 +198,7 @@ class LinearCombination(BlockEncoding):
         # disable spurious pylint
         # pylint: disable=abstract-class-instantiated
         prep = StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,

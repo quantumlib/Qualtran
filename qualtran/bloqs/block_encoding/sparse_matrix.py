@@ -26,7 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -94,7 +94,7 @@ class RowColumnOracle(Bloq, abc.ABC):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
-            l=BoundedQUInt(self.system_bitsize, self.num_nonzero), i=QUInt(self.system_bitsize)
+            l=BQUInt(self.system_bitsize, self.num_nonzero), i=QUInt(self.system_bitsize)
         )
 
 

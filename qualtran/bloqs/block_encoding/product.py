@@ -12,14 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, List, Tuple, Union
+from typing import cast, Dict, List, Sequence, Set, Tuple, Union
 
-from attrs import evolve, field, frozen, validators
+from attrs import field, frozen, validators
 from numpy.typing import NDArray
 from typing_extensions import Self
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -38,7 +40,10 @@ from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics.math_funcs import is_zero
 
 
 @frozen
@@ -129,6 +134,54 @@ class Product(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare:
         return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
+    @property
+    def anc_part(self) -> Partition:
+        n = len(self.block_encodings)
+        anc_regs = []
+        if n - 1 > 0:
+            anc_regs.append(Register("flag_bits", dtype=QBit(), shape=(n - 1,)))
+        anc_bits = self.ancilla_bitsize - (n - 1)
+        if not is_zero(anc_bits):
+            anc_regs.append(Register("ancilla", dtype=QAny(anc_bits)))
+        return Partition(cast(int, self.ancilla_bitsize), tuple(anc_regs))
+
+    @property
+    def constituents(self) -> Sequence[Bloq]:
+        n = len(self.block_encodings)
+        anc_bits = self.ancilla_bitsize - (n - 1)
+        ret = []
+        for u in reversed(self.block_encodings):
+            partition: List[Tuple[Register, List[Union[str, Unused]]]] = [
+                (Register("system", dtype=QAny(u.system_bitsize)), ["system"])
+            ]
+            if is_symbolic(u.ancilla_bitsize) or u.ancilla_bitsize > 0:
+                regs: List[Union[str, Unused]] = ["ancilla"]
+                if (
+                    is_symbolic(anc_bits)
+                    or is_symbolic(u.ancilla_bitsize)
+                    or anc_bits > u.ancilla_bitsize
+                ):
+                    regs.append(Unused(anc_bits - u.ancilla_bitsize))
+                partition.append((Register("ancilla", dtype=QAny(anc_bits)), regs))
+            if not is_zero(u.resource_bitsize):
+                regs = ["resource"]
+                if is_symbolic(self.resource_bitsize) or self.resource_bitsize > u.resource_bitsize:
+                    regs.append(Unused(self.resource_bitsize - u.resource_bitsize))
+                partition.append((Register("resource", dtype=QAny(u.resource_bitsize)), regs))
+            ret.append(AutoPartition(u, partition, left_only=False))
+        return ret
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+        counts = Counter[Bloq]()
+        for bloq in self.constituents:
+            counts[bloq] += 1
+        n = len(self.block_encodings)
+        for i, u in enumerate(reversed(self.block_encodings)):
+            if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
+                counts[MultiControlX(HasLength(u.ancilla_bitsize))] += 1
+                counts[XGate()] += 1
+        return set(counts.items())
+
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
@@ -142,14 +195,8 @@ class Product(BlockEncoding):
 
         if self.ancilla_bitsize > 0:
             # partition ancilla into flag and inner ancilla
-            anc_regs = []
-            if n - 1 > 0:
-                anc_regs.append(Register("flag_bits", dtype=QBit(), shape=(n - 1,)))
             anc_bits = self.ancilla_bitsize - (n - 1)
-            if anc_bits > 0:
-                anc_regs.append(Register("ancilla", dtype=QAny(anc_bits)))
-            anc_part = Partition(self.ancilla_bitsize, tuple(anc_regs))
-            anc_part_soqs = bb.add_d(anc_part, x=soqs.pop("ancilla"))
+            anc_part_soqs = bb.add_d(self.anc_part, x=soqs.pop("ancilla"))
             if n - 1 > 0:
                 flag_bits_soq = cast(NDArray, anc_part_soqs.pop("flag_bits"))
             if anc_bits > 0:
@@ -166,22 +213,11 @@ class Product(BlockEncoding):
             assert not is_symbolic(u.ancilla_bitsize)
             assert not is_symbolic(u.resource_bitsize)
             u_soqs = {"system": system}
-            partition: List[Tuple[Register, List[Union[str, Unused]]]] = [
-                (Register("system", dtype=QAny(u.system_bitsize)), ["system"])
-            ]
             if u.ancilla_bitsize > 0:
                 u_soqs["ancilla"] = anc_soq
-                regs: List[Union[str, Unused]] = ["ancilla"]
-                if anc_bits > u.ancilla_bitsize:
-                    regs.append(Unused(anc_bits - u.ancilla_bitsize))
-                partition.append((Register("ancilla", dtype=QAny(anc_bits)), regs))
             if u.resource_bitsize > 0:
                 u_soqs["resource"] = res_soq
-                regs = ["resource"]
-                if self.resource_bitsize > u.resource_bitsize:
-                    regs.append(Unused(self.resource_bitsize - u.resource_bitsize))
-                partition.append((Register("resource", dtype=QAny(u.resource_bitsize)), regs))
-            u_out_soqs = bb.add_d(AutoPartition(u, partition, left_only=False), **u_soqs)
+            u_out_soqs = bb.add_d(self.constituents[i], **u_soqs)
             system = u_out_soqs.pop("system")
             if u.ancilla_bitsize > 0:
                 anc_soq = u_out_soqs.pop("ancilla")
@@ -208,14 +244,14 @@ class Product(BlockEncoding):
                 anc_soqs["flag_bits"] = flag_bits_soq
             if anc_bits > 0:
                 anc_soqs["ancilla"] = anc_soq
-            out["ancilla"] = cast(Soquet, bb.add(evolve(anc_part, partition=False), **anc_soqs))
+            out["ancilla"] = cast(Soquet, bb.add(self.anc_part.adjoint(), **anc_soqs))
         return out
 
     def __str__(self) -> str:
         return f"B[{'*'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _product_block_encoding() -> Product:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
