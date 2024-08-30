@@ -654,14 +654,14 @@ def _dirtyoutofplacemontgomerymodmul_small() -> DirtyOutOfPlaceMontgomeryModMul:
 
 
 @bloq_example(generalizer=[ignore_alloc_free, ignore_split_join])
-def _dirtyoutofplacemontgomerymodmul_large() -> DirtyOutOfPlaceMontgomeryModMul:
-    dirtyoutofplacemontgomerymodmul_large = DirtyOutOfPlaceMontgomeryModMul(
-        bitsize=28, window_size=4, mod=2**28 - 1
+def _dirtyoutofplacemontgomerymodmul_medium() -> DirtyOutOfPlaceMontgomeryModMul:
+    dirtyoutofplacemontgomerymodmul_medium = DirtyOutOfPlaceMontgomeryModMul(
+        bitsize=15, window_size=4, mod=2**15 - 1
     )
-    return dirtyoutofplacemontgomerymodmul_large
+    return dirtyoutofplacemontgomerymodmul_medium
 
 
 _DIRTY_OUT_OF_PLACE_MONTGOMERY_MOD_MUL_DOC = BloqDocSpec(
     bloq_cls=DirtyOutOfPlaceMontgomeryModMul,
-    examples=(_dirtyoutofplacemontgomerymodmul_small, _dirtyoutofplacemontgomerymodmul_large),
+    examples=(_dirtyoutofplacemontgomerymodmul_small, _dirtyoutofplacemontgomerymodmul_medium),
 )

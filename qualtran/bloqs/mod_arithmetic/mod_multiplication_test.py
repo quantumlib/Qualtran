@@ -20,7 +20,7 @@ import qualtran.testing as qlt_testing
 from qualtran import QMontgomeryUInt, QUInt
 from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import (
-    _dirtyoutofplacemontgomerymodmul_large,
+    _dirtyoutofplacemontgomerymodmul_medium,
     _dirtyoutofplacemontgomerymodmul_small,
     _moddbl_large,
     _moddbl_small,
@@ -139,8 +139,9 @@ def test_examples_dirtyoutofplacemontgomerymodmul_small(bloq_autotester):
     bloq_autotester(_dirtyoutofplacemontgomerymodmul_small)
 
 
-def test_examples_dirtyoutofplacemontgomerymodmul_large(bloq_autotester):
-    bloq_autotester(_dirtyoutofplacemontgomerymodmul_large)
+@pytest.mark.slow
+def test_examples_dirtyoutofplacemontgomerymodmul_medium(bloq_autotester):
+    bloq_autotester(_dirtyoutofplacemontgomerymodmul_medium)
 
 
 @pytest.mark.notebook
