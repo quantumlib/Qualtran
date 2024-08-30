@@ -241,6 +241,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             'and_bloq': 'Ands',
             'clifford': 'Cliffords',
             'rotation': 'Rotations',
+            'rotations': 'Rotations',
             'measurement': 'Measurements',
         }
         counts_dict: Mapping[str, SymbolicInt]
@@ -252,6 +253,8 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             counts_dict = val.total_t_and_ccz_count()
         elif agg == 'beverland':
             counts_dict = val.total_beverland_count()
+        elif agg == 'legacy':
+            counts_dict = val.to_legacy_t_complexity().asdict()
         else:
             raise ValueError(f"Unknown aggregation mode {agg}.")
 
