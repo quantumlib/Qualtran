@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QBit
 from qualtran.bloqs.arithmetic.permutation import (
     _permutation,
@@ -63,6 +64,22 @@ from qualtran.symbolics import ceil, log2, slen
 )
 def test_examples(bloq_autotester, bloq_ex):
     bloq_autotester(bloq_ex)
+
+
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _permutation_cycle,
+        _permutation,
+        _sparse_permutation,
+        _permutation_cycle_symb_N,
+        _permutation_symb_with_cycles,
+        _sparse_permutation_with_symbolic_N,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_decomposition(bloq_ex):
+    qlt_testing.assert_valid_bloq_decomposition(bloq_ex.make())
 
 
 def test_permutation_cycle_unitary_and_call_graph():
