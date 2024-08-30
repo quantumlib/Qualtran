@@ -337,6 +337,7 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(cswap=1)
 
         if isinstance(bloq, MultiTargetCNOT):
+            # TODO(https://github.com/quantumlib/Qualtran/issues/1318): Decide how to count this.
             if self.legacy_shims:
                 # Legacy mode: don't treat this as one clifford. Use its decomposition.
                 pass  # fall through
