@@ -86,6 +86,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     Signature,
     Soquet,
@@ -148,7 +149,8 @@ class StatePreparationViaRotations(GateWithRegisters):
         # negative number of control bits is not allowed
         assert self.control_bitsize >= 0
         # the register to which the angle is written must be at least of size two
-        assert self.phase_bitsize > 1
+        if not is_symbolic(self.phase_bitsize):
+            assert self.phase_bitsize > 1
         # a valid quantum state must have norm one
         assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
 
@@ -175,7 +177,7 @@ class StatePreparationViaRotations(GateWithRegisters):
 
     @property
     def prga_prepare_amplitude(self) -> List['PRGAViaPhaseGradient']:
-        if is_symbolic(self.state_coefficients):
+        if is_symbolic(self.state_coefficients, self.phase_bitsize):
             return [
                 PRGAViaPhaseGradient(
                     selection_bitsize=self.state_bitsize,
@@ -199,8 +201,8 @@ class StatePreparationViaRotations(GateWithRegisters):
     @property
     def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
         data_or_shape: Union[Shaped, Tuple[int, ...]] = (
-            Shaped((self.state_coefficients.n,))
-            if isinstance(self.state_coefficients, HasLength)
+            Shaped((slen(self.state_coefficients),))
+            if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize)
             else tuple(self.rotation_tree.get_rom_vals()[1])
         )
         return PRGAViaPhaseGradient(
@@ -216,6 +218,9 @@ class StatePreparationViaRotations(GateWithRegisters):
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
+        if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize):
+            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+
         if self.uncompute:
             soqs = self._prepare_phases(bb, **soqs)
             soqs = self._prepare_amplitudes(bb, **soqs)
