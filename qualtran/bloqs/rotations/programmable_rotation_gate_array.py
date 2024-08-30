@@ -24,7 +24,7 @@ from numpy.typing import NDArray
 from qualtran import (
     bloq_example,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     GateWithRegisters,
     QAny,
     QUInt,
@@ -112,7 +112,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(self._selection_bitsize, len(self.angles[0]))),)
+        return (Register('selection', BQUInt(self._selection_bitsize, len(self.angles[0]))),)
 
     @cached_property
     def kappa_load_target(self) -> Tuple[Register, ...]:

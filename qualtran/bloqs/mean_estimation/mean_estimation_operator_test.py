@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import BoundedQUInt, QAny, QBit, QUInt, Register
+from qualtran import BQUInt, QAny, QBit, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
@@ -41,7 +41,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('q', BoundedQUInt(self.nqubits, 2)),)
+        return (Register('q', BQUInt(self.nqubits, 2)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid]
@@ -67,7 +67,7 @@ class BernoulliEncoder(SelectOracle, SpecializedSingleQubitControlledExtension):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('q', BoundedQUInt(self.selection_bitsize, 2)),)
+        return (Register('q', BQUInt(self.selection_bitsize, 2)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

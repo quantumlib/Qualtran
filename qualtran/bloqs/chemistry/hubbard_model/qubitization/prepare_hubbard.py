@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.bloqs.mod_arithmetic import ModAddK
@@ -81,14 +81,14 @@ class PrepareHubbard(PrepareOracle):
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            Register('U', BoundedQUInt(1, 2)),
-            Register('V', BoundedQUInt(1, 2)),
-            Register('p_x', BoundedQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
-            Register('p_y', BoundedQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
-            Register('alpha', BoundedQUInt(1, 2)),
-            Register('q_x', BoundedQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
-            Register('q_y', BoundedQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
-            Register('beta', BoundedQUInt(1, 2)),
+            Register('U', BQUInt(1, 2)),
+            Register('V', BQUInt(1, 2)),
+            Register('p_x', BQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
+            Register('p_y', BQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
+            Register('alpha', BQUInt(1, 2)),
+            Register('q_x', BQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
+            Register('q_y', BQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
+            Register('beta', BQUInt(1, 2)),
         )
 
     @cached_property

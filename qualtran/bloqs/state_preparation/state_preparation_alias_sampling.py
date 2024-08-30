@@ -26,7 +26,7 @@ import attrs
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
@@ -160,7 +160,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         )
         N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
@@ -191,7 +191,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            selection_registers=Register('selection', BQUInt(selection_bitsize, n_coeff)),
             alt=alt,
             keep=keep,
             mu=mu,
@@ -407,7 +407,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         alt = [index[idx] for idx in alt_compressed]
 
         return cls(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             index=np.array(index),
             alt=np.array(alt),
             keep=np.array(keep),
@@ -463,7 +463,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         mu = sub_bit_prec_from_epsilon(n_coeff, precision)
         selection_bitsize = bit_length(n_coeff - 1)
         return cls(
-            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            selection_registers=Register('selection', BQUInt(selection_bitsize, n_coeff)),
             index=Shaped((n_nonzero_coeff,)),
             alt=Shaped((n_nonzero_coeff,)),
             keep=Shaped((n_nonzero_coeff,)),

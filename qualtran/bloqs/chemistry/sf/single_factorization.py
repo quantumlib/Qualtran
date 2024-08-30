@@ -41,7 +41,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.block_encoding import BlockEncoding
@@ -145,26 +145,25 @@ class SingleFactorizationOneBody(BlockEncoding):
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register(
-                "l",
-                BoundedQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1),
+                "l", BQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1)
             ),
             Register(
                 "p",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "q",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("rot_aa", BoundedQUInt(bitsize=1)),
-            Register("swap_pq", BoundedQUInt(bitsize=1)),
-            Register("spin", BoundedQUInt(bitsize=1)),
+            Register("rot_aa", BQUInt(bitsize=1)),
+            Register("swap_pq", BQUInt(bitsize=1)),
+            Register("spin", BQUInt(bitsize=1)),
         )
 
     @property
