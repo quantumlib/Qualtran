@@ -34,7 +34,7 @@ def test_qpic_data_for_reflect_using_prepare():
 DEFINE off color=white
 DEFINE on color=black
 selection W \textrm{\scalebox{0.8}{selection}}
-selection / \textrm{\scalebox{0.5}{BoundedQUInt(2, 4)}}
+selection / \textrm{\scalebox{0.5}{BQUInt(2, 4)}}
 LABEL length=10
 selection G:width=17:shape=box \textrm{\scalebox{0.8}{R\_L}}
 """,

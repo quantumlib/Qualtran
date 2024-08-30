@@ -23,7 +23,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BloqDocSpec, BoundedQUInt, QAny, Register, Side
+from qualtran import BloqDocSpec, BQUInt, QAny, Register, Side
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicInt
 
@@ -285,7 +285,7 @@ class QROMBase(metaclass=abc.ABCMeta):
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         types = [
-            BoundedQUInt(sb, l)
+            BQUInt(sb, l)
             for l, sb in zip(self.data_shape, self.selection_bitsizes)
             if is_symbolic(l) or l > 1
         ]

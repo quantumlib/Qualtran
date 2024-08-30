@@ -18,7 +18,15 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CtrlSpec,
+    GateWithRegisters,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
@@ -108,8 +116,8 @@ class QubitizationQPE(GateWithRegisters):
         walk_regs = {reg.name: quregs[reg.name] for reg in self.walk.signature}
         reflect_regs = {reg.name: walk_regs[reg.name] for reg in self.walk.reflect.signature}
 
-        reflect_controlled = self.walk.reflect.controlled(control_values=[0])
-        walk_controlled = self.walk.controlled(control_values=[1])
+        reflect_controlled = self.walk.reflect.controlled(ctrl_spec=CtrlSpec(cvs=0))
+        walk_controlled = self.walk.controlled()
 
         qpre_reg = quregs['qpe_reg']
 
@@ -128,8 +136,8 @@ class QubitizationQPE(GateWithRegisters):
         M = 2**self.m_bits
         return {
             (self.ctrl_state_prep, 1),
-            (self.walk.controlled(control_values=[1]), 1),
-            (self.walk.reflect.controlled(control_values=[0]), 2 * (self.m_bits - 1)),
+            (self.walk.controlled(), 1),
+            (self.walk.reflect.controlled(ctrl_spec=CtrlSpec(cvs=0)), 2 * (self.m_bits - 1)),
             (self.walk, M - 2),
             (self.qft_inv, 1),
         }

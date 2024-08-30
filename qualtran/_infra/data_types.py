@@ -413,12 +413,12 @@ class QUInt(QDType):
 
 
 @attrs.frozen
-class BoundedQUInt(QDType):
+class BQUInt(QDType):
     """Unsigned integer whose values are bounded within a range.
 
     LCU methods often make use of coherent for-loops via UnaryIteration, iterating over a range
     of values stored as a superposition over the `SELECT` register. Such (nested) coherent
-    for-loops can be represented using a `Tuple[Register(dtype=BoundedQUInt),
+    for-loops can be represented using a `Tuple[Register(dtype=BQUInt),
     ...]` where the i'th entry stores the bitsize and iteration length of i'th
     nested for-loop.
 
@@ -466,7 +466,7 @@ class BoundedQUInt(QDType):
         if not self.is_symbolic():
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
-                    "BoundedQUInt iteration length is too large for given bitsize. "
+                    "BQUInt iteration length is too large for given bitsize. "
                     f"{self.iteration_length} vs {2**self.bitsize}"
                 )
 
@@ -810,8 +810,8 @@ class QMontgomeryUInt(QDType):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
 
-QAnyInt = (QInt, QUInt, BoundedQUInt, QMontgomeryUInt)
-QAnyUInt = (QUInt, BoundedQUInt, QMontgomeryUInt)
+QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
+QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt)
 
 
 class QDTypeCheckingSeverity(Enum):
@@ -827,7 +827,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(a: Union[QUInt, BoundedQUInt, QMontgomeryUInt], b: QFxp) -> bool:
+def _check_uint_fxp_consistent(a: Union[QUInt, BQUInt, QMontgomeryUInt], b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False
