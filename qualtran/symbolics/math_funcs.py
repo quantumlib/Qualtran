@@ -323,5 +323,10 @@ def is_zero(x: SymbolicInt) -> bool:
     or could not be symbolically symplified to a zero.
     """
     if is_symbolic(x):
-        return x.equals(0)
+        try:
+            zero = x.equals(0)
+        except ValueError:
+            zero = False
+        return zero
+
     return x == 0
