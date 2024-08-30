@@ -113,6 +113,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'permutation_symb',  # cannot serialize shaped
         'permutation_symb_with_cycles',  # Object arrays cannot be saved when allow_pickle=False
         'sparse_permutation_with_symbolic_N',  # setting an array element with a sequence.
+        'state_prep_via_rotation_symb',  # cannot serialize HasLength
+        'state_prep_via_rotation_symb_phasegrad',  # cannot serialize Shaped
         'sparse_state_prep_via_rotations',  # cannot serialize Permutation
         'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
         'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition

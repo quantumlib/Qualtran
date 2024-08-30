@@ -355,9 +355,33 @@ def _state_prep_via_rotation_symb() -> StatePreparationViaRotations:
     return state_prep_via_rotation_symb
 
 
+@bloq_example
+def _state_prep_via_rotation_symb_phasegrad() -> StatePreparationViaRotations:
+    state_coefs = (
+        (-0.42677669529663675 - 0.1767766952966366j),
+        (0.17677669529663664 - 0.4267766952966367j),
+        (0.17677669529663675 - 0.1767766952966368j),
+        (0.07322330470336305 - 0.07322330470336309j),
+        (0.4267766952966366 - 0.17677669529663692j),
+        (0.42677669529663664 + 0.17677669529663675j),
+        (0.0732233047033631 + 0.17677669529663678j),
+        (-0.07322330470336308 - 0.17677669529663678j),
+    )
+
+    phase_bitsize = sympy.Symbol(r"b_\text{grad}")
+    state_prep_via_rotation_symb = StatePreparationViaRotations(
+        state_coefficients=state_coefs, phase_bitsize=phase_bitsize
+    )
+    return state_prep_via_rotation_symb
+
+
 _STATE_PREP_VIA_ROTATIONS_DOC = BloqDocSpec(
     bloq_cls=StatePreparationViaRotations,
-    examples=(_state_prep_via_rotation, _state_prep_via_rotation_symb),
+    examples=(
+        _state_prep_via_rotation,
+        _state_prep_via_rotation_symb,
+        _state_prep_via_rotation_symb_phasegrad,
+    ),
 )
 
 
