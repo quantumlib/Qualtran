@@ -141,6 +141,16 @@ def _permutation_cycle() -> PermutationCycle:
 
 
 @bloq_example
+def _permutation_cycle_symb_N() -> PermutationCycle:
+    import sympy
+
+    N = sympy.symbols("n", positive=True, integer=True)
+    cycle = (3, 1, 2)
+    permutation_cycle_symb_N = PermutationCycle(N, cycle)
+    return permutation_cycle_symb_N
+
+
+@bloq_example
 def _permutation_cycle_symb() -> PermutationCycle:
     import sympy
 
@@ -155,7 +165,7 @@ def _permutation_cycle_symb() -> PermutationCycle:
 _PERMUTATION_CYCLE_DOC = BloqDocSpec(
     bloq_cls=PermutationCycle,
     import_line='from qualtran.bloqs.arithmetic.permutation import PermutationCycle',
-    examples=[_permutation_cycle, _permutation_cycle_symb],
+    examples=[_permutation_cycle_symb_N, _permutation_cycle_symb, _permutation_cycle],
 )
 
 
@@ -304,8 +314,25 @@ def _sparse_permutation() -> Permutation:
     return sparse_permutation
 
 
+@bloq_example
+def _sparse_permutation_with_symbolic_N() -> Permutation:
+    import sympy
+
+    N = sympy.symbols("N", positive=True, integer=True)
+    sparse_permutation_with_symbolic_N = Permutation.from_partial_permutation_map(
+        N, {0: 1, 1: 3, 2: 4, 3: 7}
+    )
+    return sparse_permutation_with_symbolic_N
+
+
 _PERMUTATION_DOC = BloqDocSpec(
     bloq_cls=Permutation,
     import_line='from qualtran.bloqs.arithmetic.permutation import Permutation',
-    examples=[_permutation, _permutation_symb, _permutation_symb_with_cycles, _sparse_permutation],
+    examples=[
+        _permutation,
+        _permutation_symb,
+        _permutation_symb_with_cycles,
+        _sparse_permutation,
+        _sparse_permutation_with_symbolic_N,
+    ],
 )
