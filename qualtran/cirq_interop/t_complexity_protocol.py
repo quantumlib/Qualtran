@@ -163,10 +163,10 @@ def _from_bloq_build_call_graph(bloq: Bloq) -> Optional[TComplexity]:
         return None
 
     ret = TComplexity()
-    if isinstance(callee_counts, dict):
-        callee_iterator: Iterable[BloqCountT] = callee_counts.items()
+    if isinstance(callee_counts, set):
+        callee_iterator: Iterable[BloqCountT] = callee_counts
     else:
-        callee_iterator = callee_counts
+        callee_iterator = callee_counts.items()
     for callee, n in callee_iterator:
         r = t_complexity(callee)
         if r is None:

@@ -396,13 +396,13 @@ class Controlled(GateWithRegisters):
                 f"Could not build call graph for {self}: {e2}"
             ) from e2
 
-        if isinstance(sub_cg, dict):
-            return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
-        else:
+        if isinstance(sub_cg, set):
             counts = Counter['Bloq']()
             for bloq, n in sub_cg:
                 counts[bloq.controlled(self.ctrl_spec)] += n
-            return dict(counts)
+            return counts
+        else:
+            return {bloq.controlled(self.ctrl_spec): n for bloq, n in sub_cg.items()}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
