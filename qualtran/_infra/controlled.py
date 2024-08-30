@@ -312,10 +312,12 @@ class Controlled(GateWithRegisters):
     subbloq: 'Bloq'
     ctrl_spec: 'CtrlSpec'
 
-    def __attrs_post_init__(self):
+    @cached_property
+    def _thru_registers_only(self) -> bool:
         for reg in self.subbloq.signature:
             if reg.side != Side.THRU:
-                raise ValueError(f"Cannot control non-thru bloqs. Found {reg} in {self.subbloq}")
+                return False
+        return True
 
     @classmethod
     def make_ctrl_system(cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec') -> Tuple[Bloq, AddControlledT]:
@@ -368,6 +370,9 @@ class Controlled(GateWithRegisters):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        if not self._thru_registers_only:
+            raise DecomposeTypeError(f"Cannot handle non-thru registers in {self.subbloq}")
+
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
         from qualtran import CompositeBloq
 
@@ -404,6 +409,8 @@ class Controlled(GateWithRegisters):
         return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
         other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
         if self.ctrl_spec.is_active(*ctrl_vals):
@@ -416,6 +423,8 @@ class Controlled(GateWithRegisters):
         return vals
 
     def _tensor_data(self):
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
         from qualtran.simulation.tensor._tensor_data_manipulation import (
             active_space_for_ctrl_spec,
             eye_tensor_for_signature,
@@ -445,7 +454,7 @@ class Controlled(GateWithRegisters):
             # to a unitary matrix.
             return self.tensor_contract()
         # Unable to determine the unitary effect.
-        return NotImplemented
+        raise ValueError(f"Cannot handle non-thru registers in {self}.")
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
