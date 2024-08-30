@@ -22,7 +22,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
+from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
@@ -82,9 +82,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitCon
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register('selection', BoundedQUInt(self.selection_bitsize, len(self.select_unitaries))),
-        )
+        return (Register('selection', BQUInt(self.selection_bitsize, len(self.select_unitaries))),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
