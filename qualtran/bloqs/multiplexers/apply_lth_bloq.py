@@ -20,7 +20,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Side
+from qualtran import Bloq, bloq_example, BloqDocSpec, BQUInt, QBit, Register, Side
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -81,7 +81,7 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
             return tuple(
                 Register(
                     "selection" if len(self.ops.shape) == 1 else f"selection{i}",
-                    BoundedQUInt(ceil(log2(k)), k),
+                    BQUInt(ceil(log2(k)), k),
                 )
                 for i, k in enumerate(self.ops.shape)
             )

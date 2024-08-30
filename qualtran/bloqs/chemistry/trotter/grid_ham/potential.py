@@ -30,7 +30,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
@@ -124,7 +124,7 @@ class PairPotential(Bloq):
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
         cast = Cast(
             inp_dtype=sos.reg.dtype,
-            out_dtype=BoundedQUInt(sos.reg.dtype.bitsize, iteration_length=len(self.qrom_data[0])),
+            out_dtype=BQUInt(sos.reg.dtype.bitsize, iteration_length=len(self.qrom_data[0])),
         )
         sos = bb.add(cast, reg=sos)
         qrom_bloq = QROM(
