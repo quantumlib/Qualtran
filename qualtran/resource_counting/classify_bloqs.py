@@ -182,26 +182,12 @@ def bloq_is_clifford(b: Bloq) -> bool:
     )
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
-    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 
     if isinstance(b, Adjoint):
         b = b.subbloq
 
     if isinstance(
-        b,
-        (
-            TwoBitSwap,
-            Hadamard,
-            XGate,
-            ZGate,
-            YGate,
-            ArbitraryClifford,
-            CNOT,
-            MultiTargetCNOT,
-            CYGate,
-            CZ,
-            SGate,
-        ),
+        b, (TwoBitSwap, Hadamard, XGate, ZGate, YGate, ArbitraryClifford, CNOT, CYGate, CZ, SGate)
     ):
         return True
 

@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
+import warnings
 from collections import defaultdict
-from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
+from typing import Callable, cast, Dict, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
@@ -33,6 +34,7 @@ from .classify_bloqs import (
 
 if TYPE_CHECKING:
     from qualtran import Bloq
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +211,38 @@ class GateCounts:
         n_t = self.t + ts_per_rotation * self.rotation
         return {'n_t': n_t, 'n_ccz': n_ccz}
 
+    def to_legacy_t_complexity(
+        self,
+        ts_per_toffoli: int = 4,
+        ts_per_cswap: int = 7,
+        ts_per_and_bloq: int = 4,
+        cliffords_per_and_bloq: int = 9,
+        cliffords_per_cswap: int = 10,
+    ) -> 'TComplexity':
+        """Return a legacy `TComplexity` object.
+
+        This coalesces all the gate types into t, rotations, and clifford fields. The conversion
+        factors can be tweaked using the arguments to this method.
+
+        The argument `cliffords_per_and_bloq` sets the base number of clifford gates to
+        add per `self.and_bloq`. To fully match the exact legacy `t_complexity` numbers, you
+        must enable `QECGatesCost(legacy_shims=True)`, which will enable a shim that directly
+        adds on clifford counts for the X-gates used to invert the And control lines.
+        """
+        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+        return TComplexity(
+            t=self.t
+            + ts_per_toffoli * self.toffoli
+            + ts_per_cswap * self.cswap
+            + ts_per_and_bloq * self.and_bloq,
+            rotations=cast(int, self.rotation),
+            clifford=self.clifford
+            + self.measurement
+            + cliffords_per_and_bloq * self.and_bloq
+            + cliffords_per_cswap * self.cswap,
+        )
+
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
         r"""Counts used by Beverland. et. al. using notation from the reference.
 
@@ -235,18 +269,36 @@ class GateCounts:
         }
 
 
-@frozen
+@frozen(kw_only=True)
 class QECGatesCost(CostKey[GateCounts]):
     """Counts specifically for 'expensive' gates in a surface code error correction scheme.
 
     The cost value type for this CostKey is `GateCounts`.
+
+    Args:
+        legacy_shims: If enabled, modify the counting logic to match the peculiarities of
+            the legacy `t_complexity` protocol.
     """
+
+    legacy_shims: bool = False
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
         from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
-        from qualtran.bloqs.mcmt.and_bloq import And
+        from qualtran.bloqs.mcmt import And, MultiTargetCNOT
+
+        if self.legacy_shims:
+            legacy_val = bloq._t_complexity_()
+            if legacy_val is not NotImplemented:
+                warnings.warn(
+                    "Please migrate explicit cost annotations to the general "
+                    "`Bloq.my_static_costs` method override.",
+                    DeprecationWarning,
+                )
+                return GateCounts(
+                    t=legacy_val.t, clifford=legacy_val.clifford, rotation=legacy_val.rotations
+                )
 
         # T gates
         if bloq_is_t_like(bloq):
@@ -262,13 +314,35 @@ class QECGatesCost(CostKey[GateCounts]):
 
         # 'And' bloqs
         if isinstance(bloq, And):
+            # To match the legacy `t_complexity` protocol, we can hack in the explicit
+            # counts for the clifford operations used to invert the control bit.
+            # Note: we *only* add in the clifford operations that correspond to correctly
+            # setting the control line. The other clifford operations inherent in compiling
+            # an And gate to the gateset considered by the legacy `t_complexity` protocol can be
+            # simply added in as part of `GateCounts.to_legacy_t_complexity()`
+            n_inverted_controls = (bloq.cv1 == 0) + int(bloq.cv2 == 0)
             if bloq.uncompute:
-                return GateCounts(measurement=1, clifford=1)
-            return GateCounts(and_bloq=1)
+                if self.legacy_shims:
+                    return GateCounts(clifford=3 + 2 * n_inverted_controls, measurement=1)
+                else:
+                    return GateCounts(measurement=1, clifford=1)
+
+            if self.legacy_shims:
+                return GateCounts(and_bloq=1, clifford=2 * n_inverted_controls)
+            else:
+                return GateCounts(and_bloq=1)
 
         # CSwaps aka Fredkin
         if isinstance(bloq, TwoBitCSwap):
             return GateCounts(cswap=1)
+
+        if isinstance(bloq, MultiTargetCNOT):
+            # TODO(https://github.com/quantumlib/Qualtran/issues/1318): Decide how to count this.
+            if self.legacy_shims:
+                # Legacy mode: don't treat this as one clifford. Use its decomposition.
+                pass  # fall through
+            else:
+                return GateCounts(clifford=1)
 
         # Cliffords
         if bloq_is_clifford(bloq):
