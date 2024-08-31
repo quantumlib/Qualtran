@@ -369,10 +369,10 @@ def _state_prep_via_rotation_symb_phasegrad() -> StatePreparationViaRotations:
     )
 
     phase_bitsize = sympy.Symbol(r"b_\text{grad}")
-    state_prep_via_rotation_symb = StatePreparationViaRotations(
+    state_prep_via_rotation_symb_phasegrad = StatePreparationViaRotations(
         state_coefficients=state_coefs, phase_bitsize=phase_bitsize
     )
-    return state_prep_via_rotation_symb
+    return state_prep_via_rotation_symb_phasegrad
 
 
 _STATE_PREP_VIA_ROTATIONS_DOC = BloqDocSpec(
