@@ -123,6 +123,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'scaled_chebyshev_poly_odd',
         'black_box_select',  # cannot serialize AutoPartition
         'black_box_prepare',  # cannot serialize AutoPartition
+        'vlasov_block_encoding',
         'kaiser_window_state_symbolic',  # Split cannot have a symbolic data type.
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
