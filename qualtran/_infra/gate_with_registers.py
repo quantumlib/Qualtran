@@ -371,8 +371,9 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
             return Power(bloq, abs(power))
         raise NotImplementedError(f"{self} does not implemented __pow__ for {power=}.")
 
+    @classmethod
     def _get_ctrl_spec(
-        self,
+        cls,
         num_controls: Union[Optional[int], 'CtrlSpec'] = None,
         control_values=None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
