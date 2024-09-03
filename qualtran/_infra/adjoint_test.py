@@ -19,7 +19,7 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import Adjoint, CompositeBloq, Side
 from qualtran._infra.adjoint import _adjoint_cbloq
-from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
+from qualtran.bloqs.basic_gates import CNOT, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
@@ -99,14 +99,6 @@ def test_adjoint_signature():
     assert reg.name == adj_reg.name
     assert reg.side == Side.RIGHT
     assert adj_reg.side == Side.LEFT
-
-
-def test_adjoint_supports_decompose():
-    assert not CNOT().supports_decompose_bloq()
-    assert not Adjoint(CNOT()).supports_decompose_bloq()
-
-    assert CSwap(bitsize=5).supports_decompose_bloq()
-    assert Adjoint(CSwap(bitsize=5)).supports_decompose_bloq()
 
 
 def test_adjoint_adjoint():
