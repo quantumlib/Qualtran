@@ -32,7 +32,6 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -97,9 +96,6 @@ class YGate(Bloq):
 
         (q,) = q
         return cirq.Y(q), {'q': np.asarray([q])}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

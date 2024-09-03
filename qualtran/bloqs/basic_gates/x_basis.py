@@ -32,7 +32,6 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -256,9 +255,6 @@ class XGate(Bloq):
 
         (q,) = q
         return cirq.X(q), {'q': np.asarray([q])}
-
-    def _t_complexity_(self):
-        return TComplexity(clifford=1)
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import ModPlus

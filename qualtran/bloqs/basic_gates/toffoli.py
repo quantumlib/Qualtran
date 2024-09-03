@@ -21,7 +21,6 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Connection, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
@@ -58,9 +57,6 @@ class Toffoli(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 4)}
-
-    def _t_complexity_(self):
-        return TComplexity(t=4)
 
     def my_tensors(
         self,

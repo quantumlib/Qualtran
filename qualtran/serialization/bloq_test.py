@@ -26,7 +26,6 @@ from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 from qualtran.serialization import bloq as bloq_serialization
@@ -95,9 +94,6 @@ class TestCSwap(Bloq):
     @property
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
-
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
     def my_static_costs(self, cost_key: 'CostKey'):
         if isinstance(cost_key, QECGatesCost):
