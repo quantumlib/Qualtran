@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -25,7 +24,6 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    CtrlSpec,
     QAny,
     QBit,
     Register,
