@@ -92,9 +92,9 @@ def test_pretty_name():
     assert str(ZPowGate()) == "Z**1.0"
     assert str(XPowGate()) == "X**1.0"
     assert str(YPowGate()) == "Y**1.0"
-    assert str(_ry()) == "Ry(0.25π)"
-    assert str(_rx()) == "Rx(0.25π)"
-    assert str(_rz()) == "Rz(0.25π)"
+    assert str(_ry()) == "Ry(0.7853981633974483)"
+    assert str(_rx()) == "Rx(0.7853981633974483)"
+    assert str(_rz()) == "Rz(0.7853981633974483)"
 
     assert str(CZPowGate(1.0)) == 'CZ**1.0'
     assert str(CZPowGate(0.9)) == 'CZ**0.9'

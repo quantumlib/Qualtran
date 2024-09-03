@@ -319,6 +319,9 @@ class Rz(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rz({self.angle})'
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
@@ -340,6 +343,9 @@ class Rx(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rx({self.angle})'
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
@@ -360,6 +366,9 @@ class Ry(CirqGateAsBloqBase):
         if reg is None:
             return Text('')
         return TextBox(str(self))
+
+    def __str__(self):
+        return f'Ry({self.angle})'
 
 
 @bloq_example
