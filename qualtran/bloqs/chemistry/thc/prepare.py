@@ -461,10 +461,9 @@ class PrepareTHC(PrepareOracle):
             CZ(), q1=soqs['alt_theta'], q2=soqs['less_than']
         )
         # off-control
-        ctrl_spec = CtrlSpec(QBit(), 0b0)
-        soqs['less_than'], soqs['theta'] = bb.add(
-            ZGate().controlled(ctrl_spec), ctrl=soqs['less_than'], q=soqs['theta']
-        )
+        soqs['less_than'] = bb.add(XGate(), q=soqs['less_than'])
+        soqs['less_than'], soqs['theta'] = bb.add(CZ(), q1=soqs['less_than'], q2=soqs['theta'])
+        soqs['less_than'] = bb.add(XGate(), q=soqs['less_than'])
         soqs['less_than'], soqs['alt_mu'], soqs['mu'] = bb.add(
             CSwap(bitsize=log_mu), ctrl=soqs['less_than'], x=soqs['alt_mu'], y=soqs['mu']
         )
@@ -500,7 +499,10 @@ class PrepareTHC(PrepareOracle):
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)
         cost_7 = (MultiControlX(cvs=(0, 1)), 1)
-        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
+        cost_8 = (XGate(), 2)
+        cost_9 = (CZ(), 2)
+        cost_10 = (Hadamard(), 3)
+        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7, cost_8, cost_9, cost_10}
 
 
 @bloq_example
