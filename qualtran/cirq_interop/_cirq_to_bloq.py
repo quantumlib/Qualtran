@@ -48,6 +48,7 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
+from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -108,12 +109,6 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
             self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
-    def _t_complexity_(self) -> 'TComplexity':
-        t_count = _from_directly_countable_cirq(self.cirq_gate)
-        if t_count is None:
-            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-        return t_count
-
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
@@ -152,6 +147,19 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     @property
     def cirq_gate(self) -> cirq.Gate:
         return self.gate
+
+    def _t_complexity_(self) -> 'TComplexity':
+        t_count = _from_directly_countable_cirq(self.cirq_gate)
+        if t_count is None:
+            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+        return t_count
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if isinstance(cost_key, QECGatesCost):
+            t_count = _from_directly_countable_cirq(self.cirq_gate)
+            if t_count is None:
+                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':

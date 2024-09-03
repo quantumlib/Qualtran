@@ -41,7 +41,7 @@ message QMontgomeryUInt {
     optional IntOrSympy bitsize = 1;
 }
 
-message BoundedQUInt {
+message BQUInt {
     optional IntOrSympy bitsize = 1;
     optional IntOrSympy iteration_length = 2;
 }
@@ -59,7 +59,7 @@ message QDataType {
     QInt qint = 3;
     QIntOnesComp qint_ones_comp = 4;
     QUInt quint = 5;
-    BoundedQUInt bounded_quint = 6;
+    BQUInt bquint = 6;
     QFxp qfxp = 7;
     QMontgomeryUInt qmontgomery_uint = 8;
   }

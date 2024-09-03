@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     GateWithRegisters,
     QAny,
     Register,
@@ -135,7 +135,7 @@ class SwapWithZero(GateWithRegisters):
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         types = [
-            BoundedQUInt(sb, l)
+            BQUInt(sb, l)
             for sb, l in zip(self.selection_bitsizes, self.n_target_registers)
             if is_symbolic(sb) or sb > 0
         ]

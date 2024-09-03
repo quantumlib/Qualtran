@@ -17,7 +17,7 @@ import cirq
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, GateWithRegisters, Signature
+from qualtran import Bloq, DecomposeNotImplementedError, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CHadamard, GlobalPhase
 from qualtran.bloqs.mcmt.and_bloq import And
@@ -85,7 +85,7 @@ def test_t_complexity_for_bloq_via_build_call_graph():
 
 
 def test_t_complexity_for_bloq_does_not_support():
-    with pytest.raises(TypeError):
+    with pytest.raises(DecomposeNotImplementedError):
         _ = t_complexity(DoesNotSupportTComplexityBloq())
 
 
@@ -211,45 +211,6 @@ def test_tagged_operations():
     assert t_complexity_compat(cirq.Ry(rads=0.1)(q).with_tags('tag1', 'tag2')) == TComplexity(
         rotations=1
     )
-
-
-def test_cache_clear():
-    class Cachable1(Bloq):
-        def __init__(self) -> None:
-            self.num_calls = 0
-
-        @property
-        def signature(self) -> 'Signature':
-            return Signature([])
-
-        def _t_complexity_(self) -> TComplexity:
-            self.num_calls += 1
-            return TComplexity(clifford=1)
-
-        def __hash__(self):
-            # Manufacture a hash collision
-            return hash(2)
-
-    class Cachable2(Cachable1):
-        def _t_complexity_(self) -> TComplexity:
-            self.num_calls += 1
-            return TComplexity()
-
-        def __hash__(self):
-            # Manufacture a hash collision
-            return hash(2)
-
-    assert t_complexity(Cachable1()) == TComplexity(clifford=1)
-    # Using a global cache will result in a failure of this test since `cirq.X` has
-    # `T-complexity(clifford=1)` but we explicitly return `TComplexity()` for IsCachable
-    # operation; for which the hash would be equivalent to the hash of its subgate i.e. `cirq.X`.
-    # TODO: t_complexity protocol will be refactored (#735)
-    t_complexity.cache_clear()  # type: ignore[attr-defined]
-    op = Cachable2()
-    assert t_complexity(op) == TComplexity()
-    assert t_complexity(op) == TComplexity()
-    assert op.num_calls == 1
-    t_complexity.cache_clear()  # type: ignore[attr-defined]
 
 
 @pytest.mark.notebook
