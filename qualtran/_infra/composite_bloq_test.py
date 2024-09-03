@@ -39,7 +39,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
-from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
+from qualtran._infra.data_types import BQUInt, QAny, QBit, QFxp, QUInt
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
@@ -515,7 +515,7 @@ def test_flatten():
 
 def test_type_error():
     bb = BloqBuilder()
-    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    a = bb.add_register_from_dtype('i', BQUInt(4, 3))
     b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))
@@ -527,7 +527,7 @@ def test_type_error():
     with pytest.raises(BloqError, match=r'.*register dtypes are not consistent.*'):
         b, a = bb.add(TestQFxp(), xx=b, yy=a)
     bb = BloqBuilder()
-    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    a = bb.add_register_from_dtype('i', BQUInt(4, 3))
     b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))

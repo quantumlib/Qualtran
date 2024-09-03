@@ -32,7 +32,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     DecomposeTypeError,
     QBit,
     QUInt,
@@ -98,14 +98,11 @@ class PermutationCycle(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):
         return bit_length(self.N - 1)
-
-    def is_symbolic(self):
-        return is_symbolic(self.N, self.cycle)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.cycle):
@@ -126,7 +123,7 @@ class PermutationCycle(Bloq):
         return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycle):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
             return {
@@ -144,6 +141,16 @@ def _permutation_cycle() -> PermutationCycle:
 
 
 @bloq_example
+def _permutation_cycle_symb_N() -> PermutationCycle:
+    import sympy
+
+    N = sympy.symbols("n", positive=True, integer=True)
+    cycle = (3, 1, 2)
+    permutation_cycle_symb_N = PermutationCycle(N, cycle)
+    return permutation_cycle_symb_N
+
+
+@bloq_example
 def _permutation_cycle_symb() -> PermutationCycle:
     import sympy
 
@@ -158,7 +165,7 @@ def _permutation_cycle_symb() -> PermutationCycle:
 _PERMUTATION_CYCLE_DOC = BloqDocSpec(
     bloq_cls=PermutationCycle,
     import_line='from qualtran.bloqs.arithmetic.permutation import PermutationCycle',
-    examples=[_permutation_cycle, _permutation_cycle_symb],
+    examples=[_permutation_cycle_symb_N, _permutation_cycle_symb, _permutation_cycle],
 )
 
 
@@ -199,7 +206,7 @@ class Permutation(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(x=BoundedQUInt(self.bitsize, self.N))
+        return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
     @cached_property
     def bitsize(self):
@@ -261,7 +268,7 @@ class Permutation(Bloq):
         return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
+        if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))
             return {(PermutationCycle(self.N, cycle), 1)}
@@ -307,8 +314,25 @@ def _sparse_permutation() -> Permutation:
     return sparse_permutation
 
 
+@bloq_example
+def _sparse_permutation_with_symbolic_N() -> Permutation:
+    import sympy
+
+    N = sympy.symbols("N", positive=True, integer=True)
+    sparse_permutation_with_symbolic_N = Permutation.from_partial_permutation_map(
+        N, {0: 1, 1: 3, 2: 4, 3: 7}
+    )
+    return sparse_permutation_with_symbolic_N
+
+
 _PERMUTATION_DOC = BloqDocSpec(
     bloq_cls=Permutation,
     import_line='from qualtran.bloqs.arithmetic.permutation import Permutation',
-    examples=[_permutation, _permutation_symb, _permutation_symb_with_cycles, _sparse_permutation],
+    examples=[
+        _permutation,
+        _permutation_symb,
+        _permutation_symb_with_cycles,
+        _sparse_permutation,
+        _sparse_permutation_with_symbolic_N,
+    ],
 )
