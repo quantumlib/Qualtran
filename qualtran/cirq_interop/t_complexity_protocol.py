@@ -61,6 +61,9 @@ class TComplexity:
     def __rmul__(self, other: int) -> 'TComplexity':
         return self.__mul__(other)
 
+    def asdict(self):
+        return {'t': self.t, 'rotations': self.rotations, 'clifford': self.clifford}
+
     def __str__(self) -> str:
         return (
             f'T-count:   {self.t:g}\n'
@@ -240,6 +243,9 @@ def _t_complexity_for_bloq(bloq: Bloq) -> Optional[TComplexity]:
     return _t_complexity_from_strategies(bloq, strategies)
 
 
+USE_NEW_GATE_COUNTING_FLAG = True
+
+
 def t_complexity(bloq: Bloq) -> TComplexity:
     """Returns the TComplexity of a bloq.
 
@@ -252,6 +258,11 @@ def t_complexity(bloq: Bloq) -> TComplexity:
     Raises:
         TypeError: if none of the strategies can derive the t complexity.
     """
+    if USE_NEW_GATE_COUNTING_FLAG:
+        from qualtran.resource_counting import get_cost_value, QECGatesCost
+
+        return get_cost_value(bloq, QECGatesCost(legacy_shims=True)).to_legacy_t_complexity()
+
     ret = _t_complexity_for_bloq(bloq)
     if ret is None:
         raise TypeError(

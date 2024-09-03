@@ -35,7 +35,6 @@ from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
 
@@ -155,12 +154,6 @@ class CAdd(Bloq):
         a = bb.join(a_arr, self.a_dtype)
         ctrl = bb.join(np.array([ctrl_q]))
         return {'ctrl': ctrl, 'a': a, 'b': b}
-
-    def _t_complexity_(self):
-        n = self.b_dtype.bitsize
-        num_and = self.a_dtype.bitsize + self.b_dtype.bitsize - 1
-        num_clifford = 33 * (n - 2) + 43
-        return TComplexity(t=4 * num_and, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
