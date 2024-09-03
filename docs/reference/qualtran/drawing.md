@@ -77,7 +77,7 @@ isort:skip_file
 
 [`show_bloqs(...)`](../qualtran/drawing/show_bloqs.md): Display multiple bloqs side-by-side in IPython.
 
-[`show_call_graph(...)`](../qualtran/drawing/show_call_graph.md): Display a graph representation of the counts graph `g`.
+[`show_call_graph(...)`](../qualtran/drawing/show_call_graph.md): Display a graph representation of the call graph.
 
 [`show_counts_sigma(...)`](../qualtran/drawing/show_counts_sigma.md): Display nicely formatted bloq counts sums `sigma`.
 

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L51-L91">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L115-L147">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -15,7 +15,7 @@
 
 A simple data block that uses a fixed code distance and routing overhead.
 
-Inherits From: [`DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md)
+Inherits From: [`DataBlock`](../../qualtran/surface_code/DataBlock.md)
 
 <section class="expandable">
   <h4 class="showalways">View aliases</h4>
@@ -27,16 +27,24 @@ Inherits From: [`DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.SimpleDataBlock(
-    data_d,
-    routing_overhead=attr_dict[&#x27;routing_overhead&#x27;].default,
-    qec_scheme=<a href="../../qualtran/surface_code.html#FowlerSuperconductingQubits"><code>qualtran.surface_code.FowlerSuperconductingQubits</code></a>,
-    reference=attr_dict[&#x27;reference&#x27;].default
+    data_d, routing_overhead=attr_dict[&#x27;routing_overhead&#x27;].default
 )
 </code></pre>
 
 
 
 <!-- Placeholder for "Used in" -->
+
+The simple data block approximates the total tile usage by considering one tile
+per algorithm qubit plus a constant factor overhead presumed to be used for routing.
+
+Note: the spreadsheet from the reference had a 50% overhead hardcoded for
+some of the cells using this quantity and variable (but set to 50% as default)
+for others.
+
+<h2 class="add-link">References</h2>
+
+
 
 
 
@@ -50,68 +58,56 @@ Inherits From: [`DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md
 : As an approximation, assume some routing or auxiliary
   qubits proportional to the number of algorithm qubits.
 
-`qec_scheme`<a id="qec_scheme"></a>
-: Underlying quantum error correction scheme.
-
-`reference`<a id="reference"></a>
-: A description of the source of the model.
+`n_steps_to_consume_a_magic_state`<a id="n_steps_to_consume_a_magic_state"></a>
+: The number of surface code steps to consume a magic state.
+  
+  We must teleport in "magic states" to do non-Clifford operations on our algorithmic
+  data qubits. The layout of the data block can limit the number magic states consumed
+  per unit time.
+  
+  One surface code step is `data_d` cycles of error correction.
+  
+  DataBlock imlpementation must override this method. This method is used by
+  `self.n_cycles` to report the total number of cycles required.
 
 
 
 
 ## Methods
 
-<h3 id="n_logical_qubits"><code>n_logical_qubits</code></h3>
+<h3 id="n_tiles"><code>n_tiles</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L68-L75">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L139-L140">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>n_logical_qubits(
+<code>n_tiles(
     n_algo_qubits: int
 ) -> int
 </code></pre>
 
-Number of logical qubits including overhead.
+The number of surface code tiles used to store a given number of algorithm qubits.
 
-Note: the spreadsheet from the reference had a 50% overhead hardcoded for
-some of the cells using this quantity and variable (but set to 50% as default)
-for others.
+ We define an “algorithm qubit” to be a qubit used in the routing of algorithm-relevant
+ quantum data in a bloq. A physical qubit is a physical system that can encode one qubit,
+ albeit noisily. Specific to the surface code, we define a “tile” to be the minimal area
+ of physical qubits necessary to encode one logical qubit to a particular code distance.
+ A tile can store an algorithm qubit, can be used for ancillary purposes like routing,
+ or can be left idle. A tile is usually a square grid of $2d^2$ physical qubits.
 
-<h3 id="footprint"><code>footprint</code></h3>
+ DataBlock implementations must override this method. This method is used by
+ `self.n_phys_qubits` to report the total number of physical qubits.
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L77-L80">View source</a>
+Args
 
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>footprint(
-    n_algo_qubits: int
-) -> int
-</code></pre>
-
-The number of physical qubits used by the data block.
-
-
-<h3 id="data_error"><code>data_error</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L82-L88">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>data_error(
-    n_algo_qubits: int, n_cycles: int, phys_err: float
-) -> float
-</code></pre>
-
-The error associated with storing data on `n_algo_qubits` for `n_cycles`.
+`n_algo_qubits`
+: The number of algorithm qubits to compute the number of tiles for.
 
 
-<h3 id="n_cycles_to_consume_a_magic_state"><code>n_cycles_to_consume_a_magic_state</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L90-L91">View source</a>
 
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>n_cycles_to_consume_a_magic_state() -> int
-</code></pre>
+Returns
 
-The worst case number of cycles needed to consume a magic state.
+
 
 
 <h3 id="__eq__"><code>__eq__</code></h3>

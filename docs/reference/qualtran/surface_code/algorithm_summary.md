@@ -7,7 +7,7 @@
 
 ## Classes
 
-[`class AlgorithmSummary`](../../qualtran/surface_code/AlgorithmSummary.md): Properties of a quantum algorithm that impact its physical cost
+[`class AlgorithmSummary`](../../qualtran/surface_code/AlgorithmSummary.md): Logical costs of a quantum algorithm that impact modeling of its physical cost.
 
 ## Functions
 

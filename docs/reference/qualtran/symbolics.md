@@ -29,6 +29,10 @@
 
 [`is_symbolic(...)`](../qualtran/symbolics/is_symbolic.md): Returns whether the inputs contain any symbolic object.
 
+[`is_zero(...)`](../qualtran/symbolics/is_zero.md): check if a symbolic integer is zero
+
+[`ln(...)`](../qualtran/symbolics/ln.md)
+
 [`log2(...)`](../qualtran/symbolics/log2.md)
 
 [`pi(...)`](../qualtran/symbolics/pi.md)
@@ -37,15 +41,23 @@
 
 [`sabs(...)`](../qualtran/symbolics/sabs.md)
 
+[`sarg(...)`](../qualtran/symbolics/sarg.md): Argument $t$ of a complex number $r e^{i t}$
+
 [`sconj(...)`](../qualtran/symbolics/sconj.md): Compute the complex conjugate.
+
+[`sexp(...)`](../qualtran/symbolics/sexp.md)
 
 [`shape(...)`](../qualtran/symbolics/shape.md)
 
 [`slen(...)`](../qualtran/symbolics/slen.md)
 
-[`smax(...)`](../qualtran/symbolics/smax.md)
+[`smax(...)`](../qualtran/symbolics/smax.md): Returns the maximum of the given arguments, which may be symbolic.
 
-[`smin(...)`](../qualtran/symbolics/smin.md)
+[`smin(...)`](../qualtran/symbolics/smin.md): Returns the minimum of the given arguments, which may be symbolic.
+
+[`ssqrt(...)`](../qualtran/symbolics/ssqrt.md)
+
+[`ssum(...)`](../qualtran/symbolics/ssum.md)
 
 ## Type Aliases
 

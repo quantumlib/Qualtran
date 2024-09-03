@@ -17,3 +17,7 @@ Classes for drawing bloq counts graphs with Graphviz.
 
 [`format_counts_sigma(...)`](../../qualtran/drawing/format_counts_sigma.md): Format `sigma` as markdown.
 
+## Type Aliases
+
+[`SymbolicInt`](../../qualtran/symbolics/SymbolicInt.md)
+

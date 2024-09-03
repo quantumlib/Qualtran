@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L79-L82">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L207-L230">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -12,7 +12,7 @@
 
 
 
-
+Returns the minimum of the given arguments, which may be symbolic.
 
 
 <section class="expandable">
@@ -32,3 +32,17 @@
 
 
 <!-- Placeholder for "Used in" -->
+
+
+<h2 class="add-link">Args</h2>
+
+`args`<a id="args"></a>
+: Either a pack of arguments or a single Iterable of arguments.
+  At least one argument must be provided in this pack or Iterable.
+
+
+
+
+<h2 class="add-link">Returns</h2>
+
+

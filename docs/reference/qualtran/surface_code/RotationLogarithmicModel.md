@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L37-L63">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L36-L65">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -27,11 +27,7 @@ Inherits From: [`RotationCostModel`](../../qualtran/surface_code/RotationCostMod
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.RotationLogarithmicModel(
-    slope,
-    overhead,
-    gateset=attr_dict[&#x27;gateset&#x27;].default,
-    approximation_protocol=attr_dict[&#x27;approximation_protocol&#x27;].default,
-    reference=attr_dict[&#x27;reference&#x27;].default
+    slope, overhead, gateset=attr_dict[&#x27;gateset&#x27;].default
 )
 </code></pre>
 
@@ -42,6 +38,11 @@ Inherits From: [`RotationCostModel`](../../qualtran/surface_code/RotationCostMod
 $$
 \#T = -\textrm{slope} \log_2{\textrm{budget}} + \textrm{overhead}
 $$
+
+<h2 class="add-link">References</h2>
+
+
+
 
 
 
@@ -56,12 +57,6 @@ $$
 `gateset`<a id="gateset"></a>
 : A human-readable description of the gate set (e.g. 'Clifford+T').
 
-`approximation_protocol`<a id="approximation_protocol"></a>
-: A description or reference to the approximation protocol
-
-`reference`<a id="reference"></a>
-: A description of the source of the model.
-
 
 
 
@@ -69,25 +64,25 @@ $$
 
 <h3 id="rotation_cost"><code>rotation_cost</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L59-L60">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L61-L62">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>rotation_cost(
     error_budget: float
-) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
+) -> <a href="../../qualtran/resource_counting/GateCounts.html"><code>qualtran.resource_counting.GateCounts</code></a>
 </code></pre>
 
 Cost of a single rotation.
 
 
-<h3 id="prepartion_overhead"><code>prepartion_overhead</code></h3>
+<h3 id="preparation_overhead"><code>preparation_overhead</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L62-L63">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L64-L65">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>prepartion_overhead(
+<code>preparation_overhead(
     error_budget
-) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
+) -> <a href="../../qualtran/resource_counting/GateCounts.html"><code>qualtran.resource_counting.GateCounts</code></a>
 </code></pre>
 
 Cost of preparation circuit.

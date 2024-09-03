@@ -13,7 +13,9 @@
 
 ## Functions
 
-[`t_complexity(...)`](../../qualtran/cirq_interop/t_complexity_protocol/t_complexity.md): Returns the TComplexity.
+[`t_complexity(...)`](../../qualtran/cirq_interop/t_complexity_protocol/t_complexity.md): Returns the TComplexity of a bloq.
+
+[`t_complexity_compat(...)`](../../qualtran/cirq_interop/t_complexity_protocol/t_complexity_compat.md): Returns the TComplexity of a bloq or some Cirq objects.
 
 ## Type Aliases
 

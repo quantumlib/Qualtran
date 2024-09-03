@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/physical_parameters.py#L21-L37">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/physical_parameters.py#L18-L90">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -25,10 +25,8 @@ The physical properties of a quantum computer.
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.PhysicalParameters(
-    t_gate_ns,
-    t_meas_ns,
-    physical_error_rate=attr_dict[&#x27;physical_error_rate&#x27;].default,
-    reference=attr_dict[&#x27;reference&#x27;].default
+    physical_error=attr_dict[&#x27;physical_error&#x27;].default,
+    cycle_time_us=attr_dict[&#x27;cycle_time_us&#x27;].default
 )
 </code></pre>
 
@@ -41,22 +39,69 @@ The physical properties of a quantum computer.
 
 <h2 class="add-link">Attributes</h2>
 
-`t_gate_ns`<a id="t_gate_ns"></a>
-: Clifford gate physical time.
+`physical_error`<a id="physical_error"></a>
+: The error rate of the underlying physical qubits.
 
-`t_meas_ns`<a id="t_meas_ns"></a>
-: Measurement physical time.
-
-`physical_error_rate`<a id="physical_error_rate"></a>
-: Physical error rate.
-
-`reference`<a id="reference"></a>
-: Source of these estimates.
+`cycle_time_us`<a id="cycle_time_us"></a>
+: The number of microseconds it takes to do one cycle of error correction.
 
 
 
 
 ## Methods
+
+<h3 id="make_beverland_et_al"><code>make_beverland_et_al</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/physical_parameters.py#L31-L76">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>@classmethod</code>
+<code>make_beverland_et_al(
+    qubit_modality: str = &#x27;superconducting&#x27;,
+    optimistic_err_rate: bool = False
+)
+</code></pre>
+
+The physical parameters considered in the Beverland et. al. reference.
+
+
+Args
+
+`qubit_modality`
+: One of "superconducting", "ion", or "majorana". This sets the
+  cycle time, with ions being considerably slower.
+
+`optimistic_err_rate`
+: In the reference, the authors consider two error rates, which
+  they term "realistic" and "optimistic". Set this to `True` to use optimistic
+  error rates.
+
+
+
+
+References
+
+
+
+
+<h3 id="make_gidney_fowler"><code>make_gidney_fowler</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/physical_parameters.py#L78-L90">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>@classmethod</code>
+<code>make_gidney_fowler(
+    optimistic_err_rate: bool = False
+)
+</code></pre>
+
+The physical parameters considered in the Gidney and Fowler reference.
+
+
+References
+
+
+
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 

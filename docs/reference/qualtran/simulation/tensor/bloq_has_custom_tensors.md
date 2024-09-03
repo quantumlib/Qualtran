@@ -12,7 +12,7 @@
 
 
 
-Whether this bloq declares custom tensors by overriding `.add_my_tensors(...)`.
+Whether this bloq declares custom tensors by overriding `.my_tensors(...)`.
 
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
@@ -25,5 +25,5 @@ Whether this bloq declares custom tensors by overriding `.add_my_tensors(...)`.
 
 <!-- Placeholder for "Used in" -->
 
-This is a heuristic that checks that the method is overriden. This is used as the
-flattening predicate in `flatten_for_tensor_contraction`.
+This is a heuristic that checks that the method is overriden. This is used as
+an optional predicate in `flatten_for_tensor_contraction`.

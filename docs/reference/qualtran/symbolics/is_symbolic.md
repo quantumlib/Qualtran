@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L66-L85">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L82-L101">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -26,7 +26,7 @@ Returns whether the inputs contain any symbolic object.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.symbolics.is_symbolic(
     *args
-) -> bool
+) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bool]
 </code></pre>
 
 

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L122-L145">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L177-L199">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -15,7 +15,7 @@
 
 The intermediate data block uses a fixed code distance and routing overhead.
 
-Inherits From: [`SimpleDataBlock`](../../qualtran/surface_code/SimpleDataBlock.md), [`DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md)
+Inherits From: [`DataBlock`](../../qualtran/surface_code/DataBlock.md)
 
 <section class="expandable">
   <h4 class="showalways">View aliases</h4>
@@ -27,8 +27,7 @@ Inherits From: [`SimpleDataBlock`](../../qualtran/surface_code/SimpleDataBlock.m
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.IntermediateDataBlock(
-    data_d,
-    qec_scheme=<a href="../../qualtran/surface_code.html#FowlerSuperconductingQubits"><code>qualtran.surface_code.FowlerSuperconductingQubits</code></a>
+    data_d
 )
 </code></pre>
 
@@ -51,29 +50,56 @@ the data batches are lined in the first row with the second row being an ancilla
 `data_d`<a id="data_d"></a>
 : The code distance `d` for protecting the qubits in the data block.
 
-`qec_scheme`<a id="qec_scheme"></a>
-: Underlying quantum error correction scheme.
-
-`reference`<a id="reference"></a>
-: A description of the source of the model.
-
-`routing_overhead`<a id="routing_overhead"></a>
-: &nbsp;
+`n_steps_to_consume_a_magic_state`<a id="n_steps_to_consume_a_magic_state"></a>
+: The number of surface code steps to consume a magic state.
+  
+  We must teleport in "magic states" to do non-Clifford operations on our algorithmic
+  data qubits. The layout of the data block can limit the number magic states consumed
+  per unit time.
+  
+  One surface code step is `data_d` cycles of error correction.
+  
+  DataBlock imlpementation must override this method. This method is used by
+  `self.n_cycles` to report the total number of cycles required.
 
 
 
 
 ## Methods
 
-<h3 id="n_cycles_to_consume_a_magic_state"><code>n_cycles_to_consume_a_magic_state</code></h3>
+<h3 id="n_tiles"><code>n_tiles</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L144-L145">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L194-L195">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>n_cycles_to_consume_a_magic_state() -> int
+<code>n_tiles(
+    n_algo_qubits: int
+) -> int
 </code></pre>
 
-The worst case number of cycles needed to consume a magic state.
+The number of surface code tiles used to store a given number of algorithm qubits.
+
+ We define an “algorithm qubit” to be a qubit used in the routing of algorithm-relevant
+ quantum data in a bloq. A physical qubit is a physical system that can encode one qubit,
+ albeit noisily. Specific to the surface code, we define a “tile” to be the minimal area
+ of physical qubits necessary to encode one logical qubit to a particular code distance.
+ A tile can store an algorithm qubit, can be used for ancillary purposes like routing,
+ or can be left idle. A tile is usually a square grid of $2d^2$ physical qubits.
+
+ DataBlock implementations must override this method. This method is used by
+ `self.n_phys_qubits` to report the total number of physical qubits.
+
+Args
+
+`n_algo_qubits`
+: The number of algorithm qubits to compute the number of tiles for.
+
+
+
+
+Returns
+
+
 
 
 <h3 id="__eq__"><code>__eq__</code></h3>

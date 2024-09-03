@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L32-L131">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L29-L48">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -13,7 +13,7 @@
 
 
 
-Properties of a quantum algorithm that impact its physical cost
+Logical costs of a quantum algorithm that impact modeling of its physical cost.
 
 <section class="expandable">
   <h4 class="showalways">View aliases</h4>
@@ -25,12 +25,10 @@ Properties of a quantum algorithm that impact its physical cost
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.AlgorithmSummary(
-    algorithm_qubits=attr_dict[&#x27;algorithm_qubits&#x27;].default,
-    measurements=attr_dict[&#x27;measurements&#x27;].default,
-    t_gates=attr_dict[&#x27;t_gates&#x27;].default,
-    toffoli_gates=attr_dict[&#x27;toffoli_gates&#x27;].default,
-    rotation_gates=attr_dict[&#x27;rotation_gates&#x27;].default,
-    rotation_circuit_depth=attr_dict[&#x27;rotation_circuit_depth&#x27;].default
+    *,
+    n_algo_qubits,
+    n_logical_gates,
+    n_rotation_layers=attr_dict[&#x27;n_rotation_layers&#x27;].default
 )
 </code></pre>
 
@@ -39,106 +37,32 @@ Properties of a quantum algorithm that impact its physical cost
 <!-- Placeholder for "Used in" -->
 
 
-Counts of different properties that affect the physical cost of
-running an algorithm (e.g. number of T gates).
-All counts default to zero.
+n_rotation_layers: In Qualtran, we don't actually push all the cliffords out and count
+    the number of rotation layers, so this is just the number of rotations $M_R$ by default.
+    If you are trying to reproduce numbers exactly, you can provide an explicit
+    number of rotation layers.
 
 
 
 <h2 class="add-link">Attributes</h2>
 
-`algorithm_qubits`<a id="algorithm_qubits"></a>
-: Number of qubits used by the algorithm $Q_{alg}$.
+`n_algo_qubits`<a id="n_algo_qubits"></a>
+: &nbsp;
 
-`measurements`<a id="measurements"></a>
-: Number of Measurements $M_R$.
+`n_logical_gates`<a id="n_logical_gates"></a>
+: &nbsp;
 
-`t_gates`<a id="t_gates"></a>
-: Number of T gates $M_T$.
-
-`toffoli_gates`<a id="toffoli_gates"></a>
-: Number of Toffoli gates $M_{Tof}$.
-
-`rotation_gates`<a id="rotation_gates"></a>
-: Number of Rotations $M_R$.
-
-`rotation_circuit_depth`<a id="rotation_circuit_depth"></a>
-: Depth of rotation circuit $D_R$.
+`n_rotation_layers`<a id="n_rotation_layers"></a>
+: &nbsp;
 
 
 
 
 ## Methods
 
-<h3 id="__mul__"><code>__mul__</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L56-L69">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__mul__(
-    other: int
-) -> 'AlgorithmSummary'
-</code></pre>
-
-
-
-
-<h3 id="__rmul__"><code>__rmul__</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L71-L72">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__rmul__(
-    other: int
-) -> 'AlgorithmSummary'
-</code></pre>
-
-
-
-
-<h3 id="__add__"><code>__add__</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L74-L86">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__add__(
-    other: 'AlgorithmSummary'
-) -> 'AlgorithmSummary'
-</code></pre>
-
-
-
-
-<h3 id="__sub__"><code>__sub__</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L88-L100">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__sub__(
-    other: 'AlgorithmSummary'
-) -> 'AlgorithmSummary'
-</code></pre>
-
-
-
-
-<h3 id="to_magic_count"><code>to_magic_count</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L102-L119">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>to_magic_count(
-    rotation_model: Optional[<a href="../../qualtran/surface_code/RotationCostModel.html"><code>qualtran.surface_code.RotationCostModel</code></a>] = None,
-    error_budget: Optional[float] = None
-) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
-</code></pre>
-
-
-
-
 <h3 id="from_bloq"><code>from_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L121-L131">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/algorithm_summary.py#L44-L48">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@staticmethod</code>

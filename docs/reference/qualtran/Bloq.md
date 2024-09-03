@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L73-L554">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L72-L555">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -58,7 +58,7 @@ encode more information about the bloq.
 
 <h3 id="pretty_name"><code>pretty_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L108-L109">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L107-L108">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>pretty_name() -> str
@@ -69,7 +69,7 @@ encode more information about the bloq.
 
 <h3 id="build_composite_bloq"><code>build_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L111-L126">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L110-L125">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_composite_bloq(
@@ -101,7 +101,7 @@ Returns
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L128-L142">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L127-L141">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -129,7 +129,7 @@ Raises
 
 <h3 id="supports_decompose_bloq"><code>supports_decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L144-L151">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L143-L150">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>supports_decompose_bloq() -> bool
@@ -143,7 +143,7 @@ return an accurate value.
 
 <h3 id="as_composite_bloq"><code>as_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L153-L162">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L152-L161">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_composite_bloq() -> 'CompositeBloq'
@@ -156,7 +156,7 @@ be returned.
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L164-L176">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L163-L175">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Bloq'
@@ -172,7 +172,7 @@ details.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L178-L211">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L177-L210">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
@@ -209,7 +209,7 @@ Returns
 
 <h3 id="call_classically"><code>call_classically</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L213-L235">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L212-L234">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_classically(
@@ -243,7 +243,7 @@ Returns
 
 <h3 id="tensor_contract"><code>tensor_contract</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L237-L247">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L236-L246">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>tensor_contract() -> 'NDArray'
@@ -256,45 +256,48 @@ i.e. the dangling indices. The returned array will be 0-, 1- or 2-dimensional. I
 a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
 of (right, left) indices.
 
-<h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
+<h3 id="my_tensors"><code>my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L249-L280">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L248-L280">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>add_my_tensors(
-    tn: 'qtn.TensorNetwork',
-    tag: Any,
-    *,
-    incoming: Dict[str, 'SoquetT'],
-    outgoing: Dict[str, 'SoquetT']
-)
+<code>my_tensors(
+    incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+) -> List['qtn.Tensor']
 </code></pre>
 
 Override this method to support native quimb simulation of this Bloq.
 
-This method is responsible for adding a tensor corresponding to the unitary, state, or
-effect of the bloq to the provided tensor network `tn`. Often, this method will add
-one tensor for a given Bloq, but some bloqs can be represented in a factorized form
-requiring the addition of more than one tensor.
+This method is responsible for returning tensors corresponding to the unitary, state, or
+effect of the bloq. Often, this method will return one tensor for a given Bloq, but
+some bloqs can be represented in a factorized form using more than one tensor.
 
-If this method is not overriden, the default implementation will try to use the bloq's
-decomposition to find a dense representation for this bloq.
+By default, calls to <a href="../qualtran/Bloq.html#tensor_contract"><code>Bloq.tensor_contract()</code></a> will first decompose and flatten the bloq
+before initiating the conversion to a tensor network. This has two consequences:
+ 1) Overriding this method is only necessary if this bloq does not define a decomposition
+    or if the fully-decomposed form contains a bloq that does not define its tensors.
+ 2) Even if you override this method to provide custom tensors, they may not be used
+    (by default) because we prefer the flat-decomposed version. This is usually desirable
+    for contraction performance; but for finer-grained control see
+    <a href="../qualtran/simulation/tensor/cbloq_to_quimb.html"><code>qualtran.simulation.tensor.cbloq_to_quimb</code></a>.
+
+Quimb defines a connection between two tensors by a shared index. The returned tensors
+from this method must use the Qualtran-Quimb index convention:
+ - Each tensor index is a tuple `(cxn, j)`
+ - The `cxn: qualtran.Connection` entry identifies the connection between bloq instances.
+ - The second integer `j` is the bit index within high-bitsize registers,
+   which is necessary due to technical restrictions.
 
 Args
 
-`tn`
-: The tensor network to which we add our tensor(s)
-
-`tag`
-: An arbitrary tag that must be forwarded to `qtn.Tensor`'s `tag` attribute.
-
 `incoming`
-: A mapping from register name to SoquetT to order left indices for
-  the tensor network.
+: A mapping from register name to Connection (or an array thereof) to use as
+  left indices for the tensor network. The shape of the array matches the register's
+  shape.
 
 `outgoing`
-: A mapping from register name to SoquetT to order right indices for
-  the tensor network.
+: A mapping from register name to Connection (or an array thereof) to use as
+  right indices for the tensor network.
 
 
 
@@ -396,7 +399,7 @@ Returns
 
 <h3 id="bloq_counts"><code>bloq_counts</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L345-L364">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L345-L365">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>bloq_counts(
@@ -428,11 +431,11 @@ Returns
 
 <h3 id="get_ctrl_system"><code>get_ctrl_system</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L366-L407">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L367-L403">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_ctrl_system(
-    ctrl_spec: Optional['CtrlSpec'] = None
+    ctrl_spec: 'CtrlSpec'
 ) -> Tuple['Bloq', 'AddControlledT']
 </code></pre>
 
@@ -478,7 +481,7 @@ Returns
 
 <h3 id="controlled"><code>controlled</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L409-L426">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L405-L427">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>controlled(
@@ -510,7 +513,7 @@ Returns
 
 <h3 id="t_complexity"><code>t_complexity</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L428-L436">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L429-L437">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_complexity() -> 'TComplexity'
@@ -523,7 +526,7 @@ method can be overriden with a known value.
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L441-L468">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L442-L469">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -567,7 +570,7 @@ Returns
 
 <h3 id="on"><code>on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L470-L496">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L471-L497">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on(
@@ -597,7 +600,7 @@ See Also
 
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L498-L518">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L499-L519">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
@@ -626,7 +629,7 @@ See Also
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L520-L551">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L521-L552">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(

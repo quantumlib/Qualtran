@@ -93,6 +93,10 @@ isort:skip_file
 
 [`bloq_example(...)`](./qualtran/bloq_example.md): Decorator to turn a function into a `BloqExample`.
 
+## Type Aliases
+
+[`ConnectionT`](./qualtran/ConnectionT.md)
+
 
 
 <h2 class="add-link">Other Members</h2>

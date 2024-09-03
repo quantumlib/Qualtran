@@ -15,6 +15,7 @@
    qualtran/BoundedQUInt.md
    qualtran/CompositeBloq.md
    qualtran/Connection.md
+   qualtran/ConnectionT.md
    qualtran/Controlled.md
    qualtran/CtrlSpec.md
    qualtran/DanglingT.md
@@ -57,6 +58,7 @@
    qualtran/testing/assert_bloq_example_serializes.md
    qualtran/testing/assert_connections_compatible.md
    qualtran/testing/assert_connections_consistent_qdtypes.md
+   qualtran/testing/assert_consistent_classical_action.md
    qualtran/testing/assert_equivalent_bloq_counts.md
    qualtran/testing/assert_equivalent_bloq_example_counts.md
    qualtran/testing/assert_registers_match_dangling.md
@@ -146,6 +148,7 @@
    qualtran/cirq_interop/CirqGateAsBloq.md
    qualtran/cirq_interop/CirqGateAsBloqBase.md
    qualtran/cirq_interop/CirqQuregT.md
+   qualtran/cirq_interop/cirq_gate_to_bloq.md
    qualtran/cirq_interop/cirq_optree_to_cbloq.md
    qualtran/cirq_interop/decompose_from_cirq_style_method.md
    qualtran/cirq_interop/decompose_protocol.md
@@ -166,32 +169,38 @@
    qualtran/surface_code/CCZ2TFactory.md
    qualtran/surface_code/CompactDataBlock.md
    qualtran/surface_code/ConstantWithOverheadRotationCost.md
+   qualtran/surface_code/DataBlock.md
    qualtran/surface_code/FastDataBlock.md
+   qualtran/surface_code/FifteenToOne.md
    qualtran/surface_code/IntermediateDataBlock.md
-   qualtran/surface_code/MagicCount.md
+   qualtran/surface_code/LogicalErrorModel.md
    qualtran/surface_code/MagicStateFactory.md
    qualtran/surface_code/MultiFactory.md
-   qualtran/surface_code/PhysicalCost.md
+   qualtran/surface_code/PhysicalCostModel.md
+   qualtran/surface_code/PhysicalCostsSummary.md
    qualtran/surface_code/PhysicalParameters.md
-   qualtran/surface_code/QuantumErrorCorrectionSchemeSummary.md
-   qualtran/surface_code/Reference.md
+   qualtran/surface_code/QECScheme.md
    qualtran/surface_code/RotationCostModel.md
    qualtran/surface_code/RotationLogarithmicModel.md
    qualtran/surface_code/SimpleDataBlock.md
    qualtran/surface_code/algorithm_summary.md
-   qualtran/surface_code/ccz2t_cost_model.md
+   qualtran/surface_code/ccz2t_factory.md
    qualtran/surface_code/data_block.md
+   qualtran/surface_code/fifteen_to_one_factory.md
    qualtran/surface_code/get_ccz2t_costs.md
    qualtran/surface_code/get_ccz2t_costs_from_error_budget.md
    qualtran/surface_code/get_ccz2t_costs_from_grid_search.md
-   qualtran/surface_code/magic_count.md
+   qualtran/surface_code/gidney_fowler_model.md
+   qualtran/surface_code/iter_ccz2t_factories.md
+   qualtran/surface_code/iter_simple_data_blocks.md
    qualtran/surface_code/magic_state_factory.md
    qualtran/surface_code/multi_factory.md
-   qualtran/surface_code/physical_cost.md
+   qualtran/surface_code/physical_cost_model.md
+   qualtran/surface_code/physical_cost_summary.md
    qualtran/surface_code/physical_parameters.md
-   qualtran/surface_code/quantum_error_correction_scheme_summary.md
-   qualtran/surface_code/reference.md
+   qualtran/surface_code/qec_scheme.md
    qualtran/surface_code/rotation_cost_model.md
+   qualtran/surface_code/t_factory_utils.md
 
 .. toctree::
    :hidden:
@@ -207,16 +216,22 @@
    qualtran/symbolics/ceil.md
    qualtran/symbolics/floor.md
    qualtran/symbolics/is_symbolic.md
+   qualtran/symbolics/is_zero.md
+   qualtran/symbolics/ln.md
    qualtran/symbolics/log2.md
    qualtran/symbolics/math_funcs.md
    qualtran/symbolics/pi.md
    qualtran/symbolics/prod.md
    qualtran/symbolics/sabs.md
+   qualtran/symbolics/sarg.md
    qualtran/symbolics/sconj.md
+   qualtran/symbolics/sexp.md
    qualtran/symbolics/shape.md
    qualtran/symbolics/slen.md
    qualtran/symbolics/smax.md
    qualtran/symbolics/smin.md
+   qualtran/symbolics/ssqrt.md
+   qualtran/symbolics/ssum.md
    qualtran/symbolics/types.md
 
 .. toctree::
@@ -256,6 +271,7 @@
    :caption: generalizers
 
    qualtran/resource_counting/generalizers/cirq_to_bloqs.md
+   qualtran/resource_counting/generalizers/generalize_cswap_approx.md
    qualtran/resource_counting/generalizers/generalize_cvs.md
    qualtran/resource_counting/generalizers/generalize_rotation_angle.md
    qualtran/resource_counting/generalizers/ignore_alloc_free.md
@@ -268,6 +284,8 @@
 
    qualtran/resource_counting/classify_bloqs/bloq_is_clifford.md
    qualtran/resource_counting/classify_bloqs/bloq_is_rotation.md
+   qualtran/resource_counting/classify_bloqs/bloq_is_state_or_effect.md
+   qualtran/resource_counting/classify_bloqs/bloq_is_t_like.md
    qualtran/resource_counting/classify_bloqs/classify_bloq.md
    qualtran/resource_counting/classify_bloqs/classify_t_count_by_bloq_type.md
 
@@ -284,6 +302,7 @@
    qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
+   qualtran/cirq_interop/t_complexity_protocol/t_complexity_compat.md
 
 .. toctree::
    :hidden:
@@ -296,11 +315,10 @@
    :caption: classical_sim
 
    qualtran/simulation/classical_sim/ClassicalValT.md
-   qualtran/simulation/classical_sim/bits_to_ints.md
+   qualtran/simulation/classical_sim/add_ints.md
    qualtran/simulation/classical_sim/call_cbloq_classically.md
    qualtran/simulation/classical_sim/format_classical_truth_table.md
    qualtran/simulation/classical_sim/get_classical_truth_table.md
-   qualtran/simulation/classical_sim/ints_to_bits.md
 
 .. toctree::
    :hidden:
@@ -309,37 +327,26 @@
    qualtran/simulation/tensor/active_space_for_ctrl_spec.md
    qualtran/simulation/tensor/bloq_has_custom_tensors.md
    qualtran/simulation/tensor/bloq_to_dense.md
-   qualtran/simulation/tensor/cbloq_as_contracted_tensor.md
    qualtran/simulation/tensor/cbloq_to_quimb.md
    qualtran/simulation/tensor/eye_tensor_for_signature.md
    qualtran/simulation/tensor/flatten_for_tensor_contraction.md
    qualtran/simulation/tensor/get_right_and_left_inds.md
+   qualtran/simulation/tensor/initialize_from_zero.md
+   qualtran/simulation/tensor/quimb_to_dense.md
    qualtran/simulation/tensor/tensor_data_from_unitary_and_signature.md
    qualtran/simulation/tensor/tensor_out_inp_shape_from_signature.md
    qualtran/simulation/tensor/tensor_shape_from_signature.md
 
 .. toctree::
    :hidden:
-   :caption: data_block
+   :caption: t_factory_utils
 
-   qualtran/surface_code/data_block/DataBlock.md
-
-.. toctree::
-   :hidden:
-   :caption: ccz2t_cost_model
-
-   qualtran/surface_code/ccz2t_cost_model/iter_ccz2t_factories.md
-   qualtran/surface_code/ccz2t_cost_model/iter_simple_data_blocks.md
+   qualtran/surface_code/t_factory_utils/NoisyPauliRotation.md
+   qualtran/surface_code/t_factory_utils/storage_error.md
 
 .. toctree::
    :hidden:
-   :caption: quantum_error_correction_scheme_summary
+   :caption: types
 
-   qualtran/surface_code/quantum_error_correction_scheme_summary/SimpliedSurfaceCode.md
-
-.. toctree::
-   :hidden:
-   :caption: math_funcs
-
-   qualtran/symbolics/math_funcs/ssqrt.md
+   qualtran/symbolics/types/TypeIs.md
 

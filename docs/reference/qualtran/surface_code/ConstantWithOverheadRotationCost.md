@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L66-L93">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L68-L95">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -27,9 +27,7 @@ Inherits From: [`RotationCostModel`](../../qualtran/surface_code/RotationCostMod
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.ConstantWithOverheadRotationCost(
-    bitsize,
-    overhead_rotation_cost,
-    reference=attr_dict[&#x27;reference&#x27;].default
+    bitsize, overhead_rotation_cost
 )
 </code></pre>
 
@@ -44,7 +42,10 @@ $$
 $$
 Where $b$ is the bitsize/number of digits of accuracy.
 
-reference: https://doi.org/10.1103/PRXQuantum.1.020312
+<h2 class="add-link">References</h2>
+
+
+
 
 
 
@@ -56,9 +57,6 @@ reference: https://doi.org/10.1103/PRXQuantum.1.020312
 `overhead_rotation_cost`<a id="overhead_rotation_cost"></a>
 : The cost model of preparing the initial rotation.
 
-`reference`<a id="reference"></a>
-: A description of the source of the model.
-
 
 
 
@@ -66,25 +64,25 @@ reference: https://doi.org/10.1103/PRXQuantum.1.020312
 
 <h3 id="rotation_cost"><code>rotation_cost</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L89-L90">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L91-L92">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>rotation_cost(
     error_budget: float
-) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
+) -> <a href="../../qualtran/resource_counting/GateCounts.html"><code>qualtran.resource_counting.GateCounts</code></a>
 </code></pre>
 
 Cost of a single rotation.
 
 
-<h3 id="prepartion_overhead"><code>prepartion_overhead</code></h3>
+<h3 id="preparation_overhead"><code>preparation_overhead</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L92-L93">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/rotation_cost_model.py#L94-L95">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>prepartion_overhead(
+<code>preparation_overhead(
     error_budget
-) -> <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>
+) -> <a href="../../qualtran/resource_counting/GateCounts.html"><code>qualtran.resource_counting.GateCounts</code></a>
 </code></pre>
 
 Cost of preparation circuit.

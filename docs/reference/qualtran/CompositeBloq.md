@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L80-L455">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L87-L471">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -82,7 +82,7 @@ composite bloq.
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L135-L144">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L142-L151">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -95,7 +95,7 @@ Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq.
 
 <h3 id="to_cirq_circuit_and_quregs"><code>to_cirq_circuit_and_quregs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L146-L169">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L153-L176">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_cirq_circuit_and_quregs(
@@ -131,7 +131,7 @@ Returns
 
 <h3 id="to_cirq_circuit"><code>to_cirq_circuit</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L171-L193">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L178-L200">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_cirq_circuit(
@@ -167,7 +167,7 @@ Returns
 
 <h3 id="from_cirq_circuit"><code>from_cirq_circuit</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L195-L205">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L202-L212">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -184,7 +184,7 @@ named "qubits" of shape `(n_qubits,)`.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L207-L214">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L214-L221">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
@@ -197,7 +197,7 @@ Support classical data by recursing into the composite bloq.
 
 <h3 id="call_classically"><code>call_classically</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L216-L221">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L223-L228">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_classically(
@@ -210,7 +210,7 @@ Support classical data by recursing into the composite bloq.
 
 <h3 id="as_composite_bloq"><code>as_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L223-L225">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L230-L232">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_composite_bloq() -> 'CompositeBloq'
@@ -221,7 +221,7 @@ This override just returns the present composite bloq.
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L227-L228">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L234-L235">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -249,7 +249,7 @@ Raises
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L230-L234">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L237-L241">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -262,7 +262,7 @@ Return the bloq counts by counting up all the subbloqs.
 
 <h3 id="iter_bloqnections"><code>iter_bloqnections</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L236-L255">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L243-L262">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>iter_bloqnections() -> Iterator[Tuple[BloqInstance, List[Connection], List[Connection]]]
@@ -278,7 +278,7 @@ Yields
 
 <h3 id="iter_bloqsoqs"><code>iter_bloqsoqs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L257-L290">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L264-L297">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>iter_bloqsoqs() -> Iterator[Tuple[BloqInstance, Dict[str, SoquetT], Tuple[SoquetT, ...]]]
@@ -318,7 +318,7 @@ Yields
 
 <h3 id="final_soqs"><code>final_soqs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L292-L305">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L299-L312">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>final_soqs() -> Dict[str, SoquetT]
@@ -330,7 +330,7 @@ This method is helpful for finalizing an "add from" operation, see `iter_bloqsoq
 
 <h3 id="copy"><code>copy</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L307-L317">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L314-L324">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>copy() -> 'CompositeBloq'
@@ -341,11 +341,11 @@ Create a copy of this composite bloq by re-building it.
 
 <h3 id="flatten_once"><code>flatten_once</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L319-L372">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L326-L388">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>flatten_once(
-    pred: Callable[[<a href="../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>], bool]
+    pred: Callable[[<a href="../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>], bool] = (lambda binst: True)
 ) -> 'CompositeBloq'
 </code></pre>
 
@@ -360,7 +360,8 @@ Args
 `pred`
 : A predicate that takes a bloq instance and returns True if it should
   be decomposed and flattened or False if it should remain undecomposed.
-  All bloqs for which this callable returns True must support decomposition.
+  If the bloq does not have a decomposition, it will remain undecomposed.
+  By default, flatten everything.
 
 
 
@@ -372,36 +373,21 @@ Returns
 
 Raises
 
-`NotImplementedError`
-: If `pred` returns True but the underlying bloq does not
-  support `decompose_bloq()`.
-
 `DidNotFlattenAnythingError`
-: If none of the bloq instances satisfied `pred`.
+: If the operation did not actually flatten anything.
+  This could be because none of the bloq instances satisfied `pred` or none of
+  the bloqs have decompositions.
 
 
 
-
-<h3 id="adjoint"><code>adjoint</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L374-L382">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>adjoint() -> 'CompositeBloq'
-</code></pre>
-
-Get a composite bloq which is the adjoint of this composite bloq.
-
-The adjoint of a composite bloq is another composite bloq where the order of
-operations is reversed and each subbloq is replaced with its adjoint.
 
 <h3 id="flatten"><code>flatten</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L384-L415">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L390-L418">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>flatten(
-    pred: Callable[[<a href="../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>], bool],
+    pred: Callable[[<a href="../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>], bool] = (lambda binst: True),
     max_depth: int = 1000
 ) -> 'CompositeBloq'
 </code></pre>
@@ -416,7 +402,8 @@ Args
 `pred`
 : A predicate that takes a bloq instance and returns True if it should
   be decomposed and flattened or False if it should remain undecomposed.
-  All bloqs for which this callable returns True must support decomposition.
+  If the bloq does not have a decomposition, it will remain undecomposed.
+  By default, flatten as much as possible.
 
 `max_depth`
 : To avoid infinite recursion, give up after this many recursive steps.
@@ -429,18 +416,22 @@ Returns
 
 
 
-Raises
+<h3 id="adjoint"><code>adjoint</code></h3>
 
-`NotImplementedError`
-: If `pred` returns True but the underlying bloq does not
-  support `decompose_bloq()`.
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L420-L428">View source</a>
 
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>adjoint() -> 'CompositeBloq'
+</code></pre>
 
+Get a composite bloq which is the adjoint of this composite bloq.
 
+The adjoint of a composite bloq is another composite bloq where the order of
+operations is reversed and each subbloq is replaced with its adjoint.
 
 <h3 id="debug_text"><code>debug_text</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L432-L455">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L445-L468">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>debug_text() -> str

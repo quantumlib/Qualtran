@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L28-L66">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L31-L69">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -48,7 +48,7 @@ Dataclass storing counts of logical T-gates, Clifford gates and single qubit rot
 
 <h3 id="rotation_cost"><code>rotation_cost</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L36-L38">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L39-L41">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@staticmethod</code>
@@ -62,7 +62,7 @@ Dataclass storing counts of logical T-gates, Clifford gates and single qubit rot
 
 <h3 id="t_incl_rotations"><code>t_incl_rotations</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L40-L48">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L43-L51">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_incl_rotations(
@@ -75,7 +75,7 @@ Return the total number of T gates after compiling rotations
 
 <h3 id="__add__"><code>__add__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L50-L53">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L53-L56">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__add__(
@@ -88,7 +88,7 @@ Return the total number of T gates after compiling rotations
 
 <h3 id="__mul__"><code>__mul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L55-L56">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L58-L59">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__mul__(
@@ -101,7 +101,7 @@ Return the total number of T gates after compiling rotations
 
 <h3 id="__rmul__"><code>__rmul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L58-L59">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L61-L62">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__rmul__(

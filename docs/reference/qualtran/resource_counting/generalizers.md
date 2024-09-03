@@ -13,6 +13,8 @@ for this argument.
 
 [`cirq_to_bloqs(...)`](../../qualtran/resource_counting/generalizers/cirq_to_bloqs.md): A generalizer that replaces Cirq gates with their equivalent bloq, where possible.
 
+[`generalize_cswap_approx(...)`](../../qualtran/resource_counting/generalizers/generalize_cswap_approx.md): A generalizer to replace CSwapApprox with a regular-old CSwap.
+
 [`generalize_cvs(...)`](../../qualtran/resource_counting/generalizers/generalize_cvs.md): A generalizer that replaces control variables with a shared symbol.
 
 [`generalize_rotation_angle(...)`](../../qualtran/resource_counting/generalizers/generalize_rotation_angle.md): A generalizer that replaces rotation angles with a shared symbol.

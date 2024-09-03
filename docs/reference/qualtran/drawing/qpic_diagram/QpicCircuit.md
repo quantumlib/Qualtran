@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L129-L251">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L135-L270">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -36,12 +36,25 @@ Builds data corresponding to the input specification of a QPIC diagram
 
 ## Methods
 
-<h3 id="add_wires_for_signature"><code>add_wires_for_signature</code></h3>
+<h3 id="add_left_wires_for_signature"><code>add_left_wires_for_signature</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L144-L150">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L150-L156">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>add_wires_for_signature(
+<code>add_left_wires_for_signature(
+    signature: 'Signature'
+) -> None
+</code></pre>
+
+
+
+
+<h3 id="add_right_wires_for_signature"><code>add_right_wires_for_signature</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L158-L169">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>add_right_wires_for_signature(
     signature: 'Signature'
 ) -> None
 </code></pre>
@@ -51,7 +64,7 @@ Builds data corresponding to the input specification of a QPIC diagram
 
 <h3 id="add_connection"><code>add_connection</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L211-L214">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L230-L233">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_connection(
@@ -64,7 +77,7 @@ Builds data corresponding to the input specification of a QPIC diagram
 
 <h3 id="add_bloq"><code>add_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L225-L251">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/qpic_diagram.py#L244-L270">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_bloq(

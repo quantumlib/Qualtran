@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/ccz2t_cost_model.py#L201-L271">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/gidney_fowler_model.py#L71-L143">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -19,22 +19,22 @@ Physical costs using the model from catalyzed CCZ to 2T paper.
   <h4 class="showalways">View aliases</h4>
   <p>
 <b>Main aliases</b>
-<p>`qualtran.surface_code.ccz2t_cost_model.get_ccz2t_costs_from_error_budget`</p>
+<p>`qualtran.surface_code.gidney_fowler_model.get_ccz2t_costs_from_error_budget`</p>
 </p>
 </section>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.get_ccz2t_costs_from_error_budget(
     *,
-    n_magic: <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>,
+    n_logical_gates: 'GateCounts',
     n_algo_qubits: int,
     phys_err: float = 0.001,
     error_budget: float = 0.01,
     cycle_time_us: float = 1.0,
     routing_overhead: float = 0.5,
     factory: Optional[<a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>] = None,
-    data_block: Optional[<a href="../../qualtran/surface_code/data_block/DataBlock.html"><code>qualtran.surface_code.data_block.DataBlock</code></a>] = None
-) -> <a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>
+    data_block: Optional[<a href="../../qualtran/surface_code/DataBlock.html"><code>qualtran.surface_code.DataBlock</code></a>] = None
+) -> <a href="../../qualtran/surface_code/PhysicalCostsSummary.html"><code>qualtran.surface_code.PhysicalCostsSummary</code></a>
 </code></pre>
 
 
@@ -44,8 +44,8 @@ Physical costs using the model from catalyzed CCZ to 2T paper.
 
 <h2 class="add-link">Args</h2>
 
-`n_magic`<a id="n_magic"></a>
-: The number of magic states (T, Toffoli) required to execute the algorithm
+`n_logical_gates`<a id="n_logical_gates"></a>
+: Number of algorithm logical gates.
 
 `n_algo_qubits`<a id="n_algo_qubits"></a>
 : Number of algorithm logical qubits.

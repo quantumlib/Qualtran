@@ -25,6 +25,8 @@
 
 [`assert_connections_consistent_qdtypes(...)`](../qualtran/testing/assert_connections_consistent_qdtypes.md): Check that a composite bloq's connections have consistent qdtypes.
 
+[`assert_consistent_classical_action(...)`](../qualtran/testing/assert_consistent_classical_action.md): Check that the bloq has a classical action consistent with its decomposition.
+
 [`assert_equivalent_bloq_counts(...)`](../qualtran/testing/assert_equivalent_bloq_counts.md): Assert that the BloqExample has consistent bloq counts.
 
 [`assert_equivalent_bloq_example_counts(...)`](../qualtran/testing/assert_equivalent_bloq_example_counts.md): Assert that the BloqExample has consistent bloq counts.

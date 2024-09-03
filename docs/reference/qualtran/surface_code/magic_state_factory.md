@@ -7,5 +7,5 @@
 
 ## Classes
 
-[`class MagicStateFactory`](../../qualtran/surface_code/MagicStateFactory.md): A cost model for the magic state distillation factory of a surface code compilation.
+[`class MagicStateFactory`](../../qualtran/surface_code/MagicStateFactory.md): Methods for modeling the costs of the magic state factories of a surface code compilation.
 

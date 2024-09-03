@@ -22,6 +22,8 @@ isort:skip_file
 
 ## Functions
 
+[`cirq_gate_to_bloq(...)`](../qualtran/cirq_interop/cirq_gate_to_bloq.md): For a given Cirq gate, return an equivalent bloq.
+
 [`cirq_optree_to_cbloq(...)`](../qualtran/cirq_interop/cirq_optree_to_cbloq.md): Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
 [`decompose_from_cirq_style_method(...)`](../qualtran/cirq_interop/decompose_from_cirq_style_method.md): Return a `CompositeBloq` decomposition using a cirq-style decompose method.

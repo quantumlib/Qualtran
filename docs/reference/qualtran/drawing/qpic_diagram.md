@@ -28,4 +28,7 @@ QPIC is not a dependency of Qualtran and must be manually installed by users via
 LeftDangle<a id="LeftDangle"></a>
 : Instance of <a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
 
+RightDangle<a id="RightDangle"></a>
+: Instance of <a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
+
 

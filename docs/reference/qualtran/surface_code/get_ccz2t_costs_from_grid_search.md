@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/ccz2t_cost_model.py#L309-L365">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/gidney_fowler_model.py#L182-L238">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -12,29 +12,29 @@
 
 
 
-Grid search over parameters to minimize space time volume.
+Grid search over parameters to minimize the space-time volume.
 
 
 <section class="expandable">
   <h4 class="showalways">View aliases</h4>
   <p>
 <b>Main aliases</b>
-<p>`qualtran.surface_code.ccz2t_cost_model.get_ccz2t_costs_from_grid_search`</p>
+<p>`qualtran.surface_code.gidney_fowler_model.get_ccz2t_costs_from_grid_search`</p>
 </p>
 </section>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.surface_code.get_ccz2t_costs_from_grid_search(
     *,
-    n_magic: <a href="../../qualtran/surface_code/MagicCount.html"><code>qualtran.surface_code.MagicCount</code></a>,
+    n_logical_gates: 'GateCounts',
     n_algo_qubits: int,
     phys_err: float = 0.001,
     error_budget: float = 0.01,
     cycle_time_us: float = 1.0,
     factory_iter: Iterable[<a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>] = tuple(iter_ccz2t_factories()),
-    data_block_iter: Iterable[<a href="../../qualtran/surface_code/data_block/DataBlock.html"><code>qualtran.surface_code.data_block.DataBlock</code></a>] = tuple(iter_simple_data_blocks()),
-    cost_function: Callable[[<a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>], float] = (lambda pc: pc.qubit_hours)
-) -> Tuple[<a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>, <a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>, <a href="../../qualtran/surface_code/SimpleDataBlock.html"><code>qualtran.surface_code.SimpleDataBlock</code></a>]
+    data_block_iter: Iterable[<a href="../../qualtran/surface_code/DataBlock.html"><code>qualtran.surface_code.DataBlock</code></a>] = tuple(iter_simple_data_blocks()),
+    cost_function: Callable[[<a href="../../qualtran/surface_code/PhysicalCostsSummary.html"><code>qualtran.surface_code.PhysicalCostsSummary</code></a>], float] = (lambda pc: pc.qubit_hours)
+) -> Tuple[<a href="../../qualtran/surface_code/PhysicalCostsSummary.html"><code>qualtran.surface_code.PhysicalCostsSummary</code></a>, <a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>, <a href="../../qualtran/surface_code/SimpleDataBlock.html"><code>qualtran.surface_code.SimpleDataBlock</code></a>]
 </code></pre>
 
 
@@ -44,8 +44,8 @@ Grid search over parameters to minimize space time volume.
 
 <h2 class="add-link">Args</h2>
 
-`n_magic`<a id="n_magic"></a>
-: The number of magic states (T, Toffoli) required to execute the algorithm
+`n_logical_gates`<a id="n_logical_gates"></a>
+: Number of algorithm logical gates.
 
 `n_algo_qubits`<a id="n_algo_qubits"></a>
 : Number of algorithm logical qubits.
@@ -68,7 +68,7 @@ Grid search over parameters to minimize space time volume.
 : iterable containing the instances of SimpleDataBlock to search over.
 
 `cost_function`<a id="cost_function"></a>
-: function of PhysicalCost to be minimized. Defaults to spacetime volume.
+: function of PhysicalCostsSummary to be minimized. Defaults to spacetime volume.
   Set `cost_function = (lambda pc: pc.duration_hr)` to mimimize wall time.
 
 

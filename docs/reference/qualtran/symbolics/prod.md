@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L85-L89">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L241-L245">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -25,8 +25,8 @@
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.symbolics.prod(
-    *args
-) -> <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>
+    args: Iterable[<a href="../../qualtran/symbolics/math_funcs.html#SymbolicT"><code>qualtran.symbolics.math_funcs.SymbolicT</code></a>]
+) -> <a href="../../qualtran/symbolics/math_funcs.html#SymbolicT"><code>qualtran.symbolics.math_funcs.SymbolicT</code></a>
 </code></pre>
 
 
