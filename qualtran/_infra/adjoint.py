@@ -162,13 +162,14 @@ class Adjoint(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
         sub_cg = self.subbloq.build_call_graph(ssa=ssa)
+        counts = Counter['Bloq']()
         if isinstance(sub_cg, set):
-            counts = Counter['Bloq']()
             for bloq, n in sub_cg:
                 counts[bloq.adjoint()] += n
-            return counts
         else:
-            return {bloq.adjoint(): n for bloq, n in sub_cg.items()}
+            for bloq, n in sub_cg.items():
+                counts[bloq.adjoint()] += n
+        return counts
 
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""
