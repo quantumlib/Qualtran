@@ -39,7 +39,7 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import CSwap, CZ, Hadamard, Ry, Toffoli, XGate, ZGate
+from qualtran.bloqs.basic_gates import CSwap, CZ, Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.data_loading.qroam_clean import (
     get_optimal_log_block_size_clean_ancilla,
