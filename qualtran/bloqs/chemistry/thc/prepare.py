@@ -412,6 +412,7 @@ class PrepareTHC(PrepareOracle):
             self.alt_nu,
             self.keep,
             target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
+            log_block_sizes=(self.log_block_size,),
         )
         return qroam
 
@@ -520,7 +521,9 @@ def _thc_prep() -> PrepareTHC:
     num_spat = 4
     num_mu = 8
     t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(
+        t_l, eta, zeta, num_bits_state_prep=8, log_block_size=2
+    )
     return thc_prep
 
 
