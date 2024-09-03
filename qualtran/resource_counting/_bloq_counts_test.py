@@ -18,7 +18,7 @@ from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
 from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.bloqs.for_testing.costing import make_example_costing_bloqs
-from qualtran.bloqs.mcmt import MultiTargetCNOT
+from qualtran.bloqs.mcmt import MultiAnd, MultiTargetCNOT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCount, GateCounts, get_cost_value, QECGatesCost
 
@@ -66,6 +66,12 @@ def test_qec_gates_cost():
     algo = make_example_costing_bloqs()
     gc = get_cost_value(algo, QECGatesCost())
     assert gc == GateCounts(toffoli=100, t=2 * 2 * 10, clifford=2 * 10)
+
+
+def test_qec_gates_cost_cbloq():
+    bloq = MultiAnd(cvs=(1,) * 5)
+    cbloq = bloq.decompose_bloq()
+    assert get_cost_value(bloq, QECGatesCost()) == get_cost_value(cbloq, QECGatesCost())
 
 
 @pytest.mark.parametrize(
