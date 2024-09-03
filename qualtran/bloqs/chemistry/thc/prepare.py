@@ -25,6 +25,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
@@ -40,7 +41,7 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
+from qualtran.bloqs.basic_gates import CSwap, CZ, Hadamard, Ry, Toffoli, XGate, ZGate
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.data_loading.qroam_clean import (
     get_optimal_log_block_size_clean_ancilla,
@@ -49,7 +50,6 @@ from qualtran.bloqs.data_loading.qroam_clean import (
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
-from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.drawing import Text, WireSymbol
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
@@ -457,11 +457,14 @@ class PrepareTHC(PrepareOracle):
             lte_gate, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
         )
         # TODO remove these
-        cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
-        soqs['alt_theta'], soqs['less_than'] = bb.add(cz, q=[soqs['alt_theta'], soqs['less_than']])
-        cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z, control_values=(0,)))
-        # negative control on the less_than register
-        soqs['less_than'], soqs['theta'] = bb.add(cz, q=[soqs['less_than'], soqs['theta']])
+        soqs['alt_theta'], soqs['less_than'] = bb.add(
+            CZ(), q1=soqs['alt_theta'], q2=soqs['less_than']
+        )
+        # off-control
+        ctrl_spec = CtrlSpec(QBit(), 0b0)
+        soqs['less_than'], soqs['theta'] = bb.add(
+            ZGate().controlled(ctrl_spec), ctrl=soqs['less_than'], q=soqs['theta']
+        )
         soqs['less_than'], soqs['alt_mu'], soqs['mu'] = bb.add(
             CSwap(bitsize=log_mu), ctrl=soqs['less_than'], x=soqs['alt_mu'], y=soqs['mu']
         )
@@ -496,7 +499,7 @@ class PrepareTHC(PrepareOracle):
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)
-        cost_7 = (Toffoli(), 1)
+        cost_7 = (MultiControlX(cvs=(0, 1)), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
 
 

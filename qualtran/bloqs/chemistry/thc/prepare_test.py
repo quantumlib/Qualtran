@@ -29,7 +29,7 @@ from qualtran.drawing.musical_score import get_musical_score_data, MusicalScoreD
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import classify_t_count_by_bloq_type
-from qualtran.resource_counting.generalizers import generalize_cswap_approx
+from qualtran.resource_counting.generalizers import generalize_cswap_approx, ignore_split_join
 from qualtran.testing import execute_notebook
 
 
@@ -120,6 +120,11 @@ def test_prepare_qrom_counts():
         qroam, QECGatesCost(), generalizer=generalize_cswap_approx
     ).total_t_and_ccz_count()
     assert binned_counts['data_loading'] == counts['n_ccz'] * 4, binned_counts['data_loading']
+
+
+def test_equivalent_bloq_counts():
+    prepare = _thc_prep.make()
+    qlt_testing.assert_equivalent_bloq_counts(prepare, ignore_split_join)
 
 
 def test_musical_score():
