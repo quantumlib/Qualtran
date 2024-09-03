@@ -585,7 +585,7 @@ def decompose_from_cirq_style_method(
             yields the cirq-style decomposition.
     """
     if any(
-        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
+        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side) or reg.is_symbolic()
         for reg in bloq.signature
     ):
         # pylint: disable=raise-missing-from
