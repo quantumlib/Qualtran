@@ -20,6 +20,7 @@ import cirq
 import networkx as nx
 import numpy as np
 import pytest
+import sympy
 from numpy.typing import NDArray
 
 import qualtran.testing as qlt_testing
@@ -30,6 +31,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -45,6 +47,7 @@ from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.symbolics import SymbolicInt
 
 
 def _manually_make_test_cbloq_cxns():
@@ -595,6 +598,22 @@ def test_add_and_partition():
     cbloq = bb.finalize(a=a, b=b, c=c)
     assert isinstance(cbloq, CompositeBloq)
     assert len(cbloq.bloq_instances) == 1
+
+
+@attrs.frozen
+class TestSymbolicRegisterShape(Bloq):
+    n: 'SymbolicInt'
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('q', QBit(), shape=(self.n,))])
+
+
+def test_decompose_symbolic_register_shape_raises():
+    n = sympy.Symbol("n")
+    bloq = TestSymbolicRegisterShape(n)
+    with pytest.raises(DecomposeTypeError):
+        bloq.decompose_bloq()
 
 
 @pytest.mark.notebook
