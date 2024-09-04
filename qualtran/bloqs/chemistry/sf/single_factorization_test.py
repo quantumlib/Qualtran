@@ -119,8 +119,7 @@ def test_compare_cost_to_openfermion():
     )
     # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
     delta_refl_missing_ctrl = 1
-    # TODO: porting to QECGatesCost
-    delta_unknown = 1
+    delta_unknown = 1  # TODO: https://github.com/quantumlib/Qualtran/issues/1391
     of_cost += our_qrom_cost - cost2c
     assert cost_qualtran + delta_refl_missing_ctrl - delta_unknown == of_cost
 

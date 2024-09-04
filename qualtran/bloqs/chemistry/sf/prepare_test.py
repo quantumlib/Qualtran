@@ -70,7 +70,7 @@ def test_outerprep_t_counts():
     cost1b = QR(num_aux + 1, bL)[-1] + QI(num_aux + 1)[-1]
     cost1cd = 2 * (num_bits_state_prep + nb_l + 1)
     of_cost = cost1a_mod + cost1b + cost1cd
-    toff -= 1  # TODO: unknown difference porting to QECGatesCost().
+    toff -= 1  # TODO: https://github.com/quantumlib/Qualtran/issues/1391
     assert toff == of_cost
 
 
