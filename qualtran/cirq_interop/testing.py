@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError, Signature
+from qualtran import Bloq, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.cirq_interop import t_complexity_protocol
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
@@ -126,21 +126,19 @@ def get_circuit_inp_out_cirqsim(
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):
+    if isinstance(val, Bloq):
+        raise ValueError(
+            f"Use `qlt_testing.assert_equivalent_bloq_counts` for testing bloqs: {val}."
+        )
+
     t_complexity_method = getattr(val, '_t_complexity_', None)
     expected = NotImplemented if t_complexity_method is None else t_complexity_method()
     if expected is NotImplemented or expected is None:
         raise AssertionError("No consistent t_complexity: no _t_complexity_.")
 
-    if isinstance(val, Bloq):
-        try:
-            cbloq = val.decompose_bloq()
-        except (DecomposeNotImplementedError, DecomposeTypeError) as e:
-            raise AssertionError("No consistent t_complexity: no decomposition.") from e
-        from_decomposition = t_complexity_protocol._from_bloq_build_call_graph(cbloq)
-    else:
-        decomposition = _decompose_once_considering_known_decomposition(val)
-        if decomposition is None:
-            raise AssertionError("No consistent t_complexity: no decomposition.")
-        from_decomposition = t_complexity_protocol._from_iterable(decomposition)
+    decomposition = _decompose_once_considering_known_decomposition(val)
+    if decomposition is None:
+        raise AssertionError("No consistent t_complexity: no decomposition.")
+    from_decomposition = t_complexity_protocol._from_iterable(decomposition)
 
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'

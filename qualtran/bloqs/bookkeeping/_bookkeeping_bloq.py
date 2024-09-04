@@ -16,7 +16,6 @@ import abc
 from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 from qualtran import Bloq, BloqBuilder, SoquetT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
 
@@ -42,6 +41,3 @@ class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
             return ctrl_soqs, out_soqs
 
         return self, add_controlled
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()

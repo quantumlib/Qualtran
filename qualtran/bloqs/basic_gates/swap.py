@@ -47,7 +47,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -93,9 +92,6 @@ class TwoBitSwap(Bloq):
         (x,) = x
         (y,) = y
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -199,9 +195,6 @@ class TwoBitCSwap(Bloq):
         if ctrl == 1:
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 7), (CNOT(), 8), (Hadamard(), 2)}
