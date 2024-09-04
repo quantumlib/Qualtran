@@ -55,7 +55,7 @@ def test_rz_via_par_examples(bloq_autotester):
 
 
 def test_t_cost_including_rotations():
-    theta, eps, p = sympy.symbols('theta, \epsilon, p')
+    theta, eps, p = sympy.symbols(r'theta, \epsilon, p')
     bloq = ZPowUsingProgrammedAncilla.from_failure_probability(
         exponent=theta, max_fail_probability=p, eps=eps
     )
