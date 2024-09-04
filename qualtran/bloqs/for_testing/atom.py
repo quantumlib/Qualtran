@@ -68,7 +68,7 @@ class TestAtom(Bloq):
         ]
 
     def my_static_costs(self, cost_key: 'CostKey'):
-        if cost_key == QECGatesCost():
+        if isinstance(cost_key, QECGatesCost):
             return GateCounts(t=100)
         return NotImplemented
 

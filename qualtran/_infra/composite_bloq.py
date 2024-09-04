@@ -846,6 +846,8 @@ class BloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
+        from qualtran.symbolics import is_symbolic
+
         if not self.add_register_allowed:
             raise ValueError(
                 "This BloqBuilder was constructed from pre-specified registers. "
@@ -863,6 +865,11 @@ class BloqBuilder:
                     "`dtype` must be specified and must be an QDType if `reg` is a register name."
                 )
             reg = Register(name=reg, dtype=dtype)
+
+        if is_symbolic(*reg.shape_symbolic):
+            raise DecomposeTypeError(
+                f"cannot add register with symbolic shape {reg.shape_symbolic}"
+            )
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:

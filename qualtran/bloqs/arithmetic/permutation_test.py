@@ -24,16 +24,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import numpy as np
+import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QBit
 from qualtran.bloqs.arithmetic.permutation import (
     _permutation,
     _permutation_cycle,
     _permutation_cycle_symb,
+    _permutation_cycle_symb_N,
     _permutation_symb,
     _permutation_symb_with_cycles,
     _sparse_permutation,
+    _sparse_permutation_with_symbolic_N,
     Permutation,
     PermutationCycle,
 )
@@ -44,16 +48,38 @@ from qualtran.resource_counting.generalizers import generalize_cvs, ignore_split
 from qualtran.symbolics import ceil, log2, slen
 
 
-def test_examples(bloq_autotester):
-    bloq_autotester(_permutation_cycle)
-    bloq_autotester(_permutation)
-    bloq_autotester(_sparse_permutation)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _permutation_cycle,
+        _permutation,
+        _sparse_permutation,
+        _permutation_cycle_symb,
+        _permutation_cycle_symb_N,
+        _permutation_symb,
+        _permutation_symb_with_cycles,
+        _sparse_permutation_with_symbolic_N,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_examples(bloq_autotester, bloq_ex):
+    bloq_autotester(bloq_ex)
 
 
-def test_symbolic_examples(bloq_autotester):
-    bloq_autotester(_permutation_cycle_symb)
-    bloq_autotester(_permutation_symb)
-    bloq_autotester(_permutation_symb_with_cycles)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _permutation_cycle,
+        _permutation,
+        _sparse_permutation,
+        _permutation_cycle_symb_N,
+        _permutation_symb_with_cycles,
+        _sparse_permutation_with_symbolic_N,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_decomposition(bloq_ex):
+    qlt_testing.assert_valid_bloq_decomposition(bloq_ex.make())
 
 
 def test_permutation_cycle_unitary_and_call_graph():
