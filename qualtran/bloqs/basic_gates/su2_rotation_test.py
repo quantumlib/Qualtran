@@ -30,7 +30,7 @@ def test_decompose_SU2_to_single_qubit_pauli_gates():
         gate = SU2RotationGate(theta, phi, lambd, global_shift)
 
         np.testing.assert_allclose(
-            cirq.unitary(BloqAsCirqGate(gate.decompose_bloq())), gate.rotation_matrix
+            cirq.unitary(gate.decompose_bloq().to_cirq_circuit()), gate.rotation_matrix
         )
 
 
