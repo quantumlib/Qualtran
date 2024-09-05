@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import sympy
 
     from qualtran import Bloq
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.symbolics import SymbolicInt
 
 
@@ -591,7 +591,9 @@ class UnaryIterationGate(GateWithRegisters):
             f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
