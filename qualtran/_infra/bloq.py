@@ -39,7 +39,13 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, CostKey, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        BloqCountT,
+        CostKey,
+        GeneralizerT,
+        SympySymbolAllocator,
+    )
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -279,7 +285,9 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(f"{self} does not support tensor simulation.")
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         """Override this method to build the bloq call graph.
 
         This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in

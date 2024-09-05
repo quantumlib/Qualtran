@@ -33,7 +33,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
@@ -208,7 +208,9 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                 ret += data_to_load.bit_count()
         return {(CNOT(), ret)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls

@@ -20,6 +20,7 @@ isort:skip_file
 from ._generalization import GeneralizerT
 
 from ._call_graph import (
+    BloqCountDictT,
     BloqCountT,
     big_O,
     SympySymbolAllocator,
