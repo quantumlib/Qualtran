@@ -17,7 +17,6 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rx, Rz, TGate, XGate, YGate, ZGate
-from qualtran.cirq_interop import BloqAsCirqGate
 
 from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
