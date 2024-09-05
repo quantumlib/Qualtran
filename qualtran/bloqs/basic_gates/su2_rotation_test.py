@@ -17,7 +17,6 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rx, Rz, TGate, XGate, YGate, ZGate
-from qualtran.cirq_interop import BloqAsCirqGate
 
 from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
@@ -30,7 +29,7 @@ def test_decompose_SU2_to_single_qubit_pauli_gates():
         gate = SU2RotationGate(theta, phi, lambd, global_shift)
 
         np.testing.assert_allclose(
-            cirq.unitary(BloqAsCirqGate(gate.decompose_bloq())), gate.rotation_matrix
+            cirq.unitary(gate.decompose_bloq().to_cirq_circuit()), gate.rotation_matrix
         )
 
 

@@ -151,10 +151,6 @@ class Adjoint(GateWithRegisters):
         sub_info.exponent *= -1
         return sub_info
 
-    def supports_decompose_bloq(self) -> bool:
-        """Delegate to `subbloq.supports_decompose_bloq()`"""
-        return self.subbloq.supports_decompose_bloq()
-
     def adjoint(self) -> 'Bloq':
         """The 'double adjoint' brings you back to the original bloq."""
         return self.subbloq
