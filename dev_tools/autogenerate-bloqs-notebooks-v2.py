@@ -515,6 +515,7 @@ MOD_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.mod_arithmetic.mod_multiplication._MOD_DBL_DOC,
             qualtran.bloqs.mod_arithmetic.mod_multiplication._C_MOD_MUL_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._DIRTY_OUT_OF_PLACE_MONTGOMERY_MOD_MUL_DOC,
         ],
     ),
     NotebookSpecV2(
