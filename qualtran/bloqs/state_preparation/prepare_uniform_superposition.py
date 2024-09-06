@@ -157,12 +157,12 @@ class PrepareUniformSuperposition(GateWithRegisters):
         _, l, logL = self.k_l_logL()
         theta = acos(1 - (2 ** floor(log2(l))) / l)
         return {
-            (Hadamard(), 3 * logL),
-            (LessThanConstant(logL, l), 1),
-            (LessThanConstant(logL, l).adjoint(), 1),
-            (Rz(theta), 2),
-            (MultiAnd(HasLength(logL)), 1),
-            (MultiAnd(HasLength(logL)).adjoint(), 1),
+            Hadamard(): 3 * logL,
+            LessThanConstant(logL, l): 1,
+            LessThanConstant(logL, l).adjoint(): 1,
+            Rz(theta): 2,
+            MultiAnd(HasLength(logL)): 1,
+            MultiAnd(HasLength(logL)).adjoint(): 1,
         }
 
 

@@ -14,7 +14,7 @@
 r"""Bloqs for the state preparation of the DF Hamiltonian."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -27,7 +27,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -71,12 +71,12 @@ class InnerPrepareDoubleFactorization(Bloq):
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(xi=nxi, offset=nlxi, rot=self.num_bits_rot_aa, succ_p=1, p=nxi)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Step 3.
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         # uniform superposition state, requires controlled hadamards
         # https://github.com/quantumlib/Qualtran/issues/237
-        cost_a = (Toffoli(), 7 * num_bits_xi + 2 * self.num_bits_rot_aa - 6)
+        cost_a = 7 * num_bits_xi + 2 * self.num_bits_rot_aa - 6
         # add offset to get correct bit of QROM from [l + offset^l, l+offset^l+Xi^l]
         num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         cost_b = (Add(QUInt(num_bits_lxi)), 1)
@@ -84,8 +84,9 @@ class InnerPrepareDoubleFactorization(Bloq):
         bp = num_bits_xi + self.num_bits_state_prep + 2  # C31
         cost_c = (QROAM(self.num_eig + self.num_spin_orb // 2, bp), 1)
         # inequality tests + CSWAP
-        cost_d = (Toffoli(), self.num_bits_state_prep + num_bits_xi)
-        return {cost_a, cost_b, cost_c, cost_d}
+        cost_d = self.num_bits_state_prep + num_bits_xi
+        cost_a_and_d = (Toffoli(), cost_a + cost_d)
+        return dict([cost_a_and_d, cost_b, cost_c])
 
 
 @frozen
@@ -129,7 +130,7 @@ class OuterPrepareDoubleFactorization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(l=self.num_aux.bit_length(), succ_l=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Listing 1 steps a-d
         num_bits_l = self.num_aux.bit_length()
         cost_a = (PrepareUniformSuperposition(self.num_aux + 1), 1)
@@ -137,10 +138,10 @@ class OuterPrepareDoubleFactorization(Bloq):
         output_size = num_bits_l + self.num_bits_state_prep
         cost_b = (QROAM(self.num_aux + 1, output_size), 1)
         # inequality test
-        cost_c = (Toffoli(), self.num_bits_state_prep)
+        cost_c = self.num_bits_state_prep
         # controlled swaps
-        cost_d = (Toffoli(), num_bits_l)
-        return {cost_a, cost_b, cost_c, cost_d}
+        cost_d = num_bits_l
+        return dict([cost_a, cost_b, (Toffoli(), cost_c + cost_d)])
 
 
 @frozen
@@ -192,12 +193,12 @@ class OutputIndexedData(Bloq):
             offset=nlxi,
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # listing 2 C29/30 page 52
         num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
-        return {(QROAM(self.num_aux + 1, bo), 1)}
+        return {QROAM(self.num_aux + 1, bo): 1}
 
 
 @bloq_example

@@ -19,13 +19,12 @@ so we don't have undefined symbols and can still merge the high-level algorithms
 will be fleshed out and moved to their final organizational location soon (written: 2024-05-06).
 """
 from functools import cached_property
-from typing import Set
 
 from attrs import frozen
 
 from qualtran import Bloq, QBit, QUInt, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -36,8 +35,8 @@ class MultiCToffoli(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit(), shape=(self.n,)), Register('target', QBit())])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Toffoli(), self.n - 2)}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {Toffoli(): self.n - 2}
 
 
 @frozen
@@ -51,9 +50,9 @@ class Lt(Bloq):
             [Register('x', QUInt(self.n)), Register('y', QUInt(self.n)), Register('out', QBit())]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # litinski
-        return {(Toffoli(), self.n)}
+        return {Toffoli(): self.n}
 
 
 @frozen

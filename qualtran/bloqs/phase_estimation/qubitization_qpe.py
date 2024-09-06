@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -33,7 +33,7 @@ from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationW
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -131,15 +131,15 @@ class QubitizationQPE(GateWithRegisters):
             yield reflect_controlled.on_registers(control=qpre_reg[i], **reflect_regs)
         yield self.qft_inv.on(*qpre_reg)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Assumes self.unitary is not fast forwardable.
         M = 2**self.m_bits
         return {
-            (self.ctrl_state_prep, 1),
-            (self.walk.controlled(), 1),
-            (self.walk.reflect.controlled(ctrl_spec=CtrlSpec(cvs=0)), 2 * (self.m_bits - 1)),
-            (self.walk, M - 2),
-            (self.qft_inv, 1),
+            self.ctrl_state_prep: 1,
+            self.walk.controlled(): 1,
+            self.walk.reflect.controlled(ctrl_spec=CtrlSpec(cvs=0)): 2 * (self.m_bits - 1),
+            self.walk: M - 2,
+            self.qft_inv: 1,
         }
 
 

@@ -14,7 +14,7 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -26,7 +26,7 @@ from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -143,7 +143,7 @@ class SelectSparse(SpecializedSingleQubitControlledExtension, SelectOracle):  # 
             out_soqs['control'] = soqs['control']
         return out_soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
         # is a bit misleading as applying that circuit twice would square the
@@ -155,7 +155,7 @@ class SelectSparse(SpecializedSingleQubitControlledExtension, SelectOracle):  # 
         maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y, control_regs=())
         c_maj_x = SelectedMajoranaFermion(sel_pa, target_gate=cirq.X)
         c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
-        return {(SGate(), 1), (maj_x, 1), (c_maj_x, 1), (maj_y, 1), (c_maj_y, 1)}
+        return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
 
 
 @bloq_example

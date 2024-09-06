@@ -31,7 +31,7 @@ $$
 where $\Xi^{(l)} $ is the rank of second factorization.
 """
 from functools import cached_property
-from typing import Dict, Iterable, Set, TYPE_CHECKING
+from typing import Dict, Iterable, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -63,7 +63,7 @@ from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingP
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -261,7 +261,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             'sys': sys,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
@@ -279,16 +279,14 @@ class DoubleFactorizationOneBody(BlockEncoding):
         rot_dag = rot.adjoint()
         # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
         return {
-            (in_prep, 1),  # in-prep_l listing 3 page 52/53
-            (in_prep_dag, 1),  # in_prep_l^dag
-            (rot, 1),  # rotate into system basis  listing 4 pg 54
-            (
-                Toffoli(),
-                1,
-            ),  # apply CCZ first then CCCZ, the cost is 1 + 2 Toffolis (step 4e, and 7)
-            (rot_dag, 1),  # Undo rotations
-            (CSwap(self.num_spin_orb // 2), 2),  # Swaps for spins
-            (ArbitraryClifford(n=1), 1),  # 2 Hadamards for spin superposition
+            in_prep: 1,  # in-prep_l listing 3 page 52/53
+            in_prep_dag: 1,  # in_prep_l^dag
+            rot: 1,  # rotate into system basis  listing 4 pg 54
+            # apply CCZ first then CCCZ, the cost is 1 + 2 Toffolis (step 4e, and 7)
+            Toffoli(): 1,
+            rot_dag: 1,  # Undo rotations
+            CSwap(self.num_spin_orb // 2): 2,  # Swaps for spins
+            ArbitraryClifford(n=1): 1,  # 2 Hadamards for spin superposition
         }
 
 

@@ -13,18 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -59,7 +48,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, CompositeBloq
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -203,8 +192,8 @@ class TwoBitCSwap(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=7, clifford=10)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 7), (CNOT(), 8), (Hadamard(), 2)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TGate(): 7, CNOT(): 8, Hadamard(): 2}
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -250,8 +239,8 @@ class Swap(Bloq):
 
         return {'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TwoBitSwap(), self.bitsize)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TwoBitSwap(): self.bitsize}
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -329,8 +318,8 @@ class CSwap(GateWithRegisters):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TwoBitCSwap(), self.bitsize)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TwoBitCSwap(): self.bitsize}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'

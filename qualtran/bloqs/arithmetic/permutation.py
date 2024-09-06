@@ -129,8 +129,8 @@ class PermutationCycle(Bloq):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
             return {
-                (EqualsAConstant(self.bitsize, x), cycle_len + 1),
-                (XorK(QUInt(self.bitsize), x).controlled(), cycle_len),
+                EqualsAConstant(self.bitsize, x): cycle_len + 1,
+                XorK(QUInt(self.bitsize), x).controlled(): cycle_len,
             }
 
         return super().build_call_graph(ssa)
@@ -275,7 +275,7 @@ class Permutation(Bloq):
         if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))
-            return {(PermutationCycle(self.N, cycle), 1)}
+            return {PermutationCycle(self.N, cycle): 1}
 
         return super().build_call_graph(ssa)
 

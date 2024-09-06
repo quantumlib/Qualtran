@@ -16,7 +16,7 @@
 These are for temporary convenience to lock-in the quoted literature costs.
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -28,7 +28,7 @@ from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def qroam_cost(x, data_size: int, bitsize: int, adjoint: bool = False):
@@ -112,14 +112,14 @@ class QROAM(Bloq):
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = get_qroam_cost_clean_ancilla(
             self.data_size,
             self.target_bitsize,
             adjoint=self.is_adjoint,
             qroam_block_size=self.qroam_block_size,
         )
-        return {(Toffoli(), cost)}
+        return {Toffoli(): cost}
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
@@ -160,14 +160,14 @@ class QROAMTwoRegs(Bloq):
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_a_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
         cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
         if self.is_adjoint:
             cost += self.data_a_block_size * self.data_b_block_size
         else:
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
-        return {(Toffoli(), cost)}
+        return {Toffoli(): cost}
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
@@ -218,6 +218,6 @@ class ApplyControlledZs(Bloq):
         system = bb.join(split_sys)
         return {'ctrls': ctrls, 'system': system}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # remove this method once https://github.com/quantumlib/Qualtran/issues/528 is resolved.
-        return {(Toffoli(), len(self.cvs) - 1)}
+        return {Toffoli(): len(self.cvs) - 1}

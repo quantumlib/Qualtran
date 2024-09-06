@@ -625,6 +625,6 @@ class UnaryIterationGate(GateWithRegisters):
 
         try:
             unary_iteration_loops(0, {}, total_bits(self.control_registers))
-            return {(bloq, count) for bloq, count in bloq_counts.items()}
+            return bloq_counts
         except NotImplementedError:
             return super().build_call_graph(ssa)

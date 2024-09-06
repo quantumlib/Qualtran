@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -24,7 +24,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -58,8 +58,8 @@ class PreparePowerTwoState(Bloq):
     def pretty_name(self) -> str:
         return r'PREP 2^(r/2) |r⟩'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Toffoli(), (self.bitsize - 2))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {Toffoli(): (self.bitsize - 2)}
 
 
 @frozen
@@ -112,14 +112,13 @@ class PrepareTFirstQuantization(Bloq):
         s = bb.add(PreparePowerTwoState(self.num_bits_p), r=s)
         return {'w': w, 'r': r, 's': s}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # there is a cost for the uniform state preparation for the $w$
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq
-        # 13 is from assuming 8 bits for the rotation, and n = 2.
-        uni_prep_w = (Toffoli(), 13)
-        # Factor of two for r and s registers.
-        return {uni_prep_w, (PreparePowerTwoState(bitsize=self.num_bits_p), 2)}
+        # 13 Toffolis is from assuming 8 bits for the rotation, and n = 2.
+        # Factor of two for PreparePowerTwoState for r and s registers.
+        return {Toffoli(): 13, PreparePowerTwoState(bitsize=self.num_bits_p): 2}
 
 
 @bloq_example

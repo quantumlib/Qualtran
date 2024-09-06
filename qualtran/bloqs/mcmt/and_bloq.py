@@ -23,7 +23,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 """
 import itertools
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -50,7 +50,12 @@ from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
-from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import (
+    big_O,
+    BloqCountDictT,
+    MutableBloqCountDictT,
+    SympySymbolAllocator,
+)
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_cvs,
@@ -108,7 +113,7 @@ class And(GateWithRegisters):
             raise DecomposeTypeError(f"{self} is atomic.")
         return decompose_from_cirq_style_method(self)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if FLAG_AND_AS_LEAF:
             raise DecomposeTypeError(f"{self} is atomic.")
 
@@ -117,9 +122,9 @@ class And(GateWithRegisters):
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.uncompute:
-            return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
+            return {ArbitraryClifford(n=2): 4 + 2 * pre_post_cliffords}
 
-        return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
+        return {ArbitraryClifford(n=2): 9 + 2 * pre_post_cliffords, TGate(): 4}
 
     def _t_complexity_(self) -> 'TComplexity':
         if not FLAG_AND_AS_LEAF:
@@ -403,16 +408,16 @@ class MultiAnd(Bloq):
     def __str__(self):
         return f'MultiAnd(n={self.n_ctrls})'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        pre_post_cliffords = set()
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        cost: 'MutableBloqCountDictT' = {And(): self.n_ctrls - 1}
         if not (
             is_symbolic(self.cvs)
             or is_symbolic(*self.concrete_cvs)
             or (self.n_ctrls == sum(self.concrete_cvs))
         ):
-            pre_post_cliffords = {(XGate(), 2 * (self.n_ctrls - sum(self.concrete_cvs)))}
+            cost[XGate()] = 2 * (self.n_ctrls - sum(self.concrete_cvs))
 
-        return {(And(), self.n_ctrls - 1)} | pre_post_cliffords
+        return cost
 
 
 @bloq_example(generalizer=(ignore_cliffords, generalize_cvs))

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Tuple
 
 import attrs
 import numpy as np
@@ -30,7 +30,13 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.resource_counting import BloqCountT, get_cost_value, QECGatesCost
+from qualtran.resource_counting import (
+    BloqCountDictT,
+    BloqCountT,
+    get_cost_value,
+    QECGatesCost,
+    SympySymbolAllocator,
+)
 from qualtran.resource_counting.classify_bloqs import (
     _get_basic_bloq_classification,
     bloq_is_rotation,
@@ -38,9 +44,6 @@ from qualtran.resource_counting.classify_bloqs import (
     classify_bloq,
     classify_t_count_by_bloq_type,
 )
-
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -53,8 +56,8 @@ class TestBundleOfBloqs(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return set(self.bloqs)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return dict(self.bloqs)
 
 
 @pytest.mark.parametrize(

@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -56,8 +56,8 @@ class Toffoli(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 4)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TGate(): 4}
 
     def _t_complexity_(self):
         return TComplexity(t=4)
