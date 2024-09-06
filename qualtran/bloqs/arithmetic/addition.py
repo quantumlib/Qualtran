@@ -62,7 +62,7 @@ from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -502,7 +502,9 @@ class AddK(Bloq):
         else:
             return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         loading_cost: Tuple[Bloq, SymbolicInt]
         if len(self.cvs) == 0:
             loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.

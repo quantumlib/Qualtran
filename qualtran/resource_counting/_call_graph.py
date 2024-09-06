@@ -16,7 +16,19 @@
 
 import collections.abc
 from collections import defaultdict
-from typing import Callable, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Callable,
+    cast,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import networkx as nx
 import sympy
@@ -24,6 +36,7 @@ import sympy
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
+BloqCountDictT = Mapping[Bloq, Union[int, sympy.Expr]]
 from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
@@ -69,7 +82,7 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
 
 
 def _generalize_callees(
-    raw_callee_counts: Set[BloqCountT], generalizer: GeneralizerT
+    raw_callee_counts: Union[BloqCountDictT, Set[BloqCountT]], generalizer: GeneralizerT
 ) -> List[BloqCountT]:
     """Apply `generalizer` to the results of `bloq.build_call_graph`.
 
@@ -77,7 +90,11 @@ def _generalize_callees(
     and filters out cases where `generalizer` returns `None`.
     """
     callee_counts: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
-    for callee, n in raw_callee_counts:
+    if isinstance(raw_callee_counts, set):
+        raw_callee_iterator: Iterable[BloqCountT] = raw_callee_counts
+    else:
+        raw_callee_iterator = raw_callee_counts.items()
+    for callee, n in raw_callee_iterator:
         generalized_callee = generalizer(callee)
         if generalized_callee is None:
             # Signifies that this callee should be ignored.

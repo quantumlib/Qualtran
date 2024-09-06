@@ -19,7 +19,7 @@ import cachetools
 import cirq
 
 from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 from .decompose_protocol import _decompose_once_considering_known_decomposition
@@ -60,6 +60,9 @@ class TComplexity:
 
     def __rmul__(self, other: int) -> 'TComplexity':
         return self.__mul__(other)
+
+    def asdict(self):
+        return {'t': self.t, 'rotations': self.rotations, 'clifford': self.clifford}
 
     def __str__(self) -> str:
         return (
@@ -163,7 +166,11 @@ def _from_bloq_build_call_graph(bloq: Bloq) -> Optional[TComplexity]:
         return None
 
     ret = TComplexity()
-    for callee, n in callee_counts:
+    if isinstance(callee_counts, set):
+        callee_iterator: Iterable[BloqCountT] = callee_counts
+    else:
+        callee_iterator = callee_counts.items()
+    for callee, n in callee_iterator:
         r = t_complexity(callee)
         if r is None:
             return None
@@ -236,6 +243,9 @@ def _t_complexity_for_bloq(bloq: Bloq) -> Optional[TComplexity]:
     return _t_complexity_from_strategies(bloq, strategies)
 
 
+USE_NEW_GATE_COUNTING_FLAG = True
+
+
 def t_complexity(bloq: Bloq) -> TComplexity:
     """Returns the TComplexity of a bloq.
 
@@ -248,6 +258,11 @@ def t_complexity(bloq: Bloq) -> TComplexity:
     Raises:
         TypeError: if none of the strategies can derive the t complexity.
     """
+    if USE_NEW_GATE_COUNTING_FLAG:
+        from qualtran.resource_counting import get_cost_value, QECGatesCost
+
+        return get_cost_value(bloq, QECGatesCost(legacy_shims=True)).to_legacy_t_complexity()
+
     ret = _t_complexity_for_bloq(bloq)
     if ret is None:
         raise TypeError(

@@ -20,13 +20,28 @@ from cirq.ops import SimpleQubitManager
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
+from qualtran.resource_counting.classify_bloqs import bloq_is_rotation, bloq_is_t_like
 
 
-def test_rotation_gates():
+def test_t_like_rotation_gates():
     angle = np.pi / 4.0
-    tcount = 52
-    assert Rx(angle).t_complexity().t_incl_rotations() == tcount
-    assert Ry(angle).t_complexity().t_incl_rotations() == tcount
+    # In prior versions of the library, only Rz(pi/4) would simplify to a T gate in gate counts.
+    # The others would report the synthesis cost for an arbitrary angle, which was reported as
+    # 52 T-gates.
+    assert not bloq_is_rotation(Rx(angle))
+    assert not bloq_is_rotation(Ry(angle))
+    assert not bloq_is_rotation(Rz(angle))
+    assert bloq_is_t_like(Rx(angle))
+    assert bloq_is_t_like(Ry(angle))
+    assert bloq_is_t_like(Rz(angle))
+
+    assert get_cost_value(Rx(angle), QECGatesCost()) == GateCounts(t=1)
+    assert get_cost_value(Ry(angle), QECGatesCost()) == GateCounts(t=1)
+    assert get_cost_value(Rz(angle), QECGatesCost()) == GateCounts(t=1)
+
+    assert Rx(angle).t_complexity().t_incl_rotations() == 1
+    assert Ry(angle).t_complexity().t_incl_rotations() == 1
     assert Rz(angle).t_complexity().t_incl_rotations() == 1
 
 

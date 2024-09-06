@@ -11,24 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from functools import cached_property
-from typing import cast, Dict, TYPE_CHECKING
+from typing import cast
 
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Adjoint, Bloq, CompositeBloq, Side, Signature
+from qualtran import Adjoint, CompositeBloq, Side
 from qualtran._infra.adjoint import _adjoint_cbloq
-from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
+from qualtran.bloqs.basic_gates import CNOT, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import LarrowTextBox, RarrowTextBox, Text
-
-if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
 
 
 def test_serial_combo_adjoint():
@@ -106,14 +101,6 @@ def test_adjoint_signature():
     assert adj_reg.side == Side.LEFT
 
 
-def test_adjoint_supports_decompose():
-    assert not CNOT().supports_decompose_bloq()
-    assert not Adjoint(CNOT()).supports_decompose_bloq()
-
-    assert CSwap(bitsize=5).supports_decompose_bloq()
-    assert Adjoint(CSwap(bitsize=5)).supports_decompose_bloq()
-
-
 def test_adjoint_adjoint():
     zero = ZeroState()
     adj = Adjoint(zero)  # specifically use the Adjoint wrapper for testing
@@ -165,37 +152,6 @@ def test_wire_symbol():
     adj_ws = adj.wire_symbol(reg.adjoint())
     assert isinstance(ws, LarrowTextBox)
     assert isinstance(adj_ws, RarrowTextBox)
-
-
-class TAcceptsAdjoint(TestAtom):
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        return TComplexity(t=2 if adjoint else 1)
-
-
-class TDoesNotAcceptAdjoint(TestAtom):
-    def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=3)
-
-
-class DecomposesIntoTAcceptsAdjoint(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(q=1)
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        soqs = bb.add_d(TAcceptsAdjoint(), **soqs)
-        return soqs
-
-
-def test_t_complexity():
-    assert TAcceptsAdjoint().t_complexity().t == 1
-    assert Adjoint(TAcceptsAdjoint()).t_complexity().t == 2
-
-    assert DecomposesIntoTAcceptsAdjoint().t_complexity().t == 1
-    assert Adjoint(DecomposesIntoTAcceptsAdjoint()).t_complexity().t == 2
-
-    assert TDoesNotAcceptAdjoint().t_complexity().t == 3
-    assert Adjoint(TDoesNotAcceptAdjoint()).t_complexity().t == 3
 
 
 @pytest.mark.notebook

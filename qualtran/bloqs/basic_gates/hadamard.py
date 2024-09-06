@@ -184,7 +184,7 @@ class CHadamard(Bloq):
     def my_static_costs(self, cost_key: 'CostKey'):
         from qualtran.resource_counting import GateCounts, QECGatesCost
 
-        if cost_key == QECGatesCost():
+        if isinstance(cost_key, QECGatesCost):
             # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
             # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
             # The first MatrixGate happens to be a clifford, Hadamard operation in this case.

@@ -28,6 +28,7 @@ from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
+from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 from qualtran.serialization import bloq as bloq_serialization
 from qualtran.serialization import resolver_dict
 from qualtran.serialization.bloq import arg_from_proto
@@ -98,6 +99,10 @@ class TestCSwap(Bloq):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if isinstance(cost_key, QECGatesCost):
+            return GateCounts(t=7 * self.bitsize, clifford=10 * self.bitsize)
+
 
 @dataclasses.dataclass(frozen=True)
 class TestTwoCSwap(Bloq):
@@ -130,6 +135,7 @@ def test_cbloq_to_proto_test_two_cswap():
     assert TestCSwap(bitsize) in bloq_serialization.bloqs_from_proto(cswap_proto_lib)
 
     cswap_proto = bloq_serialization.bloqs_to_proto(TestCSwap(100)).table[0].bloq
+    assert TestCSwap(100).t_complexity().t == 7 * 100
     cbloq = TestTwoCSwap(100).decompose_bloq()
     proto_lib = bloq_serialization.bloqs_to_proto(cbloq)
     assert len(proto_lib.table) == 2
