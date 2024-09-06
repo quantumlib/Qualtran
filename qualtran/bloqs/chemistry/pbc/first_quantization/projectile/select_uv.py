@@ -80,17 +80,21 @@ class SelectUVFirstQuantizationWithProj(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = Counter['Bloq']()
+        # tc_p and tc_n
         # C8 and C9, one of the registers of size num_bits_n so need to account for this.
         cost[SignedIntegerToTwosComplement(self.num_bits_p)] += 3
         cost[SignedIntegerToTwosComplement(self.num_bits_n)] += 3
         # Adding nu into p / q. Nu is one bit larger than p.
         cost[Add(QInt(self.num_bits_p + 1))] += 3
         cost[Add(QInt(self.num_bits_n + 1))] += 3
+        # ctrl_add_p and ctrl_add_n
         cost[Toffoli()] += 3 * (self.num_bits_p + 1)
         cost[Toffoli()] += 3 * (self.num_bits_n + 1)
+        # inv_tc_p and inv_tc_n
         # + 2 as these numbers are larger from addition of $\nu$
         cost[SignedIntegerToTwosComplement(self.num_bits_p + 2)] += 3
         cost[SignedIntegerToTwosComplement(self.num_bits_n + 2)] += 3
+        # cost for phase:
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost[ApplyNuclearPhase(self.num_bits_n, self.num_bits_nuc_pos)] += 1
         return cost
