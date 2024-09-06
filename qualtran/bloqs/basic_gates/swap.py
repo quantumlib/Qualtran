@@ -13,18 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -46,14 +35,10 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
+from qualtran.cirq_interop import CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
-
-from .cnot import CNOT
-from .hadamard import Hadamard
-from .t_gate import TGate
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -77,6 +62,8 @@ def _controlled_swap_matrix():
 @frozen
 class TwoBitSwap(Bloq):
     """Swap two bits.
+
+    This is a Clifford operation.
 
     Registers:
         x: the first bit
@@ -132,6 +119,15 @@ class TwoBitSwap(Bloq):
             return [ctrl], [x, y]
 
         return cswap, adder
+
+
+@bloq_example
+def _swap_bit() -> TwoBitSwap:
+    swap_bit = TwoBitSwap()
+    return swap_bit
+
+
+_TWO_BIT_SWAP_DOC = BloqDocSpec(bloq_cls=TwoBitSwap, examples=[_swap_bit], call_graph_example=None)
 
 
 @frozen
@@ -205,9 +201,22 @@ class TwoBitCSwap(Bloq):
             return TextBox('×')
 
 
+@bloq_example
+def _cswap_bit() -> TwoBitCSwap:
+    cswap_bit = TwoBitCSwap()
+    return cswap_bit
+
+
+_TWO_BIT_CSWAP_DOC = BloqDocSpec(
+    bloq_cls=TwoBitCSwap, examples=[_cswap_bit], call_graph_example=None
+)
+
+
 @frozen
 class Swap(Bloq):
     """Swap two registers
+
+    This corresponds to a qubitwise `TwoBitSwap` on the two registers.
 
     Args:
         bitsize: The bitsize of each of the two registers being swapped.
@@ -273,19 +282,34 @@ class Swap(Bloq):
         return cswap, adder
 
 
+@bloq_example
+def _swap() -> Swap:
+    n = sympy.Symbol('n', positive=True, integer=True)
+    swap = Swap(bitsize=n)
+    return swap
+
+
 @bloq_example(generalizer=ignore_split_join)
 def _swap_small() -> Swap:
     swap_small = Swap(bitsize=4)
     return swap_small
 
 
+@bloq_example
+def _swap_large() -> Swap:
+    swap_large = Swap(bitsize=64)
+    return swap_large
+
+
+_SWAP_DOC = BloqDocSpec(bloq_cls=Swap, examples=[_swap, _swap_small, _swap_large])
+
+
 @frozen
 class CSwap(GateWithRegisters):
     """Swap two registers controlled on a control bit.
 
-    Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
-
-    This decomposes into a qubitwise SWAP on the two target registers, and takes $14n$ T-gates.
+    This decomposes into a qubitwise `TwoBitCSwap` on the two target registers,
+    and takes $n$ TwoBitCSwap gates.
 
     Args:
         bitsize: The bitsize of each of the two registers being swapped.
@@ -357,12 +381,10 @@ class CSwap(GateWithRegisters):
 
 
 @bloq_example
-def _cswap_symb() -> CSwap:
-    # A symbolic version. The bitsize is the symbol 'n'.
-    from sympy import sympify
-
-    cswap_symb = CSwap(bitsize=sympify('n'))
-    return cswap_symb
+def _cswap() -> CSwap:
+    n = sympy.Symbol('n', positive=True, integer=True)
+    cswap = CSwap(bitsize=n)
+    return cswap
 
 
 @bloq_example(generalizer=ignore_split_join)
@@ -379,4 +401,4 @@ def _cswap_large() -> CSwap:
     return cswap_large
 
 
-_CSWAP_DOC = BloqDocSpec(bloq_cls=CSwap, examples=(_cswap_symb, _cswap_small, _cswap_large))
+_CSWAP_DOC = BloqDocSpec(bloq_cls=CSwap, examples=(_cswap, _cswap_small, _cswap_large))

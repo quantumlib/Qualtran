@@ -31,9 +31,10 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.basic_gates.swap import (
     _controlled_swap_matrix,
+    _cswap,
     _cswap_large,
     _cswap_small,
-    _cswap_symb,
+    _swap,
     _swap_matrix,
     _swap_small,
     Swap,
@@ -223,6 +224,12 @@ def test_swap_small(bloq_autotester):
     bloq_autotester(_swap_small)
 
 
+def test_swap_symb(bloq_autotester):
+    if bloq_autotester.check_name == 'serialize':
+        pytest.skip("Sympy equality with assumptions.")
+    bloq_autotester(_swap)
+
+
 def test_cswap_small(bloq_autotester):
     bloq_autotester(_cswap_small)
 
@@ -232,4 +239,6 @@ def test_cswap_large(bloq_autotester):
 
 
 def test_cswap_symb(bloq_autotester):
-    bloq_autotester(_cswap_symb)
+    if bloq_autotester.check_name == 'serialize':
+        pytest.skip("Sympy equality with assumptions.")
+    bloq_autotester(_cswap)
