@@ -104,9 +104,6 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
 def test_two_bit_cswap():
     cswap = TwoBitCSwap()
     np.testing.assert_allclose(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8)
-    np.testing.assert_allclose(
-        cswap.decompose_bloq().tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8
-    )
 
     # Zero ctrl -- it's identity
     np.testing.assert_allclose(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract(), atol=1e-8)

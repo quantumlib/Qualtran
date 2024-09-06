@@ -87,6 +87,9 @@ class TwoBitSwap(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=1, y=1)
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic.")
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
@@ -152,39 +155,29 @@ class TwoBitCSwap(Bloq):
         return Signature.build(ctrl=1, x=1, y=1)
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_style_method(self)
+        raise DecomposeTypeError(f"{self} is atomic.")
 
-    def decompose_from_registers(
-        self,
-        *,
-        context: cirq.DecompositionContext,
-        ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
-        x: NDArray[cirq.Qid],  # type: ignore[type-var]
-        y: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        (ctrl,) = ctrl
-        (x,) = x
-        (y,) = y
-        yield [cirq.CNOT(y, x)]
-        yield [cirq.CNOT(ctrl, x), cirq.H(y)]
-        yield [cirq.T(ctrl), cirq.T(x) ** -1, cirq.T(y)]
-        yield [cirq.CNOT(y, x)]
-        yield [cirq.CNOT(ctrl, y), cirq.T(x)]
-        yield [cirq.CNOT(ctrl, x), cirq.T(y) ** -1]
-        yield [cirq.T(x) ** -1, cirq.CNOT(ctrl, y)]
-        yield [cirq.CNOT(y, x)]
-        yield [cirq.T(x), cirq.H(y)]
-        yield [cirq.CNOT(y, x)]
+    def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+        ctrl = cirq.NamedQubit('ctrl')
+        x = cirq.NamedQubit('x')
+        y = cirq.NamedQubit('y')
+        circuit = cirq.Circuit()
+        circuit += [cirq.CNOT(y, x)]
+        circuit += [cirq.CNOT(ctrl, x), cirq.H(y)]
+        circuit += [cirq.T(ctrl), cirq.T(x) ** -1, cirq.T(y)]
+        circuit += [cirq.CNOT(y, x)]
+        circuit += [cirq.CNOT(ctrl, y), cirq.T(x)]
+        circuit += [cirq.CNOT(ctrl, x), cirq.T(y) ** -1]
+        circuit += [cirq.T(x) ** -1, cirq.CNOT(ctrl, y)]
+        circuit += [cirq.CNOT(y, x)]
+        circuit += [cirq.T(x), cirq.H(y)]
+        circuit += [cirq.CNOT(y, x)]
+        return circuit.freeze()
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
-
-        # TODO: https://github.com/quantumlib/Qualtran/issues/873. Since this bloq
-        #       has a decomposition, it will be used (by default) whenever `bloq.tensor_contract()`
-        #       is called on a bloq containing a TwoBitCSwap instead of this implementation.
-        #       When this becomes a leaf bloq, this explicit tensor will be used.
 
         matrix = _controlled_swap_matrix()
         out_inds = [(outgoing['ctrl'], 0), (outgoing['x'], 0), (outgoing['y'], 0)]
@@ -199,12 +192,6 @@ class TwoBitCSwap(Bloq):
         if ctrl == 1:
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=7, clifford=10)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 7), (CNOT(), 8), (Hadamard(), 2)}
 
     def adjoint(self) -> 'Bloq':
         return self
