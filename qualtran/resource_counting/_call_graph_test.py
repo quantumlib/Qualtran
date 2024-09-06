@@ -157,7 +157,7 @@ class OnlyCallGraphBloqShim(Bloq):
             counts[bloq] += count
         return counts
 
-    def pretty_name(self):
+    def __str__(self):
         return self.name
 
 

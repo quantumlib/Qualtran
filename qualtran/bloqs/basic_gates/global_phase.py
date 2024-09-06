@@ -106,9 +106,6 @@ class GlobalPhase(CirqGateAsBloqBase):
 
         return bloq, _add_ctrled
 
-    def pretty_name(self) -> str:
-        return 'GPhase'
-
     def __str__(self) -> str:
         return f'GPhase({self.coefficient})'
 

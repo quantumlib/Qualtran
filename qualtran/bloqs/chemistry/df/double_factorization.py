@@ -180,9 +180,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'B[H_1]'
-
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
@@ -288,6 +285,9 @@ class DoubleFactorizationOneBody(BlockEncoding):
             CSwap(self.num_spin_orb // 2): 2,  # Swaps for spins
             ArbitraryClifford(n=1): 1,  # 2 Hadamards for spin superposition
         }
+
+    def __str__(self) -> str:
+        return 'B[H_1]'
 
 
 @frozen

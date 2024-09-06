@@ -17,7 +17,7 @@ import cirq
 import numpy as np
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
+from qualtran.bloqs.basic_gates import Toffoli, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
 from qualtran.drawing.musical_score import Circle, ModPlus
 from qualtran.testing import assert_wire_symbols_match_expected
@@ -27,12 +27,9 @@ def test_toffoli(bloq_autotester):
     bloq_autotester(_toffoli)
 
 
-def test_toffoli_t_count():
-    counts = Toffoli().bloq_counts()
-    assert counts == {TGate(): 4}
-
+def test_toffoli_sigma():
     _, sigma = Toffoli().call_graph()
-    assert sigma == {TGate(): 4}
+    assert sigma == {Toffoli(): 1}
 
 
 def test_toffoli_cirq():

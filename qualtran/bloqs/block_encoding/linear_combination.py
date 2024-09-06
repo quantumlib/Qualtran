@@ -147,9 +147,6 @@ class LinearCombination(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return self.signed_block_encodings[0].system_bitsize
 
-    def pretty_name(self) -> str:
-        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.signed_block_encodings)}]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return ssum(abs(l) * be.alpha for be, l in zip(self._block_encodings, self._lambd))
@@ -330,6 +327,9 @@ class LinearCombination(BlockEncoding):
             out["resource"] = cast(Soquet, bb.add(evolve(res_part, partition=False), **res_soqs))
 
         return out
+
+    def __str__(self) -> str:
+        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.signed_block_encodings)}]"
 
 
 @bloq_example

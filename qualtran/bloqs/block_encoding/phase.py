@@ -75,9 +75,6 @@ class Phase(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if ancilla_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
-
     @property
     def signal_state(self) -> BlackBoxPrepare:
         return self.block_encoding.signal_state
@@ -89,6 +86,9 @@ class Phase(BlockEncoding):
         bb.add(GlobalPhase(exponent=self.phi, eps=self.eps))
 
         return bb.add_d(self.block_encoding, **soqs)
+
+    def __str__(self) -> str:
+        return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
 
 
 @bloq_example

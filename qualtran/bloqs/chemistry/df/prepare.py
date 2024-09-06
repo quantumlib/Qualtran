@@ -62,9 +62,6 @@ class InnerPrepareDoubleFactorization(Bloq):
     num_bits_rot_aa: int
     num_bits_state_prep: int
 
-    def pretty_name(self) -> str:
-        return "In-Prep"
-
     @cached_property
     def signature(self) -> Signature:
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
@@ -87,6 +84,9 @@ class InnerPrepareDoubleFactorization(Bloq):
         cost_d = self.num_bits_state_prep + num_bits_xi
         cost_a_and_d = (Toffoli(), cost_a + cost_d)
         return dict([cost_a_and_d, cost_b, cost_c])
+
+    def __str__(self) -> str:
+        return "In-Prep"
 
 
 @frozen
@@ -123,9 +123,6 @@ class OuterPrepareDoubleFactorization(Bloq):
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
 
-    def pretty_name(self) -> str:
-        return "OuterPrep"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(l=self.num_aux.bit_length(), succ_l=1)
@@ -142,6 +139,9 @@ class OuterPrepareDoubleFactorization(Bloq):
         # controlled swaps
         cost_d = num_bits_l
         return dict([cost_a, cost_b, (Toffoli(), cost_c + cost_d)])
+
+    def __str__(self) -> str:
+        return "OuterPrep"
 
 
 @frozen
@@ -178,9 +178,6 @@ class OutputIndexedData(Bloq):
     num_eig: int
     num_bits_rot_aa: int = 8
 
-    def pretty_name(self) -> str:
-        return "In_l-data_l"
-
     @cached_property
     def signature(self) -> Signature:
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
@@ -199,6 +196,9 @@ class OutputIndexedData(Bloq):
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
         return {QROAM(self.num_aux + 1, bo): 1}
+
+    def __str__(self) -> str:
+        return "In_l-data_l"
 
 
 @bloq_example

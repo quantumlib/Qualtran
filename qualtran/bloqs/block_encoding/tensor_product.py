@@ -82,9 +82,6 @@ class TensorProduct(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return ssum(u.system_bitsize for u in self.block_encodings)
 
-    def pretty_name(self) -> str:
-        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return prod(u.alpha for u in self.block_encodings)
@@ -177,6 +174,9 @@ class TensorProduct(BlockEncoding):
                 res_part.adjoint(), **{r.name: ap for r, ap in zip(res_regs, res_out_regs)}
             )
         return soqs_out
+
+    def __str__(self) -> str:
+        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
 
 
 @bloq_example

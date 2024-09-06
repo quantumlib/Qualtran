@@ -19,10 +19,18 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Connection, QBit, Register, Signature
-from qualtran.bloqs.basic_gates import TGate
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    Connection,
+    DecomposeTypeError,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -30,7 +38,6 @@ if TYPE_CHECKING:
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -56,8 +63,8 @@ class Toffoli(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {TGate(): 4}
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     def _t_complexity_(self):
         return TComplexity(t=4)

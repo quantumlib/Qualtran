@@ -52,9 +52,6 @@ class CostingBloq(Bloq):
     def my_static_costs(self, cost_key: 'CostKey'):
         return dict(self.static_costs).get(cost_key, NotImplemented)
 
-    def pretty_name(self):
-        return self.name
-
     def __str__(self):
         return self.name
 

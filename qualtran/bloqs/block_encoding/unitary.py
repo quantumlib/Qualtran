@@ -70,9 +70,6 @@ class Unitary(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[{self.U.pretty_name()}]"
-
     @property
     def signal_state(self) -> BlackBoxPrepare:
         return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
@@ -88,6 +85,9 @@ class Unitary(BlockEncoding):
             "system": bb.add_and_partition(self.U, partitions=partitions, system=system),
             **soqs,
         }
+
+    def __str__(self) -> str:
+        return f"B[{self.U.pretty_name()}]"
 
 
 @bloq_example

@@ -125,7 +125,7 @@ class _ZVector(Bloq):
             op = None
         return op, {'q': np.array([q])}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
 
@@ -434,7 +434,7 @@ class _IntVector(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {ArbitraryClifford(self.bitsize): 1}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
@@ -460,9 +460,6 @@ class IntState(_IntVector):
     def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
-    def __str__(self):
-        return f'IntState({self.val})'
-
 
 @bloq_example
 def _int_state() -> IntState:
@@ -487,9 +484,6 @@ class IntEffect(_IntVector):
 
     def __init__(self, val: int, bitsize: int):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
-
-    def __str__(self):
-        return f'IntEffect({self.val})'
 
 
 @bloq_example

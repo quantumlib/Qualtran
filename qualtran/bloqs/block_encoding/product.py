@@ -114,9 +114,6 @@ class Product(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return self.block_encodings[0].system_bitsize
 
-    def pretty_name(self) -> str:
-        return f"B[{'*'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return prod(u.alpha for u in self.block_encodings)
@@ -249,6 +246,9 @@ class Product(BlockEncoding):
                 anc_soqs["ancilla"] = anc_soq
             out["ancilla"] = cast(Soquet, bb.add(self.anc_part.adjoint(), **anc_soqs))
         return out
+
+    def __str__(self) -> str:
+        return f"B[{'*'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
 
 
 @bloq_example(generalizer=ignore_split_join)

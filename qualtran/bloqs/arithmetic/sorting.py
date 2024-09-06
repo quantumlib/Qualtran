@@ -73,9 +73,6 @@ class Comparator(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "Cmprtr"
-
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet'
     ) -> dict[str, 'SoquetT']:
@@ -356,9 +353,6 @@ class BitonicSort(Bloq):
         """Number of `Comparator` gates used in the decomposition"""
         logk = bit_length(self.k - 1)
         return (self.k // 2) * ((logk * (logk + 1)) // 2)
-
-    def pretty_name(self) -> str:
-        return "BSort"
 
     def is_symbolic(self):
         return is_symbolic(self.bitsize, self.k)

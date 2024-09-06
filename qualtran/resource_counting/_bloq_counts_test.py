@@ -38,10 +38,15 @@ def test_bloq_count():
     g, _ = algo.call_graph()
     leaf = BloqCount.for_call_graph_leaf_bloqs(g)
     # Note: Toffoli has a decomposition in terms of T gates.
-    assert set(leaf.gateset_bloqs) == {Hadamard(), TGate(), TGate().adjoint()}
+    assert set(leaf.gateset_bloqs) == {Hadamard(), Toffoli(), TGate(), TGate().adjoint()}
 
     t_count = get_cost_value(algo, leaf)
-    assert t_count == {TGate(): 2 * 10 + 100 * 4, TGate().adjoint(): 2 * 10, Hadamard(): 2 * 10}
+    assert t_count == {
+        Toffoli(): 100,
+        TGate(): 2 * 10,
+        TGate().adjoint(): 2 * 10,
+        Hadamard(): 2 * 10,
+    }
 
     # count things other than leaf bloqs
     top_level = get_cost_value(algo, BloqCount([bloq for bloq, n in algo.callees], 'top'))
@@ -60,6 +65,18 @@ def test_gate_counts():
 
     gc2 = GateCounts(t=sympy.Symbol('n'), toffoli=sympy.sympify('0'), cswap=2)
     assert str(gc2) == 't: n, cswap: 2'
+
+
+def test_gate_counts_toffoli_only():
+    gc = GateCounts(toffoli=10, cswap=10, and_bloq=10)
+    assert gc.total_toffoli_only() == 30
+
+    gc += GateCounts(t=1)
+    with pytest.raises(ValueError):
+        _ = gc.total_toffoli_only()
+
+    gc = GateCounts(toffoli=sympy.Symbol('n'))
+    assert gc.total_toffoli_only() == sympy.Symbol('n')
 
 
 def test_qec_gates_cost():
