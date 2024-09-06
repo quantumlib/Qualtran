@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
     _sel_t_proj,
     SelectTFirstQuantizationWithProj,
@@ -26,4 +26,4 @@ def test_select_kinetic_t_counts():
     num_bits_n = 6
     sel = SelectTFirstQuantizationWithProj(num_bits_n, 10)
     _, counts = sel.call_graph()
-    assert counts[TGate()] // 4 == 5 * (num_bits_n - 1) + 2 + 1
+    assert counts[Toffoli()] == 5 * (num_bits_n - 1) + 2 + 1
