@@ -107,9 +107,6 @@ class QubitizationQPE(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature([*self.phase_registers, *self.target_registers])
 
-    def pretty_name(self) -> str:
-        return f'QubitizationQPE[{self.m_bits}]'
-
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
@@ -141,6 +138,9 @@ class QubitizationQPE(GateWithRegisters):
             (self.walk, M - 2),
             (self.qft_inv, 1),
         }
+
+    def __str__(self) -> str:
+        return f'QubitizationQPE[{self.m_bits}]'
 
 
 @bloq_example

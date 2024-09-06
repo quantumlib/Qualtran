@@ -99,9 +99,6 @@ class Identity(Bloq):
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': q}
 
-    def pretty_name(self) -> str:
-        return self.__str__()
-
     def __str__(self) -> str:
         return 'I'
 

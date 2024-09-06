@@ -151,7 +151,7 @@ class OnlyCallGraphBloqShim(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return set(self.callees)
 
-    def pretty_name(self):
+    def __str__(self):
         return self.name
 
 

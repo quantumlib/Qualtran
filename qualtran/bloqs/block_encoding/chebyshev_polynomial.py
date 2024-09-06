@@ -212,9 +212,6 @@ class ScaledChebyshevPolynomial(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
-
     @property
     def system_bitsize(self) -> SymbolicInt:
         return self.linear_combination.system_bitsize
@@ -269,6 +266,9 @@ class ScaledChebyshevPolynomial(BlockEncoding):
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         return bb.add_d(self.linear_combination, **soqs)
+
+    def __str__(self) -> str:
+        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
 
 
 @bloq_example
