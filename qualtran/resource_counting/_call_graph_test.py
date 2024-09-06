@@ -31,6 +31,7 @@ from qualtran.resource_counting import (
     BloqCountT,
     get_bloq_call_graph,
     get_bloq_callee_counts,
+    MutableBloqCountDictT,
     SympySymbolAllocator,
 )
 from qualtran.resource_counting.generalizers import generalize_rotation_angle
@@ -151,7 +152,7 @@ class OnlyCallGraphBloqShim(Bloq):
         return Signature([])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        counts = defaultdict(int)
+        counts: 'MutableBloqCountDictT' = defaultdict(int)
         for bloq, count in self.callees:
             counts[bloq] += count
         return counts
