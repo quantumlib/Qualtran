@@ -64,9 +64,6 @@ class BlockEncoding(Bloq):
 
     """
 
-    def pretty_name(self) -> str:
-        return 'B[H]'
-
     @property
     @abc.abstractmethod
     def alpha(self) -> SymbolicFloat:
@@ -96,6 +93,9 @@ class BlockEncoding(Bloq):
     @abc.abstractmethod
     def signal_state(self) -> BlackBoxPrepare:
         r"""Returns the signal / ancilla flag state $|G\rangle."""
+
+    def __str__(self) -> str:
+        return 'B[H]'
 
 
 _BLOCK_ENCODING_DOC = BloqDocSpec(

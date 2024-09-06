@@ -74,10 +74,9 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
-    assert str(x) == 'X'
-    assert x.pretty_name() == 'cirq.X'
-    assert rx.pretty_name() == 'cirq.Rx'
-    assert toffoli.pretty_name() == 'cirq.TOFFOLI'
+    assert str(x) == 'cirq.X'
+    assert str(rx) == 'cirq.Rx'
+    assert str(toffoli) == 'cirq.TOFFOLI'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():

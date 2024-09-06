@@ -190,9 +190,6 @@ class SparseMatrix(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return self.entry_oracle.system_bitsize
 
-    def pretty_name(self) -> str:
-        return "B[SparseMatrix]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return self.row_oracle.num_nonzero
@@ -251,6 +248,9 @@ class SparseMatrix(BlockEncoding):
         l = bb.add(self.diffusion.adjoint(), target=l)
 
         return {"system": system, "ancilla": bb.join(np.concatenate([[q], bb.split(l)]))}
+
+    def __str__(self) -> str:
+        return "B[SparseMatrix]"
 
 
 @frozen

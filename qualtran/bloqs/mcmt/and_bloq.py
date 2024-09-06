@@ -177,10 +177,6 @@ class And(GateWithRegisters):
             )
         ]
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.uncompute else ''
-        return f'And{dag}'
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')

@@ -62,7 +62,7 @@ from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -308,9 +308,6 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
 
-    def pretty_name(self) -> str:
-        return "c = a + b"
-
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
@@ -339,6 +336,11 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         if power == -1:
             return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('c=a+b')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example(generalizer=ignore_split_join)
@@ -500,7 +502,9 @@ class AddK(Bloq):
         else:
             return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         loading_cost: Tuple[Bloq, SymbolicInt]
         if len(self.cvs) == 0:
             loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.

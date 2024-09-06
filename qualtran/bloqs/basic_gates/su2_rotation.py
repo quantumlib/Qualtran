@@ -204,9 +204,6 @@ class SU2RotationGate(GateWithRegisters):
         eps = ssa.new_symbol("eps")
         return cls(theta, phi, lambd, alpha, eps)
 
-    def pretty_name(self) -> str:
-        return 'SU_2'
-
     def __str__(self):
         if self.is_symbolic():
             return f'SU_2({self.theta},{self.phi},{self.lambd},{self.global_shift})'

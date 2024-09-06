@@ -56,9 +56,6 @@ class ProgRotGateArray(Bloq):
     num_eig: int
     num_bits_rot: int
 
-    def pretty_name(self) -> str:
-        return "Rotations"
-
     @cached_property
     def signature(self) -> Signature:
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()

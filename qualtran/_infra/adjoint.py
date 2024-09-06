@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import Counter
 from functools import cached_property
-from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -26,7 +27,7 @@ from .registers import Signature
 if TYPE_CHECKING:
     from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, 'SoquetT']:
@@ -150,17 +151,21 @@ class Adjoint(GateWithRegisters):
         sub_info.exponent *= -1
         return sub_info
 
-    def supports_decompose_bloq(self) -> bool:
-        """Delegate to `subbloq.supports_decompose_bloq()`"""
-        return self.subbloq.supports_decompose_bloq()
-
     def adjoint(self) -> 'Bloq':
         """The 'double adjoint' brings you back to the original bloq."""
         return self.subbloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
-        return {(bloq.adjoint(), n) for bloq, n in self.subbloq.build_call_graph(ssa=ssa)}
+        sub_cg = self.subbloq.build_call_graph(ssa=ssa)
+        counts = Counter['Bloq']()
+        if isinstance(sub_cg, set):
+            for bloq, n in sub_cg:
+                counts[bloq.adjoint()] += n
+        else:
+            for bloq, n in sub_cg.items():
+                counts[bloq.adjoint()] += n
+        return counts
 
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""

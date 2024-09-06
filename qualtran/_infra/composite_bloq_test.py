@@ -420,7 +420,6 @@ def test_test_parallel_combo_decomp():
 
 @pytest.mark.parametrize('cls', [TestSerialCombo, TestParallelCombo])
 def test_copy(cls):
-    assert cls().supports_decompose_bloq()
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
@@ -447,24 +446,24 @@ TestParallelCombo<0>
 --------------------
 Split<1>
   TestParallelCombo<0>.reg -> reg
-  reg[0] -> TestAtom()<2>.q
-  reg[1] -> TestAtom()<3>.q
-  reg[2] -> TestAtom()<4>.q
+  reg[0] -> TestAtom<2>.q
+  reg[1] -> TestAtom<3>.q
+  reg[2] -> TestAtom<4>.q
 --------------------
-TestAtom()<2>
+TestAtom<2>
   Split<1>.reg[0] -> q
   q -> Join<5>.reg[0]
-TestAtom()<3>
+TestAtom<3>
   Split<1>.reg[1] -> q
   q -> Join<5>.reg[1]
-TestAtom()<4>
+TestAtom<4>
   Split<1>.reg[2] -> q
   q -> Join<5>.reg[2]
 --------------------
 Join<5>
-  TestAtom()<2>.q -> reg[0]
-  TestAtom()<3>.q -> reg[1]
-  TestAtom()<4>.q -> reg[2]
+  TestAtom<2>.q -> reg[0]
+  TestAtom<3>.q -> reg[1]
+  TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
     )
 
@@ -508,9 +507,6 @@ def test_flatten():
 
     cbloq3 = cbloq.flatten(lambda binst: True)
     assert len(cbloq3.bloq_instances) == 5 * 2
-
-    cbloq4 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
-    assert len(cbloq4.bloq_instances) == 5 * 2
 
     cbloq5 = cbloq.flatten()
     assert len(cbloq5.bloq_instances) == 5 * 2

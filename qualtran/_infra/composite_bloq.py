@@ -232,7 +232,10 @@ class CompositeBloq(Bloq):
         return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        raise DecomposeTypeError("CompositeBloq cannot be decomposed.")
+        raise ValueError(
+            "Calling `decompose_bloq` on a CompositeBloq is ill-defined. "
+            "Consider using the composite bloq directly or using `.flatten()`."
+        )
 
     def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
