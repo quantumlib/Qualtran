@@ -84,8 +84,8 @@ def test_get_flame_graph_data_qft_textbook():
 
 def test_get_flame_graph_data_prep_uniform():
     bloq = PrepareUniformSuperposition(12)
-    data = get_flame_graph_data(bloq)
-    assert sorted(data) == sorted(
+    data = sorted(get_flame_graph_data(bloq))
+    should_be = sorted(
         [
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
             'PrepareUniformSuperposition[12][0](T:124);LessThanConstant[2][3](T:8);And(T:4)\t4',
@@ -96,3 +96,10 @@ def test_get_flame_graph_data_prep_uniform():
             'PrepareUniformSuperposition[12][0](T:124);And(T:4)\t4',
         ]
     )
+    assert len(data) == len(should_be)
+    for line1, line2 in zip(data, should_be):
+        if 'Rz' in line1:
+            # Unstable str formatting of Rz float angle on CI vs local
+            continue
+
+        assert line1 == line2
