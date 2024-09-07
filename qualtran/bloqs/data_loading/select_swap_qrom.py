@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, Type, TYPE_CHECKING, TypeVar, Union
+from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, TypeVar, Union
 
 import attrs
 import cirq
@@ -33,7 +33,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
@@ -255,7 +255,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             for target_bitsize in self.target_bitsizes
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: Dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         toggle_overhead = 2 if self.use_dirty_ancilla else 1
         ret[self.qrom_bloq] += 1
@@ -266,7 +266,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
                 ret[swz] += toggle_overhead
                 ret[swz.adjoint()] += toggle_overhead
-        return set(ret.items())
+        return ret
 
     def _add_qrom_bloq(
         self,

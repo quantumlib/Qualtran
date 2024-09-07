@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 from attrs import frozen
 
@@ -21,7 +21,7 @@ from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Side, S
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
@@ -74,8 +74,8 @@ class Unitary(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare:
         return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return {(self.U, 1)}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {self.U: 1}
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT

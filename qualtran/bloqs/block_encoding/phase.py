@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 from attrs import frozen
 
@@ -21,7 +21,7 @@ from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Signature, So
 from qualtran.bloqs.basic_gates import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
@@ -79,8 +79,8 @@ class Phase(BlockEncoding):
     def signal_state(self) -> BlackBoxPrepare:
         return self.block_encoding.signal_state
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return {(self.block_encoding, 1), (GlobalPhase(exponent=self.phi, eps=self.eps), 1)}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {self.block_encoding: 1, GlobalPhase(exponent=self.phi, eps=self.eps): 1}
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         bb.add(GlobalPhase(exponent=self.phi, eps=self.eps))

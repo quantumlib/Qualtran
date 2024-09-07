@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 import numpy as np
 import sympy
@@ -34,7 +34,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.bloqs.basic_gates import CSwap
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 
@@ -174,8 +174,8 @@ class ParallelComparators(Bloq):
 
         return {'xs': xs, 'junk': np.array(junk)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Comparator(self.bitsize), self.num_comparisons)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+        return {Comparator(self.bitsize): self.num_comparisons}
 
 
 @bloq_example
@@ -278,8 +278,8 @@ class BitonicMerge(Bloq):
 
         return {'result': result, 'junk': np.array(junk)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Comparator(self.bitsize), self.num_comparisons)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+        return {Comparator(self.bitsize): self.num_comparisons}
 
 
 @bloq_example
@@ -379,8 +379,8 @@ class BitonicSort(Bloq):
 
         return {'xs': xs, 'junk': junk}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        return {(Comparator(self.bitsize), self.num_comparisons)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
+        return {Comparator(self.bitsize): self.num_comparisons}
 
 
 @bloq_example

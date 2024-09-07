@@ -23,6 +23,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    MutableMapping,
     Optional,
     Sequence,
     Set,
@@ -37,6 +38,7 @@ from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, Decompos
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 BloqCountDictT = Mapping[Bloq, Union[int, sympy.Expr]]
+MutableBloqCountDictT = MutableMapping[Bloq, Union[int, sympy.Expr]]
 from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
@@ -66,7 +68,7 @@ class SympySymbolAllocator:
         return s
 
 
-def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
+def build_cbloq_call_graph(cbloq: CompositeBloq) -> BloqCountDictT:
     """Count all the subbloqs in a composite bloq.
 
     This is the function underpinning `CompositeBloq.build_call_graph`.
@@ -78,7 +80,7 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
     for binst in cbloq.bloq_instances:
         counts[binst.bloq] += 1
 
-    return {(bloq, n) for bloq, n in counts.items()}
+    return counts
 
 
 def _generalize_callees(

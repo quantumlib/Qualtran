@@ -62,7 +62,12 @@ from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        BloqCountT,
+        MutableBloqCountDictT,
+        SympySymbolAllocator,
+    )
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -209,10 +214,10 @@ class Add(Bloq):
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.b_dtype.bitsize
         n_cnot = (n - 2) * 6 + 3
-        return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
+        return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
 
 
 @bloq_example(generalizer=ignore_split_join)
@@ -327,8 +332,8 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         ]
         return cirq.inverse(optree) if self.is_adjoint else optree
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(And(uncompute=self.is_adjoint), self.bitsize), (CNOT(), 5 * self.bitsize)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {And(uncompute=self.is_adjoint): self.bitsize, CNOT(): 5 * self.bitsize}
 
     def __pow__(self, power: int):
         if power == 1:
@@ -505,16 +510,16 @@ class AddK(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        loading_cost: Tuple[Bloq, SymbolicInt]
+        loading_cost: MutableBloqCountDictT
         if len(self.cvs) == 0:
-            loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.
+            loading_cost = {XGate(): self.bitsize}  # upper bound; depends on the data.
         elif len(self.cvs) == 1:
-            loading_cost = (CNOT(), self.bitsize)  # upper bound; depends on the data.
+            loading_cost = {CNOT(): self.bitsize}  # upper bound; depends on the data.
         else:
             # Otherwise, use the decomposition
             return super().build_call_graph(ssa=ssa)
-
-        return {loading_cost, (Add(QUInt(self.bitsize)), 1)}
+        loading_cost[Add(QUInt(self.bitsize))] = 1
+        return loading_cost
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if self.cvs:

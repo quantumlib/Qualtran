@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -155,11 +155,11 @@ class CAdd(Bloq):
         ctrl = bb.join(np.array([ctrl_q]))
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (And(self.cv, 1), self.a_dtype.bitsize),
-            (Add(self.a_dtype, self.b_dtype), 1),
-            (And(self.cv, 1).adjoint(), self.a_dtype.bitsize),
+            And(self.cv, 1): self.a_dtype.bitsize,
+            Add(self.a_dtype, self.b_dtype): 1,
+            And(self.cv, 1).adjoint(): self.a_dtype.bitsize,
         }
 
 
