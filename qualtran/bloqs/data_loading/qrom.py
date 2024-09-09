@@ -22,7 +22,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, QUInt, Register
+from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError, QUInt, Register
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.arithmetic import XorK
 from qualtran.bloqs.basic_gates import CNOT
@@ -152,6 +152,13 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             yield self._load_nth_data(zero_indx, ctrl_qubits=(and_target,), **target_regs)
             yield cirq.inverse(multi_controlled_and)
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        if self.has_data():
+            return super().decompose_from_registers(context=context, **quregs)
+        raise DecomposeTypeError(f"Cannot decompose symbolic {self} with no data.")
 
     def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
         if not self.has_data():
