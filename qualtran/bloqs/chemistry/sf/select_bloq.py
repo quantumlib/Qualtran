@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -21,7 +21,7 @@ from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -54,8 +54,8 @@ class SelectSingleFactorization(Bloq):
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(p=n, q=n, spin=1, succ_pq=1, succ_l=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Toffoli(), 2 * (self.num_spin_orb - 2))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {Toffoli(): 2 * (self.num_spin_orb - 2)}
 
 
 @bloq_example

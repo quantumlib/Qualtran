@@ -24,6 +24,7 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _state_prep_via_rotation,
     _state_prep_via_rotation_symb,
+    _state_prep_via_rotation_symb_phasegrad,
     PRGAViaPhaseGradient,
     StatePreparationViaRotations,
 )
@@ -34,8 +35,17 @@ def accuracy(state1, state2):
     return abs(np.dot(state1, state2.conj()))
 
 
-def test_state_prep_via_rotation(bloq_autotester):
-    bloq_autotester(_state_prep_via_rotation)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _state_prep_via_rotation,
+        _state_prep_via_rotation_symb,
+        _state_prep_via_rotation_symb_phasegrad,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_state_prep_via_rotation(bloq_autotester, bloq_ex):
+    bloq_autotester(bloq_ex)
 
 
 def test_state_prep_via_rotation_symb_quick():

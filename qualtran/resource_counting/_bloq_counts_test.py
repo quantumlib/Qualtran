@@ -18,6 +18,8 @@ from qualtran.bloqs import basic_gates, mcmt, rotations
 from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
 from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.bloqs.for_testing.costing import make_example_costing_bloqs
+from qualtran.bloqs.mcmt import MultiAnd, MultiTargetCNOT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCount, GateCounts, get_cost_value, QECGatesCost
 
 
@@ -36,10 +38,15 @@ def test_bloq_count():
     g, _ = algo.call_graph()
     leaf = BloqCount.for_call_graph_leaf_bloqs(g)
     # Note: Toffoli has a decomposition in terms of T gates.
-    assert set(leaf.gateset_bloqs) == {Hadamard(), TGate(), TGate().adjoint()}
+    assert set(leaf.gateset_bloqs) == {Hadamard(), Toffoli(), TGate(), TGate().adjoint()}
 
     t_count = get_cost_value(algo, leaf)
-    assert t_count == {TGate(): 2 * 10 + 100 * 4, TGate().adjoint(): 2 * 10, Hadamard(): 2 * 10}
+    assert t_count == {
+        Toffoli(): 100,
+        TGate(): 2 * 10,
+        TGate().adjoint(): 2 * 10,
+        Hadamard(): 2 * 10,
+    }
 
     # count things other than leaf bloqs
     top_level = get_cost_value(algo, BloqCount([bloq for bloq, n in algo.callees], 'top'))
@@ -60,10 +67,28 @@ def test_gate_counts():
     assert str(gc2) == 't: n, cswap: 2'
 
 
+def test_gate_counts_toffoli_only():
+    gc = GateCounts(toffoli=10, cswap=10, and_bloq=10)
+    assert gc.total_toffoli_only() == 30
+
+    gc += GateCounts(t=1)
+    with pytest.raises(ValueError):
+        _ = gc.total_toffoli_only()
+
+    gc = GateCounts(toffoli=sympy.Symbol('n'))
+    assert gc.total_toffoli_only() == sympy.Symbol('n')
+
+
 def test_qec_gates_cost():
     algo = make_example_costing_bloqs()
     gc = get_cost_value(algo, QECGatesCost())
     assert gc == GateCounts(toffoli=100, t=2 * 2 * 10, clifford=2 * 10)
+
+
+def test_qec_gates_cost_cbloq():
+    bloq = MultiAnd(cvs=(1,) * 5)
+    cbloq = bloq.decompose_bloq()
+    assert get_cost_value(bloq, QECGatesCost()) == get_cost_value(cbloq, QECGatesCost())
 
 
 @pytest.mark.parametrize(
@@ -91,5 +116,17 @@ def test_qec_gates_cost():
         [mcmt.MultiControlX(cvs=(1, 1, 1)), GateCounts(and_bloq=2, measurement=2, clifford=3)],
     ],
 )
-def test_algorithm_summary_counts(bloq, counts):
+def test_get_cost_value_qec_gates_cost(bloq, counts):
     assert get_cost_value(bloq, QECGatesCost()) == counts
+
+
+def test_count_multi_target_cnot():
+    b = MultiTargetCNOT(bitsize=12)
+
+    # MultiTargetCNOT can be done in one clifford cycle on the surface code.
+    assert get_cost_value(b, QECGatesCost()) == GateCounts(clifford=1)
+
+    # And/or we could respect its decomposition.
+    # TODO: https://github.com/quantumlib/Qualtran/issues/1318
+    assert get_cost_value(b, QECGatesCost(legacy_shims=True)) == GateCounts(clifford=23)
+    assert b.t_complexity() == TComplexity(clifford=23)

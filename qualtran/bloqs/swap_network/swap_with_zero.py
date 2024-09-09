@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, Iterator, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     GateWithRegisters,
     QAny,
     Register,
@@ -38,7 +38,7 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -135,7 +135,7 @@ class SwapWithZero(GateWithRegisters):
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         types = [
-            BoundedQUInt(sb, l)
+            BQUInt(sb, l)
             for sb, l in zip(self.selection_bitsizes, self.n_target_registers)
             if is_symbolic(sb) or sb > 0
         ]
@@ -180,9 +180,9 @@ class SwapWithZero(GateWithRegisters):
         }
         return sel | {'targets': targets}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_swaps = prod(x for x in self.n_target_registers) - 1
-        return {(self.cswap_n, num_swaps)}
+        return {self.cswap_n: num_swaps}
 
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -35,7 +35,6 @@ from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
 
@@ -43,7 +42,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -156,17 +155,11 @@ class CAdd(Bloq):
         ctrl = bb.join(np.array([ctrl_q]))
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
-    def _t_complexity_(self):
-        n = self.b_dtype.bitsize
-        num_and = self.a_dtype.bitsize + self.b_dtype.bitsize - 1
-        num_clifford = 33 * (n - 2) + 43
-        return TComplexity(t=4 * num_and, clifford=num_clifford)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (And(self.cv, 1), self.a_dtype.bitsize),
-            (Add(self.a_dtype, self.b_dtype), 1),
-            (And(self.cv, 1).adjoint(), self.a_dtype.bitsize),
+            And(self.cv, 1): self.a_dtype.bitsize,
+            Add(self.a_dtype, self.b_dtype): 1,
+            And(self.cv, 1).adjoint(): self.a_dtype.bitsize,
         }
 
 

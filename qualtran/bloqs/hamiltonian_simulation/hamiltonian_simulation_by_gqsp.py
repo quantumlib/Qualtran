@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -32,7 +32,7 @@ from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -182,7 +182,7 @@ class HamiltonianSimulationByGQSP(Bloq):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         counts = Counter[Bloq]()
 
         d = self.degree
@@ -192,7 +192,7 @@ class HamiltonianSimulationByGQSP(Bloq):
         counts[self.walk_operator.adjoint().controlled()] += d
         counts[SU2RotationGate.arbitrary(ssa)] += 2 * d + 1
 
-        return set(counts.items())
+        return counts
 
 
 @bloq_example

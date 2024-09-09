@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
@@ -39,7 +39,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import HasLength
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -100,18 +100,18 @@ class ModNeg(Bloq):
         bb.free(ancilla)
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cvs: Union[list[int], HasLength]
         if isinstance(self.dtype.bitsize, int):
             cvs = [0] * self.dtype.bitsize
         else:
             cvs = HasLength(self.dtype.bitsize)
         return {
-            (MultiControlX(cvs), 1),
-            (MultiControlX(cvs).adjoint(), 1),
-            (MultiTargetCNOT(self.dtype.bitsize), 1),
-            (AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1), signed=False), 1),
-            (XGate(), 2),
+            MultiControlX(cvs): 1,
+            MultiControlX(cvs).adjoint(): 1,
+            MultiTargetCNOT(self.dtype.bitsize): 1,
+            AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1), signed=False): 1,
+            XGate(): 2,
         }
 
     def wire_symbol(
@@ -194,20 +194,20 @@ class CModNeg(Bloq):
         bb.free(ancilla)
         return {'ctrl': ctrl, 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cvs: Union[list[int], HasLength]
         if isinstance(self.dtype.bitsize, int):
             cvs = [0] * self.dtype.bitsize
         else:
             cvs = HasLength(self.dtype.bitsize)
         return {
-            (MultiControlX(cvs), 1),
-            (MultiControlX(cvs).adjoint(), 1),
-            (And(self.cv, 1), 1),
-            (And(self.cv, 1).adjoint(), 1),
-            (MultiTargetCNOT(self.dtype.bitsize), 1),
-            (AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1,), signed=False), 1),
-            (XGate(), 2),
+            MultiControlX(cvs): 1,
+            MultiControlX(cvs).adjoint(): 1,
+            And(self.cv, 1): 1,
+            And(self.cv, 1).adjoint(): 1,
+            MultiTargetCNOT(self.dtype.bitsize): 1,
+            AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1,), signed=False): 1,
+            XGate(): 2,
         }
 
     def wire_symbol(
@@ -285,12 +285,12 @@ class ModSub(Bloq):
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (BitwiseNot(self.dtype), 2),
-            (AddK(self.dtype.bitsize, self.mod + 1, signed=False), 1),
-            (AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), 1),
-            (ModAdd(self.dtype.bitsize, self.mod), 1),
+            BitwiseNot(self.dtype): 2,
+            AddK(self.dtype.bitsize, self.mod + 1, signed=False): 1,
+            AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(): 1,
+            ModAdd(self.dtype.bitsize, self.mod): 1,
         }
 
     def wire_symbol(
@@ -365,12 +365,12 @@ class CModSub(Bloq):
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (BitwiseNot(self.dtype), 2),
-            (AddK(self.dtype.bitsize, self.mod + 1, signed=False), 1),
-            (AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), 1),
-            (CModAdd(self.dtype, self.mod, self.cv), 1),
+            BitwiseNot(self.dtype): 2,
+            AddK(self.dtype.bitsize, self.mod + 1, signed=False): 1,
+            AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(): 1,
+            CModAdd(self.dtype, self.mod, self.cv): 1,
         }
 
     def wire_symbol(

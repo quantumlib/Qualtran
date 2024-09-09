@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -43,7 +43,7 @@ from qualtran.drawing import Text
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -150,18 +150,18 @@ class Subtract(Bloq):
         else:
             raise ValueError()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
-        return (
-            {
-                (OnEach(self.b_dtype.bitsize, XGate()), 3),
-                (Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)), 1),
-            }
-            .union(
-                [(MultiTargetCNOT(delta), 2)] if delta and isinstance(self.a_dtype, QInt) else []
-            )
-            .union([(Allocate(QAny(delta)), 1), (Free(QAny(delta)), 1)] if delta else [])
-        )
+        costs = {
+            OnEach(self.b_dtype.bitsize, XGate()): 3,
+            Add(QUInt(self.b_dtype.bitsize), QUInt(self.b_dtype.bitsize)): 1,
+        }
+        if delta:
+            costs[Allocate(QAny(delta))] = 1
+            costs[Free(QAny(delta))] = 1
+            if isinstance(self.a_dtype, QInt):
+                costs[MultiTargetCNOT(delta)] = 2
+        return costs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         delta = self.b_dtype.bitsize - self.a_dtype.bitsize
@@ -288,8 +288,8 @@ class SubtractFrom(Bloq):
         else:
             raise ValueError()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(BitwiseNot(self.dtype), 2), (Add(self.dtype, self.dtype), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {BitwiseNot(self.dtype): 2, Add(self.dtype, self.dtype): 1}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         b = bb.add(BitwiseNot(self.dtype), x=b)  # a, -1 - b

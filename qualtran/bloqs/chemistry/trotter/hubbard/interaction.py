@@ -14,7 +14,7 @@
 r"""Bloqs implementing unitary evolution under the interacting part of the Hubbard Hamiltonian."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -24,7 +24,7 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -62,9 +62,9 @@ class Interaction(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Page 13 paragraph 1.
-        return {(Rz(angle=self.angle * self.hubb_u, eps=self.eps), self.length**2)}
+        return {Rz(angle=self.angle * self.hubb_u, eps=self.eps): self.length**2}
 
 
 @frozen
@@ -105,9 +105,9 @@ class InteractionHWP(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (HammingWeightPhasing(self.length**2 // 2, self.angle * self.hubb_u, eps=self.eps), 2)
+            HammingWeightPhasing(self.length**2 // 2, self.angle * self.hubb_u, eps=self.eps): 2
         }
 
 

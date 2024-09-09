@@ -15,7 +15,6 @@
 import numpy as np
 import pytest
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
     _prep_first_quant,
     _sel_first_quant,
@@ -68,7 +67,7 @@ def test_select_t_costs():
     assert cost == expected_cost
 
 
-def test_prepare_t_costs():
+def test_prepare_toffoli_costs():
     num_bits_p = 6
     num_bits_n = 8
     eta = 10
@@ -90,7 +89,7 @@ def test_prepare_t_costs():
         num_bits_rot_aa=b_r,
         num_bits_t=num_bits_t,
     )
-    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    cost += get_cost_value(prep_first_quant, QECGatesCost()).total_toffoli_only()
     prep_first_quant = PrepareFirstQuantizationWithProj(
         num_bits_p,
         num_bits_n,
@@ -102,7 +101,7 @@ def test_prepare_t_costs():
         num_bits_rot_aa=b_r,
         num_bits_t=num_bits_t,
     ).adjoint()
-    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    cost += get_cost_value(prep_first_quant, QECGatesCost()).total_toffoli_only()
     n_eta = (eta - 1).bit_length()
     expected_cost = 6 * num_bits_t + 2  # C1
     expected_cost += 14 * n_eta + 8 * b_r - 36  # C2

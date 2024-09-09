@@ -14,7 +14,7 @@
 
 import pytest
 
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
     _prep_power_two_proj,
     _prep_t_proj,
@@ -40,13 +40,12 @@ def test_prepare_kinetic_t_proj_counts():
     qual_cost = 0
     prep = PrepareTFirstQuantizationWithProj(num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r)
     _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += counts[Toffoli()]
     prep = PrepareTFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r
     ).adjoint()
     _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
-    qual_cost //= 4
+    qual_cost += counts[Toffoli()]
     assert qual_cost == expected_cost
 
 

@@ -14,7 +14,7 @@
 
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     QBit,
     Register,
@@ -37,7 +37,7 @@ from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -95,7 +95,7 @@ class THCRotations(Bloq):
         dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
         if self.is_adjoint:
@@ -116,7 +116,7 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        return {(Toffoli(), (rot_cost + toff_cost_qrom))}
+        return {Toffoli(): (rot_cost + toff_cost_qrom)}
 
 
 @frozen
@@ -168,21 +168,19 @@ class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # typ
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("succ", BoundedQUInt(bitsize=1)),
-            Register("nu_eq_mp1", BoundedQUInt(bitsize=1)),
+            Register("succ", BQUInt(bitsize=1)),
+            Register("nu_eq_mp1", BQUInt(bitsize=1)),
             Register(
-                "mu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "mu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
             Register(
-                "nu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "nu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
-            Register("plus_mn", BoundedQUInt(bitsize=1)),
-            Register("plus_a", BoundedQUInt(bitsize=1)),
-            Register("plus_b", BoundedQUInt(bitsize=1)),
-            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
-            Register("rot", BoundedQUInt(bitsize=1)),
+            Register("plus_mn", BQUInt(bitsize=1)),
+            Register("plus_a", BQUInt(bitsize=1)),
+            Register("plus_b", BQUInt(bitsize=1)),
+            Register("sigma", BQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BQUInt(bitsize=1)),
         )
 
     @cached_property

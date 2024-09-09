@@ -15,7 +15,7 @@
 
 from openfermion.resource_estimates.utils import power_two, QI, QR
 
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.df.prepare import (
     _indexed_data,
     _prep_inner,
@@ -70,7 +70,7 @@ def test_outerprep_t_counts():
     assert toff == cost1a_mod + cost1b + cost1cd
 
 
-def test_indexed_data_t_counts():
+def test_indexed_data_toffoli_counts():
     num_spin_orb = 108
     num_aux = 360
     num_bits_rot_aa = 7
@@ -79,12 +79,12 @@ def test_indexed_data_t_counts():
         num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot_aa
     )
     _, counts = in_l_data_l.call_graph()
-    toff = counts[TGate()] // 4
+    toff = counts[Toffoli()]
     in_l_data_l = OutputIndexedData(
         num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
     _, counts = in_l_data_l.call_graph()
-    toff += counts[TGate()] // 4
+    toff += counts[Toffoli()]
     # captured from cost2 in openfermion df.compute_cost
     nxi = (num_spin_orb // 2 - 1).bit_length()
     nlxi = (num_eig + num_spin_orb // 2 - 1).bit_length()

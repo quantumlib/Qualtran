@@ -19,7 +19,7 @@ from typing import Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING
 import cirq
 import pytest
 
-from qualtran import BoundedQUInt, QAny, QUInt, Register, Signature
+from qualtran import BQUInt, QAny, QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Join, Split
@@ -47,7 +47,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(self._selection_bitsize, self._target_bitsize)),)
+        return (Register('selection', BQUInt(self._selection_bitsize, self._target_bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -102,8 +102,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
     def selection_registers(self) -> Tuple[Register, ...]:
         return tuple(
             Register(
-                'ijk'[i],
-                BoundedQUInt((self._target_shape[i] - 1).bit_length(), self._target_shape[i]),
+                'ijk'[i], BQUInt((self._target_shape[i] - 1).bit_length(), self._target_shape[i])
             )
             for i in range(3)
         )
@@ -162,7 +161,7 @@ def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, in
 
 def test_unary_iteration_loop():
     n_range, m_range = (3, 5), (6, 8)
-    selection_registers = [Register('n', BoundedQUInt(3, 5)), Register('m', BoundedQUInt(3, 8))]
+    selection_registers = [Register('n', BQUInt(3, 5)), Register('m', BQUInt(3, 8))]
     selection = get_named_qubits(selection_registers)
     target = {(n, m): cirq.q(f't({n}, {m})') for n in range(*n_range) for m in range(*m_range)}
     qm = cirq.GreedyQubitManager("ancilla", maximize_reuse=True)
