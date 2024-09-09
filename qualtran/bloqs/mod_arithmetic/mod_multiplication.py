@@ -15,7 +15,7 @@
 import math
 import numbers
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -184,7 +184,7 @@ class CModMulK(Bloq):
         if is_symbolic(self.k, self.mod):
             return
         assert 0 < self.k < self.mod
-        assert math.gcd(self.k, self.mod) == 1
+        assert math.gcd(cast(int, self.k), cast(int, self.mod)) == 1
 
     @cached_property
     def signature(self) -> 'Signature':

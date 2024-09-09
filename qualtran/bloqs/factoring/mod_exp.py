@@ -14,7 +14,7 @@
 import math
 import random
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
 import sympy
@@ -73,7 +73,7 @@ class ModExp(Bloq):
 
     def __attrs_post_init__(self):
         if not is_symbolic(self.base, self.mod):
-            assert math.gcd(self.base, self.mod) == 1
+            assert math.gcd(cast(int, self.base), cast(int, self.mod)) == 1
 
     @cached_property
     def signature(self) -> 'Signature':
