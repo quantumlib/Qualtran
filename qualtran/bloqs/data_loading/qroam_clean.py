@@ -71,6 +71,8 @@ def get_optimal_log_block_size_clean_ancilla(
         k = log2(qroam_block_size)
     if is_symbolic(k):
         return k
+    if k < 0:
+        return 0
     k_int = np.array([np.floor(k), np.ceil(k)])
     return int(k_int[np.argmin(qroam_cost(2**k_int, data_size, bitsize, adjoint))])
 
@@ -233,9 +235,11 @@ class QROAMCleanAdjointWrapper(Bloq):
         if self.qroam_clean.has_data():
             return QROAMCleanAdjoint.build_from_data(
                 *self.qroam_clean.batched_data_permuted,
+                target_bitsizes=self.qroam_clean.target_bitsizes,
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.batched_data_permuted),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
         else:
             return QROAMCleanAdjoint.build_from_bitsize(
@@ -244,6 +248,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.target_bitsizes),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
