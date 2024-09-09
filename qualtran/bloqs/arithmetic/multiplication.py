@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Iterable, List, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Sequence, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -39,7 +39,7 @@ from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, Symboli
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -131,9 +131,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO: The T-complexity here is approximate.
-        return {(TGate(), 8 * smax(self.a_bitsize, self.b_bitsize) ** 2)}
+        return {TGate(): 8 * smax(self.a_bitsize, self.b_bitsize) ** 2}
 
 
 @bloq_example
@@ -189,12 +189,12 @@ class Square(Bloq):
     def pretty_name(self) -> str:
         return "a^2"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -275,11 +275,11 @@ class SumOfSquares(Bloq):
     def pretty_name(self) -> str:
         return "SOS"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -329,12 +329,12 @@ class Product(Bloq):
     def pretty_name(self) -> str:
         return "a*b"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -390,12 +390,12 @@ class ScaleIntByReal(Bloq):
     def pretty_name(self) -> str:
         return "r*i"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
         # the user has ensured these are large enough for their desired
         # precision.
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -447,10 +447,10 @@ class MultiplyTwoReals(Bloq):
     def pretty_name(self) -> str:
         return "a*b"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -506,10 +506,10 @@ class SquareRealNumber(Bloq):
     def pretty_name(self) -> str:
         return "a^2"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Bottom of page 74
         num_toff = self.bitsize**2 // 2 - 4
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -562,7 +562,7 @@ class InvertRealNumber(Bloq):
     def pretty_name(self) -> str:
         return "1/a"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # initial approximation: Figure 4
         num_int = self.bitsize - self.num_frac
         # Newton-Raphson: Eq. (1)
@@ -571,14 +571,14 @@ class InvertRealNumber(Bloq):
         # TODO: When decomposing we will potentially need to use larger registers.
         # Related issue: https://github.com/quantumlib/Qualtran/issues/655
         return {
-            (Toffoli(), num_int - 1),
-            (CNOT(), 2 + num_int - 1),
-            (MultiControlX(cvs=HasLength(num_int)), 1),
-            (XGate(), 1),
-            (SquareRealNumber(self.bitsize), num_iters),  # x^2
-            (MultiplyTwoReals(self.bitsize), num_iters),  # a * x^2
-            (ScaleIntByReal(self.bitsize, 2), num_iters),  # 2 * x
-            (Subtract(QUInt(self.bitsize)), num_iters),  # 2 * x - a * x^2
+            Toffoli(): num_int - 1,
+            CNOT(): 2 + num_int - 1,
+            MultiControlX(cvs=HasLength(num_int)): 1,
+            XGate(): 1,
+            SquareRealNumber(self.bitsize): num_iters,  # x^2
+            MultiplyTwoReals(self.bitsize): num_iters,  # a * x^2
+            ScaleIntByReal(self.bitsize, 2): num_iters,  # 2 * x
+            Subtract(QUInt(self.bitsize)): num_iters,  # 2 * x - a * x^2
         }
 
 

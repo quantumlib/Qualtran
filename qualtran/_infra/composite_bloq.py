@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 # NDArrays must be bound to np.generic
@@ -237,7 +237,7 @@ class CompositeBloq(Bloq):
             "Consider using the composite bloq directly or using `.flatten()`."
         )
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
         """Return the bloq counts by counting up all the subbloqs."""
         from qualtran.resource_counting import build_cbloq_call_graph
 

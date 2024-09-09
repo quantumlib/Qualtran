@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -39,7 +39,7 @@ from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 from qualtran.symbolics import HasLength, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -129,9 +129,9 @@ class MultiControlPauli(GateWithRegisters):
 
         return {'controls': controls, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.n_ctrls == 0:
-            return {(self.target_bloq, 1)}
+            return {self.target_bloq: 1}
 
         if is_symbolic(self.cvs):
             # TODO CtrlSpec does not support symbolic cvs yet.
@@ -140,19 +140,15 @@ class MultiControlPauli(GateWithRegisters):
             from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
             if self.n_ctrls == 1:
-                return {(self.target_bloq.controlled(), 1)}
+                return {self.target_bloq.controlled(): 1}
             elif self.n_ctrls == 2:
                 and_bloq = And(ssa.new_symbol('cv1'), ssa.new_symbol('cv2'))
-                return {(self.target_bloq.controlled(), 1), (and_bloq, 1), (and_bloq.adjoint(), 1)}
+                return {self.target_bloq.controlled(): 1, and_bloq: 1, and_bloq.adjoint(): 1}
             else:
                 m_and_bloq = MultiAnd(self.cvs)
-                return {
-                    (self.target_bloq.controlled(), 1),
-                    (m_and_bloq, 1),
-                    (m_and_bloq.adjoint(), 1),
-                }
+                return {self.target_bloq.controlled(): 1, m_and_bloq: 1, m_and_bloq.adjoint(): 1}
 
-        return {(self._multi_ctrl_bloq, 1)}
+        return {self._multi_ctrl_bloq: 1}
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (

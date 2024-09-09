@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 import sympy
 from attrs import frozen
@@ -31,7 +31,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import PlusState
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 from ._ecc_shims import MeasureQFT
 from .ec_add_r import ECAddR
@@ -67,8 +67,8 @@ class ECPhaseEstimateR(Bloq):
         bb.add(MeasureQFT(n=self.n), x=ctrl)
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ECAddR(n=self.n, R=self.point), self.n), (MeasureQFT(n=self.n), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {ECAddR(n=self.n, R=self.point): self.n, MeasureQFT(n=self.n): 1}
 
     def __str__(self) -> str:
         return f'PE${self.point}$'

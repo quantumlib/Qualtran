@@ -14,7 +14,7 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Tuple
 
 import attrs
 import sympy
@@ -32,7 +32,7 @@ from qualtran import (
 )
 from qualtran.drawing import Text, WireSymbol
 from qualtran.drawing.musical_score import TextBox
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
 
 
@@ -78,8 +78,8 @@ class OnEach(Bloq):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs, self.target_dtype)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self.gate, self.n)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self.gate: self.n}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         one_reg = self.gate.wire_symbol(reg=reg, idx=idx)

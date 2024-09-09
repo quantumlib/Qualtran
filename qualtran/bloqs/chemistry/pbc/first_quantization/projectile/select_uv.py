@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
+from collections import Counter
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -23,7 +24,7 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNuclearPhase
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -77,32 +78,26 @@ class SelectUVFirstQuantizationWithProj(Bloq):
     def pretty_name(self) -> str:
         return r'SEL UV'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        cost = Counter['Bloq']()
+        # tc_p and tc_n
         # C8 and C9, one of the registers of size num_bits_n so need to account for this.
-        cost_tc_p = (SignedIntegerToTwosComplement(self.num_bits_p), 3)
-        cost_tc_n = (SignedIntegerToTwosComplement(self.num_bits_n), 3)
+        cost[SignedIntegerToTwosComplement(self.num_bits_p)] += 3
+        cost[SignedIntegerToTwosComplement(self.num_bits_n)] += 3
         # Adding nu into p / q. Nu is one bit larger than p.
-        cost_add_p = (Add(QInt(self.num_bits_p + 1)), 3)
-        cost_add_n = (Add(QInt(self.num_bits_n + 1)), 3)
-        cost_ctrl_add_p = (Toffoli(), 3 * (self.num_bits_p + 1))
-        cost_ctrl_add_n = (Toffoli(), 3 * (self.num_bits_n + 1))
+        cost[Add(QInt(self.num_bits_p + 1))] += 3
+        cost[Add(QInt(self.num_bits_n + 1))] += 3
+        # ctrl_add_p and ctrl_add_n
+        cost[Toffoli()] += 3 * (self.num_bits_p + 1)
+        cost[Toffoli()] += 3 * (self.num_bits_n + 1)
+        # inv_tc_p and inv_tc_n
         # + 2 as these numbers are larger from addition of $\nu$
-        cost_inv_tc_p = (SignedIntegerToTwosComplement(self.num_bits_p + 2), 3)
-        cost_inv_tc_n = (SignedIntegerToTwosComplement(self.num_bits_n + 2), 3)
+        cost[SignedIntegerToTwosComplement(self.num_bits_p + 2)] += 3
+        cost[SignedIntegerToTwosComplement(self.num_bits_n + 2)] += 3
+        # cost for phase:
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
-        cost_phase = (ApplyNuclearPhase(self.num_bits_n, self.num_bits_nuc_pos), 1)
-        return {
-            cost_tc_p,
-            cost_tc_n,
-            cost_tc_n,
-            cost_add_p,
-            cost_add_n,
-            cost_ctrl_add_n,
-            cost_ctrl_add_p,
-            cost_inv_tc_p,
-            cost_inv_tc_n,
-            cost_phase,
-        }
+        cost[ApplyNuclearPhase(self.num_bits_n, self.num_bits_nuc_pos)] += 1
+        return cost
 
 
 @bloq_example

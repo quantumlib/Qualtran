@@ -14,7 +14,7 @@
 r"""Bloqs for the applying number operators to system for the DF Hamiltonian."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -23,7 +23,7 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -70,7 +70,7 @@ class ProgRotGateArray(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Step 4 in the reference.
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
@@ -78,6 +78,6 @@ class ProgRotGateArray(Bloq):
         data_size = self.num_eig + self.num_spin_orb // 2
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
         return {
-            (Toffoli(), (cost_a + cost_c)),
-            (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2), 1),
+            Toffoli(): (cost_a + cost_c),
+            QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2): 1,
         }

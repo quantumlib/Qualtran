@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import Dict, Iterable, Set, Tuple
+from typing import Dict, Iterable, Tuple
 
 import numpy as np
 import sympy
@@ -46,7 +46,7 @@ from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import bit_length
@@ -220,14 +220,14 @@ class SparseMatrix(BlockEncoding):
             ],
         )
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            (self.diffusion, 1),
-            (self.col_oracle, 1),
-            (self.entry_oracle, 1),
-            (Swap(self.system_bitsize), 1),
-            (self.row_oracle.adjoint(), 1),
-            (self.diffusion.adjoint(), 1),
+            self.diffusion: 1,
+            self.col_oracle: 1,
+            self.entry_oracle: 1,
+            Swap(self.system_bitsize): 1,
+            self.row_oracle.adjoint(): 1,
+            self.diffusion.adjoint(): 1,
         }
 
     def build_composite_bloq(
@@ -331,10 +331,10 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
             raise IndexError("l out of bounds")
         return ((l + i - self.bandsize) % (2**self.system_bitsize), i)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {
-            (Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), 1),
-            (AddK(self.system_bitsize, -self.bandsize, signed=True), 1),
+            Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)): 1,
+            AddK(self.system_bitsize, -self.bandsize, signed=True): 1,
         }
 
     def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> Dict[str, SoquetT]:

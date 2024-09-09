@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Set, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import ConnectionT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -118,7 +118,7 @@ class KaiserWindowState(QPEWindowStateBase):
             )
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
             StatePreparationViaRotations,
         )
@@ -127,7 +127,7 @@ class KaiserWindowState(QPEWindowStateBase):
             state_prep_coeff = HasLength(2**self.bitsize)
         else:
             state_prep_coeff = self.kaiser_state_coeff.tolist()
-        return {(StatePreparationViaRotations(state_prep_coeff, self.bitsize), 1)}
+        return {StatePreparationViaRotations(state_prep_coeff, self.bitsize): 1}
 
 
 @bloq_example

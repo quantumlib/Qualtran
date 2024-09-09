@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, CompositeBloq
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -246,8 +246,8 @@ class Swap(Bloq):
 
         return {'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TwoBitSwap(), self.bitsize)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TwoBitSwap(): self.bitsize}
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -340,8 +340,8 @@ class CSwap(GateWithRegisters):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TwoBitCSwap(), self.bitsize)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TwoBitCSwap(): self.bitsize}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'

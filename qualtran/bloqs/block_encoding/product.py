@@ -14,7 +14,7 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, List, Sequence, Set, Tuple, Union
+from typing import cast, Dict, List, Sequence, Tuple, Union
 
 from attrs import field, frozen, validators
 from numpy.typing import NDArray
@@ -40,7 +40,7 @@ from qualtran.bloqs.bookkeeping.partition import Partition
 from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import is_zero
@@ -171,7 +171,7 @@ class Product(BlockEncoding):
             ret.append(AutoPartition(u, partition, left_only=False))
         return ret
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
         for bloq in self.constituents:
             counts[bloq] += 1
@@ -180,7 +180,7 @@ class Product(BlockEncoding):
             if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
                 counts[MultiControlX(HasLength(u.ancilla_bitsize))] += 1
                 counts[XGate()] += 1
-        return set(counts.items())
+        return counts
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
