@@ -174,7 +174,7 @@ def test_dirtyoutofplacemontgomerymodmul_symbolic_cost(uncompute):
 
     # In Litinski 2023 https://arxiv.org/abs/2306.08585 a window size of 4 is used.
     # The cost function generally has floor/ceil division that disappear for bitsize=0 mod 4.
-    # This is why instead of used bitsize=n directly, we use bitsize=4*m=n.
+    # This is why instead of using bitsize=n directly, we use bitsize=4*m=n.
     b = DirtyOutOfPlaceMontgomeryModMul(4 * m, 4, p, uncompute)
     cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
     assert cost['n_t'] == 0
