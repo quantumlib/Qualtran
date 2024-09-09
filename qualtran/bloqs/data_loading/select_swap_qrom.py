@@ -66,6 +66,14 @@ def find_optimal_log_block_size(
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
+def _find_optimal_log_block_size_helper(qrom: 'SelectSwapQROM') -> Tuple[SymbolicInt, ...]:
+    target_bitsize = sum(qrom.target_bitsizes) * sum(prod(shape) for shape in qrom.target_shapes)
+    return tuple(
+        find_optimal_log_block_size(ilen, target_bitsize, qrom.use_dirty_ancilla)
+        for ilen in qrom.data_shape
+    )
+
+
 def _alloc_anc_for_reg(
     bb: 'BloqBuilder', dtype: 'QDType', shape: Tuple[int, ...], dirty: bool
 ) -> 'SoquetT':
@@ -124,6 +132,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        if x is not None
+        else x,
+        default=None,
     )
     use_dirty_ancilla: bool = True
 
@@ -133,6 +144,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             raise ValueError(
                 f"{type(self)} currently only supports target registers of shape (). Found {self.target_shapes}"
             )
+        if self.log_block_sizes is None:
+            object.__setattr__(self, "log_block_sizes", _find_optimal_log_block_size_helper(self))
 
     @cached_property
     def signature(self) -> Signature:
@@ -141,15 +154,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         )
 
     # Builder methods and helpers.
-    @log_block_sizes.default
-    def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
-        target_bitsize = sum(self.target_bitsizes) * sum(
-            prod(shape) for shape in self.target_shapes
-        )
-        return tuple(
-            find_optimal_log_block_size(ilen, target_bitsize, True) for ilen in self.data_shape
-        )
-
     def is_symbolic(self) -> bool:
         return super().is_symbolic() or is_symbolic(*self.log_block_sizes)
 
@@ -166,6 +170,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        if log_block_sizes is None:
+            log_block_sizes = _find_optimal_log_block_size_helper(qroam)
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     @classmethod
@@ -186,6 +192,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             num_controls=num_controls,
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        if log_block_sizes is None:
+            log_block_sizes = _find_optimal_log_block_size_helper(qroam)
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     def with_log_block_sizes(
@@ -193,14 +201,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
     ) -> 'SelSwapQROM_T':
         if log_block_sizes is None:
-            if self.use_dirty_ancilla:
-                return self
-            target_bitsize = sum(self.target_bitsizes) * sum(
-                prod(shape) for shape in self.target_shapes
-            )
-            log_block_sizes = tuple(
-                find_optimal_log_block_size(ilen, target_bitsize, False) for ilen in self.data_shape
-            )
+            return self
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
             log_block_sizes = (log_block_sizes,)
         if not is_symbolic(*log_block_sizes):
