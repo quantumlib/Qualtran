@@ -97,7 +97,8 @@ def _generalize_callees(
         raw_callee_iterator: Iterable[BloqCountT] = raw_callee_counts
         warnings.warn(
             "build_call_graph returning sets is deprecated (got {raw_callee_counts})."
-            "Please change build_call_graph for this bloq to use a dictionary."
+            "Please change build_call_graph for this bloq to use a dictionary.",
+            DeprecationWarning,
         )
     else:
         raw_callee_iterator = raw_callee_counts.items()
