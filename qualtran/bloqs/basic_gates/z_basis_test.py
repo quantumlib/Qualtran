@@ -72,7 +72,7 @@ def test_int_effect(bloq_autotester):
 
 def test_zero_state_manual():
     bloq = ZeroState()
-    assert str(bloq) == 'ZeroState'
+    assert str(bloq) == '|0>'
     assert not bloq.bit
     vector = bloq.tensor_contract()
     should_be = np.array([1, 0])

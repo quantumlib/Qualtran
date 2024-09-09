@@ -15,8 +15,22 @@
 """Functionality for the `Bloq.call_graph()` protocol."""
 
 import collections.abc
+import warnings
 from collections import defaultdict
-from typing import Callable, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Callable,
+    cast,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    MutableMapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import networkx as nx
 import sympy
@@ -24,6 +38,8 @@ import sympy
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
+BloqCountDictT = Mapping[Bloq, Union[int, sympy.Expr]]
+MutableBloqCountDictT = MutableMapping[Bloq, Union[int, sympy.Expr]]
 from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
@@ -53,7 +69,7 @@ class SympySymbolAllocator:
         return s
 
 
-def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
+def build_cbloq_call_graph(cbloq: CompositeBloq) -> BloqCountDictT:
     """Count all the subbloqs in a composite bloq.
 
     This is the function underpinning `CompositeBloq.build_call_graph`.
@@ -65,11 +81,11 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
     for binst in cbloq.bloq_instances:
         counts[binst.bloq] += 1
 
-    return {(bloq, n) for bloq, n in counts.items()}
+    return counts
 
 
 def _generalize_callees(
-    raw_callee_counts: Set[BloqCountT], generalizer: GeneralizerT
+    raw_callee_counts: Union[BloqCountDictT, Set[BloqCountT]], generalizer: GeneralizerT
 ) -> List[BloqCountT]:
     """Apply `generalizer` to the results of `bloq.build_call_graph`.
 
@@ -77,7 +93,16 @@ def _generalize_callees(
     and filters out cases where `generalizer` returns `None`.
     """
     callee_counts: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
-    for callee, n in raw_callee_counts:
+    if isinstance(raw_callee_counts, set):
+        raw_callee_iterator: Iterable[BloqCountT] = raw_callee_counts
+        warnings.warn(
+            "build_call_graph returning sets is deprecated (got {raw_callee_counts})."
+            "Please change build_call_graph for this bloq to use a dictionary.",
+            DeprecationWarning,
+        )
+    else:
+        raw_callee_iterator = raw_callee_counts.items()
+    for callee, n in raw_callee_iterator:
         generalized_callee = generalizer(callee)
         if generalized_callee is None:
             # Signifies that this callee should be ignored.

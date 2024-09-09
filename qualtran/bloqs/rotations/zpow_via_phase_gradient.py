@@ -30,7 +30,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic import XorK
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free
 from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
@@ -123,10 +123,10 @@ class ZPowConstViaPhaseGradient(Bloq):
 
         return {'q': q, 'phase_grad': phase_grad}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            (self._load_bloq.controlled(), 2),
-            (AddIntoPhaseGrad(self.phase_grad_bitsize, self.phase_grad_bitsize), 1),
+            self._load_bloq.controlled(): 2,
+            AddIntoPhaseGrad(self.phase_grad_bitsize, self.phase_grad_bitsize): 1,
         }
 
     def __str__(self) -> str:

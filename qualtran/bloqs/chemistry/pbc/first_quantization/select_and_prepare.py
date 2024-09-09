@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -45,7 +45,7 @@ from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
     from qualtran import Soquet
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -76,11 +76,11 @@ class PrepareTUVSuperpositions(Bloq):
     def pretty_name(self) -> str:
         return 'PREP TUV'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_eta_zeta = (self.eta + 2 * self.lambda_zeta - 1).bit_length()
         # The cost arises from rotating a qubit, and uniform state preparation
         # over eta + 2 lambda_zeta numbers along.
-        return {(Toffoli(), self.num_bits_t + 4 * n_eta_zeta + 2 * self.num_bits_rot_aa - 12)}
+        return {Toffoli(): self.num_bits_t + 4 * n_eta_zeta + 2 * self.num_bits_rot_aa - 12}
 
 
 @frozen
@@ -108,10 +108,10 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         n_eta = (self.eta - 1).bit_length()
         return Signature.build(i=n_eta, j=n_eta)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
-        return {(Toffoli(), (7 * n_eta + 4 * self.num_bits_rot_aa - 18))}
+        return {Toffoli(): (7 * n_eta + 4 * self.num_bits_rot_aa - 18)}
 
 
 @frozen

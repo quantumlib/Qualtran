@@ -24,7 +24,7 @@ from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -112,7 +112,7 @@ class ControlledViaAnd(Controlled):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         counts: Counter[Bloq] = Counter()
         counts[self.subbloq.controlled()] += 1
 
@@ -124,7 +124,7 @@ class ControlledViaAnd(Controlled):
             counts[ctrl] += 1
             counts[ctrl.adjoint()] += 1
 
-        return set(counts.items())
+        return counts
 
 
 @bloq_example

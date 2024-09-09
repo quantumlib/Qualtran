@@ -22,7 +22,7 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, QUInt, Register
+from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError, QUInt, Register
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.arithmetic import XorK
 from qualtran.bloqs.basic_gates import CNOT
@@ -33,7 +33,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
@@ -153,6 +153,13 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             yield cirq.inverse(multi_controlled_and)
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
 
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        if self.has_data():
+            return super().decompose_from_registers(context=context, **quregs)
+        raise DecomposeTypeError(f"Cannot decompose symbolic {self} with no data.")
+
     def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
         if not self.has_data():
             return False
@@ -208,14 +215,16 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                 ret += data_to_load.bit_count()
         return {(CNOT(), ret)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
         n_cnot = prod(
             bitsize * prod(sh) for bitsize, sh in zip(self.target_bitsizes, self.target_shapes)
         ) * prod(self.data_shape)
-        return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
+        return {And(): n_and, And().adjoint(): n_and, CNOT(): n_cnot}
 
     def adjoint(self) -> 'QROM':
         return self

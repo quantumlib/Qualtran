@@ -193,32 +193,32 @@ def test_controlled_parallel():
         == """\
 Split<0>
   LeftDangle.reg -> reg
-  reg[0] -> C[TestAtom()]<1>.q
-  reg[1] -> C[TestAtom()]<2>.q
-  reg[2] -> C[TestAtom()]<3>.q
+  reg[0] -> C[TestAtom]<1>.q
+  reg[1] -> C[TestAtom]<2>.q
+  reg[2] -> C[TestAtom]<3>.q
 --------------------
-C[TestAtom()]<1>
+C[TestAtom]<1>
   LeftDangle.ctrl -> ctrl
   Split<0>.reg[0] -> q
-  ctrl -> C[TestAtom()]<2>.ctrl
+  ctrl -> C[TestAtom]<2>.ctrl
   q -> Join<4>.reg[0]
 --------------------
-C[TestAtom()]<2>
-  C[TestAtom()]<1>.ctrl -> ctrl
+C[TestAtom]<2>
+  C[TestAtom]<1>.ctrl -> ctrl
   Split<0>.reg[1] -> q
-  ctrl -> C[TestAtom()]<3>.ctrl
+  ctrl -> C[TestAtom]<3>.ctrl
   q -> Join<4>.reg[1]
 --------------------
-C[TestAtom()]<3>
-  C[TestAtom()]<2>.ctrl -> ctrl
+C[TestAtom]<3>
+  C[TestAtom]<2>.ctrl -> ctrl
   Split<0>.reg[2] -> q
   q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
 Join<4>
-  C[TestAtom()]<1>.q -> reg[0]
-  C[TestAtom()]<2>.q -> reg[1]
-  C[TestAtom()]<3>.q -> reg[2]
+  C[TestAtom]<1>.q -> reg[0]
+  C[TestAtom]<2>.q -> reg[1]
+  C[TestAtom]<3>.q -> reg[2]
   reg -> RightDangle.reg"""
     )
 
@@ -228,7 +228,7 @@ def test_doubly_controlled():
     assert (
         bloq.as_composite_bloq().debug_text()
         == """\
-C[C[TestAtom()]]<0>
+C[C[TestAtom]]<0>
   LeftDangle.ctrl2 -> ctrl2
   LeftDangle.ctrl -> ctrl
   LeftDangle.q -> q

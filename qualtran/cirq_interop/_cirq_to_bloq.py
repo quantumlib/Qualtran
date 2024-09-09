@@ -140,7 +140,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
         return f'cirq.{g}'
 

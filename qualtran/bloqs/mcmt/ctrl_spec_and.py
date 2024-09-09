@@ -41,7 +41,7 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -171,13 +171,13 @@ class CtrlSpecAnd(Bloq):
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits == 2:
             assert isinstance(self._flat_cvs, tuple)
             cv1, cv2 = self._flat_cvs
-            return {(And(cv1, cv2), 1)}
+            return {And(cv1, cv2): 1}
 
-        return {(MultiAnd(self._flat_cvs), 1)}
+        return {MultiAnd(self._flat_cvs): 1}
 
 
 @bloq_example(generalizer=ignore_split_join)

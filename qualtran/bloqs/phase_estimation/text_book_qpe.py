@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -23,7 +23,7 @@ from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -180,12 +180,12 @@ class TextbookQPE(GateWithRegisters):
             yield cirq.pow(unitary_op.controlled_by(qbit), 2**i)
         yield self.qft_inv.on(*phase_qubits)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Assumes self.unitary is not fast forwardable.
         return {
-            (self.ctrl_state_prep, 1),
-            (self.unitary.controlled(), (2**self.m_bits) - 1),
-            (self.qft_inv, 1),
+            self.ctrl_state_prep: 1,
+            self.unitary.controlled(): (2**self.m_bits) - 1,
+            self.qft_inv: 1,
         }
 
 

@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     import sympy
 
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 SymbolicCycleT: TypeAlias = Union[CycleT, Shaped]
 
@@ -122,13 +122,15 @@ class PermutationCycle(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if is_symbolic(self.cycle):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
             return {
-                (EqualsAConstant(self.bitsize, x), cycle_len + 1),
-                (XorK(QUInt(self.bitsize), x).controlled(), cycle_len),
+                EqualsAConstant(self.bitsize, x): cycle_len + 1,
+                XorK(QUInt(self.bitsize), x).controlled(): cycle_len,
             }
 
         return super().build_call_graph(ssa)
@@ -267,11 +269,13 @@ class Permutation(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))
-            return {(PermutationCycle(self.N, cycle), 1)}
+            return {PermutationCycle(self.N, cycle): 1}
 
         return super().build_call_graph(ssa)
 

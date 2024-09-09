@@ -20,7 +20,7 @@ import numpy as np
 
 from qualtran import GateWithRegisters, QFxp, Signature
 from qualtran.bloqs.arithmetic import PlusEqualProduct
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
@@ -76,12 +76,12 @@ class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
         )
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         # Hack to propagate bigO(...). Here `c` is some constant.
         c = ssa.new_symbol("c")
 
         return {
-            (PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize), c)
+            PlusEqualProduct(self.target_bitsize, self.target_bitsize, 2 * self.target_bitsize): c
         }
 
     def adjoint(self) -> 'ArcTan':
