@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
 import numbers
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -180,12 +181,10 @@ class CModMulK(Bloq):
     mod: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        if isinstance(self.k, sympy.Expr):
+        if is_symbolic(self.k, self.mod):
             return
-        if isinstance(self.mod, sympy.Expr):
-            return
-
         assert 0 < self.k < self.mod
+        assert math.gcd(cast(int, self.k), cast(int, self.mod)) == 1
 
     @cached_property
     def signature(self) -> 'Signature':
