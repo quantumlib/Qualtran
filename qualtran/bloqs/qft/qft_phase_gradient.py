@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Set
+from typing import Iterator
 
 import attrs
 import cirq
@@ -23,7 +23,7 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, 
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import Swap
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics.types import is_symbolic
 
 
@@ -96,37 +96,27 @@ class QFTPhaseGradient(GateWithRegisters):
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
         if is_symbolic(self.bitsize):
             # TODO: The T-gate cost here is an upper bound constructed off of the recurrence
             # relation for the QFT as used in decompose_from_registers above.
-            return set(
-                [
-                    (
-                        PlusEqualProduct(
-                            self.bitsize // 2, self.bitsize - (self.bitsize // 2), self.bitsize
-                        ),
-                        log(self.bitsize, 2),
-                    )
-                ]
-            )
+            return {
+                PlusEqualProduct(
+                    self.bitsize // 2, self.bitsize - (self.bitsize // 2), self.bitsize
+                ): log(self.bitsize, 2)
+            }
 
         if self.bitsize == 1:
-            return set([(Hadamard(), 1)])
-        ret: Set['BloqCountT'] = set(
-            [
-                (QFTPhaseGradient(self.bitsize // 2), 1),
-                (QFTPhaseGradient(self.bitsize - (self.bitsize // 2)), 1),
-                (
-                    PlusEqualProduct(
-                        self.bitsize // 2, self.bitsize - (self.bitsize // 2), self.bitsize
-                    ),
-                    1,
-                ),
-            ]
-        )
+            return {Hadamard(): 1}
+        ret: 'MutableBloqCountDictT' = {
+            QFTPhaseGradient(self.bitsize // 2): 1,
+            QFTPhaseGradient(self.bitsize - (self.bitsize // 2)): 1,
+            PlusEqualProduct(
+                self.bitsize // 2, self.bitsize - (self.bitsize // 2), self.bitsize
+            ): 1,
+        }
         if self.with_reverse:
-            ret |= set([(Swap(1), self.bitsize // 2)])
+            ret[Swap(1)] = self.bitsize // 2
         return ret
 
 

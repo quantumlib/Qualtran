@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -125,7 +125,7 @@ class _ZVector(Bloq):
             op = None
         return op, {'q': np.array([q])}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
 
@@ -431,10 +431,10 @@ class _IntVector(Bloq):
         assert val == self.val, val
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ArbitraryClifford(self.bitsize), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {ArbitraryClifford(self.bitsize): 1}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
@@ -460,9 +460,6 @@ class IntState(_IntVector):
     def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
-    def __str__(self):
-        return f'IntState({self.val})'
-
 
 @bloq_example
 def _int_state() -> IntState:
@@ -487,9 +484,6 @@ class IntEffect(_IntVector):
 
     def __init__(self, val: int, bitsize: int):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
-
-    def __str__(self):
-        return f'IntEffect({self.val})'
 
 
 @bloq_example

@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -53,7 +53,7 @@ from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_spl
 from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -462,7 +462,7 @@ class PrepareTHC(PrepareOracle):
         }
         return out_regs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
         nmu = self.num_mu.bit_length()
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
@@ -478,7 +478,7 @@ class PrepareTHC(PrepareOracle):
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)
         cost_7 = (Toffoli(), 1)
-        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
+        return dict([cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7])
 
 
 @bloq_example

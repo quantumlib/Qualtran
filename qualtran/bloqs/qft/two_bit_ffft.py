@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Set, TYPE_CHECKING
+from typing import Dict, List, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -41,7 +41,7 @@ from qualtran.symbolics.types import SymbolicFloat
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _fkn_matrix(k: int, n: int) -> NDArray[np.complex128]:
@@ -105,13 +105,13 @@ class TwoBitFFFT(Bloq):
             qtn.Tensor(data=matrix.reshape((2,) * 4), inds=out_inds + in_inds, tags=[str(self)])
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (Rz(2 * np.pi * self.k / self.n, eps=self.eps), 1),
-            (SGate(), 3),
-            (Hadamard(), 6),
-            (TGate(), 2),
-            (CNOT(), 3),
+            Rz(2 * np.pi * self.k / self.n, eps=self.eps): 1,
+            SGate(): 3,
+            Hadamard(): 6,
+            TGate(): 2,
+            CNOT(): 3,
         }
 
     def build_composite_bloq(

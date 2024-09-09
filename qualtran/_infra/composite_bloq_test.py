@@ -20,6 +20,7 @@ import cirq
 import networkx as nx
 import numpy as np
 import pytest
+import sympy
 from numpy.typing import NDArray
 
 import qualtran.testing as qlt_testing
@@ -30,6 +31,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -45,6 +47,7 @@ from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.symbolics import SymbolicInt
 
 
 def _manually_make_test_cbloq_cxns():
@@ -417,7 +420,6 @@ def test_test_parallel_combo_decomp():
 
 @pytest.mark.parametrize('cls', [TestSerialCombo, TestParallelCombo])
 def test_copy(cls):
-    assert cls().supports_decompose_bloq()
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
@@ -444,24 +446,24 @@ TestParallelCombo<0>
 --------------------
 Split<1>
   TestParallelCombo<0>.reg -> reg
-  reg[0] -> TestAtom()<2>.q
-  reg[1] -> TestAtom()<3>.q
-  reg[2] -> TestAtom()<4>.q
+  reg[0] -> TestAtom<2>.q
+  reg[1] -> TestAtom<3>.q
+  reg[2] -> TestAtom<4>.q
 --------------------
-TestAtom()<2>
+TestAtom<2>
   Split<1>.reg[0] -> q
   q -> Join<5>.reg[0]
-TestAtom()<3>
+TestAtom<3>
   Split<1>.reg[1] -> q
   q -> Join<5>.reg[1]
-TestAtom()<4>
+TestAtom<4>
   Split<1>.reg[2] -> q
   q -> Join<5>.reg[2]
 --------------------
 Join<5>
-  TestAtom()<2>.q -> reg[0]
-  TestAtom()<3>.q -> reg[1]
-  TestAtom()<4>.q -> reg[2]
+  TestAtom<2>.q -> reg[0]
+  TestAtom<3>.q -> reg[1]
+  TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
     )
 
@@ -505,9 +507,6 @@ def test_flatten():
 
     cbloq3 = cbloq.flatten(lambda binst: True)
     assert len(cbloq3.bloq_instances) == 5 * 2
-
-    cbloq4 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
-    assert len(cbloq4.bloq_instances) == 5 * 2
 
     cbloq5 = cbloq.flatten()
     assert len(cbloq5.bloq_instances) == 5 * 2
@@ -595,6 +594,22 @@ def test_add_and_partition():
     cbloq = bb.finalize(a=a, b=b, c=c)
     assert isinstance(cbloq, CompositeBloq)
     assert len(cbloq.bloq_instances) == 1
+
+
+@attrs.frozen
+class TestSymbolicRegisterShape(Bloq):
+    n: 'SymbolicInt'
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('q', QBit(), shape=(self.n,))])
+
+
+def test_decompose_symbolic_register_shape_raises():
+    n = sympy.Symbol("n")
+    bloq = TestSymbolicRegisterShape(n)
+    with pytest.raises(DecomposeTypeError):
+        bloq.decompose_bloq()
 
 
 @pytest.mark.notebook

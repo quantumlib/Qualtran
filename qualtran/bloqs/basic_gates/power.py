@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,7 +23,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -66,8 +66,8 @@ class Power(GateWithRegisters):
             soqs = bb.add_d(self.bloq, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self.bloq, self.power)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self.bloq: self.power}
 
     def __pow__(self, power) -> 'Power':
         bloq = self.bloq.adjoint() if power < 0 else self.bloq

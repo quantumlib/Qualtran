@@ -13,7 +13,7 @@
 #  limitations under the License.
 import math
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -36,7 +36,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 
@@ -118,12 +118,9 @@ class ModExp(Bloq):
 
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {
-            (IntState(val=1, bitsize=self.x_bitsize), 1),
-            (self._CtrlModMul(k=k), self.exp_bitsize),
-        }
+        return {IntState(val=1, bitsize=self.x_bitsize): 1, self._CtrlModMul(k=k): self.exp_bitsize}
 
     def on_classical_vals(self, exponent: int):
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}

@@ -14,7 +14,7 @@
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile.
 """
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -25,7 +25,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu impor
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -91,12 +91,12 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
-            (PrepareNuStateWithProj(self.num_bits_p, self.num_bits_n, self.m_param), 1),
-            (PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), 1),
+            PrepareNuStateWithProj(self.num_bits_p, self.num_bits_n, self.m_param): 1,
+            PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos): 1,
         }
 
 

@@ -43,7 +43,7 @@ from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic, Shaped
@@ -142,12 +142,12 @@ class ModDbl(Bloq):
             return Text(f'x = 2 * x mod {self.mod}')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            (AddK(self.dtype.bitsize + 2, -self.mod, signed=False), 1),
-            (AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False), 1),
-            (CNOT(), 1),
-            (XGate(), 2),
+            AddK(self.dtype.bitsize + 2, -self.mod, signed=False): 1,
+            AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False): 1,
+            CNOT(): 1,
+            XGate(): 2,
         }
 
 
@@ -229,9 +229,9 @@ class CModMulK(Bloq):
         bb.free(y)
         return {'ctrl': ctrl, 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         k = ssa.new_symbol('k')
-        return {(self._Add(k=k), 2), (CSwap(self.dtype.bitsize), 1)}
+        return {self._Add(k=k): 2, CSwap(self.dtype.bitsize): 1}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl and x < self.mod:

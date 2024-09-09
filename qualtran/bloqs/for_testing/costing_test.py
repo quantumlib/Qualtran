@@ -27,6 +27,5 @@ Algo -- 1 -> Func2
 Func1 -- 10 -> H
 Func1 -- 10 -> T
 Func1 -- 10 -> T†
-Func2 -- 100 -> Toffoli
-Toffoli -- 4 -> T"""
+Func2 -- 100 -> Toffoli"""
     )

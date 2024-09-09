@@ -94,6 +94,9 @@ class ZPowGate(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Z**{self.exponent}'
+
 
 @bloq_example
 def _z_pow() -> ZPowGate:
@@ -193,6 +196,9 @@ class XPowGate(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'X**{self.exponent}'
+
 
 @bloq_example
 def _x_pow() -> XPowGate:
@@ -263,6 +269,9 @@ class YPowGate(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Y**{self.exponent}'
+
 
 @bloq_example
 def _y_pow() -> YPowGate:
@@ -310,6 +319,9 @@ class Rz(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rz({self.angle})'
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
@@ -331,6 +343,9 @@ class Rx(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rx({self.angle})'
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
@@ -351,6 +366,9 @@ class Ry(CirqGateAsBloqBase):
         if reg is None:
             return Text('')
         return TextBox(str(self))
+
+    def __str__(self):
+        return f'Ry({self.angle})'
 
 
 @bloq_example

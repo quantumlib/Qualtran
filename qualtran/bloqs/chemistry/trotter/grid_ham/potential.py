@@ -83,9 +83,6 @@ class PairPotential(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "PairPotential"
-
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -221,9 +218,6 @@ class PotentialEnergy(Bloq):
                 )
             ]
         )
-
-    def pretty_name(self) -> str:
-        return "PotentialEnergy"
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

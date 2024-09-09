@@ -147,14 +147,15 @@ class BloqAsCirqGate(cirq.Gate):
         return self._decompose_with_context_(qubits)
 
     def _unitary_(self):
-        if (
-            all(reg.side == Side.THRU for reg in self.signature)
-            and not self.bloq.supports_decompose_bloq()
-        ):
-            tensor = self.bloq.tensor_contract()
-            if tensor.ndim != 2:
+        if all(reg.side == Side.THRU for reg in self.signature):
+            try:
+                _ = self.bloq.decompose_bloq()  # check for decomposability
                 return NotImplemented
-            return tensor
+            except (DecomposeNotImplementedError, DecomposeTypeError):
+                tensor = self.bloq.tensor_contract()
+                if tensor.ndim != 2:
+                    return NotImplemented
+                return tensor
         return NotImplemented
 
     def on_registers(

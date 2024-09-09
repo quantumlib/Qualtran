@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Set
+from typing import Iterator
 
 import attrs
 import cirq
@@ -23,7 +23,7 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Signat
 from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.swap import TwoBitSwap
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
 from qualtran.symbolics.types import is_symbolic
 
@@ -84,20 +84,17 @@ class QFTTextBook(GateWithRegisters):
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
-        ret: Set['BloqCountT'] = {(Hadamard(), self.bitsize)}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
+        ret: 'MutableBloqCountDictT' = {Hadamard(): self.bitsize}
         if is_symbolic(self.bitsize):
-            ret |= {
-                (
-                    PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True),
-                    self.bitsize // 2,
-                )
-            }
+            ret[PhaseGradientUnitary(self.bitsize - 1, exponent=0.5, is_controlled=True)] = (
+                self.bitsize // 2
+            )
         else:
             for i in range(1, self.bitsize):
-                ret |= {(PhaseGradientUnitary(i, exponent=0.5, is_controlled=True), 1)}
+                ret[PhaseGradientUnitary(i, exponent=0.5, is_controlled=True)] = 1
         if self.with_reverse:
-            ret |= {(TwoBitSwap(), self.bitsize // 2)}
+            ret[TwoBitSwap()] = self.bitsize // 2
         return ret
 
 

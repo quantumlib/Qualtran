@@ -14,7 +14,7 @@
 """Quantum Variable Rotation."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -22,7 +22,7 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -55,10 +55,10 @@ class QuantumVariableRotation(Bloq):
     def pretty_name(self) -> str:
         return 'e^{i*phi}'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
-        return {(Rz(theta), self.phi_bitsize)}
+        return {Rz(theta): self.phi_bitsize}
 
 
 @bloq_example

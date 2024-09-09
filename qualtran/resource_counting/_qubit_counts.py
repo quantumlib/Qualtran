@@ -19,7 +19,7 @@ import networkx as nx
 from attrs import frozen
 
 from qualtran import Bloq, Connection, DanglingT, DecomposeNotImplementedError, DecomposeTypeError
-from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.composite_bloq import _binst_to_cxns, CompositeBloq
 from qualtran.symbolics import smax, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
@@ -104,6 +104,9 @@ class QubitCount(CostKey[SymbolicInt]):
         # Most accurate:
         # Compute the number of qubits ("width") from the bloq's decomposition. We forward
         # the `get_callee_cost` function so this can recurse into subbloqs.
+        if isinstance(bloq, CompositeBloq):
+            logger.info("Computing %s by the passed-in CompositeBloq", self)
+            return _cbloq_max_width(bloq._binst_graph, get_callee_cost)
         try:
             cbloq = bloq.decompose_bloq()
             logger.info("Computing %s for %s from its decomposition", self, bloq)

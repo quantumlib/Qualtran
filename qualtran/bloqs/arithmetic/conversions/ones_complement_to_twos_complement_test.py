@@ -16,18 +16,18 @@ from qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement im
     _signed_to_twos,
     SignedIntegerToTwosComplement,
 )
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 
 
 def test_signed_to_twos(bloq_autotester):
     bloq_autotester(_signed_to_twos)
 
 
-def test_signed_to_twos_complement_t_complexity():
+def test_signed_to_twos_complement_toffoli_count():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('x', bitsize)
     q0 = bb.add(SignedIntegerToTwosComplement(bitsize), x=q0)
     cbloq = bb.finalize(x=q0)
     _, sigma = cbloq.call_graph()
-    assert sigma[TGate()] == 4 * (5 - 2)
+    assert sigma[Toffoli()] == (5 - 2)

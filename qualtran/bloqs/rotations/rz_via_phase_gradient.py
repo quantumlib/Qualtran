@@ -26,7 +26,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.controlled_add_or_subtract import ControlledAddOrSubtract
 from qualtran.bloqs.bookkeeping import Cast
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -99,8 +99,8 @@ class RzViaPhaseGradient(Bloq):
 
         return {'q': q, 'angle': angle, 'phase_grad': phase_grad}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        return {(ControlledAddOrSubtract(self._angle_int_dtype, self._phasegrad_int_dtype), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {ControlledAddOrSubtract(self._angle_int_dtype, self._phasegrad_int_dtype): 1}
 
 
 @bloq_example

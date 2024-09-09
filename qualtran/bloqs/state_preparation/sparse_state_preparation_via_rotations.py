@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Set, TYPE_CHECKING, Union
+from typing import Sequence, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import scipy
 
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -193,8 +193,8 @@ class SparseStatePreparationViaRotations(Bloq):
 
         return {'target_state': target_state, 'phase_gradient': phase_gradient}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self._dense_stateprep_bloq, 1), (self._basis_permutation_bloq, 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self._dense_stateprep_bloq: 1, self._basis_permutation_bloq: 1}
 
 
 @bloq_example

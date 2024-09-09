@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -23,7 +23,7 @@ from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -85,9 +85,9 @@ class ToContiguousIndex(Bloq):
             text = r'⊕ν(ν-1)/2+μ'
             return TextBox(text)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return {(Toffoli(), num_toffoli)}
+        return {Toffoli(): num_toffoli}
 
 
 @bloq_example
