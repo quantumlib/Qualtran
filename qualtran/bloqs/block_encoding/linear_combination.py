@@ -329,7 +329,7 @@ class LinearCombination(BlockEncoding):
         return out
 
     def __str__(self) -> str:
-        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.signed_block_encodings)}]"
+        return f"B[{'+'.join(str(be)[2:-1] for be in self.signed_block_encodings)}]"
 
 
 @bloq_example

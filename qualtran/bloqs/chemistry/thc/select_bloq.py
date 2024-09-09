@@ -91,7 +91,7 @@ class THCRotations(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 

@@ -94,7 +94,7 @@ class ChebyshevPolynomial(BlockEncoding):
         )
 
     def pretty_name(self) -> str:
-        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
+        return f"B[T_{self.order}({self.block_encoding})]"
 
     @property
     def system_bitsize(self) -> SymbolicInt:
@@ -272,7 +272,7 @@ class ScaledChebyshevPolynomial(BlockEncoding):
         return bb.add_d(self.linear_combination, **soqs)
 
     def __str__(self) -> str:
-        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
+        return f"B[T_{self.order}({self.block_encoding})]"
 
 
 @bloq_example
