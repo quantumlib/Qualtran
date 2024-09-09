@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -26,7 +26,7 @@ from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -96,14 +96,13 @@ class HammingWeightPhasing(GateWithRegisters):
     def pretty_name(self) -> str:
         return f'HWP_{self.bitsize}(Z^{self.exponent})'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (HammingWeightCompute(self.bitsize), 1),
-            (HammingWeightCompute(self.bitsize).adjoint(), 1),
-            (
-                ZPowGate(exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()),
-                self.bitsize.bit_length(),
-            ),
+            HammingWeightCompute(self.bitsize): 1,
+            HammingWeightCompute(self.bitsize).adjoint(): 1,
+            ZPowGate(
+                exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()
+            ): self.bitsize.bit_length(),
         }
 
 

@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 import attrs
 import networkx as nx
@@ -26,9 +27,11 @@ from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import (
+    BloqCountDictT,
     BloqCountT,
     get_bloq_call_graph,
     get_bloq_callee_counts,
+    MutableBloqCountDictT,
     SympySymbolAllocator,
 )
 from qualtran.resource_counting.generalizers import generalize_rotation_angle
@@ -43,8 +46,8 @@ class BigBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
-        return {(SubBloq(unrelated_param=0.5), sympy.log(self.bitsize))}
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
+        return {SubBloq(unrelated_param=0.5): sympy.log(self.bitsize)}
 
 
 @frozen
@@ -71,8 +74,8 @@ class SubBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 3)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TGate(): 3}
 
 
 def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
@@ -148,10 +151,13 @@ class OnlyCallGraphBloqShim(Bloq):
     def signature(self) -> 'Signature':
         return Signature([])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return set(self.callees)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        counts: 'MutableBloqCountDictT' = defaultdict(int)
+        for bloq, count in self.callees:
+            counts[bloq] += count
+        return counts
 
-    def pretty_name(self):
+    def __str__(self):
         return self.name
 
 

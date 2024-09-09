@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -21,7 +21,7 @@ from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -68,14 +68,14 @@ class PreparePowerTwoStateWithProj(Bloq):
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize_n)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
-            return {(Toffoli(), (self.bitsize_n - 2))}
+            return {Toffoli(): (self.bitsize_n - 2)}
         else:
             # The doubly controlled hadamard can be converted to and And and a
             # controlled Hadamard, with the And gate being inverted at zero
             # Toffoli cost.
-            return {(Toffoli(), (self.bitsize_n - 2) + self.bitsize_n - self.bitsize_p)}
+            return {Toffoli(): (self.bitsize_n - 2) + self.bitsize_n - self.bitsize_p}
 
 
 @frozen
@@ -128,32 +128,29 @@ class PrepareTFirstQuantizationWithProj(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # there is a cost for the uniform state preparation for the $w$
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq
         # 13 is from assuming 8 bits for the rotation, and n = 2.
-        uni_prep_w = (Toffoli(), 13)
+        uni_prep_w = 13
         # Factor of two for r and s registers.
-        ctrl_mom = (
-            PreparePowerTwoStateWithProj(
-                bitsize_n=self.num_bits_n, bitsize_p=self.num_bits_p, is_adjoint=self.is_adjoint
-            ),
-            2,
+        ctrl_mom_gate = PreparePowerTwoStateWithProj(
+            bitsize_n=self.num_bits_n, bitsize_p=self.num_bits_p, is_adjoint=self.is_adjoint
         )
         # Inequality test can be inverted at zero cost
         if self.is_adjoint:
             # pg 31 (Appendix A. Sec 2 c)
-            k_k_proj = (Toffoli(), 0)
+            k_k_proj = 0
         else:
             # Cost for preparing a state for selecting the components of k_p^w k_proj^w
             # Prepare a uniform superposition over 8 states and do 2 inequality
             # tests to select between x, y and z.
             # built on w_proj above
-            k_k_proj = (Toffoli(), 16)
+            k_k_proj = 16
         # pg 31 (Appendix A. Sec 2 c)
-        ctrl_swap = (Toffoli(), 2)
-        return {uni_prep_w, ctrl_mom, k_k_proj, ctrl_swap}
+        ctrl_swap = 2
+        return {Toffoli(): uni_prep_w + k_k_proj + ctrl_swap, ctrl_mom_gate: 2}
 
 
 @bloq_example
