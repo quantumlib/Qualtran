@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -55,7 +55,7 @@ from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -106,12 +106,12 @@ class PrepareTUVSuperpositions(Bloq):
     def pretty_name(self) -> str:
         return 'PREP TUV'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
-            return set()
+            return {}
         else:
-            return {(Toffoli(), 6 * self.num_bits_t + 2)}
+            return {Toffoli(): 6 * self.num_bits_t + 2}
 
 
 @frozen

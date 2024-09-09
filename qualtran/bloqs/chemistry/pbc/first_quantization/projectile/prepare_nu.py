@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for preparing the $\nu$ state for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -30,7 +30,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -77,11 +77,11 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
-            return {(Toffoli(), (self.bitsize_n - 1) + 1)}
+            return {Toffoli(): (self.bitsize_n - 1) + 1}
         else:
-            return {(Toffoli(), (self.bitsize_n - 1) + (self.bitsize_n - self.bitsize_p - 1) + 1)}
+            return {Toffoli(): (self.bitsize_n - 1) + (self.bitsize_n - self.bitsize_p - 1) + 1}
 
 
 @frozen
@@ -154,7 +154,7 @@ class PrepareNuStateWithProj(Bloq):
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # 1. Prepare unary encoded superposition state (Eq 77)
         cost_1 = (PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
@@ -167,7 +167,7 @@ class PrepareNuStateWithProj(Bloq):
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
         cost_6 = (TestNuInequality(self.num_bits_n, n_m), 1)
-        return {cost_1, cost_2, cost_3, cost_4, cost_6}
+        return dict([cost_1, cost_2, cost_3, cost_4, cost_6])
 
 
 @bloq_example

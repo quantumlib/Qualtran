@@ -15,7 +15,7 @@
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -29,7 +29,7 @@ from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat,
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -73,7 +73,7 @@ class LPRSInterimPrep(GateWithRegisters):
         anc = bb.add(Hadamard(), q=anc)
         return {'m': bb.join(q[::-1]), 'anc': anc}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
         ret: Counter['Bloq'] = Counter()
         ret[Rz(angle=rz_angle)] += 1
@@ -84,7 +84,7 @@ class LPRSInterimPrep(GateWithRegisters):
         else:
             for i in range(self.bitsize):
                 ret[Rz(angle=rz_angle * (2**i)).controlled()] += 1
-        return set(ret.items())
+        return ret
 
 
 @attrs.frozen
@@ -172,19 +172,19 @@ class LPResourceState(QPEWindowStateBase):
         bb.free(anc)
         return {'qpe_reg': qpe_reg}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         flag_angle = acos(1 / (1 + 2**self.bitsize))
         reflection_bloq: 'Bloq' = ReflectionUsingPrepare.reflection_around_zero(
             [1, 1, self.bitsize], global_phase=1j
         )
         return {
-            (LPRSInterimPrep(self.bitsize), 2),
-            (LPRSInterimPrep(self.bitsize).adjoint(), 1),
-            (Ry(angle=flag_angle), 2),
-            (Ry(angle=-1 * flag_angle), 1),
-            (reflection_bloq, 1),
-            (XGate(), 2),
-            (CZ(), 1),
+            LPRSInterimPrep(self.bitsize): 2,
+            LPRSInterimPrep(self.bitsize).adjoint(): 1,
+            Ry(angle=flag_angle): 2,
+            Ry(angle=-1 * flag_angle): 1,
+            reflection_bloq: 1,
+            XGate(): 2,
+            CZ(): 1,
         }
 
 

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -22,7 +22,7 @@ from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -33,6 +33,6 @@ class TestBloqWithCallGraph(Bloq):
     def signature(self) -> Signature:
         return Signature.build()
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = ssa.new_symbol('n')
-        return {(TestParallelCombo(), 1), (TestSerialCombo(), 1), (TestAtom(), n)}
+        return {TestParallelCombo(): 1, TestSerialCombo(): 1, TestAtom(): n}

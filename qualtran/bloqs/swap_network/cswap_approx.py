@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterator, Set, TYPE_CHECKING
+from typing import Dict, Iterator, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -32,7 +32,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -105,16 +105,12 @@ class CSwapApprox(GateWithRegisters):
             ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return {
-            (TGate(), 4 * n),
-            (ArbitraryClifford(n=1), 16 * n),
-            (ArbitraryClifford(n=2), 6 * n - 1),
-        }
+        return {TGate(): 4 * n, ArbitraryClifford(n=1): 16 * n, ArbitraryClifford(n=2): 6 * n - 1}
 
 
 @bloq_example

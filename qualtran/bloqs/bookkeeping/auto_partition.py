@@ -99,9 +99,6 @@ class AutoPartition(Bloq):
         else:
             return Signature(r for r, _ in self.partitions)
 
-    def pretty_name(self) -> str:
-        return self.bloq.pretty_name()
-
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         parts: Dict[str, Partition] = dict()
         in_regs: Dict[str, SoquetT] = dict()
@@ -140,6 +137,9 @@ class AutoPartition(Bloq):
                 },
             )
         return out_regs
+
+    def __str__(self) -> str:
+        return str(self.bloq)
 
 
 @bloq_example

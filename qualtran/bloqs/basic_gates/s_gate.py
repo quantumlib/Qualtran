@@ -78,14 +78,14 @@ class SGate(Bloq):
         p = -1 if self.is_adjoint else 1
         return cirq.S(q) ** p, {'q': np.array([q])}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         maybe_dag = '†' if self.is_adjoint else ''
         return f'S{maybe_dag}'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(self.pretty_name())
+        return TextBox(str(self))
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
