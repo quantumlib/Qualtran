@@ -15,6 +15,7 @@
 """Functionality for the `Bloq.call_graph()` protocol."""
 
 import collections.abc
+import warnings
 from collections import defaultdict
 from typing import (
     Callable,
@@ -92,6 +93,10 @@ def _generalize_callees(
     callee_counts: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     if isinstance(raw_callee_counts, set):
         raw_callee_iterator: Iterable[BloqCountT] = raw_callee_counts
+        warnings.warn(
+            "build_call_graph returning sets is deprecated (got {raw_callee_counts})."
+            "Please change build_call_graph for this bloq to use a dictionary."
+        )
     else:
         raw_callee_iterator = raw_callee_counts.items()
     for callee, n in raw_callee_iterator:
