@@ -39,15 +39,19 @@ SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
 
 def find_optimal_log_block_size(
-    iteration_length: SymbolicInt, target_bitsize: SymbolicInt
+    iteration_length: SymbolicInt, target_bitsize: SymbolicInt, use_dirty_ancilla: bool = False
 ) -> SymbolicInt:
     """Find optimal block size, which is a power of 2, for SelectSwapQROM.
 
     This functions returns the optimal `k` s.t.
         * k is in an integer and k >= 0.
-        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
+        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized if use_dirty_ancilla is False
+        * iteration_length/2^k + 2*target_bitsize*(2^k - 1) is minimized if use_dirty_ancilla is True
+
     The corresponding block size for SelectSwapQROM would be 2^k.
     """
+    if not use_dirty_ancilla:
+        target_bitsize = 2 * target_bitsize
     k: SymbolicFloat = 0.5 * log2(iteration_length / target_bitsize)
     if is_symbolic(k):
         return ceil(k)
@@ -142,7 +146,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         target_bitsize = sum(self.target_bitsizes) * sum(
             prod(shape) for shape in self.target_shapes
         )
-        return tuple(find_optimal_log_block_size(ilen, target_bitsize) for ilen in self.data_shape)
+        return tuple(
+            find_optimal_log_block_size(ilen, target_bitsize, True) for ilen in self.data_shape
+        )
 
     def is_symbolic(self) -> bool:
         return super().is_symbolic() or is_symbolic(*self.log_block_sizes)
@@ -187,7 +193,14 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
     ) -> 'SelSwapQROM_T':
         if log_block_sizes is None:
-            return self
+            if self.use_dirty_ancilla:
+                return self
+            target_bitsize = sum(self.target_bitsizes) * sum(
+                prod(shape) for shape in self.target_shapes
+            )
+            log_block_sizes = tuple(
+                find_optimal_log_block_size(ilen, target_bitsize, False) for ilen in self.data_shape
+            )
         if isinstance(log_block_sizes, (int, sympy.Basic, numbers.Number)):
             log_block_sizes = (log_block_sizes,)
         if not is_symbolic(*log_block_sizes):
