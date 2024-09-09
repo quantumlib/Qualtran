@@ -14,12 +14,13 @@
 
 import numbers
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
 import sympy
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -39,7 +40,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic import Add, AddK, CAdd, Xor
 from qualtran.bloqs.arithmetic.comparison import LessThanConstant
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
-from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -276,6 +277,131 @@ _C_MOD_MUL_K_DOC = BloqDocSpec(bloq_cls=CModMulK, examples=(_modmul_symb, _modmu
 
 
 @frozen
+class SingleWindowedModMul(Bloq):
+    r"""Performs modular multiplication on a single windowed.
+
+    Applies
+    $$
+        \ket{x}\key{y}\key{t}\ket{0} \rightarrow \ket{x}\key{y}\ket{t+xy \mod p} \ket{xy \mod 2^w}
+    $$
+
+    Where:
+
+    - $w$ is the window size.
+    - $p$ is the modulus.
+
+    Args:
+        bitsize: size of the numbers.
+        window_size: size of the window.
+        mod: The integer modulus.
+
+    Registers:
+        x: The first integer (`window_size` bits).
+        y: The second integer (`bitsize` bits)
+        target: product accumulator.
+        qrom_index: contains the value $xy \mod 2^w$ (starts at 0).
+    """
+
+    window_size: 'SymbolicInt'
+    bitsize: 'SymbolicInt'
+    mod: 'SymbolicInt'
+
+    def __post_init__(self):
+        assert self.bitsize % self.window_size == 0
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', QBit(), shape=(self.window_size,)),
+                Register('y', QMontgomeryUInt(self.bitsize)),
+                Register('target', QBit(), shape=(self.window_size + self.bitsize,)),
+                Register('qrom_index', QMontgomeryUInt(self.window_size)),
+            ]
+        )
+
+    @cached_property
+    def qrom(self) -> QROAMClean:
+        if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
+            log_block_sizes = None
+            if is_symbolic(self.bitsize) and not is_symbolic(self.window_size):
+                # We assume that bitsize is much larger than window_size
+                log_block_sizes = (0,)
+            return QROAMClean(
+                [Shaped((2**self.window_size,))],
+                selection_bitsizes=(self.window_size,),
+                target_bitsizes=(self.window_size + self.bitsize,),
+                log_block_sizes=log_block_sizes,
+            )
+        inv_mod = pow(self.mod, 2 ** (self.window_size - 1) - 1, 2**self.window_size)
+        N = 2**self.window_size
+        data = (-np.arange(N) * inv_mod) % N
+        data *= self.mod
+        return QROAMClean(
+            [data],
+            selection_bitsizes=(self.window_size,),
+            target_bitsizes=(self.window_size + self.bitsize,),
+        )
+
+    def on_classical_vals(self, x: Sequence[int], y: int, target: Sequence[int], qrom_index: int):
+        if is_symbolic(self.bitsize) or is_symbolic(self.window_size):
+            raise ValueError(f'classical action is not supported for {self}')
+        dtype = QMontgomeryUInt(self.window_size + self.bitsize)
+        target_val = QMontgomeryUInt.from_bits(dtype, target)
+        for i in range(self.window_size):
+            if x[i]:
+                target_val += y << i
+        qrom_index = target_val & (2**self.window_size - 1)
+        Tm = self.qrom.data[0][qrom_index]
+        target_val = (target_val + Tm) >> self.window_size
+        target = QMontgomeryUInt.to_bits(dtype, target_val)
+        return {'target': target, 'qrom_index': qrom_index, 'x': x, 'y': y}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: NDArray[Soquet], y: Soquet, target: NDArray[Soquet], qrom_index: Soquet  # type: ignore[type-var]
+    ):
+        if is_symbolic(self.window_size):
+            raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
+        for i in range(self.window_size):
+            z = bb.join(target[-self.bitsize - 1 - i : len(target) - i])
+            x[i], y, z = bb.add(
+                CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)),
+                ctrl=x[i],
+                a=y,
+                b=z,
+            )
+            z_arr = bb.split(z)
+            target[-self.bitsize - 1 - i : len(target) - i] = z_arr
+
+        m = bb.join(target[-self.window_size :], QMontgomeryUInt(self.window_size))
+        m, qrom_index = bb.add(Xor(QMontgomeryUInt(self.window_size)), x=m, y=qrom_index)
+        target[-self.window_size :] = bb.split(m)
+
+        qrom_index, qrom_target = bb.add(self.qrom, selection=qrom_index)
+        z = bb.join(target)
+        qrom_target, z = bb.add(
+            Add(QMontgomeryUInt(self.bitsize + self.window_size)), a=qrom_target, b=z
+        )
+        qrom_index = bb.add(self.qrom.adjoint(), selection=qrom_index, target0_=qrom_target)
+        target_arr = bb.split(z)
+        target_arr = np.roll(target_arr, self.window_size)
+
+        return {'x': x, 'y': y, 'target': target_arr, 'qrom_index': qrom_index}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (
+                CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)),
+                self.window_size,
+            ),
+            (Xor(QMontgomeryUInt(self.window_size)), 1),
+            (Add(QMontgomeryUInt(self.bitsize + self.window_size)), 1),
+            (self.qrom, 1),
+            (self.qrom.adjoint(), 1),
+        }
+
+
+@frozen
 class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     r"""Perform windowed montgomery modular multiplication.
 
@@ -343,54 +469,8 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         )
 
     @cached_property
-    def _lookup_qrom(self) -> QROM:
-        if is_symbolic(self.window_size) or is_symbolic(self.mod):
-            return QROM(
-                [Shaped((2**self.window_size,))],
-                selection_bitsizes=(self.window_size,),
-                target_bitsizes=(self.window_size + self.bitsize,),
-            )
-        inv_mod = pow(self.mod, 2 ** (self.window_size - 1) - 1, 2**self.window_size)
-        N = 2**self.window_size
-        data = (-np.arange(N) * inv_mod) % N
-        data *= self.mod
-        return QROM(
-            [data],
-            selection_bitsizes=(self.window_size,),
-            target_bitsizes=(self.window_size + self.bitsize,),
-        )
-
-    def _apply_window(
-        self, bb, x_arr, y: Soquet, target_arr, qrom_index: Soquet, qrom_target: Soquet
-    ):
-        if is_symbolic(self.window_size):
-            raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
-        for i in range(self.window_size):
-            z = bb.join(target_arr[-self.bitsize - 1 - i : len(target_arr) - i])
-            x_arr[i], y, z = bb.add(
-                CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)),
-                ctrl=x_arr[i],
-                a=y,
-                b=z,
-            )
-            z_arr = bb.split(z)
-            target_arr[-self.bitsize - 1 - i : len(target_arr) - i] = z_arr
-
-        m = bb.join(target_arr[-self.window_size :], QMontgomeryUInt(self.window_size))
-        m, qrom_index = bb.add(Xor(QMontgomeryUInt(self.window_size)), x=m, y=qrom_index)
-        target_arr[-self.window_size :] = bb.split(m)
-
-        qrom = self._lookup_qrom
-        qrom_index, qrom_target = bb.add(qrom, selection=qrom_index, target0_=qrom_target)
-        z = bb.join(target_arr)
-        qrom_target, z = bb.add(
-            Add(QMontgomeryUInt(self.bitsize + self.window_size)), a=qrom_target, b=z
-        )
-        qrom_index, qrom_target = bb.add(qrom.adjoint(), selection=qrom_index, target0_=qrom_target)
-        target_arr = bb.split(z)
-        target_arr = np.roll(target_arr, self.window_size)
-
-        return x_arr, y, target_arr, qrom_index, qrom_target
+    def _window(self):
+        return SingleWindowedModMul(self.window_size, self.bitsize, self.mod)
 
     def build_composite_bloq(
         self,
@@ -405,32 +485,21 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
             raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
         x_arr = bb.split(x)
         x_arr = np.flip(x_arr)
-        qrom_target = bb.allocate(
-            self.window_size + self.bitsize, QMontgomeryUInt(self.window_size + self.bitsize)
-        )
 
         target_arr = np.concatenate([bb.split(bb.allocate(self.window_size)), bb.split(target)])
         qrom_indices_arr = bb.split(qrom_indices)
 
         for i in range(0, self.bitsize, self.window_size):
-            (
-                x_arr[i : i + self.window_size],
-                y,
-                target_arr,
-                qrom_index,
-                qrom_target,
-            ) = self._apply_window(
-                bb,
-                x_arr[i : i + self.window_size],
-                y,
-                target_arr,
-                bb.join(qrom_indices_arr[i : i + self.window_size]),
-                qrom_target,
+            (x_arr[i : i + self.window_size], y, target_arr, qrom_index) = bb.add(
+                self._window,
+                x=x_arr[i : i + self.window_size],
+                y=y,
+                target=target_arr,
+                qrom_index=bb.join(qrom_indices_arr[i : i + self.window_size]),
             )
             qrom_indices_arr[i : i + self.window_size] = bb.split(qrom_index)
 
         # Free ancillas and join
-        bb.free(qrom_target)
         bb.free(bb.join(target_arr[: -self.bitsize]))
         x_arr = np.flip(x_arr[: self.bitsize])
         x = bb.join(x_arr)
@@ -449,13 +518,10 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_windows = (self.bitsize + self.window_size - 1) // self.window_size
         return {
-            (self._lookup_qrom, 2 * num_windows),
             (AddK(self.bitsize, self.mod, cvs=(1,), signed=False), 1),
             (LessThanConstant(bitsize=self.bitsize, less_than_val=self.mod), 1),
-            (Add(QMontgomeryUInt(self.bitsize + self.window_size)), num_windows),
-            (CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)), self.bitsize),
-            (Xor(QMontgomeryUInt(self.window_size)), num_windows),
             (XGate(), 1),
+            (self._window, num_windows),
         }
 
 
@@ -656,7 +722,7 @@ def _dirtyoutofplacemontgomerymodmul_small() -> DirtyOutOfPlaceMontgomeryModMul:
 @bloq_example(generalizer=[ignore_alloc_free, ignore_split_join])
 def _dirtyoutofplacemontgomerymodmul_medium() -> DirtyOutOfPlaceMontgomeryModMul:
     dirtyoutofplacemontgomerymodmul_medium = DirtyOutOfPlaceMontgomeryModMul(
-        bitsize=15, window_size=4, mod=2**15 - 1
+        bitsize=16, window_size=4, mod=2**15 - 1
     )
     return dirtyoutofplacemontgomerymodmul_medium
 

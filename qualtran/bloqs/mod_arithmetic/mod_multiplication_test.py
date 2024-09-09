@@ -139,7 +139,6 @@ def test_examples_dirtyoutofplacemontgomerymodmul_small(bloq_autotester):
     bloq_autotester(_dirtyoutofplacemontgomerymodmul_small)
 
 
-@pytest.mark.slow
 def test_examples_dirtyoutofplacemontgomerymodmul_medium(bloq_autotester):
     bloq_autotester(_dirtyoutofplacemontgomerymodmul_medium)
 
@@ -182,11 +181,11 @@ def test_dirtyoutofplacemontgomerymodmul_symbolic_cost(uncompute):
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
     # Figure/Table 8. Lists modular multiplication as 2.25n^2+9n toffoli.
-    # The following formula is 2.25n^2+9.75n-1 written with rationals because sympy comparison fails with floats.
+    # The following formula is 2.25n^2+8.25n-1 written with rationals because sympy comparison fails with floats.
     assert isinstance(cost['n_ccz'], sympy.Expr)
     assert (
         cost['n_ccz'].subs(m, n / 4).expand()
-        == sympy.Rational(9, 4) * n**2 + sympy.Rational(39, 4) * n - 1
+        == sympy.Rational(9, 4) * n**2 + sympy.Rational(33, 4) * n - 1
     )
 
 
