@@ -13,16 +13,17 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterator, TYPE_CHECKING
+from typing import Dict, Iterator, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
@@ -93,8 +94,10 @@ class CSwapApprox(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def pretty_name(self) -> str:
-        return '~swap'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('~swap')
+        return super().wire_symbol(reg, idx)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:

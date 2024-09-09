@@ -176,7 +176,7 @@ class TensorProduct(BlockEncoding):
         return soqs_out
 
     def __str__(self) -> str:
-        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
+        return f"B[{'⊗'.join(str(u)[2:-1] for u in self.block_encodings)}]"
 
 
 @bloq_example
