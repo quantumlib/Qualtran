@@ -232,3 +232,14 @@ def test_tensor_contraction(use_dirty_ancilla: bool):
     )
     qrom = QROM.build_from_data(data)
     np.testing.assert_allclose(qrom.tensor_contract(), qroam.tensor_contract(), atol=1e-8)
+
+
+def test_select_swap_block_sizes():
+    data = [*range(1600)]
+    qroam_opt = SelectSwapQROM.build_from_data(data)
+    qroam_subopt = SelectSwapQROM.build_from_data(data, log_block_sizes=(8,))
+    assert qroam_opt.block_sizes == (16,)
+    assert qroam_opt.t_complexity().t < qroam_subopt.t_complexity().t
+
+    qroam = SelectSwapQROM.build_from_data(data, use_dirty_ancilla=False)
+    assert qroam.block_sizes == (8,)
