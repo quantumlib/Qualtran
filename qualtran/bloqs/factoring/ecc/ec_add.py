@@ -29,7 +29,7 @@ from qualtran.bloqs.mod_arithmetic import (
     ModSub,
 )
 from qualtran.bloqs.mod_arithmetic._shims import ModInv
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -72,19 +72,19 @@ class ECAdd(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         # litinksi
         return {
-            (MultiCToffoli(n=self.n), 18),
-            (ModAdd(bitsize=self.n, mod=self.mod), 3),
-            (CModAdd(QUInt(self.n), mod=self.mod), 2),
-            (ModSub(QUInt(self.n), mod=self.mod), 2),
-            (CModSub(QUInt(self.n), mod=self.mod), 4),
-            (ModNeg(QUInt(self.n), mod=self.mod), 2),
-            (CModNeg(QUInt(self.n), mod=self.mod), 1),
-            (ModDbl(QUInt(self.n), mod=self.mod), 2),
-            (DirtyOutOfPlaceMontgomeryModMul(bitsize=self.n, window_size=4, mod=self.mod), 10),
-            (ModInv(n=self.n, mod=self.mod), 4),
+            MultiCToffoli(n=self.n): 18,
+            ModAdd(bitsize=self.n, mod=self.mod): 3,
+            CModAdd(QUInt(self.n), mod=self.mod): 2,
+            ModSub(QUInt(self.n), mod=self.mod): 2,
+            CModSub(QUInt(self.n), mod=self.mod): 4,
+            ModNeg(QUInt(self.n), mod=self.mod): 2,
+            CModNeg(QUInt(self.n), mod=self.mod): 1,
+            ModDbl(QUInt(self.n), mod=self.mod): 2,
+            DirtyOutOfPlaceMontgomeryModMul(bitsize=self.n, window_size=4, mod=self.mod): 10,
+            ModInv(n=self.n, mod=self.mod): 4,
         }
 
 
