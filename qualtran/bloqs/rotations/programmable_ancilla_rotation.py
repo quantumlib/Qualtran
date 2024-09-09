@@ -138,7 +138,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
 
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
-            eps = ssa.new_symbol(r"\epsilon")
+            eps = self.eps / n_rz
             resources[ZPowProgrammedAncilla(phi, eps)] += self.n_rounds
         else:
             for i in range(int(self.n_rounds)):
