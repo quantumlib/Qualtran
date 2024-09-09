@@ -236,6 +236,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.batched_data_permuted),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
         else:
             return QROAMCleanAdjoint.build_from_bitsize(
@@ -244,6 +245,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.target_bitsizes),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
