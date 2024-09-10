@@ -13,13 +13,14 @@
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -56,8 +57,10 @@ class ApplyNuclearPhase(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'-e^(-k_ν⋅R_l)'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'-e^(-k_ν⋅R_l)')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_p = self.num_bits_p
@@ -111,8 +114,10 @@ class SelectUVFirstQuantization(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'SEL UV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SEL UV")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
