@@ -21,7 +21,7 @@ from attrs import field, frozen
 from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate, ZPowGate
 from qualtran.bloqs.basic_gates._shims import Measure
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 
@@ -131,14 +131,14 @@ class ZPowUsingProgrammedAncilla(Bloq):
         n_rounds = ceil(log2(1 / max_fail_probability))
         return cls(exponent=exponent, eps=eps, n_rounds=n_rounds)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         resources: Counter[Bloq] = Counter({CNOT(): self.n_rounds, XGate(): self.n_rounds})
 
         n_rz = self.n_rounds + (1 if self.apply_final_correction else 0)
 
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
-            eps = ssa.new_symbol(r"\epsilon")
+            eps = self.eps / n_rz
             resources[ZPowProgrammedAncilla(phi, eps)] += self.n_rounds
         else:
             for i in range(int(self.n_rounds)):
@@ -149,7 +149,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
 
         resources[Measure()] += self.n_rounds
 
-        return set(resources.items())
+        return resources
 
 
 @bloq_example

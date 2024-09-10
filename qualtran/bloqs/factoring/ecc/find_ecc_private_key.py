@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 import sympy
 from attrs import frozen
@@ -21,7 +21,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signature, SoquetT
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.bookkeeping import Free
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
 
 from .ec_phase_estimate_r import ECPhaseEstimateR
@@ -103,12 +103,12 @@ class FindECCPrivateKey(Bloq):
         bb.add(Free(QUInt(self.n)), reg=y)
         return {}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         Rx = ssa.new_symbol('Rx')
         Ry = ssa.new_symbol('Ry')
         generic_point = ECPoint(Rx, Ry, mod=self.mod, curve_a=self.curve_a)
 
-        return {(ECPhaseEstimateR(n=self.n, point=generic_point), 2)}
+        return {ECPhaseEstimateR(n=self.n, point=generic_point): 2}
 
     def cost_attrs(self):
         return [('n', self.n)]

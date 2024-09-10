@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Sequence, Set, Tuple
+from typing import Any, Sequence, Tuple
 
 from attrs import field, frozen
 
 from qualtran import Bloq, Signature
-from qualtran.resource_counting import BloqCountT, CostKey, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, BloqCountT, CostKey, SympySymbolAllocator
 
 
 def _convert_callees(callees: Sequence[BloqCountT]) -> Tuple[BloqCountT, ...]:
@@ -46,14 +46,11 @@ class CostingBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(register=self.num_qubits)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return set(self.callees)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return dict(self.callees)
 
     def my_static_costs(self, cost_key: 'CostKey'):
         return dict(self.static_costs).get(cost_key, NotImplemented)
-
-    def pretty_name(self):
-        return self.name
 
     def __str__(self):
         return self.name

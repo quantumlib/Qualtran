@@ -11,18 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import (
     _select_uv,
     SelectUVFirstQuantization,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_select_uv(bloq_autotester):
     bloq_autotester(_select_uv)
 
 
-def test_select_uv_t_counts():
+def test_select_uv_toffoli_counts():
     num_bits_p = 6
     eta = 10
     num_bits_nuc_pos = 8
@@ -30,7 +30,6 @@ def test_select_uv_t_counts():
         2 * num_bits_p * num_bits_nuc_pos - num_bits_p * (num_bits_p + 1) - 1
     )
     sel = SelectUVFirstQuantization(num_bits_p, eta, eta, num_bits_nuc_pos)
-    _, counts = sel.call_graph()
-    qual_cost = counts[TGate()] // 4
+    qual_cost = get_cost_value(sel, QECGatesCost()).total_toffoli_only()
     # + 6 as they cost additon as nbits not nbits - 1, there are 6 additions / subtractions.
     assert qual_cost + 6 == expected_cost

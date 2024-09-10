@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap
@@ -88,14 +88,14 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            Register('U', BoundedQUInt(1, 2)),
-            Register('V', BoundedQUInt(1, 2)),
-            Register('p_x', BoundedQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
-            Register('p_y', BoundedQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
-            Register('alpha', BoundedQUInt(1, 2)),
-            Register('q_x', BoundedQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
-            Register('q_y', BoundedQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
-            Register('beta', BoundedQUInt(1, 2)),
+            Register('U', BQUInt(1, 2)),
+            Register('V', BQUInt(1, 2)),
+            Register('p_x', BQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
+            Register('p_y', BQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
+            Register('alpha', BQUInt(1, 2)),
+            Register('q_x', BQUInt((self.x_dim - 1).bit_length(), self.x_dim)),
+            Register('q_y', BQUInt((self.y_dim - 1).bit_length(), self.y_dim)),
+            Register('beta', BQUInt(1, 2)),
         )
 
     @cached_property
@@ -120,13 +120,9 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
 
         yield SelectedMajoranaFermion(
             selection_regs=(
-                Register('alpha', BoundedQUInt(1, 2)),
-                Register(
-                    'p_y', BoundedQUInt(self.signature.get_left('p_y').total_bits(), self.y_dim)
-                ),
-                Register(
-                    'p_x', BoundedQUInt(self.signature.get_left('p_x').total_bits(), self.x_dim)
-                ),
+                Register('alpha', BQUInt(1, 2)),
+                Register('p_y', BQUInt(self.signature.get_left('p_y').total_bits(), self.y_dim)),
+                Register('p_x', BQUInt(self.signature.get_left('p_x').total_bits(), self.x_dim)),
             ),
             control_regs=self.control_registers,
             target_gate=cirq.Y,
@@ -137,9 +133,9 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
         yield CSwap.make_on(ctrl=V, x=alpha, y=beta)
 
         q_selection_regs = (
-            Register('beta', BoundedQUInt(1, 2)),
-            Register('q_y', BoundedQUInt(self.signature.get_left('q_y').total_bits(), self.y_dim)),
-            Register('q_x', BoundedQUInt(self.signature.get_left('q_x').total_bits(), self.x_dim)),
+            Register('beta', BQUInt(1, 2)),
+            Register('q_y', BQUInt(self.signature.get_left('q_y').total_bits(), self.y_dim)),
+            Register('q_x', BQUInt(self.signature.get_left('q_x').total_bits(), self.x_dim)),
         )
         yield SelectedMajoranaFermion(
             selection_regs=q_selection_regs, control_regs=self.control_registers, target_gate=cirq.X
@@ -162,12 +158,8 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
 
         yield ApplyGateToLthQubit(
             selection_regs=(
-                Register(
-                    'q_y', BoundedQUInt(self.signature.get_left('q_y').total_bits(), self.y_dim)
-                ),
-                Register(
-                    'q_x', BoundedQUInt(self.signature.get_left('q_x').total_bits(), self.x_dim)
-                ),
+                Register('q_y', BQUInt(self.signature.get_left('q_y').total_bits(), self.y_dim)),
+                Register('q_x', BQUInt(self.signature.get_left('q_x').total_bits(), self.x_dim)),
             ),
             nth_gate=lambda *_: cirq.Z,
             control_regs=Register('control', QAny(1 + total_bits(self.control_registers))),

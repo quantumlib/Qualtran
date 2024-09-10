@@ -24,7 +24,7 @@ from numpy.typing import NDArray
 from qualtran.symbolics import is_symbolic
 
 from .data_types import (
-    BoundedQUInt,
+    BQUInt,
     check_dtypes_consistent,
     QAny,
     QAnyInt,
@@ -75,21 +75,21 @@ def test_quint():
 
 
 def test_bounded_quint():
-    qint_3 = BoundedQUInt(2, 3)
-    assert str(qint_3) == 'BoundedQUInt(2, 3)'
+    qint_3 = BQUInt(2, 3)
+    assert str(qint_3) == 'BQUInt(2, 3)'
 
     assert qint_3.bitsize == 2
     assert qint_3.iteration_length == 3
-    with pytest.raises(ValueError, match="BoundedQUInt iteration length.*"):
-        BoundedQUInt(4, 76)
+    with pytest.raises(ValueError, match="BQUInt iteration length.*"):
+        BQUInt(4, 76)
     n = sympy.symbols('x')
     l = sympy.symbols('l')
-    qint_8 = BoundedQUInt(n, l)
+    qint_8 = BQUInt(n, l)
     assert qint_8.num_qubits == n
     assert qint_8.iteration_length == l
-    assert is_symbolic(BoundedQUInt(sympy.Symbol('x'), 2))
-    assert is_symbolic(BoundedQUInt(2, sympy.Symbol('x')))
-    assert is_symbolic(BoundedQUInt(*sympy.symbols('x y')))
+    assert is_symbolic(BQUInt(sympy.Symbol('x'), 2))
+    assert is_symbolic(BQUInt(2, sympy.Symbol('x')))
+    assert is_symbolic(BQUInt(*sympy.symbols('x y')))
 
 
 def test_qfxp():
@@ -135,13 +135,13 @@ def test_qmontgomeryuint():
     assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation(qdtype: QDType):
     for v in qdtype.get_classical_domain():
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -158,10 +158,10 @@ def test_validation_errs():
         QUInt(3).assert_valid_classical_val(8)
 
     with pytest.raises(ValueError):
-        BoundedQUInt(3, 5).assert_valid_classical_val(-1)
+        BQUInt(3, 5).assert_valid_classical_val(-1)
 
     with pytest.raises(ValueError):
-        BoundedQUInt(3, 5).assert_valid_classical_val(6)
+        BQUInt(3, 5).assert_valid_classical_val(6)
 
     with pytest.raises(ValueError):
         QInt(4).assert_valid_classical_val(-9)
@@ -183,15 +183,13 @@ def test_validate_arrays():
         QBit().assert_valid_classical_val_array(arr)
 
 
-@pytest.mark.parametrize(
-    'qdtype', [QIntOnesComp(4), QFxp(4, 4), QInt(4), QUInt(4), BoundedQUInt(4, 5)]
-)
+@pytest.mark.parametrize('qdtype', [QIntOnesComp(4), QFxp(4, 4), QInt(4), QUInt(4), BQUInt(4, 5)])
 def test_qany_consistency(qdtype):
     # All Types with correct bitsize are ok with QAny
     assert check_dtypes_consistent(qdtype, QAny(4))
 
 
-@pytest.mark.parametrize('qdtype', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4)])
+@pytest.mark.parametrize('qdtype', [QUInt(4), BQUInt(4, 5), QMontgomeryUInt(4)])
 def test_type_errors_fxp_uint(qdtype):
     assert check_dtypes_consistent(qdtype, QFxp(4, 4))
     assert check_dtypes_consistent(qdtype, QFxp(4, 0))
@@ -213,10 +211,10 @@ def test_type_errors_fxp():
 
 
 @pytest.mark.parametrize(
-    'qdtype_a', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
+    'qdtype_a', [QUInt(4), BQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
 )
 @pytest.mark.parametrize(
-    'qdtype_b', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
+    'qdtype_b', [QUInt(4), BQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
 )
 def test_type_errors_matrix(qdtype_a, qdtype_b):
     if qdtype_a == qdtype_b:
@@ -233,7 +231,7 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QBit(), QInt(1))
     assert check_dtypes_consistent(QInt(1), QBit())
     assert check_dtypes_consistent(QAny(1), QBit())
-    assert check_dtypes_consistent(BoundedQUInt(1), QBit())
+    assert check_dtypes_consistent(BQUInt(1), QBit())
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
 
 
@@ -313,11 +311,11 @@ def test_int_to_bits():
 
 
 def test_bounded_quint_to_and_from_bits():
-    bquint4 = BoundedQUInt(4, 12)
+    bquint4 = BQUInt(4, 12)
     assert [*bquint4.get_classical_domain()] == [*range(0, 12)]
     assert list(bquint4.to_bits(10)) == [1, 0, 1, 0]
     with pytest.raises(ValueError):
-        BoundedQUInt(4, 12).to_bits(13)
+        BQUInt(4, 12).to_bits(13)
 
     assert_to_and_from_bits_array_consistent(bquint4, range(0, 12))
 

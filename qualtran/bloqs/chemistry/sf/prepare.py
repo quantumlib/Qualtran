@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -27,7 +27,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -77,7 +77,7 @@ class InnerPrepareSingleFactorization(Bloq):
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(l=self.num_aux.bit_length(), p=n, q=n, succ_pq=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = (self.num_spin_orb // 2 - 1).bit_length()
         # 2. a prep uniform upper triangular.
         cost_up_tri = (Toffoli(), 6 * n + 2 * self.num_bits_rot_aa - 7)
@@ -100,7 +100,7 @@ class InnerPrepareSingleFactorization(Bloq):
         # inequality test
         cost_ineq = (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1)
         cost_swap = (CSwap(2 * n), 1)
-        return {cost_up_tri, cost_contg_indx, cost_qroam, cost_ineq, cost_swap}
+        return dict([cost_up_tri, cost_contg_indx, cost_qroam, cost_ineq, cost_swap])
 
 
 @frozen
@@ -140,7 +140,7 @@ class OuterPrepareSingleFactorization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(l=self.num_aux.bit_length(), succ_l=1, l_ne_zero=1, rot_aa=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # 1.a
         cost_uni = (PrepareUniformSuperposition(self.num_aux + 1), 1)
         num_bits_l = (self.num_aux + 1).bit_length()
@@ -151,7 +151,7 @@ class OuterPrepareSingleFactorization(Bloq):
         cost_ineq = (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1)
         # 1.d swap alt/keep values
         cost_swap = (CSwap(num_bits_l + 1), 1)
-        return {cost_uni, cost_qroam, cost_ineq, cost_swap}
+        return dict([cost_uni, cost_qroam, cost_ineq, cost_swap])
 
 
 @bloq_example

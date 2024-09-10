@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict
 
 from attrs import frozen
 
@@ -21,7 +21,7 @@ from qualtran import bloq_example, BloqBuilder, BloqDocSpec, QAny, Signature, So
 from qualtran.bloqs.basic_gates import GlobalPhase
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
@@ -75,20 +75,20 @@ class Phase(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if ancilla_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
-
     @property
     def signal_state(self) -> BlackBoxPrepare:
         return self.block_encoding.signal_state
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return {(self.block_encoding, 1), (GlobalPhase(exponent=self.phi, eps=self.eps), 1)}
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {self.block_encoding: 1, GlobalPhase(exponent=self.phi, eps=self.eps): 1}
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         bb.add(GlobalPhase(exponent=self.phi, eps=self.eps))
 
         return bb.add_d(self.block_encoding, **soqs)
+
+    def __str__(self) -> str:
+        return f"B[exp({self.phi}i){str(self.block_encoding)[2:-1]}]"
 
 
 @bloq_example

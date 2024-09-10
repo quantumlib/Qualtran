@@ -14,18 +14,7 @@
 
 from collections import defaultdict
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -65,7 +54,11 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        MutableBloqCountDictT,
+        SympySymbolAllocator,
+    )
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -183,22 +176,22 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def _has_unitary_(self):
         return True
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if (
             not is_symbolic(self.less_than_val, self.bitsize)
             and self.less_than_val >= 2**self.bitsize
         ):
-            return {(XGate(), 1)}
+            return {XGate(): 1}
         num_set_bits = (
             int(self.less_than_val).bit_count()
             if not is_symbolic(self.less_than_val)
             else self.bitsize
         )
         return {
-            (And(), self.bitsize),
-            (And().adjoint(), self.bitsize),
-            (CNOT(), num_set_bits + 2 * self.bitsize),
-            (XGate(), 2 * (1 + num_set_bits)),
+            And(): self.bitsize,
+            And().adjoint(): self.bitsize,
+            CNOT(): num_set_bits + 2 * self.bitsize,
+            XGate(): 2 * (1 + num_set_bits),
         }
 
 
@@ -307,8 +300,8 @@ class BiQubitsMixer(GateWithRegisters):
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(XGate(), 1), (CNOT(), 9), (And(uncompute=self.is_adjoint), 2)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): 1, CNOT(): 9, And(uncompute=self.is_adjoint): 2}
 
     def _has_unitary_(self):
         return not self.is_adjoint
@@ -380,8 +373,8 @@ class SingleQubitCompare(GateWithRegisters):
             return self.adjoint()
         return self
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(XGate(), 1), (CNOT(), 4), (And(uncompute=self.is_adjoint), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): 1, CNOT(): 4, And(uncompute=self.is_adjoint): 1}
 
 
 @bloq_example
@@ -575,13 +568,13 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         all_ancilla = set([q for op in adjoint for q in op.qubits if q not in input_qubits])
         context.qubit_manager.qfree(all_ancilla)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if is_symbolic(self.x_bitsize, self.y_bitsize):
             return {
-                (BiQubitsMixer(), self.x_bitsize),
-                (BiQubitsMixer().adjoint(), self.x_bitsize),
-                (SingleQubitCompare(), 1),
-                (SingleQubitCompare().adjoint(), 1),
+                BiQubitsMixer(): self.x_bitsize,
+                BiQubitsMixer().adjoint(): self.x_bitsize,
+                SingleQubitCompare(): 1,
+                SingleQubitCompare().adjoint(): 1,
             }
 
         n = min(self.x_bitsize, self.y_bitsize)
@@ -613,7 +606,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
             ret[And(1, 0).adjoint()] += 1
             ret[CNOT()] += 1
 
-        return set(ret.items())
+        return ret
 
     def _has_unitary_(self):
         return True
@@ -691,8 +684,8 @@ class GreaterThan(Bloq):
         target = bb.add(XGate(), q=target)
         return {'a': a, 'b': b, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(LessThanEqual(self.a_bitsize, self.b_bitsize), 1), (XGate(), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {LessThanEqual(self.a_bitsize, self.b_bitsize): 1, XGate(): 1}
 
 
 @bloq_example
@@ -885,23 +878,23 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.bitsize == 1:
-            return {(MultiControlX(cvs=(1, 0)), 1)}
+            return {MultiControlX(cvs=(1, 0)): 1}
 
         if self.signed:
             return {
-                (CNOT(), 6 * self.bitsize - 7),
-                (XGate(), 2 * self.bitsize + 2),
-                (And(), self.bitsize - 1),
-                (And(uncompute=True), self.bitsize - 1),
+                CNOT(): 6 * self.bitsize - 7,
+                XGate(): 2 * self.bitsize + 2,
+                And(): self.bitsize - 1,
+                And(uncompute=True): self.bitsize - 1,
             }
 
         return {
-            (CNOT(), 6 * self.bitsize - 1),
-            (XGate(), 2 * self.bitsize + 4),
-            (And(), self.bitsize),
-            (And(uncompute=True), self.bitsize),
+            CNOT(): 6 * self.bitsize - 1,
+            XGate(): 2 * self.bitsize + 4,
+            And(): self.bitsize,
+            And(uncompute=True): self.bitsize,
         }
 
 
@@ -941,8 +934,8 @@ class GreaterThanConstant(Bloq):
             return TextBox(f"⨁(x > {self.val})")
         raise ValueError(f'Unknown register symbol {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(LessThanConstant(self.bitsize, less_than_val=self.val), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {LessThanConstant(self.bitsize, less_than_val=self.val): 1}
 
 
 @bloq_example
@@ -1007,8 +1000,8 @@ class EqualsAConstant(Bloq):
         x = bb.join(xs)
         return {'x': x, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(MultiControlX(self.bits_k), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {MultiControlX(self.bits_k): 1}
 
 
 def _make_equals_a_constant():
@@ -1134,21 +1127,22 @@ class CLinearDepthGreaterThan(Bloq):
             return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target ^ (a > b)}
         return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        signed_ops = []
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        signed_ops: 'MutableBloqCountDictT' = {}
         if isinstance(self.dtype, QInt):
-            signed_ops = [
-                (SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), 2),
-                (SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), 2),
-            ]
+            signed_ops = {
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)): 2,
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(): 2,
+            }
         dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
         return {
-            (BitwiseNot(dtype), 2),
-            (BitwiseNot(QUInt(dtype.bitsize + 1)), 2),
-            (OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(), 1),
-            (OutOfPlaceAdder(self.dtype.bitsize + 1), 1),
-            (MultiControlX((self.cv, 1)), 1),
-        }.union(signed_ops)
+            BitwiseNot(dtype): 2,
+            BitwiseNot(QUInt(dtype.bitsize + 1)): 2,
+            OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(): 1,
+            OutOfPlaceAdder(self.dtype.bitsize + 1): 1,
+            MultiControlX((self.cv, 1)): 1,
+            **signed_ops,
+        }
 
 
 @bloq_example(generalizer=ignore_split_join)

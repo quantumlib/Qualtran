@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -24,7 +24,7 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -74,12 +74,12 @@ class HoppingPlaquette(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('qubits', QBit(), shape=(4,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # The TwoBitFFFT in the reference is F(k=0, n=arbitrary)
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
         # be rotated to single rotation + cliffords.
-        return {(TwoBitFFFT(0, 1, eps=self.eps), 4), (Rz(self.kappa, eps=self.eps), 2)}
+        return {TwoBitFFFT(0, 1, eps=self.eps): 4, Rz(self.kappa, eps=self.eps): 2}
 
 
 @frozen
@@ -128,11 +128,9 @@ class HoppingTile(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('system', QAny(self.length), shape=(2,))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
-        return {
-            (HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)
-        }
+        return {HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps): self.length**2 // 2}
 
 
 @frozen
@@ -181,19 +179,14 @@ class HoppingTileHWP(HoppingTile):
         l = 'p' if self.pink else 'g'
         return f'H_h^{l}(HWP)'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
         # Each plaquette contributes 4 TwoBitFFFT gates and two arbitrary rotations.
         # We use Hamming weight phasing to apply all 2 * L^2/4 (two for spin
         # here) for both of these rotations.
         return {
-            (TwoBitFFFT(0, 1, self.eps), 4 * self.length**2 // 2),
-            (
-                HammingWeightPhasing(
-                    2 * self.length**2 // 4, self.tau * self.angle, eps=self.eps
-                ),
-                2,
-            ),
+            TwoBitFFFT(0, 1, self.eps): 4 * self.length**2 // 2,
+            HammingWeightPhasing(2 * self.length**2 // 4, self.tau * self.angle, eps=self.eps): 2,
         }
 
 

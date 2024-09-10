@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set
 
 import sympy
 from attrs import frozen
@@ -21,7 +20,7 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic._shims import MultiCToffoli
 from qualtran.bloqs.mod_arithmetic import CModAdd, CModNeg, CModSub, ModAdd, ModNeg, ModSub
 from qualtran.bloqs.mod_arithmetic._shims import ModDbl, ModInv, ModMul
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -64,19 +63,19 @@ class ECAdd(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # litinksi
         return {
-            (MultiCToffoli(n=self.n), 18),
-            (ModAdd(bitsize=self.n, mod=self.mod), 3),
-            (CModAdd(QUInt(self.n), mod=self.mod), 2),
-            (ModSub(QUInt(self.n), mod=self.mod), 2),
-            (CModSub(QUInt(self.n), mod=self.mod), 4),
-            (ModNeg(QUInt(self.n), mod=self.mod), 2),
-            (CModNeg(QUInt(self.n), mod=self.mod), 1),
-            (ModDbl(QUInt(self.n), mod=self.mod), 2),
-            (ModMul(n=self.n, mod=self.mod), 10),
-            (ModInv(n=self.n, mod=self.mod), 4),
+            MultiCToffoli(n=self.n): 18,
+            ModAdd(bitsize=self.n, mod=self.mod): 3,
+            CModAdd(QUInt(self.n), mod=self.mod): 2,
+            ModSub(QUInt(self.n), mod=self.mod): 2,
+            CModSub(QUInt(self.n), mod=self.mod): 4,
+            ModNeg(QUInt(self.n), mod=self.mod): 2,
+            CModNeg(QUInt(self.n), mod=self.mod): 1,
+            ModDbl(QUInt(self.n), mod=self.mod): 2,
+            ModMul(n=self.n, mod=self.mod): 10,
+            ModInv(n=self.n, mod=self.mod): 4,
         }
 
 

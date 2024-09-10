@@ -14,7 +14,6 @@
 
 from openfermion.resource_estimates.utils import power_two, QI, QI2, QR, QR2
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sf.prepare import (
     _prep_inner,
     _prep_outer,
@@ -24,6 +23,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prep_inner(bloq_autotester):
@@ -43,21 +43,18 @@ def test_outerprep_t_counts():
     outer_prep = OuterPrepareSingleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     )
-    _, counts = outer_prep.call_graph()
-    toff = counts[TGate()]
+    # Note: this contains rotations, but we just divide the total T count by 4 to approximate
+    # the toffoli count: https://github.com/quantumlib/Qualtran/issues/390
+    toff = get_cost_value(outer_prep, QECGatesCost()).total_t_count(ts_per_cswap=4)
+    toff -= 4 * (num_bits_state_prep - 1)
     nb_l = num_aux.bit_length()
-    toff -= (7 - 4) * (nb_l + 1)
-    toff -= 4 * num_bits_state_prep - 4
     outer_prep = OuterPrepareSingleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
-    _, counts = outer_prep.call_graph()
-    toff += counts[TGate()]
-    # swap difference
-    toff -= (7 - 4) * (nb_l + 1)
+    toff += get_cost_value(outer_prep, QECGatesCost()).total_t_count(ts_per_cswap=4)
     # See https://github.com/quantumlib/Qualtran/issues/390
     # inequality difference
-    toff -= 4 * num_bits_state_prep - 4
+    toff -= 4 * (num_bits_state_prep - 1)
     toff //= 4
     # Number of qubits for the first register
     # Number of qubits for p and q registers
@@ -66,13 +63,14 @@ def test_outerprep_t_counts():
     # correct the expected cost by using a different uniform superposition algorithm
     # see: https://github.com/quantumlib/Qualtran/issues/611
     prep = PrepareUniformSuperposition(num_aux + 1)
-    cost1a_mod = prep.call_graph()[1][TGate()] // 4
-    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
+    cost1a_mod = get_cost_value(prep, QECGatesCost()).total_t_count(ts_per_cswap=4) // 4
+    cost1a_mod += get_cost_value(prep.adjoint(), QECGatesCost()).total_t_count(ts_per_cswap=4) // 4
     assert cost1a != cost1a_mod
     bL = nb_l + num_bits_state_prep + 2
     cost1b = QR(num_aux + 1, bL)[-1] + QI(num_aux + 1)[-1]
     cost1cd = 2 * (num_bits_state_prep + nb_l + 1)
     of_cost = cost1a_mod + cost1b + cost1cd
+    toff -= 1  # TODO: https://github.com/quantumlib/Qualtran/issues/1391
     assert toff == of_cost
 
 
@@ -90,11 +88,10 @@ def test_inner_prepare_t_counts():
         kp1=2**2,
         kp2=2**5,
     )
-    _, counts = in_prep.call_graph()
-    toff = counts[TGate()]
-    # account for difference in how swaps are counted.
+    # Note: this contains rotations, but we just divide the total T count by 4 to approximate
+    # the toffoli count: https://github.com/quantumlib/Qualtran/issues/390
+    toff = get_cost_value(in_prep, QECGatesCost()).total_t_count(ts_per_cswap=4)
     # inequality difference
-    toff -= (7 - 4) * (2 * nN)
     toff -= 4 * num_bits_state_prep - 4
     in_prep = InnerPrepareSingleFactorization(
         num_aux=num_aux,
@@ -104,10 +101,8 @@ def test_inner_prepare_t_counts():
         kp1=2**1,
         kp2=2**8,
     ).adjoint()
-    _, counts = in_prep.call_graph()
     # factor of two from squaring
-    toff += counts[TGate()]
-    toff -= (7 - 4) * (2 * nN)
+    toff += get_cost_value(in_prep, QECGatesCost()).total_t_count(ts_per_cswap=4)
     # See https://github.com/quantumlib/Qualtran/issues/390
     # inequality difference
     toff -= 4 * num_bits_state_prep - 4

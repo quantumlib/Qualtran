@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Set
+from typing import Dict
 
 import numpy as np
 from attrs import frozen
@@ -20,7 +20,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.rotations.phase_gradient import _fxp
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
@@ -72,9 +72,6 @@ class ArcSin(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "arcsin(x)"
-
     def on_classical_vals(
         self, x: ClassicalValT, result: ClassicalValT
     ) -> Dict[str, ClassicalValT]:
@@ -84,7 +81,7 @@ class ArcSin(Bloq):
         result ^= int(np.arcsin(x_fxp) * 2**self.bitsize)
         return {'x': x, 'result': result}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         n = self.bitsize
         p = self.bitsize - self.num_frac
         d = self.degree
@@ -100,7 +97,7 @@ class ArcSin(Bloq):
             - 9 * p**2
             + 2
         )
-        return {(Toffoli(), toffolis)}
+        return {Toffoli(): toffolis}
 
 
 @bloq_example

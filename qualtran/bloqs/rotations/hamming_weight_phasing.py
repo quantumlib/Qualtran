@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -22,11 +22,12 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, 
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
+from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -93,17 +94,18 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def pretty_name(self) -> str:
-        return f'HWP_{self.bitsize}(Z^{self.exponent})'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'HWP_{self.bitsize}(Z^{self.exponent})')
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (HammingWeightCompute(self.bitsize), 1),
-            (HammingWeightCompute(self.bitsize).adjoint(), 1),
-            (
-                ZPowGate(exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()),
-                self.bitsize.bit_length(),
-            ),
+            HammingWeightCompute(self.bitsize): 1,
+            HammingWeightCompute(self.bitsize).adjoint(): 1,
+            ZPowGate(
+                exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()
+            ): self.bitsize.bit_length(),
         }
 
 
@@ -191,8 +193,10 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def pretty_name(self) -> str:
-        return f'HWPG_{self.bitsize}(Z^{self.exponent})'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'HWPG_{self.bitsize}(Z^{self.exponent})')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example

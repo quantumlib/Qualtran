@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -36,13 +36,14 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
@@ -128,20 +129,19 @@ class PhaseGradientUnitary(GateWithRegisters):
             return self
         return attrs.evolve(self, exponent=self.exponent * power)
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
         gate = CZPowGate if self.is_controlled else ZPowGate
         if is_symbolic(self.bitsize):
             return {
-                (
-                    gate(exponent=self.exponent / 2 ** (self.bitsize), eps=self.eps / self.bitsize),
-                    self.bitsize,
-                )
+                gate(
+                    exponent=self.exponent / 2 ** (self.bitsize), eps=self.eps / self.bitsize
+                ): self.bitsize
             }
 
-        ret: Set['BloqCountT'] = set()
-        for i in range(self.bitsize):
-            ret.add((gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize), 1))
-        return ret
+        return {
+            gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize): 1
+            for i in range(self.bitsize)
+        }
 
 
 @bloq_example
@@ -260,9 +260,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     sign: int = +1
     controlled_by: Optional[int] = None
 
-    def pretty_name(self) -> str:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         sign = '+' if self.sign > 0 else '-'
-        return f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x'
+        if reg is None:
+            return Text(f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x')
+        return super().wire_symbol(reg, idx)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -324,12 +326,12 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
         return {'x': x, 'phase_grad': phase_grad_out}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_toffoli = self.phase_bitsize - 2
         if self.controlled_by is not None:
-            return {(Toffoli(), 2 * num_toffoli)}
+            return {Toffoli(): 2 * num_toffoli}
 
-        return {(Toffoli(), num_toffoli)}
+        return {Toffoli(): num_toffoli}
 
     def adjoint(self) -> 'AddIntoPhaseGrad':
         return attrs.evolve(self, sign=-self.sign)
@@ -514,7 +516,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_additions = (self.gamma_dtype.bitsize + 2) // 2
         if not isinstance(self.gamma, sympy.Basic):
             num_additions_naive = 0
@@ -525,7 +527,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
                 if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)
-        return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
+        return {AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize): num_additions}
 
 
 @bloq_example
