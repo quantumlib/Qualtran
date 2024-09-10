@@ -217,10 +217,19 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
-        title='Swap Network',
+        title='Basic Swaps',
+        module=qualtran.bloqs.basic_gates.swap,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_CSWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Swap Networks',
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
-            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
             qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
             qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,

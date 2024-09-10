@@ -106,7 +106,7 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':

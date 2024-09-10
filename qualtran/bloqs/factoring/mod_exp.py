@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import math
+import random
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
-import numpy as np
 import sympy
 from attrs import frozen
 
@@ -38,6 +38,7 @@ from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics import is_symbolic
 
 
 @frozen
@@ -70,9 +71,9 @@ class ModExp(Bloq):
     exp_bitsize: Union[int, sympy.Expr]
     x_bitsize: Union[int, sympy.Expr]
 
-    def __post_init__(self):
-        if isinstance(self.base, int) and isinstance(self.mod, int):
-            assert math.gcd(self.base, self.mod) == 1
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.base, self.mod):
+            assert math.gcd(cast(int, self.base), cast(int, self.mod)) == 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -95,9 +96,9 @@ class ModExp(Bloq):
         if isinstance(big_n, sympy.Expr):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
         else:
-            little_n = int(np.ceil(np.log2(big_n)))
+            little_n = int(math.ceil(math.log2(big_n)))
         if g is None:
-            g = np.random.randint(big_n)
+            g = random.randint(2, big_n)
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
     def _CtrlModMul(self, k: Union[int, sympy.Expr]):
@@ -111,10 +112,10 @@ class ModExp(Bloq):
         exponent = bb.split(exponent)
 
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
-        base = self.base
+        base = self.base % self.mod
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
-            base = base * base % self.mod
+            base = (base * base) % self.mod
 
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
@@ -145,13 +146,13 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_small() -> ModExp:
-    modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
+    modexp_small = ModExp(base=4, mod=15, exp_bitsize=3, x_bitsize=2048)
     return modexp_small
 
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp() -> ModExp:
-    modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
+    modexp = ModExp.make_for_shor(big_n=13 * 17, g=9)
     return modexp
 
 

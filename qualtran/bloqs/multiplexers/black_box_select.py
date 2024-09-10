@@ -56,7 +56,7 @@ class BlackBoxSelect(Bloq):
 
     select: SelectOracle
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return 'SELECT'
 
     @cached_property

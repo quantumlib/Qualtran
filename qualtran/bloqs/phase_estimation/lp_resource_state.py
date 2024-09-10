@@ -15,16 +15,17 @@
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from collections import Counter
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 import sympy
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import CZ, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -55,8 +56,10 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def pretty_name(self) -> str:
-        return 'LPRS'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('LPRS')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, m: 'SoquetT', anc: 'Soquet'
