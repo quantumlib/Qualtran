@@ -145,7 +145,7 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_small() -> ModExp:
-    modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
+    modexp_small = ModExp(base=4, mod=15, exp_bitsize=3, x_bitsize=2048)
     return modexp_small
 
 
