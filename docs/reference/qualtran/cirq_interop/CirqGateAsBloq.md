@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L144-L154">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L139-L162">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -46,16 +46,26 @@ Inherits From: [`CirqGateAsBloqBase`](../../qualtran/cirq_interop/CirqGateAsBloq
 
 ## Methods
 
-<h3 id="pretty_name"><code>pretty_name</code></h3>
+<h3 id="my_static_costs"><code>my_static_costs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L148-L150">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L157-L162">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>pretty_name() -> str
+<code>my_static_costs(
+    cost_key: 'CostKey'
+)
 </code></pre>
 
+Override this method to provide static costs.
 
+The system will query a particular cost by asking for a `cost_key`. This method
+can optionally provide a value, which will be preferred over a computed cost.
 
+Static costs can be provided if the particular cost cannot be easily computed or
+as a performance optimization.
+
+This method must return `NotImplemented` if a value cannot be provided for the specified
+CostKey.
 
 <h3 id="num_qubits"><code>num_qubits</code></h3>
 

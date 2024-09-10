@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L31-L69">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L31-L72">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -107,6 +107,17 @@ Return the total number of T gates after compiling rotations
 <code>__rmul__(
     other: int
 ) -> 'TComplexity'
+</code></pre>
+
+
+
+
+<h3 id="asdict"><code>asdict</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/t_complexity_protocol.py#L64-L65">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>asdict()
 </code></pre>
 
 

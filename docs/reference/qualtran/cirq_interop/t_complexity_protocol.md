@@ -19,7 +19,17 @@
 
 ## Type Aliases
 
+[`BloqCountT`](../../qualtran/resource_counting/BloqCountT.md)
+
 [`SymbolicFloat`](../../qualtran/symbolics/SymbolicFloat.md)
 
 [`SymbolicInt`](../../qualtran/symbolics/SymbolicInt.md)
+
+
+
+<h2 class="add-link">Other Members</h2>
+
+USE_NEW_GATE_COUNTING_FLAG<a id="USE_NEW_GATE_COUNTING_FLAG"></a>
+: `True`
+
 

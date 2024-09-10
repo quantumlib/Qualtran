@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_call_graph.py#L56-L68">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_call_graph.py#L72-L84">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -18,7 +18,7 @@ Count all the subbloqs in a composite bloq.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.resource_counting.build_cbloq_call_graph(
     cbloq: <a href="../../qualtran/CompositeBloq.html"><code>qualtran.CompositeBloq</code></a>
-) -> Set[<a href="../../qualtran/resource_counting/BloqCountT.html"><code>qualtran.resource_counting.BloqCountT</code></a>]
+) -> <a href="../../qualtran/resource_counting/BloqCountDictT.html"><code>qualtran.resource_counting.BloqCountDictT</code></a>
 </code></pre>
 
 

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L123-L235">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L125-L277">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -67,7 +67,7 @@ Specifically, this class holds counts for the number of `TGate` (and adjoint), `
 
 <h3 id="__add__"><code>__add__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L139-L151">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L141-L153">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__add__(
@@ -80,7 +80,7 @@ Specifically, this class holds counts for the number of `TGate` (and adjoint), `
 
 <h3 id="__mul__"><code>__mul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L153-L162">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L155-L164">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__mul__(
@@ -93,7 +93,7 @@ Specifically, this class holds counts for the number of `TGate` (and adjoint), `
 
 <h3 id="__rmul__"><code>__rmul__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L164-L165">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L166-L167">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__rmul__(
@@ -106,7 +106,7 @@ Specifically, this class holds counts for the number of `TGate` (and adjoint), `
 
 <h3 id="asdict"><code>asdict</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L173-L182">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L175-L184">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>asdict() -> Dict[str, int]
@@ -117,7 +117,7 @@ Specifically, this class holds counts for the number of `TGate` (and adjoint), `
 
 <h3 id="total_t_count"><code>total_t_count</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L184-L205">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L186-L207">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>total_t_count(
@@ -138,7 +138,7 @@ The default value for `ts_per_rotation` assumes the rotation is approximated usi
 
 <h3 id="total_t_and_ccz_count"><code>total_t_and_ccz_count</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L207-L210">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L209-L212">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>total_t_and_ccz_count(
@@ -149,9 +149,44 @@ The default value for `ts_per_rotation` assumes the rotation is approximated usi
 
 
 
+<h3 id="total_toffoli_only"><code>total_toffoli_only</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L214-L220">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>total_toffoli_only() -> int
+</code></pre>
+
+The number of Toffoli-like gates, and raise an exception if there are Ts/rotations.
+
+
+<h3 id="to_legacy_t_complexity"><code>to_legacy_t_complexity</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L222-L252">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>to_legacy_t_complexity(
+    ts_per_toffoli: int = 4,
+    ts_per_cswap: int = 7,
+    ts_per_and_bloq: int = 4,
+    cliffords_per_and_bloq: int = 9,
+    cliffords_per_cswap: int = 10
+) -> 'TComplexity'
+</code></pre>
+
+Return a legacy `TComplexity` object.
+
+This coalesces all the gate types into t, rotations, and clifford fields. The conversion
+factors can be tweaked using the arguments to this method.
+
+The argument `cliffords_per_and_bloq` sets the base number of clifford gates to
+add per `self.and_bloq`. To fully match the exact legacy `t_complexity` numbers, you
+must enable `QECGatesCost(legacy_shims=True)`, which will enable a shim that directly
+adds on clifford counts for the X-gates used to invert the And control lines.
+
 <h3 id="total_beverland_count"><code>total_beverland_count</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L212-L235">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L254-L277">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>total_beverland_count() -> Dict[str, <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>]

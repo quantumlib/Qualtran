@@ -50,9 +50,13 @@ isort:skip_file
 
 ## Type Aliases
 
+[`BloqCountDictT`](../qualtran/resource_counting/BloqCountDictT.md)
+
 [`BloqCountT`](../qualtran/resource_counting/BloqCountT.md)
 
 [`GeneralizerT`](../qualtran/resource_counting/GeneralizerT.md)
+
+[`MutableBloqCountDictT`](../qualtran/resource_counting/MutableBloqCountDictT.md)
 
 
 

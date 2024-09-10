@@ -6,13 +6,13 @@
 
    qualtran/AddControlledT.md
    qualtran/Adjoint.md
+   qualtran/BQUInt.md
    qualtran/Bloq.md
    qualtran/BloqBuilder.md
    qualtran/BloqDocSpec.md
    qualtran/BloqError.md
    qualtran/BloqExample.md
    qualtran/BloqInstance.md
-   qualtran/BoundedQUInt.md
    qualtran/CompositeBloq.md
    qualtran/Connection.md
    qualtran/ConnectionT.md
@@ -120,10 +120,12 @@
    :caption: resource_counting
 
    qualtran/resource_counting/BloqCount.md
+   qualtran/resource_counting/BloqCountDictT.md
    qualtran/resource_counting/BloqCountT.md
    qualtran/resource_counting/CostKey.md
    qualtran/resource_counting/GateCounts.md
    qualtran/resource_counting/GeneralizerT.md
+   qualtran/resource_counting/MutableBloqCountDictT.md
    qualtran/resource_counting/QECGatesCost.md
    qualtran/resource_counting/QubitCount.md
    qualtran/resource_counting/SuccessProb.md

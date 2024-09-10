@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L238-L305">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L280-L387">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -18,7 +18,9 @@ Counts specifically for 'expensive' gates in a surface code error correction sch
 Inherits From: [`CostKey`](../../qualtran/resource_counting/CostKey.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>qualtran.resource_counting.QECGatesCost()
+<code>qualtran.resource_counting.QECGatesCost(
+    *, legacy_shims=attr_dict[&#x27;legacy_shims&#x27;].default
+)
 </code></pre>
 
 
@@ -27,11 +29,30 @@ Inherits From: [`CostKey`](../../qualtran/resource_counting/CostKey.md)
 
 The cost value type for this CostKey is `GateCounts`.
 
+<h2 class="add-link">Args</h2>
+
+`legacy_shims`<a id="legacy_shims"></a>
+: If enabled, modify the counting logic to match the peculiarities of
+  the legacy `t_complexity` protocol.
+
+
+
+
+
+
+<h2 class="add-link">Attributes</h2>
+
+`legacy_shims`<a id="legacy_shims"></a>
+: &nbsp;
+
+
+
+
 ## Methods
 
 <h3 id="compute"><code>compute</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L245-L295">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L293-L377">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>compute(
@@ -68,7 +89,7 @@ Returns
 
 <h3 id="zero"><code>zero</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L297-L298">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L379-L380">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>zero() -> <a href="../../qualtran/resource_counting/GateCounts.html"><code>qualtran.resource_counting.GateCounts</code></a>
@@ -79,7 +100,7 @@ The value corresponding to zero cost.
 
 <h3 id="validate_val"><code>validate_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L300-L302">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L382-L384">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>validate_val(

@@ -57,7 +57,7 @@ isort:skip_file
 
 [`class QUInt`](./qualtran/QUInt.md): Unsigned integer of a given width bitsize which wraps around upon overflow.
 
-[`class BoundedQUInt`](./qualtran/BoundedQUInt.md): Unsigned integer whose values are bounded within a range.
+[`class BQUInt`](./qualtran/BQUInt.md): Unsigned integer whose values are bounded within a range.
 
 [`class QMontgomeryUInt`](./qualtran/QMontgomeryUInt.md): Montgomery form of an unsigned integer of a given width bitsize which wraps around upon overflow.
 
