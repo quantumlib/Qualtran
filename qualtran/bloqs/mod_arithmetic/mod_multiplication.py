@@ -276,7 +276,7 @@ _C_MOD_MUL_K_DOC = BloqDocSpec(bloq_cls=CModMulK, examples=(_modmul_symb, _modmu
 
 
 @frozen
-class SingleWindowedModMul(Bloq):
+class SingleWindowModMul(Bloq):
     r"""Performs modular multiplication on a single windowed.
 
     Applies
@@ -306,7 +306,8 @@ class SingleWindowedModMul(Bloq):
     mod: 'SymbolicInt'
 
     def __attrs_post_init__(self):
-        assert self.bitsize % self.window_size == 0
+        if not is_symbolic(self.bitsize, self.window_size):
+            assert self.bitsize % self.window_size == 0
 
     @property
     def signature(self) -> 'Signature':
@@ -469,7 +470,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
 
     @cached_property
     def _window(self):
-        return SingleWindowedModMul(self.window_size, self.bitsize, self.mod)
+        return SingleWindowModMul(self.window_size, self.bitsize, self.mod)
 
     def build_composite_bloq(
         self,
