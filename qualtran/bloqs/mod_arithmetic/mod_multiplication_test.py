@@ -151,7 +151,7 @@ def test_notebook():
 @pytest.mark.parametrize('p', (7, 9, 11))
 @pytest.mark.parametrize('uncompute', [True, False])
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(1, 5) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(6, 10) for m in range(1, n + 1) if n % m == 0]
 )
 def test_dirtyoutofplacemontgomerymodmul_decomposition(n, m, p, uncompute):
     b = DirtyOutOfPlaceMontgomeryModMul(n, m, p, uncompute)
