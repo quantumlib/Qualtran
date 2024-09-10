@@ -305,7 +305,7 @@ class SingleWindowedModMul(Bloq):
     bitsize: 'SymbolicInt'
     mod: 'SymbolicInt'
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         assert self.bitsize % self.window_size == 0
 
     @property
@@ -442,7 +442,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     window_size: 'SymbolicInt'
     mod: 'SymbolicInt'
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if isinstance(self.mod, int):
             assert self.mod > 1 and self.mod % 2 == 1  # Must be an odd integer greater than 1.
 
@@ -565,7 +565,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
     mod: 'SymbolicInt'
     uncompute: bool = False
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if isinstance(self.mod, int):
             assert self.mod > 1 and self.mod % 2 == 1  # Must be an odd integer greater than 1.
 
