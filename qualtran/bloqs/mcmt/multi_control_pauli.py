@@ -109,7 +109,7 @@ class MultiControlPauli(GateWithRegisters):
 
         return {'controls': out_soqs[ctrl_reg_name], 'target': out_soqs[target_reg_name]}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         n = self.n_ctrls
         ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
         return f'{ctrl}{self.target_gate!s}'

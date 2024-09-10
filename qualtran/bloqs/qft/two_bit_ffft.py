@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -35,6 +35,7 @@ from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.rotation import Rz
 from qualtran.bloqs.basic_gates.s_gate import SGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics.types import SymbolicFloat
 
@@ -86,8 +87,10 @@ class TwoBitFFFT(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QBit()), Register('y', QBit())])
 
-    def pretty_name(self) -> str:
-        return 'F(k, n)'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('F(k, n)')
+        return super().wire_symbol(reg, idx)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

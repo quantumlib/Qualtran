@@ -36,6 +36,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics.types import is_symbolic
 
@@ -259,9 +260,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     sign: int = +1
     controlled_by: Optional[int] = None
 
-    def pretty_name(self) -> str:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         sign = '+' if self.sign > 0 else '-'
-        return f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x'
+        if reg is None:
+            return Text(f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x')
+        return super().wire_symbol(reg, idx)
 
     @cached_property
     def signature(self) -> 'Signature':

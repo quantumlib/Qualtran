@@ -88,7 +88,7 @@ class Phase(BlockEncoding):
         return bb.add_d(self.block_encoding, **soqs)
 
     def __str__(self) -> str:
-        return f"B[exp({self.phi}i){self.block_encoding.pretty_name()[2:-1]}]"
+        return f"B[exp({self.phi}i){str(self.block_encoding)[2:-1]}]"
 
 
 @bloq_example

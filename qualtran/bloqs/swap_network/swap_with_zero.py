@@ -213,9 +213,6 @@ class SwapWithZero(GateWithRegisters):
     def adjoint(self) -> 'SwapWithZero':
         return attrs.evolve(self, uncompute=not self.uncompute)
 
-    def pretty_name(self) -> str:
-        return 'SwapWithZero†' if self.uncompute else 'SwapWithZero'
-
     def __str__(self) -> str:
         return 'SwapWithZero†' if self.uncompute else 'SwapWithZero'
 

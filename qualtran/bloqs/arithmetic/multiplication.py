@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Iterable, List, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -34,6 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
 if TYPE_CHECKING:
@@ -72,8 +73,10 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
             )
 
-    def pretty_name(self) -> str:
-        return "result -= a*b" if self.is_adjoint else "result += a*b"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("result -= a*b") if self.is_adjoint else Text("result += a*b")
+        return super().wire_symbol(reg, idx)
 
     @property
     def signature(self) -> 'Signature':
@@ -186,8 +189,10 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def pretty_name(self) -> str:
-        return "a^2"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("a^2")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
@@ -272,8 +277,10 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "SOS"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('SOS')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_toff = self.k * self.bitsize**2 - self.bitsize
@@ -326,8 +333,10 @@ class Product(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a*b"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a*b')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
@@ -387,8 +396,10 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "r*i"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('r*i')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
@@ -444,8 +455,10 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a*b"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a*b')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
@@ -503,8 +516,10 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a^2"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a^2')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Bottom of page 74
@@ -559,8 +574,10 @@ class InvertRealNumber(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "1/a"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('1/a')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # initial approximation: Figure 4

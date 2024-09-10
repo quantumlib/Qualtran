@@ -87,7 +87,7 @@ class Unitary(BlockEncoding):
         }
 
     def __str__(self) -> str:
-        return f"B[{self.U.pretty_name()}]"
+        return f"B[{self.U}]"
 
 
 @bloq_example
