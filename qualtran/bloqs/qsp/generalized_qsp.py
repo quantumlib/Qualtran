@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Iterable, Iterator, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -47,7 +47,7 @@ from qualtran.symbolics import (
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def qsp_complementary_polynomial(
@@ -369,7 +369,7 @@ class GeneralizedQSP(GateWithRegisters):
     def is_symbolic(self) -> bool:
         return is_symbolic(self.P, self.Q, self.negative_power)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         counts = Counter[Bloq]()
 
         degree = slen(self.P) - 1
@@ -380,7 +380,7 @@ class GeneralizedQSP(GateWithRegisters):
         counts[self.U.adjoint()] += smax(0, self.negative_power - degree)
         counts[self.U.adjoint().controlled()] += smin(degree, self.negative_power)
 
-        return set((bloq, count) for bloq, count in counts.items() if not is_zero(count))
+        return {bloq: count for bloq, count in counts.items() if not is_zero(count)}
 
 
 @bloq_example

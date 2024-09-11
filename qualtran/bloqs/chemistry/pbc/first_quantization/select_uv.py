@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -22,7 +22,7 @@ from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -59,7 +59,7 @@ class ApplyNuclearPhase(Bloq):
     def pretty_name(self) -> str:
         return r'-e^(-k_ν⋅R_l)'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_p = self.num_bits_p
         n_n = self.num_bits_nuc
         # This is some complicated application of phase gradient gates.
@@ -68,7 +68,7 @@ class ApplyNuclearPhase(Bloq):
             cost = 3 * (2 * n_p * n_n - n_p * (n_p + 1) - 1)
         else:
             cost = 3 * n_n * (n_n - 1)
-        return {(Toffoli(), cost)}
+        return {Toffoli(): cost}
 
 
 @frozen
@@ -114,7 +114,7 @@ class SelectUVFirstQuantization(Bloq):
     def pretty_name(self) -> str:
         return r'SEL UV'
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
         cost_add = (Add(QInt(self.num_bits_p + 1)), 6)  # + 2?
         cost_ctrl_add = (Toffoli(), 6 * (self.num_bits_p + 1))
@@ -122,7 +122,7 @@ class SelectUVFirstQuantization(Bloq):
         cost_inv_tc = (SignedIntegerToTwosComplement(self.num_bits_p + 2), 6)
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost_phase = (ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), 1)
-        return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
+        return dict([cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase])
 
 
 @bloq_example

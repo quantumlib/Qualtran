@@ -74,7 +74,7 @@ References:
 """
 
 from collections import Counter
-from typing import cast, Dict, Iterable, List, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -86,6 +86,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     Signature,
     Soquet,
@@ -98,7 +99,7 @@ from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.symbolics import bit_length, HasLength, is_symbolic, Shaped, slen, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _to_tuple_or_has_length(
@@ -148,7 +149,8 @@ class StatePreparationViaRotations(GateWithRegisters):
         # negative number of control bits is not allowed
         assert self.control_bitsize >= 0
         # the register to which the angle is written must be at least of size two
-        assert self.phase_bitsize > 1
+        if not is_symbolic(self.phase_bitsize):
+            assert self.phase_bitsize > 1
         # a valid quantum state must have norm one
         assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
 
@@ -175,7 +177,7 @@ class StatePreparationViaRotations(GateWithRegisters):
 
     @property
     def prga_prepare_amplitude(self) -> List['PRGAViaPhaseGradient']:
-        if is_symbolic(self.state_coefficients):
+        if is_symbolic(self.state_coefficients, self.phase_bitsize):
             return [
                 PRGAViaPhaseGradient(
                     selection_bitsize=self.state_bitsize,
@@ -199,8 +201,8 @@ class StatePreparationViaRotations(GateWithRegisters):
     @property
     def prga_prepare_phases(self) -> 'PRGAViaPhaseGradient':
         data_or_shape: Union[Shaped, Tuple[int, ...]] = (
-            Shaped((self.state_coefficients.n,))
-            if isinstance(self.state_coefficients, HasLength)
+            Shaped((slen(self.state_coefficients),))
+            if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize)
             else tuple(self.rotation_tree.get_rom_vals()[1])
         )
         return PRGAViaPhaseGradient(
@@ -216,6 +218,9 @@ class StatePreparationViaRotations(GateWithRegisters):
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
+        if is_symbolic(self.state_coefficients) or is_symbolic(self.phase_bitsize):
+            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+
         if self.uncompute:
             soqs = self._prepare_phases(bb, **soqs)
             soqs = self._prepare_amplitudes(bb, **soqs)
@@ -224,7 +229,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs = self._prepare_phases(bb, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: 'Counter[Bloq]' = Counter()
         ret[Rx(angle=-np.pi / 2)] += self.state_bitsize
         ret[Rx(angle=np.pi / 2)] += self.state_bitsize
@@ -232,7 +237,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         ret[self.prga_prepare_phases] += 1
         for bloq in self.prga_prepare_amplitude:
             ret[bloq] += 1
-        return set(ret.items())
+        return ret
 
     def _prepare_amplitudes(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         r"""Parameters into soqs:
@@ -350,9 +355,33 @@ def _state_prep_via_rotation_symb() -> StatePreparationViaRotations:
     return state_prep_via_rotation_symb
 
 
+@bloq_example
+def _state_prep_via_rotation_symb_phasegrad() -> StatePreparationViaRotations:
+    state_coefs = (
+        (-0.42677669529663675 - 0.1767766952966366j),
+        (0.17677669529663664 - 0.4267766952966367j),
+        (0.17677669529663675 - 0.1767766952966368j),
+        (0.07322330470336305 - 0.07322330470336309j),
+        (0.4267766952966366 - 0.17677669529663692j),
+        (0.42677669529663664 + 0.17677669529663675j),
+        (0.0732233047033631 + 0.17677669529663678j),
+        (-0.07322330470336308 - 0.17677669529663678j),
+    )
+
+    phase_bitsize = sympy.Symbol(r"b_\text{grad}")
+    state_prep_via_rotation_symb_phasegrad = StatePreparationViaRotations(
+        state_coefficients=state_coefs, phase_bitsize=phase_bitsize
+    )
+    return state_prep_via_rotation_symb_phasegrad
+
+
 _STATE_PREP_VIA_ROTATIONS_DOC = BloqDocSpec(
     bloq_cls=StatePreparationViaRotations,
-    examples=(_state_prep_via_rotation, _state_prep_via_rotation_symb),
+    examples=(
+        _state_prep_via_rotation,
+        _state_prep_via_rotation_symb,
+        _state_prep_via_rotation_symb_phasegrad,
+    ),
 )
 
 
@@ -427,12 +456,12 @@ class PRGAViaPhaseGradient(Bloq):
         bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: 'Counter[Bloq]' = Counter()
         ret[self.qrom_bloq] += 1
         ret[self.qrom_bloq.adjoint()] += 1
         ret[self.add_into_phase_grad] += 1
-        return set(ret.items())
+        return ret
 
     def __repr__(self):
         return (

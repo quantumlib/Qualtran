@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 # NDArrays must be bound to np.generic
@@ -232,9 +232,12 @@ class CompositeBloq(Bloq):
         return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        raise DecomposeTypeError("CompositeBloq cannot be decomposed.")
+        raise ValueError(
+            "Calling `decompose_bloq` on a CompositeBloq is ill-defined. "
+            "Consider using the composite bloq directly or using `.flatten()`."
+        )
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
         """Return the bloq counts by counting up all the subbloqs."""
         from qualtran.resource_counting import build_cbloq_call_graph
 
@@ -846,6 +849,8 @@ class BloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
+        from qualtran.symbolics import is_symbolic
+
         if not self.add_register_allowed:
             raise ValueError(
                 "This BloqBuilder was constructed from pre-specified registers. "
@@ -863,6 +868,11 @@ class BloqBuilder:
                     "`dtype` must be specified and must be an QDType if `reg` is a register name."
                 )
             reg = Register(name=reg, dtype=dtype)
+
+        if is_symbolic(*reg.shape_symbolic):
+            raise DecomposeTypeError(
+                f"cannot add register with symbolic shape {reg.shape_symbolic}"
+            )
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:

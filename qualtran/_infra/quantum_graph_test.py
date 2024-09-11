@@ -70,4 +70,4 @@ def test_bloq_instance():
     binst_a = BloqInstance(TestAtom(), i=1)
     binst_b = BloqInstance(TestAtom(), i=1)
     assert binst_a == binst_b
-    assert str(binst_a) == 'TestAtom()<1>'
+    assert str(binst_a) == 'TestAtom<1>'

@@ -48,6 +48,7 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
+from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -108,12 +109,6 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
             self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
-    def _t_complexity_(self) -> 'TComplexity':
-        t_count = _from_directly_countable_cirq(self.cirq_gate)
-        if t_count is None:
-            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-        return t_count
-
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
@@ -145,13 +140,26 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
         return f'cirq.{g}'
 
     @property
     def cirq_gate(self) -> cirq.Gate:
         return self.gate
+
+    def _t_complexity_(self) -> 'TComplexity':
+        t_count = _from_directly_countable_cirq(self.cirq_gate)
+        if t_count is None:
+            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+        return t_count
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if isinstance(cost_key, QECGatesCost):
+            t_count = _from_directly_countable_cirq(self.cirq_gate)
+            if t_count is None:
+                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
@@ -577,7 +585,7 @@ def decompose_from_cirq_style_method(
             yields the cirq-style decomposition.
     """
     if any(
-        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
+        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side) or reg.is_symbolic()
         for reg in bloq.signature
     ):
         # pylint: disable=raise-missing-from

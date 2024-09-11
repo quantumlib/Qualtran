@@ -23,7 +23,7 @@ electron repulsion integrals.
 """
 
 from functools import cached_property
-from typing import Dict, Iterable, Set, TYPE_CHECKING
+from typing import Dict, Iterable, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -41,7 +41,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.block_encoding import BlockEncoding
@@ -55,7 +55,7 @@ from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingP
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -145,26 +145,25 @@ class SingleFactorizationOneBody(BlockEncoding):
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register(
-                "l",
-                BoundedQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1),
+                "l", BQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1)
             ),
             Register(
                 "p",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "q",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("rot_aa", BoundedQUInt(bitsize=1)),
-            Register("swap_pq", BoundedQUInt(bitsize=1)),
-            Register("spin", BoundedQUInt(bitsize=1)),
+            Register("rot_aa", BQUInt(bitsize=1)),
+            Register("swap_pq", BQUInt(bitsize=1)),
+            Register("spin", BQUInt(bitsize=1)),
         )
 
     @property
@@ -251,7 +250,7 @@ class SingleFactorizationOneBody(BlockEncoding):
             'sys': sys,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         iprep = InnerPrepareSingleFactorization(
             self.num_aux,
             self.num_spin_orb,
@@ -270,11 +269,11 @@ class SingleFactorizationOneBody(BlockEncoding):
         ).adjoint()
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return {
-            (iprep, 1),
-            (iprep_dag, 1),
-            (CSwap(n), 2),
-            (SelectSingleFactorization(num_spin_orb=self.num_spin_orb), 1),
-            (Hadamard(), 4),
+            iprep: 1,
+            iprep_dag: 1,
+            CSwap(n): 2,
+            SelectSingleFactorization(num_spin_orb=self.num_spin_orb): 1,
+            Hadamard(): 4,
         }
 
 

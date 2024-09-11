@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperpostionIJFirstQuantization,
 )
@@ -34,15 +34,14 @@ def test_prepare_kinetic_t_counts():
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
     _, counts = uni.call_graph()
-    qual_cost = counts[TGate()]
+    qual_cost = counts[Toffoli()]
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r).adjoint()
     _, counts = uni.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += counts[Toffoli()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
     _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
+    qual_cost += counts[Toffoli()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r).adjoint()
     _, counts = prep.call_graph()
-    qual_cost += counts[TGate()]
-    qual_cost //= 4
+    qual_cost += counts[Toffoli()]
     assert qual_cost == expected_cost

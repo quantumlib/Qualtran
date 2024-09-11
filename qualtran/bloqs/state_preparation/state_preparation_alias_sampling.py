@@ -20,13 +20,13 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
@@ -48,7 +48,7 @@ from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicFl
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
@@ -160,7 +160,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         )
         N = len(unnormalized_probabilities)
         return StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
@@ -191,7 +191,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         selection_bitsize = bit_length(n_coeff - 1)
         alt, keep = Shaped((n_coeff,)), Shaped((n_coeff,))
         return StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            selection_registers=Register('selection', BQUInt(selection_bitsize, n_coeff)),
             alt=alt,
             keep=keep,
             mu=mu,
@@ -271,13 +271,13 @@ class StatePreparationAliasSampling(PrepareOracle):
             'keep': keep,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (PrepareUniformSuperposition(self.n_coeff), 1),
-            (self.qrom_bloq, 1),
-            (LessThanEqual(self.mu, self.mu), 1),
-            (CSwap(self.selection_bitsize), 1),
-            (Hadamard(), self.mu),
+            PrepareUniformSuperposition(self.n_coeff): 1,
+            self.qrom_bloq: 1,
+            LessThanEqual(self.mu, self.mu): 1,
+            CSwap(self.selection_bitsize): 1,
+            Hadamard(): self.mu,
         }
 
 
@@ -407,7 +407,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         alt = [index[idx] for idx in alt_compressed]
 
         return cls(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             index=np.array(index),
             alt=np.array(alt),
             keep=np.array(keep),
@@ -463,7 +463,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         mu = sub_bit_prec_from_epsilon(n_coeff, precision)
         selection_bitsize = bit_length(n_coeff - 1)
         return cls(
-            selection_registers=Register('selection', BoundedQUInt(selection_bitsize, n_coeff)),
+            selection_registers=Register('selection', BQUInt(selection_bitsize, n_coeff)),
             index=Shaped((n_nonzero_coeff,)),
             alt=Shaped((n_nonzero_coeff,)),
             keep=Shaped((n_nonzero_coeff,)),

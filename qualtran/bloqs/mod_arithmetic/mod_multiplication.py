@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
 import numbers
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -38,7 +39,7 @@ from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.mod_arithmetic.mod_addition import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
@@ -134,12 +135,12 @@ class ModDbl(Bloq):
             return Text(f'x = 2 * x mod {self.mod}')
         return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            (AddK(self.dtype.bitsize + 2, -self.mod, signed=False), 1),
-            (AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False), 1),
-            (CNOT(), 1),
-            (XGate(), 2),
+            AddK(self.dtype.bitsize + 2, -self.mod, signed=False): 1,
+            AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False): 1,
+            CNOT(): 1,
+            XGate(): 2,
         }
 
 
@@ -180,12 +181,10 @@ class CModMulK(Bloq):
     mod: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        if isinstance(self.k, sympy.Expr):
+        if is_symbolic(self.k, self.mod):
             return
-        if isinstance(self.mod, sympy.Expr):
-            return
-
         assert 0 < self.k < self.mod
+        assert math.gcd(cast(int, self.k), cast(int, self.mod)) == 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -221,9 +220,9 @@ class CModMulK(Bloq):
         bb.free(y)
         return {'ctrl': ctrl, 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         k = ssa.new_symbol('k')
-        return {(self._Add(k=k), 2), (CSwap(self.dtype.bitsize), 1)}
+        return {self._Add(k=k): 2, CSwap(self.dtype.bitsize): 1}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl and x < self.mod:

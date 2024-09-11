@@ -44,6 +44,8 @@ def test_mod_exp_consistent_classical():
 
         # Choose a base smaller than mod.
         base = rs.randint(1, mod)
+        while np.gcd(base, mod) != 1:
+            base = rs.randint(1, mod)
 
         bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
         ret1 = bloq.call_classically(exponent=exponent)
@@ -65,7 +67,7 @@ def test_modexp_symb_manual():
 
 
 def test_mod_exp_consistent_counts():
-    bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
+    bloq = ModExp(base=11, exp_bitsize=3, x_bitsize=10, mod=50)
 
     counts1 = bloq.bloq_counts()
 
@@ -86,7 +88,7 @@ def test_mod_exp_consistent_counts():
 
 
 def test_mod_exp_t_complexity():
-    bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
+    bloq = ModExp(base=11, exp_bitsize=3, x_bitsize=10, mod=50)
     tcomp = bloq.t_complexity()
     assert tcomp.t > 0
 
