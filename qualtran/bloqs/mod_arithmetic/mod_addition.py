@@ -23,6 +23,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     QMontgomeryUInt,
@@ -89,7 +90,7 @@ class ModAdd(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
-            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f'Symbolic decomposition is not supported for {self}')
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -115,7 +116,8 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=True, cvs=()), x=y)
+        # FIXME: signed addition not large enough to fit `self.bitsize`-ed number.
+        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
@@ -125,7 +127,7 @@ class ModAdd(Bloq):
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=True, cvs=(1,)), x=y, ctrls=sign_split
+            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
         )
         sign = bb.join(sign_split)
 
@@ -390,6 +392,9 @@ class CModAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if self.dtype.is_symbolic():
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         y_arr = bb.split(y)
         ancilla = bb.allocate(1)
         x = bb.add(Cast(self.dtype, QUInt(self.dtype.bitsize)), reg=x)

@@ -174,6 +174,7 @@ def bloq_is_clifford(b: Bloq) -> bool:
         CYGate,
         CZ,
         Hadamard,
+        OnEach,
         SGate,
         TwoBitSwap,
         XGate,
@@ -185,6 +186,9 @@ def bloq_is_clifford(b: Bloq) -> bool:
 
     if isinstance(b, Adjoint):
         b = b.subbloq
+
+    if isinstance(b, OnEach):
+        b = b.gate
 
     if isinstance(
         b, (TwoBitSwap, Hadamard, XGate, ZGate, YGate, ArbitraryClifford, CNOT, CYGate, CZ, SGate)

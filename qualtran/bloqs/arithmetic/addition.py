@@ -76,7 +76,7 @@ if TYPE_CHECKING:
 class Add(Bloq):
     r"""An n-bit addition gate.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $n-1$ AND gates.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -89,7 +89,11 @@ class Add(Bloq):
         b: A b_dtype.bitsize-sized input/output register (register b above).
 
     References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+        Gidney 2018. The construction used in this bloq, evolved from [2].
+
+        [A new quantum ripple-carry addition circuit](https://arxiv.org/abs/quant-ph/0410184).
+        Cuccaro et. al. 2004.
     """
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
@@ -479,10 +483,6 @@ class AddK(Bloq):
 
         # Rejoin the qubits representing k for in-place addition.
         k = bb.join(k_split, dtype=x.reg.dtype)
-        if not isinstance(x.reg.dtype, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError(
-                "Only QInt, QUInt and QMontgomerUInt types are supported for composite addition."
-            )
         k, x = bb.add(Add(x.reg.dtype, x.reg.dtype), a=k, b=x)
 
         # Resplit the k qubits in order to undo the original bit flips to go from the binary

@@ -13,12 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
+import attrs
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature
+from qualtran import Bloq, DecomposeTypeError, QBit, QUInt, Register, Side, Signature
 from qualtran.drawing import RarrowTextBox, Text, WireSymbol
+from qualtran.resource_counting import CostKey, QubitCount
 
 
 @frozen
@@ -41,5 +43,24 @@ class MeasureQFT(Bloq):
             return RarrowTextBox('MeasQFT')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def cost_attrs(self):
-        return [('n', self.n)]
+    def my_static_costs(self, cost_key: 'CostKey'):
+        # TODO https://github.com/quantumlib/Qualtran/issues/1261
+        if cost_key == QubitCount():
+            return self.n
+        return NotImplemented
+
+
+@frozen
+class SimpleQROM(Bloq):
+    selection_bitsize: int
+    targets: Sequence[Tuple[str, int]] = attrs.field(converter=tuple)
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('selection', QUInt(self.selection_bitsize))]
+            + [Register(tname, QUInt(tsize)) for tname, tsize in self.targets]
+        )
+
+    def __str__(self):
+        return 'QROM'
