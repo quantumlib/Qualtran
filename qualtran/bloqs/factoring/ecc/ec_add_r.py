@@ -18,10 +18,23 @@ from typing import Dict, Optional, Tuple, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QBit,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 
+from ._ecc_shims import SimpleQROM
+from .ec_add import ECAdd
 from .ec_point import ECPoint
 
 
@@ -140,6 +153,31 @@ class ECWindowAddR(Bloq):
             ]
         )
 
+    @cached_property
+    def lookup_bloq(self) -> SimpleQROM:
+        return SimpleQROM(
+            selection_bitsize=self.window_size,
+            targets=[('a', self.n), ('b', self.n), ('lam', self.n)],
+        )
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        ctrl = bb.join(ctrl)
+        a = bb.allocate(dtype=QUInt(self.n))
+        b = bb.allocate(dtype=QUInt(self.n))
+        lam = bb.allocate(dtype=QUInt(self.n))
+
+        mod = self.R.mod
+        ctrl, a, b, lam = bb.add(self.lookup_bloq, selection=ctrl, a=a, b=b, lam=lam)
+        a, b, x, y, lam = bb.add(ECAdd(n=self.n, mod=mod), a=a, b=b, x=x, y=y, lam=lam)
+        ctrl, a, b, lam = bb.add(self.lookup_bloq.adjoint(), selection=ctrl, a=a, b=b, lam=lam)
+        bb.free(a)
+        bb.free(b)
+        bb.free(lam)
+
+        return {'ctrl': bb.split(ctrl), 'x': x, 'y': y}
+
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -152,9 +190,6 @@ class ECWindowAddR(Bloq):
         if reg.name == 'y':
             return TextBox(f'$+{self.R.y}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return f'ECWindowAddR({self.n=})'
 
 
 @bloq_example

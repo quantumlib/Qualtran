@@ -64,7 +64,8 @@ class ECAdd(Bloq):
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # litinksi
+        # Litinski 2023.
+        # These counts are transcribed from the table in Figure 5.
         return {
             MultiCToffoli(n=self.n): 18,
             ModAdd(bitsize=self.n, mod=self.mod): 3,
@@ -86,4 +87,12 @@ def _ec_add() -> ECAdd:
     return ec_add
 
 
-_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add])
+@bloq_example
+def _ec_add_256() -> ECAdd:
+    ec_add_256 = ECAdd(
+        n=256, mod=0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
+    )
+    return ec_add_256
+
+
+_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add, _ec_add_256])

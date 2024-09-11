@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import functools
 from functools import cached_property
 from typing import Dict
 
@@ -66,6 +66,7 @@ class FindECCPrivateKey(Bloq):
         n: The bitsize of the elliptic curve points' x and y registers.
         base_point: The base point $P$ with unknown order $r$ such that $P = [r] P$.
         public_key: The public key $Q$ such that $Q = [k] P$ for private key $k$.
+        window_size: If non-zero, use windowed elliptic curve point addition.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
@@ -75,6 +76,7 @@ class FindECCPrivateKey(Bloq):
     n: int
     base_point: ECPoint
     public_key: ECPoint
+    window_size: int = 0
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -92,12 +94,16 @@ class FindECCPrivateKey(Bloq):
             raise ValueError("Inconsistent curve parameters in the two points.")
         return self.base_point.curve_a
 
+    @property
+    def ec_pe_r(self) -> ECPhaseEstimateR:
+        return functools.partial(ECPhaseEstimateR, n=self.n, window_size=self.window_size)
+
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
         x = bb.add(IntState(bitsize=self.n, val=self.base_point.x))
         y = bb.add(IntState(bitsize=self.n, val=self.base_point.y))
 
-        x, y = bb.add(ECPhaseEstimateR(n=self.n, point=self.base_point), x=x, y=y)
-        x, y = bb.add(ECPhaseEstimateR(n=self.n, point=self.public_key), x=x, y=y)
+        x, y = bb.add(self.ec_pe_r(point=self.base_point), x=x, y=y)
+        x, y = bb.add(self.ec_pe_r(point=self.public_key), x=x, y=y)
 
         bb.add(Free(QUInt(self.n)), reg=x)
         bb.add(Free(QUInt(self.n)), reg=y)
@@ -108,7 +114,7 @@ class FindECCPrivateKey(Bloq):
         Ry = ssa.new_symbol('Ry')
         generic_point = ECPoint(Rx, Ry, mod=self.mod, curve_a=self.curve_a)
 
-        return {ECPhaseEstimateR(n=self.n, point=generic_point): 2}
+        return {self.ec_pe_r(point=generic_point): 2}
 
     def cost_attrs(self):
         return [('n', self.n)]

@@ -32,7 +32,6 @@ from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
-from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -48,8 +47,12 @@ class _ModInvInner(Bloq):
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # This listing is based off of Haner 2023, fig 15. The order of operations
-        # matches the order in the figure
+        # This listing is based off of Haner 2023, fig 15 and Litinski 2023, fig 7 circuit.
+        # The latter cites Gouzien 2023 for its circuit.
+        # The order of operations matches the order in the figures
+
+        # The leading-order cost might be off by a factor of n, see the comment in
+        # `ModInv.build_call_graph`.
         listing = [
             (MultiCToffoli(self.n + 1), 1),
             (CNOT(), 1),
@@ -95,8 +98,15 @@ class ModInv(Bloq):
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # Roetteler
-        # return {(Toffoli(), 32 * self.n**2 * log2(self.n))}
+        # Roetteler 2017.
+        # {(Toffoli(), 32 * self.n**2 * log2(self.n))}
+
+        # Litinski 2023 Table/Figure 8 lists the cost as 26n^2 + 2n.
+        # We can subtract the 2n from `Negate` and `AddK`, and divide by
+        # 2n to find that they expect `_ModInvInner` to cost 13n; but we only
+        # find 12 factors of n. Maybe they counted the 3-bit toffoli as an n-bit toffoli(?)
+
+        # The callees are derived from Litinski 2023, Figure 7 circuit.
         return {
             _ModInvInner(n=self.n, mod=self.mod): 2 * self.n,
             Negate(QUInt(self.n)): 1,
@@ -132,8 +142,11 @@ class ModMul(Bloq):
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # Roetteler montgomery
-        return {Toffoli(): ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2)}
+        # Roetteler 2017 montgomery multiplier
+        # {(Toffoli(), ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2))}
+
+        # Litinski 2023. Figure/Table 8
+        return {(Toffoli(), 2.25 * self.n**2 + 9 * self.n)}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

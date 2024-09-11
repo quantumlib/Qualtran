@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QBit,
     QInt,
     QUInt,
@@ -134,6 +135,8 @@ class CAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
+        if self.a_dtype.is_symbolic():
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
         a_arr = bb.split(a)
         ctrl_q = bb.split(ctrl)[0]
         ancilla_arr = []

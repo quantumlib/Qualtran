@@ -24,7 +24,7 @@ from attrs import frozen
 
 from qualtran import Bloq, QBit, QUInt, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, CostKey, QubitCount, SympySymbolAllocator
 
 
 @frozen
@@ -36,7 +36,13 @@ class MultiCToffoli(Bloq):
         return Signature([Register('ctrl', QBit(), shape=(self.n,)), Register('target', QBit())])
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        return {Toffoli(): self.n - 2}
+        return {Toffoli(): self.n - 1}
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        # TODO https://github.com/quantumlib/Qualtran/issues/1261
+        if cost_key == QubitCount():
+            return self.n + 1
+        return NotImplemented
 
 
 @frozen
@@ -51,7 +57,7 @@ class Lt(Bloq):
         )
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        # litinski
+        # Litinski 2023. Figure/Table 3.
         return {Toffoli(): self.n}
 
 
@@ -62,3 +68,9 @@ class CHalf(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.n))])
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        # It's unclear what this operation is (as part of the ModInv circuit).
+        # If we assume it's a modular halving, then we can just run `ModDbl`
+        # backwards, and the cost is the same.
+        return {(Toffoli(), 2 * self.n)}
