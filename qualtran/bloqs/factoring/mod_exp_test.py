@@ -58,7 +58,7 @@ def test_modexp_symb_manual():
     modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     assert cast(Text, modexp.wire_symbol(reg=None)).text == 'g^e % N'
     counts = modexp.bloq_counts()
-    counts_by_bloq = {bloq.pretty_name(): n for bloq, n in counts.items()}
+    counts_by_bloq = {str(bloq): n for bloq, n in counts.items()}
     assert counts_by_bloq['|1>'] == 1
     assert counts_by_bloq['CModMulK'] == n_e
 

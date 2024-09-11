@@ -14,7 +14,7 @@
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
 from collections import Counter
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -22,6 +22,7 @@ from qualtran import Bloq, bloq_example, QAny, QBit, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNuclearPhase
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
@@ -75,8 +76,10 @@ class SelectUVFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'SEL UV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('SEL UV')
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = Counter['Bloq']()

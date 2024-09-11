@@ -163,7 +163,7 @@ def test_zero_state_effect(bit):
 
 def test_int_state_manual():
     k = IntState(255, bitsize=8)
-    assert k.pretty_name() == '|255>'
+    assert str(k) == '|255>'
     (val,) = k.call_classically()
     assert val == 255
 
@@ -177,7 +177,7 @@ def test_int_state_manual():
 
 def test_int_effect_manual():
     k = IntEffect(255, bitsize=8)
-    assert k.pretty_name() == '<255|'
+    assert str(k) == '<255|'
     ret = k.call_classically(val=255)
     assert ret == ()
 

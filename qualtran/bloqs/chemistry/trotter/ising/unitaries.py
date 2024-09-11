@@ -12,12 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 import attrs
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import CNOT, Rx, Rz
+from qualtran.drawing import Text, WireSymbol
 
 
 @attrs.frozen
@@ -40,8 +41,10 @@ class IsingXUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def pretty_name(self) -> str:
-        return 'U_X'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("U_X")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
         system = bb.split(system)
@@ -70,8 +73,10 @@ class IsingZZUnitary(Bloq):
     def signature(self) -> Signature:
         return Signature.build(system=self.nsites)
 
-    def pretty_name(self) -> str:
-        return 'U_ZZ'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("U_ZZ")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', system: 'Soquet') -> Dict[str, 'Soquet']:
         system = bb.split(system)
