@@ -15,6 +15,7 @@
 from functools import cached_property
 from typing import Dict, Set
 
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -31,9 +32,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import PlusState
+from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.qft import QFTTextBook
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
-from ._ecc_shims import MeasureQFT
 from .ec_add_r import ECAddR
 from .ec_point import ECPoint
 
@@ -64,11 +66,21 @@ class ECPhaseEstimateR(Bloq):
         for i in range(self.n):
             ctrl[i], x, y = bb.add(ECAddR(n=self.n, R=2**i * self.point), ctrl=ctrl[i], x=x, y=y)
 
-        bb.add(MeasureQFT(n=self.n), x=ctrl)
+        ctrls = bb.join(np.array(ctrl), dtype=QUInt(bitsize=self.n))
+        ctrls = bb.add(QFTTextBook(bitsize=self.n), q=ctrls)
+        ctrl = bb.split(ctrls)
+
+        for i in range(self.n):
+            bb.add(Measure(), q=ctrl[i])
+
         return {'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ECAddR(n=self.n, R=self.point), self.n), (MeasureQFT(n=self.n), 1)}
+        return {
+            (ECAddR(n=self.n, R=self.point), self.n),
+            (QFTTextBook(bitsize=self.n), 1),
+            (Measure(), self.n),
+        }
 
     def pretty_name(self) -> str:
         point_str = str(self.point)

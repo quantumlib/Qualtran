@@ -13,15 +13,32 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    CtrlSpec,
+    DecomposeTypeError,
+    QBit,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran.bloqs.arithmetic import XorK
+from qualtran.bloqs.basic_gates import IntState
+from qualtran.bloqs.bookkeeping import Free
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 
+from .ec_add import ECAdd
 from .ec_point import ECPoint
 
 
@@ -66,6 +83,49 @@ class ECAddR(Bloq):
         return Signature(
             [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
         )
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        a = bb.add(IntState(bitsize=self.n, val=0))
+        b = bb.add(IntState(bitsize=self.n, val=0))
+
+        ctrl_spec = CtrlSpec(qdtypes=QBit(), cvs=(1))
+        ctrl, a = bb.add(
+            XorK(QUInt(bitsize=self.n), self.R.x).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=a
+        )
+        ctrl, b = bb.add(
+            XorK(QUInt(bitsize=self.n), self.R.y).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=b
+        )
+
+        lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
+        lam_denom = (2 * self.R.y) % self.R.mod
+
+        lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
+        lam_r = bb.add(IntState(bitsize=self.n, val=lam))
+
+        a, b, x, y, lam_r = bb.add(ECAdd(self.n, self.R.mod), a=a, b=b, x=x, y=y, lam=lam_r)
+
+        # Call graph doesn't like the controlled() operator on arbitrary clifford.
+        ctrl, a = bb.add(
+            XorK(QUInt(bitsize=self.n), self.R.x).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=a
+        )
+        ctrl, b = bb.add(
+            XorK(QUInt(bitsize=self.n), self.R.y).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=b
+        )
+
+        bb.add(Free(QUInt(self.n)), reg=a)
+        bb.add(Free(QUInt(self.n)), reg=b)
+        bb.add(Free(QUInt(self.n)), reg=lam_r)
+
+        return {'ctrl': ctrl, 'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        ctrl_spec = CtrlSpec(qdtypes=QBit(), cvs=(1))
+        return {(ECAdd(self.n, self.R.mod).controlled(ctrl_spec=ctrl_spec), 1)}
 
     def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         if ctrl == 0:
