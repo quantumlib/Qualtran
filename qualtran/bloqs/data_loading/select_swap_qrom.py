@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, Type, TYPE_CHECKING, TypeVar, Union
+from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, TypeVar, Union
 
 import attrs
 import cirq
@@ -33,21 +33,25 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
 
 def find_optimal_log_block_size(
-    iteration_length: SymbolicInt, target_bitsize: SymbolicInt
+    iteration_length: SymbolicInt, target_bitsize: SymbolicInt, use_dirty_ancilla: bool = False
 ) -> SymbolicInt:
     """Find optimal block size, which is a power of 2, for SelectSwapQROM.
 
     This functions returns the optimal `k` s.t.
         * k is in an integer and k >= 0.
-        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
+        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized if use_dirty_ancilla is False
+        * iteration_length/2^k + 2*target_bitsize*(2^k - 1) is minimized if use_dirty_ancilla is True
+
     The corresponding block size for SelectSwapQROM would be 2^k.
     """
+    if not use_dirty_ancilla:
+        target_bitsize = 2 * target_bitsize
     k: SymbolicFloat = 0.5 * log2(iteration_length / target_bitsize)
     if is_symbolic(k):
         return ceil(k)
@@ -60,6 +64,14 @@ def find_optimal_log_block_size(
 
     k_int = [np.floor(k), np.ceil(k)]  # restrict optimal k to integers
     return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
+
+
+def _find_optimal_log_block_size_helper(qrom: 'SelectSwapQROM') -> Tuple[SymbolicInt, ...]:
+    target_bitsize = sum(qrom.target_bitsizes) * sum(prod(shape) for shape in qrom.target_shapes)
+    return tuple(
+        find_optimal_log_block_size(ilen, target_bitsize, qrom.use_dirty_ancilla)
+        for ilen in qrom.data_shape
+    )
 
 
 def _alloc_anc_for_reg(
@@ -120,6 +132,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        if x is not None
+        else x,
+        default=None,
     )
     use_dirty_ancilla: bool = True
 
@@ -129,6 +144,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             raise ValueError(
                 f"{type(self)} currently only supports target registers of shape (). Found {self.target_shapes}"
             )
+        if self.log_block_sizes is None:
+            object.__setattr__(self, "log_block_sizes", _find_optimal_log_block_size_helper(self))
 
     @cached_property
     def signature(self) -> Signature:
@@ -137,13 +154,6 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         )
 
     # Builder methods and helpers.
-    @log_block_sizes.default
-    def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
-        target_bitsize = sum(self.target_bitsizes) * sum(
-            prod(shape) for shape in self.target_shapes
-        )
-        return tuple(find_optimal_log_block_size(ilen, target_bitsize) for ilen in self.data_shape)
-
     def is_symbolic(self) -> bool:
         return super().is_symbolic() or is_symbolic(*self.log_block_sizes)
 
@@ -160,6 +170,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        if log_block_sizes is None:
+            log_block_sizes = _find_optimal_log_block_size_helper(qroam)
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     @classmethod
@@ -180,6 +192,8 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             num_controls=num_controls,
         )
         qroam = attrs.evolve(qroam, use_dirty_ancilla=use_dirty_ancilla)
+        if log_block_sizes is None:
+            log_block_sizes = _find_optimal_log_block_size_helper(qroam)
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     def with_log_block_sizes(
@@ -255,7 +269,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             for target_bitsize in self.target_bitsizes
         ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: Dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         toggle_overhead = 2 if self.use_dirty_ancilla else 1
         ret[self.qrom_bloq] += 1
@@ -266,7 +280,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
                 ret[swz] += toggle_overhead
                 ret[swz.adjoint()] += toggle_overhead
-        return set(ret.items())
+        return ret
 
     def _add_qrom_bloq(
         self,

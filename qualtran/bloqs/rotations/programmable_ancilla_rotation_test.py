@@ -26,6 +26,8 @@ from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
     ZPowProgrammedAncilla,
     ZPowUsingProgrammedAncilla,
 )
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
+from qualtran.symbolics import ceil, log2
 
 
 def test_rz_resource_state_examples(bloq_autotester):
@@ -52,6 +54,20 @@ def test_rz_via_par_examples(bloq_autotester):
     bloq_autotester(_zpow_using_programmed_ancilla_symb_rounds)
 
 
+def test_t_cost_including_rotations():
+    theta, eps, p = sympy.symbols(r'theta, \epsilon, p')
+    bloq = ZPowUsingProgrammedAncilla.from_failure_probability(
+        exponent=theta, max_fail_probability=p, eps=eps
+    )
+    _, sigma = bloq.call_graph()
+    n_rot = ceil(log2(1 / p))
+    eps_per_rot = eps / n_rot
+    # TODO(#1250): Ideally, we should be able to get this symbolic cost via more standard
+    # ways like `bloq.t_complexity()` or `get_cost_value(bloq, QECGatesCost())` but both
+    # of them ignore epsilon right now.
+    assert t_counts_from_sigma(sigma) == ceil(1.149 * log2(1.0 / eps_per_rot) + 9.2) * n_rot
+
+
 def test_rz_via_par_call_graphs():
     _, sigma_rz = ZPowUsingProgrammedAncilla(np.pi / 4).call_graph(max_depth=1)
     assert sigma_rz == {
@@ -74,13 +90,13 @@ def test_rz_via_par_call_graphs():
         Measure(): 3,
     }
 
-    phi0, eps0, n = sympy.symbols(r"_\phi0 _\epsilon0 n")
+    phi0, n = sympy.symbols(r"_\phi0 n")
     _, sigma_rz_symb_rounds = ZPowUsingProgrammedAncilla(phi, eps=eps, n_rounds=n).call_graph(
         max_depth=1
     )
     assert sigma_rz_symb_rounds == {
         CNOT(): n,
         XGate(): n,
-        ZPowProgrammedAncilla(phi0, eps0): n,
+        ZPowProgrammedAncilla(phi0, eps / n): n,
         Measure(): n,
     }

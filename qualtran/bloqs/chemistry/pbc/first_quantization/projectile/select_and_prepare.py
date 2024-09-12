@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -55,7 +55,7 @@ from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -103,15 +103,17 @@ class PrepareTUVSuperpositions(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
-        return 'PREP TUV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP TUV")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
-            return set()
+            return {}
         else:
-            return {(Toffoli(), 6 * self.num_bits_t + 2)}
+            return {Toffoli(): 6 * self.num_bits_t + 2}
 
 
 @frozen
@@ -140,7 +142,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('MultiSwap')
         if reg.name == 'sel':
             return TextBox('In')
         elif reg.name == 'targets':
@@ -282,8 +284,10 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -461,8 +465,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def pretty_name(self) -> str:
-        return r'SELECT'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SELECT")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,

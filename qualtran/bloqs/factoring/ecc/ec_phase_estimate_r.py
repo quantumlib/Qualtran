@@ -34,7 +34,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import PlusState
 from qualtran.bloqs.basic_gates._shims import Measure
 from qualtran.bloqs.qft import QFTTextBook
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 from .ec_add_r import ECAddR
 from .ec_point import ECPoint
@@ -75,18 +75,15 @@ class ECPhaseEstimateR(Bloq):
 
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountDictT']:
         return {
             (ECAddR(n=self.n, R=self.point), self.n),
             (QFTTextBook(bitsize=self.n), 1),
             (Measure(), self.n),
         }
 
-    def pretty_name(self) -> str:
-        point_str = str(self.point)
-        if len(point_str) < 5 or True:
-            return f'PE${point_str}$'
-        return 'PE(R)'
+    def __str__(self) -> str:
+        return f'PE${self.point}$'
 
 
 @bloq_example

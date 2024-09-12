@@ -48,16 +48,16 @@ TestAtom('atom2')<2>
     assert (
         TestSerialCombo().adjoint().decompose_bloq().debug_text()
         == """\
-Adjoint(subbloq=TestAtom('atom2'))<0>
+TestAtom('atom2')†<0>
   LeftDangle.reg -> q
-  q -> Adjoint(subbloq=TestAtom('atom1'))<1>.q
+  q -> TestAtom('atom1')†<1>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom1'))<1>
-  Adjoint(subbloq=TestAtom('atom2'))<0>.q -> q
-  q -> Adjoint(subbloq=TestAtom('atom0'))<2>.q
+TestAtom('atom1')†<1>
+  TestAtom('atom2')†<0>.q -> q
+  q -> TestAtom('atom0')†<2>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom0'))<2>
-  Adjoint(subbloq=TestAtom('atom1'))<1>.q -> q
+TestAtom('atom0')†<2>
+  TestAtom('atom1')†<1>.q -> q
   q -> RightDangle.reg"""
     )
 
@@ -72,16 +72,16 @@ def test_cbloq_adjoint_function():
     assert (
         adj_cbloq.debug_text()
         == """\
-Adjoint(subbloq=TestAtom('atom2'))<0>
+TestAtom('atom2')†<0>
   LeftDangle.reg -> q
-  q -> Adjoint(subbloq=TestAtom('atom1'))<1>.q
+  q -> TestAtom('atom1')†<1>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom1'))<1>
-  Adjoint(subbloq=TestAtom('atom2'))<0>.q -> q
-  q -> Adjoint(subbloq=TestAtom('atom0'))<2>.q
+TestAtom('atom1')†<1>
+  TestAtom('atom2')†<0>.q -> q
+  q -> TestAtom('atom0')†<2>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom0'))<2>
-  Adjoint(subbloq=TestAtom('atom1'))<1>.q -> q
+TestAtom('atom0')†<2>
+  TestAtom('atom1')†<1>.q -> q
   q -> RightDangle.reg"""
     )
 
@@ -135,13 +135,12 @@ def test_call_graph():
 
 def test_names():
     atom = TestAtom()
-    assert atom.pretty_name() == "TestAtom"
+    assert str(atom) == "TestAtom"
     assert cast(Text, atom.wire_symbol(reg=None)).text == "TestAtom"
 
     adj_atom = Adjoint(atom)
-    assert adj_atom.pretty_name() == "TestAtom†"
+    assert str(adj_atom) == "TestAtom†"
     assert cast(Text, adj_atom.wire_symbol(reg=None)).text == "TestAtom†"
-    assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
 def test_wire_symbol():

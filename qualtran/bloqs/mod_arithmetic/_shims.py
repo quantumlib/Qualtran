@@ -22,7 +22,7 @@ and moved to their final organizational location soon (written: 2024-05-06).
 
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -35,7 +35,7 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -47,7 +47,7 @@ class _ModInvInner(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # This listing is based off of Haner 2023, fig 15. The order of operations
         # matches the order in the figure
         listing = [
@@ -71,7 +71,7 @@ class _ModInvInner(Bloq):
         summer: Dict[Bloq, int] = defaultdict(lambda: 0)
         for bloq, n in listing:
             summer[bloq] += n
-        return set(summer.items())
+        return summer
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -94,14 +94,14 @@ class ModInv(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Roetteler
         # return {(Toffoli(), 32 * self.n**2 * log2(self.n))}
         return {
-            (_ModInvInner(n=self.n, mod=self.mod), 2 * self.n),
-            (Negate(QUInt(self.n)), 1),
-            (AddK(self.n, k=self.mod), 1),
-            (Swap(self.n), 1),
+            _ModInvInner(n=self.n, mod=self.mod): 2 * self.n,
+            Negate(QUInt(self.n)): 1,
+            AddK(self.n, k=self.mod): 1,
+            Swap(self.n): 1,
         }
 
     def wire_symbol(
@@ -131,9 +131,9 @@ class ModMul(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Roetteler montgomery
-        return {(Toffoli(), ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2))}
+        return {Toffoli(): ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2)}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

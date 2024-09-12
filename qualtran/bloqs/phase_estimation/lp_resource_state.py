@@ -15,21 +15,22 @@
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 import sympy
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import CZ, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.phase_estimation.qpe_window_state import QPEWindowStateBase
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import acos, ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -55,8 +56,10 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def pretty_name(self) -> str:
-        return 'LPRS'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('LPRS')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, m: 'SoquetT', anc: 'Soquet'
@@ -73,7 +76,7 @@ class LPRSInterimPrep(GateWithRegisters):
         anc = bb.add(Hadamard(), q=anc)
         return {'m': bb.join(q[::-1]), 'anc': anc}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
         ret: Counter['Bloq'] = Counter()
         ret[Rz(angle=rz_angle)] += 1
@@ -84,7 +87,7 @@ class LPRSInterimPrep(GateWithRegisters):
         else:
             for i in range(self.bitsize):
                 ret[Rz(angle=rz_angle * (2**i)).controlled()] += 1
-        return set(ret.items())
+        return ret
 
 
 @attrs.frozen
@@ -172,19 +175,19 @@ class LPResourceState(QPEWindowStateBase):
         bb.free(anc)
         return {'qpe_reg': qpe_reg}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         flag_angle = acos(1 / (1 + 2**self.bitsize))
         reflection_bloq: 'Bloq' = ReflectionUsingPrepare.reflection_around_zero(
             [1, 1, self.bitsize], global_phase=1j
         )
         return {
-            (LPRSInterimPrep(self.bitsize), 2),
-            (LPRSInterimPrep(self.bitsize).adjoint(), 1),
-            (Ry(angle=flag_angle), 2),
-            (Ry(angle=-1 * flag_angle), 1),
-            (reflection_bloq, 1),
-            (XGate(), 2),
-            (CZ(), 1),
+            LPRSInterimPrep(self.bitsize): 2,
+            LPRSInterimPrep(self.bitsize).adjoint(): 1,
+            Ry(angle=flag_angle): 2,
+            Ry(angle=-1 * flag_angle): 1,
+            reflection_bloq: 1,
+            XGate(): 2,
+            CZ(): 1,
         }
 
 

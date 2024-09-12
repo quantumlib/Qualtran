@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -36,7 +36,11 @@ from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        MutableBloqCountDictT,
+        SympySymbolAllocator,
+    )
 
 
 @attrs.frozen
@@ -89,8 +93,8 @@ class ChebyshevPolynomial(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
+    def __str__(self) -> str:
+        return f"B[T_{self.order}({self.block_encoding})]"
 
     @property
     def system_bitsize(self) -> SymbolicInt:
@@ -138,14 +142,14 @@ class ChebyshevPolynomial(BlockEncoding):
             soqs |= bb.add_d(self.block_encoding, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.order
-        s: Set['BloqCountT'] = {
-            (self.block_encoding, n // 2 + n % 2),
-            (self.block_encoding.adjoint(), n // 2),
+        s: 'MutableBloqCountDictT' = {
+            self.block_encoding: n // 2 + n % 2,
+            self.block_encoding.adjoint(): n // 2,
         }
         if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
-            s.add((self.reflection_bloq, n - n % 2))
+            s[self.reflection_bloq] = n - n % 2
         return s
 
 
@@ -212,9 +216,6 @@ class ScaledChebyshevPolynomial(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
-        return f"B[T_{self.order}({self.block_encoding.pretty_name()})]"
-
     @property
     def system_bitsize(self) -> SymbolicInt:
         return self.linear_combination.system_bitsize
@@ -269,6 +270,9 @@ class ScaledChebyshevPolynomial(BlockEncoding):
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         return bb.add_d(self.linear_combination, **soqs)
+
+    def __str__(self) -> str:
+        return f"B[T_{self.order}({self.block_encoding})]"
 
 
 @bloq_example

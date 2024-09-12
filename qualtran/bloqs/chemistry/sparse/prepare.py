@@ -15,7 +15,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -51,7 +51,7 @@ from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def get_sparse_inputs_from_integrals(
@@ -422,15 +422,15 @@ class PrepareSparse(PrepareOracle):
         )
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (PrepareUniformSuperposition(self.num_non_zero), 1),
-            (self.build_qrom_bloq(), 1),
-            (OnEach(self.num_bits_state_prep, Hadamard()), 1),
-            (Hadamard(), 3),
-            (CSwap(1), 1),
-            (CSwap(self.num_bits_spat_orb), 4 + 4),
-            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1),
+            PrepareUniformSuperposition(self.num_non_zero): 1,
+            self.build_qrom_bloq(): 1,
+            OnEach(self.num_bits_state_prep, Hadamard()): 1,
+            Hadamard(): 3,
+            CSwap(1): 1,
+            CSwap(self.num_bits_spat_orb): 4 + 4,
+            LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep): 1,
         }
 
 
