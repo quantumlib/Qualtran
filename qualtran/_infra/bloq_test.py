@@ -28,7 +28,7 @@ def test_bloq():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestTwoBitOp'
+    assert str(tb) == 'TestTwoBitOp'
 
     with pytest.raises(DecomposeTypeError):
         tb.decompose_bloq()

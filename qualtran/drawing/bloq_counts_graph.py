@@ -110,7 +110,7 @@ class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
 class GraphvizCounts(_CallGraphDrawerBase):
     """Draw a bloq call graphs using Graphviz.
 
-    Each node is a bloq with a `bloq.pretty_name()` label and an automatically-determined
+    Each node is a bloq with a string label and an automatically-determined
     "details" string based on the bloqs attributes. For non-attrs classes, classes with
     a large number of fields, or classes where the fields' string representations are long;
     the details string will be abbreviated.
@@ -133,7 +133,7 @@ class GraphvizCounts(_CallGraphDrawerBase):
         self.max_detail_len = 200
 
     def get_node_title(self, b: Bloq):
-        return b.pretty_name()
+        return str(b)
 
     @staticmethod
     def abbreviate_field_list(

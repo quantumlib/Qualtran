@@ -167,13 +167,9 @@ class Adjoint(GateWithRegisters):
                 counts[bloq.adjoint()] += n
         return counts
 
-    def pretty_name(self) -> str:
-        """The subbloq's pretty_name with a dagger."""
-        return self.subbloq.pretty_name() + '†'
-
     def __str__(self) -> str:
         """Delegate to subbloq's `__str__` method."""
-        return f'Adjoint(subbloq={str(self.subbloq)})'
+        return f'{str(self.subbloq)}†'
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

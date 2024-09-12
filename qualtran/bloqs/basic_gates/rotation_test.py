@@ -103,7 +103,7 @@ def test_as_cirq_op():
     )
 
 
-def test_pretty_name():
+def test_str():
     assert str(ZPowGate()) == "Z**1.0"
     assert str(XPowGate()) == "X**1.0"
     assert str(YPowGate()) == "Y**1.0"
