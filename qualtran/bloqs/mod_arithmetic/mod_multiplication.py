@@ -277,7 +277,7 @@ _C_MOD_MUL_K_DOC = BloqDocSpec(bloq_cls=CModMulK, examples=(_modmul_symb, _modmu
 
 @frozen
 class SingleWindowModMul(Bloq):
-    r"""Performs modular multiplication on a single windowed.
+    r"""Used as a subroutine in DirtyOutOfPlaceMontgomeryModMul.
 
     Applies
     $$
@@ -290,14 +290,14 @@ class SingleWindowModMul(Bloq):
     - $p$ is the modulus.
 
     Args:
-        bitsize: size of the numbers.
-        window_size: size of the window.
+        window_size: size of the window (=size of the first register).
+        bitsize: size of the second register.
         mod: The integer modulus.
 
     Registers:
-        x: The first integer (`window_size` bits).
+        x: The first integer as an array of bits (`window_size` bits).
         y: The second integer (`bitsize` bits)
-        target: product accumulator.
+        target: product accumulation array of bits.
         qrom_index: contains the value $xy \mod 2^w$ (starts at 0).
     """
 
@@ -377,27 +377,35 @@ class SingleWindowModMul(Bloq):
         m, qrom_index = bb.add(Xor(QMontgomeryUInt(self.window_size)), x=m, y=qrom_index)
         target[-self.window_size :] = bb.split(m)
 
-        qrom_index, qrom_target = bb.add(self.qrom, selection=qrom_index)
+        qrom_index, qrom_target, *junk = bb.add(self.qrom, selection=qrom_index)
         z = bb.join(target)
         qrom_target, z = bb.add(
             Add(QMontgomeryUInt(self.bitsize + self.window_size)), a=qrom_target, b=z
         )
-        qrom_index = bb.add(self.qrom.adjoint(), selection=qrom_index, target0_=qrom_target)
+        if junk:
+            assert len(junk) == 1
+            qrom_index = bb.add(
+                self.qrom.adjoint(),
+                selection=qrom_index,
+                target0_=qrom_target,
+                junk_target0_=junk[0],
+            )
+        else:
+            qrom_index = bb.add(self.qrom.adjoint(), selection=qrom_index, target0_=qrom_target)
         target_arr = bb.split(z)
         target_arr = np.roll(target_arr, self.window_size)
 
         return {'x': x, 'y': y, 'target': target_arr, 'qrom_index': qrom_index}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {
-            (
-                CAdd(QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)),
-                self.window_size,
-            ),
-            (Xor(QMontgomeryUInt(self.window_size)), 1),
-            (Add(QMontgomeryUInt(self.bitsize + self.window_size)), 1),
-            (self.qrom, 1),
-            (self.qrom.adjoint(), 1),
+            CAdd(
+                QMontgomeryUInt(self.bitsize), QMontgomeryUInt(self.bitsize + 1)
+            ): self.window_size,
+            Xor(QMontgomeryUInt(self.window_size)): 1,
+            Add(QMontgomeryUInt(self.bitsize + self.window_size)): 1,
+            self.qrom: 1,
+            self.qrom.adjoint(): 1,
         }
 
 
@@ -414,7 +422,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
 
     - $n$ is the bitsize.
     - $x, y$ are in montgomery form
-    - $h$ is an ancilla register that represents intermidate values.
+    - $h$ is an ancilla register that represents intermediate values.
     - $c$ is whether a final modular reduction was applied or not.
 
     Note: this is an internal implementation class that assumes the target registers (see above) are clean.
@@ -515,13 +523,13 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
 
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         num_windows = (self.bitsize + self.window_size - 1) // self.window_size
         return {
-            (AddK(self.bitsize, self.mod, cvs=(1,), signed=False), 1),
-            (LessThanConstant(bitsize=self.bitsize, less_than_val=self.mod), 1),
-            (XGate(), 1),
-            (self._window, num_windows),
+            AddK(self.bitsize, self.mod, cvs=(1,), signed=False): 1,
+            LessThanConstant(bitsize=self.bitsize, less_than_val=self.mod): 1,
+            XGate(): 1,
+            self._window: num_windows,
         }
 
 
