@@ -33,9 +33,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic import XorK
-from qualtran.bloqs.basic_gates import IntState
+from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.bookkeeping import Free
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 from .ec_add import ECAdd
@@ -93,13 +94,8 @@ class ECAddR(Bloq):
         a = bb.add(IntState(bitsize=self.n, val=0))
         b = bb.add(IntState(bitsize=self.n, val=0))
 
-        ctrl_spec = CtrlSpec(qdtypes=QBit(), cvs=(1))
-        ctrl, a = bb.add(
-            XorK(QUInt(bitsize=self.n), self.R.x).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=a
-        )
-        ctrl, b = bb.add(
-            XorK(QUInt(bitsize=self.n), self.R.y).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=b
-        )
+        ctrl, a = bb.add(XorK(QUInt(bitsize=self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
+        ctrl, b = bb.add(XorK(QUInt(bitsize=self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
 
         lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
         lam_denom = (2 * self.R.y) % self.R.mod
@@ -107,25 +103,22 @@ class ECAddR(Bloq):
         lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
         lam_r = bb.add(IntState(bitsize=self.n, val=lam))
 
-        a, b, x, y, lam_r = bb.add(ECAdd(self.n, self.R.mod), a=a, b=b, x=x, y=y, lam=lam_r)
+        a, b, x, y, lam_r = bb.add(
+            ECAdd(self.n, self.R.mod, self.R.curve_a), a=a, b=b, x=x, y=y, lam=lam_r
+        )
 
         # Call graph doesn't like the controlled() operator on arbitrary clifford.
-        ctrl, a = bb.add(
-            XorK(QUInt(bitsize=self.n), self.R.x).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=a
-        )
-        ctrl, b = bb.add(
-            XorK(QUInt(bitsize=self.n), self.R.y).controlled(ctrl_spec=ctrl_spec), ctrl=ctrl, x=b
-        )
+        ctrl, a = bb.add(XorK(QUInt(bitsize=self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
+        ctrl, b = bb.add(XorK(QUInt(bitsize=self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
 
         bb.add(Free(QUInt(self.n)), reg=a)
         bb.add(Free(QUInt(self.n)), reg=b)
-        bb.add(Free(QUInt(self.n)), reg=lam_r)
+        bb.add(IntEffect(bitsize=self.n, val=lam), val=lam_r)
 
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        ctrl_spec = CtrlSpec(qdtypes=QBit(), cvs=(1))
-        return {(ECAdd(self.n, self.R.mod).controlled(ctrl_spec=ctrl_spec), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountDictT']:
+        return {(ECAdd(self.n, self.R.mod, self.R.curve_a).controlled(), 1)}
 
     def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         if ctrl == 0:

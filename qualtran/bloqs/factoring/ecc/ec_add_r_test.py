@@ -12,7 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc.ec_add_r import _ec_add_r, _ec_add_r_small, _ec_window_add
+import pytest
+
+from qualtran.bloqs.factoring.ecc.ec_add_r import _ec_add_r, _ec_add_r_small, _ec_window_add, ECAddR
+from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
+
+
+@pytest.mark.parametrize(
+    'n,p,ctrl,x,y,a,b,result',
+    [(18, 17, 0, 1, 1, 12, 13, (0, 1, 1)), (14, 13, 1, 5, 11, 15, 5, (1, 10, 5))],
+)
+def test_ec_add_r_classical(n, p, ctrl, x, y, a, b, result):
+    R = ECPoint(a, b, mod=p)
+    bloq = ECAddR(n=n, R=R)
+    ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
+    ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, x=x, y=y)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 def test_ec_add_r(bloq_autotester):

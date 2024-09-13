@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import Dict, Union
 
 import sympy
 from attrs import frozen
@@ -21,6 +22,9 @@ from qualtran.bloqs.arithmetic._shims import MultiCToffoli
 from qualtran.bloqs.mod_arithmetic import CModAdd, CModNeg, CModSub, ModAdd, ModNeg, ModSub
 from qualtran.bloqs.mod_arithmetic._shims import ModDbl, ModInv, ModMul
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.simulation.classical_sim import ClassicalValT
+
+from .ec_point import ECPoint
 
 
 @frozen
@@ -50,6 +54,7 @@ class ECAdd(Bloq):
 
     n: int
     mod: int
+    curve_a: int
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -77,6 +82,12 @@ class ECAdd(Bloq):
             ModMul(n=self.n, mod=self.mod): 10,
             ModInv(n=self.n, mod=self.mod): 4,
         }
+
+    def on_classical_vals(self, a, b, x, y, lam) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+        p1 = ECPoint(a, b, mod=self.mod, curve_a=self.curve_a)
+        p2 = ECPoint(x, y, mod=self.mod, curve_a=self.curve_a)
+        result: ECPoint = p1 + p2
+        return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam': lam}
 
 
 @bloq_example
