@@ -277,7 +277,9 @@ _C_MOD_MUL_K_DOC = BloqDocSpec(bloq_cls=CModMulK, examples=(_modmul_symb, _modmu
 
 @frozen
 class SingleWindowModMul(Bloq):
-    r"""Used as a subroutine in DirtyOutOfPlaceMontgomeryModMul.
+    r"""Performs modular multiplication on a single windowed.
+
+    This bloq is used as a subroutine in DirtyOutOfPlaceMontgomeryModMul.
 
     Applies
     $$
@@ -620,6 +622,8 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         target: 'ClassicalValT',
         qrom_indices: 'ClassicalValT',
     ):
+        # This method implements same logic as SingleWindowModMul.on_classical_vals except that it works on integers rather than bit arrays.
+        # Calls to this function are equivalent to calls to self._window.call_classically given the appropiate conversion int <-> bitarray.
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
         for i in range(self.window_size):
