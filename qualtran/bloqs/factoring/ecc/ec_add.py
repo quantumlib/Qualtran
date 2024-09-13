@@ -37,6 +37,8 @@ class ECAdd(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
+        curve_a: The $a$ coefficient of an elliptic curve given in the standard form of
+            $y^2 = x^3 + ax + b$.
 
     Registers:
         a: The x component of the first input elliptic curve point of bitsize `n`.
