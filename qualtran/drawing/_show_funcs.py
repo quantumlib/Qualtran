@@ -53,7 +53,10 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:
-        raise ValueError(f"Unknown `show_bloq` type: {type}.")
+        raise ValueError(
+            f"Unknown `show_bloq` type: {type}."
+            "Allowed types are [graph, dtype, musical_score, latex]"
+        )
 
 
 def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]] = None):

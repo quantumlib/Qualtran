@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, Type, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -30,7 +30,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, SoquetT, QDType
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
 
@@ -71,6 +71,8 @@ def get_optimal_log_block_size_clean_ancilla(
         k = log2(qroam_block_size)
     if is_symbolic(k):
         return k
+    if k < 0:
+        return 0
     k_int = np.array([np.floor(k), np.ceil(k)])
     return int(k_int[np.argmin(qroam_cost(2**k_int, data_size, bitsize, adjoint))])
 
@@ -174,11 +176,11 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
             assert all(1 <= 2**bs <= ilen for bs, ilen in zip(log_block_sizes, self.data_shape))
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes
-        return {(Toffoli(), n_toffoli)}
+        return {Toffoli(): n_toffoli}
 
     @cached_property
     def signature(self) -> Signature:
@@ -233,9 +235,11 @@ class QROAMCleanAdjointWrapper(Bloq):
         if self.qroam_clean.has_data():
             return QROAMCleanAdjoint.build_from_data(
                 *self.qroam_clean.batched_data_permuted,
+                target_bitsizes=self.qroam_clean.target_bitsizes,
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.batched_data_permuted),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
         else:
             return QROAMCleanAdjoint.build_from_bitsize(
@@ -244,6 +248,7 @@ class QROAMCleanAdjointWrapper(Bloq):
                 target_shapes=(self.qroam_clean.block_sizes,)
                 * len(self.qroam_clean.target_bitsizes),
                 log_block_sizes=self.log_block_sizes,
+                num_controls=self.qroam_clean.num_controls,
             )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -260,11 +265,11 @@ class QROAMCleanAdjointWrapper(Bloq):
         soqs = bb.add_d(self.qroam_clean_adjoint_bloq, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.qroam_clean.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes
-        return {(Toffoli(), n_toffoli)}
+        return {Toffoli(): n_toffoli}
 
     def adjoint(self) -> 'QROAMClean':
         return self.qroam_clean
@@ -437,13 +442,13 @@ class QROAMClean(SelectSwapQROM):
                 junk_regs += [attrs.evolve(reg, name='junk_' + reg.name, shape=(block_size - 1,))]
         return tuple(junk_regs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: Dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         ret[self.qrom_bloq] += 1
         for swz in self.swap_with_zero_bloqs:
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
                 ret[swz] += 1
-        return set(ret.items())
+        return ret
 
     def _build_composite_bloq_with_swz_clean(
         self,
@@ -511,7 +516,7 @@ class QROAMClean(SelectSwapQROM):
         name = reg.name
         if name == 'selection':
             return TextBox('In')
-        elif 'target' in name:
+        elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)

@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import Dict, Iterable, Set, Tuple
+from typing import Dict, Iterable, Tuple
 
 import numpy as np
 import sympy
@@ -26,7 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -46,7 +46,7 @@ from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import bit_length
@@ -94,7 +94,7 @@ class RowColumnOracle(Bloq, abc.ABC):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
-            l=BoundedQUInt(self.system_bitsize, self.num_nonzero), i=QUInt(self.system_bitsize)
+            l=BQUInt(self.system_bitsize, self.num_nonzero), i=QUInt(self.system_bitsize)
         )
 
 
@@ -190,9 +190,6 @@ class SparseMatrix(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return self.entry_oracle.system_bitsize
 
-    def pretty_name(self) -> str:
-        return "B[SparseMatrix]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return self.row_oracle.num_nonzero
@@ -211,7 +208,7 @@ class SparseMatrix(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
     @cached_property
     def diffusion(self):
@@ -223,14 +220,14 @@ class SparseMatrix(BlockEncoding):
             ],
         )
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            (self.diffusion, 1),
-            (self.col_oracle, 1),
-            (self.entry_oracle, 1),
-            (Swap(self.system_bitsize), 1),
-            (self.row_oracle.adjoint(), 1),
-            (self.diffusion.adjoint(), 1),
+            self.diffusion: 1,
+            self.col_oracle: 1,
+            self.entry_oracle: 1,
+            Swap(self.system_bitsize): 1,
+            self.row_oracle.adjoint(): 1,
+            self.diffusion.adjoint(): 1,
         }
 
     def build_composite_bloq(
@@ -251,6 +248,9 @@ class SparseMatrix(BlockEncoding):
         l = bb.add(self.diffusion.adjoint(), target=l)
 
         return {"system": system, "ancilla": bb.join(np.concatenate([[q], bb.split(l)]))}
+
+    def __str__(self) -> str:
+        return "B[SparseMatrix]"
 
 
 @frozen
@@ -331,10 +331,10 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
             raise IndexError("l out of bounds")
         return ((l + i - self.bandsize) % (2**self.system_bitsize), i)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set[BloqCountT]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {
-            (Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), 1),
-            (AddK(self.system_bitsize, -self.bandsize, signed=True), 1),
+            Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)): 1,
+            AddK(self.system_bitsize, -self.bandsize, signed=True): 1,
         }
 
     def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> Dict[str, SoquetT]:

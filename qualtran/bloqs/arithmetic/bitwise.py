@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Dict, Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Signature,
@@ -38,7 +39,7 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -89,9 +90,9 @@ class XorK(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_flips = self.bitsize if self.is_symbolic() else sum(self._bits_k)
-        return {(XGate(), num_flips)}
+        return {XGate(): num_flips}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         if isinstance(self.k, sympy.Expr):
@@ -155,8 +156,8 @@ class Xor(Bloq):
 
         return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        return {(CNOT(), self.dtype.num_qubits)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {CNOT(): self.dtype.num_qubits}
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -220,6 +221,12 @@ class BitwiseNot(Bloq):
             return TextBox("")
 
         return TextBox("~x")
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        x = -x - 1
+        if isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
+            x %= 2**self.dtype.bitsize
+        return {'x': x}
 
 
 @bloq_example

@@ -39,7 +39,13 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, CostKey, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        BloqCountT,
+        CostKey,
+        GeneralizerT,
+        SympySymbolAllocator,
+    )
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -104,9 +110,6 @@ class Bloq(metaclass=abc.ABCMeta):
         about this bloq.
         """
 
-    def pretty_name(self) -> str:
-        return self.__class__.__name__
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
@@ -139,15 +142,6 @@ class Bloq(metaclass=abc.ABCMeta):
                 `build_composite_bloq` returns `NotImplemented`.
         """
         return _decompose_from_build_composite_bloq(self)
-
-    def supports_decompose_bloq(self) -> bool:
-        """Whether this bloq supports `.decompose_bloq()`.
-
-        By default, we check that the method `build_composite_bloq` is overriden. For
-        extraordinary circumstances, you may need to override this method directly to
-        return an accurate value.
-        """
-        return not self.build_composite_bloq.__qualname__.startswith('Bloq.')
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
@@ -279,7 +273,9 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(f"{self} does not support tensor simulation.")
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         """Override this method to build the bloq call graph.
 
         This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in
@@ -538,7 +534,7 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.drawing import directional_text_box, Text
 
         if reg is None:
-            name = self.pretty_name()
+            name = str(self)
             if len(name) <= 10:
                 return Text(name)
             return Text(name[:8] + '..')

@@ -14,7 +14,7 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Set, Tuple
+from typing import Dict, Tuple
 
 from attrs import evolve, field, frozen, validators
 from typing_extensions import Self
@@ -32,7 +32,7 @@ from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, prod, ssum, SymbolicFloat, SymbolicInt
 
 
@@ -82,9 +82,6 @@ class TensorProduct(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return ssum(u.system_bitsize for u in self.block_encodings)
 
-    def pretty_name(self) -> str:
-        return f"B[{'⊗'.join(u.pretty_name()[2:-1] for u in self.block_encodings)}]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return prod(u.alpha for u in self.block_encodings)
@@ -104,13 +101,13 @@ class TensorProduct(BlockEncoding):
     @property
     def signal_state(self) -> BlackBoxPrepare:
         if all(isinstance(u.signal_state.prepare, PrepareIdentity) for u in self.block_encodings):
-            return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+            return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
         else:
             # TODO: implement by taking tensor product of component signal states
             raise NotImplementedError
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set[BloqCountT]:
-        return set(Counter(self.block_encodings).items())
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return Counter(self.block_encodings)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
@@ -177,6 +174,9 @@ class TensorProduct(BlockEncoding):
                 res_part.adjoint(), **{r.name: ap for r, ap in zip(res_regs, res_out_regs)}
             )
         return soqs_out
+
+    def __str__(self) -> str:
+        return f"B[{'⊗'.join(str(u)[2:-1] for u in self.block_encodings)}]"
 
 
 @bloq_example

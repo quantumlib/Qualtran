@@ -217,10 +217,19 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
-        title='Swap Network',
+        title='Basic Swaps',
+        module=qualtran.bloqs.basic_gates.swap,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_CSWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Swap Networks',
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
-            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
             qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
             qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
@@ -500,10 +509,22 @@ MOD_ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Modular Subtraction',
+        module=qualtran.bloqs.mod_arithmetic.mod_subtraction,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_NEG_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._MOD_SUB_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_subtraction._CMOD_SUB_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Modular Multiplication',
-        module=qualtran.bloqs.factoring.mod_mul,
-        bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
+        module=qualtran.bloqs.mod_arithmetic.mod_multiplication,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._MOD_DBL_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._C_MOD_MUL_K_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -625,7 +646,15 @@ ROT_QFT_PE = [
         title='Textbook Quantum Phase Estimation',
         module=qualtran.bloqs.phase_estimation.text_book_qpe,
         bloq_specs=[
-            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
+            qualtran.bloqs.phase_estimation.qpe_window_state._CC_RECTANGULAR_WINDOW_STATE_DOC,
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Kaiser Window State for Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.kaiser_window_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.kaiser_window_state._CC_KAISER_WINDOW_STATE_DOC
         ],
     ),
     NotebookSpecV2(

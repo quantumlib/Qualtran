@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse.select_bloq import _sel_sparse
 
 
@@ -22,6 +21,6 @@ def test_prep_inner(bloq_autotester):
 
 def test_decompose_bloq_counts():
     sel = _sel_sparse()
-    cost_decomp = sel.decompose_bloq().call_graph()[1][TGate()]
-    cost_call = sel.call_graph()[1][TGate()]
+    cost_decomp = sel.decompose_bloq().call_graph()[1]
+    cost_call = sel.call_graph()[1]
     assert cost_call == cost_decomp

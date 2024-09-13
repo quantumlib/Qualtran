@@ -23,7 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     Register,
     Signature,
@@ -147,9 +147,6 @@ class LinearCombination(BlockEncoding):
     def system_bitsize(self) -> SymbolicInt:
         return self.signed_block_encodings[0].system_bitsize
 
-    def pretty_name(self) -> str:
-        return f"B[{'+'.join(be.pretty_name()[2:-1] for be in self.signed_block_encodings)}]"
-
     @cached_property
     def alpha(self) -> SymbolicFloat:
         return ssum(abs(l) * be.alpha for be, l in zip(self._block_encodings, self._lambd))
@@ -178,7 +175,7 @@ class LinearCombination(BlockEncoding):
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
-        return BlackBoxPrepare(PrepareIdentity((QAny(self.ancilla_bitsize),)))
+        return BlackBoxPrepare(PrepareIdentity.from_bitsizes([self.ancilla_bitsize]))
 
     @cached_property
     def prepare(self) -> BlackBoxPrepare:
@@ -201,7 +198,7 @@ class LinearCombination(BlockEncoding):
         # disable spurious pylint
         # pylint: disable=abstract-class-instantiated
         prep = StatePreparationAliasSampling(
-            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
+            selection_registers=Register('selection', BQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
@@ -330,6 +327,9 @@ class LinearCombination(BlockEncoding):
             out["resource"] = cast(Soquet, bb.add(evolve(res_part, partition=False), **res_soqs))
 
         return out
+
+    def __str__(self) -> str:
+        return f"B[{'+'.join(str(be)[2:-1] for be in self.signed_block_encodings)}]"
 
 
 @bloq_example

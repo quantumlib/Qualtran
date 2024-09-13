@@ -44,7 +44,7 @@ from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-from qualtran.testing import execute_notebook
+from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
 
 
 def test_product(bloq_autotester):
@@ -212,6 +212,11 @@ def test_product_random():
 
 def test_product_signal_state():
     assert isinstance(_product_block_encoding().signal_state.prepare, PrepareIdentity)
+    _ = _product_block_encoding().signal_state.decompose_bloq()
+
+
+def test_product_counts():
+    assert_equivalent_bloq_example_counts(_product_block_encoding)
 
 
 @pytest.mark.notebook

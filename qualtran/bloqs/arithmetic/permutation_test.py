@@ -24,35 +24,62 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import numpy as np
+import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QBit
 from qualtran.bloqs.arithmetic.permutation import (
     _permutation,
     _permutation_cycle,
     _permutation_cycle_symb,
+    _permutation_cycle_symb_N,
     _permutation_symb,
     _permutation_symb_with_cycles,
     _sparse_permutation,
+    _sparse_permutation_with_symbolic_N,
     Permutation,
     PermutationCycle,
 )
-from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
-from qualtran.bloqs.bookkeeping import Allocate, ArbitraryClifford, Free
-from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.bookkeeping import Allocate, Free
+from qualtran.bloqs.mcmt import And
+from qualtran.resource_counting.generalizers import generalize_cvs, ignore_split_join
 from qualtran.symbolics import ceil, log2, slen
 
 
-def test_examples(bloq_autotester):
-    bloq_autotester(_permutation_cycle)
-    bloq_autotester(_permutation)
-    bloq_autotester(_sparse_permutation)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _permutation_cycle,
+        _permutation,
+        _sparse_permutation,
+        _permutation_cycle_symb,
+        _permutation_cycle_symb_N,
+        _permutation_symb,
+        _permutation_symb_with_cycles,
+        _sparse_permutation_with_symbolic_N,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_examples(bloq_autotester, bloq_ex):
+    bloq_autotester(bloq_ex)
 
 
-def test_symbolic_examples(bloq_autotester):
-    bloq_autotester(_permutation_cycle_symb)
-    bloq_autotester(_permutation_symb)
-    bloq_autotester(_permutation_symb_with_cycles)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [
+        _permutation_cycle,
+        _permutation,
+        _sparse_permutation,
+        _permutation_cycle_symb_N,
+        _permutation_symb_with_cycles,
+        _sparse_permutation_with_symbolic_N,
+    ],
+    ids=lambda bloq_ex: bloq_ex.name,
+)
+def test_decomposition(bloq_ex):
+    qlt_testing.assert_valid_bloq_decomposition(bloq_ex.make())
 
 
 def test_permutation_cycle_unitary_and_call_graph():
@@ -62,11 +89,14 @@ def test_permutation_cycle_unitary_and_call_graph():
         bloq.tensor_contract(), np.array([[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
     )
 
-    _, sigma = bloq.call_graph(generalizer=ignore_split_join)
+    cv = sympy.Symbol('cv')
+    _, sigma = bloq.call_graph(
+        generalizer=[ignore_split_join, generalize_cvs], keep=lambda b: isinstance(b, And)
+    )
     assert sigma == {
         CNOT(): 8,
-        TGate(): 16,
-        ArbitraryClifford(n=2): 76,
+        And(cv1=cv, cv2=cv): 4,
+        And(cv1=cv, cv2=cv).adjoint(): 4,
         Allocate(QBit()): 1,
         Free(QBit()): 1,
     }
@@ -76,10 +106,10 @@ def test_permutation_cycle_symbolic_call_graph():
     bloq = _permutation_cycle_symb()
     logN, L = ceil(log2(bloq.N)), slen(bloq.cycle)
 
-    _, sigma = bloq.call_graph()
+    _, sigma = bloq.call_graph(keep=lambda b: isinstance(b, And))
     assert sigma == {
-        ArbitraryClifford(n=2): (L + 1) * (13 * logN - 13),
-        TGate(): (L + 1) * (4 * logN - 4),
+        And(): (L + 1) * (logN - 1),
+        And().adjoint(): (L + 1) * (logN - 1),
         CNOT(): L * logN + L + 1,
     }
 
@@ -103,12 +133,12 @@ def test_permutation_unitary_and_call_graph():
         ),
     )
 
-    _, sigma = bloq.call_graph(generalizer=ignore_split_join)
+    _, sigma = bloq.call_graph(generalizer=ignore_split_join, keep=lambda b: isinstance(b, And))
     assert sigma == {
         CNOT(): 17,
-        TGate(): 56,
+        And(): 56 // 4,
+        And().adjoint(): 56 // 4,
         XGate(): 56,
-        ArbitraryClifford(n=2): 182,
         Allocate(QBit()): 2,
         Free(QBit()): 2,
     }
@@ -130,9 +160,9 @@ def test_permutation_symbolic_call_graph():
     logN = ceil(log2(N))
     bloq = _permutation_symb()
 
-    _, sigma = bloq.call_graph()
+    _, sigma = bloq.call_graph(keep=lambda b: isinstance(b, And))
     assert sigma == {
-        ArbitraryClifford(n=2): (N + 1) * (13 * logN - 13),
-        TGate(): (N + 1) * (4 * logN - 4),
+        And().adjoint(): (N + 1) * (logN - 1),
+        And(): (N + 1) * (logN - 1),
         CNOT(): N * logN + N + 1,
     }

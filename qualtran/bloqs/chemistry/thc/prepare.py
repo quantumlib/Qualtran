@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -32,7 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -53,7 +53,7 @@ from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_spl
 from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -106,7 +106,7 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
@@ -344,20 +344,18 @@ class PrepareTHC(PrepareOracle):
     def selection_registers(self) -> Tuple[Register, ...]:
         return (
             Register(
-                "mu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "mu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
             Register(
-                "nu",
-                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
+                "nu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
             ),
-            Register("plus_mn", BoundedQUInt(bitsize=1)),
-            Register("plus_a", BoundedQUInt(bitsize=1)),
-            Register("plus_b", BoundedQUInt(bitsize=1)),
-            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
-            Register("rot", BoundedQUInt(bitsize=1)),
-            Register('succ', QBit()),
-            Register('nu_eq_mp1', QBit()),
+            Register("plus_mn", BQUInt(bitsize=1)),
+            Register("plus_a", BQUInt(bitsize=1)),
+            Register("plus_b", BQUInt(bitsize=1)),
+            Register("sigma", BQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BQUInt(bitsize=1)),
+            Register('succ', BQUInt(bitsize=1)),
+            Register('nu_eq_mp1', BQUInt(bitsize=1)),
         )
 
     @cached_property
@@ -464,7 +462,7 @@ class PrepareTHC(PrepareOracle):
         }
         return out_regs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
         nmu = self.num_mu.bit_length()
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
@@ -480,7 +478,7 @@ class PrepareTHC(PrepareOracle):
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)
         cost_7 = (Toffoli(), 1)
-        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
+        return dict([cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7])
 
 
 @bloq_example

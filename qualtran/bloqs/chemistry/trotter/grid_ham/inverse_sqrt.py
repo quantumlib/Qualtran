@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -21,9 +21,10 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QFxp, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
@@ -164,10 +165,12 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y = x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y=x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
         # 2. scale y^2 by x
@@ -175,12 +178,12 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 4. multiply y^2 x by y
         # 5. add 3. and 4.
         return {
-            (SquareRealNumber(self.poly_bitsize), 1),
+            SquareRealNumber(self.poly_bitsize): 1,
             # TODO: When decomposing we will potentially need to cast into a larger register.
             # See: https://github.com/quantumlib/Qualtran/issues/655
-            (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize), 1),
-            (MultiplyTwoReals(self.target_bitsize), 2),
-            (Add(QInt(self.target_bitsize)), 1),
+            ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize): 1,
+            MultiplyTwoReals(self.target_bitsize): 2,
+            Add(QInt(self.target_bitsize)): 1,
         }
 
 
@@ -215,13 +218,15 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y ~ x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y~x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize)), 3)}
+        return {MultiplyTwoReals(self.poly_bitsize): 3, Add(QInt(self.poly_bitsize)): 3}
 
 
 @bloq_example

@@ -23,7 +23,7 @@ from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -91,8 +91,8 @@ class SignExtend(Bloq):
 
         return {'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        return {(MultiTargetCNOT(self.extend_bitsize), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {MultiTargetCNOT(self.extend_bitsize): 1}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         return {'y': x}
@@ -173,8 +173,8 @@ class SignTruncate(Bloq):
 
         return {'y': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
-        return {(MultiTargetCNOT(self.truncate_bitsize), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {MultiTargetCNOT(self.truncate_bitsize): 1}
 
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         bits = self.inp_dtype.to_bits(int(x))

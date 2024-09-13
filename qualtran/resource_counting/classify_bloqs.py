@@ -24,7 +24,6 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
@@ -88,6 +87,8 @@ def classify_t_count_by_bloq_type(
     Returns
         classified_bloqs: dictionary containing the T count for different types of bloqs.
     """
+    from qualtran.resource_counting import get_cost_value, QECGatesCost
+
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
@@ -105,10 +106,10 @@ def classify_t_count_by_bloq_type(
     classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
-        t_counts = t_counts_from_sigma(k.call_graph()[1])
+        t_counts = get_cost_value(k, QECGatesCost()).total_t_count()
         if t_counts > 0:
             classified_bloqs[classification] += v * t_counts
-    return classified_bloqs
+    return dict(classified_bloqs)
 
 
 _CLIFFORD_ANGLES = np.array(
@@ -181,26 +182,12 @@ def bloq_is_clifford(b: Bloq) -> bool:
     )
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
-    from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 
     if isinstance(b, Adjoint):
         b = b.subbloq
 
     if isinstance(
-        b,
-        (
-            TwoBitSwap,
-            Hadamard,
-            XGate,
-            ZGate,
-            YGate,
-            ArbitraryClifford,
-            CNOT,
-            MultiTargetCNOT,
-            CYGate,
-            CZ,
-            SGate,
-        ),
+        b, (TwoBitSwap, Hadamard, XGate, ZGate, YGate, ArbitraryClifford, CNOT, CYGate, CZ, SGate)
     ):
         return True
 
@@ -230,7 +217,7 @@ def bloq_is_rotation(b: Bloq) -> bool:
     This function has a shim for counting Controlled[Rotation] gates as a rotation, which
     will be remediated when the Qualtran standard library gains a bespoke bloq for each CRot.
     """
-    from qualtran.bloqs.basic_gates import GlobalPhase, SGate, TGate
+    from qualtran.bloqs.basic_gates import SGate, TGate
     from qualtran.bloqs.basic_gates.rotation import (
         CZPowGate,
         Rx,
@@ -242,12 +229,17 @@ def bloq_is_rotation(b: Bloq) -> bool:
     )
 
     if isinstance(b, Controlled):
+        if b.ctrl_spec.num_qubits > 1:
+            return False
+
         # TODO https://github.com/quantumlib/Qualtran/issues/878
         #      explicit representation of all two-qubit rotations.
-        if isinstance(b.subbloq, (SGate, TGate, GlobalPhase)):
+        if isinstance(b.subbloq, (SGate, TGate)):
             return True
 
-        return bloq_is_rotation(b.subbloq)
+        # For historical reasons, this hacky solution for controlled rotations does *not*
+        # do clifford, T angle simplification.
+        return isinstance(b.subbloq, (Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate))
 
     if isinstance(b, CZPowGate):
         return True
@@ -271,3 +263,10 @@ def bloq_is_rotation(b: Bloq) -> bool:
         return True
 
     return False
+
+
+def bloq_is_state_or_effect(b: Bloq) -> bool:
+    from qualtran.bloqs.basic_gates.x_basis import _XVector
+    from qualtran.bloqs.basic_gates.z_basis import _ZVector
+
+    return isinstance(b, (_XVector, _ZVector))

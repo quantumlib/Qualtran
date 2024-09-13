@@ -110,7 +110,7 @@ class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
 class GraphvizCounts(_CallGraphDrawerBase):
     """Draw a bloq call graphs using Graphviz.
 
-    Each node is a bloq with a `bloq.pretty_name()` label and an automatically-determined
+    Each node is a bloq with a string label and an automatically-determined
     "details" string based on the bloqs attributes. For non-attrs classes, classes with
     a large number of fields, or classes where the fields' string representations are long;
     the details string will be abbreviated.
@@ -133,7 +133,7 @@ class GraphvizCounts(_CallGraphDrawerBase):
         self.max_detail_len = 200
 
     def get_node_title(self, b: Bloq):
-        return b.pretty_name()
+        return str(b)
 
     @staticmethod
     def abbreviate_field_list(
@@ -241,6 +241,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             'and_bloq': 'Ands',
             'clifford': 'Cliffords',
             'rotation': 'Rotations',
+            'rotations': 'Rotations',
             'measurement': 'Measurements',
         }
         counts_dict: Mapping[str, SymbolicInt]
@@ -252,6 +253,8 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             counts_dict = val.total_t_and_ccz_count()
         elif agg == 'beverland':
             counts_dict = val.total_beverland_count()
+        elif agg == 'legacy':
+            counts_dict = val.to_legacy_t_complexity().asdict()
         else:
             raise ValueError(f"Unknown aggregation mode {agg}.")
 

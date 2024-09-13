@@ -14,18 +14,7 @@
 
 """Quantum read-only memory."""
 import numbers
-from typing import (
-    Callable,
-    cast,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import cast, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -33,8 +22,9 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, Register
+from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError, QUInt, Register
 from qualtran._infra.gate_with_registers import merge_qubits
+from qualtran.bloqs.arithmetic import XorK
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
@@ -43,7 +33,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
@@ -127,7 +117,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     def _load_nth_data(
         self,
         selection_idx: Tuple[int, ...],
-        gate: Callable[[cirq.Qid], cirq.Operation],
+        ctrl_qubits: Tuple[cirq.Qid, ...] = (),
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
@@ -136,20 +126,18 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
             for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
-                for q, bit in zip(target[idx], f'{data_to_load:0{target_bitsize}b}'):
-                    if int(bit):
-                        yield gate(q)
+                yield XorK(QUInt(target_bitsize), data_to_load).on(*target[idx]).controlled_by(
+                    *ctrl_qubits
+                )
 
     def decompose_zero_selection(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
-        controls = merge_qubits(self.control_registers, **quregs)
+        controls = tuple(merge_qubits(self.control_registers, **quregs))
         target_regs = {reg.name: quregs[reg.name] for reg in self.target_registers}
         zero_indx = (0,) * len(self.data_shape)
-        if self.num_controls == 0:
-            yield self._load_nth_data(zero_indx, cirq.X, **target_regs)
-        elif self.num_controls == 1:
-            yield self._load_nth_data(zero_indx, lambda q: CNOT().on(controls[0], q), **target_regs)
+        if self.num_controls <= 1:
+            yield self._load_nth_data(zero_indx, ctrl_qubits=controls, **target_regs)
         else:
             ctrl = np.array(controls)[:, np.newaxis]
             junk = np.array(context.qubit_manager.qalloc(len(controls) - 2))[:, np.newaxis]
@@ -161,9 +149,16 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                     ctrl=ctrl, junk=junk, target=and_target
                 )
             yield multi_controlled_and
-            yield self._load_nth_data(zero_indx, lambda q: CNOT().on(and_target, q), **target_regs)
+            yield self._load_nth_data(zero_indx, ctrl_qubits=(and_target,), **target_regs)
             yield cirq.inverse(multi_controlled_and)
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        if self.has_data():
+            return super().decompose_from_registers(context=context, **quregs)
+        raise DecomposeTypeError(f"Cannot decompose symbolic {self} with no data.")
 
     def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
         if not self.has_data():
@@ -182,7 +177,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
     ) -> Iterator[cirq.OP_TREE]:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
-        yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)
+        yield self._load_nth_data(selection_idx, ctrl_qubits=(control,), **target_regs)
 
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
@@ -220,14 +215,16 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                 ret += data_to_load.bit_count()
         return {(CNOT(), ret)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.has_data():
             return super().build_call_graph(ssa=ssa)
         n_and = prod(self.data_shape) - 2 + self.num_controls
         n_cnot = prod(
             bitsize * prod(sh) for bitsize, sh in zip(self.target_bitsizes, self.target_shapes)
         ) * prod(self.data_shape)
-        return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
+        return {And(): n_and, And().adjoint(): n_and, CNOT(): n_cnot}
 
     def adjoint(self) -> 'QROM':
         return self

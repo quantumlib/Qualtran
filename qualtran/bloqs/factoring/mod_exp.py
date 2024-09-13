@@ -11,11 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import math
+import random
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
-import numpy as np
 import sympy
 from attrs import frozen
 
@@ -33,10 +34,11 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics import is_symbolic
 
 
 @frozen
@@ -69,6 +71,10 @@ class ModExp(Bloq):
     exp_bitsize: Union[int, sympy.Expr]
     x_bitsize: Union[int, sympy.Expr]
 
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.base, self.mod):
+            assert math.gcd(cast(int, self.base), cast(int, self.mod)) == 1
+
     @cached_property
     def signature(self) -> 'Signature':
         return Signature(
@@ -90,14 +96,14 @@ class ModExp(Bloq):
         if isinstance(big_n, sympy.Expr):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
         else:
-            little_n = int(np.ceil(np.log2(big_n)))
+            little_n = int(math.ceil(math.log2(big_n)))
         if g is None:
-            g = np.random.randint(big_n)
+            g = random.randint(2, big_n)
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
     def _CtrlModMul(self, k: Union[int, sympy.Expr]):
-        """Helper method to return a `CtrlModMul` with attributes forwarded."""
-        return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
+        """Helper method to return a `CModMulK` with attributes forwarded."""
+        return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if isinstance(self.exp_bitsize, sympy.Expr):
@@ -106,19 +112,16 @@ class ModExp(Bloq):
         exponent = bb.split(exponent)
 
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
-        base = self.base
+        base = self.base % self.mod
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
-            base = base * base % self.mod
+            base = (base * base) % self.mod
 
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {
-            (IntState(val=1, bitsize=self.x_bitsize), 1),
-            (self._CtrlModMul(k=k), self.exp_bitsize),
-        }
+        return {IntState(val=1, bitsize=self.x_bitsize): 1, self._CtrlModMul(k=k): self.exp_bitsize}
 
     def on_classical_vals(self, exponent: int):
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
@@ -135,7 +138,7 @@ _K = sympy.Symbol('k_exp')
 
 
 def _generalize_k(b: Bloq) -> Optional[Bloq]:
-    if isinstance(b, CtrlModMul):
+    if isinstance(b, CModMulK):
         return attrs.evolve(b, k=_K)
 
     return b
@@ -143,13 +146,13 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_small() -> ModExp:
-    modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
+    modexp_small = ModExp(base=4, mod=15, exp_bitsize=3, x_bitsize=2048)
     return modexp_small
 
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp() -> ModExp:
-    modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
+    modexp = ModExp.make_for_shor(big_n=13 * 17, g=9)
     return modexp
 
 

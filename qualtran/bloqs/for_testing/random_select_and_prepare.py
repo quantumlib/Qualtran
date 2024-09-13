@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
+from qualtran import BloqBuilder, BQUInt, QBit, Register, SoquetT
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
@@ -56,7 +56,7 @@ class TestPrepareOracle(PrepareOracle):
 
     @property
     def selection_registers(self) -> tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
+        return (Register('selection', BQUInt(bitsize=self.U.bitsize)),)
 
     @property
     def l1_norm_of_coeffs(self) -> float:
@@ -128,11 +128,11 @@ class TestPauliSelectOracle(SpecializedSingleQubitControlledExtension, SelectOra
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(bitsize=self.select_bitsize)),)
+        return (Register('selection', BQUInt(bitsize=self.select_bitsize)),)
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', BoundedQUInt(bitsize=self.target_bitsize)),)
+        return (Register('target', BQUInt(bitsize=self.target_bitsize)),)
 
     def decompose_from_registers(
         self,

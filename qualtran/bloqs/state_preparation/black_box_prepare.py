@@ -30,6 +30,7 @@ from qualtran import (
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.symbolics import ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics.types import is_symbolic
 
 
 @frozen
@@ -71,21 +72,21 @@ class BlackBoxPrepare(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('selection', QAny(self.selection_bitsize)),
-                Register('junk', QAny(self.junk_bitsize)),
-            ]
-        )
+        return Signature.build(selection=self.selection_bitsize, junk=self.junk_bitsize)
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
-        partitions = (
-            (self.selection_registers[0], [r.name for r in self.prepare.selection_registers]),
-            (self.junk_registers[0], [r.name for r in self.prepare.junk_registers]),
-        )
+        if self.selection_bitsize == 0:
+            return soqs
+        partitions = [
+            (self.selection_registers[0], [r.name for r in self.prepare.selection_registers])
+        ]
+        if is_symbolic(self.junk_bitsize) or self.junk_bitsize > 0:
+            partitions.append(
+                (self.junk_registers[0], [r.name for r in self.prepare.junk_registers])
+            )
         return bb.add_d(AutoPartition(self.prepare, partitions), **soqs)
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return 'Prep'
 
 

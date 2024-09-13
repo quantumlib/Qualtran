@@ -34,6 +34,7 @@ Bloqs Library
     basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
+    basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
@@ -80,7 +81,8 @@ Bloqs Library
     :caption: Modular Arithmetic:
 
     mod_arithmetic/mod_addition.ipynb
-    factoring/mod_mul.ipynb
+    mod_arithmetic/mod_subtraction.ipynb
+    mod_arithmetic/mod_multiplication.ipynb
     factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
     factoring/ecc/ecc.ipynb
@@ -102,6 +104,7 @@ Bloqs Library
     qft/qft_phase_gradient.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
+    phase_estimation/kaiser_window_state.ipynb
     qubitization/qubitization_walk_operator.ipynb
     phase_estimation/qubitization_qpe.ipynb
 

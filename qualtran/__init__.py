@@ -51,7 +51,7 @@ from ._infra.data_types import (
     QFxp,
     QIntOnesComp,
     QUInt,
-    BoundedQUInt,
+    BQUInt,
     QMontgomeryUInt,
 )
 
