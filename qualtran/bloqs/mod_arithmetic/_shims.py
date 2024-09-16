@@ -25,8 +25,9 @@ from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
+import attrs
 
-from qualtran import Bloq, QUInt, Register, Signature
+from qualtran import Bloq, QUInt, Register, Side, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
@@ -88,10 +89,21 @@ class _ModInvInner(Bloq):
 class ModInv(Bloq):
     n: int
     mod: int
+    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('x', QUInt(self.n)),
+                Register('garbage1', QUInt(self.n), side=side),
+                Register('garbage2', QUInt(self.n), side=side),
+            ]
+        )
+
+    def adjoint(self) -> 'DirtyOutOfPlaceMontgomeryModMul':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Roetteler
@@ -112,4 +124,8 @@ class ModInv(Bloq):
             return TextBox('x')
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
+        elif reg.name == 'garbage1':
+            return TextBox('garbage1')
+        elif reg.name == 'garbage2':
+            return TextBox('garbage2')
         raise ValueError(f'Unrecognized register name {reg.name}')

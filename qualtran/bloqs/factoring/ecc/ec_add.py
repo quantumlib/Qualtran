@@ -47,7 +47,7 @@ from qualtran.bloqs.mod_arithmetic import (
 )
 from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
-from qualtran.bloqs.mod_arithmetic._shims import ModDbl, ModInv, ModMul
+from qualtran.bloqs.mod_arithmetic._shims import ModInv
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 from .ec_point import ECPoint
@@ -63,6 +63,7 @@ class ECAdd(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
 
     Registers:
         a: The x component of the first input elliptic curve point of bitsize `n`.
@@ -80,6 +81,7 @@ class ECAdd(Bloq):
 
     n: int
     mod: int
+    window_size: int = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -105,10 +107,6 @@ class ECAdd(Bloq):
         f_3 = bb.add(ZeroState())
         f_4 = bb.add(ZeroState())
         ctrl = bb.add(ZeroState())
-        z_1 = bb.add(IntState(bitsize=self.n, val=0))
-        z_2 = bb.add(IntState(bitsize=self.n, val=0))
-        z_3 = bb.add(IntState(bitsize=self.n, val=0))
-        z_4 = bb.add(IntState(bitsize=self.n, val=0))
         lam = bb.add(IntState(bitsize=self.n, val=0))
 
         # Step 1:
@@ -142,8 +140,14 @@ class ECAdd(Bloq):
         # Step 2:
         a, x = bb.add(ModSub(QMontgomeryUInt(self.n), mod=self.mod), x=a, y=x)
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
-        # ModInv (needs 2n for out/garbage register)
-        # ModMult (needs more garbage register)
+        x, z_1, z_2 = bb.add(ModInv(n=self.n, mod=self.mod), x=x)
+        x, y, z_4, z_3, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=y,
+        )
 
         z_4_split = bb.split(z_4)
         lam_split = bb.split(lam)
@@ -171,12 +175,39 @@ class ECAdd(Bloq):
         lam = bb.join(lam_split, dtype=QUInt(self.n))
 
         lam, lam_r, f_1 = bb.add(Equals(self.n), x=lam, y=lam_r, target=f_1)
-        # uncompute modinv modmult
+        x, y = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=y,
+            target=z_4,
+            qrom_indices=z_3,
+            reduced=reduced,
+        )
+        x = bb.add(ModInv(n=self.n, mod=self.mod).adjoint(), x=x, garbage1=z_1, garbage2=z_2)
 
         # Step 3:
-        # ModMult (needs more garbage register)
+        x, lam, z_1, z_2, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=lam,
+        )
         ctrl, z_1, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=z_1, y=y)
-        # uncompute modmult
+        x, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=lam,
+            target=z_1,
+            qrom_indices=z_2,
+            reduced=reduced,
+        )
+
+        z_1 = bb.add(IntState(bitsize=self.n, val=0))
         a_split = bb.split(a)
         z_1_split = bb.split(z_1)
         for i in range(self.n):
@@ -187,9 +218,21 @@ class ECAdd(Bloq):
         z_1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod), x=z_1)
         a, z_1 = bb.add(ModAdd(self.n, mod=self.mod), x=a, y=z_1)
         ctrl, z_1, x = bb.add(CModAdd(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=z_1, y=x)
-        # uncompute cnot moddbl modadd
+
+        a, z_1 = bb.add(ModAdd(self.n, mod=self.mod).adjoint(), x=a, y=z_1)
+        z_1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod).adjoint(), x=z_1)
+        a_split = bb.split(a)
+        z_1_split = bb.split(z_1)
+        for i in range(self.n):
+            a_split[i], z_1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z_1_split[i])
+        a = bb.join(a_split, QMontgomeryUInt(bitsize=self.n))
+        z_1 = bb.join(z_1_split, QUInt(bitsize=self.n))
+
+        bb.add(Free(QUInt(self.n)), reg=z_1)
 
         # Step 4:
+        z_4 = bb.add(IntState(bitsize=self.n, val=0))
+
         lam_split = bb.split(lam)
         z_4_split = bb.split(z_4)
         for i in range(self.n):
@@ -197,12 +240,42 @@ class ECAdd(Bloq):
         lam = bb.join(lam_split, QUInt(bitsize=self.n))
         z_4 = bb.join(z_4_split, QUInt(bitsize=self.n))
 
-        # ModMult (needs more garbage register)
+        z_4, lam, z_3, z_2, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=z_4,
+            y=lam,
+        )
 
         z_3, x = bb.add(ModSub(QMontgomeryUInt(self.n), mod=self.mod), x=z_3, y=x)
 
-        # uncompute cnot modmult
-        # ModMult (needs more garbage register)
+        z_4, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=z_4,
+            y=lam,
+            target=z_3,
+            qrom_indices=z_2,
+            reduced=reduced,
+        )
+        lam_split = bb.split(lam)
+        z_4_split = bb.split(z_4)
+        for i in range(self.n):
+            lam_split[i], z_4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z_4_split[i])
+        lam = bb.join(lam_split, QUInt(bitsize=self.n))
+        z_4 = bb.join(z_4_split, QUInt(bitsize=self.n))
+
+        bb.add(Free(QUInt(self.n)), reg=z_4)
+
+        x, lam, z_3, z_4, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=lam,
+        )
         z_3_split = bb.split(z_3)
         y_split = bb.split(y)
         for i in range(self.n):
@@ -210,11 +283,51 @@ class ECAdd(Bloq):
         z_3 = bb.join(z_3_split, QUInt(bitsize=self.n))
         y = bb.join(y_split, QMontgomeryUInt(bitsize=self.n))
 
-        # uncompute modmult
+        x, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=lam,
+            target=z_3,
+            qrom_indices=z_4,
+            reduced=reduced,
+        )
 
         # Step 5:
+        x, z_1, z_2 = bb.add(ModInv(n=self.n, mod=self.mod), x=x)
+        x, y, z_4, z_3, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=y,
+        )
 
-        # uncompute modinv modmult multicontrolx uncompute modinv modmult
+        z_4_split = bb.split(z_4)
+        lam_split = bb.split(lam)
+        for i in range(self.n):
+            ctrls = [ctrl, z_4_split[i]]
+            ctrls, lam_split[i] = bb.add(
+                MultiControlX(cvs=[1, 1]), controls=ctrls, target=lam_split[i]
+            )
+            ctrl = ctrls[0]
+            z_4_split[i] = ctrls[1]
+        z_4 = bb.join(z_4_split, dtype=QUInt(self.n))
+        lam = bb.join(lam_split, dtype=QUInt(self.n))
+
+        x, y = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=y,
+            target=z_4,
+            qrom_indices=z_3,
+            reduced=reduced,
+        )
+        x = bb.add(ModInv(n=self.n, mod=self.mod).adjoint(), x=x, garbage1=z_1, garbage2=z_2)
+
         ctrl, x = bb.add(CModNeg(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=x)
         a, x = bb.add(ModAdd(self.n, mod=self.mod), x=a, y=x)
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
@@ -316,17 +429,14 @@ class ECAdd(Bloq):
         bb.add(Free(QBit()), reg=f_3)
         bb.add(Free(QBit()), reg=f_4)
         bb.add(Free(QBit()), reg=ctrl)
-        bb.add(Free(QUInt(self.n)), reg=z_1)
-        bb.add(Free(QUInt(self.n)), reg=z_2)
-        bb.add(Free(QUInt(self.n)), reg=z_3)
-        bb.add(Free(QUInt(self.n)), reg=z_4)
         bb.add(Free(QUInt(self.n)), reg=lam)
 
         return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
     def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
-        p1 = ECPoint(a, b, mod=self.mod, curve_a=0)
-        p2 = ECPoint(x, y, mod=self.mod, curve_a=0)
+        curve_a = lam_r * 2 * b - (3 * a**2)
+        p1 = ECPoint(a, b, mod=self.mod, curve_a=curve_a)
+        p2 = ECPoint(x, y, mod=self.mod, curve_a=curve_a)
         result: ECPoint = p1 + p2
         return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam_r': lam_r}
 
@@ -341,7 +451,6 @@ class ECAdd(Bloq):
             (ModNeg(QUInt(self.n), mod=self.mod), 2),
             (CModNeg(QUInt(self.n), mod=self.mod), 1),
             (ModDbl(QUInt(self.n), mod=self.mod), 2),
-            (ModMul(n=self.n, mod=self.mod), 10),
             (ModInv(n=self.n, mod=self.mod), 4),
         }
 

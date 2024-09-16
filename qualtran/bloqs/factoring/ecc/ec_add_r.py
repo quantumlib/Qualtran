@@ -222,7 +222,14 @@ class ECWindowAddR(Bloq):
             selection=ctrl,
         )
 
-        a, b, x, y, lam_r = bb.add(ECAdd(n=self.n, mod=self.R.mod), a=a, b=b, x=x, y=y, lam_r=lam_r)
+        a, b, x, y, lam_r = bb.add(
+            ECAdd(n=self.n, mod=self.R.mod, window_size=self.window_size),
+            a=a,
+            b=b,
+            x=x,
+            y=y,
+            lam_r=lam_r,
+        )
 
         ctrl = bb.add(
             QROAMClean(
@@ -261,7 +268,7 @@ class ECWindowAddR(Bloq):
                 ),
                 1,
             ),
-            (ECAdd(self.n, self.R.mod), 1),
+            (ECAdd(self.n, self.R.mod, self.window_size), 1),
             (
                 QROAMClean(
                     [data_a, data_b, data_lam],
