@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import sympy
 from attrs import frozen
@@ -23,7 +23,6 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QUInt,
@@ -35,6 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic import XorK
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 from qualtran.bloqs.bookkeeping import Free
+from qualtran.bloqs.data_loading import QROAMClean
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -103,11 +103,8 @@ class ECAddR(Bloq):
         lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
         lam_r = bb.add(IntState(bitsize=self.n, val=lam))
 
-        a, b, x, y, lam_r = bb.add(
-            ECAdd(self.n, self.R.mod, self.R.curve_a), a=a, b=b, x=x, y=y, lam=lam_r
-        )
+        a, b, x, y, lam_r = bb.add(ECAdd(self.n, self.R.mod), a=a, b=b, x=x, y=y, lam_r=lam_r)
 
-        # Call graph doesn't like the controlled() operator on arbitrary clifford.
         ctrl, a = bb.add(XorK(QUInt(bitsize=self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
         ctrl, b = bb.add(XorK(QUInt(bitsize=self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
 
@@ -117,8 +114,12 @@ class ECAddR(Bloq):
 
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountDictT']:
-        return {(ECAdd(self.n, self.R.mod, self.R.curve_a).controlled(), 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {
+            (XorK(QUInt(self.n), self.R.x).controlled(), 2),
+            (XorK(QUInt(self.n), self.R.y).controlled(), 2),
+            (ECAdd(self.n, self.R.mod), 1),
+        }
 
     def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         if ctrl == 0:
@@ -193,6 +194,89 @@ class ECWindowAddR(Bloq):
             ]
         )
 
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        ctrl = bb.join(ctrl)
+
+        cR = self.R
+        lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
+        lam_denom = (2 * self.R.y) % self.R.mod
+        lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
+        data_a, data_b, data_lam = [0, self.R.x], [0, self.R.y], [0, lam]
+        for _ in range(2, 2**self.window_size):
+            cR = cR + self.R
+            data_a.append(cR.x)
+            data_b.append(cR.y)
+            lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
+            lam_denom = (2 * cR.y) % cR.mod
+            lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
+            data_lam.append(lam)
+
+        ctrl, a, b, lam_r = bb.add(
+            QROAMClean(
+                [data_a, data_b, data_lam],
+                selection_bitsizes=(self.window_size,),
+                target_bitsizes=(self.n, self.n, self.n),
+            ),
+            selection=ctrl,
+        )
+
+        a, b, x, y, lam_r = bb.add(ECAdd(n=self.n, mod=self.R.mod), a=a, b=b, x=x, y=y, lam_r=lam_r)
+
+        ctrl = bb.add(
+            QROAMClean(
+                [data_a, data_b, data_lam],
+                selection_bitsizes=(self.window_size,),
+                target_bitsizes=(self.n, self.n, self.n),
+            ).adjoint(),
+            selection=ctrl,
+            target0_=a,
+            target1_=b,
+            target2_=lam_r,
+        )
+
+        return {'ctrl': bb.split(ctrl), 'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        cR = self.R
+        lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
+        lam_denom = (2 * self.R.y) % self.R.mod
+        lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
+        data_a, data_b, data_lam = [0, self.R.x], [0, self.R.y], [0, lam]
+        for _ in range(2, 2**self.window_size):
+            cR = cR + self.R
+            data_a.append(cR.x)
+            data_b.append(cR.y)
+            lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
+            lam_denom = (2 * cR.y) % cR.mod
+            lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
+            data_lam.append(lam)
+        return {
+            (
+                QROAMClean(
+                    [data_a, data_b, data_lam],
+                    selection_bitsizes=(self.window_size,),
+                    target_bitsizes=(self.n, self.n, self.n),
+                ),
+                1,
+            ),
+            (ECAdd(self.n, self.R.mod), 1),
+            (
+                QROAMClean(
+                    [data_a, data_b, data_lam],
+                    selection_bitsizes=(self.window_size,),
+                    target_bitsizes=(self.n, self.n, self.n),
+                ).adjoint(),
+                1,
+            ),
+        }
+
+    def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+        A = ECPoint(x, y, mod=self.R.mod, curve_a=self.R.curve_a)
+        result: ECPoint = A + (ctrl * self.R)
+        return {'ctrl': ctrl, 'x': result.x, 'y': result.y}
+
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -205,9 +289,6 @@ class ECWindowAddR(Bloq):
         if reg.name == 'y':
             return TextBox(f'$+{self.R.y}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return f'ECWindowAddR({self.n=})'
 
 
 @bloq_example

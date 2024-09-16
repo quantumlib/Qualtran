@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import functools
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict, Union
 
 import numpy as np
 import sympy
@@ -32,12 +33,11 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import PlusState
-from qualtran.bloqs.basic_gates._shims import Measure
-from qualtran.bloqs.qft import QFTTextBook
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
-from .ec_add_r import ECAddR
+from .ec_add_r import ECAddR, ECWindowAddR
 from .ec_point import ECPoint
+from ._ecc_shims import MeasureQFT
 
 
 @frozen
@@ -50,37 +50,53 @@ class ECPhaseEstimateR(Bloq):
     Args:
         n: The bitsize of the elliptic curve points' x and y registers.
         point: The elliptic curve point to phase estimate against.
+        window_size: If greater than one, use windowed elliptic curve point addition.
     """
 
     n: int
     point: ECPoint
+    window_size: int = 1
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
 
+    @property
+    def ec_add(self) -> Union[ECAddR, ECWindowAddR]:
+        if self.window_size == 1:
+            return functools.partial(ECAddR, n=self.n)
+        return functools.partial(ECWindowAddR, n=self.n, window_size=self.window_size)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
         ctrl = [bb.add(PlusState()) for _ in range(self.n)]
-        for i in range(self.n):
-            ctrl[i], x, y = bb.add(ECAddR(n=self.n, R=2**i * self.point), ctrl=ctrl[i], x=x, y=y)
 
-        ctrls = bb.join(np.array(ctrl), dtype=QUInt(bitsize=self.n))
-        ctrls = bb.add(QFTTextBook(bitsize=self.n), q=ctrls)
-        ctrl = bb.split(ctrls)
+        if self.window_size == 1:
+            for i in range(self.n):
+                ctrl[i], x, y = bb.add(
+                    self.ec_add(n=self.n, R=2**i * self.point), ctrl=ctrl[i], x=x, y=y
+                )
+        else:
+            ctrls = np.split(np.array(ctrl), self.n // self.window_size)
+            for i in range(self.n // self.window_size):
+                ctrls[i], x, y = bb.add(
+                    self.ec_add(
+                        n=self.n,
+                        window_size=self.window_size,
+                        R=2 ** (self.window_size * i) * self.point,
+                    ),
+                    ctrl=ctrls[i],
+                    x=x,
+                    y=y,
+                )
+            ctrl = np.concatenate(ctrls, axis=None)
 
-        for i in range(self.n):
-            bb.add(Measure(), q=ctrl[i])
-
+        bb.add(MeasureQFT(n=self.n), x=ctrl)
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountDictT']:
-        return {
-            (ECAddR(n=self.n, R=self.point), self.n),
-            (QFTTextBook(bitsize=self.n), 1),
-            (Measure(), self.n),
-        }
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {(self.ec_add(R=self.point), self.n / (self.window_size)), (MeasureQFT(n=self.n), 1)}
 
     def __str__(self) -> str:
         return f'PE${self.point}$'
