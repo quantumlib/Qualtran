@@ -35,7 +35,16 @@ from qualtran import (
 from qualtran.bloqs.arithmetic._shims import MultiCToffoli
 from qualtran.bloqs.arithmetic.comparison import Equals
 from qualtran.bloqs.basic_gates import IntState, ZeroState, CNOT, Toffoli
-from qualtran.bloqs.mod_arithmetic import CModAdd, CModNeg, CModSub, ModAdd, ModNeg, ModSub
+from qualtran.bloqs.mod_arithmetic import (
+    CModAdd,
+    CModNeg,
+    CModSub,
+    DirtyOutOfPlaceMontgomeryModMul,
+    ModAdd,
+    ModDbl,
+    ModNeg,
+    ModSub,
+)
 from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic._shims import ModDbl, ModInv, ModMul
