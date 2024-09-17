@@ -1474,7 +1474,7 @@ class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
         a: first input register.
         b: second input register.
         c: ancilla register that will contain $b-a$ and will be used for uncomputation.
-        target: A single bit output register to store the result of a > b.
+        target: A single bit output register to store the result of a >= b.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
@@ -1500,7 +1500,7 @@ class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
         a: first input register.
         b: second input register.
         c: ancilla register that will contain $b-a$ and will be used for uncomputation.
-        target: A single bit output register to store the result of a > b.
+        target: A single bit output register to store the result of a < b.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
@@ -1526,7 +1526,7 @@ class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
         a: first input register.
         b: second input register.
         c: ancilla register that will contain $b-a$ and will be used for uncomputation.
-        target: A single bit output register to store the result of a > b.
+        target: A single bit output register to store the result of a <= b.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
