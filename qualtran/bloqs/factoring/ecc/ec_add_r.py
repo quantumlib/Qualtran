@@ -38,6 +38,7 @@ from qualtran.bloqs.data_loading import QROAMClean
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics.types import Shaped, is_symbolic
 
 from .ec_add import ECAdd
 from .ec_point import ECPoint
@@ -194,33 +195,50 @@ class ECWindowAddR(Bloq):
             ]
         )
 
+    @cached_property
+    def qrom(self) -> QROAMClean:
+        if is_symbolic(self.n) or is_symbolic(self.window_size):
+            log_block_sizes = None
+            if is_symbolic(self.n) and not is_symbolic(self.window_size):
+                # We assume that bitsize is much larger than window_size
+                log_block_sizes = (0,)
+            return QROAMClean(
+                [
+                    Shaped((2**self.window_size,)),
+                    Shaped((2**self.window_size,)),
+                    Shaped((2**self.window_size,)),
+                ],
+                selection_bitsizes=(self.window_size,),
+                target_bitsizes=(self.n, self.n, self.n),
+                log_block_sizes=log_block_sizes,
+            )
+
+        cR = self.R
+        data_a, data_b, data_lam = [0], [0], [0]
+        for _ in range(1, 2**self.window_size):
+            data_a.append(cR.x)
+            data_b.append(cR.y)
+            lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
+            lam_denom = (2 * cR.y) % cR.mod
+            if lam_denom != 0:
+                lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
+            else:
+                lam = 0
+            data_lam.append(lam)
+            cR = cR + self.R
+
+        return QROAMClean(
+            [data_a, data_b, data_lam],
+            selection_bitsizes=(self.window_size,),
+            target_bitsizes=(self.n, self.n, self.n),
+        )
+
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
         ctrl = bb.join(ctrl)
 
-        cR = self.R
-        lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
-        lam_denom = (2 * self.R.y) % self.R.mod
-        lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
-        data_a, data_b, data_lam = [0, self.R.x], [0, self.R.y], [0, lam]
-        for _ in range(2, 2**self.window_size):
-            cR = cR + self.R
-            data_a.append(cR.x)
-            data_b.append(cR.y)
-            lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
-            lam_denom = (2 * cR.y) % cR.mod
-            lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
-            data_lam.append(lam)
-
-        ctrl, a, b, lam_r = bb.add(
-            QROAMClean(
-                [data_a, data_b, data_lam],
-                selection_bitsizes=(self.window_size,),
-                target_bitsizes=(self.n, self.n, self.n),
-            ),
-            selection=ctrl,
-        )
+        ctrl, a, b, lam_r, *junk = bb.add(self.qrom, selection=ctrl)
 
         a, b, x, y, lam_r = bb.add(
             ECAdd(n=self.n, mod=self.R.mod, window_size=self.window_size),
@@ -231,57 +249,36 @@ class ECWindowAddR(Bloq):
             lam_r=lam_r,
         )
 
-        ctrl = bb.add(
-            QROAMClean(
-                [data_a, data_b, data_lam],
-                selection_bitsizes=(self.window_size,),
-                target_bitsizes=(self.n, self.n, self.n),
-            ).adjoint(),
-            selection=ctrl,
-            target0_=a,
-            target1_=b,
-            target2_=lam_r,
-        )
+        if junk:
+            assert len(junk) == 3
+            ctrl = bb.add(
+                self.qrom.adjoint(),
+                selection=ctrl,
+                target0_=a,
+                target1_=b,
+                target2_=lam_r,
+                junk_target0_=junk[0],
+                junk_target1_=junk[1],
+                junk_target2_=junk[2],
+            )
+        else:
+            ctrl = bb.add(
+                self.qrom.adjoint(), selection=ctrl, target0_=a, target1_=b, target2_=lam_r
+            )
 
         return {'ctrl': bb.split(ctrl), 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cR = self.R
-        lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
-        lam_denom = (2 * self.R.y) % self.R.mod
-        lam = (lam_num * pow(lam_denom, -1, mod=self.R.mod)) % self.R.mod
-        data_a, data_b, data_lam = [0, self.R.x], [0, self.R.y], [0, lam]
-        for _ in range(2, 2**self.window_size):
-            cR = cR + self.R
-            data_a.append(cR.x)
-            data_b.append(cR.y)
-            lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
-            lam_denom = (2 * cR.y) % cR.mod
-            lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
-            data_lam.append(lam)
         return {
-            (
-                QROAMClean(
-                    [data_a, data_b, data_lam],
-                    selection_bitsizes=(self.window_size,),
-                    target_bitsizes=(self.n, self.n, self.n),
-                ),
-                1,
-            ),
+            (self.qrom, 1),
             (ECAdd(self.n, self.R.mod, self.window_size), 1),
-            (
-                QROAMClean(
-                    [data_a, data_b, data_lam],
-                    selection_bitsizes=(self.window_size,),
-                    target_bitsizes=(self.n, self.n, self.n),
-                ).adjoint(),
-                1,
-            ),
+            (self.qrom.adjoint(), 1),
         }
 
     def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         A = ECPoint(x, y, mod=self.R.mod, curve_a=self.R.curve_a)
-        result: ECPoint = A + (ctrl * self.R)
+        ctrls = QUInt(self.n).from_bits(ctrl)
+        result: ECPoint = A + (ctrls * self.R)
         return {'ctrl': ctrl, 'x': result.x, 'y': result.y}
 
     def wire_symbol(
