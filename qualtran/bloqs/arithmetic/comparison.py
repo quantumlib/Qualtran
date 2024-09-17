@@ -1434,7 +1434,7 @@ class _LinearDepthHalfComparisonBase(_HalfComparisonBase):
 class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
-    Implements \ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a>b} using $n$ And gates.
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a>b}$ using $n$ And gates.
 
     This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
@@ -1460,7 +1460,7 @@ class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
 class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
-    Implements \ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-bb}\ket{a \geq b} using $n$ And gates.
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a \geq b}$ using $n$ And gates.
 
     This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
@@ -1486,7 +1486,7 @@ class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
 class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
-    Implements \ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a<b} using $n$ And gates.
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a<b}$ using $n$ And gates.
 
     This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
@@ -1512,7 +1512,7 @@ class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
 class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
-    Implements \ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a \leq b} using $n$ And gates.
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a \leq b}$ using $n$ And gates.
 
     This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
