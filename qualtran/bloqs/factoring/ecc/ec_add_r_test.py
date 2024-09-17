@@ -14,7 +14,14 @@
 
 import pytest
 
-from qualtran.bloqs.factoring.ecc.ec_add_r import _ec_add_r, _ec_add_r_small, _ec_window_add, ECAddR
+from qualtran.bloqs.factoring.ecc.ec_add_r import (
+    _ec_add_r,
+    _ec_add_r_small,
+    _ec_window_add,
+    _ec_window_add_r_small,
+    ECAddR,
+    ECWindowAddR,
+)
 from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
 
 
@@ -31,6 +38,22 @@ def test_ec_add_r_classical(n, p, ctrl, x, y, a, b, result):
     assert ret1 == result
 
 
+@pytest.mark.parametrize(
+    'n,p,window_size,ctrl,x,y,a,b,result',
+    [
+        (16, 17, 4, (0, 0, 0, 0), 1, 1, 12, 13, (0, 1, 1)),
+        (32, 13, 8, (1, 1, 1, 1, 1, 1, 1, 1), 5, 11, 15, 5, (1, 10, 5)),
+    ],
+)
+def test_ec_window_add_r_classical(n, p, window_size, ctrl, x, y, a, b, result):
+    R = ECPoint(a, b, mod=p)
+    bloq = ECWindowAddR(n=n, R=R, window_size=window_size)
+    ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
+    ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, x=x, y=y)
+    assert ret1 == ret2
+    assert ret1 == result
+
+
 def test_ec_add_r(bloq_autotester):
     bloq_autotester(_ec_add_r)
 
@@ -41,3 +64,7 @@ def test_ec_add_r_small(bloq_autotester):
 
 def test_ec_window_add(bloq_autotester):
     bloq_autotester(_ec_window_add)
+
+
+def test_ec_window_add_r_small(bloq_autotester):
+    bloq_autotester(_ec_window_add_r_small)

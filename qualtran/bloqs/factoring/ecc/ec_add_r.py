@@ -94,8 +94,8 @@ class ECAddR(Bloq):
         a = bb.add(IntState(bitsize=self.n, val=0))
         b = bb.add(IntState(bitsize=self.n, val=0))
 
-        ctrl, a = bb.add(XorK(QUInt(bitsize=self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
-        ctrl, b = bb.add(XorK(QUInt(bitsize=self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
+        ctrl, a = bb.add(XorK(QUInt(self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
+        ctrl, b = bb.add(XorK(QUInt(self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
 
         lam_num = (3 * self.R.x**2 + self.R.curve_a) % self.R.mod
         lam_denom = (2 * self.R.y) % self.R.mod
@@ -105,8 +105,8 @@ class ECAddR(Bloq):
 
         a, b, x, y, lam_r = bb.add(ECAdd(self.n, self.R.mod), a=a, b=b, x=x, y=y, lam_r=lam_r)
 
-        ctrl, a = bb.add(XorK(QUInt(bitsize=self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
-        ctrl, b = bb.add(XorK(QUInt(bitsize=self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
+        ctrl, a = bb.add(XorK(QUInt(self.n), self.R.x).controlled(), ctrl=ctrl, x=a)
+        ctrl, b = bb.add(XorK(QUInt(self.n), self.R.y).controlled(), ctrl=ctrl, x=b)
 
         bb.add(Free(QUInt(self.n)), reg=a)
         bb.add(Free(QUInt(self.n)), reg=b)
@@ -150,8 +150,8 @@ def _ec_add_r() -> ECAddR:
 
 @bloq_example
 def _ec_add_r_small() -> ECAddR:
-    n = 5  # fits our mod = 17
-    P = ECPoint(15, 13, mod=17, curve_a=0)
+    n = 5
+    P = ECPoint(0, 2, mod=7, curve_a=3)
     ec_add_r_small = ECAddR(n=n, R=P)
     return ec_add_r_small
 
@@ -306,4 +306,14 @@ def _ec_window_add() -> ECWindowAddR:
     return ec_window_add
 
 
-_EC_WINDOW_ADD_BLOQ_DOC = BloqDocSpec(bloq_cls=ECWindowAddR, examples=[_ec_window_add])
+@bloq_example
+def _ec_window_add_r_small() -> ECWindowAddR:
+    n = 16
+    P = ECPoint(2, 2, mod=7, curve_a=3)
+    ec_add_r_small = ECWindowAddR(n=n, R=P, window_size=4)
+    return ec_add_r_small
+
+
+_EC_WINDOW_ADD_BLOQ_DOC = BloqDocSpec(
+    bloq_cls=ECWindowAddR, examples=[_ec_window_add, _ec_window_add_r_small]
+)

@@ -31,7 +31,7 @@ from qualtran import Bloq, QUInt, Register, Side, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
-from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
+from qualtran.bloqs.mod_arithmetic.mod_multiplication import DirtyOutOfPlaceMontgomeryModMul, ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:

@@ -32,7 +32,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic._shims import MultiCToffoli
 from qualtran.bloqs.arithmetic.comparison import Equals
 from qualtran.bloqs.basic_gates import IntState, ZeroState, CNOT, Toffoli
 from qualtran.bloqs.mod_arithmetic import (
@@ -49,6 +48,8 @@ from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic._shims import ModInv
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics.types import HasLength
 
 from .ec_point import ECPoint
 
@@ -120,16 +121,16 @@ class ECAdd(Bloq):
         ab_arr = np.concatenate((a_arr, b_arr), axis=None)
         ab_arr, f_3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f_3)
         ab_arr = np.split(ab_arr, 2)
-        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(bitsize=self.n))
-        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(bitsize=self.n))
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
 
         x_arr = bb.split(x)
         y_arr = bb.split(y)
         xy_arr = np.concatenate((x_arr, y_arr), axis=None)
         xy_arr, f_4 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=xy_arr, target=f_4)
         xy_arr = np.split(xy_arr, 2)
-        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(bitsize=self.n))
-        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(bitsize=self.n))
+        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         f_ctrls = [f_2, f_3, f_4]
         f_ctrls, ctrl = bb.add(MultiControlX(cvs=[0] * 3), controls=f_ctrls, target=ctrl)
@@ -212,8 +213,8 @@ class ECAdd(Bloq):
         z_1_split = bb.split(z_1)
         for i in range(self.n):
             a_split[i], z_1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z_1_split[i])
-        a = bb.join(a_split, QMontgomeryUInt(bitsize=self.n))
-        z_1 = bb.join(z_1_split, QUInt(bitsize=self.n))
+        a = bb.join(a_split, QMontgomeryUInt(self.n))
+        z_1 = bb.join(z_1_split, QUInt(self.n))
 
         z_1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod), x=z_1)
         a, z_1 = bb.add(ModAdd(self.n, mod=self.mod), x=a, y=z_1)
@@ -225,8 +226,8 @@ class ECAdd(Bloq):
         z_1_split = bb.split(z_1)
         for i in range(self.n):
             a_split[i], z_1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z_1_split[i])
-        a = bb.join(a_split, QMontgomeryUInt(bitsize=self.n))
-        z_1 = bb.join(z_1_split, QUInt(bitsize=self.n))
+        a = bb.join(a_split, QMontgomeryUInt(self.n))
+        z_1 = bb.join(z_1_split, QUInt(self.n))
 
         bb.add(Free(QUInt(self.n)), reg=z_1)
 
@@ -237,8 +238,8 @@ class ECAdd(Bloq):
         z_4_split = bb.split(z_4)
         for i in range(self.n):
             lam_split[i], z_4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z_4_split[i])
-        lam = bb.join(lam_split, QUInt(bitsize=self.n))
-        z_4 = bb.join(z_4_split, QUInt(bitsize=self.n))
+        lam = bb.join(lam_split, QUInt(self.n))
+        z_4 = bb.join(z_4_split, QUInt(self.n))
 
         z_4, lam, z_3, z_2, reduced = bb.add(
             DirtyOutOfPlaceMontgomeryModMul(
@@ -264,8 +265,8 @@ class ECAdd(Bloq):
         z_4_split = bb.split(z_4)
         for i in range(self.n):
             lam_split[i], z_4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z_4_split[i])
-        lam = bb.join(lam_split, QUInt(bitsize=self.n))
-        z_4 = bb.join(z_4_split, QUInt(bitsize=self.n))
+        lam = bb.join(lam_split, QUInt(self.n))
+        z_4 = bb.join(z_4_split, QUInt(self.n))
 
         bb.add(Free(QUInt(self.n)), reg=z_4)
 
@@ -280,8 +281,8 @@ class ECAdd(Bloq):
         y_split = bb.split(y)
         for i in range(self.n):
             z_3_split[i], y_split[i] = bb.add(CNOT(), ctrl=z_3_split[i], target=y_split[i])
-        z_3 = bb.join(z_3_split, QUInt(bitsize=self.n))
-        y = bb.join(y_split, QMontgomeryUInt(bitsize=self.n))
+        z_3 = bb.join(z_3_split, QUInt(self.n))
+        y = bb.join(y_split, QMontgomeryUInt(self.n))
 
         x, lam = bb.add(
             DirtyOutOfPlaceMontgomeryModMul(
@@ -361,29 +362,25 @@ class ECAdd(Bloq):
 
         a_arr = bb.split(a)
         b_arr = bb.split(b)
-        ab = bb.join(
-            np.concatenate((a_arr, b_arr), axis=None), dtype=QMontgomeryUInt(bitsize=2 * self.n)
-        )
+        ab = bb.join(np.concatenate((a_arr, b_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
         x_arr = bb.split(x)
         y_arr = bb.split(y)
-        xy = bb.join(
-            np.concatenate((x_arr, y_arr), axis=None), dtype=QMontgomeryUInt(bitsize=2 * self.n)
-        )
+        xy = bb.join(np.concatenate((x_arr, y_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
         ab, xy, f_4 = bb.add(Equals(2 * self.n), x=ab, y=xy, target=f_4)
         ab_split = bb.split(ab)
-        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(bitsize=self.n))
-        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(bitsize=self.n))
+        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
         xy_split = bb.split(xy)
-        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(bitsize=self.n))
-        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(bitsize=self.n))
+        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
 
         a_arr = bb.split(a)
         b_arr = bb.split(b)
         ab_arr = np.concatenate((a_arr, b_arr), axis=None)
         ab_arr, f_3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f_3)
         ab_arr = np.split(ab_arr, 2)
-        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(bitsize=self.n))
-        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(bitsize=self.n))
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
 
         ancilla = bb.add(ZeroState())
         toff_ctrl = [f_1, f_2]
@@ -420,8 +417,8 @@ class ECAdd(Bloq):
             MultiAnd(cvs=[0] * 2 * self.n).adjoint(), ctrl=xy_arr, junk=junk, target=out
         )
         xy_arr = np.split(xy_arr, 2)
-        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(bitsize=self.n))
-        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(bitsize=self.n))
+        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Step 7: Free all ancilla qubits in the zero state.
         bb.add(Free(QBit()), reg=f_1)
@@ -441,17 +438,47 @@ class ECAdd(Bloq):
         return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam_r': lam_r}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # litinksi
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.n, int):
+            cvs = [0] * 2 * self.n
+        else:
+            cvs = HasLength(2 * self.n)
         return {
-            (MultiCToffoli(n=self.n), 18),
-            (ModAdd(bitsize=self.n, mod=self.mod), 3),
-            (CModAdd(QUInt(self.n), mod=self.mod), 2),
-            (ModSub(QUInt(self.n), mod=self.mod), 2),
-            (CModSub(QUInt(self.n), mod=self.mod), 4),
-            (ModNeg(QUInt(self.n), mod=self.mod), 2),
-            (CModNeg(QUInt(self.n), mod=self.mod), 1),
-            (ModDbl(QUInt(self.n), mod=self.mod), 2),
-            (ModInv(n=self.n, mod=self.mod), 4),
+            (Equals(self.n), 3),
+            (ModNeg(QMontgomeryUInt(self.n), mod=self.mod), 2),
+            (MultiControlX(cvs=cvs), 3),
+            (MultiControlX(cvs=[0] * 3), 2),
+            (ModSub(QMontgomeryUInt(self.n), mod=self.mod), 2),
+            (CModSub(QMontgomeryUInt(self.n), mod=self.mod), 4),
+            (ModInv(n=self.n, mod=self.mod), 2),
+            (
+                DirtyOutOfPlaceMontgomeryModMul(
+                    bitsize=self.n, window_size=self.window_size, mod=self.mod
+                ),
+                5,
+            ),
+            (MultiControlX(cvs=[0, 1, 1]), self.n),
+            (MultiControlX(cvs=[1, 1, 1]), self.n),
+            (
+                DirtyOutOfPlaceMontgomeryModMul(
+                    bitsize=self.n, window_size=self.window_size, mod=self.mod
+                ).adjoint(),
+                5,
+            ),
+            (ModInv(n=self.n, mod=self.mod).adjoint(), 2),
+            (CNOT(), 5 * self.n),
+            (ModDbl(QMontgomeryUInt(self.n), mod=self.mod), 1),
+            (ModAdd(self.n, mod=self.mod), 2),
+            (CModAdd(QMontgomeryUInt(self.n), mod=self.mod), 2),
+            (ModAdd(self.n, mod=self.mod).adjoint(), 1),
+            (ModDbl(QMontgomeryUInt(self.n), mod=self.mod).adjoint(), 1),
+            (MultiControlX(cvs=[1, 1]), self.n),
+            (CModNeg(QMontgomeryUInt(self.n), mod=self.mod), 1),
+            (Toffoli(), 2 * self.n + 4),
+            (Equals(2 * self.n), 1),
+            (MultiAnd(cvs=cvs), 1),
+            (MultiTargetCNOT(2), 1),
+            (MultiAnd(cvs=cvs).adjoint(), 1),
         }
 
 
@@ -464,7 +491,7 @@ def _ec_add() -> ECAdd:
 
 @bloq_example
 def _ec_add_small() -> ECAdd:
-    ec_add = ECAdd(5, mod=17)
+    ec_add = ECAdd(5, mod=7)
     return ec_add
 
 

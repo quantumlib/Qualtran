@@ -49,8 +49,8 @@ class MeasureQFT(Bloq):
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
 
-        x = bb.join(np.array(x), dtype=QUInt(bitsize=self.n))
-        x = bb.add(QFTTextBook(bitsize=self.n), q=x)
+        x = bb.join(np.array(x), dtype=QUInt(self.n))
+        x = bb.add(QFTTextBook(self.n), q=x)
         x = bb.split(x)
 
         for i in range(self.n):
@@ -59,7 +59,7 @@ class MeasureQFT(Bloq):
         return {}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {(QFTTextBook(bitsize=self.n), 1), (Measure(), self.n)}
+        return {(QFTTextBook(self.n), 1), (Measure(), self.n)}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
