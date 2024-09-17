@@ -1436,9 +1436,9 @@ class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
 
     Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a>b}$ using $n$ And gates.
 
-    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
-    copying out the carry, and uncomputing the addition circuit.
+    copying out the carry, and keeping $c$ for the uncomputation.
 
     Args:
         dtype: dtype of the two integers a and b.
@@ -1462,9 +1462,9 @@ class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
 
     Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a \geq b}$ using $n$ And gates.
 
-    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
-    copying out the carry, and uncomputing the addition circuit.
+    copying out the carry, and keeping $c$ for the uncomputation.
 
     Args:
         dtype: dtype of the two integers a and b.
@@ -1488,9 +1488,9 @@ class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
 
     Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a<b}$ using $n$ And gates.
 
-    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
-    copying out the carry, and uncomputing the addition circuit.
+    copying out the carry, and keeping $c$ for the uncomputation.
 
     Args:
         dtype: dtype of the two integers a and b.
@@ -1514,9 +1514,9 @@ class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
 
     Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a \leq b}$ using $n$ And gates.
 
-    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
     implement it by flipping all the bits in b, computing the first half of the addition circuit,
-    copying out the carry, and uncomputing the addition circuit.
+    copying out the carry, and keeping $c$ for the uncomputation.
 
     Args:
         dtype: dtype of the two integers a and b.
