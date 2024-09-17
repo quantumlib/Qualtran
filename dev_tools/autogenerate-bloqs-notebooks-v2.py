@@ -448,6 +448,10 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
             qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_GREATERTHAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_GREATERTHANEQUAL_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_LESSTHAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_LESSTHANEQUAL_DOC,
         ],
     ),
     NotebookSpecV2(

@@ -272,6 +272,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
 
     bitsize: 'SymbolicInt'
     is_adjoint: bool = False
+    include_most_significant_bit: bool = True
 
     @property
     def signature(self):
@@ -280,7 +281,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             [
                 Register('a', QUInt(self.bitsize)),
                 Register('b', QUInt(self.bitsize)),
-                Register('c', QUInt(self.bitsize + 1), side=side),
+                Register(
+                    'c', QUInt(self.bitsize + int(self.include_most_significant_bit)), side=side
+                ),
             ]
         )
 
@@ -307,7 +310,12 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return {
             'a': a,
             'b': b,
-            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+            'c': add_ints(
+                int(a),
+                int(b),
+                num_bits=self.bitsize + int(self.include_most_significant_bit),
+                is_signed=False,
+            ),
         }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -328,12 +336,22 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
                 cirq.CX(a[i], c[i + 1]),
                 cirq.CX(b[i], c[i]),
             ]
-            for i in range(self.bitsize)
+            for i in range(self.bitsize - 1 + int(self.include_most_significant_bit))
         ]
+        if not self.include_most_significant_bit:
+            i = self.bitsize - 1
+            optree.append(
+                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i]), cirq.CX(a[i], b[i]), cirq.CX(b[i], c[i])]
+            )
         return cirq.inverse(optree) if self.is_adjoint else optree
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {And(uncompute=self.is_adjoint): self.bitsize, CNOT(): 5 * self.bitsize}
+        return {
+            And(uncompute=self.is_adjoint): self.bitsize
+            - 1
+            + int(self.include_most_significant_bit),
+            CNOT(): 5 * (self.bitsize - 1) + 4 + int(self.include_most_significant_bit),
+        }
 
     def __pow__(self, power: int):
         if power == 1:

@@ -27,6 +27,10 @@ from qualtran.bloqs.arithmetic.comparison import (
     _greater_than,
     _gt_k,
     _leq_symb,
+    _lineardepthhalfgreaterthan_small,
+    _lineardepthhalfgreaterthanequal_small,
+    _lineardepthhalflessthan_small,
+    _lineardepthhalflessthanequal_small,
     _lt_k_symb,
     BiQubitsMixer,
     CLinearDepthGreaterThan,
@@ -36,10 +40,15 @@ from qualtran.bloqs.arithmetic.comparison import (
     LessThanConstant,
     LessThanEqual,
     LinearDepthGreaterThan,
+    LinearDepthHalfGreaterThan,
+    LinearDepthHalfGreaterThanEqual,
+    LinearDepthHalfLessThan,
+    LinearDepthHalfLessThanEqual,
     SingleQubitCompare,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
 
@@ -378,3 +387,99 @@ def test_clineardepthgreaterthan_tcomplexity(ctrl, dtype):
     c = CLinearDepthGreaterThan(dtype(n), ctrl).t_complexity()
     assert c.t == 4 * (n + 2)
     assert c.rotations == 0
+
+
+@pytest.mark.parametrize(
+    'comp_cls',
+    [
+        LinearDepthHalfGreaterThan,
+        LinearDepthHalfGreaterThanEqual,
+        LinearDepthHalfLessThan,
+        LinearDepthHalfLessThanEqual,
+    ],
+)
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+@pytest.mark.parametrize('uncompute', [True, False])
+def test_linear_half_comparison_decomposition(comp_cls, dtype, bitsize, uncompute):
+    b = comp_cls(dtype(bitsize), uncompute)
+    qlt_testing.assert_valid_bloq_decomposition(b)
+
+
+@pytest.mark.parametrize(
+    'comp_cls',
+    [
+        LinearDepthHalfGreaterThan,
+        LinearDepthHalfGreaterThanEqual,
+        LinearDepthHalfLessThan,
+        LinearDepthHalfLessThanEqual,
+    ],
+)
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+@pytest.mark.parametrize('uncompute', [True, False])
+def test_linear_half_comparison_bloq_counts(comp_cls, dtype, bitsize, uncompute):
+    b = comp_cls(dtype(bitsize), uncompute)
+    qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
+
+
+@pytest.mark.parametrize(
+    'comp_cls',
+    [
+        LinearDepthHalfGreaterThan,
+        LinearDepthHalfGreaterThanEqual,
+        LinearDepthHalfLessThan,
+        LinearDepthHalfLessThanEqual,
+    ],
+)
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_linear_half_comparison_classical_action(comp_cls, dtype, bitsize):
+    b = comp_cls(dtype(bitsize))
+    if dtype is QInt:
+        valid_range = range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1))
+    else:
+        valid_range = range(2**bitsize)
+    qlt_testing.assert_consistent_classical_action(b, a=valid_range, b=valid_range)
+
+
+@pytest.mark.parametrize(
+    'comp_cls',
+    [
+        LinearDepthHalfGreaterThan,
+        LinearDepthHalfGreaterThanEqual,
+        LinearDepthHalfLessThan,
+        LinearDepthHalfLessThanEqual,
+    ],
+)
+@pytest.mark.parametrize('dtype', [QInt, QUInt, QMontgomeryUInt])
+def test_linear_half_comparison_symbolic_complexity(comp_cls, dtype):
+    n = sympy.Symbol('n')
+    b = comp_cls(dtype(n))
+
+    cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+
+    assert cost['n_t'] == 0
+    assert cost['n_ccz'] == n
+
+    # uncomputation has zero cost.
+    cost = get_cost_value(b.adjoint(), QECGatesCost()).total_t_and_ccz_count()
+
+    assert cost['n_t'] == 0
+    assert cost['n_ccz'] == 0
+
+
+def test_lineardepthhalfgreaterthan_small(bloq_autotester):
+    bloq_autotester(_lineardepthhalfgreaterthan_small)
+
+
+def test_lineardepthhalflessthan_small(bloq_autotester):
+    bloq_autotester(_lineardepthhalflessthan_small)
+
+
+def test_lineardepthhalfgreaterthanequal_small(bloq_autotester):
+    bloq_autotester(_lineardepthhalfgreaterthanequal_small)
+
+
+def test_lineardepthhalflessthanequal_small(bloq_autotester):
+    bloq_autotester(_lineardepthhalflessthanequal_small)
