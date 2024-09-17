@@ -97,6 +97,8 @@ import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
+import qualtran.bloqs.factoring.ecc.ec_add
+import qualtran.bloqs.factoring.ecc.ec_add_r
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
@@ -325,6 +327,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMClean": qualtran.bloqs.data_loading.qroam_clean.QROAMClean,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
     "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd": qualtran.bloqs.mod_arithmetic.CModAdd,
@@ -339,6 +342,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK": qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul,
+    "qualtran.bloqs.factoring.ecc.ec_add.ECAdd": qualtran.bloqs.factoring.ecc.ec_add.ECAdd,
+    "qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR": qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,

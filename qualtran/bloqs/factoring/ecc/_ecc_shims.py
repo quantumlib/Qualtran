@@ -15,9 +15,9 @@
 from functools import cached_property
 from typing import Dict, Optional, Tuple
 
-from attrs import frozen
 import numpy as np
 import sympy
+from attrs import frozen
 
 from qualtran import (
     Bloq,

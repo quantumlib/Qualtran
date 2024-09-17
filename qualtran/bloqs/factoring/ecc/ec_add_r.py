@@ -38,7 +38,7 @@ from qualtran.bloqs.data_loading import QROAMClean
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics.types import Shaped, is_symbolic
+from qualtran.symbolics.types import is_symbolic, Shaped
 
 from .ec_add import ECAdd
 from .ec_point import ECPoint

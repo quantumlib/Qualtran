@@ -24,8 +24,8 @@ from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
-from attrs import frozen
 import attrs
+from attrs import frozen
 
 from qualtran import Bloq, QUInt, Register, Side, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract

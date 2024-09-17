@@ -35,9 +35,9 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import PlusState
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
+from ._ecc_shims import MeasureQFT
 from .ec_add_r import ECAddR, ECWindowAddR
 from .ec_point import ECPoint
-from ._ecc_shims import MeasureQFT
 
 
 @frozen

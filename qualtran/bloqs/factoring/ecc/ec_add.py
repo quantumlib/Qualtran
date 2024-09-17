@@ -25,15 +25,17 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QBit,
-    QUInt,
     QMontgomeryUInt,
+    QUInt,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import Equals
-from qualtran.bloqs.basic_gates import IntState, ZeroState, CNOT, Toffoli
+from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
+from qualtran.bloqs.bookkeeping import Free
+from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic import (
     CModAdd,
     CModNeg,
@@ -44,8 +46,6 @@ from qualtran.bloqs.mod_arithmetic import (
     ModNeg,
     ModSub,
 )
-from qualtran.bloqs.bookkeeping import Free
-from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic._shims import ModInv
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
