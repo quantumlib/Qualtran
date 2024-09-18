@@ -23,7 +23,7 @@ from qualtran.serialization.ec_point import ec_point_from_proto, ec_point_to_pro
     [
         ECPoint(x=15, y=13, mod=17, curve_a=0),
         ECPoint(x=0, y=2, mod=7, curve_a=3),
-        ECPoint(x=0, y=2, mod=7)
+        ECPoint(x=0, y=2, mod=7),
     ],
 )
 def test_ec_point_to_proto_roundtrip(ec_point: ECPoint):

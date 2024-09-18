@@ -33,6 +33,8 @@ from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import DirtyOutOfPlaceMontgomeryModMul, ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
+from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -114,6 +116,37 @@ class ModInv(Bloq):
             AddK(self.n, k=self.mod): 1,
             Swap(self.n): 1,
         }
+
+    # Hacky classical simulation just to confirm correctness of ECAdd circuit.
+    def on_classical_vals(
+        self,
+        x: 'ClassicalValT',
+        garbage1: Optional['ClassicalValT'] = None,
+        garbage2: Optional['ClassicalValT'] = None,
+    ) -> Dict[str, ClassicalValT]:
+        if is_symbolic(self.n) or is_symbolic(self.mod):
+            raise ValueError(f'classical action is not supported for {self}')
+
+        if self.uncompute:
+            assert garbage1 is not None
+            assert garbage2 is not None
+            return {'x': garbage1}
+        assert garbage1 is None
+        assert garbage2 is None
+
+        # Store the original x in the garbage registers for the uncompute simulation.
+        garbage1 = x
+        garbage2 = x
+
+        # When P = Q the circuit computes lambda with a mod inversion, but doesn't use the output
+        # value. Here we will just do nothing to x in that case because it won't matter in the
+        # circuit anyway.
+        try:
+            x = pow(int(x), -1, mod=self.mod)
+        except ValueError:
+            x = x
+
+        return {'x': x, 'garbage1': garbage1, 'garbage2': garbage2}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

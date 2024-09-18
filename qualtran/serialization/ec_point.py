@@ -22,7 +22,7 @@ def ec_point_from_proto(point: ec_point_pb2.ECPoint) -> ECPoint:
         x=int_or_sympy_from_proto(point.x),
         y=int_or_sympy_from_proto(point.y),
         mod=int_or_sympy_from_proto(point.mod),
-        curve_a=int_or_sympy_from_proto(point.curve_a)
+        curve_a=int_or_sympy_from_proto(point.curve_a),
     )
 
 
@@ -31,5 +31,5 @@ def ec_point_to_proto(point: ECPoint) -> ec_point_pb2.ECPoint:
         x=int_or_sympy_to_proto(point.x),
         y=int_or_sympy_to_proto(point.y),
         mod=int_or_sympy_to_proto(point.mod),
-        curve_a=int_or_sympy_to_proto(point.curve_a)
+        curve_a=int_or_sympy_to_proto(point.curve_a),
     )

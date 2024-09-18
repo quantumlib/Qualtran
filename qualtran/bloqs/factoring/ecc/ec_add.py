@@ -495,12 +495,4 @@ def _ec_add_small() -> ECAdd:
     return ec_add
 
 
-@bloq_example
-def _ec_add_256() -> ECAdd:
-    ec_add_256 = ECAdd(
-        n=256, mod=0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
-    )
-    return ec_add_256
-
-
-_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add, _ec_add_small, _ec_add_256])
+_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add, _ec_add_small])
