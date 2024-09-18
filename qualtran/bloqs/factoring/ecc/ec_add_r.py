@@ -307,8 +307,8 @@ def _ec_window_add() -> ECWindowAddR:
 def _ec_window_add_r_small() -> ECWindowAddR:
     n = 16
     P = ECPoint(2, 2, mod=7, curve_a=3)
-    ec_add_r_small = ECWindowAddR(n=n, R=P, window_size=4)
-    return ec_add_r_small
+    ec_window_add_r_small = ECWindowAddR(n=n, R=P, window_size=4)
+    return ec_window_add_r_small
 
 
 _EC_WINDOW_ADD_BLOQ_DOC = BloqDocSpec(

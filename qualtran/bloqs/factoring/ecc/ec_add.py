@@ -491,8 +491,8 @@ def _ec_add() -> ECAdd:
 
 @bloq_example
 def _ec_add_small() -> ECAdd:
-    ec_add = ECAdd(5, mod=7)
-    return ec_add
+    ec_add_small = ECAdd(5, mod=7)
+    return ec_add_small
 
 
 _EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add, _ec_add_small])
