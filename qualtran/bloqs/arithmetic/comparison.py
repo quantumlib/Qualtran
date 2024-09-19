@@ -31,6 +31,7 @@ from qualtran import (
     GateWithRegisters,
     QAny,
     QBit,
+    QDType,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -951,20 +952,25 @@ _GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k]
 class Equals(Bloq):
     r"""Implements |x>|y>|t> => |x>|y>|t ⨁ (x = y)> using $n-1$ Toffoli gates.
     Args:
-        bitsize: bitsize of x and y registers.
+        dtype: Data type of the input registers `x` and `y`.
     Registers:
         x: Bitsize-sized input register.
         y: Bitsize-sized input register.
         target: Register to hold result of comparison.
     """
 
-    bitsize: SymbolicInt
+    dtype: QDType
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(
-            x=QUInt(self.bitsize), y=QUInt(self.bitsize), target=QBit()
-        )
+        return Signature.build_from_dtypes(x=self.dtype, y=self.dtype, target=QBit())
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.dtype.num_qubits
+
+    def is_symbolic(self):
+        return is_symbolic(self.dtype)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
@@ -980,10 +986,10 @@ class Equals(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.bitsize):
-            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
+        if self.is_symbolic():
+            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
-        x, y = bb.add(Xor(QAny(self.bitsize)), x=x, y=y)
+        x, y = bb.add(Xor(self.dtype), x=x, y=y)
         if self.bitsize == 1:
             y = bb.add(XGate(), q=y)
             y, target = bb.add(CNOT(), ctrl=y, target=target)
@@ -993,7 +999,7 @@ class Equals(Bloq):
             y_split, out = bb.add(And(0, 0), ctrl=y_split)
             out, target = bb.add(CNOT(), ctrl=out, target=target)
             y_split = bb.add(And(0, 0).adjoint(), ctrl=y_split, target=out)
-            y = bb.join(y_split, QAny(self.bitsize))
+            y = bb.join(y_split, self.dtype)
         else:
             y_split = bb.split(y)
             y_split, junk, out = bb.add(MultiAnd(cvs=[0] * self.bitsize), ctrl=y_split)
@@ -1001,24 +1007,19 @@ class Equals(Bloq):
             y_split = bb.add(
                 MultiAnd(cvs=[0] * self.bitsize).adjoint(), ctrl=y_split, junk=junk, target=out
             )
-            y = bb.join(y_split, QAny(self.bitsize))
-        x, y = bb.add(Xor(QAny(self.bitsize)), x=x, y=y)
+            y = bb.join(y_split, self.dtype)
+        x, y = bb.add(Xor(self.dtype), x=x, y=y)
 
         return {'x': x, 'y': y, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.bitsize == 1:
-            return {(Xor(QAny(self.bitsize)), 2), (XGate(), 2), (CNOT(), 1)}
+            return {(Xor(self.dtype), 2), (XGate(), 2), (CNOT(), 1)}
         elif self.bitsize == 2:
-            return {
-                (Xor(QAny(self.bitsize)), 2),
-                (And(0, 0), 1),
-                (And(0, 0).adjoint(), 1),
-                (CNOT(), 1),
-            }
+            return {(Xor(self.dtype), 2), (And(0, 0), 1), (And(0, 0).adjoint(), 1), (CNOT(), 1)}
         else:
             return {
-                (Xor(QAny(self.bitsize)), 2),
+                (Xor(self.dtype), 2),
                 (MultiAnd(cvs=[0] * self.bitsize), 1),
                 (MultiAnd(cvs=[0] * self.bitsize).adjoint(), 1),
                 (CNOT(), 1),
@@ -1030,7 +1031,7 @@ class Equals(Bloq):
 
 @bloq_example
 def _equals() -> Equals:
-    equals = Equals(bitsize=4)
+    equals = Equals(QUInt(4))
     return equals
 
 

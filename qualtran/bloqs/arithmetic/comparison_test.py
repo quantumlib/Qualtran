@@ -20,7 +20,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QMontgomeryUInt, QUInt
+from qualtran import BloqBuilder, QBit, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
     _clineardepthgreaterthan_example,
     _eq_k,
@@ -302,28 +302,12 @@ def test_greater_than_constant():
     )
 
 
-@pytest.mark.parametrize('bitsize', [1, 2, 5])
-def test_equals_decomp(bitsize):
-    bloq = Equals(bitsize=bitsize)
-    qlt_testing.assert_valid_bloq_decomposition(bloq)
-    qlt_testing.assert_equivalent_bloq_counts(bloq, [ignore_alloc_free, ignore_split_join])
-
-
-@pytest.mark.parametrize(
-    'bitsize,x,y,target,result',
-    [(1, 1, 1, 0, 1), (2, 2, 3, 0, 0), (3, 5, 3, 1, 1), (4, 8, 8, 0, 1), (5, 30, 30, 1, 0)],
-)
-def test_classical_equals(bitsize, x, y, target, result):
-    bloq = Equals(bitsize=bitsize)
-    cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(x=x, y=y, target=target)
-    cbloq_classical = cbloq.call_classically(x=x, y=y, target=target)
-
-    assert len(bloq_classical) == len(cbloq_classical)
-    for i in range(len(bloq_classical)):
-        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
-
-    assert bloq_classical[-1] == result
+@pytest.mark.parametrize('dtype', [QBit(), QUInt(2), QInt(3), QMontgomeryUInt(4), QUInt(5)])
+def test_classical_equals(dtype):
+    bloq = Equals(dtype)
+    qlt_testing.assert_consistent_classical_action(
+        bloq, x=dtype.get_classical_domain(), y=dtype.get_classical_domain(), target=range(0, 2)
+    )
 
 
 def test_equals_a_constant():
