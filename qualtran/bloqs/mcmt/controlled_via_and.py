@@ -127,7 +127,6 @@ class ControlledViaAnd(Controlled):
         return counts
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        """flatten nested controlled bloqs"""
         ctrl_spec_combined = CtrlSpec(
             qdtypes=ctrl_spec.qdtypes + self.ctrl_spec.qdtypes,
             cvs=ctrl_spec.cvs + self.ctrl_spec.cvs,
