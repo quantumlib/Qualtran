@@ -41,7 +41,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
-from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor
 from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.bookkeeping import Cast
@@ -945,6 +945,96 @@ def _gt_k() -> GreaterThanConstant:
 
 
 _GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k])
+
+
+@frozen
+class Equals(Bloq):
+    r"""Implements |x>|y>|t> => |x>|y>|t ⨁ (x = y)> using $n-1$ Toffoli gates.
+    Args:
+        bitsize: bitsize of x and y registers.
+    Registers:
+        x: Bitsize-sized input register.
+        y: Bitsize-sized input register.
+        target: Register to hold result of comparison.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(
+            x=QUInt(self.bitsize), y=QUInt(self.bitsize), target=QBit()
+        )
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text("")
+        if reg.name == 'x':
+            return TextBox("In(x)")
+        if reg.name == 'y':
+            return TextBox("In(y)")
+        elif reg.name == 'target':
+            return TextBox("⨁(x = y)")
+        raise ValueError(f'Unknown register symbol {reg.name}')
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
+
+        x, y = bb.add(Xor(QAny(self.bitsize)), x=x, y=y)
+        if self.bitsize == 1:
+            y = bb.add(XGate(), q=y)
+            y, target = bb.add(CNOT(), ctrl=y, target=target)
+            y = bb.add(XGate(), q=y)
+        elif self.bitsize == 2:
+            y_split = bb.split(y)
+            y_split, out = bb.add(And(0, 0), ctrl=y_split)
+            out, target = bb.add(CNOT(), ctrl=out, target=target)
+            y_split = bb.add(And(0, 0).adjoint(), ctrl=y_split, target=out)
+            y = bb.join(y_split, QAny(self.bitsize))
+        else:
+            y_split = bb.split(y)
+            y_split, junk, out = bb.add(MultiAnd(cvs=[0] * self.bitsize), ctrl=y_split)
+            out, target = bb.add(CNOT(), ctrl=out, target=target)
+            y_split = bb.add(
+                MultiAnd(cvs=[0] * self.bitsize).adjoint(), ctrl=y_split, junk=junk, target=out
+            )
+            y = bb.join(y_split, QAny(self.bitsize))
+        x, y = bb.add(Xor(QAny(self.bitsize)), x=x, y=y)
+
+        return {'x': x, 'y': y, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        if self.bitsize == 1:
+            return {(Xor(QAny(self.bitsize)), 2), (XGate(), 2), (CNOT(), 1)}
+        elif self.bitsize == 2:
+            return {
+                (Xor(QAny(self.bitsize)), 2),
+                (And(0, 0), 1),
+                (And(0, 0).adjoint(), 1),
+                (CNOT(), 1),
+            }
+        else:
+            return {
+                (Xor(QAny(self.bitsize)), 2),
+                (MultiAnd(cvs=[0] * self.bitsize), 1),
+                (MultiAnd(cvs=[0] * self.bitsize).adjoint(), 1),
+                (CNOT(), 1),
+            }
+
+    def on_classical_vals(self, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'y': y, 'target': target ^ (x == y)}
+
+
+@bloq_example
+def _equals() -> Equals:
+    equals = Equals(bitsize=4)
+    return equals
+
+
+_EQUALS_DOC = BloqDocSpec(bloq_cls=Equals, examples=[_equals])
 
 
 @frozen
