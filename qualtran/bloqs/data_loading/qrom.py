@@ -33,7 +33,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, CostKey, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:

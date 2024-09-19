@@ -41,7 +41,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, CostKey, SympySymbolAllocator
 
 SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 

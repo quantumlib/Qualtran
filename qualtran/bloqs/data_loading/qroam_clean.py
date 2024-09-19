@@ -30,7 +30,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, SoquetT, QDType
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator, CostKey
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
 
@@ -300,7 +300,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         raise ValueError(f'Unknown register name {name}')
 
     def __str__(self):
-        return f'QROAMCleanAdjoint'
+        return 'QROAMCleanAdjoint'
 
 
 @attrs.frozen
