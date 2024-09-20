@@ -990,40 +990,22 @@ class Equals(Bloq):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
         x, y = bb.add(Xor(self.dtype), x=x, y=y)
-        if self.bitsize == 1:
-            y = bb.add(XGate(), q=y)
-            y, target = bb.add(CNOT(), ctrl=y, target=target)
-            y = bb.add(XGate(), q=y)
-        elif self.bitsize == 2:
-            y_split = bb.split(y)
-            y_split, out = bb.add(And(0, 0), ctrl=y_split)
-            out, target = bb.add(CNOT(), ctrl=out, target=target)
-            y_split = bb.add(And(0, 0).adjoint(), ctrl=y_split, target=out)
-            y = bb.join(y_split, self.dtype)
-        else:
-            y_split = bb.split(y)
-            y_split, junk, out = bb.add(MultiAnd(cvs=[0] * self.bitsize), ctrl=y_split)
-            out, target = bb.add(CNOT(), ctrl=out, target=target)
-            y_split = bb.add(
-                MultiAnd(cvs=[0] * self.bitsize).adjoint(), ctrl=y_split, junk=junk, target=out
-            )
-            y = bb.join(y_split, self.dtype)
+        y_split = bb.split(y)
+        y_split, target = bb.add(
+            MultiControlX(cvs=[0] * self.bitsize), controls=y_split, target=target
+        )
+        y = bb.join(y_split, self.dtype)
         x, y = bb.add(Xor(self.dtype), x=x, y=y)
 
         return {'x': x, 'y': y, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        if self.bitsize == 1:
-            return {(Xor(self.dtype), 2), (XGate(), 2), (CNOT(), 1)}
-        elif self.bitsize == 2:
-            return {(Xor(self.dtype), 2), (And(0, 0), 1), (And(0, 0).adjoint(), 1), (CNOT(), 1)}
-        else:
-            return {
-                (Xor(self.dtype), 2),
-                (MultiAnd(cvs=[0] * self.bitsize), 1),
-                (MultiAnd(cvs=[0] * self.bitsize).adjoint(), 1),
-                (CNOT(), 1),
-            }
+        return {
+            Xor(self.dtype): 2,
+            MultiControlX(cvs=[0] * self.bitsize): 1,
+            MultiAnd(cvs=[0] * self.bitsize).adjoint(): 1,
+            CNOT(): 1,
+        }
 
     def on_classical_vals(self, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': y, 'target': target ^ (x == y)}
