@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -21,6 +21,7 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Sign
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
+from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
@@ -120,9 +121,11 @@ class HoppingTile(Bloq):
         if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
-    def pretty_name(self) -> str:
-        l = 'p' if self.pink else 'g'
-        return f'H_h^{l}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            l = 'p' if self.pink else 'g'
+            return Text(f'H_h^{l}')
+        return super().wire_symbol(reg, idx)
 
     @cached_property
     def signature(self) -> Signature:
