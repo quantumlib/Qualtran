@@ -12,12 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import Dict, Union
 
+import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QUInt, Register, Signature
-from qualtran.bloqs.arithmetic._shims import MultiCToffoli
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    DecomposeTypeError,
+    QBit,
+    QMontgomeryUInt,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran.bloqs.arithmetic.comparison import Equals
+from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
+from qualtran.bloqs.bookkeeping import Free
+from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic import (
     CModAdd,
     CModNeg,
@@ -30,6 +50,951 @@ from qualtran.bloqs.mod_arithmetic import (
 )
 from qualtran.bloqs.mod_arithmetic._shims import ModInv
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics.types import HasLength
+
+from .ec_point import ECPoint
+
+
+@frozen
+class _ECAddStepOne(Bloq):
+    r"""Performs step one of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        uncompute: whether to compute or uncompute.
+
+    Registers:
+        f1: Flag to set if a = x.
+        f2: Flag to set if b = -y.
+        f3: Flag to set if (a, b) = (0, 0).
+        f4: Flag to set if (x, y) = (0, 0).
+        ctrl: Flag to set if neither the input points nor the output point are (0, 0).
+        a: The x component of the first input elliptic curve point of bitsize `n`.
+        b: The y component of the first input elliptic curve point of bitsize `n`.
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('f1', QBit(), side=side),
+                Register('f2', QBit(), side=side),
+                Register('f3', QBit(), side=side),
+                Register('f4', QBit(), side=side),
+                Register('ctrl', QBit(), side=side),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+            ]
+        )
+
+    def adjoint(self) -> '_ECAddStepOne':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        f1 = 0 ^ (a == x)
+        f2 = 0 ^ (b == -y)
+        f3 = 0 ^ (a == b == 0)
+        f4 = 0 ^ (x == y == 0)
+        ctrl = 0 ^ (f2 == f3 == f4 == 0)
+        return {
+            'f1': f1,
+            'f2': f2,
+            'f3': f3,
+            'f4': f4,
+            'ctrl': ctrl,
+            'a': a,
+            'b': b,
+            'x': x,
+            'y': y,
+        }
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # Initialize control flags to 0.
+        f1 = bb.add(ZeroState())
+        f2 = bb.add(ZeroState())
+        f3 = bb.add(ZeroState())
+        f4 = bb.add(ZeroState())
+        ctrl = bb.add(ZeroState())
+
+        # Set flag 1 if a = x.
+        a, x, f1 = bb.add(Equals(self.n), x=a, y=x, target=f1)
+
+        # Set flag 2 if b = -y.
+        y = bb.add(ModNeg(QMontgomeryUInt(self.n), mod=self.mod), x=y)
+        b, y, f2 = bb.add(Equals(self.n), x=b, y=y, target=f2)
+        y = bb.add(ModNeg(QMontgomeryUInt(self.n), mod=self.mod), x=y)
+
+        # Set flag 3 if (a, b) == (0, 0).
+        a_arr = bb.split(a)
+        b_arr = bb.split(b)
+        ab_arr = np.concatenate((a_arr, b_arr), axis=None)
+        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
+        ab_arr = np.split(ab_arr, 2)
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
+
+        # Set flag 4 if (x, y) == (0, 0).
+        x_arr = bb.split(x)
+        y_arr = bb.split(y)
+        xy_arr = np.concatenate((x_arr, y_arr), axis=None)
+        xy_arr, f4 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=xy_arr, target=f4)
+        xy_arr = np.split(xy_arr, 2)
+        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
+
+        # Set ctrl flag if f2, f3, f4 are set.
+        f_ctrls = [f2, f3, f4]
+        f_ctrls, ctrl = bb.add(MultiControlX(cvs=[0] * 3), controls=f_ctrls, target=ctrl)
+        f2 = f_ctrls[0]
+        f3 = f_ctrls[1]
+        f4 = f_ctrls[2]
+
+        # Return the output registers.
+        return {
+            'f1': f1,
+            'f2': f2,
+            'f3': f3,
+            'f4': f4,
+            'ctrl': ctrl,
+            'a': a,
+            'b': b,
+            'x': x,
+            'y': y,
+        }
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.n, int):
+            cvs = [0] * 2 * self.n
+        else:
+            cvs = HasLength(2 * self.n)
+        return {
+            Equals(self.n): 2,
+            ModNeg(QMontgomeryUInt(self.n), mod=self.mod): 2,
+            MultiControlX(cvs=cvs): 2,
+            MultiControlX(cvs=[0] * 3): 1,
+        }
+
+
+@frozen
+class _ECAddStepTwo(Bloq):
+    r"""Performs step two of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
+        uncompute: whether to compute or uncompute.
+
+    Registers:
+        f1: Flag set if a = x.
+        ctrl: Flag set if neither the input points nor the output point are (0, 0).
+        a: The x component of the first input elliptic curve point of bitsize `n`.
+        b: The y component of the first input elliptic curve point of bitsize `n`.
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+        lam: The lambda slope used in the addition operation.
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    window_size: int = 1
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('f1', QBit()),
+                Register('ctrl', QBit()),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+                Register('lam', QUInt(self.n), side=side),
+                Register('lam_r', QUInt(self.n)),
+            ]
+        )
+
+    def adjoint(self) -> '_ECAddStepTwo':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    def on_classical_vals(
+        self,
+        f1: 'ClassicalValT',
+        ctrl: 'ClassicalValT',
+        a: 'ClassicalValT',
+        b: 'ClassicalValT',
+        x: 'ClassicalValT',
+        y: 'ClassicalValT',
+        lam_r: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        x = (x - a) % self.mod
+        if ctrl == 1:
+            y = (y - b) % self.mod
+            lam = (y * pow(x, -1, mod=self.mod)) % self.mod
+        else:
+            lam = 0
+        return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        f1: Soquet,
+        ctrl: Soquet,
+        a: Soquet,
+        b: Soquet,
+        x: Soquet,
+        y: Soquet,
+        lam_r: Soquet,
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # Initalize lambda to 0.
+        lam = bb.add(IntState(bitsize=self.n, val=0))
+
+        # Perform modular subtraction so that x = (x - a) % p.
+        a, x = bb.add(ModSub(QMontgomeryUInt(self.n), mod=self.mod), x=a, y=x)
+
+        # Perform controlled modular subtraction so that y = (y - b) % p iff ctrl = 1.
+        ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
+
+        # Perform modular inversion s.t. x = (x - a)^-1 % p.
+        x, z1, z2 = bb.add(ModInv(n=self.n, mod=self.mod), x=x)
+
+        # Perform modular multiplication z4 = (y / x) % p.
+        x, y, z4, z3, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=y,
+        )
+
+        # If ctrl = 1 and x != a: lam = (y - b) / (x - a) % p.
+        z4_split = bb.split(z4)
+        lam_split = bb.split(lam)
+        for i in range(self.n):
+            ctrls = [f1, ctrl, z4_split[i]]
+            ctrls, lam_split[i] = bb.add(
+                MultiControlX(cvs=[0, 1, 1]), controls=ctrls, target=lam_split[i]
+            )
+            f1 = ctrls[0]
+            ctrl = ctrls[1]
+            z4_split[i] = ctrls[2]
+        z4 = bb.join(z4_split, dtype=QUInt(self.n))
+
+        # If ctrl = 1 and x = a: lam = lam_r.
+        lam_r_split = bb.split(lam_r)
+        for i in range(self.n):
+            ctrls = [f1, ctrl, lam_r_split[i]]
+            ctrls, lam_split[i] = bb.add(
+                MultiControlX(cvs=[1, 1, 1]), controls=ctrls, target=lam_split[i]
+            )
+            f1 = ctrls[0]
+            ctrl = ctrls[1]
+            lam_r_split[i] = ctrls[2]
+        lam_r = bb.join(lam_r_split, dtype=QUInt(self.n))
+        lam = bb.join(lam_split, dtype=QUInt(self.n))
+
+        # If lam = lam_r: return f1 = 0. (If not we will flip f1 to 0 at the end iff x_r = y_r = 0).
+        lam, lam_r, f1 = bb.add(Equals(self.n), x=lam, y=lam_r, target=f1)
+
+        # Uncompute the modular multiplication then the modular inversion.
+        x, y = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=y,
+            target=z4,
+            qrom_indices=z3,
+            reduced=reduced,
+        )
+        x = bb.add(ModInv(n=self.n, mod=self.mod).adjoint(), x=x, garbage1=z1, garbage2=z2)
+
+        # Return the output registers.
+        return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {
+            Equals(self.n): 1,
+            ModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            ModInv(n=self.n, mod=self.mod): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ): 1,
+            MultiControlX(cvs=[0, 1, 1]): self.n,
+            MultiControlX(cvs=[1, 1, 1]): self.n,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(): 1,
+            ModInv(n=self.n, mod=self.mod).adjoint(): 1,
+        }
+
+
+@frozen
+class _ECAddStepThree(Bloq):
+    r"""Performs step three of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
+
+    Registers:
+        ctrl: Flag set if neither the input points nor the output point are (0, 0).
+        a: The x component of the first input elliptic curve point of bitsize `n`.
+        b: The y component of the first input elliptic curve point of bitsize `n`.
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+        lam: The lambda slope used in the addition operation.
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    window_size: int = 1
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('ctrl', QBit()),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+                Register('lam', QUInt(self.n)),
+                Register('lam_r', QUInt(self.n)),
+            ]
+        )
+
+    def on_classical_vals(
+        self,
+        ctrl: 'ClassicalValT',
+        a: 'ClassicalValT',
+        b: 'ClassicalValT',
+        x: 'ClassicalValT',
+        y: 'ClassicalValT',
+        lam: 'ClassicalValT',
+        lam_r: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == 1:
+            x = (x + 3 * a) % self.mod
+            y = 0
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        ctrl: Soquet,
+        a: Soquet,
+        b: Soquet,
+        x: Soquet,
+        y: Soquet,
+        lam: Soquet,
+        lam_r: Soquet,
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # Store (x - a) * lam % p in z1 (= (y - b) % p).
+        x, lam, z1, z2, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=lam,
+        )
+
+        # If ctrl: subtract z1 from y (= 0).
+        ctrl, z1, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=z1, y=y)
+
+        # Uncompute original multiplication.
+        x, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=lam,
+            target=z1,
+            qrom_indices=z2,
+            reduced=reduced,
+        )
+
+        # z1 = a.
+        z1 = bb.add(IntState(bitsize=self.n, val=0))
+        a_split = bb.split(a)
+        z1_split = bb.split(z1)
+        for i in range(self.n):
+            a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
+        a = bb.join(a_split, QMontgomeryUInt(self.n))
+        z1 = bb.join(z1_split, QUInt(self.n))
+
+        # z1 = (3 * a) % p.
+        z1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod), x=z1)
+        a, z1 = bb.add(ModAdd(self.n, mod=self.mod), x=a, y=z1)
+
+        # If ctrl: x = (x + 2 * a) % p.
+        ctrl, z1, x = bb.add(CModAdd(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=z1, y=x)
+
+        # Uncompute z1.
+        a, z1 = bb.add(ModAdd(self.n, mod=self.mod).adjoint(), x=a, y=z1)
+        z1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod).adjoint(), x=z1)
+        a_split = bb.split(a)
+        z1_split = bb.split(z1)
+        for i in range(self.n):
+            a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
+        a = bb.join(a_split, QMontgomeryUInt(self.n))
+        z1 = bb.join(z1_split, QUInt(self.n))
+        bb.add(Free(QUInt(self.n)), reg=z1)
+
+        # Return the output registers.
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {
+            CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(): 1,
+            CNOT(): 2 * self.n,
+            ModDbl(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            ModAdd(self.n, mod=self.mod): 1,
+            CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            ModAdd(self.n, mod=self.mod).adjoint(): 1,
+            ModDbl(QMontgomeryUInt(self.n), mod=self.mod).adjoint(): 1,
+        }
+
+
+@frozen
+class _ECAddStepFour(Bloq):
+    r"""Performs step four of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
+
+    Registers:
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+        lam: The lambda slope used in the addition operation.
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    window_size: int = 1
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+                Register('lam', QUInt(self.n)),
+                Register('lam_r', QUInt(self.n)),
+            ]
+        )
+
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT', lam_r: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        montgomery_prod = (lam * lam * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
+        x = (x - montgomery_prod) % self.mod
+        y = (lam * x * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
+        return {'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet, lam_r: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # Initialize z4 = lam.
+        z4 = bb.add(IntState(bitsize=self.n, val=0))
+        lam_split = bb.split(lam)
+        z4_split = bb.split(z4)
+        for i in range(self.n):
+            lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
+        lam = bb.join(lam_split, QUInt(self.n))
+        z4 = bb.join(z4_split, QUInt(self.n))
+
+        # z3 = lam * lam % p.
+        z4, lam, z3, z2, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=z4,
+            y=lam,
+        )
+
+        # x = a - x_r % p.
+        z3, x = bb.add(ModSub(QMontgomeryUInt(self.n), mod=self.mod), x=z3, y=x)
+
+        # Uncompute the multiplication and initialization of z4.
+        z4, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=z4,
+            y=lam,
+            target=z3,
+            qrom_indices=z2,
+            reduced=reduced,
+        )
+        lam_split = bb.split(lam)
+        z4_split = bb.split(z4)
+        for i in range(self.n):
+            lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
+        lam = bb.join(lam_split, QUInt(self.n))
+        z4 = bb.join(z4_split, QUInt(self.n))
+        bb.add(Free(QUInt(self.n)), reg=z4)
+
+        # z3 = lam * x % p.
+        x, lam, z3, z4, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=lam,
+        )
+
+        # y = y_r + b % p.
+        z3_split = bb.split(z3)
+        y_split = bb.split(y)
+        for i in range(self.n):
+            z3_split[i], y_split[i] = bb.add(CNOT(), ctrl=z3_split[i], target=y_split[i])
+        z3 = bb.join(z3_split, QUInt(self.n))
+        y = bb.join(y_split, QMontgomeryUInt(self.n))
+
+        # Uncompute multiplication.
+        x, lam = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=lam,
+            target=z3,
+            qrom_indices=z4,
+            reduced=reduced,
+        )
+
+        # Return the output registers.
+        return {'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {
+            ModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ): 2,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(): 2,
+            CNOT(): 3 * self.n,
+        }
+
+
+@frozen
+class _ECAddStepFive(Bloq):
+    r"""Performs step five of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
+        uncompute: whether to compute or uncompute.
+
+    Registers:
+        ctrl: Flag set if neither the input points nor the output point are (0, 0).
+        a: The x component of the first input elliptic curve point of bitsize `n`.
+        b: The y component of the first input elliptic curve point of bitsize `n`.
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+        lam: The lambda slope used in the addition operation.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    window_size: int = 1
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        side = Side.RIGHT if self.uncompute else Side.LEFT
+        return Signature(
+            [
+                Register('ctrl', QBit()),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+                Register('lam', QUInt(self.n), side=side),
+            ]
+        )
+
+    def adjoint(self) -> '_ECAddStepFive':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    def on_classical_vals(
+        self,
+        ctrl: 'ClassicalValT',
+        a: 'ClassicalValT',
+        b: 'ClassicalValT',
+        x: 'ClassicalValT',
+        y: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == 1:
+            x = (a - x) % self.mod
+            y = (y - b) % self.mod
+        else:
+            x = (x + a) % self.mod
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        ctrl: Soquet,
+        a: Soquet,
+        b: Soquet,
+        x: Soquet,
+        y: Soquet,
+        lam: Soquet,
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # x = x ^ -1 % p.
+        x, z1, z2 = bb.add(ModInv(n=self.n, mod=self.mod), x=x)
+
+        # z4 = x * y % p.
+        x, y, z4, z3, reduced = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ),
+            x=x,
+            y=y,
+        )
+
+        # If ctrl: lam = 0.
+        z4_split = bb.split(z4)
+        lam_split = bb.split(lam)
+        for i in range(self.n):
+            ctrls = [ctrl, z4_split[i]]
+            ctrls, lam_split[i] = bb.add(
+                MultiControlX(cvs=[1, 1]), controls=ctrls, target=lam_split[i]
+            )
+            ctrl = ctrls[0]
+            z4_split[i] = ctrls[1]
+        z4 = bb.join(z4_split, dtype=QUInt(self.n))
+        lam = bb.join(lam_split, dtype=QUInt(self.n))
+        bb.add(Free(QUInt(self.n)), reg=lam)
+
+        # Uncompute multiplication and inverse.
+        x, y = bb.add(
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(),
+            x=x,
+            y=y,
+            target=z4,
+            qrom_indices=z3,
+            reduced=reduced,
+        )
+        x = bb.add(ModInv(n=self.n, mod=self.mod).adjoint(), x=x, garbage1=z1, garbage2=z2)
+
+        # If ctrl: x = x_r - a % p.
+        ctrl, x = bb.add(CModNeg(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=x)
+
+        # Add a to x (x = x_r).
+        a, x = bb.add(ModAdd(self.n, mod=self.mod), x=a, y=x)
+
+        # If ctrl: subtract b from y (y = y_r).
+        ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
+
+        # Return the output registers.
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {
+            ModNeg(QMontgomeryUInt(self.n), mod=self.mod): 2,
+            CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            ModInv(n=self.n, mod=self.mod): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ): 1,
+            DirtyOutOfPlaceMontgomeryModMul(
+                bitsize=self.n, window_size=self.window_size, mod=self.mod
+            ).adjoint(): 1,
+            ModInv(n=self.n, mod=self.mod).adjoint(): 1,
+            ModAdd(self.n, mod=self.mod): 1,
+            MultiControlX(cvs=[1, 1]): self.n,
+            CModNeg(QMontgomeryUInt(self.n), mod=self.mod): 1,
+        }
+
+
+@frozen
+class _ECAddStepSix(Bloq):
+    r"""Performs step six of the ECAdd bloq.
+
+    Args:
+        n: The bitsize of the two registers storing the elliptic curve point
+        mod: The modulus of the field in which we do the addition.
+        uncompute: whether to compute or uncompute.
+
+    Registers:
+        f1: Flag to set if a = x.
+        f2: Flag to set if b = -y.
+        f3: Flag to set if (a, b) = (0, 0).
+        f4: Flag to set if (x, y) = (0, 0).
+        ctrl: Flag to set if neither the input points nor the output point are (0, 0).
+        a: The x component of the first input elliptic curve point of bitsize `n`.
+        b: The y component of the first input elliptic curve point of bitsize `n`.
+        x: The x component of the second input elliptic curve point of bitsize `n`, which
+           will contain the x component of the resultant curve point.
+        y: The y component of the second input elliptic curve point of bitsize `n`, which
+           will contain the y component of the resultant curve point.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 10
+    """
+
+    n: int
+    mod: int
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        side = Side.RIGHT if self.uncompute else Side.LEFT
+        return Signature(
+            [
+                Register('f1', QBit(), side=side),
+                Register('f2', QBit(), side=side),
+                Register('f3', QBit(), side=side),
+                Register('f4', QBit(), side=side),
+                Register('ctrl', QBit(), side=side),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+            ]
+        )
+
+    def adjoint(self) -> '_ECAddStepSix':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    def on_classical_vals(
+        self,
+        f1: 'ClassicalValT',
+        f2: 'ClassicalValT',
+        f3: 'ClassicalValT',
+        f4: 'ClassicalValT',
+        ctrl: 'ClassicalValT',
+        a: 'ClassicalValT',
+        b: 'ClassicalValT',
+        x: 'ClassicalValT',
+        y: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        if f4 == 1:
+            x = a
+            y = b
+        if f1 and f2:
+            x = 0
+            y = 0
+        return {'a': a, 'b': b, 'x': x, 'y': y}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        f1: Soquet,
+        f2: Soquet,
+        f3: Soquet,
+        f4: Soquet,
+        ctrl: Soquet,
+        a: Soquet,
+        b: Soquet,
+        x: Soquet,
+        y: Soquet,
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        # Unset control if f2, f3, and f4 flags are set.
+        f_ctrls = [f2, f3, f4]
+        f_ctrls, ctrl = bb.add(MultiControlX(cvs=[0] * 3), controls=f_ctrls, target=ctrl)
+        f2 = f_ctrls[0]
+        f3 = f_ctrls[1]
+        f4 = f_ctrls[2]
+
+        # Set (x, y) to (a, b) if f4 is set.
+        a_split = bb.split(a)
+        x_split = bb.split(x)
+        for i in range(self.n):
+            toff_ctrl = [f4, a_split[i]]
+            toff_ctrl, x_split[i] = bb.add(Toffoli(), ctrl=toff_ctrl, target=x_split[i])
+            f4 = toff_ctrl[0]
+            a_split[i] = toff_ctrl[1]
+        a = bb.join(a_split, QMontgomeryUInt(self.n))
+        x = bb.join(x_split, QMontgomeryUInt(self.n))
+        b_split = bb.split(b)
+        y_split = bb.split(y)
+        for i in range(self.n):
+            toff_ctrl = [f4, b_split[i]]
+            toff_ctrl, y_split[i] = bb.add(Toffoli(), ctrl=toff_ctrl, target=y_split[i])
+            f4 = toff_ctrl[0]
+            b_split[i] = toff_ctrl[1]
+        b = bb.join(b_split, QMontgomeryUInt(self.n))
+        y = bb.join(y_split, QMontgomeryUInt(self.n))
+
+        # Unset f4 if (x, y) = (a, b).
+        a_arr = bb.split(a)
+        b_arr = bb.split(b)
+        ab = bb.join(np.concatenate((a_arr, b_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
+        x_arr = bb.split(x)
+        y_arr = bb.split(y)
+        xy = bb.join(np.concatenate((x_arr, y_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
+        ab, xy, f4 = bb.add(Equals(2 * self.n), x=ab, y=xy, target=f4)
+        ab_split = bb.split(ab)
+        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
+        xy_split = bb.split(xy)
+        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
+
+        # Unset f3 if (a, b) = (0, 0).
+        a_arr = bb.split(a)
+        b_arr = bb.split(b)
+        ab_arr = np.concatenate((a_arr, b_arr), axis=None)
+        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
+        ab_arr = np.split(ab_arr, 2)
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
+
+        # If f1 and f2 are set, subtract a from x and add b to y.
+        ancilla = bb.add(ZeroState())
+        toff_ctrl = [f1, f2]
+        toff_ctrl, ancilla = bb.add(Toffoli(), ctrl=toff_ctrl, target=ancilla)
+        ancilla, a, x = bb.add(
+            CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ancilla, x=a, y=x
+        )
+        toff_ctrl, ancilla = bb.add(Toffoli(), ctrl=toff_ctrl, target=ancilla)
+        f1 = toff_ctrl[0]
+        f2 = toff_ctrl[1]
+        bb.add(Free(QBit()), reg=ancilla)
+        ancilla = bb.add(ZeroState())
+        toff_ctrl = [f1, f2]
+        toff_ctrl, ancilla = bb.add(Toffoli(), ctrl=toff_ctrl, target=ancilla)
+        ancilla, b, y = bb.add(
+            CModAdd(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ancilla, x=b, y=y
+        )
+        toff_ctrl, ancilla = bb.add(Toffoli(), ctrl=toff_ctrl, target=ancilla)
+        f1 = toff_ctrl[0]
+        f2 = toff_ctrl[1]
+        bb.add(Free(QBit()), reg=ancilla)
+
+        # Unset f1 and f2 if (x, y) = (0, 0).
+        x_arr = bb.split(x)
+        y_arr = bb.split(y)
+        xy_arr = np.concatenate((x_arr, y_arr), axis=None)
+        xy_arr, junk, out = bb.add(MultiAnd(cvs=[0] * 2 * self.n), ctrl=xy_arr)
+        targets = bb.join(np.array([f1, f2]))
+        out, targets = bb.add(MultiTargetCNOT(2), control=out, targets=targets)
+        targets = bb.split(targets)
+        f1 = targets[0]
+        f2 = targets[1]
+        xy_arr = bb.add(
+            MultiAnd(cvs=[0] * 2 * self.n).adjoint(), ctrl=xy_arr, junk=junk, target=out
+        )
+        xy_arr = np.split(xy_arr, 2)
+        x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
+
+        # Free all ancilla qubits in the zero state.
+        bb.add(Free(QBit()), reg=f1)
+        bb.add(Free(QBit()), reg=f2)
+        bb.add(Free(QBit()), reg=f3)
+        bb.add(Free(QBit()), reg=f4)
+        bb.add(Free(QBit()), reg=ctrl)
+
+        # Return the output registers.
+        return {'a': a, 'b': b, 'x': x, 'y': y}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.n, int):
+            cvs = [0] * 2 * self.n
+        else:
+            cvs = HasLength(2 * self.n)
+        return {
+            MultiControlX(cvs=cvs): 1,
+            MultiControlX(cvs=[0] * 3): 1,
+            CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
+            Toffoli(): 2 * self.n + 4,
+            Equals(2 * self.n): 1,
+            MultiAnd(cvs=cvs): 1,
+            MultiTargetCNOT(2): 1,
+            MultiAnd(cvs=cvs).adjoint(): 1,
+        }
 
 
 @frozen
@@ -42,6 +1007,7 @@ class ECAdd(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
+        window_size: The number of bits in the window.
 
     Registers:
         a: The x component of the first input elliptic curve point of bitsize `n`.
@@ -50,7 +1016,7 @@ class ECAdd(Bloq):
            will contain the x component of the resultant curve point.
         y: The y component of the second input elliptic curve point of bitsize `n`, which
            will contain the y component of the resultant curve point.
-        lam: The precomputed lambda slope used in the addition operation.
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
@@ -59,6 +1025,7 @@ class ECAdd(Bloq):
 
     n: int
     mod: int
+    window_size: int = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -68,23 +1035,84 @@ class ECAdd(Bloq):
                 Register('b', QUInt(self.n)),
                 Register('x', QUInt(self.n)),
                 Register('y', QUInt(self.n)),
-                Register('lam', QUInt(self.n)),
+                Register('lam_r', QUInt(self.n)),
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
-        # litinksi
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam_r: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        f1, f2, f3, f4, ctrl, a, b, x, y = bb.add(
+            _ECAddStepOne(n=self.n, mod=self.mod), a=a, b=b, x=x, y=y
+        )
+        f1, ctrl, a, b, x, y, lam, lam_r = bb.add(
+            _ECAddStepTwo(n=self.n, mod=self.mod, window_size=self.window_size),
+            f1=f1,
+            ctrl=ctrl,
+            a=a,
+            b=b,
+            x=x,
+            y=y,
+            lam_r=lam_r,
+        )
+        ctrl, a, b, x, y, lam, lam_r = bb.add(
+            _ECAddStepThree(n=self.n, mod=self.mod, window_size=self.window_size),
+            ctrl=ctrl,
+            a=a,
+            b=b,
+            x=x,
+            y=y,
+            lam_r=lam_r,
+        )
+        x, y, lam, lam_r = bb.add(
+            _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size),
+            x=x,
+            y=y,
+            lam=lam,
+            lam_r=lam_r,
+        )
+        ctrl, a, b, x, y = bb.add(
+            _ECAddStepFive(n=self.n, mod=self.mod, window_size=self.window_size),
+            ctrl=ctrl,
+            a=a,
+            b=b,
+            x=x,
+            y=y,
+            lam=lam,
+        )
+        a, b, x, y = bb.add(
+            _ECAddStepSix(n=self.n, mod=self.mod),
+            f1=f1,
+            f2=f2,
+            f3=f3,
+            f4=f4,
+            ctrl=ctrl,
+            a=a,
+            b=b,
+            x=x,
+            y=y,
+        )
+
+        return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
+
+    def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+        curve_a = lam_r * 2 * b - (3 * a**2)
+        p1 = ECPoint(a, b, mod=self.mod, curve_a=curve_a)
+        p2 = ECPoint(x, y, mod=self.mod, curve_a=curve_a)
+        result: ECPoint = p1 + p2
+        return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam_r': lam_r}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            MultiCToffoli(n=self.n): 18,
-            ModAdd(bitsize=self.n, mod=self.mod): 3,
-            CModAdd(QUInt(self.n), mod=self.mod): 2,
-            ModSub(QUInt(self.n), mod=self.mod): 2,
-            CModSub(QUInt(self.n), mod=self.mod): 4,
-            ModNeg(QUInt(self.n), mod=self.mod): 2,
-            CModNeg(QUInt(self.n), mod=self.mod): 1,
-            ModDbl(QUInt(self.n), mod=self.mod): 2,
-            DirtyOutOfPlaceMontgomeryModMul(bitsize=self.n, window_size=4, mod=self.mod): 10,
-            ModInv(n=self.n, mod=self.mod): 4,
+            _ECAddStepOne(n=self.n, mod=self.mod): 1,
+            _ECAddStepTwo(n=self.n, mod=self.mod, window_size=self.window_size): 1,
+            _ECAddStepThree(n=self.n, mod=self.mod, window_size=self.window_size): 1,
+            _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size): 1,
+            _ECAddStepFive(n=self.n, mod=self.mod, window_size=self.window_size): 1,
+            _ECAddStepSix(n=self.n, mod=self.mod): 1,
         }
 
 
@@ -95,4 +1123,10 @@ def _ec_add() -> ECAdd:
     return ec_add
 
 
-_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add])
+@bloq_example
+def _ec_add_small() -> ECAdd:
+    ec_add_small = ECAdd(5, mod=7)
+    return ec_add_small
+
+
+_EC_ADD_DOC = BloqDocSpec(bloq_cls=ECAdd, examples=[_ec_add, _ec_add_small])
