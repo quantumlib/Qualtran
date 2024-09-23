@@ -951,11 +951,13 @@ _GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k]
 @frozen
 class Equals(Bloq):
     r"""Implements |x>|y>|t> => |x>|y>|t ⨁ (x = y)> using $n-1$ Toffoli gates.
+
     Args:
         dtype: Data type of the input registers `x` and `y`.
+
     Registers:
-        x: Bitsize-sized input register.
-        y: Bitsize-sized input register.
+        x: First input register.
+        y: Second input register.
         target: Register to hold result of comparison.
     """
 
@@ -1000,10 +1002,15 @@ class Equals(Bloq):
         return {'x': x, 'y': y, 'target': target}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.bitsize, int):
+            cvs = [0] * self.bitsize
+        else:
+            cvs = HasLength(self.bitsize)
         return {
             Xor(self.dtype): 2,
-            MultiControlX(cvs=[0] * self.bitsize): 1,
-            MultiAnd(cvs=[0] * self.bitsize).adjoint(): 1,
+            MultiControlX(cvs=cvs): 1,
+            MultiAnd(cvs=cvs).adjoint(): 1,
             CNOT(): 1,
         }
 
