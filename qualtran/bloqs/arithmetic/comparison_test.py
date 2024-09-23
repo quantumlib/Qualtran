@@ -306,10 +306,7 @@ def test_greater_than_constant():
 def test_classical_equals(dtype):
     bloq = Equals(dtype)
     qlt_testing.assert_consistent_classical_action(
-        bloq,
-        x=dtype.get_classical_domain(),
-        y=dtype.get_classical_domain(),
-        target=QBit().get_classical_domain(),
+        bloq, x=dtype.get_classical_domain(), y=dtype.get_classical_domain(), target=range(2)
     )
 
 

@@ -988,14 +988,15 @@ class Equals(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if self.is_symbolic():
-            raise DecomposeTypeError(f"cannot decompose symbolic {self}")
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.bitsize, int):
+            cvs = [0] * self.bitsize
+        else:
+            cvs = HasLength(self.bitsize)
 
         x, y = bb.add(Xor(self.dtype), x=x, y=y)
         y_split = bb.split(y)
-        y_split, target = bb.add(
-            MultiControlX(cvs=[0] * self.bitsize), controls=y_split, target=target
-        )
+        y_split, target = bb.add(MultiControlX(cvs=cvs), controls=y_split, target=target)
         y = bb.join(y_split, self.dtype)
         x, y = bb.add(Xor(self.dtype), x=x, y=y)
 
