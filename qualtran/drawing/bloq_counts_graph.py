@@ -16,15 +16,14 @@
 import abc
 import html
 import warnings
-from typing import Any, cast, Dict, Iterable, Mapping, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, Mapping, Optional, TYPE_CHECKING, Union
 
-import attrs
 import IPython.display
 import networkx as nx
 import pydot
 import sympy
 
-from qualtran import Bloq, CompositeBloq
+from qualtran import Bloq
 from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
@@ -107,74 +106,6 @@ class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
         return IPython.display.SVG(self.get_svg_bytes())
 
 
-class GraphvizCounts(_CallGraphDrawerBase):
-    """Draw a bloq call graphs using Graphviz.
-
-    Each node is a bloq with a string label and an automatically-determined
-    "details" string based on the bloqs attributes. For non-attrs classes, classes with
-    a large number of fields, or classes where the fields' string representations are long;
-    the details string will be abbreviated.
-
-    Each edge is labeled with the number of times the "caller" (predecessor) bloq calls the
-    "callee" (successor) bloq.
-
-    Args:
-        g: The call graph, from e.g. `Bloq.call_graph()`.
-
-    See Also:
-        `qualtran.drawing.show_call_graph`, which uses this class under-the-hood.
-    """
-
-    def __init__(self, g: nx.DiGraph):
-        super().__init__(g=g)
-
-        self.max_detail_fields = 5
-        self.max_field_val_len = 12
-        self.max_detail_len = 200
-
-    def get_node_title(self, b: Bloq):
-        return str(b)
-
-    @staticmethod
-    def abbreviate_field_list(
-        name_vals: Iterable[Tuple[str, Any]], max_field_val_len: int = 12, max_detail_fields=5
-    ):
-        """Helper function for abbreviating a list of key=value representations.
-
-        This is used by the default `get_node_details`.
-        """
-
-        def abbrev(x: str):
-            # Each field value gets cut off if it's too long.
-            if len(x) > max_field_val_len:
-                return x[: max_field_val_len - 4] + ' ...'
-            return x
-
-        details = [f'{name}={abbrev(repr(val))}' for name, val in name_vals]
-        if len(details) > max_detail_fields:
-            # Too many fields gets cut off.
-            n = len(details) - max_detail_fields + 1
-            details = details[: max_detail_fields - 1] + [f'[{n} addtl fields].']
-
-        return ', '.join(details)
-
-    def get_node_details(self, b: Bloq):
-        # Special case for composite bloqs.
-        if isinstance(b, CompositeBloq):
-            return f'{len(b.bloq_instances)} bloqs...'[: self.max_detail_len]
-
-        # Clumsy truncation if it's not an attrs class, since we can't easily inspect the fields.
-        if not attrs.has(b.__class__):
-            return repr(b)[: self.max_detail_len]
-
-        # Otherwise, use the abbreviation function.
-        return self.abbreviate_field_list(
-            ((field.name, getattr(b, field.name)) for field in attrs.fields(b.__class__)),
-            max_field_val_len=self.max_field_val_len,
-            max_detail_fields=self.max_detail_fields,
-        )[: self.max_detail_len]
-
-
 class GraphvizCallGraph(_CallGraphDrawerBase):
     """Draw a bloq call graph using Graphviz with additional data.
 
@@ -188,9 +119,6 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
 
     This class uses a bloq's `__str__` string to title the bloq. Arbitrary additional tabular
     data can be provided with `bloq_data`.
-
-    This graph drawer is the successor to the `GraphvizCounts` existing drawer,
-    and will replace `GraphvizCounts` when all bloqs have been migrated to use `__str__()`.
 
     Args:
         g: The call graph, from e.g. `Bloq.call_graph()`.

@@ -17,6 +17,7 @@ from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     CLinearDepthGreaterThan,
+    Equals,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
