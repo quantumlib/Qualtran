@@ -79,6 +79,9 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     # Qualtran (constants are not ignored).  The difference arises from
     # uncontrolled unary iteration used by QROM, which QROAMClean delegates to.
     delta_qrom = -2
+    # The -4 comes from QROAMCleanAdjoint, which delegates to a QROM and SwapWithZero
+    # and each of them contributes a -2 factor.
+    delta_qrom_adjoint = -4
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
@@ -86,7 +89,9 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     lte_cost_paper = prep_sparse.num_bits_state_prep  # inverted at zero cost
     delta_ineq = lte_cost - lte_cost_paper
     swap_cost = 8 * (num_spin_orb // 2 - 1).bit_length() + 1  # inverted at zero cost
-    adjusted_cost_qualtran = cost - delta_qrom - delta_uni_prep - delta_ineq - swap_cost
+    adjusted_cost_qualtran = (
+        cost - delta_qrom - delta_uni_prep - delta_ineq - swap_cost - delta_qrom_adjoint
+    )
     cost_of = cost_sparse(
         num_spin_orb, unused_lambda, num_non_zero, unused_de, num_bits_state_prep, unused_stps
     )[0]

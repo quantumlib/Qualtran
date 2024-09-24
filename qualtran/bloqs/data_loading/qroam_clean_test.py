@@ -42,7 +42,7 @@ def test_qroam_clean_qubit_counts():
     K = 2**k
     # log(N) - k ancilla are required for the nested unary iteration.
     expected_qubits = K * b + 2 * ceil(log2(N)) - k - 1
-    assert get_cost_value(bloq, QubitCount()) == expected_qubits
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
 
 
 def test_t_complexity_1d_data_symbolic():

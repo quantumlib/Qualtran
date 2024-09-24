@@ -53,7 +53,7 @@ def test_qrom_qubit_counts():
     bloq = QROM.build_from_bitsize((N,), (b,), num_controls=c)
     # log(N) ancilla are required for the ancilla used in unary iteration.
     expected_qubits = 2 * ceil(log2(N)) + b + 2 * c - 1
-    assert get_cost_value(bloq, QubitCount()) == expected_qubits
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
 
 
 @pytest.mark.slow
