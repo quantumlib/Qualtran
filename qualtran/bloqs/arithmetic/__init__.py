@@ -22,6 +22,10 @@ from qualtran.bloqs.arithmetic.comparison import (
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthHalfGreaterThan,
+    LinearDepthHalfGreaterThanEqual,
+    LinearDepthHalfLessThan,
+    LinearDepthHalfLessThanEqual,
     SingleQubitCompare,
 )
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
