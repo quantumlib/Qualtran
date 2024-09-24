@@ -97,6 +97,8 @@ import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
+import qualtran.bloqs.factoring.ecc.ec_add
+import qualtran.bloqs.factoring.ecc.ec_add_r
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
@@ -114,6 +116,7 @@ import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
+import qualtran.bloqs.mod_arithmetic._shims
 import qualtran.bloqs.mod_arithmetic.mod_multiplication
 import qualtran.bloqs.mod_arithmetic.mod_subtraction
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -167,6 +170,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.bitwise.Xor": qualtran.bloqs.arithmetic.bitwise.Xor,
     "qualtran.bloqs.arithmetic.bitwise.XorK": qualtran.bloqs.arithmetic.bitwise.XorK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
+    "qualtran.bloqs.arithmetic.comparison.Equals": qualtran.bloqs.arithmetic.comparison.Equals,
     "qualtran.bloqs.arithmetic.comparison.EqualsAConstant": qualtran.bloqs.arithmetic.comparison.EqualsAConstant,
     "qualtran.bloqs.arithmetic.comparison.GreaterThan": qualtran.bloqs.arithmetic.comparison.GreaterThan,
     "qualtran.bloqs.arithmetic.comparison.GreaterThanConstant": qualtran.bloqs.arithmetic.comparison.GreaterThanConstant,
@@ -325,7 +329,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMClean": qualtran.bloqs.data_loading.qroam_clean.QROAMClean,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
+    "qualtran.bloqs.mod_arithmetic._shims.ModInv": qualtran.bloqs.mod_arithmetic._shims.ModInv,
     "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd": qualtran.bloqs.mod_arithmetic.CModAdd,
     "qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK": qualtran.bloqs.mod_arithmetic.mod_addition.ModAddK,
@@ -333,12 +339,18 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.ModAdd": qualtran.bloqs.mod_arithmetic.ModAdd,
     "qualtran.bloqs.mod_arithmetic.ModSub": qualtran.bloqs.mod_arithmetic.ModSub,
     "qualtran.bloqs.mod_arithmetic.CModSub": qualtran.bloqs.mod_arithmetic.CModSub,
+    "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd": qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd,
+    "qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd": qualtran.bloqs.mod_arithmetic.mod_addition.CModAdd,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg,
+    "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModSub": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModSub,
+    "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModSub": qualtran.bloqs.mod_arithmetic.mod_subtraction.CModSub,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl": qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK": qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul,
+    "qualtran.bloqs.factoring.ecc.ec_add.ECAdd": qualtran.bloqs.factoring.ecc.ec_add.ECAdd,
+    "qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR": qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,

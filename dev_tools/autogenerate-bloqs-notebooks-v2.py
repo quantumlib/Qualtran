@@ -444,6 +444,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
             qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._EQUALS_DOC,
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
