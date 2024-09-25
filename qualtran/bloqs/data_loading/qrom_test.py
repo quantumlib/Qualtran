@@ -25,7 +25,8 @@ from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.data_loading.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
+from qualtran.symbolics import ceil, log2
 
 
 def test_qrom_small(bloq_autotester):
@@ -38,6 +39,21 @@ def test_qrom_multi_data(bloq_autotester):
 
 def test_qrom_multi_dim(bloq_autotester):
     bloq_autotester(_qrom_multi_dim)
+
+
+def test_qrom_qubit_counts():
+    bloq = _qrom_small.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    bloq = _qrom_multi_data.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    bloq = _qrom_multi_dim.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    # Symbolic
+    N, b, c = sympy.symbols('N b c', positive=True, integer=True)
+    bloq = QROM.build_from_bitsize((N,), (b,), num_controls=c)
+    # log(N) ancilla are required for the ancilla used in unary iteration.
+    expected_qubits = 2 * ceil(log2(N)) + b + 2 * c - 1
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
 
 
 @pytest.mark.slow
