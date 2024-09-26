@@ -1301,8 +1301,8 @@ class _HalfLinearDepthGreaterThan(Bloq):
 @frozen
 class _HalfComparisonBase(Bloq):
     dtype: _SUPPORTED_DTYPES
-    comparison_dtype: str = attrs.field(
-        default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<=')
+    comparison_op: str = attrs.field(
+        default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<='), repr=False
     )
     uncompute: bool = False
 
@@ -1329,11 +1329,11 @@ class _HalfComparisonBase(Bloq):
     def _classical_comparison(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Union[bool, np.bool_, NDArray[np.bool_]]:
-        if self.comparison_dtype == '>':
+        if self.comparison_op == '>':
             return a > b
-        elif self.comparison_dtype == '<':
+        elif self.comparison_op == '<':
             return a < b
-        elif self.comparison_dtype == '>=':
+        elif self.comparison_op == '>=':
             return a >= b
         else:
             return a <= b
@@ -1354,19 +1354,19 @@ class _HalfComparisonBase(Bloq):
             )
             assert target == self._classical_comparison(a, b)
             return {'a': a, 'b': b}
-        if self.comparison_dtype in ('>', '<='):
+        if self.comparison_op in ('>', '<='):
             c = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
         else:
             c = add_ints(int(a), -int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
         return {'a': a, 'b': b, 'c': c, 'target': int(self._classical_comparison(a, b))}
 
     def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> Dict[str, 'SoquetT']:
-        if self.comparison_dtype in ('>', '<='):
+        if self.comparison_op in ('>', '<='):
             a, b, c, target = bb.add_from(self._half_greater_than_bloq, a=a, b=b)  # type: ignore
         else:
             b, a, c, target = bb.add_from(self._half_greater_than_bloq, a=b, b=a)  # type: ignore
 
-        if self.comparison_dtype in ('<=', '>='):
+        if self.comparison_op in ('<=', '>='):
             target = bb.add(XGate(), q=target)
 
         return {'a': a, 'b': b, 'c': c, 'target': target}
@@ -1374,10 +1374,10 @@ class _HalfComparisonBase(Bloq):
     def _uncompute(
         self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', c: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if self.comparison_dtype in ('<=', '>='):
+        if self.comparison_op in ('<=', '>='):
             target = bb.add(XGate(), q=target)
 
-        if self.comparison_dtype in ('>', '<='):
+        if self.comparison_op in ('>', '<='):
             a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=a, b=b, c=c, target=target)  # type: ignore
         else:
             a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=b, b=a, c=c, target=target)  # type: ignore
@@ -1408,7 +1408,7 @@ class _HalfComparisonBase(Bloq):
                 SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)): 2,
                 SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(): 2,
             }
-        if self.comparison_dtype in ('>=', '<='):
+        if self.comparison_op in ('>=', '<='):
             extra_ops[XGate()] = 1
         adder = self._half_greater_than_bloq
         if self.uncompute:
@@ -1453,7 +1453,7 @@ class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_dtype: str = attrs.field(default='>', init=False)
+    comparison_op: str = attrs.field(default='>', init=False, repr=False)
 
 
 @frozen
@@ -1479,7 +1479,7 @@ class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_dtype: str = attrs.field(default='>=', init=False)
+    comparison_op: str = attrs.field(default='>=', init=False, repr=False)
 
 
 @frozen
@@ -1505,7 +1505,7 @@ class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_dtype: str = attrs.field(default='<', init=False)
+    comparison_op: str = attrs.field(default='<', init=False, repr=False)
 
 
 @frozen
@@ -1531,7 +1531,7 @@ class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_dtype: str = attrs.field(default='<=', init=False)
+    comparison_op: str = attrs.field(default='<=', init=False, repr=False)
 
 
 @bloq_example
