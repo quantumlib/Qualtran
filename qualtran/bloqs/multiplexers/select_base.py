@@ -39,18 +39,15 @@ class SelectOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]:
-        ...
+    def control_registers(self) -> Tuple[Register, ...]: ...
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]:
-        ...
+    def selection_registers(self) -> Tuple[Register, ...]: ...
 
     @property
     @abc.abstractmethod
-    def target_registers(self) -> Tuple[Register, ...]:
-        ...
+    def target_registers(self) -> Tuple[Register, ...]: ...
 
     @cached_property
     def signature(self) -> Signature:

@@ -91,6 +91,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
         Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
         rotations
     """
+
     phasegrad_bitsize: int
 
     @cached_property

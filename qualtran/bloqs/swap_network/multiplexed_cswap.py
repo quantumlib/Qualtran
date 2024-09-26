@@ -57,6 +57,7 @@ class MultiplexedCSwap(UnaryIterationGate):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 20 paragraph 2.
     """
+
     selection_regs: Tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
