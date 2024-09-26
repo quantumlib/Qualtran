@@ -34,7 +34,7 @@ with a quantum algorithm.
 """
 
 from .ec_point import ECPoint
-from .ec_add import ECAdd
+from .ec_add import ECAdd, _ECAddStepOne, _ECAddStepTwo, _ECAddStepThree, _ECAddStepFour, _ECAddStepFive, _ECAddStepSix
 from .ec_add_r import ECAddR, ECWindowAddR
 from .ec_phase_estimate_r import ECPhaseEstimateR
 from .find_ecc_private_key import FindECCPrivateKey

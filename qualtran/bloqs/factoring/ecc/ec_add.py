@@ -111,7 +111,7 @@ class _ECAddStepOne(Bloq):
         self, a: 'ClassicalValT', b: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         f1 = 0 ^ (a == x)
-        f2 = 0 ^ (b == -y)
+        f2 = 0 ^ (b == (-y % self.mod))
         f3 = 0 ^ (a == b == 0)
         f4 = 0 ^ (x == y == 0)
         ctrl = 0 ^ (f2 == f3 == f4 == 0)
@@ -141,11 +141,11 @@ class _ECAddStepOne(Bloq):
         ctrl = bb.add(ZeroState())
 
         # Set flag 1 if a = x.
-        a, x, f1 = bb.add(Equals(self.n), x=a, y=x, target=f1)
+        a, x, f1 = bb.add(Equals(QMontgomeryUInt(self.n)), x=a, y=x, target=f1)
 
         # Set flag 2 if b = -y.
         y = bb.add(ModNeg(QMontgomeryUInt(self.n), mod=self.mod), x=y)
-        b, y, f2 = bb.add(Equals(self.n), x=b, y=y, target=f2)
+        b, y, f2 = bb.add(Equals(QMontgomeryUInt(self.n)), x=b, y=y, target=f2)
         y = bb.add(ModNeg(QMontgomeryUInt(self.n), mod=self.mod), x=y)
 
         # Set flag 3 if (a, b) == (0, 0).
@@ -193,7 +193,7 @@ class _ECAddStepOne(Bloq):
         else:
             cvs = HasLength(2 * self.n)
         return {
-            Equals(self.n): 2,
+            Equals(QMontgomeryUInt(self.n)): 2,
             ModNeg(QMontgomeryUInt(self.n), mod=self.mod): 2,
             MultiControlX(cvs=cvs): 2,
             MultiControlX(cvs=[0] * 3): 1,
@@ -264,7 +264,11 @@ class _ECAddStepTwo(Bloq):
         x = (x - a) % self.mod
         if ctrl == 1:
             y = (y - b) % self.mod
-            lam = (y * pow(x, -1, mod=self.mod)) % self.mod
+            if f1 == 1:
+                lam = lam_r
+                f1 = 0
+            else:
+                lam = (y * pow(x, -1, mod=self.mod)) % self.mod
         else:
             lam = 0
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
@@ -331,7 +335,7 @@ class _ECAddStepTwo(Bloq):
         lam = bb.join(lam_split, dtype=QUInt(self.n))
 
         # If lam = lam_r: return f1 = 0. (If not we will flip f1 to 0 at the end iff x_r = y_r = 0).
-        lam, lam_r, f1 = bb.add(Equals(self.n), x=lam, y=lam_r, target=f1)
+        lam, lam_r, f1 = bb.add(Equals(QMontgomeryUInt(self.n)), x=lam, y=lam_r, target=f1)
 
         # Uncompute the modular multiplication then the modular inversion.
         x, y = bb.add(
@@ -351,7 +355,7 @@ class _ECAddStepTwo(Bloq):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            Equals(self.n): 1,
+            Equals(QMontgomeryUInt(self.n)): 1,
             ModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             ModInv(n=self.n, mod=self.mod): 1,
@@ -385,7 +389,6 @@ class _ECAddStepThree(Bloq):
         y: The y component of the second input elliptic curve point of bitsize `n`, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
-        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -406,7 +409,6 @@ class _ECAddStepThree(Bloq):
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
                 Register('lam', QUInt(self.n)),
-                Register('lam_r', QUInt(self.n)),
             ]
         )
 
@@ -418,12 +420,11 @@ class _ECAddStepThree(Bloq):
         x: 'ClassicalValT',
         y: 'ClassicalValT',
         lam: 'ClassicalValT',
-        lam_r: 'ClassicalValT',
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 1:
             x = (x + 3 * a) % self.mod
             y = 0
-        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
         self,
@@ -434,7 +435,6 @@ class _ECAddStepThree(Bloq):
         x: Soquet,
         y: Soquet,
         lam: Soquet,
-        lam_r: Soquet,
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
@@ -491,7 +491,7 @@ class _ECAddStepThree(Bloq):
         bb.add(Free(QUInt(self.n)), reg=z1)
 
         # Return the output registers.
-        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
@@ -526,7 +526,6 @@ class _ECAddStepFour(Bloq):
         y: The y component of the second input elliptic curve point of bitsize `n`, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
-        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -544,20 +543,19 @@ class _ECAddStepFour(Bloq):
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
                 Register('lam', QUInt(self.n)),
-                Register('lam_r', QUInt(self.n)),
             ]
         )
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT', lam_r: 'ClassicalValT'
+        self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         montgomery_prod = (lam * lam * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
         x = (x - montgomery_prod) % self.mod
         y = (lam * x * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
-        return {'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+        return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet, lam_r: Soquet
+        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
@@ -632,7 +630,7 @@ class _ECAddStepFour(Bloq):
         )
 
         # Return the output registers.
-        return {'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
+        return {'x': x, 'y': y, 'lam': lam}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
@@ -701,6 +699,7 @@ class _ECAddStepFive(Bloq):
         b: 'ClassicalValT',
         x: 'ClassicalValT',
         y: 'ClassicalValT',
+        lam: 'ClassicalValT',
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 1:
             x = (a - x) % self.mod
@@ -771,7 +770,7 @@ class _ECAddStepFive(Bloq):
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
 
         # Return the output registers.
-        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
@@ -912,7 +911,7 @@ class _ECAddStepSix(Bloq):
         x_arr = bb.split(x)
         y_arr = bb.split(y)
         xy = bb.join(np.concatenate((x_arr, y_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
-        ab, xy, f4 = bb.add(Equals(2 * self.n), x=ab, y=xy, target=f4)
+        ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
         ab_split = bb.split(ab)
         a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
         b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
@@ -990,7 +989,7 @@ class _ECAddStepSix(Bloq):
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
             Toffoli(): 2 * self.n + 4,
-            Equals(2 * self.n): 1,
+            Equals(QMontgomeryUInt(2 * self.n)): 1,
             MultiAnd(cvs=cvs): 1,
             MultiTargetCNOT(2): 1,
             MultiAnd(cvs=cvs).adjoint(): 1,
@@ -1058,21 +1057,20 @@ class ECAdd(Bloq):
             y=y,
             lam_r=lam_r,
         )
-        ctrl, a, b, x, y, lam, lam_r = bb.add(
+        ctrl, a, b, x, y, lam = bb.add(
             _ECAddStepThree(n=self.n, mod=self.mod, window_size=self.window_size),
             ctrl=ctrl,
             a=a,
             b=b,
             x=x,
             y=y,
-            lam_r=lam_r,
+            lam=lam,
         )
-        x, y, lam, lam_r = bb.add(
+        x, y, lam = bb.add(
             _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size),
             x=x,
             y=y,
             lam=lam,
-            lam_r=lam_r,
         )
         ctrl, a, b, x, y = bb.add(
             _ECAddStepFive(n=self.n, mod=self.mod, window_size=self.window_size),
