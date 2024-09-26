@@ -20,7 +20,22 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    BQUInt,
+    QAny,
+    QBit,
+    QDType,
+    QFxp,
+    QInt,
+    QIntOnesComp,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+)
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
@@ -148,3 +163,37 @@ def test_add_ints_signed(n_bits: int):
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('classical_sim')
+
+
+@frozen
+class TestMultiDimensionalReg(Bloq):
+    dtype: QDType
+    n: int
+
+    @property
+    def signature(self):
+        return Signature(
+            [
+                Register('x', self.dtype, shape=(self.n,), side=Side.LEFT),
+                Register('y', self.dtype, shape=(self.n,), side=Side.RIGHT),
+            ]
+        )
+
+    def on_classical_vals(self, x):
+        return {'y': x}
+
+
+@pytest.mark.parametrize(
+    'dtype', [QBit(), QInt(5), QUInt(5), QIntOnesComp(5), BQUInt(5, 20), QFxp(5, 3, signed=True)]
+)
+def test_multidimensional_classical_sim_for_dtypes(dtype: QDType):
+    x = [*dtype.get_classical_domain()]
+    bloq = TestMultiDimensionalReg(dtype, len(x))
+    np.testing.assert_equal(bloq.call_classically(x=np.array(x))[0], x)
+
+
+def test_multidimensional_classical_sim_for_large_int():
+    dtype = QInt(100)
+    x = [2**88 - 1, 2**12 - 1, 2**54 - 1, 1 - 2**72, 1 - 2**62]
+    bloq = TestMultiDimensionalReg(dtype, len(x))
+    np.testing.assert_equal(bloq.call_classically(x=np.array(x))[0], x)

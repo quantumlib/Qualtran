@@ -30,8 +30,8 @@ qsharp
 qsharp-widgets
 
 # qref bartiq interop
-qref>=0.7.0
-bartiq>=0.5.1
+qref==0.7.0
+bartiq==0.6.0
 
 # serialization
 protobuf

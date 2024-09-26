@@ -14,7 +14,19 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+    Union,
+)
 
 import networkx as nx
 import numpy as np
@@ -34,7 +46,39 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
+if TYPE_CHECKING:
+    from qualtran import QDType
+
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
+
+
+def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
+    from qualtran._infra.data_types import QBit, QInt, QUInt
+
+    if isinstance(dtype, QUInt):
+        if dtype.bitsize <= 8:
+            return np.uint8
+        elif dtype.bitsize <= 16:
+            return np.uint16
+        elif dtype.bitsize <= 32:
+            return np.uint32
+        elif dtype.bitsize <= 64:
+            return np.uint64
+
+    if isinstance(dtype, QInt):
+        if dtype.bitsize <= 8:
+            return np.int8
+        elif dtype.bitsize <= 16:
+            return np.int16
+        elif dtype.bitsize <= 32:
+            return np.int32
+        elif dtype.bitsize <= 64:
+            return np.int64
+
+    if isinstance(dtype, QBit):
+        return np.uint8
+
+    return object
 
 
 def _get_in_vals(
@@ -44,19 +88,7 @@ def _get_in_vals(
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
-    if reg.bitsize <= 8:
-        dtype: Type = np.uint8
-    elif reg.bitsize <= 16:
-        dtype = np.uint16
-    elif reg.bitsize <= 32:
-        dtype = np.uint32
-    elif reg.bitsize <= 64:
-        dtype = np.uint64
-    else:
-        raise NotImplementedError(
-            "We currently only support up to 64-bit "
-            "multi-dimensional registers in classical simulation."
-        )
+    dtype: Type = _numpy_dtype_from_qdtype(reg.dtype)
 
     arg = np.empty(reg.shape, dtype=dtype)
     for idx in reg.all_idxs():

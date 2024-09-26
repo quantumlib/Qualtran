@@ -167,6 +167,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.bitwise.Xor": qualtran.bloqs.arithmetic.bitwise.Xor,
     "qualtran.bloqs.arithmetic.bitwise.XorK": qualtran.bloqs.arithmetic.bitwise.XorK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
+    "qualtran.bloqs.arithmetic.comparison.Equals": qualtran.bloqs.arithmetic.comparison.Equals,
     "qualtran.bloqs.arithmetic.comparison.EqualsAConstant": qualtran.bloqs.arithmetic.comparison.EqualsAConstant,
     "qualtran.bloqs.arithmetic.comparison.GreaterThan": qualtran.bloqs.arithmetic.comparison.GreaterThan,
     "qualtran.bloqs.arithmetic.comparison.GreaterThanConstant": qualtran.bloqs.arithmetic.comparison.GreaterThanConstant,

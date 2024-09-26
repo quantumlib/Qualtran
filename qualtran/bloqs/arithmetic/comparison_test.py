@@ -20,10 +20,11 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QMontgomeryUInt, QUInt
+from qualtran import BloqBuilder, QBit, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
     _clineardepthgreaterthan_example,
     _eq_k,
+    _equals,
     _greater_than,
     _gt_k,
     _leq_symb,
@@ -34,6 +35,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     _lt_k_symb,
     BiQubitsMixer,
     CLinearDepthGreaterThan,
+    Equals,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -70,6 +72,10 @@ def test_lt_k_symb(bloq_autotester):
 
 def test_leq_symb(bloq_autotester):
     bloq_autotester(_leq_symb)
+
+
+def test_equals(bloq_autotester):
+    bloq_autotester(_equals)
 
 
 def test_eq_k(bloq_autotester):
@@ -302,6 +308,14 @@ def test_greater_than_constant():
     )
     assert t_complexity(GreaterThanConstant(bitsize, 17)) == t_complexity(
         LessThanConstant(bitsize, 17)
+    )
+
+
+@pytest.mark.parametrize('dtype', [QBit(), QUInt(2), QInt(3), QMontgomeryUInt(4), QUInt(5)])
+def test_classical_equals(dtype):
+    bloq = Equals(dtype)
+    qlt_testing.assert_consistent_classical_action(
+        bloq, x=dtype.get_classical_domain(), y=dtype.get_classical_domain(), target=range(2)
     )
 
 
