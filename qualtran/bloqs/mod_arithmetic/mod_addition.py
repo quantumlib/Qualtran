@@ -25,6 +25,7 @@ from qualtran import (
     BloqDocSpec,
     GateWithRegisters,
     QBit,
+    QInt,
     QMontgomeryUInt,
     QUInt,
     Register,
@@ -100,14 +101,14 @@ class ModAdd(Bloq):
         x_split = bb.split(x)
         y_split = bb.split(y)
         x = bb.join(
-            np.concatenate([[junk_bit], x_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+            np.concatenate([[junk_bit], x_split]), dtype=QInt(bitsize=self.bitsize + 1)
         )
         y = bb.join(
-            np.concatenate([[sign], y_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+            np.concatenate([[sign], y_split]), dtype=QInt(bitsize=self.bitsize + 1)
         )
 
         # Perform in-place addition on quantum register y.
-        x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
+        x, y = bb.add(Add(QInt(bitsize=self.bitsize + 1)), a=x, b=y)
 
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
@@ -121,7 +122,7 @@ class ModAdd(Bloq):
         # negative.
         y_split = bb.split(y)
         sign = y_split[0]
-        y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
+        y = bb.join(y_split[1:], dtype=QInt(bitsize=self.bitsize))
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
