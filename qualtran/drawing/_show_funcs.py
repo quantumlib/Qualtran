@@ -81,15 +81,13 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]
 @overload
 def show_call_graph(
     item: 'Bloq', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
-) -> None:
-    ...
+) -> None: ...
 
 
 @overload
 def show_call_graph(
     item: 'nx.Graph', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
-) -> None:
-    ...
+) -> None: ...
 
 
 def show_call_graph(

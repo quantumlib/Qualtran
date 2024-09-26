@@ -53,6 +53,7 @@ class PreparePowerTwoStateWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     bitsize_n: int
     bitsize_p: int
     is_adjoint: bool = False
