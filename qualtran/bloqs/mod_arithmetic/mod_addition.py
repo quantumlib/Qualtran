@@ -100,12 +100,8 @@ class ModAdd(Bloq):
         # constant subtraction circuit.
         x_split = bb.split(x)
         y_split = bb.split(y)
-        x = bb.join(
-            np.concatenate([[junk_bit], x_split]), dtype=QInt(bitsize=self.bitsize + 1)
-        )
-        y = bb.join(
-            np.concatenate([[sign], y_split]), dtype=QInt(bitsize=self.bitsize + 1)
-        )
+        x = bb.join(np.concatenate([[junk_bit], x_split]), dtype=QInt(bitsize=self.bitsize + 1))
+        y = bb.join(np.concatenate([[sign], y_split]), dtype=QInt(bitsize=self.bitsize + 1))
 
         # Perform in-place addition on quantum register y.
         x, y = bb.add(Add(QInt(bitsize=self.bitsize + 1)), a=x, b=y)

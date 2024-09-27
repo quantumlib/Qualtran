@@ -551,7 +551,8 @@ class _ECAddStepFour(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         montgomery_prod = (lam * lam * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
         x = (x - montgomery_prod) % self.mod
-        y = (lam * x * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
+        if lam > 0:
+            y = (lam * x * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
         return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
@@ -1067,10 +1068,7 @@ class ECAdd(Bloq):
             lam=lam,
         )
         x, y, lam = bb.add(
-            _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size),
-            x=x,
-            y=y,
-            lam=lam,
+            _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size), x=x, y=y, lam=lam
         )
         ctrl, a, b, x, y = bb.add(
             _ECAddStepFive(n=self.n, mod=self.mod, window_size=self.window_size),
