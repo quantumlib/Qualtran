@@ -449,6 +449,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
             page 8.
     """
+
     bitsize: 'SymbolicInt'
     window_size: 'SymbolicInt'
     mod: 'SymbolicInt'
@@ -571,6 +572,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
             page 8.
     """
+
     bitsize: 'SymbolicInt'
     window_size: 'SymbolicInt'
     mod: 'SymbolicInt'

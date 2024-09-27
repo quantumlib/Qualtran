@@ -47,6 +47,7 @@ class QuantumVariableRotation(Bloq):
             computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
             Fig 14.
     """
+
     phi_bitsize: int
 
     @cached_property

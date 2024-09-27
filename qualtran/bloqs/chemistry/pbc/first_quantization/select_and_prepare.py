@@ -64,6 +64,7 @@ class PrepareTUVSuperpositions(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 15, section A
     """
+
     num_bits_t: int
     eta: int
     lambda_zeta: int
@@ -102,6 +103,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
         page 18, section A, around Eq 62.
     """
+
     eta: int
     num_bits_rot_aa: int
 

@@ -50,6 +50,7 @@ class SGate(Bloq):
     Registers:
         q: The qubit
     """
+
     is_adjoint: bool = False
 
     @cached_property
