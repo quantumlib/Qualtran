@@ -149,18 +149,14 @@ class _ECAddStepOne(Bloq):
         y = bb.add(ModNeg(QMontgomeryUInt(self.n), mod=self.mod), x=y)
 
         # Set flag 3 if (a, b) == (0, 0).
-        a_arr = bb.split(a)
-        b_arr = bb.split(b)
-        ab_arr = np.concatenate((a_arr, b_arr), axis=None)
+        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
         ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
         ab_arr = np.split(ab_arr, 2)
         a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
         b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Set flag 4 if (x, y) == (0, 0).
-        x_arr = bb.split(x)
-        y_arr = bb.split(y)
-        xy_arr = np.concatenate((x_arr, y_arr), axis=None)
+        xy_arr = np.concatenate([bb.split(x), bb.split(y)])
         xy_arr, f4 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=xy_arr, target=f4)
         xy_arr = np.split(xy_arr, 2)
         x = bb.join(xy_arr[0], dtype=QMontgomeryUInt(self.n))
@@ -268,7 +264,7 @@ class _ECAddStepTwo(Bloq):
                 lam = lam_r
                 f1 = 0
             else:
-                lam = (y * pow(x, -1, mod=self.mod)) % self.mod
+                lam = (y * pow(int(x), -1, mod=self.mod)) % self.mod
         else:
             lam = 0
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
@@ -906,12 +902,8 @@ class _ECAddStepSix(Bloq):
         y = bb.join(y_split, QMontgomeryUInt(self.n))
 
         # Unset f4 if (x, y) = (a, b).
-        a_arr = bb.split(a)
-        b_arr = bb.split(b)
-        ab = bb.join(np.concatenate((a_arr, b_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
-        x_arr = bb.split(x)
-        y_arr = bb.split(y)
-        xy = bb.join(np.concatenate((x_arr, y_arr), axis=None), dtype=QMontgomeryUInt(2 * self.n))
+        ab = bb.join(np.concatenate([bb.split(a), bb.split(b)]), dtype=QMontgomeryUInt(2 * self.n))
+        xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
         ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
         ab_split = bb.split(ab)
         a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
@@ -921,9 +913,7 @@ class _ECAddStepSix(Bloq):
         y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
 
         # Unset f3 if (a, b) = (0, 0).
-        a_arr = bb.split(a)
-        b_arr = bb.split(b)
-        ab_arr = np.concatenate((a_arr, b_arr), axis=None)
+        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
         ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
         ab_arr = np.split(ab_arr, 2)
         a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
@@ -952,9 +942,7 @@ class _ECAddStepSix(Bloq):
         bb.add(Free(QBit()), reg=ancilla)
 
         # Unset f1 and f2 if (x, y) = (0, 0).
-        x_arr = bb.split(x)
-        y_arr = bb.split(y)
-        xy_arr = np.concatenate((x_arr, y_arr), axis=None)
+        xy_arr = np.concatenate([bb.split(x), bb.split(y)])
         xy_arr, junk, out = bb.add(MultiAnd(cvs=[0] * 2 * self.n), ctrl=xy_arr)
         targets = bb.join(np.array([f1, f2]))
         out, targets = bb.add(MultiTargetCNOT(2), control=out, targets=targets)

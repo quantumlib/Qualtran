@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
@@ -43,8 +42,8 @@ def test_ec_add_step_one_classical(n, p, a, b, x, y, result):
     bloq = _ECAddStepOne(n=n, mod=p)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y)
     ret2 = bloq.decompose_bloq().call_classically(a=a, b=b, x=x, y=y)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -61,8 +60,8 @@ def test_ec_add_step_two_classical(n, p, window_size, f1, ctrl, a, b, x, y, lam_
     bloq = _ECAddStepTwo(n=n, mod=p, window_size=window_size)
     ret1 = bloq.call_classically(f1=f1, ctrl=ctrl, a=a, b=b, x=x, y=y, lam_r=lam_r)
     ret2 = bloq.decompose_bloq().call_classically(f1=f1, ctrl=ctrl, a=a, b=b, x=x, y=y, lam_r=lam_r)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -79,8 +78,8 @@ def test_ec_add_step_three_classical(n, p, window_size, ctrl, a, b, x, y, lam, r
     bloq = _ECAddStepThree(n=n, mod=p, window_size=window_size)
     ret1 = bloq.call_classically(ctrl=ctrl, a=a, b=b, x=x, y=y, lam=lam)
     ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, a=a, b=b, x=x, y=y, lam=lam)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -97,8 +96,8 @@ def test_ec_add_step_four_classical(n, p, window_size, x, y, lam, result):
     bloq = _ECAddStepFour(n=n, mod=p, window_size=window_size)
     ret1 = bloq.call_classically(x=x, y=y, lam=lam)
     ret2 = bloq.decompose_bloq().call_classically(x=x, y=y, lam=lam)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -115,8 +114,8 @@ def test_ec_add_step_five_classical(n, p, window_size, ctrl, a, b, x, y, lam, re
     bloq = _ECAddStepFive(n=n, mod=p, window_size=window_size)
     ret1 = bloq.call_classically(ctrl=ctrl, a=a, b=b, x=x, y=y, lam=lam)
     ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, a=a, b=b, x=x, y=y, lam=lam)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -135,8 +134,8 @@ def test_ec_add_step_six_classical(n, p, f1, f2, f3, f4, ctrl, a, b, x, y, resul
     ret2 = bloq.decompose_bloq().call_classically(
         f1=f1, f2=f2, f3=f3, f4=f4, ctrl=ctrl, a=a, b=b, x=x, y=y
     )
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 @pytest.mark.parametrize(
@@ -151,8 +150,8 @@ def test_ec_add_classical(n, p, window_size, a, b, x, y, lam_r, result):
     bloq = ECAdd(n=n, mod=p, window_size=window_size)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y, lam_r=lam_r)
     ret2 = bloq.decompose_bloq().call_classically(a=a, b=b, x=x, y=y, lam_r=lam_r)
-    np.testing.assert_array_equal(ret1, ret2)
-    np.testing.assert_array_equal(ret1, result)
+    assert ret1 == ret2
+    assert ret1 == result
 
 
 def test_ec_add(bloq_autotester):

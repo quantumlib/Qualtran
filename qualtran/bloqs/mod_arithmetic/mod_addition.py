@@ -125,6 +125,7 @@ class ModAdd(Bloq):
             AddK(bitsize=self.bitsize, k=self.mod, signed=True, cvs=(1,)), x=y, ctrls=sign_split
         )
         sign = bb.join(sign_split)
+        y = bb.add(Cast(QInt(bitsize=self.bitsize), QMontgomeryUInt(bitsize=self.bitsize)), reg=y)
 
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
