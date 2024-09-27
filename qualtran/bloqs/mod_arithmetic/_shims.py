@@ -31,7 +31,7 @@ from qualtran import Bloq, QUInt, Register, Side, Signature
 from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
-from qualtran.bloqs.mod_arithmetic.mod_multiplication import DirtyOutOfPlaceMontgomeryModMul, ModDbl
+from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics.types import is_symbolic
@@ -104,7 +104,7 @@ class ModInv(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'DirtyOutOfPlaceMontgomeryModMul':
+    def adjoint(self) -> 'ModInv':
         return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
