@@ -110,6 +110,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
             Berry et. al. (2019). Appendix C.
     """
+
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -213,9 +214,9 @@ class QROAMCleanAdjointWrapper(Bloq):
 
     qroam_clean: 'QROAMClean'
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: x
-        if x is None
-        else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        converter=lambda x: (
+            x if x is None else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        )
     )
 
     @cached_property
@@ -343,6 +344,7 @@ class QROAMClean(SelectSwapQROM):
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
             Berry et. al. (2019). Appendix A. and B.
     """
+
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )

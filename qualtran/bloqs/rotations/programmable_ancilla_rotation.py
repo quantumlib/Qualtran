@@ -36,6 +36,7 @@ class ZPowProgrammedAncilla(Bloq):
     Signature:
         q: the ancilla qubit prepared in the above state.
     """
+
     exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
 

@@ -150,15 +150,13 @@ def _preprocess_for_efficient_roulette_selection(
 
 
 @overload
-def sub_bit_prec_from_epsilon(number_of_coefficients: int, precision: float) -> int:
-    ...
+def sub_bit_prec_from_epsilon(number_of_coefficients: int, precision: float) -> int: ...
 
 
 @overload
 def sub_bit_prec_from_epsilon(
     number_of_coefficients: SymbolicInt, precision: SymbolicFloat
-) -> SymbolicInt:
-    ...
+) -> SymbolicInt: ...
 
 
 def sub_bit_prec_from_epsilon(

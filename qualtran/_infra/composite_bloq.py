@@ -880,12 +880,10 @@ class BloqBuilder:
         return None
 
     @overload
-    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]:
-        ...
+    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: int) -> SoquetT:
-        ...
+    def add_register(self, reg: str, bitsize: int) -> SoquetT: ...
 
     def add_register(
         self, reg: Union[str, Register], bitsize: Optional[int] = None

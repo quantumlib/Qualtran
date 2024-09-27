@@ -47,8 +47,7 @@ class SpecializedSingleQubitControlledExtension(Bloq):
 
     @property
     @abc.abstractmethod
-    def control_registers(self) -> Tuple[Register, ...]:
-        ...
+    def control_registers(self) -> Tuple[Register, ...]: ...
 
     def get_single_qubit_controlled_bloq(
         self, control_val: int
