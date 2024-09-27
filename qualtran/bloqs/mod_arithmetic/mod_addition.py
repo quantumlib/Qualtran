@@ -25,7 +25,6 @@ from qualtran import (
     BloqDocSpec,
     GateWithRegisters,
     QBit,
-    QInt,
     QMontgomeryUInt,
     QUInt,
     Register,
@@ -100,11 +99,15 @@ class ModAdd(Bloq):
         # constant subtraction circuit.
         x_split = bb.split(x)
         y_split = bb.split(y)
-        x = bb.join(np.concatenate([[junk_bit], x_split]), dtype=QInt(bitsize=self.bitsize + 1))
-        y = bb.join(np.concatenate([[sign], y_split]), dtype=QInt(bitsize=self.bitsize + 1))
+        x = bb.join(
+            np.concatenate([[junk_bit], x_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
+        y = bb.join(
+            np.concatenate([[sign], y_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
 
         # Perform in-place addition on quantum register y.
-        x, y = bb.add(Add(QInt(bitsize=self.bitsize + 1)), a=x, b=y)
+        x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
 
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
@@ -112,20 +115,19 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=True, cvs=()), x=y)
+        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
         y_split = bb.split(y)
         sign = y_split[0]
-        y = bb.join(y_split[1:], dtype=QInt(bitsize=self.bitsize))
+        y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=True, cvs=(1,)), x=y, ctrls=sign_split
+            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
         )
         sign = bb.join(sign_split)
-        y = bb.add(Cast(QInt(bitsize=self.bitsize), QMontgomeryUInt(bitsize=self.bitsize)), reg=y)
 
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
