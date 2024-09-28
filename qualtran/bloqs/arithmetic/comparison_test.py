@@ -450,11 +450,9 @@ def test_linear_half_comparison_bloq_counts(comp_cls, dtype, bitsize, uncompute)
 @pytest.mark.parametrize('bitsize', range(2, 5))
 def test_linear_half_comparison_classical_action(comp_cls, dtype, bitsize):
     b = comp_cls(dtype(bitsize))
-    if dtype is QInt:
-        valid_range = range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1))
-    else:
-        valid_range = range(2**bitsize)
-    qlt_testing.assert_consistent_classical_action(b, a=valid_range, b=valid_range)
+    qlt_testing.assert_consistent_classical_action(
+        b, a=dtype(bitsize).get_classical_domain(), b=dtype(bitsize).get_classical_domain()
+    )
 
 
 @pytest.mark.parametrize(

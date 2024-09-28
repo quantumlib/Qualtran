@@ -1238,8 +1238,6 @@ _CLinearDepthGreaterThan_DOC = BloqDocSpec(
     bloq_cls=CLinearDepthGreaterThan, examples=[_clineardepthgreaterthan_example]
 )
 
-_SUPPORTED_DTYPES = Union[QInt, QUInt, QMontgomeryUInt]
-
 
 @frozen
 class _HalfLinearDepthGreaterThan(Bloq):
@@ -1381,7 +1379,7 @@ class _HalfLinearDepthGreaterThan(Bloq):
 
 @frozen
 class _HalfComparisonBase(Bloq):
-    dtype: _SUPPORTED_DTYPES
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
     comparison_op: str = attrs.field(
         default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<='), repr=False
     )
@@ -1496,10 +1494,9 @@ class _HalfComparisonBase(Bloq):
             adder = adder.adjoint()
         adder_call_graph = adder.build_call_graph(ssa)
         assert isinstance(adder_call_graph, dict)
-        counts = {**adder_call_graph}
+        counts: defaultdict['Bloq', int | sympy.Expr] = defaultdict(lambda: 0)
+        counts.update(adder_call_graph)
         for k, v in extra_ops.items():
-            if k not in counts:
-                counts[k] = 0
             counts[k] += v
         return counts
 
@@ -1511,7 +1508,13 @@ class _LinearDepthHalfComparisonBase(_HalfComparisonBase):
         return _HalfLinearDepthGreaterThan(self.dtype, uncompute=False)
 
 
-@frozen
+def _hide_base_fields(cls, fields):
+    return [
+        field.evolve(repr=False) if field.name == 'comparison_op' else field for field in fields
+    ]
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
 class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
@@ -1534,10 +1537,15 @@ class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_op: str = attrs.field(default='>', init=False, repr=False)
+
+    def __init__(self, dtype: Union[QInt, QUInt, QMontgomeryUInt], uncompute: bool = False):
+        self.__attrs_init__(dtype=dtype, comparison_op='>')
+
+    def adjoint(self) -> 'LinearDepthHalfGreaterThan':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
 
-@frozen
+@frozen(init=False, field_transformer=_hide_base_fields)
 class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
@@ -1560,10 +1568,15 @@ class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_op: str = attrs.field(default='>=', init=False, repr=False)
+
+    def __init__(self, dtype: Union[QInt, QUInt, QMontgomeryUInt], uncompute: bool = False):
+        self.__attrs_init__(dtype=dtype, comparison_op='>=')
+
+    def adjoint(self) -> 'LinearDepthHalfGreaterThanEqual':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
 
-@frozen
+@frozen(init=False, field_transformer=_hide_base_fields)
 class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
@@ -1586,10 +1599,15 @@ class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_op: str = attrs.field(default='<', init=False, repr=False)
+
+    def __init__(self, dtype: Union[QInt, QUInt, QMontgomeryUInt], uncompute: bool = False):
+        self.__attrs_init__(dtype=dtype, comparison_op='<')
+
+    def adjoint(self) -> 'LinearDepthHalfLessThan':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
 
-@frozen
+@frozen(init=False, field_transformer=_hide_base_fields)
 class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
     r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
 
@@ -1612,7 +1630,12 @@ class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
     """
-    comparison_op: str = attrs.field(default='<=', init=False, repr=False)
+
+    def __init__(self, dtype: Union[QInt, QUInt, QMontgomeryUInt], uncompute: bool = False):
+        self.__attrs_init__(dtype=dtype, uncompute=uncompute, comparison_op='<=')
+
+    def adjoint(self) -> 'LinearDepthHalfLessThanEqual':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
 
 @bloq_example
