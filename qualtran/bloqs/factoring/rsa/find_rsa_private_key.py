@@ -82,7 +82,7 @@ class FindRSAPrivateKey(Bloq):
 
         x = bb.add(RSAPhaseEstimate(n=self.n, mod=self.mod), x=x)
 
-        bb.add(Free(QUInt(self.n)), reg=x)
+        bb.add(Free(QUInt(self.n), dirty=True), reg=x)
         return {}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
@@ -99,4 +99,4 @@ def _rsa() -> FindRSAPrivateKey:
     return rsa
 
 
-_ECC_BLOQ_DOC = BloqDocSpec(bloq_cls=FindRSAPrivateKey, examples=[_rsa])
+_RSA_BLOQ_DOC = BloqDocSpec(bloq_cls=FindRSAPrivateKey, examples=[_rsa])

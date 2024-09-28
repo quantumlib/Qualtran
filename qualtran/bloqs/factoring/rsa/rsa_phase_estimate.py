@@ -32,10 +32,9 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import PlusState
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.symbolics.types import SymbolicInt
 
-from ._ecc_shims import MeasureQFT
-from .ec_add_r import ECAddR
-from .ec_point import ECPoint
+from .._factoring_shims import MeasureQFT
 
 
 @frozen
@@ -50,44 +49,39 @@ class RSAPhaseEstimate(Bloq):
         point: The elliptic curve point to phase estimate against.
     """
 
-    n: int
-    point: ECPoint
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('y', QUInt(self.n))])
+        return Signature([Register('x', QUInt(self.n))])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
-        ctrl = [bb.add(PlusState()) for _ in range(self.n)]
+        ctrl = [bb.add(PlusState()) for _ in range(2 * self.n)]
         for i in range(self.n):
             ctrl[i], x, y = bb.add(ECAddR(n=self.n, R=2**i * self.point), ctrl=ctrl[i], x=x, y=y)
 
-        bb.add(MeasureQFT(n=self.n), x=ctrl)
-        return {'x': x, 'y': y}
+        bb.add(MeasureQFT(n=2 * self.n), x=ctrl)
+        return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {ECAddR(n=self.n, R=self.point): self.n, MeasureQFT(n=self.n): 1}
 
-    def __str__(self) -> str:
-        return f'PE${self.point}$'
-
 
 @bloq_example
-def _ec_pe() -> ECPhaseEstimateR:
-    n, p = sympy.symbols('n p ')
-    Rx, Ry = sympy.symbols('R_x R_y')
-    ec_pe = ECPhaseEstimateR(n=n, point=ECPoint(Rx, Ry, mod=p))
+def _rsa_pe() -> RSAPhaseEstimate:
+    n, p = sympy.symbols('n p')
+    ec_pe = RSAPhaseEstimate(n=n, p=p)
     return ec_pe
 
 
 @bloq_example
-def _ec_pe_small() -> ECPhaseEstimateR:
-    n = 3
-    Rx, Ry, p = sympy.symbols('R_x R_y p')
-    ec_pe_small = ECPhaseEstimateR(n=n, point=ECPoint(Rx, Ry, mod=p))
+def _rsa_pe_small() -> RSAPhaseEstimate:
+    n, p = 3, 7
+    ec_pe_small = RSAPhaseEstimate(n=n, p=p)
     return ec_pe_small
 
 
-_EC_PE_BLOQ_DOC = BloqDocSpec(bloq_cls=ECPhaseEstimateR, examples=[_ec_pe])
+_RSA_PE_BLOQ_DOC = BloqDocSpec(bloq_cls=RSAPhaseEstimate, examples=[_rsa_pe])

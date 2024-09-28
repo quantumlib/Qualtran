@@ -105,6 +105,7 @@ import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -533,6 +534,14 @@ MOD_ARITHMETIC = [
         module=qualtran.bloqs.factoring.mod_exp,
         bloq_specs=[qualtran.bloqs.factoring.mod_exp._MODEXP_DOC],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpecV2(
+        title='Factoring RSA',
+        module=qualtran.bloqs.factoring.rsa,
+        bloq_specs=[
+            qualtran.bloqs.factoring.rsa.find_rsa_private_key._RSA_BLOQ_DOC,
+            qualtran.bloqs.factoring.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
