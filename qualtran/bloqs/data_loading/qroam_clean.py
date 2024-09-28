@@ -30,7 +30,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, SoquetT, QDType
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator, CostKey
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
 
@@ -110,6 +110,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
             Berry et. al. (2019). Appendix C.
     """
+
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -179,7 +180,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
-        n_toffoli = ceil(data_size / block_sizes) + block_sizes
+        n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.num_controls
         return {Toffoli(): n_toffoli}
 
     @cached_property
@@ -213,9 +214,9 @@ class QROAMCleanAdjointWrapper(Bloq):
 
     qroam_clean: 'QROAMClean'
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: x
-        if x is None
-        else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        converter=lambda x: (
+            x if x is None else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+        )
     )
 
     @cached_property
@@ -268,7 +269,7 @@ class QROAMCleanAdjointWrapper(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.qroam_clean.data_shape)
-        n_toffoli = ceil(data_size / block_sizes) + block_sizes
+        n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.qroam_clean.num_controls
         return {Toffoli(): n_toffoli}
 
     def adjoint(self) -> 'QROAMClean':
@@ -298,6 +299,9 @@ class QROAMCleanAdjointWrapper(Bloq):
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unknown register name {name}')
+
+    def __str__(self):
+        return 'QROAMCleanAdjoint'
 
 
 @attrs.frozen
@@ -340,6 +344,7 @@ class QROAMClean(SelectSwapQROM):
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
             Berry et. al. (2019). Appendix A. and B.
     """
+
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -449,6 +454,15 @@ class QROAMClean(SelectSwapQROM):
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
                 ret[swz] += 1
         return ret
+
+    def my_static_costs(self, cost_key: "CostKey"):
+        from qualtran.resource_counting import get_cost_value, QubitCount
+
+        if isinstance(cost_key, QubitCount):
+            qrom_costs = get_cost_value(self.qrom_bloq, QubitCount())
+            return qrom_costs + sum(self.log_block_sizes)
+
+        return NotImplemented
 
     def _build_composite_bloq_with_swz_clean(
         self,

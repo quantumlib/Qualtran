@@ -22,7 +22,15 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike
 
-from qualtran import bloq_example, BloqDocSpec, BQUInt, GateWithRegisters, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    DecomposeTypeError,
+    GateWithRegisters,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.arithmetic.bitwise import Xor
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading.qrom import QROM
@@ -33,7 +41,7 @@ from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, Sym
 
 if TYPE_CHECKING:
     from qualtran import Bloq, BloqBuilder, QDType, SoquetT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, CostKey, SympySymbolAllocator
 
 SelSwapQROM_T = TypeVar('SelSwapQROM_T', bound='SelectSwapQROM')
 
@@ -131,9 +139,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
-        if x is not None
-        else x,
+        converter=lambda x: (
+            tuple(x.tolist() if isinstance(x, np.ndarray) else x) if x is not None else x
+        ),
         default=None,
     )
     use_dirty_ancilla: bool = True
@@ -408,7 +416,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         target = [soqs.pop(reg.name) for reg in self.target_registers]
         # Allocate intermediate clean/dirty ancilla for the underlying QROM call.
         if is_symbolic(*self.block_sizes):
-            raise ValueError(
+            raise DecomposeTypeError(
                 f"Cannot decompose SelectSwapQROM bloq with symbolic block sizes. Found {self.block_sizes=}"
             )
         block_sizes = cast(Tuple[int, ...], self.block_sizes)
@@ -448,6 +456,18 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
+    def my_static_costs(self, cost_key: "CostKey"):
+        from qualtran.resource_counting import get_cost_value, QubitCount
+
+        if isinstance(cost_key, QubitCount):
+            return (
+                get_cost_value(self.qrom_bloq, QubitCount())
+                + sum(self.log_block_sizes)
+                + sum(self.target_bitsizes)
+            )
+
+        return NotImplemented
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM')
@@ -482,7 +502,7 @@ def _qroam_multi_dim() -> SelectSwapQROM:
 
 @bloq_example
 def _qroam_symb_dirty_1d() -> SelectSwapQROM:
-    N, b, k, c = sympy.symbols('N b k c')
+    N, b, k, c = sympy.symbols('N b k c', positive=True, integers=True)
     qroam_symb_dirty_1d = SelectSwapQROM.build_from_bitsize(
         (N,), (b,), log_block_sizes=(k,), num_controls=c
     )
@@ -491,7 +511,7 @@ def _qroam_symb_dirty_1d() -> SelectSwapQROM:
 
 @bloq_example
 def _qroam_symb_dirty_2d() -> SelectSwapQROM:
-    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c')
+    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c', positive=True, integers=True)
     log_block_sizes = (k1, k2)
     qroam_symb_dirty_2d = SelectSwapQROM.build_from_bitsize(
         (N, M), (b1, b2), log_block_sizes=log_block_sizes, num_controls=c
@@ -501,7 +521,7 @@ def _qroam_symb_dirty_2d() -> SelectSwapQROM:
 
 @bloq_example
 def _qroam_symb_clean_1d() -> SelectSwapQROM:
-    N, b, k, c = sympy.symbols('N b k c')
+    N, b, k, c = sympy.symbols('N b k c', positive=True, integers=True)
     qroam_symb_clean_1d = SelectSwapQROM.build_from_bitsize(
         (N,), (b,), log_block_sizes=(k,), num_controls=c, use_dirty_ancilla=False
     )
@@ -510,7 +530,7 @@ def _qroam_symb_clean_1d() -> SelectSwapQROM:
 
 @bloq_example
 def _qroam_symb_clean_2d() -> SelectSwapQROM:
-    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c')
+    N, M, b1, b2, k1, k2, c = sympy.symbols('N M b1 b2 k1 k2 c', positive=True, integers=True)
     log_block_sizes = (k1, k2)
     qroam_symb_clean_2d = SelectSwapQROM.build_from_bitsize(
         (N, M), (b1, b2), log_block_sizes=log_block_sizes, num_controls=c, use_dirty_ancilla=False

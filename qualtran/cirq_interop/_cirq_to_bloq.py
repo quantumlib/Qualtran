@@ -75,8 +75,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate:
-        ...
+    def cirq_gate(self) -> cirq.Gate: ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -264,9 +263,9 @@ def _ensure_in_reg_exists(
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
-        qreg_to_qvar[
-            _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
-        ] = bb.allocate(n_alloc)
+        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))] = (
+            bb.allocate(n_alloc)
+        )
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.

@@ -70,13 +70,11 @@ T = TypeVar('T')
 @overload
 def is_symbolic(
     arg: Union[T, sympy.Expr, Shaped, HasLength], /
-) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]:
-    ...
+) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]: ...
 
 
 @overload
-def is_symbolic(*args) -> bool:
-    ...
+def is_symbolic(*args) -> bool: ...
 
 
 def is_symbolic(*args) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bool]:

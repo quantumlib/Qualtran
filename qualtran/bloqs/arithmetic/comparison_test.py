@@ -20,16 +20,18 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QMontgomeryUInt, QUInt
+from qualtran import BloqBuilder, QBit, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.comparison import (
     _clineardepthgreaterthan_example,
     _eq_k,
+    _equals,
     _greater_than,
     _gt_k,
     _leq_symb,
     _lt_k_symb,
     BiQubitsMixer,
     CLinearDepthGreaterThan,
+    Equals,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -61,6 +63,10 @@ def test_lt_k_symb(bloq_autotester):
 
 def test_leq_symb(bloq_autotester):
     bloq_autotester(_leq_symb)
+
+
+def test_equals(bloq_autotester):
+    bloq_autotester(_equals)
 
 
 def test_eq_k(bloq_autotester):
@@ -296,6 +302,14 @@ def test_greater_than_constant():
     )
 
 
+@pytest.mark.parametrize('dtype', [QBit(), QUInt(2), QInt(3), QMontgomeryUInt(4), QUInt(5)])
+def test_classical_equals(dtype):
+    bloq = Equals(dtype)
+    qlt_testing.assert_consistent_classical_action(
+        bloq, x=dtype.get_classical_domain(), y=dtype.get_classical_domain(), target=range(2)
+    )
+
+
 def test_equals_a_constant():
     bb = BloqBuilder()
     bitsize = 5
@@ -337,7 +351,7 @@ def test_clineardepthgreaterthan_classical_action_unsigned(ctrl, dtype, bitsize)
     b = CLinearDepthGreaterThan(dtype(bitsize), ctrl)
     cb = b.decompose_bloq()
     for c, target in itertools.product(range(2), repeat=2):
-        for (x, y) in itertools.product(range(2**bitsize), repeat=2):
+        for x, y in itertools.product(range(2**bitsize), repeat=2):
             assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
                 ctrl=c, a=x, b=y, target=target
             )
@@ -349,7 +363,7 @@ def test_clineardepthgreaterthan_classical_action_signed(ctrl, bitsize):
     b = CLinearDepthGreaterThan(QInt(bitsize), ctrl)
     cb = b.decompose_bloq()
     for c, target in itertools.product(range(2), repeat=2):
-        for (x, y) in itertools.product(range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1)), repeat=2):
+        for x, y in itertools.product(range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1)), repeat=2):
             assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
                 ctrl=c, a=x, b=y, target=target
             )

@@ -115,7 +115,7 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=True, cvs=()), x=y)
+        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
@@ -125,7 +125,7 @@ class ModAdd(Bloq):
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=True, cvs=(1,)), x=y, ctrls=sign_split
+            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
         )
         sign = bb.join(sign_split)
 
