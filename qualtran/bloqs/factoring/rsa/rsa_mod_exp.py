@@ -86,7 +86,9 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: int, g: Optional[int] = None):
+    def make_for_shor(
+        cls, big_n: Union[int, sympy.Expr], g: Optional[Union[int, sympy.Expr]] = None
+    ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -99,10 +101,13 @@ class ModExp(Bloq):
         else:
             little_n = int(math.ceil(math.log2(big_n)))
         if g is None:
-            while True:
-                g = random.randint(2, big_n)
-                if math.gcd(g, big_n) == 1:
-                    break
+            if isinstance(big_n, sympy.Expr):
+                g = sympy.symbols('g')
+            else:
+                while True:
+                    g = random.randint(2, int(big_n))
+                    if math.gcd(g, int(big_n)) == 1:
+                        break
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
     def _CtrlModMul(self, k: Union[int, sympy.Expr]):
