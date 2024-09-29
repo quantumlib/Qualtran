@@ -19,12 +19,13 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import Bloq
+from qualtran import Bloq, QUInt
 from qualtran.bloqs.bookkeeping import Join, Split
-from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
+from qualtran.bloqs.factoring.rsa.rsa_mod_exp import _modexp, ModExp
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.symbolics.types import HasLength
 from qualtran.testing import execute_notebook
 
 
@@ -48,22 +49,11 @@ def test_mod_exp_consistent_classical():
             base = rs.randint(1, mod)
 
         bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
-        ret1 = bloq.call_classically(exponent=exponent)
-        ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
-        assert ret1 == ret2
-
-
-def test_modexp_symb_manual():
-    g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
-    modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
-    assert cast(Text, modexp.wire_symbol(reg=None)).text == 'g^e % N'
-    counts = modexp.bloq_counts()
-    counts_by_bloq = {str(bloq): n for bloq, n in counts.items()}
-    assert counts_by_bloq['|1>'] == 1
-    assert counts_by_bloq['CModMulK'] == n_e
-
-    b, x = modexp.call_classically(exponent=sympy.Symbol('b'))
-    assert str(x) == 'Mod(g**b, N)'
+        ret1 = bloq.call_classically(exponent=QUInt(ne).to_bits(exponent), x=1)
+        ret2 = bloq.decompose_bloq().call_classically(exponent=QUInt(ne).to_bits(exponent), x=1)
+        assert len(ret1) == len(ret2)
+        for i in range(len(ret1)):
+            np.testing.assert_array_equal(ret1[i], ret2[i])
 
 
 def test_mod_exp_consistent_counts():
@@ -97,15 +87,6 @@ def test_modexp(bloq_autotester):
     bloq_autotester(_modexp)
 
 
-def test_modexp_symb(bloq_autotester):
-    bloq_autotester(_modexp_symb)
-
-
 @pytest.mark.notebook
 def test_intro_notebook():
     execute_notebook('factoring-via-modexp')
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('mod_exp')

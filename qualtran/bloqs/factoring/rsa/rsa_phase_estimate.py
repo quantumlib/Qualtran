@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Optional
 
 import sympy
 from attrs import frozen
@@ -30,58 +31,74 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import PlusState
+from qualtran.bloqs.basic_gates import IntState, PlusState
+from qualtran.bloqs.bookkeeping import Free
+from qualtran.bloqs.factoring._factoring_shims import MeasureQFT
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.symbolics.types import is_symbolic, SymbolicInt
 
-from .._factoring_shims import MeasureQFT
+from .rsa_mod_exp import ModExp
 
 
 @frozen
 class RSAPhaseEstimate(Bloq):
-    """Perform a single phase estimation of ECAddR for a given point.
+    """Perform a single phase estimation of ModExp for the given base.
 
-    This is used as a subroutine in `FindECCPrivateKey`. First, we phase-estimate the
-    addition of the base point $P$, then of the public key $Q$.
+    Computes the phase estimation of a single run of Modular Exponentiation with
+    an optional, pre-set base or a random, valid base.
 
     Args:
-        n: The bitsize of the elliptic curve points' x and y registers.
-        point: The elliptic curve point to phase estimate against.
+        n: The bitsize of the modulus N.
+        mod: The modulus N; a part of the public key for RSA.
+        base: An optional base for modular exponentiation.
+
+    References:
+        [Circuit for Shor's algorithm using 2n+3 qubits](https://arxiv.org/abs/quant-ph/0205095).
+        Stephane Beauregard. 2003.
     """
 
     n: 'SymbolicInt'
     mod: 'SymbolicInt'
+    base: Optional['SymbolicInt'] = None
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n))])
+        return Signature([])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def __attrs_post_init__(self):
+        if not is_symbolic(self.n, self.mod):
+            assert self.n == int(math.ceil(math.log2(self.mod)))
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
-        ctrl = [bb.add(PlusState()) for _ in range(2 * self.n)]
-        for i in range(self.n):
-            ctrl[i], x, y = bb.add(ECAddR(n=self.n, R=2**i * self.point), ctrl=ctrl[i], x=x, y=y)
+        exponent = [bb.add(PlusState()) for _ in range(2 * self.n)]
+        x = bb.add(IntState(val=1, bitsize=self.n))
 
-        bb.add(MeasureQFT(n=2 * self.n), x=ctrl)
-        return {'x': x}
+        exponent, x = bb.add(
+            ModExp.make_for_shor(big_n=self.mod, g=self.base), exponent=exponent, x=x
+        )
+
+        bb.add(MeasureQFT(n=2 * self.n), x=exponent)
+        bb.add(Free(QUInt(self.n), dirty=True), reg=x)
+        return {}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {ECAddR(n=self.n, R=self.point): self.n, MeasureQFT(n=self.n): 1}
+        return {MeasureQFT(n=self.n): 1}
 
 
 @bloq_example
 def _rsa_pe() -> RSAPhaseEstimate:
     n, p = sympy.symbols('n p')
-    ec_pe = RSAPhaseEstimate(n=n, p=p)
-    return ec_pe
+    rsa_pe = RSAPhaseEstimate(n=n, mod=p)
+    return rsa_pe
 
 
 @bloq_example
 def _rsa_pe_small() -> RSAPhaseEstimate:
-    n, p = 3, 7
-    ec_pe_small = RSAPhaseEstimate(n=n, p=p)
-    return ec_pe_small
+    n, p = 6, 5 * 7
+    rsa_pe_small = RSAPhaseEstimate(n=n, mod=p)
+    return rsa_pe_small
 
 
-_RSA_PE_BLOQ_DOC = BloqDocSpec(bloq_cls=RSAPhaseEstimate, examples=[_rsa_pe])
+_RSA_PE_BLOQ_DOC = BloqDocSpec(bloq_cls=RSAPhaseEstimate, examples=[_rsa_pe_small, _rsa_pe])
