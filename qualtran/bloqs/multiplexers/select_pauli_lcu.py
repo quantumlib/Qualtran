@@ -59,6 +59,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitCon
             dense pauli string must contain `target_bitsize` terms.
         control_val: Optional control value. If specified, a singly controlled gate is constructed.
     """
+
     selection_bitsize: int
     target_bitsize: int
     select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)

@@ -33,6 +33,7 @@ class IsingXUnitary(Bloq):
     Registers:
         system: The system register to apply the unitary to.
     """
+
     nsites: int
     angle: float
     eps: float = 1e-10
@@ -65,6 +66,7 @@ class IsingZZUnitary(Bloq):
     Registers:
         system: The system register to apply the unitary to.
     """
+
     nsites: int
     angle: float
     eps: float = 1e-10

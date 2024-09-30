@@ -52,6 +52,7 @@ class SelectTFirstQuantizationWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 20, section B
     """
+
     num_bits_n: int
     eta: int
 

@@ -139,9 +139,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
-        if x is not None
-        else x,
+        converter=lambda x: (
+            tuple(x.tolist() if isinstance(x, np.ndarray) else x) if x is not None else x
+        ),
         default=None,
     )
     use_dirty_ancilla: bool = True

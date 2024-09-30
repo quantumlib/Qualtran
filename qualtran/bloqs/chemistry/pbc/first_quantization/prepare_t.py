@@ -50,6 +50,7 @@ class PreparePowerTwoState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
         Eq 67-69, pg 19-20
     """
+
     bitsize: int
 
     @cached_property

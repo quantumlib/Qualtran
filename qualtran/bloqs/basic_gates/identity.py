@@ -54,6 +54,7 @@ class Identity(Bloq):
     Registers:
         q: register of `n` qubits
     """
+
     bitsize: SymbolicInt = 1
 
     @cached_property

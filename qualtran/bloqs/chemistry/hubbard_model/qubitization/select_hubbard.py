@@ -145,8 +145,8 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
         yield CSwap.make_on(ctrl=V, x=p_y, y=q_y)
         yield CSwap.make_on(ctrl=V, x=p_x, y=q_x)
 
-        yield cirq.S(*control) ** -1 if control else cirq.global_phase_operation(
-            -1j
+        yield (
+            cirq.S(*control) ** -1 if control else cirq.global_phase_operation(-1j)
         )  # Fix errant i from XY=iZ
         yield cirq.Z(*U).controlled_by(*control)  # Fix errant -1 from multiple pauli applications
 
