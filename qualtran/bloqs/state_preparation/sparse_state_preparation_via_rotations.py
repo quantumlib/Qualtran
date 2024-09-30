@@ -13,6 +13,7 @@
 #  limitations under the License.
 from typing import Sequence, TYPE_CHECKING, Union
 
+import attrs
 import numpy as np
 import sympy
 from attrs import field, frozen
@@ -25,6 +26,7 @@ from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _to_tuple_or_has_length,
     StatePreparationViaRotations,
 )
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import bit_length, HasLength, is_symbolic, slen, SymbolicInt
 
 if TYPE_CHECKING:
@@ -172,9 +174,10 @@ class SparseStatePreparationViaRotations(Bloq):
 
         assert isinstance(self.sparse_indices, tuple)
 
-        return Permutation.from_partial_permutation_map(
+        permute_bloq = Permutation.from_partial_permutation_map(
             self.N, dict(enumerate(self.sparse_indices))
         )
+        return attrs.evolve(permute_bloq, bitsize=self.target_bitsize)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', target_state: 'SoquetT', phase_gradient: 'SoquetT'
@@ -200,10 +203,24 @@ class SparseStatePreparationViaRotations(Bloq):
         return {self._dense_stateprep_bloq: 1, self._basis_permutation_bloq: 1}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _sparse_state_prep_via_rotations() -> SparseStatePreparationViaRotations:
     sparse_state_prep_via_rotations = SparseStatePreparationViaRotations.from_sparse_array(
         [0.70914953, 0, 0, 0, 0.46943701, 0, 0.2297245, 0, 0, 0.32960471, 0, 0, 0.33959273, 0, 0],
         phase_bitsize=2,
     )
     return sparse_state_prep_via_rotations
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _sparse_state_prep_via_rotations_with_large_target_bitsize() -> (
+    SparseStatePreparationViaRotations
+):
+    sparse_state_prep_via_rotations = SparseStatePreparationViaRotations.from_sparse_array(
+        [0.70914953, 0, 0, 0, 0.46943701, 0, 0.2297245, 0, 0, 0.32960471, 0, 0, 0.33959273, 0, 0],
+        phase_bitsize=2,
+    )
+    sparse_state_prep_via_rotations_with_large_target_bitsize = attrs.evolve(
+        sparse_state_prep_via_rotations, target_bitsize=6
+    )
+    return sparse_state_prep_via_rotations_with_large_target_bitsize

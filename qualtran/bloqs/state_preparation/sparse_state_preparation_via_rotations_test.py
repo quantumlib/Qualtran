@@ -20,12 +20,17 @@ from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.rotations import PhaseGradientState
 from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
     _sparse_state_prep_via_rotations,
+    _sparse_state_prep_via_rotations_with_large_target_bitsize,
     SparseStatePreparationViaRotations,
 )
 
 
-def test_examples(bloq_autotester):
-    bloq_autotester(_sparse_state_prep_via_rotations)
+@pytest.mark.parametrize(
+    "bloq_ex",
+    [_sparse_state_prep_via_rotations, _sparse_state_prep_via_rotations_with_large_target_bitsize],
+)
+def test_examples(bloq_autotester, bloq_ex):
+    bloq_autotester(bloq_ex)
 
 
 def get_prepared_state_vector(bloq: SparseStatePreparationViaRotations) -> NDArray[np.complex128]:
