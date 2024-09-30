@@ -499,7 +499,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         Returns:
             A controlled version of the bloq.
         """
-        ctrl_spec = self._get_ctrl_spec(
+        ctrl_spec = GateWithRegisters._get_ctrl_spec(
             num_controls, control_values, control_qid_shape, ctrl_spec=ctrl_spec
         )
         controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
