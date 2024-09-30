@@ -58,6 +58,7 @@ class SparseStatePreparationViaRotations(Bloq):
     nonzero_coeffs: Union[tuple[complex, ...], HasLength] = field(converter=_to_tuple_or_has_length)
     N: SymbolicInt
     phase_bitsize: SymbolicInt
+    target_bitsize: SymbolicInt = field()
 
     def __attrs_post_init__(self):
         n_idx = slen(self.sparse_indices)
@@ -71,8 +72,8 @@ class SparseStatePreparationViaRotations(Bloq):
             target_state=QUInt(self.target_bitsize), phase_gradient=QAny(self.phase_bitsize)
         )
 
-    @property
-    def target_bitsize(self) -> SymbolicInt:
+    @target_bitsize.default
+    def _default_target_bitsize(self) -> SymbolicInt:
         return bit_length(self.N - 1)
 
     @property
@@ -160,6 +161,7 @@ class SparseStatePreparationViaRotations(Bloq):
         dense_coeffs_padded = np.pad(
             list(self.nonzero_coeffs), (0, 2**self.dense_bitsize - len(self.nonzero_coeffs))
         )
+        dense_coeffs_padded = dense_coeffs_padded / np.linalg.norm(dense_coeffs_padded)
         return StatePreparationViaRotations(tuple(dense_coeffs_padded.tolist()), self.phase_bitsize)
 
     @property
