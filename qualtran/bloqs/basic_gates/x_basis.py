@@ -227,13 +227,14 @@ class XGate(Bloq):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates import CNOT, Toffoli
+        from qualtran.bloqs.mcmt import ControlledViaAnd
 
         if ctrl_spec == CtrlSpec():
             bloq: 'Bloq' = CNOT()
         elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
             bloq = Toffoli()
         else:
-            return super().get_ctrl_system(ctrl_spec)
+            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec)
 
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']

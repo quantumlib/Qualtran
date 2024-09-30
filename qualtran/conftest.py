@@ -116,6 +116,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'state_prep_alias_symb',  # cannot serialize Shaped
         'sparse_matrix_block_encoding',
         'sparse_matrix_symb_block_encoding',
+        'sparse_matrix_hermitian_block_encoding',
+        'sparse_matrix_symb_hermitian_block_encoding',
         'sparse_state_prep_alias_symb',  # cannot serialize Shaped
         'sparse_permutation',  # contains nested tuple of inhomogeneous shape
         'permutation_cycle_symb',  # cannot serialize Shaped
