@@ -111,7 +111,7 @@ class MultiControlPauli(GateWithRegisters):
 
     def __str__(self) -> str:
         n = self.n_ctrls
-        ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
+        ctrl = f'C[{n}]' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
         return f'{ctrl}{self.target_gate!s}'
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -192,6 +192,9 @@ class MultiControlX(MultiControlPauli):
     def _X(self):
         return cirq.X
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @frozen
 class MultiControlZ(MultiControlPauli):
@@ -205,3 +208,6 @@ class MultiControlZ(MultiControlPauli):
     @target_gate.default
     def _Z(self):
         return cirq.Z
+
+    def adjoint(self) -> 'Bloq':
+        return self

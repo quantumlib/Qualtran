@@ -85,6 +85,14 @@ class BlockEncoding(Bloq):
         """The number of resource qubits not counted in ancillas."""
 
     @property
+    def ctrl_bitsize(self) -> SymbolicInt:
+        """The number of control qubits, useful to define optimized custom controlled circuits.
+
+        Usually either 0 or 1, as all other control cases can be reduced to 1.
+        """
+        return 0
+
+    @property
     @abc.abstractmethod
     def epsilon(self) -> SymbolicFloat:
         """The precision to which the block encoding is to be prepared."""
