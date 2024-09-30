@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeNotImplementedError,
     DecomposeTypeError,
     QBit,
     QUInt,
@@ -222,8 +223,6 @@ class BitonicMerge(Bloq):
         k = self.half_length
         if not is_symbolic(k):
             assert k >= 1, "length of input lists must be positive"
-            # TODO(#1090) support non-power-of-two input lengths
-            assert (k & (k - 1)) == 0, "length of input lists must be a power of 2"
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -249,13 +248,15 @@ class BitonicMerge(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', xs: 'SoquetT', ys: 'SoquetT'
     ) -> dict[str, 'SoquetT']:
-        if is_symbolic(self.half_length):
+        k = self.half_length
+        if is_symbolic(k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
+        if (k & (k - 1)) != 0:
+            # TODO(#1090) support non-power-of-two input lengths
+            raise DecomposeNotImplementedError("length of input lists must be a power of 2")
 
         assert isinstance(xs, np.ndarray)
         assert isinstance(ys, np.ndarray)
-
-        k = self.half_length
 
         first_round_junk = []
         for i in range(k):

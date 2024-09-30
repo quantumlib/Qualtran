@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
 # TODO: https://github.com/quantumlib/Qualtran/issues/1346
-FLAG_AND_AS_LEAF = False
+FLAG_AND_AS_LEAF = True
 
 
 @frozen
