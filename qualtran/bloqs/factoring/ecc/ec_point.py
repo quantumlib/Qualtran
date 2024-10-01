@@ -63,7 +63,7 @@ class ECPoint:
             lam_num = (other.y - self.y) % self.mod
             lam_denom = (other.x - self.x) % self.mod
 
-        lam = (lam_num * pow(int(lam_denom), -1, mod=int(self.mod))) % self.mod
+        lam = (lam_num * pow(lam_denom, -1, mod=self.mod)) % self.mod
         xr = (lam**2 - other.x - self.x) % self.mod
         yr = (lam * (self.x - xr) - self.y) % self.mod
         return ECPoint(xr, yr, mod=self.mod, curve_a=self.curve_a)
