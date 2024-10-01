@@ -142,7 +142,7 @@ class ModInv(Bloq):
         # value. Here we will just do nothing to x in that case because it won't matter in the
         # circuit anyway.
         try:
-            x = pow(int(x), -1, mod=self.mod)
+            x = pow(int(x) * pow(2, self.n, self.mod), -1, mod=self.mod) % self.mod
         except ValueError:
             pass
 
