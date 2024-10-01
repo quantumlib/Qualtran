@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
+
+import attrs
 import numpy as np
 import pytest
 from numpy.typing import NDArray
@@ -45,7 +48,8 @@ def get_prepared_state_vector(bloq: SparseStatePreparationViaRotations) -> NDArr
 
 
 @pytest.mark.slow
-def test_prepared_state():
+@pytest.mark.parametrize("target_bitsize", [None, 4, 6])
+def test_prepared_state(target_bitsize: Optional[int]):
     expected_state = np.array(
         [
             (-0.42677669529663675 - 0.1767766952966366j),
@@ -68,6 +72,9 @@ def test_prepared_state():
     N = len(expected_state)
 
     bloq = SparseStatePreparationViaRotations.from_sparse_array(expected_state, phase_bitsize=3)
+    if target_bitsize is not None:
+        bloq = attrs.evolve(bloq, target_bitsize=target_bitsize)
+
     actual_state = get_prepared_state_vector(bloq)
     np.testing.assert_allclose(np.linalg.norm(actual_state), 1)
     np.testing.assert_allclose(actual_state[:N], expected_state)
