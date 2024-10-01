@@ -278,6 +278,21 @@ class CModAddK(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
+    
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT',
+    ) -> Dict[str, 'SoquetT']:
+        return {'ctrl': ctrl, 'x': x}
+    
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == 0:
+            return {'ctrl': 0, 'x': x}
+
+        assert ctrl == 1, 'Bad ctrl value.'
+        x = (x + self.k) % self.mod
+        return {'ctrl': ctrl, 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
@@ -315,6 +330,16 @@ class CtrlScaleModAdd(Bloq):
                 Register('y', QUInt(self.bitsize)),
             ]
         )
+    
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            x_split[i], y = bb.add(CModAddK(k=(self.k * 2**i), bitsize=self.bitsize, mod=self.mod), ctrl=x_split[i], x=y)
+        x = bb.join(x_split, dtype=QUInt(self.bitsize))
+
+        return {'ctrl': ctrl, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
