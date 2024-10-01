@@ -67,6 +67,8 @@ class SparseStatePreparationViaRotations(Bloq):
         n_coeff = slen(self.nonzero_coeffs)
         if not is_symbolic(n_idx, n_coeff) and n_idx != n_coeff:
             raise ValueError(f"Number of indices {n_idx} must equal number of coeffs {n_coeff}")
+        if not is_symbolic(self.target_bitsize, self.N):
+            assert 2**self.target_bitsize >= self.N
 
     @property
     def signature(self) -> Signature:
