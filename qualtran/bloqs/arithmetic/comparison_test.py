@@ -310,6 +310,12 @@ def test_classical_equals(dtype):
     )
 
 
+def test_equals_call_graph():
+    bloq = Equals(QUInt(4))
+
+    qlt_testing.assert_equivalent_bloq_counts(bloq, ignore_split_join)
+
+
 def test_equals_a_constant():
     bb = BloqBuilder()
     bitsize = 5
