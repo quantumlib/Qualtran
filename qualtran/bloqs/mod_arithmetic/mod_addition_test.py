@@ -37,6 +37,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.testing import (
+    assert_consistent_classical_action,
     assert_equivalent_bloq_counts,
     assert_valid_bloq_decomposition,
     execute_notebook,
@@ -201,3 +202,9 @@ def test_cmod_add_complexity_vs_ref():
     # Figure/Table 8. Lists n-qubit controlled modular addition as 5n toffoli.
     #     Note: We have an extra toffoli due to how our OutOfPlaceAdder works.
     assert counts['n_ccz'] == 5 * n + 1
+
+
+@pytest.mark.parametrize(['prime', 'bitsize'], [(p, bitsize) for p in [5, 7] for bitsize in (5, 6)])
+def test_mod_add_classical_action(bitsize, prime):
+    b = ModAdd(bitsize, prime)
+    assert_consistent_classical_action(b, x=range(prime), y=range(prime))
