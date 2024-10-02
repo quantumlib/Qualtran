@@ -32,7 +32,7 @@ class PhysicalParameters:
     def make_beverland_et_al(
         cls, qubit_modality: str = 'superconducting', optimistic_err_rate: bool = False
     ):
-        """The physical parameters considered in the Beverland et. al. reference.
+        """The physical parameters considered in the Beverland et al. reference.
 
         Args:
             qubit_modality: One of "superconducting", "ion", or "majorana". This sets the
@@ -43,7 +43,7 @@ class PhysicalParameters:
 
         References:
             [Assessing requirements to scale to practical quantum advantage](https://arxiv.org/abs/2211.07629).
-            Beverland et. al. (2022).
+            Beverland et al. (2022).
         """
         if optimistic_err_rate:
             phys_err_rate = 1e-4

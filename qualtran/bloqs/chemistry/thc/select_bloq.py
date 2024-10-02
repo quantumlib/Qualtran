@@ -66,7 +66,7 @@ class THCRotations(Bloq):
         [Even more efficient quantum computations of chemistry through
             tensor hypercontraction](https://arxiv.org/pdf/2011.03494.pdf) Fig. 7.
         [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
-            Burg, Low et. al. 2021. Eq. 73
+            Burg, Low, et al. 2021. Eq. 73
     """
 
     num_mu: int

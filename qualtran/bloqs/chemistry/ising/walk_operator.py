@@ -52,7 +52,7 @@ def get_prepare_precision_from_eigenphase_precision(
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Eq (A9).
+        Babbush et al. (2018). Eq (A9).
     """
     return ((eps_eigenphase * sum_of_coeffs) / ((1 + eps_eigenphase**2) * num_coeffs)) * (
         1 - (hamiltonian_l2_norm / sum_of_coeffs) ** 2
@@ -126,7 +126,7 @@ def walk_operator_for_pauli_hamiltonian(
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Eq (A9).
+        Babbush et al. (2018). Eq (A9).
     """
     q = sorted(ham.qubits)
     ham_dps = [ps.dense(q) for ps in ham]
