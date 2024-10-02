@@ -116,6 +116,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'state_prep_via_rotation_symb',  # cannot serialize HasLength
         'state_prep_via_rotation_symb_phasegrad',  # cannot serialize Shaped
         'sparse_state_prep_via_rotations',  # cannot serialize Permutation
+        'sparse_state_prep_via_rotations_with_large_target_bitsize',  # setting an array element with a sequence.
         'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
         'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition
         'chebyshev_poly_even',
