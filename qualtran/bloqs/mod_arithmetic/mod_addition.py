@@ -43,7 +43,6 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -90,8 +89,8 @@ class ModAdd(Bloq):
         return {'x': x, 'y': (x + y) % self.mod}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.bitsize):
-            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
+        if isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -482,6 +481,8 @@ class CModAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.dtype.bitsize, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
         y_arr = bb.split(y)
         ancilla = bb.allocate(1)
         x = bb.add(Cast(self.dtype, QUInt(self.dtype.bitsize)), reg=x)

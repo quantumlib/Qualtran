@@ -28,6 +28,10 @@ from qualtran.bloqs.mod_arithmetic.mod_addition import (
     _cmodadd_example,
     _ctrl_scale_mod_add,
     _ctrl_scale_mod_add_small,
+    _mod_add,
+    _mod_add_k,
+    _mod_add_k_large,
+    _mod_add_k_small,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
@@ -37,6 +41,29 @@ from qualtran.testing import (
     assert_valid_bloq_decomposition,
     execute_notebook,
 )
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        _mod_add,
+        _mod_add_k,
+        _mod_add_k_small,
+        _mod_add_k_large,
+        _cmod_add_k,
+        _cmod_add_k_small,
+        _ctrl_scale_mod_add,
+        _ctrl_scale_mod_add_small,
+        _cmodadd_example,
+    ],
+)
+def test_examples(bloq_autotester, bloq):
+    bloq_autotester(bloq)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('mod_addition')
 
 
 def identity_map(n: int):
@@ -162,31 +189,6 @@ def test_cmodadd_cost(control, dtype):
     cost: GateCounts = get_cost_value(b, QECGatesCost())
     n_toffolis = 5 * n + 1
     assert cost.total_t_count() == 4 * n_toffolis
-
-
-def test_cmodadd_example(bloq_autotester):
-    bloq_autotester(_cmodadd_example)
-
-
-def test_cmod_add_k(bloq_autotester):
-    bloq_autotester(_cmod_add_k)
-
-
-def test_cmod_add_k_small(bloq_autotester):
-    bloq_autotester(_cmod_add_k_small)
-
-
-def test_ctrl_scale_mod_add(bloq_autotester):
-    bloq_autotester(_ctrl_scale_mod_add)
-
-
-def test_ctrl_scale_mod_add_small(bloq_autotester):
-    bloq_autotester(_ctrl_scale_mod_add_small)
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('mod_addition')
 
 
 def test_cmod_add_complexity_vs_ref():
