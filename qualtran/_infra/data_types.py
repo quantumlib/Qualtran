@@ -822,8 +822,16 @@ class QGF(QDType):
     order $p^{m}0$, all of which are isomorphic. When m=1, the finite field of order p can be
     constructed via integers modulo p.
 
+    Elements of a Galois Field $GF(p^m)$ may be conveniently viewed as polynomials
+    $a_{0} + a_{1}x + ... + a_{m−1}x_{m−1}$, where $a_0, a_1, ..., a_{m−1} \in F(p)$.
+    $GF(p^m)$ addition is defined as the component-wise (polynomial) addition over F(p) and
+    multiplication is defined as polynomial multiplication modulo an irreducible polynomial of
+    degree $m$. The selection of the specific irreducible polynomial affects the representation
+    of the given field, but all fields of a fixed size are isomorphic.
+
     The data type uses the [Galois library](https://mhostetter.github.io/galois/latest/) to
-    perform arithmetic over Galois Fields.
+    perform arithmetic over Galois Fields. By default, the Conway polynomial $C_{p, m}$ is used
+    as the irreducible polynomial.
 
     Attributes:
         characteristic: The characteristic $p$ of the field $GF(p^{m})$.
@@ -864,7 +872,7 @@ class QGF(QDType):
 
     @cached_property
     def gf_type(self):
-        return GF(int(self.characteristic), int(self.degree))
+        return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
 
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
