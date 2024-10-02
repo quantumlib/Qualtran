@@ -50,14 +50,16 @@ respectively.
 
 import abc
 from enum import Enum
+from functools import cached_property
 from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
 from fxpmath import Fxp
+from galois import GF
 from numpy.typing import NDArray
 
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -810,8 +812,122 @@ class QMontgomeryUInt(QDType):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
 
+@attrs.frozen
+class QGF(QDType):
+    r"""Galois Field type to represent elements of a finite field.
+
+    A Finite Field or Galois Field is a field that contains finite number of elements. The order
+    of a finite field is the number of elements in the field, which is either a prime number or
+    a prime power. For every prime number $p$ and every positive integer $m$ there are fields of
+    order $p^{m}0$, all of which are isomorphic. When m=1, the finite field of order p can be
+    constructed via integers modulo p.
+
+    The data type uses the [Galois library](https://mhostetter.github.io/galois/latest/) to
+    perform arithmetic over Galois Fields.
+
+    Attributes:
+        characteristic: The characteristic $p$ of the field $GF(p^{m})$.
+            The characteristic must be prime.
+        degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
+
+    References
+        [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
+        [Intro to Prime Fields](https://mhostetter.github.io/galois/latest/tutorials/intro-to-prime-fields/)
+        [Intro to Extension Fields](https://mhostetter.github.io/galois/latest/tutorials/intro-to-extension-fields/)
+    """
+
+    characteristic: SymbolicInt
+    degree: SymbolicInt
+
+    @cached_property
+    def order(self) -> SymbolicInt:
+        return self.characteristic**self.degree
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return bit_length(self.order - 1)
+
+    @cached_property
+    def num_qubits(self) -> SymbolicInt:
+        """Number of qubits required to represent a single instance of this data type."""
+        return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+        yield from self.gf_type.elements
+
+    @cached_property
+    def _quint_equivalent(self) -> QUInt:
+        return QUInt(self.num_qubits)
+
+    @cached_property
+    def gf_type(self):
+        return GF(int(self.characteristic), int(self.degree))
+
+    def to_bits(self, x) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        return self._quint_equivalent.to_bits(int(x))
+
+    def from_bits(self, bits: Sequence[int]):
+        """Combine individual bits to form x"""
+        return self.gf_type(self._quint_equivalent.from_bits(bits))
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        """Combine individual bits to form classical values.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
+        and the output array satisfies `output_shape = input_shape[:-1]`.
+        """
+        return self.gf_type(self._quint_equivalent.from_bits_array(bits_array))
+
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        if not isinstance(val, self.gf_type):
+            raise ValueError(f"{debug_str} should be a {self.gf_type}, not {val!r}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
+        """Raises an exception if `val_array` is not a valid array of classical values
+        for this type.
+
+        Often, validation on an array can be performed faster than validating each element
+        individually.
+
+        Args:
+            val_array: A numpy array of classical values. Each value should be in the domain
+                of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= self.order):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+        return is_symbolic(self.characteristic, self.order)
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return self.order
+
+    def __str__(self):
+        return f'QGF({self.characteristic}^{self.degree})'
+
+
 QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
-QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt)
+QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt, QGF)
 
 
 class QDTypeCheckingSeverity(Enum):
@@ -827,7 +943,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(a: Union[QUInt, BQUInt, QMontgomeryUInt], b: QFxp) -> bool:
+def _check_uint_fxp_consistent(a: Union[QUInt, BQUInt, QMontgomeryUInt, QGF], b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

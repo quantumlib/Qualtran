@@ -21,7 +21,7 @@ import pytest
 import sympy
 from numpy.typing import NDArray
 
-from qualtran.symbolics import is_symbolic
+from qualtran.symbolics import ceil, is_symbolic, log2
 
 from .data_types import (
     BQUInt,
@@ -31,6 +31,7 @@ from .data_types import (
     QBit,
     QDType,
     QFxp,
+    QGF,
     QInt,
     QIntOnesComp,
     QMontgomeryUInt,
@@ -135,13 +136,23 @@ def test_qmontgomeryuint():
     assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
 
 
+def test_qgf():
+    qgf_256 = QGF(characteristic=2, degree=8)
+    assert str(qgf_256) == 'QGF(2^8)'
+    assert qgf_256.num_qubits == 8
+    p, m = sympy.symbols('p, m', integer=True, positive=True)
+    qgf_pm = QGF(characteristic=p, degree=m)
+    assert qgf_pm.num_qubits == ceil(log2(p**m))
+    assert is_symbolic(qgf_pm)
+
+
 @pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation(qdtype: QDType):
     for v in qdtype.get_classical_domain():
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5), QGF(2, 8)])
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -171,6 +182,9 @@ def test_validation_errs():
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(-1)
+
+    with pytest.raises(ValueError):
+        QGF(2, 8).assert_valid_classical_val(2**8)
 
 
 def test_validate_arrays():
@@ -233,10 +247,11 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QAny(1), QBit())
     assert check_dtypes_consistent(BQUInt(1), QBit())
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
+    assert check_dtypes_consistent(QGF(characteristic=2, degree=1), QBit())
 
 
 def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Union[Sequence[Any], NDArray]):
-    values = np.asarray(values)
+    values = np.asanyarray(values)
     bits_array = qdtype.to_bits_array(values)
 
     # individual values
@@ -261,6 +276,21 @@ def test_qint_to_and_from_bits():
         QInt(4).to_bits(10)
 
     assert_to_and_from_bits_array_consistent(qint4, range(-8, 8))
+
+
+def test_qgf_to_and_from_bits():
+    from galois import GF
+
+    qgf_256 = QGF(2, 8)
+    gf256 = GF(2**8)
+    assert [*qgf_256.get_classical_domain()] == [*range(256)]
+    a, b = qgf_256.to_bits(gf256(21)), qgf_256.to_bits(gf256(22))
+    c = qgf_256.from_bits(list(np.bitwise_xor(a, b)))
+    assert c == gf256(21) + gf256(22)
+
+    with pytest.raises(ValueError):
+        qgf_256.to_bits(21)
+    assert_to_and_from_bits_array_consistent(qgf_256, gf256([*range(256)]))
 
 
 def test_quint_to_and_from_bits():
