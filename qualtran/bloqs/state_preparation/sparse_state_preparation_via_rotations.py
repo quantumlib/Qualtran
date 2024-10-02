@@ -51,7 +51,7 @@ class SparseStatePreparationViaRotations(Bloq):
 
     References:
         [A simple quantum algorithm to efficiently prepare sparse states](https://arxiv.org/abs/2310.19309)
-        Ramacciotti et. al. Section 4 "Permutation Grover-Rudolph".
+        Ramacciotti et al. Section 4 "Permutation Grover-Rudolph".
     """
 
     sparse_indices: Union[tuple[int, ...], HasLength] = field(converter=_to_tuple_or_has_length)

@@ -47,7 +47,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.A. and Figure 7.
+        Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
     selection_regs: Tuple[Register, ...] = attrs.field(
