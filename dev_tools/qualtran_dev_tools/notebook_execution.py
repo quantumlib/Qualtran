@@ -222,8 +222,12 @@ def execute_and_export_notebooks(
         output_html=output_html,
         only_out_of_date=only_out_of_date,
     )
-    with multiprocessing.Pool() as pool:
-        results = pool.map(func, nb_rel_paths)
+    parallel = False
+    if parallel:
+        with multiprocessing.Pool() as pool:
+            results = pool.map(func, nb_rel_paths)
+    else:
+        results = [func(nb_rel_path) for nb_rel_path in nb_rel_paths]
     bad_nbs = [nbname for nbname, err in results if err is not None]
 
     if len(bad_nbs) > 0:
