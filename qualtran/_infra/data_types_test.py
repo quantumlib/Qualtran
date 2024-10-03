@@ -287,6 +287,8 @@ def test_qgf_to_and_from_bits():
     a, b = qgf_256.to_bits(gf256(21)), qgf_256.to_bits(gf256(22))
     c = qgf_256.from_bits(list(np.bitwise_xor(a, b)))
     assert c == gf256(21) + gf256(22)
+    for x in gf256.elements:
+        assert x == gf256.Vector(qgf_256.to_bits(x))
 
     with pytest.raises(ValueError):
         qgf_256.to_bits(21)

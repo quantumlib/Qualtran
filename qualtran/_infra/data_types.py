@@ -931,7 +931,7 @@ class QGF(QDType):
         return self.order
 
     def __str__(self):
-        return f'QGF({self.characteristic}^{self.degree})'
+        return f'QGF({self.characteristic}**{self.degree})'
 
 
 QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
