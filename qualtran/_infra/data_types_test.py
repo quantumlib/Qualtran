@@ -138,7 +138,7 @@ def test_qmontgomeryuint():
 
 def test_qgf():
     qgf_256 = QGF(characteristic=2, degree=8)
-    assert str(qgf_256) == 'QGF(2^8)'
+    assert str(qgf_256) == 'QGF(2**8)'
     assert qgf_256.num_qubits == 8
     p, m = sympy.symbols('p, m', integer=True, positive=True)
     qgf_pm = QGF(characteristic=p, degree=m)
