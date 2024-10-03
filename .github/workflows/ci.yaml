@@ -64,7 +64,6 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          python -c 'import quimb; import galois' # debugging ci
           python dev_tools/execute-notebooks.py
 
   format:
