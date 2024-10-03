@@ -143,7 +143,7 @@ class TwoBitCSwap(Bloq):
 
     References:
         [An algorithm for the T-count](https://arxiv.org/abs/1308.4134).
-        Gosset et. al. 2013. Figure 5.2.
+        Gosset et al. 2013. Figure 5.2.
     """
 
     @cached_property

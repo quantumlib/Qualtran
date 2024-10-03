@@ -108,7 +108,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et. al. (2019). Appendix C.
+            Berry et al. (2019). Appendix C.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
@@ -342,7 +342,7 @@ class QROAMClean(SelectSwapQROM):
 
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et. al. (2019). Appendix A. and B.
+            Berry et al. (2019). Appendix A. and B.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(

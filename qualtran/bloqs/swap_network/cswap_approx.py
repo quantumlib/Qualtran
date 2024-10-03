@@ -57,7 +57,7 @@ class CSwapApprox(GateWithRegisters):
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
-        Low et. al. 2018. See Appendix B.2.c.
+        Low et al. 2018. See Appendix B.2.c.
     """
 
     bitsize: SymbolicInt

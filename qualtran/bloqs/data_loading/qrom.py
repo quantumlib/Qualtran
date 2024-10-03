@@ -75,10 +75,10 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
+        Babbush et al. 2018. Figure 1.
 
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
-            Babbush et. al. (2020). Figure 3.
+        Babbush et al. 2020. Figure 3.
     """
 
     @classmethod
