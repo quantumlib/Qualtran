@@ -69,7 +69,7 @@ class Allocate(_BookkeepingBloq):
         return Free(self.dtype, self.dirty)
 
     def on_classical_vals(self) -> Dict[str, int]:
-        return {'reg': 0}
+        return {'reg': self.dtype.from_bits([0] * self.dtype.num_qubits)}
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
