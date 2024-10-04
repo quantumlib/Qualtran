@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
+import sympy
 from attrs import frozen
 
 from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature
@@ -23,7 +24,7 @@ from qualtran.drawing import RarrowTextBox, Text, WireSymbol
 
 @frozen
 class MeasureQFT(Bloq):
-    n: int
+    n: Union[int, sympy.Expr]
 
     @cached_property
     def signature(self) -> 'Signature':

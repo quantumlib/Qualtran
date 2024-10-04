@@ -11,3 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.factoring.rsa.rsa_phase_estimate import _rsa_pe, _rsa_pe_small
+
+
+def test_rsa_pe(bloq_autotester):
+    bloq_autotester(_rsa_pe)
+
+
+def test_rsa_pe_small(bloq_autotester):
+    bloq_autotester(_rsa_pe_small)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('rsa')
