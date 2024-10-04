@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import sympy
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -692,7 +693,9 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
     return BloqCheckResult.PASS, ''
 
 
-def assert_consistent_classical_action(bloq: Bloq, **parameter_ranges: Sequence[int]):
+def assert_consistent_classical_action(
+    bloq: Bloq, **parameter_ranges: Union[NDArray, Sequence[int]]
+):
     """Check that the bloq has a classical action consistent with its decomposition.
 
     Args:
