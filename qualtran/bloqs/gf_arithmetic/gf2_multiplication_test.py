@@ -20,6 +20,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf16_multiplication,
     GF2Multiplication,
 )
+from qualtran.testing import assert_consistent_classical_action
 
 
 def test_gf16_multiplication(bloq_autotester):
@@ -30,13 +31,16 @@ def test_gf2_multiplication_symbolic(bloq_autotester):
     bloq_autotester(_gf2_multiplication_symbolic)
 
 
-@pytest.mark.parametrize('m', [2, 3, 4, 5])
+def test_gf2_multiplication_classical_sim_quick():
+    m = 2
+    bloq = GF2Multiplication(m)
+    GFM = GF(2**m)
+    assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize('m', [3, 4, 5])
 def test_gf2_multiplication_classical_sim(m):
     bloq = GF2Multiplication(m)
     GFM = GF(2**m)
-    for x in GFM.elements:
-        for y in GFM.elements:
-            xout, yout, resout = bloq.call_classically(x=x, y=y)
-            assert x == xout and y == yout
-            expected_res = x * y
-            assert resout == expected_res, f'{x=}, {y=}, {expected_res=}, {resout=}'
+    assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)

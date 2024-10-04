@@ -110,9 +110,9 @@ class GF2Multiplication(Bloq):
             qubits in each of the two input registers $a$ and $b$ that should be multiplied.
 
     Registers:
-        - $x$: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
-        - $y$: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
-        - $result$: Output RIGHT register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
+        x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
+        y: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
+        result: Output RIGHT register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
 
 
     References:
@@ -200,6 +200,10 @@ class GF2Multiplication(Bloq):
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         m = self.bitsize
         return {Toffoli(): m**2, self.synthesize_reduction_matrix_q: 1}
+
+    def on_classical_vals(self, *, x, y) -> Dict[str, 'ClassicalValT']:
+        assert isinstance(x, self.qgf.gf_type) and isinstance(y, self.qgf.gf_type)
+        return {'x': x, 'y': y, 'result': x * y}
 
 
 @bloq_example
