@@ -89,6 +89,12 @@ Bloqs Library
 
 .. toctree::
     :maxdepth: 2
+    :caption: GF Arithmetic:
+
+    gf_arithmetic/gf2_multiplication.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Rotations:
 
     basic_gates/rotation.ipynb

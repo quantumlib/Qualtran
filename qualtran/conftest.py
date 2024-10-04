@@ -90,6 +90,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'qubitization_qpe_sparse_chem',  # too slow
         'trott_unitary',
         'symbolic_hamsim_by_gqsp',
+        'gf16_multiplication',  # cannot serialize QGF
+        'gf2_multiplication_symbolic',  # cannot serialize QGF
         'gqsp_1d_ising',
         'auto_partition',
         'unitary_block_encoding',
