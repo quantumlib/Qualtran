@@ -30,7 +30,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli
-from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt, ceil
+from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet
