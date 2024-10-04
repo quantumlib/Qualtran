@@ -97,7 +97,7 @@ def _get_in_vals(
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
-    arg = _numpy_empty_reg_from_reg(reg)
+    arg = _empty_ndarray_from_reg(reg)
     for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
