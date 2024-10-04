@@ -81,7 +81,7 @@ def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
     return object
 
 
-def _numpy_empty_reg_from_reg(reg: Register) -> np.ndarray:
+def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
     from qualtran._infra.data_types import QGF
 
     if isinstance(reg.dtype, QGF):

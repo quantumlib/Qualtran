@@ -56,7 +56,6 @@ from typing import Any, Iterable, List, Sequence, Union
 import attrs
 import numpy as np
 from fxpmath import Fxp
-from galois import GF
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
@@ -819,7 +818,7 @@ class QGF(QDType):
     A Finite Field or Galois Field is a field that contains finite number of elements. The order
     of a finite field is the number of elements in the field, which is either a prime number or
     a prime power. For every prime number $p$ and every positive integer $m$ there are fields of
-    order $p^{m}0$, all of which are isomorphic. When m=1, the finite field of order p can be
+    order $p^m$, all of which are isomorphic. When m=1, the finite field of order p can be
     constructed via integers modulo p.
 
     Elements of a Galois Field $GF(p^m)$ may be conveniently viewed as polynomials
@@ -834,13 +833,15 @@ class QGF(QDType):
     as the irreducible polynomial.
 
     Attributes:
-        characteristic: The characteristic $p$ of the field $GF(p^{m})$.
+        characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
+
         [Intro to Prime Fields](https://mhostetter.github.io/galois/latest/tutorials/intro-to-prime-fields/)
+
         [Intro to Extension Fields](https://mhostetter.github.io/galois/latest/tutorials/intro-to-extension-fields/)
     """
 
@@ -872,6 +873,8 @@ class QGF(QDType):
 
     @cached_property
     def gf_type(self):
+        from galois import GF
+
         return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
 
     def to_bits(self, x) -> List[int]:
