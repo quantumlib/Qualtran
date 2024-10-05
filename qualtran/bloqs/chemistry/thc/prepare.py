@@ -391,7 +391,7 @@ class PrepareTHC(PrepareOracle):
         """Extra registers required for QROAMClean."""
         return tuple(
             Register(
-                name=f'jnk_{reg.name}',
+                name=f'junk_{reg.name}',
                 dtype=reg.dtype,
                 shape=reg.shape + (2**self.log_block_size - 1,),
                 side=Side.RIGHT,
@@ -453,7 +453,6 @@ class PrepareTHC(PrepareOracle):
         soqs['keep'], soqs['sigma'], soqs['less_than'] = bb.add(
             lte_gate, x=soqs['keep'], y=soqs['sigma'], target=soqs['less_than']
         )
-        # TODO remove these
         soqs['alt_theta'], soqs['less_than'] = bb.add(
             CZ(), q1=soqs['alt_theta'], q2=soqs['less_than']
         )
