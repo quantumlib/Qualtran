@@ -498,7 +498,9 @@ class PrepareTHC(PrepareOracle):
         cost_8 = (XGate(), 2)
         cost_9 = (CZ(), 2)
         cost_10 = (Hadamard(), 3)
-        return dict([cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7, cost_8, cost_9, cost_10])
+        return dict(
+            [cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7, cost_8, cost_9, cost_10]
+        )
 
 
 @bloq_example
