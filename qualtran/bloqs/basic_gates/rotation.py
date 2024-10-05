@@ -94,6 +94,9 @@ class ZPowGate(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Z**{self.exponent}'
+
 
 @bloq_example
 def _z_pow() -> ZPowGate:
@@ -174,6 +177,7 @@ class XPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
@@ -192,6 +196,9 @@ class XPowGate(CirqGateAsBloqBase):
         if reg is None:
             return Text('')
         return TextBox(str(self))
+
+    def __str__(self):
+        return f'X**{self.exponent}'
 
 
 @bloq_example
@@ -244,6 +251,7 @@ class YPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
@@ -262,6 +270,9 @@ class YPowGate(CirqGateAsBloqBase):
         if reg is None:
             return Text('')
         return TextBox(str(self))
+
+    def __str__(self):
+        return f'Y**{self.exponent}'
 
 
 @bloq_example
@@ -310,6 +321,9 @@ class Rz(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rz({self.angle})'
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
@@ -331,6 +345,9 @@ class Rx(CirqGateAsBloqBase):
             return Text('')
         return TextBox(str(self))
 
+    def __str__(self):
+        return f'Rx({self.angle})'
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
@@ -351,6 +368,9 @@ class Ry(CirqGateAsBloqBase):
         if reg is None:
             return Text('')
         return TextBox(str(self))
+
+    def __str__(self):
+        return f'Ry({self.angle})'
 
 
 @bloq_example

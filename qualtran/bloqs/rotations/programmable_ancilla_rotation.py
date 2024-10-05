@@ -21,7 +21,7 @@ from attrs import field, frozen
 from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate, ZPowGate
 from qualtran.bloqs.basic_gates._shims import Measure
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 
@@ -36,6 +36,7 @@ class ZPowProgrammedAncilla(Bloq):
     Signature:
         q: the ancilla qubit prepared in the above state.
     """
+
     exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
 
@@ -98,7 +99,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
 
     exponent: SymbolicFloat
@@ -131,14 +132,14 @@ class ZPowUsingProgrammedAncilla(Bloq):
         n_rounds = ceil(log2(1 / max_fail_probability))
         return cls(exponent=exponent, eps=eps, n_rounds=n_rounds)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> set['BloqCountT']:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         resources: Counter[Bloq] = Counter({CNOT(): self.n_rounds, XGate(): self.n_rounds})
 
         n_rz = self.n_rounds + (1 if self.apply_final_correction else 0)
 
         if is_symbolic(self.n_rounds):
             phi = ssa.new_symbol(r"\phi")
-            eps = ssa.new_symbol(r"\epsilon")
+            eps = self.eps / n_rz
             resources[ZPowProgrammedAncilla(phi, eps)] += self.n_rounds
         else:
             for i in range(int(self.n_rounds)):
@@ -149,7 +150,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
 
         resources[Measure()] += self.n_rounds
 
-        return set(resources.items())
+        return resources
 
 
 @bloq_example
@@ -164,7 +165,7 @@ def _zpow_using_programmed_ancilla_symb() -> ZPowUsingProgrammedAncilla:
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
     phi, eps = sympy.symbols(r"\phi \epsilon")
     zpow_using_programmed_ancilla_symb = ZPowUsingProgrammedAncilla(
@@ -179,7 +180,7 @@ def _zpow_using_programmed_ancilla_symb_rounds() -> ZPowUsingProgrammedAncilla:
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
     phi, n = sympy.symbols(r"\phi n")
     zpow_using_programmed_ancilla_symb_rounds = ZPowUsingProgrammedAncilla(

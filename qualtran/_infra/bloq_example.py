@@ -78,15 +78,13 @@ def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> Type[_BloqT
 
 
 @typing.overload
-def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_BloqType]:
-    ...
+def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_BloqType]: ...
 
 
 @typing.overload
 def bloq_example(
     _func: None = None, *, generalizer: _GeneralizerType = lambda x: x
-) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]:
-    ...
+) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]: ...
 
 
 def bloq_example(

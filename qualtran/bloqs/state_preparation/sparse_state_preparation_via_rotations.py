@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Set, TYPE_CHECKING, Union
+from typing import Sequence, TYPE_CHECKING, Union
 
+import attrs
 import numpy as np
 import sympy
 from attrs import field, frozen
@@ -25,13 +26,14 @@ from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _to_tuple_or_has_length,
     StatePreparationViaRotations,
 )
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import bit_length, HasLength, is_symbolic, slen, SymbolicInt
 
 if TYPE_CHECKING:
     import scipy
 
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -51,18 +53,22 @@ class SparseStatePreparationViaRotations(Bloq):
 
     References:
         [A simple quantum algorithm to efficiently prepare sparse states](https://arxiv.org/abs/2310.19309)
-        Ramacciotti et. al. Section 4 "Permutation Grover-Rudolph".
+        Ramacciotti et al. Section 4 "Permutation Grover-Rudolph".
     """
+
     sparse_indices: Union[tuple[int, ...], HasLength] = field(converter=_to_tuple_or_has_length)
     nonzero_coeffs: Union[tuple[complex, ...], HasLength] = field(converter=_to_tuple_or_has_length)
     N: SymbolicInt
     phase_bitsize: SymbolicInt
+    target_bitsize: SymbolicInt = field()
 
     def __attrs_post_init__(self):
         n_idx = slen(self.sparse_indices)
         n_coeff = slen(self.nonzero_coeffs)
         if not is_symbolic(n_idx, n_coeff) and n_idx != n_coeff:
             raise ValueError(f"Number of indices {n_idx} must equal number of coeffs {n_coeff}")
+        if not is_symbolic(self.target_bitsize, self.N):
+            assert 2**self.target_bitsize >= self.N
 
     @property
     def signature(self) -> Signature:
@@ -70,8 +76,8 @@ class SparseStatePreparationViaRotations(Bloq):
             target_state=QUInt(self.target_bitsize), phase_gradient=QAny(self.phase_bitsize)
         )
 
-    @property
-    def target_bitsize(self) -> SymbolicInt:
+    @target_bitsize.default
+    def _default_target_bitsize(self) -> SymbolicInt:
         return bit_length(self.N - 1)
 
     @property
@@ -159,6 +165,7 @@ class SparseStatePreparationViaRotations(Bloq):
         dense_coeffs_padded = np.pad(
             list(self.nonzero_coeffs), (0, 2**self.dense_bitsize - len(self.nonzero_coeffs))
         )
+        dense_coeffs_padded = dense_coeffs_padded / np.linalg.norm(dense_coeffs_padded)
         return StatePreparationViaRotations(tuple(dense_coeffs_padded.tolist()), self.phase_bitsize)
 
     @property
@@ -169,9 +176,10 @@ class SparseStatePreparationViaRotations(Bloq):
 
         assert isinstance(self.sparse_indices, tuple)
 
-        return Permutation.from_partial_permutation_map(
+        permute_bloq = Permutation.from_partial_permutation_map(
             self.N, dict(enumerate(self.sparse_indices))
         )
+        return attrs.evolve(permute_bloq, bitsize=self.target_bitsize)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', target_state: 'SoquetT', phase_gradient: 'SoquetT'
@@ -193,14 +201,28 @@ class SparseStatePreparationViaRotations(Bloq):
 
         return {'target_state': target_state, 'phase_gradient': phase_gradient}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self._dense_stateprep_bloq, 1), (self._basis_permutation_bloq, 1)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self._dense_stateprep_bloq: 1, self._basis_permutation_bloq: 1}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _sparse_state_prep_via_rotations() -> SparseStatePreparationViaRotations:
     sparse_state_prep_via_rotations = SparseStatePreparationViaRotations.from_sparse_array(
         [0.70914953, 0, 0, 0, 0.46943701, 0, 0.2297245, 0, 0, 0.32960471, 0, 0, 0.33959273, 0, 0],
         phase_bitsize=2,
     )
     return sparse_state_prep_via_rotations
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _sparse_state_prep_via_rotations_with_large_target_bitsize() -> (
+    SparseStatePreparationViaRotations
+):
+    sparse_state_prep_via_rotations = SparseStatePreparationViaRotations.from_sparse_array(
+        [0.70914953, 0, 0, 0, 0.46943701, 0, 0.2297245, 0, 0, 0.32960471, 0, 0, 0.33959273, 0, 0],
+        phase_bitsize=2,
+    )
+    sparse_state_prep_via_rotations_with_large_target_bitsize = attrs.evolve(
+        sparse_state_prep_via_rotations, target_bitsize=6
+    )
+    return sparse_state_prep_via_rotations_with_large_target_bitsize

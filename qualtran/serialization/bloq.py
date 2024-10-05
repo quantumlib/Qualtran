@@ -37,12 +37,14 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran.bloqs.factoring.ecc import ECPoint
 from qualtran.protos import bloq_pb2
 from qualtran.serialization import (
     annotations,
     args,
     ctrl_spec,
     data_types,
+    ec_point,
     registers,
     resolver_dict,
 )
@@ -75,6 +77,8 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
         return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(np.asarray(val)))
     if np.iscomplexobj(val):
         return bloq_pb2.BloqArg(name=name, complex_val=args.complex_to_proto(val))
+    if isinstance(val, ECPoint):
+        return bloq_pb2.BloqArg(name=name, ec_point=ec_point.ec_point_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -101,6 +105,8 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: args.ndarray_from_proto(arg.ndarray)}
     if arg.HasField("complex_val"):
         return {arg.name: args.complex_from_proto(arg.complex_val)}
+    if arg.HasField("ec_point"):
+        return {arg.name: ec_point.ec_point_from_proto(arg.ec_point)}
     raise ValueError(f"Cannot deserialize {arg=}")
 
 

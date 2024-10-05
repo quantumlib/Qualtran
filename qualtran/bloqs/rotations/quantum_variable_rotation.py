@@ -56,7 +56,7 @@ References:
 
 import abc
 from functools import cached_property
-from typing import cast, Dict, Sequence, Set, TYPE_CHECKING
+from typing import cast, Dict, Sequence, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -90,7 +90,7 @@ from qualtran.symbolics import (
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
@@ -98,13 +98,11 @@ class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cost_registers(self) -> Sequence[Register]:
-        ...
+    def cost_registers(self) -> Sequence[Register]: ...
 
     @property
     @abc.abstractmethod
-    def extra_registers(self) -> Sequence[Register]:
-        ...
+    def extra_registers(self) -> Sequence[Register]: ...
 
     @cached_property
     def signature(self) -> Signature:
@@ -199,11 +197,11 @@ class QvrZPow(QvrInterface):
             out[-(i + offset)] = bb.add(ZPowGate(exponent=exp, eps=eps), q=out[-(i + offset)])
         return {self.cost_reg.name: bb.join(out, self.cost_reg.dtype)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         zpow = ZPowGate(
             exponent=self.gamma / (2**self.num_frac_rotations), eps=self.eps / self.num_rotations
         )
-        return {(zpow, self.num_rotations)}
+        return {zpow: self.num_rotations}
 
 
 @bloq_example
@@ -481,14 +479,9 @@ class QvrPhaseGradient(QvrInterface):
         )
         return {self.cost_reg.name: out, 'phase_grad': phase_grad}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (
-                AddScaledValIntoPhaseReg(
-                    self.cost_dtype, self.b_grad, self.gamma, self.gamma_dtype
-                ),
-                1,
-            )
+            AddScaledValIntoPhaseReg(self.cost_dtype, self.b_grad, self.gamma, self.gamma_dtype): 1
         }
 
 

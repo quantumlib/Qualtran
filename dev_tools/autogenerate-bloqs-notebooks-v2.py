@@ -105,6 +105,7 @@ import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -217,10 +218,19 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
-        title='Swap Network',
+        title='Basic Swaps',
+        module=qualtran.bloqs.basic_gates.swap,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._TWO_BIT_CSWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._SWAP_DOC,
+            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Swap Networks',
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
-            qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
             qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
             qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
@@ -434,6 +444,7 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._LT_K_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._EQUALS_DOC,
             qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
             qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
@@ -515,6 +526,7 @@ MOD_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.mod_arithmetic.mod_multiplication._MOD_DBL_DOC,
             qualtran.bloqs.mod_arithmetic.mod_multiplication._C_MOD_MUL_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_multiplication._DIRTY_OUT_OF_PLACE_MONTGOMERY_MOD_MUL_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -538,6 +550,17 @@ MOD_ARITHMETIC = [
             qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
+]
+
+GF_ARITHMETIC = [
+    # --------------------------------------------------------------------------
+    # -----   Galois Fields (GF) Arithmetic    ---------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='GF($2^m$) Multiplication',
+        module=qualtran.bloqs.gf_arithmetic.gf2_multiplication,
+        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC],
+    )
 ]
 
 
@@ -852,6 +875,7 @@ NB_BY_SECTION = [
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
+    ('GF Arithmetic', GF_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
     ('Other', OTHER),

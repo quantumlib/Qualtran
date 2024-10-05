@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, List, Set, TYPE_CHECKING
+from typing import Iterator, List, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -25,7 +25,7 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -79,9 +79,6 @@ class HammingWeightCompute(GateWithRegisters):
             return 1  # worst case
         return self.bitsize.bit_count()
 
-    def pretty_name(self) -> str:
-        return "out = x.bit_count()"
-
     def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
         return [
             [cirq.CX(a, b), cirq.CX(a, c)],
@@ -117,7 +114,7 @@ class HammingWeightCompute(GateWithRegisters):
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
         yield self._decompose_using_three_to_two_adders(x, junk, out)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_and = self.junk_bitsize
         num_cnot = num_and * 5 + self.bit_count_of_bitsize
-        return {(And(), num_and), (CNOT(), num_cnot)}
+        return {And(): num_and, CNOT(): num_cnot}

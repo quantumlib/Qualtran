@@ -75,8 +75,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate:
-        ...
+    def cirq_gate(self) -> cirq.Gate: ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -140,7 +139,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
         return f'cirq.{g}'
 
@@ -264,9 +263,9 @@ def _ensure_in_reg_exists(
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
-        qreg_to_qvar[
-            _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
-        ] = bb.allocate(n_alloc)
+        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))] = (
+            bb.allocate(n_alloc)
+        )
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -585,7 +584,7 @@ def decompose_from_cirq_style_method(
             yields the cirq-style decomposition.
     """
     if any(
-        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
+        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side) or reg.is_symbolic()
         for reg in bloq.signature
     ):
         # pylint: disable=raise-missing-from

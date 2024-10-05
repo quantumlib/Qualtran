@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -54,7 +54,7 @@ from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_spl
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -107,7 +107,7 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
@@ -483,7 +483,7 @@ class PrepareTHC(PrepareOracle):
         )
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
         nmu = self.num_mu.bit_length()
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
@@ -498,7 +498,7 @@ class PrepareTHC(PrepareOracle):
         cost_8 = (XGate(), 2)
         cost_9 = (CZ(), 2)
         cost_10 = (Hadamard(), 3)
-        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7, cost_8, cost_9, cost_10}
+        return dict([cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7, cost_8, cost_9, cost_10])
 
 
 @bloq_example

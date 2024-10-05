@@ -74,7 +74,7 @@ References:
 """
 
 from collections import Counter
-from typing import cast, Dict, Iterable, List, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -99,7 +99,7 @@ from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.symbolics import bit_length, HasLength, is_symbolic, Shaped, slen, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _to_tuple_or_has_length(
@@ -229,7 +229,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             soqs = self._prepare_phases(bb, **soqs)
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: 'Counter[Bloq]' = Counter()
         ret[Rx(angle=-np.pi / 2)] += self.state_bitsize
         ret[Rx(angle=np.pi / 2)] += self.state_bitsize
@@ -237,7 +237,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         ret[self.prga_prepare_phases] += 1
         for bloq in self.prga_prepare_amplitude:
             ret[bloq] += 1
-        return set(ret.items())
+        return ret
 
     def _prepare_amplitudes(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         r"""Parameters into soqs:
@@ -456,12 +456,12 @@ class PRGAViaPhaseGradient(Bloq):
         bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         ret: 'Counter[Bloq]' = Counter()
         ret[self.qrom_bloq] += 1
         ret[self.qrom_bloq.adjoint()] += 1
         ret[self.add_into_phase_grad] += 1
-        return set(ret.items())
+        return ret
 
     def __repr__(self):
         return (

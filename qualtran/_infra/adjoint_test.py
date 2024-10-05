@@ -19,7 +19,7 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import Adjoint, CompositeBloq, Side
 from qualtran._infra.adjoint import _adjoint_cbloq
-from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
+from qualtran.bloqs.basic_gates import CNOT, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
@@ -48,16 +48,16 @@ TestAtom('atom2')<2>
     assert (
         TestSerialCombo().adjoint().decompose_bloq().debug_text()
         == """\
-Adjoint(subbloq=TestAtom('atom2'))<0>
+TestAtom('atom2')†<0>
   LeftDangle.reg -> q
-  q -> Adjoint(subbloq=TestAtom('atom1'))<1>.q
+  q -> TestAtom('atom1')†<1>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom1'))<1>
-  Adjoint(subbloq=TestAtom('atom2'))<0>.q -> q
-  q -> Adjoint(subbloq=TestAtom('atom0'))<2>.q
+TestAtom('atom1')†<1>
+  TestAtom('atom2')†<0>.q -> q
+  q -> TestAtom('atom0')†<2>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom0'))<2>
-  Adjoint(subbloq=TestAtom('atom1'))<1>.q -> q
+TestAtom('atom0')†<2>
+  TestAtom('atom1')†<1>.q -> q
   q -> RightDangle.reg"""
     )
 
@@ -72,16 +72,16 @@ def test_cbloq_adjoint_function():
     assert (
         adj_cbloq.debug_text()
         == """\
-Adjoint(subbloq=TestAtom('atom2'))<0>
+TestAtom('atom2')†<0>
   LeftDangle.reg -> q
-  q -> Adjoint(subbloq=TestAtom('atom1'))<1>.q
+  q -> TestAtom('atom1')†<1>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom1'))<1>
-  Adjoint(subbloq=TestAtom('atom2'))<0>.q -> q
-  q -> Adjoint(subbloq=TestAtom('atom0'))<2>.q
+TestAtom('atom1')†<1>
+  TestAtom('atom2')†<0>.q -> q
+  q -> TestAtom('atom0')†<2>.q
 --------------------
-Adjoint(subbloq=TestAtom('atom0'))<2>
-  Adjoint(subbloq=TestAtom('atom1'))<1>.q -> q
+TestAtom('atom0')†<2>
+  TestAtom('atom1')†<1>.q -> q
   q -> RightDangle.reg"""
     )
 
@@ -99,14 +99,6 @@ def test_adjoint_signature():
     assert reg.name == adj_reg.name
     assert reg.side == Side.RIGHT
     assert adj_reg.side == Side.LEFT
-
-
-def test_adjoint_supports_decompose():
-    assert not CNOT().supports_decompose_bloq()
-    assert not Adjoint(CNOT()).supports_decompose_bloq()
-
-    assert CSwap(bitsize=5).supports_decompose_bloq()
-    assert Adjoint(CSwap(bitsize=5)).supports_decompose_bloq()
 
 
 def test_adjoint_adjoint():
@@ -143,13 +135,12 @@ def test_call_graph():
 
 def test_names():
     atom = TestAtom()
-    assert atom.pretty_name() == "TestAtom"
+    assert str(atom) == "TestAtom"
     assert cast(Text, atom.wire_symbol(reg=None)).text == "TestAtom"
 
     adj_atom = Adjoint(atom)
-    assert adj_atom.pretty_name() == "TestAtom†"
+    assert str(adj_atom) == "TestAtom†"
     assert cast(Text, adj_atom.wire_symbol(reg=None)).text == "TestAtom†"
-    assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
 def test_wire_symbol():

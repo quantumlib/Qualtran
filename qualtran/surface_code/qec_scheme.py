@@ -62,7 +62,7 @@ class QECScheme:
             See section XV for introduction of this formula, with citation to below.
 
             Surface code quantum error correction incorporating accurate error propagation.
-            Fowler et. al. (2010). https://arxiv.org/abs/1004.0255.
+            Fowler et al. (2010). https://arxiv.org/abs/1004.0255.
             Note: this doesn't actually contain the formula from the above reference.
         """
         return self.error_rate_scaler * math.pow(
@@ -99,11 +99,11 @@ class QECScheme:
 
     @classmethod
     def make_beverland_et_al(cls):
-        """The qec scheme parameters considered in Beverland et. al. reference.
+        """The qec scheme parameters considered in Beverland et al. reference.
 
         References:
             [https://arxiv.org/abs/2211.07629](Assessing requirements to scale to practical quantum advantage).
-            Beverland et. al. (2022).
+            Beverland et al. (2022).
         """
         return cls(error_rate_scaler=0.03, error_rate_threshold=0.01)
 

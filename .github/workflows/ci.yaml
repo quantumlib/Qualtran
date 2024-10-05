@@ -65,6 +65,8 @@ jobs:
           pip install --no-deps -e .
       - run: |
           python dev_tools/execute-notebooks.py
+        env:
+          NUMBA_NUM_THREADS: 4
 
   format:
     runs-on: ubuntu-latest

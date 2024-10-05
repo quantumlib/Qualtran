@@ -74,10 +74,9 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
-    assert str(x) == 'X'
-    assert x.pretty_name() == 'cirq.X'
-    assert rx.pretty_name() == 'cirq.Rx'
-    assert toffoli.pretty_name() == 'cirq.TOFFOLI'
+    assert str(x) == 'cirq.X'
+    assert str(rx) == 'cirq.Rx'
+    assert str(toffoli) == 'cirq.TOFFOLI'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
@@ -99,7 +98,7 @@ def test_bloq_decompose():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestCNOT'
+    assert str(tb) == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
     circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)

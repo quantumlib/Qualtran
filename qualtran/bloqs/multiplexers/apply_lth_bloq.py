@@ -52,7 +52,7 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](
-        https://arxiv.org/abs/1805.03662). Babbush et. al. (2018). Section III.A. and Figure 7.
+        https://arxiv.org/abs/1805.03662). Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
     # type ignore needed here for Bloq as NDArray parameter

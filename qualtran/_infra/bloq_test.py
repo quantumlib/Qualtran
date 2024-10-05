@@ -28,7 +28,7 @@ def test_bloq():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestTwoBitOp'
+    assert str(tb) == 'TestTwoBitOp'
 
     with pytest.raises(DecomposeTypeError):
         tb.decompose_bloq()
@@ -36,7 +36,8 @@ def test_bloq():
 
 def test_as_composite_bloq():
     tb = TestAtom()
-    assert not tb.supports_decompose_bloq()
+    with pytest.raises(DecomposeTypeError):
+        tb.decompose_bloq()
     cb = tb.as_composite_bloq()
     assert isinstance(cb, CompositeBloq)
     bloqs = list(cb.bloq_instances)

@@ -21,7 +21,7 @@ import networkx as nx
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics import is_zero, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -211,6 +211,14 @@ class GateCounts:
         n_t = self.t + ts_per_rotation * self.rotation
         return {'n_t': n_t, 'n_ccz': n_ccz}
 
+    def total_toffoli_only(self) -> int:
+        """The number of Toffoli-like gates, and raise an exception if there are Ts/rotations."""
+        if not is_zero(self.t):
+            raise ValueError(f"{self} contains T counts.")
+        if not is_zero(self.rotation):
+            raise ValueError(f"{self} contains rotations.")
+        return self.toffoli + self.cswap + self.and_bloq
+
     def to_legacy_t_complexity(
         self,
         ts_per_toffoli: int = 4,
@@ -244,7 +252,7 @@ class GateCounts:
         )
 
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
-        r"""Counts used by Beverland. et. al. using notation from the reference.
+        r"""Counts used by Beverland et al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
          - $M_R$ is the number of rotations.

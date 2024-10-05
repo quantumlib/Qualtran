@@ -52,7 +52,7 @@ if TYPE_CHECKING:
     import sympy
 
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
 SymbolicCycleT: TypeAlias = Union[CycleT, Shaped]
 
@@ -84,6 +84,7 @@ class PermutationCycle(Bloq):
     Args:
         N: the total size the permutation acts on.
         cycle: the permutation cycle to apply.
+        bitsize: number of bits to store the indices, defaults to $\ceil(\log_2(N))$.
 
     Registers:
         x: integer register storing a value in [0, ..., N - 1]
@@ -95,13 +96,14 @@ class PermutationCycle(Bloq):
 
     N: SymbolicInt
     cycle: Union[tuple[int, ...], Shaped] = field(converter=_convert_cycle)
+    bitsize: SymbolicInt = field()
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
-    @cached_property
-    def bitsize(self):
+    @bitsize.default
+    def _default_bitsize(self):
         return bit_length(self.N - 1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
@@ -122,13 +124,15 @@ class PermutationCycle(Bloq):
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if is_symbolic(self.cycle):
             x = ssa.new_symbol('x')
             cycle_len = slen(self.cycle)
             return {
-                (EqualsAConstant(self.bitsize, x), cycle_len + 1),
-                (XorK(QUInt(self.bitsize), x).controlled(), cycle_len),
+                EqualsAConstant(self.bitsize, x): cycle_len + 1,
+                XorK(QUInt(self.bitsize), x).controlled(): cycle_len,
             }
 
         return super().build_call_graph(ssa)
@@ -192,6 +196,7 @@ class Permutation(Bloq):
     Args:
         N: the total size the permutation acts on.
         cycles: a sequence of permutation cycles that form the permutation.
+        bitsize: number of bits to store the indices, defaults to $\ceil(\log_2(N))$.
 
     Registers:
         x: integer register storing a value in [0, ..., N - 1]
@@ -203,13 +208,14 @@ class Permutation(Bloq):
 
     N: SymbolicInt
     cycles: Union[tuple[SymbolicCycleT, ...], Shaped] = field(converter=_convert_cycles)
+    bitsize: SymbolicInt = field()
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=BQUInt(self.bitsize, self.N))
 
-    @cached_property
-    def bitsize(self):
+    @bitsize.default
+    def _default_bitsize(self):
         return bit_length(self.N - 1)
 
     def is_symbolic(self):
@@ -263,15 +269,17 @@ class Permutation(Bloq):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
 
         for cycle in self.cycles:
-            x = bb.add(PermutationCycle(self.N, cycle), x=x)
+            x = bb.add(PermutationCycle(self.N, cycle, self.bitsize), x=x)
 
         return {'x': x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if is_symbolic(self.cycles):
             # worst case cost: single cycle of length N
             cycle = Shaped((self.N,))
-            return {(PermutationCycle(self.N, cycle), 1)}
+            return {PermutationCycle(self.N, cycle, self.bitsize): 1}
 
         return super().build_call_graph(ssa)
 

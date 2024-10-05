@@ -34,6 +34,7 @@ Bloqs Library
     basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
+    basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
@@ -85,6 +86,12 @@ Bloqs Library
     factoring/mod_exp.ipynb
     factoring/ecc/ec_add.ipynb
     factoring/ecc/ecc.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: GF Arithmetic:
+
+    gf_arithmetic/gf2_multiplication.ipynb
 
 .. toctree::
     :maxdepth: 2

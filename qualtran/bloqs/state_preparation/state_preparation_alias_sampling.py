@@ -20,7 +20,7 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 from functools import cached_property
-from typing import Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -48,7 +48,7 @@ from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicFl
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
@@ -110,7 +110,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.D. and Figure 11.
+        Babbush et al. (2018). Section III.D. and Figure 11.
     """
 
     selection_registers: Tuple[Register, ...] = attrs.field(
@@ -271,13 +271,13 @@ class StatePreparationAliasSampling(PrepareOracle):
             'keep': keep,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (PrepareUniformSuperposition(self.n_coeff), 1),
-            (self.qrom_bloq, 1),
-            (LessThanEqual(self.mu, self.mu), 1),
-            (CSwap(self.selection_bitsize), 1),
-            (Hadamard(), self.mu),
+            PrepareUniformSuperposition(self.n_coeff): 1,
+            self.qrom_bloq: 1,
+            LessThanEqual(self.mu, self.mu): 1,
+            CSwap(self.selection_bitsize): 1,
+            Hadamard(): self.mu,
         }
 
 
@@ -353,6 +353,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         [2] [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et al. (2018). Section III.D. and Figure 11.
     """
+
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )

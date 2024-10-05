@@ -25,7 +25,7 @@ from qualtran.bloqs.for_testing.with_decomposition import (
     TestSerialCombo,
 )
 from qualtran.drawing import show_bloq
-from qualtran.resource_counting import get_cost_cache, QubitCount
+from qualtran.resource_counting import get_cost_cache, get_cost_value, QubitCount
 from qualtran.resource_counting._qubit_counts import _cbloq_max_width
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -33,7 +33,6 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 def test_max_width_interior_alloc_symb():
     n = sympy.Symbol('n', positive=True)
     bloq = InteriorAlloc(n=n)
-    show_bloq(bloq.decompose_bloq())
 
     binst_graph = bloq.decompose_bloq()._binst_graph
     max_width = _cbloq_max_width(binst_graph)
@@ -43,7 +42,6 @@ def test_max_width_interior_alloc_symb():
 def test_max_width_interior_alloc_nums():
     n = 10
     bloq = InteriorAlloc(n=n)
-    show_bloq(bloq.decompose_bloq())
 
     binst_graph = bloq.decompose_bloq()._binst_graph
     max_width = _cbloq_max_width(binst_graph)
@@ -73,6 +71,14 @@ def test_qubit_count_cost():
         Swap(10): 20,
         TwoBitSwap(): 2,
     }
+
+
+def test_on_cbloq():
+    n = sympy.Symbol('n', positive=True, integer=True)
+    bloq = InteriorAlloc(n=n)
+    cbloq = bloq.decompose_bloq()
+    n_qubits = get_cost_value(cbloq, QubitCount())
+    assert n_qubits == 3 * n
 
 
 @pytest.mark.notebook

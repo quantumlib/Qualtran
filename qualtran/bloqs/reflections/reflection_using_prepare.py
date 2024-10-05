@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Iterator, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -33,7 +33,11 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 if TYPE_CHECKING:
     from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare
     from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        MutableBloqCountDictT,
+        SympySymbolAllocator,
+    )
 
 
 @attrs.frozen(cache_hash=True)
@@ -72,7 +76,7 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
+        Babbush et al. 2018. Figure 1.
     """
 
     prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
@@ -162,21 +166,21 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_phase_control = sum(reg.total_bits() for reg in self.selection_registers)
         cvs = HasLength(n_phase_control) if is_symbolic(n_phase_control) else [0] * n_phase_control
-        costs: Set['BloqCountT'] = {
-            (self.prepare_gate, 1),
-            (self.prepare_gate.adjoint(), 1),
-            (MultiControlZ(cvs), 1),
+        costs: 'MutableBloqCountDictT' = {
+            self.prepare_gate: 1,
+            self.prepare_gate.adjoint(): 1,
+            MultiControlZ(cvs): 1,
         }
         if self.control_val is None:
-            costs.add((XGate(), 2))
+            costs[XGate()] = 2
         if self.global_phase != 1:
             phase_op: Bloq = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
             if self.control_val is not None:
                 phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
-            costs.add((phase_op, 1))
+            costs[phase_op] = 1
         return costs
 
     def adjoint(self) -> 'ReflectionUsingPrepare':

@@ -15,6 +15,7 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran._infra.data_types import QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
@@ -27,7 +28,8 @@ from qualtran.bloqs.data_loading.select_swap_qrom import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost, QubitCount
+from qualtran.symbolics import ceil, log2
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -192,6 +194,20 @@ def test_qroam_t_complexity():
     assert qroam.t_complexity() == TComplexity(t=192, clifford=1082)
 
 
+def test_selswap_qubit_counts():
+    bloq = _qroam_multi_data.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    bloq = _qroam_multi_dim.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    # Symbolic
+    N, b, k = sympy.symbols('N b k', positive=True, integer=True)
+    bloq = SelectSwapQROM.build_from_bitsize((N,), (b,), log_block_sizes=(k,))
+    K = 2**k
+    # log(N) - k ancilla are required for the nested unary iteration.
+    expected_qubits = K * b + b + 2 * ceil(log2(N)) - k - 1
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
+
+
 def test_qroam_many_registers():
     # Test > 10 registers which resulted in https://github.com/quantumlib/Qualtran/issues/556
     target_bitsizes = (3,) * 10 + (1,) * 2 + (3,)
@@ -232,3 +248,14 @@ def test_tensor_contraction(use_dirty_ancilla: bool):
     )
     qrom = QROM.build_from_data(data)
     np.testing.assert_allclose(qrom.tensor_contract(), qroam.tensor_contract(), atol=1e-8)
+
+
+def test_select_swap_block_sizes():
+    data = [*range(1600)]
+    qroam_opt = SelectSwapQROM.build_from_data(data)
+    qroam_subopt = SelectSwapQROM.build_from_data(data, log_block_sizes=(8,))
+    assert qroam_opt.block_sizes == (16,)
+    assert qroam_opt.t_complexity().t < qroam_subopt.t_complexity().t
+
+    qroam = SelectSwapQROM.build_from_data(data, use_dirty_ancilla=False)
+    assert qroam.block_sizes == (8,)

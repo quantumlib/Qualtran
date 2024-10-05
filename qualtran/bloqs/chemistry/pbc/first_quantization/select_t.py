@@ -13,15 +13,16 @@
 #  limitations under the License.
 r"""Bloqs for SELECT T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -41,6 +42,7 @@ class SelectTFirstQuantization(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 20, section B
     """
+
     num_bits_p: int
     eta: int
 
@@ -57,18 +59,20 @@ class SelectTFirstQuantization(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'SEL T'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SEL T")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
         # into an ancilla register ($3(n_{p}-1)$), copying the $r$ and $s$ bit of into an
         # ancilla ($2(n_{p}-1)$), controlling on both those bit perform phase flip on an
         # ancilla $|+\rangle$ state. This requires $1$ Toffoli, Then erase which costs
         # only Cliffords. There is an additional control bit controlling the application
         # of $T$ thus we come to our total.
-        # Eq 73. page
-        return {(Toffoli(), (5 * (self.num_bits_p - 1) + 2))}
+        # Eq 73, page 20.
+        return {Toffoli(): (5 * (self.num_bits_p - 1) + 2)}
 
 
 @bloq_example

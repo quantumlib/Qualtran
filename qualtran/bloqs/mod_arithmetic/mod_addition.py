@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -38,7 +38,7 @@ from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
@@ -115,7 +115,7 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=True, cvs=()), x=y)
+        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
@@ -125,7 +125,7 @@ class ModAdd(Bloq):
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=True, cvs=(1,)), x=y, ctrls=sign_split
+            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
         )
         sign = bb.join(sign_split)
 
@@ -143,13 +143,13 @@ class ModAdd(Bloq):
         # Return the output registers.
         return {'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (Add(QUInt(self.bitsize + 1)), 1),
-            (AddK(self.bitsize + 1, k=-self.mod), 1),
-            (AddK(self.bitsize, k=self.mod).controlled(), 1),
-            (LinearDepthGreaterThan(self.bitsize), 1),
-            (XGate(), 1),
+            Add(QUInt(self.bitsize + 1)): 1,
+            AddK(self.bitsize + 1, k=-self.mod): 1,
+            AddK(self.bitsize, k=self.mod).controlled(): 1,
+            LinearDepthGreaterThan(self.bitsize): 1,
+            XGate(): 1,
         }
 
     def short_name(self) -> str:
@@ -229,8 +229,8 @@ class ModAddK(GateWithRegisters):
     def __pow__(self, power: int) -> 'ModAddK':
         return ModAddK(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(QUInt(self.bitsize), QUInt(self.bitsize)), 5)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {Add(QUInt(self.bitsize), QUInt(self.bitsize)): 5}
 
 
 @bloq_example
@@ -279,9 +279,9 @@ class CModAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {(AddK(k=k, bitsize=self.bitsize).controlled(), 5)}
+        return {AddK(k=k, bitsize=self.bitsize).controlled(): 5}
 
     def short_name(self) -> str:
         return f'x += {self.k} % {self.mod}'
@@ -316,9 +316,9 @@ class CtrlScaleModAdd(Bloq):
             ]
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {(CModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
+        return {CModAddK(k=k, bitsize=self.bitsize, mod=self.mod): self.bitsize}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -424,13 +424,13 @@ class CModAdd(Bloq):
 
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv), 1),
-            (AddK(self.dtype.bitsize + 1, -self.mod, signed=False), 1),
-            (AddK(self.dtype.bitsize, self.mod, cvs=(1,), signed=False), 1),
-            (CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv), 1),
-            (XGate(), 1),
+            CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv): 1,
+            AddK(self.dtype.bitsize + 1, -self.mod, signed=False): 1,
+            AddK(self.dtype.bitsize, self.mod, cvs=(1,), signed=False): 1,
+            CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv): 1,
+            XGate(): 1,
         }
 
 

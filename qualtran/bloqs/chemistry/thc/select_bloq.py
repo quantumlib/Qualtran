@@ -14,7 +14,7 @@
 
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -37,7 +37,7 @@ from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -66,7 +66,7 @@ class THCRotations(Bloq):
         [Even more efficient quantum computations of chemistry through
             tensor hypercontraction](https://arxiv.org/pdf/2011.03494.pdf) Fig. 7.
         [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
-            Burg, Low et. al. 2021. Eq. 73
+            Burg, Low, et al. 2021. Eq. 73
     """
 
     num_mu: int
@@ -91,11 +91,11 @@ class THCRotations(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"In_mu-R{dag}"
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
         if self.is_adjoint:
@@ -116,7 +116,7 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        return {(Toffoli(), (rot_cost + toff_cost_qrom))}
+        return {Toffoli(): (rot_cost + toff_cost_qrom)}
 
 
 @frozen

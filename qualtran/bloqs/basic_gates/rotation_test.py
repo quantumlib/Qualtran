@@ -103,13 +103,13 @@ def test_as_cirq_op():
     )
 
 
-def test_pretty_name():
-    assert ZPowGate().pretty_name() == "ZPowGate"
-    assert XPowGate().pretty_name() == "XPowGate"
-    assert YPowGate().pretty_name() == "YPowGate"
-    assert _ry().pretty_name() == "Ry"
-    assert _rx().pretty_name() == "Rx"
-    assert _rz().pretty_name() == "Rz"
+def test_str():
+    assert str(ZPowGate()) == "Z**1.0"
+    assert str(XPowGate()) == "X**1.0"
+    assert str(YPowGate()) == "Y**1.0"
+    assert str(_ry()) == "Ry(0.7853981633974483)"
+    assert str(_rx()) == "Rx(0.7853981633974483)"
+    assert str(_rz()) == "Rz(0.7853981633974483)"
 
     assert str(CZPowGate(1.0)) == 'CZ**1.0'
     assert str(CZPowGate(0.9)) == 'CZ**0.9'

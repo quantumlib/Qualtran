@@ -22,12 +22,27 @@ from qualtran.bloqs.data_loading.qroam_clean import (
     QROAMClean,
     QROAMCleanAdjointWrapper,
 )
-from qualtran.symbolics import ceil
+from qualtran.resource_counting import get_cost_value, QubitCount
+from qualtran.symbolics import ceil, log2
 
 
 def test_bloq_examples(bloq_autotester):
     bloq_autotester(_qroam_clean_multi_data)
     bloq_autotester(_qroam_clean_multi_dim)
+
+
+def test_qroam_clean_qubit_counts():
+    bloq = _qroam_clean_multi_data.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    bloq = _qroam_clean_multi_dim.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    # Symbolic
+    N, b, k = sympy.symbols('N b k', positive=True, integer=True)
+    bloq = QROAMClean.build_from_bitsize((N,), (b,), log_block_sizes=(k,))
+    K = 2**k
+    # log(N) - k ancilla are required for the nested unary iteration.
+    expected_qubits = K * b + 2 * ceil(log2(N)) - k - 1
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
 
 
 def test_t_complexity_1d_data_symbolic():
@@ -42,7 +57,7 @@ def test_t_complexity_1d_data_symbolic():
     inv_k = sympy.symbols('kinv')
     inv_K = 2**inv_k
     bloq_inv = bloq_inv.with_log_block_sizes(log_block_sizes=(inv_k,))
-    expected_toffoli_inv = ceil(N / inv_K) + inv_K
+    expected_toffoli_inv = ceil(N / inv_K) + inv_K - 4
     assert bloq_inv.t_complexity().t == 4 * expected_toffoli_inv
 
 
@@ -58,7 +73,7 @@ def test_t_complexity_2d_data_symbolic():
     inv_k1, inv_k2 = sympy.symbols('kinv1, kinv2')
     inv_K1, inv_K2 = 2**inv_k1, 2**inv_k2
     bloq_inv = bloq_inv.with_log_block_sizes(log_block_sizes=(inv_k1, inv_k2))
-    expected_toffoli_inv = ceil(N1 * N2 / (inv_K1 * inv_K2)) + inv_K1 * inv_K2
+    expected_toffoli_inv = ceil(N1 * N2 / (inv_K1 * inv_K2)) + inv_K1 * inv_K2 - 4
     assert bloq_inv.t_complexity().t == 4 * expected_toffoli_inv
 
 
@@ -80,19 +95,18 @@ def test_qroam_clean_classical_sim():
     # 1D data, 1 dataset
     N, max_N, log_block_sizes = 25, 2**10, 3
     data = rng.integers(max_N, size=N)
-    bloq = QROAMClean.build_from_data(data, log_block_sizes=log_block_sizes)
+    bloq = QROAMClean.build_from_data(data, log_block_sizes=log_block_sizes, num_controls=1)
     cbloq = bloq.decompose_bloq()
     bloq_inv = bloq.adjoint()
     assert isinstance(bloq_inv, QROAMCleanAdjointWrapper)
     for x in range(N):
-        vals = bloq.call_classically(selection=x)
-        cvals = cbloq.call_classically(selection=x)
-        assert vals[0:2] == cvals[0:2] == (x, data[x])
-        assert np.array_equal(vals[2], cvals[2])
-        target_with_junk = np.array([vals[1], *vals[2]])  # type: ignore[misc]
+        vals = bloq.call_classically(selection=x, control=1)
+        cvals = cbloq.call_classically(selection=x, control=1)
+        assert vals[0:3] == cvals[0:3] == (1, x, data[x])
+        assert np.array_equal(vals[3], cvals[3])
         assert bloq_inv.call_classically(
-            selection=vals[0], target0_=vals[1], junk_target0_=vals[2]
-        ) == (x,)
+            control=vals[0], selection=vals[1], target0_=vals[2], junk_target0_=vals[3]
+        ) == (1, x)
 
     # 2D data, 1 datasets
     N, M, max_N, log_block_sizes = 7, 11, 2**5, (2, 3)
@@ -107,7 +121,6 @@ def test_qroam_clean_classical_sim():
             cvals = cbloq.call_classically(selection0=x, selection1=y)
             assert vals[0:3] == cvals[0:3] == (x, y, data[x][y])
             assert np.array_equal(vals[3], cvals[3])
-            # target_with_junk = np.array([vals[2], *vals[3]]).reshape(2 ** np.array(log_block_sizes))  # type: ignore[misc]
             assert bloq_inv.call_classically(
                 selection0=x, selection1=y, target0_=vals[2], junk_target0_=vals[3]
             ) == (x, y)
@@ -128,8 +141,6 @@ def test_qroam_clean_classical_sim_multi_dataset():
         cvals = cbloq.call_classically(selection=x)
         assert vals[0:3] == cvals[0:3] == (x, data[0][x], data[1][x])
         assert np.array_equal(vals[3], cvals[3]) and np.array_equal(vals[4], cvals[4])
-        targets_with_junk0 = np.array([vals[1], *vals[3]])  # type: ignore[misc]
-        targets_with_junk1 = np.array([vals[2], *vals[4]])  # type: ignore[misc]
         assert bloq_inv.call_classically(
             selection=vals[0],
             target0_=vals[1],
@@ -154,8 +165,6 @@ def test_qroam_clean_classical_sim_multi_dataset():
             cvals = cbloq.call_classically(selection0=x, selection1=y)
             assert vals[0:4] == cvals[0:4] == (x, y, data[0][x][y], data[1][x][y])
             assert np.array_equal(vals[4], cvals[4]) and np.array_equal(vals[5], cvals[5])
-            targets_with_junk0 = np.array([vals[2], *vals[4]]).reshape(2**log_block_sizes)  # type: ignore[misc]
-            targets_with_junk1 = np.array([vals[3], *vals[5]]).reshape(2**log_block_sizes)  # type: ignore[misc]
             assert bloq_inv.call_classically(
                 selection0=x,
                 selection1=y,

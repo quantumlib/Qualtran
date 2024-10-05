@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
 from typing import (
     Any,
@@ -20,7 +21,6 @@ from typing import (
     Optional,
     Protocol,
     Sequence,
-    Set,
     Tuple,
     TYPE_CHECKING,
     Union,
@@ -39,10 +39,10 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, CompositeBloq, ConnectionT, SoquetT
+    from qualtran import Bloq, BloqBuilder, CompositeBloq, ConnectionT, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -268,8 +268,7 @@ class AddControlledT(Protocol):
 
     def __call__(
         self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-        ...
+    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
 
 
 def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
@@ -386,7 +385,7 @@ class Controlled(GateWithRegisters):
         fsoqs |= dict(zip(self.ctrl_reg_names, ctrl_soqs))
         return fsoqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         try:
             sub_cg = self.subbloq.build_call_graph(ssa=ssa)
         except DecomposeTypeError as e1:
@@ -396,7 +395,14 @@ class Controlled(GateWithRegisters):
                 f"Could not build call graph for {self}: {e2}"
             ) from e2
 
-        return {(bloq.controlled(self.ctrl_spec), n) for bloq, n in sub_cg}
+        counts = Counter['Bloq']()
+        if isinstance(sub_cg, set):
+            for bloq, n in sub_cg:
+                counts[bloq.controlled(self.ctrl_spec)] += n
+        else:
+            for bloq, n in sub_cg.items():
+                counts[bloq.controlled(self.ctrl_spec)] += n
+        return counts
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
@@ -470,11 +476,6 @@ class Controlled(GateWithRegisters):
 
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
-
-    def pretty_name(self) -> str:
-        num_ctrls = self.ctrl_spec.num_qubits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
-        return f'{ctrl_string}[{self.subbloq.pretty_name()}]'
 
     def __str__(self) -> str:
         num_ctrls = self.ctrl_spec.num_qubits
