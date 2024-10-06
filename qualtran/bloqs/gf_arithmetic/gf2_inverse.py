@@ -34,7 +34,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, CostKey, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -71,6 +71,8 @@ class GF2Inverse(Bloq):
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
         result: Output RIGHT register of size $m$ that stores $x^{-1}$ from $GF(2^m)$.
+        junk: Output RIGHT register of size $m$ and shape ($m - 2$) that stores
+            results from intermediate multiplications.
     """
 
     bitsize: SymbolicInt
@@ -93,6 +95,14 @@ class GF2Inverse(Bloq):
     @cached_property
     def qgf(self) -> QGF:
         return QGF(characteristic=2, degree=self.bitsize)
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        from qualtran.resource_counting import QubitCount
+
+        if isinstance(cost_key, QubitCount):
+            return self.signature.n_qubits()
+
+        return NotImplemented
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
@@ -149,9 +159,9 @@ def _gf16_inverse() -> GF2Inverse:
 def _gf2_inverse_symbolic() -> GF2Inverse:
     import sympy
 
-    m = sympy.Symbol('m')
+    m = sympy.Symbol('m', positive=True, integer=True)
     gf2_inverse_symbolic = GF2Inverse(m)
     return gf2_inverse_symbolic
 
 
-_GF2_INVERSE_DOC = BloqDocSpec(bloq_cls=GF2Inverse, examples=(_gf16_inverse, _gf2_inverse_symbolic))
+_GF2_INVERSE_DOC = BloqDocSpec(bloq_cls=GF2Inverse, examples=(_gf16_inverse,))

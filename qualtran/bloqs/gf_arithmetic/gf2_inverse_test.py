@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import pytest
+import sympy
 from galois import GF
 
 from qualtran.bloqs.gf_arithmetic.gf2_inverse import (
@@ -20,6 +21,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_inverse import (
     _gf16_inverse,
     GF2Inverse,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -29,6 +31,13 @@ def test_gf16_multiplication(bloq_autotester):
 
 def test_gf2_multiplication_symbolic(bloq_autotester):
     bloq_autotester(_gf2_inverse_symbolic)
+
+
+def test_gf2_multiplication_symbolic_toffoli_complexity():
+    bloq = _gf2_inverse_symbolic.make()
+    m = bloq.bitsize
+    assert get_cost_value(bloq, QECGatesCost()).toffoli - m**2 * (m - 2) == 0
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - m**2) == 0
 
 
 def test_gf2_multiplication_classical_sim_quick():
