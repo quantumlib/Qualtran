@@ -106,6 +106,7 @@ import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.gf_arithmetic.gf2_addition
+import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.gf_arithmetic.gf2_square
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
@@ -572,6 +573,11 @@ GF_ARITHMETIC = [
         title='GF($2^m$) Square',
         module=qualtran.bloqs.gf_arithmetic.gf2_square,
         bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_square._GF2_SQUARE_DOC],
+    ),
+    NotebookSpecV2(
+        title='GF($2^m$) Inverse',
+        module=qualtran.bloqs.gf_arithmetic.gf2_inverse,
+        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_inverse._GF2_INVERSE_DOC],
     ),
 ]
 

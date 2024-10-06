@@ -96,6 +96,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'gf2_multiplication_symbolic',  # cannot serialize QGF
         'gf16_square',  # cannot serialize QGF
         'gf2_square_symbolic',  # cannot serialize QGF
+        'gf16_inverse',  # cannot serialize QGF
+        'gf2_inverse_symbolic',  # cannot serialize QGF
         'gqsp_1d_ising',
         'auto_partition',
         'unitary_block_encoding',

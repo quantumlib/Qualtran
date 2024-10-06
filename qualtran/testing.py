@@ -708,4 +708,6 @@ def assert_consistent_classical_action(
         call_with = {p: v for p, v in zip(parameter_names, vals)}
         bloq_res = bloq.call_classically(**call_with)
         decomposed_res = cb.call_classically(**call_with)
-        assert bloq_res == decomposed_res, f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        np.testing.assert_equal(
+            bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        )
