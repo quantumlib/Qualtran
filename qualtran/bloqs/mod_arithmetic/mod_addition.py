@@ -23,6 +23,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     QMontgomeryUInt,
@@ -32,7 +33,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.bloq import DecomposeTypeError
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.arithmetic.comparison import CLinearDepthGreaterThan, LinearDepthGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
@@ -43,6 +43,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -89,8 +90,8 @@ class ModAdd(Bloq):
         return {'x': x, 'y': (x + y) % self.mod}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -270,6 +271,15 @@ class CModAddK(Bloq):
     Registers:
         ctrl: The control bit
         x: The register to perform the in-place modular addition.
+
+    References:
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        [Quantum Networks for Elementary Arithmetic Operations](https://arxiv.org/abs/quant-ph/9511018).
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
+        Construction in the Gidney and Ekerå paper from 2019 references the second source's
+        construction in figure 4. Because the construction is simply a ModAdd bloq and not a
+        ModAddK bloq, we choose to use the bloq described in the third paper as it uses 2 fewer Add
+        bloqs.
     """
 
     k: Union[int, sympy.Expr]
@@ -283,8 +293,6 @@ class CModAddK(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
         k = bb.add(IntState(bitsize=self.bitsize, val=self.k))
         ctrl, k, x = bb.add(CModAdd(QUInt(self.bitsize), mod=self.mod), ctrl=ctrl, x=k, y=x)
         bb.add(IntEffect(bitsize=self.bitsize, val=self.k), val=k)
@@ -344,6 +352,12 @@ class CtrlScaleModAdd(Bloq):
         ctrl: The control bit
         x: The 'source' quantum register containing the integer to be scaled and added to `y`.
         y: The 'destination' quantum register to which the addition will apply.
+
+    References:
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Construction based on description in section 2.2 paragraph 4. We add n And/And† bloqs
+        because the bloq is controlled, but the construction also involves modular addition
+        controlled on the qubits comprising register x.
     """
 
     k: Union[int, sympy.Expr]
@@ -363,10 +377,10 @@ class CtrlScaleModAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         x_split = bb.split(x)
-        for i in range(self.bitsize):
+        for i in range(int(self.bitsize)):
             and_ctrl = [ctrl, x_split[i]]
             and_ctrl, ancilla = bb.add(And(), ctrl=and_ctrl)
             ancilla, y = bb.add(
@@ -481,8 +495,8 @@ class CModAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.dtype.bitsize, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `bitsize`.")
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         y_arr = bb.split(y)
         ancilla = bb.allocate(1)
         x = bb.add(Cast(self.dtype, QUInt(self.dtype.bitsize)), reg=x)
