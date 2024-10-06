@@ -93,6 +93,7 @@ Bloqs Library
 
     gf_arithmetic/gf2_multiplication.ipynb
     gf_arithmetic/gf2_addition.ipynb
+    gf_arithmetic/gf2_square.ipynb
 
 .. toctree::
     :maxdepth: 2
