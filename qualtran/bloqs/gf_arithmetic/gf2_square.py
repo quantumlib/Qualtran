@@ -66,6 +66,7 @@ class GF2Square(Bloq):
 
     @cached_property
     def squaring_matrix(self) -> np.ndarray:
+        r"""$m \times m$ matrix that maps the input $x^{i}$ to $x^{2 * i} % P(x)$"""
         m = int(self.bitsize)
         f = self.qgf.gf_type.irreducible_poly
         M = np.zeros((m, m))

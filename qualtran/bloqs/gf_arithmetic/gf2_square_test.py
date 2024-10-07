@@ -16,27 +16,34 @@ import pytest
 from galois import GF
 
 from qualtran.bloqs.gf_arithmetic.gf2_square import _gf2_square_symbolic, _gf16_square, GF2Square
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
 
 
-def test_gf16_multiplication(bloq_autotester):
+def test_gf16_square(bloq_autotester):
     bloq_autotester(_gf16_square)
 
 
-def test_gf2_multiplication_symbolic(bloq_autotester):
+def test_gf2_square_symbolic(bloq_autotester):
     bloq_autotester(_gf2_square_symbolic)
 
 
-def test_gf2_multiplication_classical_sim_quick():
+def test_gf2_square_classical_sim_quick():
     m = 2
     bloq = GF2Square(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
+def test_gf2_square_resource():
+    bloq = _gf2_square_symbolic.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.bitsize
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('m', [3, 4, 5])
-def test_gf2_multiplication_classical_sim(m):
+def test_gf2_square_classical_sim(m):
     bloq = GF2Square(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements)
