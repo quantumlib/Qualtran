@@ -117,11 +117,20 @@ def get_markdown_docstring_lines(cls: Type) -> List[str]:
     docstring = cls.__doc__ if cls.__doc__ else ""
     gds = _GoogleDocstringToMarkdown(inspect.cleandoc(docstring), config=config, what='class')
 
-    # 2. Pre-pend a header.
-    lines = [f'## `{cls.__name__}`'] + gds.lines()
+    # 2. Substitute restructured text inline-code blocks to markdown-style backticks.
+    lines = [re.sub(r':py:func:`(\w+)`', r'`\1`', line) for line in gds.lines()]
 
-    # 3. Substitute restructured text inline-code blocks to markdown-style backticks.
-    lines = [re.sub(r':py:func:`(\w+)`', r'`\1`', line) for line in lines]
+    return lines
+
+
+def get_markdown_docstring(cls: Type) -> List[str]:
+    """From a class `cls`, return its docstring as Markdown lines with a header."""
+
+    # 1. Get documentation lines
+    lines = get_markdown_docstring_lines(cls)
+
+    # 2. Pre-pend a header.
+    lines = [f'## `{cls.__name__}`'] + lines
 
     return lines
 
