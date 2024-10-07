@@ -117,16 +117,14 @@ class ModInv(Bloq):
             Swap(self.n): 1,
         }
 
-    # Hacky classical simulation just to confirm correctness of ECAdd circuit.
     def on_classical_vals(
         self,
         x: 'ClassicalValT',
         garbage1: Optional['ClassicalValT'] = None,
         garbage2: Optional['ClassicalValT'] = None,
     ) -> Dict[str, ClassicalValT]:
-        if is_symbolic(self.n) or is_symbolic(self.mod):
-            raise ValueError(f'classical action is not supported for {self}')
-
+        # TODO(https://github.com/quantumlib/Qualtran/issues/1443): Hacky classical simulation just
+        # to confirm correctness of ECAdd circuit.
         if self.uncompute:
             assert garbage1 is not None
             assert garbage2 is not None

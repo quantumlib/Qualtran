@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import Dict, Union
 
-import attrs
 import numpy as np
 import sympy
 from attrs import frozen
@@ -51,7 +50,7 @@ from qualtran.bloqs.mod_arithmetic import (
 from qualtran.bloqs.mod_arithmetic._shims import ModInv
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics.types import HasLength
+from qualtran.symbolics.types import HasLength, is_symbolic
 
 from .ec_point import ECPoint
 
@@ -63,7 +62,6 @@ class _ECAddStepOne(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        uncompute: whether to compute or uncompute.
 
     Registers:
         f1: Flag to set if a = x.
@@ -80,23 +78,21 @@ class _ECAddStepOne(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
     mod: int
-    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('f1', QBit(), side=side),
-                Register('f2', QBit(), side=side),
-                Register('f3', QBit(), side=side),
-                Register('f4', QBit(), side=side),
-                Register('ctrl', QBit(), side=side),
+                Register('f1', QBit(), side=Side.RIGHT),
+                Register('f2', QBit(), side=Side.RIGHT),
+                Register('f3', QBit(), side=Side.RIGHT),
+                Register('f4', QBit(), side=Side.RIGHT),
+                Register('ctrl', QBit(), side=Side.RIGHT),
                 Register('a', QMontgomeryUInt(self.n)),
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
@@ -104,17 +100,14 @@ class _ECAddStepOne(Bloq):
             ]
         )
 
-    def adjoint(self) -> '_ECAddStepOne':
-        return attrs.evolve(self, uncompute=self.uncompute ^ True)
-
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        f1 = 0 ^ (a == x)
-        f2 = 0 ^ (b == (-y % self.mod))
-        f3 = 0 ^ (a == b == 0)
-        f4 = 0 ^ (x == y == 0)
-        ctrl = 0 ^ (f2 == f3 == f4 == 0)
+        f1 = int(a == x)
+        f2 = int(b == (-y % self.mod))
+        f3 = int(a == b == 0)
+        f4 = int(x == y == 0)
+        ctrl = int(f2 == f3 == f4 == 0)
         return {
             'f1': f1,
             'f2': f2,
@@ -130,8 +123,8 @@ class _ECAddStepOne(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # Initialize control flags to 0.
         f1 = bb.add(ZeroState())
@@ -204,7 +197,6 @@ class _ECAddStepTwo(Bloq):
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
         window_size: The number of bits in the window.
-        uncompute: whether to compute or uncompute.
 
     Registers:
         f1: Flag set if a = x.
@@ -220,17 +212,15 @@ class _ECAddStepTwo(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
     mod: int
     window_size: int = 1
-    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
                 Register('f1', QBit()),
@@ -239,13 +229,10 @@ class _ECAddStepTwo(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n), side=side),
+                Register('lam', QUInt(self.n), side=Side.RIGHT),
                 Register('lam_r', QUInt(self.n)),
             ]
         )
-
-    def adjoint(self) -> '_ECAddStepTwo':
-        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def on_classical_vals(
         self,
@@ -280,8 +267,8 @@ class _ECAddStepTwo(Bloq):
         y: Soquet,
         lam_r: Soquet,
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # Initalize lambda to 0.
         lam = bb.add(IntState(bitsize=self.n, val=0))
@@ -388,7 +375,7 @@ class _ECAddStepThree(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
@@ -432,8 +419,8 @@ class _ECAddStepThree(Bloq):
         y: Soquet,
         lam: Soquet,
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # Store (x - a) * lam % p in z1 (= (y - b) % p).
         x, lam, z1, z2, reduced = bb.add(
@@ -525,7 +512,7 @@ class _ECAddStepFour(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
@@ -554,8 +541,8 @@ class _ECAddStepFour(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # Initialize z4 = lam.
         z4 = bb.add(IntState(bitsize=self.n, val=0))
@@ -650,7 +637,6 @@ class _ECAddStepFive(Bloq):
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
         window_size: The number of bits in the window.
-        uncompute: whether to compute or uncompute.
 
     Registers:
         ctrl: Flag set if neither the input points nor the output point are (0, 0).
@@ -664,17 +650,15 @@ class _ECAddStepFive(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
     mod: int
     window_size: int = 1
-    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.RIGHT if self.uncompute else Side.LEFT
         return Signature(
             [
                 Register('ctrl', QBit()),
@@ -682,12 +666,9 @@ class _ECAddStepFive(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n), side=side),
+                Register('lam', QUInt(self.n), side=Side.LEFT),
             ]
         )
-
-    def adjoint(self) -> '_ECAddStepFive':
-        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def on_classical_vals(
         self,
@@ -715,8 +696,8 @@ class _ECAddStepFive(Bloq):
         y: Soquet,
         lam: Soquet,
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # x = x ^ -1 % p.
         x, z1, z2 = bb.add(ModInv(n=self.n, mod=self.mod), x=x)
@@ -794,7 +775,6 @@ class _ECAddStepSix(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        uncompute: whether to compute or uncompute.
 
     Registers:
         f1: Flag to set if a = x.
@@ -811,32 +791,27 @@ class _ECAddStepSix(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 10
+        Fig 10.
     """
 
     n: int
     mod: int
-    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.RIGHT if self.uncompute else Side.LEFT
         return Signature(
             [
-                Register('f1', QBit(), side=side),
-                Register('f2', QBit(), side=side),
-                Register('f3', QBit(), side=side),
-                Register('f4', QBit(), side=side),
-                Register('ctrl', QBit(), side=side),
+                Register('f1', QBit(), side=Side.LEFT),
+                Register('f2', QBit(), side=Side.LEFT),
+                Register('f3', QBit(), side=Side.LEFT),
+                Register('f4', QBit(), side=Side.LEFT),
+                Register('ctrl', QBit(), side=Side.LEFT),
                 Register('a', QMontgomeryUInt(self.n)),
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
             ]
         )
-
-    def adjoint(self) -> '_ECAddStepSix':
-        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def on_classical_vals(
         self,
@@ -871,8 +846,8 @@ class _ECAddStepSix(Bloq):
         x: Soquet,
         y: Soquet,
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # Unset control if f2, f3, and f4 flags are set.
         f_ctrls = [f2, f3, f4]
@@ -992,6 +967,11 @@ class ECAdd(Bloq):
     This takes elliptic curve points given by (a, b) and (x, y)
     and outputs the sum (x_r, y_r) in the second pair of registers.
 
+    Because the decomposition of this Bloq is complex, we split it into six separate parts
+    corresponding to the parts described in figure 10 of the Litinski paper cited below. We follow
+    the signature from figure 5 and break down the further decompositions based on the steps in
+    figure 10.
+
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
@@ -1030,9 +1010,6 @@ class ECAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam_r: Soquet
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
-
         f1, f2, f3, f4, ctrl, a, b, x, y = bb.add(
             _ECAddStepOne(n=self.n, mod=self.mod), a=a, b=b, x=x, y=y
         )
@@ -1086,7 +1063,7 @@ class ECAdd(Bloq):
         curve_a = lam_r * 2 * b - (3 * a**2)
         p1 = ECPoint(a, b, mod=self.mod, curve_a=curve_a)
         p2 = ECPoint(x, y, mod=self.mod, curve_a=curve_a)
-        result: ECPoint = p1 + p2
+        result = p1 + p2
         return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam_r': lam_r}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
