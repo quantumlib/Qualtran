@@ -34,9 +34,9 @@ class GF2Addition(Bloq):
     from GF($2^m$). Addition in GF($2^m$) simply reduces to a component wise XOR, which
     can be implemented via CNOT gates. The addition is performed in-place such that
 
-        $$
-        |x\rangle |y\rangle \rightarrow |x\rangle |x + y\rangle
-        $$
+    $$
+    |x\rangle |y\rangle \rightarrow |x\rangle |x + y\rangle
+    $$
 
     Args:
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
@@ -62,11 +62,11 @@ class GF2Addition(Bloq):
     ) -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
-        x, y = bb.split(x)[::-1], bb.split(y)[::-1]
+        x, y = bb.split(x), bb.split(y)
         m = int(self.bitsize)
         for i in range(m):
             x[i], y[i] = bb.add(CNOT(), ctrl=x[i], target=y[i])
-        x, y = (bb.join(x[::-1], dtype=self.qgf), bb.join(y[::-1], dtype=self.qgf))
+        x, y = (bb.join(x, dtype=self.qgf), bb.join(y, dtype=self.qgf))
         return {'x': x, 'y': y}
 
     def build_call_graph(

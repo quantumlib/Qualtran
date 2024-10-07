@@ -20,27 +20,34 @@ from qualtran.bloqs.gf_arithmetic.gf2_addition import (
     _gf16_addition,
     GF2Addition,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
 
 
-def test_gf16_multiplication(bloq_autotester):
+def test_gf16_addition(bloq_autotester):
     bloq_autotester(_gf16_addition)
 
 
-def test_gf2_multiplication_symbolic(bloq_autotester):
+def test_gf2_addition_symbolic(bloq_autotester):
     bloq_autotester(_gf2_addition_symbolic)
 
 
-def test_gf2_multiplication_classical_sim_quick():
+def test_gf2_addition_classical_sim_quick():
     m = 2
     bloq = GF2Addition(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)
 
 
+def test_gf2_addition_resource():
+    bloq = _gf2_addition_symbolic.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.bitsize
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('m', [3, 4, 5])
-def test_gf2_multiplication_classical_sim(m):
+def test_gf2_addition_classical_sim(m):
     bloq = GF2Addition(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)
