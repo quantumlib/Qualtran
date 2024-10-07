@@ -91,7 +91,7 @@ class ModAdd(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
-            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -378,7 +378,7 @@ class CtrlScaleModAdd(Bloq):
         self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
-            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         x_split = bb.split(x)
         for i in range(int(self.bitsize)):
             and_ctrl = [ctrl, x_split[i]]
