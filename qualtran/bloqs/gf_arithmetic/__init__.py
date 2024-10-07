@@ -12,4 +12,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
