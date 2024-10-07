@@ -105,6 +105,7 @@ import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.gf_arithmetic.gf2_add_k
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
@@ -568,6 +569,11 @@ GF_ARITHMETIC = [
         title='GF($2^m$) Addition',
         module=qualtran.bloqs.gf_arithmetic.gf2_addition,
         bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_addition._GF2_ADDITION_DOC],
+    ),
+    NotebookSpecV2(
+        title='GF($2^m$) Add Constant',
+        module=qualtran.bloqs.gf_arithmetic.gf2_add_k,
+        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_add_k._GF2_ADD_K_DOC],
     ),
     NotebookSpecV2(
         title='GF($2^m$) Square',
