@@ -55,6 +55,7 @@ import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -503,6 +504,17 @@ MOD_ARITHMETIC = [
     ),
 ]
 
+GF_ARITHMETIC = [
+    # --------------------------------------------------------------------------
+    # -----   Galois Fields (GF) Arithmetic    ---------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='GF($2^m$) Multiplication',
+        module=qualtran.bloqs.gf_arithmetic.gf2_multiplication,
+        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC],
+    )
+]
+
 
 ROT_QFT_PE = [
     # --------------------------------------------------------------------------
@@ -797,6 +809,7 @@ NB_BY_SECTION = [
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
+    ('GF Arithmetic', GF_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
     ('Other', OTHER),
