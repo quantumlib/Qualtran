@@ -39,7 +39,7 @@ from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
-from qualtran.symbolics.types import HasLength
+from qualtran.symbolics.types import SymbolicInt
 
 
 @frozen
@@ -67,10 +67,10 @@ class ModExp(Bloq):
         Gidney and Ekerå. 2019.
     """
 
-    base: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    exp_bitsize: Union[int, sympy.Expr]
-    x_bitsize: Union[int, sympy.Expr]
+    base: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    exp_bitsize: 'SymbolicInt'
+    x_bitsize: 'SymbolicInt'
 
     def __attrs_post_init__(self):
         if not is_symbolic(self.base, self.mod):
@@ -87,7 +87,7 @@ class ModExp(Bloq):
 
     @classmethod
     def make_for_shor(
-        cls, big_n: Union[int, sympy.Expr], g: Optional[Union[int, sympy.Expr]] = None
+        cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None
     ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
@@ -96,12 +96,12 @@ class ModExp(Bloq):
                 to set `x_bitsize` and `exp_bitsize`.
             g: Optional base of the exponentiation. If `None`, we pick a random base.
         """
-        if isinstance(big_n, sympy.Expr):
+        if is_symbolic(big_n):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
         else:
             little_n = int(math.ceil(math.log2(big_n)))
         if g is None:
-            if isinstance(big_n, sympy.Expr):
+            if is_symbolic(big_n):
                 g = sympy.symbols('g')
             else:
                 while True:
@@ -110,15 +110,15 @@ class ModExp(Bloq):
                         break
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
-    def _CtrlModMul(self, k: Union[int, sympy.Expr]):
+    def _CtrlModMul(self, k: 'SymbolicInt'):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', exponent: 'Soquet', x: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.exp_bitsize, sympy.Expr):
-            raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
+        if is_symbolic(self.exp_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
         base = self.base % self.mod
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):

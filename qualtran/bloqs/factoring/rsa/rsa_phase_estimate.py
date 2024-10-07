@@ -26,9 +26,7 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     QUInt,
-    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState, PlusState
@@ -70,8 +68,8 @@ class RSAPhaseEstimate(Bloq):
             assert self.n == int(math.ceil(math.log2(self.mod)))
 
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
-        if isinstance(self.n, sympy.Expr):
-            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
         exponent = [bb.add(PlusState()) for _ in range(2 * self.n)]
         x = bb.add(IntState(val=1, bitsize=self.n))
 
@@ -84,7 +82,7 @@ class RSAPhaseEstimate(Bloq):
         return {}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {MeasureQFT(n=self.n): 1}
+        return {MeasureQFT(n=self.n): 1, ModExp.make_for_shor(big_n=self.mod, g=self.base): 1}
 
 
 @bloq_example
