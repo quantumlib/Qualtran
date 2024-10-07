@@ -32,7 +32,6 @@ from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
-from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -114,37 +113,3 @@ class ModInv(Bloq):
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
         raise ValueError(f'Unrecognized register name {reg.name}')
-
-
-@frozen
-class ModMul(Bloq):
-    n: int
-    mod: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature(
-            [
-                Register('x', QUInt(self.n)),
-                Register('y', QUInt(self.n)),
-                Register('out', QUInt(self.n)),
-            ]
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        # Roetteler montgomery
-        return {Toffoli(): ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2)}
-
-    def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
-    ) -> 'WireSymbol':
-        if reg is None:
-            return Text("")
-        if reg.name in ['x', 'y']:
-            return TextBox(reg.name)
-        elif reg.name == 'out':
-            return TextBox('x*y')
-        raise ValueError(f'Unrecognized register name {reg.name}')
-
-    def __str__(self):
-        return self.__class__.__name__

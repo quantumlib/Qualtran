@@ -110,9 +110,6 @@ class Bloq(metaclass=abc.ABCMeta):
         about this bloq.
         """
 
-    def pretty_name(self) -> str:
-        return str(self)
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
@@ -537,7 +534,7 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.drawing import directional_text_box, Text
 
         if reg is None:
-            name = self.pretty_name()
+            name = str(self)
             if len(name) <= 10:
                 return Text(name)
             return Text(name[:8] + '..')

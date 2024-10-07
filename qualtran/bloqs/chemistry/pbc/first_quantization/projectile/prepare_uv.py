@@ -14,7 +14,7 @@
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile.
 """
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -23,6 +23,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import Prepare
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
     PrepareNuStateWithProj,
 )
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -53,6 +54,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     num_bits_p: int
     num_bits_n: int
     eta: int
@@ -75,8 +77,10 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP UV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP UV")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT

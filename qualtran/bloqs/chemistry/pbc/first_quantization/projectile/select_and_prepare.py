@@ -83,6 +83,7 @@ class PrepareTUVSuperpositions(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 15, section A
     """
+
     num_bits_t: int
     eta: int
     lambda_zeta: int
@@ -103,8 +104,10 @@ class PrepareTUVSuperpositions(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
-        return 'PREP TUV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP TUV")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
@@ -140,7 +143,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('MultiSwap')
         if reg.name == 'sel':
             return TextBox('In')
         elif reg.name == 'targets':
@@ -282,8 +285,10 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -461,8 +466,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def pretty_name(self) -> str:
-        return r'SELECT'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SELECT")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,

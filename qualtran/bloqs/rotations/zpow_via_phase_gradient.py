@@ -62,8 +62,9 @@ class ZPowConstViaPhaseGradient(Bloq):
 
     References:
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
-        Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
+        Haner et al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
+
     exponent: SymbolicFloat
     phase_grad_bitsize: SymbolicInt
 

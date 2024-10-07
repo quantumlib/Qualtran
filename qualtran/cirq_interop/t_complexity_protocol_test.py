@@ -34,8 +34,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-class DoesNotSupportTComplexity:
-    ...
+class DoesNotSupportTComplexity: ...
 
 
 @frozen

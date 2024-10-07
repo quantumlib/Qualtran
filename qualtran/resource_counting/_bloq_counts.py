@@ -252,7 +252,7 @@ class GateCounts:
         )
 
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
-        r"""Counts used by Beverland. et. al. using notation from the reference.
+        r"""Counts used by Beverland et al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
          - $M_R$ is the number of rotations.

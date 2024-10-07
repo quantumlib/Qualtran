@@ -177,6 +177,7 @@ class XPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
@@ -250,6 +251,7 @@ class YPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11

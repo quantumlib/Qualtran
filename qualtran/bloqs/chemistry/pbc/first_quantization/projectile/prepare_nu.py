@@ -60,6 +60,7 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 77.
     """
+
     bitsize_n: int
     bitsize_p: int
     is_adjoint: bool = False
@@ -115,6 +116,7 @@ class PrepareNuStateWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     num_bits_p: int
     num_bits_n: int
     m_param: int

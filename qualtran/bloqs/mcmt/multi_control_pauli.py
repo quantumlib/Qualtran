@@ -185,6 +185,7 @@ class MultiControlX(MultiControlPauli):
 
     See :class:`MultiControlPauli` for implementation and costs.
     """
+
     target_gate: cirq.Pauli = field(init=False)
 
     @target_gate.default
@@ -198,6 +199,7 @@ class MultiControlZ(MultiControlPauli):
 
     See :class:`MultiControlPauli` for implementation and costs.
     """
+
     target_gate: cirq.Pauli = field(init=False)
 
     @target_gate.default

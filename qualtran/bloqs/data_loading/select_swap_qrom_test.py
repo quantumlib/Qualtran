@@ -15,6 +15,7 @@
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qualtran._infra.data_types import QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
@@ -27,7 +28,8 @@ from qualtran.bloqs.data_loading.select_swap_qrom import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost, QubitCount
+from qualtran.symbolics import ceil, log2
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -190,6 +192,20 @@ def test_qroam_t_complexity():
     gate_counts = get_cost_value(qroam, QECGatesCost())
     assert gate_counts == GateCounts(t=192, clifford=1082)
     assert qroam.t_complexity() == TComplexity(t=192, clifford=1082)
+
+
+def test_selswap_qubit_counts():
+    bloq = _qroam_multi_data.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    bloq = _qroam_multi_dim.make()
+    assert get_cost_value(bloq, QubitCount()) == get_cost_value(bloq.decompose_bloq(), QubitCount())
+    # Symbolic
+    N, b, k = sympy.symbols('N b k', positive=True, integer=True)
+    bloq = SelectSwapQROM.build_from_bitsize((N,), (b,), log_block_sizes=(k,))
+    K = 2**k
+    # log(N) - k ancilla are required for the nested unary iteration.
+    expected_qubits = K * b + b + 2 * ceil(log2(N)) - k - 1
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_qubits) == 0
 
 
 def test_qroam_many_registers():

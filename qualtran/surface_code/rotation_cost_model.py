@@ -48,10 +48,10 @@ class RotationLogarithmicModel(RotationCostModel):
 
     References:
         [https://arxiv.org/abs/2211.07629](Assessing requirements to scale to practical quantum advantage).
-        Beverland et. al. (2022).
+        Beverland et al. (2022).
 
         [https://arxiv.org/abs/2203.10064](Shorter quantum circuits via single-qubit gate approximation).
-        Kliuchnikov. et. al. (2022). Used for the approximation protocol.
+        Kliuchnikov et al. (2022). Used for the approximation protocol.
     """
 
     slope: float
@@ -82,7 +82,7 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
 
     References:
         [https://doi.org/10.1103/PRXQuantum.1.020312](Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization).
-        Sanders et. al. (2020).
+        Sanders et al. (2020).
     """
 
     bitsize: int

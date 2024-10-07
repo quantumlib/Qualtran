@@ -64,6 +64,7 @@ class PrepareTUVSuperpositions(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 15, section A
     """
+
     num_bits_t: int
     eta: int
     lambda_zeta: int
@@ -73,8 +74,10 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def pretty_name(self) -> str:
-        return 'PREP TUV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP TUV")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n_eta_zeta = (self.eta + 2 * self.lambda_zeta - 1).bit_length()
@@ -100,6 +103,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
         page 18, section A, around Eq 62.
     """
+
     eta: int
     num_bits_rot_aa: int
 
@@ -161,7 +165,7 @@ class MultiplexedCSwap3D(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('MultiSwap')
         if reg.name == 'sel':
             return TextBox('In')
         elif reg.name == 'targets':
@@ -169,9 +173,6 @@ class MultiplexedCSwap3D(Bloq):
         elif reg.name == 'junk':
             return TextBox('×(y)')
         raise ValueError(f'Unknown name: {reg.name}')
-
-    def pretty_name(self) -> str:
-        return 'MultiSwap'
 
     def build_composite_bloq(
         self, bb: BloqBuilder, sel: SoquetT, targets: SoquetT, junk: SoquetT
@@ -282,8 +283,10 @@ class PrepareFirstQuantization(PrepareOracle):
             )
         return self.sum_of_l1_coeffs
 
-    def pretty_name(self) -> str:
-        return r'PREP'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -447,8 +450,10 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def pretty_name(self) -> str:
-        return r'SELECT'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SELECT")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,

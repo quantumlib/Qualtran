@@ -93,7 +93,7 @@ class ChebyshevPolynomial(BlockEncoding):
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
         )
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return f"B[T_{self.order}({self.block_encoding})]"
 
     @property

@@ -27,7 +27,9 @@ from qualtran.bloqs.chemistry.thc.prepare import (
 )
 from qualtran.drawing.musical_score import get_musical_score_data, MusicalScoreData
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import classify_t_count_by_bloq_type
+from qualtran.resource_counting.generalizers import generalize_cswap_approx, ignore_split_join
 from qualtran.testing import execute_notebook
 
 
@@ -112,11 +114,17 @@ def test_prepare_qrom_counts():
     t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=7)
     thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
     binned_counts = classify_t_count_by_bloq_type(thc_prep)
-    assert binned_counts['data_loading'] == 304, binned_counts['data_loading']
-    t_l, eta, zeta = build_random_test_integrals(num_mu, num_spat, seed=23)
-    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, eta, zeta, num_bits_state_prep=8)
-    binned_counts = classify_t_count_by_bloq_type(thc_prep)
-    assert binned_counts['data_loading'] == 296, binned_counts['data_loading']
+    qroam = thc_prep.build_qrom_bloq()
+
+    counts = get_cost_value(
+        qroam, QECGatesCost(), generalizer=generalize_cswap_approx
+    ).total_t_and_ccz_count()
+    assert binned_counts['data_loading'] == counts['n_ccz'] * 4, binned_counts['data_loading']
+
+
+def test_equivalent_bloq_counts():
+    prepare = _thc_prep.make()
+    qlt_testing.assert_equivalent_bloq_counts(prepare, ignore_split_join)
 
 
 def test_musical_score():
