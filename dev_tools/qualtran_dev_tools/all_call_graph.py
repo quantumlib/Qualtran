@@ -66,8 +66,6 @@ def get_all_call_graph(bes: Iterable[BloqExample]):
         except DecomposeNotImplementedError:
             warnings.warn(f"{b} lacks a call graph.")
             return True
-        except ValueError:
-            return False
 
         return False
 
