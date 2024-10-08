@@ -23,5 +23,6 @@ from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.block_encoding.product import Product
 from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
+from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import SparseMatrixHermitian
 from qualtran.bloqs.block_encoding.tensor_product import TensorProduct
 from qualtran.bloqs.block_encoding.unitary import Unitary

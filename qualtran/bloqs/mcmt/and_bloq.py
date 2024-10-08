@@ -70,7 +70,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
 # TODO: https://github.com/quantumlib/Qualtran/issues/1346
-FLAG_AND_AS_LEAF = False
+FLAG_AND_AS_LEAF = True
 
 
 @frozen
@@ -194,7 +194,11 @@ class And(GateWithRegisters):
 
     def __str__(self):
         dag = '†' if self.uncompute else ''
-        return f'And{dag}'
+        if self.cv1 != 1 or self.cv2 != 1:
+            cv = f"({self.cv1}, {self.cv2})"
+        else:
+            cv = ""
+        return f'And{cv}{dag}'
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
