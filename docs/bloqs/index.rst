@@ -92,6 +92,10 @@ Bloqs Library
     :caption: GF Arithmetic:
 
     gf_arithmetic/gf2_multiplication.ipynb
+    gf_arithmetic/gf2_addition.ipynb
+    gf_arithmetic/gf2_add_k.ipynb
+    gf_arithmetic/gf2_square.ipynb
+    gf_arithmetic/gf2_inverse.ipynb
 
 .. toctree::
     :maxdepth: 2
