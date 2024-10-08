@@ -38,7 +38,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     from qualtran import Bloq, CtrlSpec, Soquet
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
-    if ctrl_spec != CtrlSpec():
+    if ctrl_spec.num_qubits != 1:
         assert isinstance(bloq, Bloq)
         return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
 
@@ -46,9 +46,12 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
         bloq, BloqWithSpecializedControl
     ), f"{bloq} must implement protocol {BloqWithSpecializedControl}"
 
+    # extract the single bit control value
+    (cv,) = ctrl_spec._cvs_tuple
+
     if bloq.cv is None:
         # the easy case: use the controlled bloq
-        ctrl_bloq = bloq.with_cv(cv=1)
+        ctrl_bloq = bloq.with_cv(cv=cv)
         assert isinstance(ctrl_bloq, BloqWithSpecializedControl)
         ctrl_reg_name = ctrl_bloq.ctrl_reg_name
 
@@ -66,7 +69,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     else:
         # the difficult case: must combine the two controls into one
         un_ctrl_bloq = bloq.with_cv(cv=None)
-        ctrl_bloq = ControlledViaAnd(un_ctrl_bloq, CtrlSpec(cvs=[1, bloq.cv]))
+        ctrl_bloq = ControlledViaAnd(un_ctrl_bloq, CtrlSpec(cvs=[cv, bloq.cv]))
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
