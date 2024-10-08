@@ -13,10 +13,12 @@
 #  limitations under the License.
 
 import pytest
+import sympy
 from galois import GF
 
 from qualtran.bloqs.gf_arithmetic.gf2_square import _gf2_square_symbolic, _gf16_square, GF2Square
 from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.symbolics import ceil, log2
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -37,8 +39,9 @@ def test_gf2_square_classical_sim_quick():
 
 def test_gf2_square_resource():
     bloq = _gf2_square_symbolic.make()
+    m = bloq.bitsize
     assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
-    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.bitsize
+    assert sympy.simplify(get_cost_value(bloq, QECGatesCost()).clifford - ceil(m**2 / log2(m))) == 0
 
 
 @pytest.mark.slow
