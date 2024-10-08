@@ -20,18 +20,19 @@ import numpy as np
 from attrs import evolve, frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     BQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -120,7 +121,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
+class SelectTHC(SelectOracle):
     r"""SELECT for THC Hamiltonian.
 
     Args:
@@ -312,6 +313,24 @@ class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # typ
             out_soqs['control'] = soqs['control']
 
         return out_soqs
+
+    @property
+    def cv(self):
+        return self.control_val
+
+    def with_cv(self, *, cv: Optional[int]) -> 'SelectTHC':
+        return evolve(self, control_val=cv)
+
+    @property
+    def ctrl_reg_name(self) -> str:
+        return 'control'
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
+            get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
+        )
+
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
 
 
 @bloq_example
