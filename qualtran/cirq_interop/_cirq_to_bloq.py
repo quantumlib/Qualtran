@@ -82,11 +82,12 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         if isinstance(self.cirq_gate, Bloq):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
-        return (
-            Signature([Register('q', QBit(), shape=nqubits)])
-            if nqubits > 1
-            else Signature.build(q=nqubits)
-        )
+        if nqubits == 1:
+            return Signature([Register('q', QBit())])
+        elif nqubits == 0:
+            return Signature([])
+        # else
+        return Signature([Register('q', QBit(), shape=nqubits)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT

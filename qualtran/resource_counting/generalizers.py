@@ -70,7 +70,7 @@ def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
         return attrs.evolve(b, angle=PHI)
 
     if isinstance(b, (XPowGate, YPowGate, ZPowGate)):
-        return attrs.evolve(b, exponent=PHI, global_shift=0)
+        return attrs.evolve(b, exponent=PHI)
 
     if isinstance(b, (TGate, SGate)):
         # ignore `is_adjoint`.

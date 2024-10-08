@@ -508,3 +508,34 @@ class Controlled(GateWithRegisters):
                 )
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
+
+    @staticmethod
+    def get_single_reg_ctrl_system(
+        ctrl_bloq: 'Bloq', ctrl_reg_name: str
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        """A static method for helping explicitly write your own `get_ctrl_system`.
+
+        Bloq authors can set up a controlled version of the bloq if the controlled bloq
+        takes one additional control register with a known name. You can use this function to
+        easily return the callable required by `get_ctrl_system`.
+
+        Args:
+            ctrl_bloq: The controlled version of the bloq
+            ctrl_reg_name: The name of the new register that takes a control soquet.
+
+        Returns:
+            ctrl_bloq: The control bloq, per the `Bloq.get_ctrl_system` interface.
+            add_controlled: A function that adds the controlled version of the bloq to
+                a composite bloq that is being built, per the `Bloq.get_ctrl_system` interface.
+        """
+
+        def adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl_soq,) = ctrl_soqs
+            soqs = {ctrl_reg_name: ctrl_soq} | in_soqs
+            soqs = bb.add_d(ctrl_bloq, **soqs)
+            ctrl_soqs = [soqs.pop(ctrl_reg_name)]
+            return ctrl_soqs, soqs.values()
+
+        return ctrl_bloq, adder

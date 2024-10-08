@@ -179,7 +179,9 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
         if self.global_phase != 1:
             phase_op: Bloq = GlobalPhase.from_coefficient(self.global_phase, eps=self.eps)
             if self.control_val is not None:
-                phase_op = phase_op.controlled(ctrl_spec=CtrlSpec(cvs=self.control_val))
+                phase_op = phase_op.controlled()
+                if self.control_val == 0:
+                    costs[XGate()] = 2
             costs[phase_op] = 1
         return costs
 
