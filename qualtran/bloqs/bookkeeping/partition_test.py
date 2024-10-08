@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QGF, Register, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Partition
@@ -117,3 +117,14 @@ def test_partition_call_classically():
     assert flat_out[2] == 2
     out = bloq.adjoint().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
     assert out[0] == 64
+
+
+def test_partition_call_classically_gf():
+    dtypes = [QGF(2, 2), QGF(2, 3)]
+    regs = (Register('xx', dtypes[0]), Register('yy', dtypes[1]))
+    partition = Partition(n=5, regs=regs)
+    unpartition = partition.adjoint()
+    for x in range(2**5):
+        xx, yy = partition.call_classically(x=x)
+        assert isinstance(xx, dtypes[0].gf_type) and isinstance(yy, dtypes[1].gf_type)
+        assert (x,) == unpartition.call_classically(xx=xx, yy=yy)
