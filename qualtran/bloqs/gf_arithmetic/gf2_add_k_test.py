@@ -19,15 +19,15 @@ from qualtran.bloqs.gf_arithmetic.gf2_add_k import _gf2_add_k_symbolic, _gf16_ad
 from qualtran.testing import assert_consistent_classical_action
 
 
-def test_gf16_multiplication(bloq_autotester):
+def test_gf16_add_k(bloq_autotester):
     bloq_autotester(_gf16_add_k)
 
 
-def test_gf2_multiplication_symbolic(bloq_autotester):
+def test_gf2_add_k_symbolic(bloq_autotester):
     bloq_autotester(_gf2_add_k_symbolic)
 
 
-def test_gf2_multiplication_classical_sim_quick():
+def test_gf2_add_k_classical_sim_quick():
     m = 2
     GFM = GF(2**m)
     for k in GFM.elements:
@@ -37,7 +37,7 @@ def test_gf2_multiplication_classical_sim_quick():
 
 @pytest.mark.slow
 @pytest.mark.parametrize('m', [3, 4, 5])
-def test_gf2_multiplication_classical_sim(m):
+def test_gf2_add_k_classical_sim(m):
     GFM = GF(2**m)
     for k in GFM.elements:
         bloq = GF2AddK(m, int(k))

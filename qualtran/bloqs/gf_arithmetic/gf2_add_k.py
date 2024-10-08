@@ -22,7 +22,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -34,9 +34,9 @@ class GF2AddK(Bloq):
     $|x\rangle$ storing elements from GF($2^m$). Addition in GF($2^m$) simply reduces to a component
     wise XOR, which can be implemented via X gates.
 
-        $$
-        |x\rangle  \rightarrow |x + k\rangle
-        $$
+    $$
+    |x\rangle  \rightarrow |x + k\rangle
+    $$
 
     Args:
         bitsize: The degree $m$ of the galois field GF($2^m$). Also corresponds to the number of
