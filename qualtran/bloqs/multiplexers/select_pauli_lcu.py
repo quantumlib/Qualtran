@@ -22,8 +22,17 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+)
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting.generalizers import (
@@ -39,7 +48,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -116,6 +125,24 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate, SpecializedSingleQubitCon
         """
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
+
+    @property
+    def cv(self):
+        return self.control_val
+
+    def with_cv(self, *, cv: Optional[int]) -> 'SelectPauliLCU':
+        return attrs.evolve(self, control_val=cv)
+
+    @property
+    def ctrl_reg_name(self) -> str:
+        return 'control'
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
+            get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
+        )
+
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
