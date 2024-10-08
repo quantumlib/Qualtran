@@ -107,6 +107,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
+import qualtran.bloqs.gf_arithmetic.gf2_square
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -566,6 +567,11 @@ GF_ARITHMETIC = [
         title='GF($2^m$) Addition',
         module=qualtran.bloqs.gf_arithmetic.gf2_addition,
         bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_addition._GF2_ADDITION_DOC],
+    ),
+    NotebookSpecV2(
+        title='GF($2^m$) Square',
+        module=qualtran.bloqs.gf_arithmetic.gf2_square,
+        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_square._GF2_SQUARE_DOC],
     ),
 ]
 
