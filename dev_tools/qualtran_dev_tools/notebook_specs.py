@@ -1,3 +1,32 @@
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+"""List of Jupyter notebooks.
+
+The notebooks listed in this file are used to generate Jupyter notebooks that
+document and provide examples for each of the bloqs. This list is also used to
+generate the static exports for the Qualtran web UI.
+
+## Adding a new bloq.
+
+ 1. Create a qualtran.BloqExample perhaps using the `@bloq_example` decorator. Wrap it in a
+    `qualtran.BloqDocSpec`. This code should live alongside the bloq.
+ 2. If this is a new module: add a new entry to the appropriate notebook spec global variable
+    in this file (according to its category/organization).
+ 3. Update the `NotebookSpec` `bloq_specs` field to include the `BloqDocSpec` for your new bloq.
+"""
+
 from typing import List
 
 from qualtran_dev_tools.git_tools import get_git_root

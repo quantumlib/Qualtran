@@ -109,7 +109,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         ]
 
 
-def get_markdown_docstring_lines(cls: Type) -> List[str]:
+def get_markdown_docstring(cls: Type) -> List[str]:
     """From a class `cls`, return its docstring as Markdown lines."""
 
     # 1. Sphinx incantation
@@ -123,11 +123,11 @@ def get_markdown_docstring_lines(cls: Type) -> List[str]:
     return lines
 
 
-def get_markdown_docstring(cls: Type) -> List[str]:
+def get_markdown_docstring_lines(cls: Type) -> List[str]:
     """From a class `cls`, return its docstring as Markdown lines with a header."""
 
     # 1. Get documentation lines
-    lines = get_markdown_docstring_lines(cls)
+    lines = get_markdown_docstring(cls)
 
     # 2. Pre-pend a header.
     lines = [f'## `{cls.__name__}`'] + lines

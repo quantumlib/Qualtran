@@ -14,18 +14,15 @@
 
 """Autogeneration of Jupyter notebooks.
 
-For each notebook spec listed in the various global variables (in this file)
-we write a notebook with a title, module docstring,
-standard imports, and information on each bloq listed in the
+For each notebook spec listed in the various global variables imported from
+`qualtran_dev_tools.notebook_specs` we write a notebook with a title, module
+docstring, standard imports, and information on each bloq listed in the
 `bloq_specs` field. For each bloq, we render a docstring and diagrams.
 
 ## Adding a new bloq.
 
- 1. Create a qualtran.BloqExample perhaps using the `@bloq_example` decorator. Wrap it in a
-    `qualtran.BloqDocSpec`. This code should live alongside the bloq.
- 2. If this is a new module: add a new entry to the appropriate notebook spec global variable
-    in this file (according to its category/organization).
- 3. Update the `NotebookSpec` `bloq_specs` field to include the `BloqDocSpec` for your new bloq.
+Follow the instructions in `dev_tools/qualtran_dev_tools/notebook_specs.py` to
+add a new bloq.
 
 ## Autogen behavior.
 
@@ -50,7 +47,7 @@ from typing import Iterable, List
 
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
-from qualtran_dev_tools.notebook_specs import GIT_ROOT, SOURCE_DIR, NB_BY_SECTION
+from qualtran_dev_tools.notebook_specs import GIT_ROOT, NB_BY_SECTION, SOURCE_DIR
 
 # --------------------------------------------------------------------------
 # -----   Concepts   -------------------------------------------------------
