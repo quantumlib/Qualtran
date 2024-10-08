@@ -92,6 +92,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'symbolic_hamsim_by_gqsp',
         'gf16_addition',  # cannot serialize QGF
         'gf2_addition_symbolic',  # cannot serialize QGF
+        'gf16_add_k',  # cannot serialize QGF
+        'gf2_add_k_symbolic',  # cannot serialize QGF
         'gf16_multiplication',  # cannot serialize QGF
         'gf2_multiplication_symbolic',  # cannot serialize QGF
         'gf16_square',  # cannot serialize QGF
