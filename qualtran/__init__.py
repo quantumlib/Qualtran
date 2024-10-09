@@ -53,6 +53,7 @@ from ._infra.data_types import (
     QUInt,
     BQUInt,
     QMontgomeryUInt,
+    QGF,
 )
 
 # Internal imports: none
