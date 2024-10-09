@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
-import cirq
 import numpy as np
 import sympy
 from attrs import frozen
@@ -44,6 +43,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, CompositeBloq
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -82,6 +82,8 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
+        import cirq
+
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -154,6 +156,8 @@ class TwoBitCSwap(Bloq):
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+        import cirq
+
         ctrl = cirq.NamedQubit('ctrl')
         x = cirq.NamedQubit('x')
         y = cirq.NamedQubit('y')
@@ -354,12 +358,16 @@ class CSwap(GateWithRegisters):
 
     @classmethod
     def make_on(
-        cls, **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
-    ) -> cirq.Operation:
+        cls, **quregs: Union[Sequence['cirq.Qid'], NDArray['cirq.Qid']]  # type: ignore[type-var]
+    ) -> 'cirq.Operation':
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(bitsize=len(quregs['x'])).on_registers(**quregs)
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
         if not args.use_unicode_characters:
             return cirq.CircuitDiagramInfo(
                 ("@",) + ("swap_x",) * self.bitsize + ("swap_y",) * self.bitsize
