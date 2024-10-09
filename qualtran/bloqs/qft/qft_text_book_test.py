@@ -16,8 +16,10 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.qft.qft_text_book import _qft_text_book, _symbolic_qft, QFTTextBook
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 @pytest.mark.parametrize('without_reverse', [True, False])
@@ -29,7 +31,7 @@ def test_qft_text_book_quick(without_reverse: bool):
     assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
     assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
 
-    assert_valid_bloq_decomposition(qft_bloq)
+    qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
 
 @pytest.mark.slow
@@ -42,23 +44,28 @@ def test_qft_text_book(n: int, without_reverse: bool):
     assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
     assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
 
-    assert_valid_bloq_decomposition(qft_bloq)
+    qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
 
 @pytest.mark.parametrize('n', [10, 123])
 def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTTextBook(n)
-    qft_t_complexity = qft_bloq.t_complexity()
-    assert qft_t_complexity.rotations == (n * (n - 1)) // 2
-    assert qft_t_complexity.t == 0
+    qlt_testing.assert_equivalent_bloq_counts(qft_bloq, generalizer=[ignore_split_join])
+    gate_counts = get_cost_value(qft_bloq, QECGatesCost())
+    # special angle ZPow gets turned into clifford or T
+    rots = ((n - 3) * (n - 2)) // 2
+    assert gate_counts.t == n - 2
+    assert gate_counts.toffoli == 0
+    assert gate_counts.rotation == rots
+    assert gate_counts.and_bloq == (n * (n - 1)) // 2
 
 
 def test_qft_text_book_t_complexity_symbolic():
     n = sympy.symbols('n')
     qft_bloq = QFTTextBook(bitsize=n)
-    qft_t_complexity = qft_bloq.t_complexity()
-    assert qft_t_complexity.rotations == (n - 1) * (n // 2)
-    assert qft_t_complexity.t == 0
+    gate_counts = get_cost_value(qft_bloq, QECGatesCost())
+    assert gate_counts.rotation == (n - 1) * (n // 2)
+    assert gate_counts.and_bloq == (n - 1) * (n // 2)
 
 
 def test_qft_text_book_auto(bloq_autotester):

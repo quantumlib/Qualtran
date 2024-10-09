@@ -214,18 +214,12 @@ class CZPowGate(Bloq):
         return Signature([Register('q', QBit(), shape=(2,))])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        from qualtran.bloqs.basic_gates import Toffoli, ZeroEffect, ZeroState
         from qualtran.bloqs.mcmt import And
 
         q1, q2 = q
-
-        # (ctrl, q), anc = bb.add(And(), ctrl=[ctrl, q])
-        anc = bb.add(ZeroState())
-        (q1, q2), anc = bb.add(Toffoli(), ctrl=[q1, q2], target=anc)
+        (q1, q2), anc = bb.add(And(), ctrl=[q1, q2])
         anc = bb.add(ZPowGate(self.exponent, self.eps), q=anc)
-        # (ctrl, q) = bb.add(And().adjoint(), ctrl=[ctrl, q], target=anc)
-        (q1, q2), anc = bb.add(Toffoli(), ctrl=[q1, q2], target=anc)
-        bb.add(ZeroEffect(), q=anc)
+        (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
 
     def __pow__(self, power):
