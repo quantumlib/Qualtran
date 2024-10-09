@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import itertools
-from typing import Optional
 
 import cirq
 import numpy as np

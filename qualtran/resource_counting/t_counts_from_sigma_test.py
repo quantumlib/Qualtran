@@ -14,17 +14,7 @@
 
 import sympy
 
-from qualtran.bloqs.basic_gates import (
-    CZPowGate,
-    Rx,
-    Ry,
-    Rz,
-    TGate,
-    Toffoli,
-    XPowGate,
-    YPowGate,
-    ZPowGate,
-)
+from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate, Toffoli, XPowGate, YPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 

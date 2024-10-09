@@ -68,7 +68,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
@@ -206,7 +205,7 @@ class CZPowGate(Bloq):
         Jones et. al. 2012. Figure 8.
     """
 
-    exponent: float = 1.0
+    exponent: SymbolicFloat = 1.0
     eps: SymbolicFloat = 1e-11
 
     @cached_property
@@ -216,7 +215,7 @@ class CZPowGate(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
-        q1, q2 = q
+        q1, q2 = q  # type: ignore
         (q1, q2), anc = bb.add(And(), ctrl=[q1, q2])
         anc = bb.add(ZPowGate(self.exponent, self.eps), q=anc)
         (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
@@ -597,9 +596,3 @@ def _rx() -> Rx:
 def _ry() -> Ry:
     ry = Ry(angle=np.pi / 4.0)
     return ry
-
-
-@bloq_example
-def _rz() -> Rz:
-    rz = Rz(angle=np.pi / 4.0)
-    return rz

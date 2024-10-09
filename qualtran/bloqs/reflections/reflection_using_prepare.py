@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits, total_bits
 from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
