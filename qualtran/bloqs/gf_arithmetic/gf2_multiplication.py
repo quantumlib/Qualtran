@@ -51,7 +51,7 @@ class SynthesizeLRCircuit(Bloq):
     """Synthesize linear reversible circuit using CNOT gates.
 
     Args:
-        matrix: An n x m matrix describing the linear transformation.
+        matrix: An n x n matrix describing the linear transformation.
 
     References:
         [Efficient Synthesis of Linear Reversible Circuits](https://arxiv.org/abs/quant-ph/0302002)
