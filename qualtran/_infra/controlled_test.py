@@ -14,7 +14,6 @@
 from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import attrs
-import cirq
 import numpy as np
 import pytest
 
@@ -84,6 +83,7 @@ def test_ctrl_spec_shape():
 
 
 def test_ctrl_spec_to_cirq_cv_roundtrip():
+    cirq = pytest.importorskip('cirq')
     cirq_cv = cirq.ProductOfSums([0, 1, 0, 1])
     assert CtrlSpec.from_cirq_cv(cirq_cv) == CtrlSpec(cvs=[0, 1, 0, 1])
 
@@ -99,9 +99,10 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
 
 
 def test_ctrl_bloq_as_cirq_op():
+    cirq = pytest.importorskip('cirq')
     subbloq = XGate()
 
-    def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
+    def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
         left_quregs = get_named_qubits(bloq.signature.lefts())
         circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
         circuit2 = cirq.Circuit(
@@ -340,7 +341,9 @@ def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
 
 
-def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
@@ -357,6 +360,7 @@ interesting_ctrl_specs = [
 
 @pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
 def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
+    cirq = pytest.importorskip('cirq')
     # Test one qubit unitaries
     _verify_ctrl_tensor_for_unitary(ctrl_spec, XGate(), cirq.X)
     _verify_ctrl_tensor_for_unitary(ctrl_spec, YGate(), cirq.Y)
@@ -366,6 +370,7 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
 
 
 def test_controlled_tensor_without_decompose():
+    cirq = pytest.importorskip('cirq')
     ctrl_spec = CtrlSpec()
     bloq = TwoBitCSwap()
     ctrl_bloq = Controlled(bloq, ctrl_spec)
@@ -442,6 +447,7 @@ def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
 
 
 def test_controlled_diagrams():
+    cirq = pytest.importorskip('cirq')
     ctrl_gate = XPowGate(0.25).controlled()
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_gate.on_registers(**get_named_qubits(ctrl_gate.signature))),
