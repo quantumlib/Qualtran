@@ -21,7 +21,7 @@ SymbolicFloat = Union[float, sympy.Expr]
 """A floating point value or a sympy expression."""
 
 SymbolicInt = Union[int, sympy.Expr]
-"""A floating point value or a sympy expression."""
+"""An integer value or a sympy expression."""
 
 SymbolicComplex = Union[complex, sympy.Expr]
 """A complex value or a sympy expression."""
