@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
 import pytest
 from galois import GF
 
@@ -40,9 +41,10 @@ def test_synthesize_lr_circuit():
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
-        bloq_out = bloq.call_classically(q=QGFM.to_bits(i))[0]
+        bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
-        assert i == QGFM.from_bits(bloq_adj_out)
+        assert isinstance(bloq_adj_out, np.ndarray)
+        assert i == QGFM.from_bits([*bloq_adj_out])
 
 
 @pytest.mark.slow
@@ -53,9 +55,10 @@ def test_synthesize_lr_circuit_slow(m):
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
-        bloq_out = bloq.call_classically(q=QGFM.to_bits(i))[0]
+        bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
-        assert i == QGFM.from_bits(bloq_adj_out)
+        assert isinstance(bloq_adj_out, np.ndarray)
+        assert i == QGFM.from_bits([*bloq_adj_out])
 
 
 def test_gf2_plus_equal_prod_classical_sim_quick():
