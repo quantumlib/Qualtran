@@ -92,3 +92,17 @@ q  |  q
 0 -> 1
 1 -> 0"""
     )
+
+
+def test_controlled_x():
+    from qualtran import CtrlSpec, QUInt
+    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran.bloqs.mcmt import And
+
+    def _keep_and(b):
+        return isinstance(b, And)
+
+    n = 8
+    bloq = XGate().controlled(CtrlSpec(qdtypes=QUInt(n), cvs=1))
+    _, sigma = bloq.call_graph(keep=_keep_and)
+    assert sigma == {And(): n - 1, CNOT(): 1, And().adjoint(): n - 1, XGate(): 4 * (n - 1)}
