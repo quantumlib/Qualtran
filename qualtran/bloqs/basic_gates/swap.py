@@ -40,6 +40,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, CompositeBloq

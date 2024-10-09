@@ -54,6 +54,8 @@ from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran import SoquetT
 
 
@@ -98,17 +100,20 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
         assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
 
 
+def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
+    left_quregs = get_named_qubits(bloq.signature.lefts())
+    circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
+    circuit2 = cirq.Circuit(
+        gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+
 def test_ctrl_bloq_as_cirq_op():
     cirq = pytest.importorskip('cirq')
     subbloq = XGate()
-
-    def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
-        left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
-        circuit2 = cirq.Circuit(
-            gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
-        )
-        cirq.testing.assert_same_circuits(circuit1, circuit2)
 
     # Simple ctrl spec
     _test_cirq_equivalence(subbloq, cirq.X)
