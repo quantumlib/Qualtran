@@ -173,7 +173,7 @@ class SelectSparse(SelectOracle):
     def cv(self):
         return self.control_val
 
-    def with_cv(self, *, cv: Optional[int]) -> 'SelectHubbard':
+    def with_cv(self, *, cv: Optional[int]) -> 'SelectSparse':
         return attrs.evolve(self, control_val=cv)
 
     @property

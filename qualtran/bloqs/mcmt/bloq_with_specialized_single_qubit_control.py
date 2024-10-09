@@ -26,7 +26,7 @@ class BloqWithSpecializedControl(Protocol):
     @property
     def cv(self) -> Optional[int]: ...
 
-    def with_cv(self, *, cv: Optional[int]) -> 'Bloq': ...
+    def with_cv(self, *, cv: Optional[int]) -> Optional['Bloq']: ...
 
     @property
     def ctrl_reg_name(self) -> str: ...
@@ -38,9 +38,12 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     from qualtran import Bloq, CtrlSpec, Soquet
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
-    if ctrl_spec.num_qubits != 1:
+    def _get_default_fallback():
         assert isinstance(bloq, Bloq)
         return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
+
+    if ctrl_spec.num_qubits != 1:
+        return _get_default_fallback()
 
     assert isinstance(
         bloq, BloqWithSpecializedControl
@@ -52,12 +55,17 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     if bloq.cv is None:
         # the easy case: use the controlled bloq
         ctrl_bloq = bloq.with_cv(cv=cv)
+        if ctrl_bloq is None:
+            return _get_default_fallback()
+
         assert isinstance(ctrl_bloq, BloqWithSpecializedControl)
         ctrl_reg_name = ctrl_bloq.ctrl_reg_name
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
         ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            assert ctrl_bloq is not None
+
             (ctrl,) = ctrl_soqs
             in_soqs |= {ctrl_reg_name: ctrl}
 
@@ -69,6 +77,9 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     else:
         # the difficult case: must combine the two controls into one
         un_ctrl_bloq = bloq.with_cv(cv=None)
+        if un_ctrl_bloq is None:
+            return _get_default_fallback()
+
         ctrl_bloq = ControlledViaAnd(un_ctrl_bloq, CtrlSpec(cvs=[cv, bloq.cv]))
 
         def _adder(

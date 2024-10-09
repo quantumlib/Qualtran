@@ -30,6 +30,7 @@ import pytest
 from attrs import evolve, frozen
 
 from qualtran import AddControlledT, Bloq, CtrlSpec, Signature
+from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
     get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
 )
@@ -108,3 +109,79 @@ def test_custom_controlled(ctrl_specs: Sequence[CtrlSpec]):
         clifford=ANY,
         measurement=ANY,
     )
+
+
+@frozen
+class TestAtom(Bloq):
+    tag: str
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build(q=2)
+
+    @property
+    def cv(self):
+        return None
+
+    def with_cv(self, *, cv: Optional[int]) -> Optional[Bloq]:
+        if cv == 0:
+            return None
+
+        if cv is None:
+            return self
+        return CTestAtom(self.tag)
+
+    @property
+    def ctrl_reg_name(self) -> str:
+        return 'ctrl'
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+
+
+@frozen
+class CTestAtom(Bloq):
+    tag: str
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build(ctrl=1, q=2)
+
+    @property
+    def cv(self):
+        return 1
+
+    def with_cv(self, *, cv: Optional[int]) -> Optional[Bloq]:
+        if cv == 0:
+            return None
+
+        if cv is not None:
+            return self
+        return TestAtom(self.tag)
+
+    @property
+    def ctrl_reg_name(self) -> str:
+        return 'ctrl'
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+
+
+def test_bloq_with_controlled_bloq():
+    assert TestAtom('g').controlled() == CTestAtom('g')
+
+    def _keep_and(b):
+        # TODO remove this after https://github.com/quantumlib/Qualtran/issues/1346 is resolved.
+        return isinstance(b, And)
+
+    ctrl_bloq = CTestAtom('g').controlled()
+    _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
+    assert sigma == {And(): 1, CTestAtom('g'): 1, And().adjoint(): 1}
+
+    ctrl_bloq = CTestAtom('n').controlled(CtrlSpec(cvs=0))
+    _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
+    assert sigma == {And(0, 1): 1, CTestAtom('n'): 1, And(0, 1).adjoint(): 1}
+
+    ctrl_bloq = TestAtom('nn').controlled(CtrlSpec(cvs=[0, 0]))
+    _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
+    assert sigma == {And(0, 0): 1, CTestAtom('nn'): 1, And(0, 0).adjoint(): 1}
