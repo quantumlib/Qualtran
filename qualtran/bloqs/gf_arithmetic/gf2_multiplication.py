@@ -58,11 +58,12 @@ class SynthesizeLRCircuit(Bloq):
     """
 
     matrix: Union[Shaped, np.ndarray] = attrs.field(eq=_data_or_shape_to_tuple)
+    is_adjoint: bool = False
 
     def __attrs_post_init__(self):
         assert len(self.matrix.shape) == 2
         n, m = self.matrix.shape
-        assert is_symbolic(n, m) or n >= m
+        assert is_symbolic(n, m) or n == m
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -72,16 +73,22 @@ class SynthesizeLRCircuit(Bloq):
     def on_classical_vals(self, *, q: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         matrix = self.matrix
         assert isinstance(matrix, np.ndarray)
+        if self.is_adjoint:
+            matrix = np.linalg.inv(matrix)
+            assert np.allclose(matrix, matrix.astype(int))
+            matrix = matrix.astype(int)
         _, m = matrix.shape
         assert isinstance(q, np.ndarray)
-        q_in = q[:m]
-        return {'q': (matrix @ q_in) % 2}
+        return {'q': (matrix @ q) % 2}
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         n = self.matrix.shape[0]
         return {CNOT(): ceil(n**2 / log2(n))}
+
+    def adjoint(self) -> 'SynthesizeLRCircuit':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
 @attrs.frozen
@@ -108,11 +115,15 @@ class GF2Multiplication(Bloq):
     Args:
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
             qubits in each of the two input registers $a$ and $b$ that should be multiplied.
+        plus_equal_prod: If True, implements the `PlusEqualProduct` version that applies the
+            map $|x\rangle |y\rangle |z\rangle \rightarrow |x\rangle |y\rangle |x + z\rangle$.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
         y: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
-        result: Output RIGHT register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
+        result: Register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
+            If plus_equal_prod is True - result is a THRU register and stores $result + x * y$.
+            If plus_equal_prod is False - result is a RIGHT register and stores $x * y$.
 
 
     References:
@@ -124,14 +135,16 @@ class GF2Multiplication(Bloq):
     """
 
     bitsize: SymbolicInt
+    plus_equal_prod: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
+        result_side = Side.THRU if self.plus_equal_prod else Side.RIGHT
         return Signature(
             [
                 Register('x', dtype=self.qgf),
                 Register('y', dtype=self.qgf),
-                Register('result', dtype=self.qgf, side=Side.RIGHT),
+                Register('result', dtype=self.qgf, side=result_side),
             ]
         )
 
@@ -143,7 +156,7 @@ class GF2Multiplication(Bloq):
     def reduction_matrix_q(self) -> np.ndarray:
         m = int(self.bitsize)
         f = self.qgf.gf_type.irreducible_poly
-        M = np.zeros((m - 1, m))
+        M = np.zeros((m, m))
         alpha = [1] + [0] * m
         for i in range(m - 1):
             # x ** (m + i) % f
@@ -151,6 +164,7 @@ class GF2Multiplication(Bloq):
             coeffs = coeffs + [0] * (m - len(coeffs))
             M[i] = coeffs
             alpha += [0]
+        M[m - 1][m - 1] = 1
         return np.transpose(M)
 
     @cached_property
@@ -162,14 +176,18 @@ class GF2Multiplication(Bloq):
             else SynthesizeLRCircuit(self.reduction_matrix_q)
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: 'Soquet', y: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
-        result = bb.allocate(dtype=self.qgf)
+        x, y = soqs['x'], soqs['y']
+        result = soqs['result'] if self.plus_equal_prod else bb.allocate(dtype=self.qgf)
         x, y, result = bb.split(x)[::-1], bb.split(y)[::-1], bb.split(result)[::-1]
         m = int(self.bitsize)
+
+        # Step-0: PlusEqualProduct special case.
+        if self.plus_equal_prod:
+            result = bb.add(self.synthesize_reduction_matrix_q.adjoint(), q=result)
+
         # Step-1: Multiply Monomials.
         for i in range(m):
             for j in range(i + 1, m):
@@ -199,16 +217,21 @@ class GF2Multiplication(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         m = self.bitsize
-        return {Toffoli(): m**2, self.synthesize_reduction_matrix_q: 1}
+        plus_equal_prod = (
+            {self.synthesize_reduction_matrix_q.adjoint(): 1} if self.plus_equal_prod else {}
+        )
+        return {Toffoli(): m**2, self.synthesize_reduction_matrix_q: 1} | plus_equal_prod
 
-    def on_classical_vals(self, *, x, y) -> Dict[str, 'ClassicalValT']:
-        assert isinstance(x, self.qgf.gf_type) and isinstance(y, self.qgf.gf_type)
-        return {'x': x, 'y': y, 'result': x * y}
+    def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
+        assert all(isinstance(val, self.qgf.gf_type) for val in vals.values())
+        x, y = vals['x'], vals['y']
+        result = vals['result'] if self.plus_equal_prod else self.qgf.gf_type(0)
+        return {'x': x, 'y': y, 'result': result + x * y}
 
 
 @bloq_example
 def _gf16_multiplication() -> GF2Multiplication:
-    gf16_multiplication = GF2Multiplication(4)
+    gf16_multiplication = GF2Multiplication(4, plus_equal_prod=True)
     return gf16_multiplication
 
 
@@ -217,7 +240,7 @@ def _gf2_multiplication_symbolic() -> GF2Multiplication:
     import sympy
 
     m = sympy.Symbol('m')
-    gf2_multiplication_symbolic = GF2Multiplication(m)
+    gf2_multiplication_symbolic = GF2Multiplication(m, plus_equal_prod=False)
     return gf2_multiplication_symbolic
 
 
