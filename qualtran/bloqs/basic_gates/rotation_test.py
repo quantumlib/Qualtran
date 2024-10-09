@@ -17,11 +17,135 @@ import numpy as np
 import pytest
 from cirq.ops import SimpleQubitManager
 
+from qualtran import BloqBuilder, Controlled, CtrlSpec
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
-from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
+from qualtran.bloqs.basic_gates import (
+    CZ,
+    CZPowGate,
+    GlobalPhase,
+    Rx,
+    Ry,
+    Rz,
+    SGate,
+    TGate,
+    XPowGate,
+    YPowGate,
+    ZGate,
+    ZPowGate,
+)
+from qualtran.bloqs.basic_gates.rotation import _crz, _cz_pow, _rx, _ry, _rz, _z_pow, CRz
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import bloq_is_rotation, bloq_is_t_like
+
+
+def test_zpow_gate(bloq_autotester):
+    bloq_autotester(_z_pow)
+
+
+def test_zpow_is_controlled_gphase():
+    rs = np.random.RandomState(52)
+    t = rs.uniform(0, 2)
+    cgphase = GlobalPhase(exponent=t).controlled().tensor_contract()
+    zpow = ZPowGate(exponent=t).tensor_contract()
+    np.testing.assert_allclose(zpow, cgphase)
+
+    a = GlobalPhase(exponent=t).tensor_contract()
+    manual_cgphase = np.diag([1, a])
+    np.testing.assert_allclose(zpow, manual_cgphase)
+
+
+def test_zpow_from_rz():
+    rs = np.random.RandomState(52)
+    t = rs.uniform(0, 2)
+
+    bb = BloqBuilder()
+    q = bb.add_register('q', 1)
+    q = bb.add(Rz(angle=t * np.pi), q=q)
+    bb.add(GlobalPhase(exponent=t / 2))
+    rz_with_phase = bb.finalize(q=q)
+
+    np.testing.assert_allclose(ZPowGate(t).tensor_contract(), rz_with_phase.tensor_contract())
+
+
+def test_rz_from_zpow():
+    rs = np.random.RandomState(52)
+    theta = rs.uniform(0, 2 * np.pi)
+
+    bb = BloqBuilder()
+    q = bb.add_register('q', 1)
+    q = bb.add(ZPowGate(exponent=theta / np.pi), q=q)
+    bb.add(GlobalPhase(exponent=-theta / (2 * np.pi)))
+    zpow_with_phase = bb.finalize(q=q)
+
+    np.testing.assert_allclose(Rz(angle=theta).tensor_contract(), zpow_with_phase.tensor_contract())
+
+
+def test_zpow_special_exponents():
+    zpow_1 = ZPowGate(exponent=1)
+    np.testing.assert_allclose(ZGate().tensor_contract(), zpow_1.tensor_contract())
+
+    zpow_half = ZPowGate(exponent=0.5)
+    np.testing.assert_allclose(SGate().tensor_contract(), zpow_half.tensor_contract())
+
+    zpow_quarter = ZPowGate(exponent=0.25)
+    np.testing.assert_allclose(TGate().tensor_contract(), zpow_quarter.tensor_contract())
+
+
+def test_czpow(bloq_autotester):
+    bloq_autotester(_cz_pow)
+
+
+def test_czpow_tensor():
+    rs = np.random.RandomState(52)
+    t = rs.uniform(0, 2)
+    u1 = CZPowGate(exponent=t).tensor_contract()
+    u2 = cirq.unitary(cirq.ZPowGate(exponent=t).controlled())
+    u3 = Controlled(ZPowGate(exponent=t), CtrlSpec()).tensor_contract()
+    np.testing.assert_allclose(u1, u2, atol=1e-8)
+    np.testing.assert_allclose(u1, u3, atol=1e-8)
+
+
+def test_czpow_special_exponents():
+    czpow_1 = CZPowGate(exponent=1)
+    np.testing.assert_allclose(CZ().tensor_contract(), czpow_1.tensor_contract())
+
+
+def test_czpow_from_controlled_z_pow():
+    rs = np.random.RandomState(52)
+    t = rs.uniform(0, 2)
+    zpow = ZPowGate(exponent=t)
+    assert zpow.controlled() == CZPowGate(exponent=t)
+
+    cbloq = Controlled(zpow.as_composite_bloq(), CtrlSpec()).decompose_bloq()
+    (czpow_inst,) = list(cbloq.bloq_instances)
+    assert czpow_inst.bloq == CZPowGate(exponent=t)
+    np.testing.assert_allclose(CZPowGate(exponent=t).tensor_contract(), cbloq.tensor_contract())
+
+
+def test_crz(bloq_autotester):
+    bloq_autotester(_crz)
+
+
+def test_crz_tensor():
+    rs = np.random.RandomState(52)
+    angle = rs.uniform(0, 2 * np.pi)
+    u1 = CRz(angle=angle).tensor_contract()
+    u2 = cirq.unitary(cirq.Rz(rads=angle).controlled())
+    u3 = Controlled(Rz(angle=angle), CtrlSpec()).tensor_contract()
+    np.testing.assert_allclose(u1, u2, atol=1e-8)
+    np.testing.assert_allclose(u1, u3, atol=1e-8)
+
+
+def test_crz_from_controlled_rz():
+    rs = np.random.RandomState()
+    angle = rs.uniform(0, 2 * np.pi)
+    rz = Rz(angle=angle)
+    assert rz.controlled() == CRz(angle=angle)
+
+    cbloq = Controlled(rz.as_composite_bloq(), CtrlSpec()).decompose_bloq()
+    (crz_inst,) = list(cbloq.bloq_instances)
+    assert crz_inst.bloq == CRz(angle=angle)
+    np.testing.assert_allclose(CRz(angle=angle).tensor_contract(), cbloq.tensor_contract())
 
 
 def test_t_like_rotation_gates():
@@ -93,14 +217,12 @@ def test_as_cirq_op():
     assert circuit == cirq.Circuit(
         cirq.YPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
     )
-    bloq = ZPowGate(exponent=1 / 5, global_shift=-0.5)
+    bloq = ZPowGate(exponent=1 / 5)
     quregs = get_named_qubits(bloq.signature)
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     assert op is not None
     circuit = cirq.Circuit(op)
-    assert circuit == cirq.Circuit(
-        cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
-    )
+    assert circuit == cirq.Circuit(cirq.ZPowGate(exponent=1 / 5).on(cirq.NamedQubit("q")))
 
 
 def test_str():
