@@ -810,6 +810,18 @@ class QMontgomeryUInt(QDType):
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
+    def montgomery_inverse(self, xm, n, p):
+        return ((pow(xm, p - 2, p)) * pow(2, 2 * n, p)) % p
+
+    def montgomery_product(self, xm, ym, n, p):
+        return (xm * ym * pow(2, n * (p - 2), p)) % p
+
+    def montgomery_to_uint(self, xm, n, p):
+        return (xm * pow(2, n * (p - 2), p)) % p
+
+    def uint_to_montgomery(self, x, n, p):
+        return (x * pow(2, n, p)) % p
+
 
 @attrs.frozen
 class QGF(QDType):
