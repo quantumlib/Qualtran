@@ -19,6 +19,8 @@ import pandas as pd
 import pandas.io.formats.style
 
 from qualtran import Bloq, BloqExample
+from qualtran.resource_counting import get_cost_value, QubitCount
+from qualtran.simulation.tensor import cbloq_to_quimb
 from qualtran.testing import (
     BloqCheckResult,
     check_bloq_example_decompose,
@@ -134,3 +136,44 @@ def summarize_results(report_card: pd.DataFrame) -> pd.DataFrame:
     )
     summary.columns = [v.name.lower() for v in summary.columns]
     return summary
+
+
+def report_on_tensors(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
+    """Get timing information for tensor functionality.
+
+    This should be used with `ExecuteWithTimeout`. The resultant
+    record dictionary is sent over `cxn`.
+    """
+    record: Dict[str, Any] = {'name': name, 'cls': cls_name}
+
+    try:
+        start = time.perf_counter()
+        flat = bloq.as_composite_bloq().flatten()
+        record['flat_dur'] = time.perf_counter() - start
+
+        start = time.perf_counter()
+        tn = cbloq_to_quimb(flat)
+        record['tn_dur'] = time.perf_counter() - start
+
+        start = time.perf_counter()
+        record['width'] = tn.contraction_width()
+        record['width_dur'] = time.perf_counter() - start
+
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        record['err'] = str(e)
+
+    cxn.send(record)
+
+
+def report_on_cost_timings(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
+    record: Dict[str, Any] = {'name': name, 'cls': cls_name}
+
+    try:
+        start = time.perf_counter()
+        _ = get_cost_value(bloq, QubitCount())
+        record['qubitcount_dur'] = time.perf_counter() - start
+
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        record['err'] = str(e)
+
+    cxn.send(record)
