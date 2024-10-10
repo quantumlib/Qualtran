@@ -256,6 +256,8 @@ class _ECAddStepTwo(Bloq):
                     self.n,
                     self.mod,
                 )
+                # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bug in circuit
+                # which flips f1 when lam and lam_r are equal.
                 if lam == lam_r:
                     f1 = (f1 + 1) % 2
         else:
@@ -728,6 +730,8 @@ class _ECAddStepFive(Bloq):
             z4_split[i] = ctrls[1]
         z4 = bb.join(z4_split, dtype=QMontgomeryUInt(self.n))
         lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
+        # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bug in circuit where lambda
+        # is not set to 0 before being freed.
         bb.add(Free(QMontgomeryUInt(self.n), dirty=True), reg=lam)
 
         # Uncompute multiplication and inverse.
@@ -936,6 +940,8 @@ class _ECAddStepSix(Bloq):
         y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Free all ancilla qubits in the zero state.
+        # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bugs in circuit where f1,
+        # f2, and f4 are freed before being set to 0.
         bb.add(Free(QBit(), dirty=True), reg=f1)
         bb.add(Free(QBit(), dirty=True), reg=f2)
         bb.add(Free(QBit()), reg=f3)

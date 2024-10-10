@@ -136,13 +136,7 @@ class ModInv(Bloq):
         garbage1 = x
         garbage2 = x
 
-        # When P = Q the circuit computes lambda with a mod inversion, but doesn't use the output
-        # value. Here we will just do nothing to x in that case because it won't matter in the
-        # circuit anyway.
-        try:
-            x = pow(int(x), self.mod - 2, mod=self.mod) * pow(2, 2 * self.n, self.mod) % self.mod
-        except ValueError:
-            pass
+        x = pow(int(x), self.mod - 2, mod=self.mod) * pow(2, 2 * self.n, self.mod) % self.mod
 
         return {'x': x, 'garbage1': garbage1, 'garbage2': garbage2}
 
