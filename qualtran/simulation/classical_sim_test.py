@@ -28,6 +28,7 @@ from qualtran import (
     QBit,
     QDType,
     QFxp,
+    QGF,
     QInt,
     QIntOnesComp,
     QUInt,
@@ -169,6 +170,7 @@ def test_notebook():
 class TestMultiDimensionalReg(Bloq):
     dtype: QDType
     n: int
+    dtypes_to_assert: tuple[type, ...] = (int, np.integer)
 
     @property
     def signature(self):
@@ -180,6 +182,7 @@ class TestMultiDimensionalReg(Bloq):
         )
 
     def on_classical_vals(self, x):
+        assert all(isinstance(y, self.dtypes_to_assert) for y in x.reshape(-1))
         return {'y': x}
 
 
@@ -197,3 +200,12 @@ def test_multidimensional_classical_sim_for_large_int():
     x = [2**88 - 1, 2**12 - 1, 2**54 - 1, 1 - 2**72, 1 - 2**62]
     bloq = TestMultiDimensionalReg(dtype, len(x))
     np.testing.assert_equal(bloq.call_classically(x=np.array(x))[0], x)
+
+
+def test_multidimensional_classical_sim_for_gqf():
+    dtype = QGF(2, 2)
+    x = dtype.gf_type.elements
+    bloq = TestMultiDimensionalReg(dtype, len(x), (dtype.gf_type,))
+    y = bloq.call_classically(x=x)[0]
+    assert isinstance(y, dtype.gf_type)
+    np.testing.assert_equal(y, x)

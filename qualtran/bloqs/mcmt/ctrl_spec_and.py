@@ -71,7 +71,7 @@ class CtrlSpecAnd(Bloq):
 
     References:
         [Unqomp: synthesizing uncomputation in Quantum circuits](https://dl.acm.org/doi/10.1145/3453483.3454040)
-        Paradis et. al. 2021.
+        Paradis et al. 2021.
     """
 
     ctrl_spec: CtrlSpec

@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import cirq
 import numpy as np
 import pytest
 import sympy
@@ -100,6 +99,13 @@ def test_signature():
 
     assert list(signature) == [r1, r2, r3]
 
+
+def test_get_named_qubits():
+    cirq = pytest.importorskip('cirq')
+    r1 = Register("r1", QAny(5))
+    r2 = Register("r2", QAny(2))
+    r3 = Register("r3", QBit())
+    signature = Signature([r1, r2, r3])
     expected_named_qubits = {
         "r1": cirq.NamedQubit.range(5, prefix="r1"),
         "r2": cirq.NamedQubit.range(2, prefix="r2"),
@@ -179,6 +185,7 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
+    cirq = pytest.importorskip('cirq')
     regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
