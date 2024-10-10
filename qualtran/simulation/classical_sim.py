@@ -81,6 +81,15 @@ def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
     return object
 
 
+def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
+    from qualtran._infra.data_types import QGF
+
+    if isinstance(reg.dtype, QGF):
+        return reg.dtype.gf_type.Zeros(reg.shape)
+
+    return np.empty(reg.shape, dtype=_numpy_dtype_from_qdtype(reg.dtype))
+
+
 def _get_in_vals(
     binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:
@@ -88,9 +97,7 @@ def _get_in_vals(
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
-    dtype: Type = _numpy_dtype_from_qdtype(reg.dtype)
-
-    arg = np.empty(reg.shape, dtype=dtype)
+    arg = _empty_ndarray_from_reg(reg)
     for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
@@ -121,7 +128,7 @@ def _update_assign_from_vals(
 
         if reg.shape:
             # `val` is an array
-            val = np.asarray(val)
+            val = np.asanyarray(val)
             if val.shape != reg.shape:
                 raise ValueError(
                     f"Incorrect shape {val.shape} received for {debug_str}. " f"Want {reg.shape}."

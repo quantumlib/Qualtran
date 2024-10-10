@@ -6,6 +6,7 @@ numpy
 sympy
 cirq-core==1.4
 fxpmath
+galois
 
 # qualtran/testing.py
 nbconvert
