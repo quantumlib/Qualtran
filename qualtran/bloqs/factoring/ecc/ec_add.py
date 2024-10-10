@@ -26,7 +26,6 @@ from qualtran import (
     DecomposeTypeError,
     QBit,
     QMontgomeryUInt,
-    QUInt,
     Register,
     Side,
     Signature,
@@ -69,11 +68,11 @@ class _ECAddStepOne(Bloq):
         f3: Flag to set if (a, b) = (0, 0).
         f4: Flag to set if (x, y) = (0, 0).
         ctrl: Flag to set if neither the input points nor the output point are (0, 0).
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
 
     References:
@@ -196,19 +195,19 @@ class _ECAddStepTwo(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        window_size: The number of bits in the window.
+        window_size: The number of bits in the ModMult window.
 
     Registers:
         f1: Flag set if a = x.
         ctrl: Flag set if neither the input points nor the output point are (0, 0).
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
-        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y) in montgomery form.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
@@ -229,8 +228,8 @@ class _ECAddStepTwo(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n), side=Side.RIGHT),
-                Register('lam_r', QUInt(self.n)),
+                Register('lam', QMontgomeryUInt(self.n), side=Side.RIGHT),
+                Register('lam_r', QMontgomeryUInt(self.n)),
             ]
         )
 
@@ -251,7 +250,14 @@ class _ECAddStepTwo(Bloq):
                 lam = lam_r
                 f1 = 0
             else:
-                lam = (y * pow(int(x), -1, mod=self.mod)) % self.mod
+                lam = QMontgomeryUInt(self.n).montgomery_product(
+                    y,
+                    QMontgomeryUInt(self.n).montgomery_inverse(x, self.n, self.mod),
+                    self.n,
+                    self.mod,
+                )
+                if lam == lam_r:
+                    f1 = (f1 + 1) % 2
         else:
             lam = 0
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
@@ -302,7 +308,7 @@ class _ECAddStepTwo(Bloq):
             f1 = ctrls[0]
             ctrl = ctrls[1]
             z4_split[i] = ctrls[2]
-        z4 = bb.join(z4_split, dtype=QUInt(self.n))
+        z4 = bb.join(z4_split, dtype=QMontgomeryUInt(self.n))
 
         # If ctrl = 1 and x = a: lam = lam_r.
         lam_r_split = bb.split(lam_r)
@@ -314,8 +320,8 @@ class _ECAddStepTwo(Bloq):
             f1 = ctrls[0]
             ctrl = ctrls[1]
             lam_r_split[i] = ctrls[2]
-        lam_r = bb.join(lam_r_split, dtype=QUInt(self.n))
-        lam = bb.join(lam_split, dtype=QUInt(self.n))
+        lam_r = bb.join(lam_r_split, dtype=QMontgomeryUInt(self.n))
+        lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
 
         # If lam = lam_r: return f1 = 0. (If not we will flip f1 to 0 at the end iff x_r = y_r = 0).
         lam, lam_r, f1 = bb.add(Equals(QMontgomeryUInt(self.n)), x=lam, y=lam_r, target=f1)
@@ -361,15 +367,15 @@ class _ECAddStepThree(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        window_size: The number of bits in the window.
+        window_size: The number of bits in the ModMult window.
 
     Registers:
         ctrl: Flag set if neither the input points nor the output point are (0, 0).
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
 
@@ -391,7 +397,7 @@ class _ECAddStepThree(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n)),
+                Register('lam', QMontgomeryUInt(self.n)),
             ]
         )
 
@@ -453,7 +459,7 @@ class _ECAddStepThree(Bloq):
         for i in range(self.n):
             a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
         a = bb.join(a_split, QMontgomeryUInt(self.n))
-        z1 = bb.join(z1_split, QUInt(self.n))
+        z1 = bb.join(z1_split, QMontgomeryUInt(self.n))
 
         # z1 = (3 * a) % p.
         z1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod), x=z1)
@@ -470,8 +476,8 @@ class _ECAddStepThree(Bloq):
         for i in range(self.n):
             a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
         a = bb.join(a_split, QMontgomeryUInt(self.n))
-        z1 = bb.join(z1_split, QUInt(self.n))
-        bb.add(Free(QUInt(self.n)), reg=z1)
+        z1 = bb.join(z1_split, QMontgomeryUInt(self.n))
+        bb.add(Free(QMontgomeryUInt(self.n)), reg=z1)
 
         # Return the output registers.
         return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam}
@@ -501,12 +507,12 @@ class _ECAddStepFour(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        window_size: The number of bits in the window.
+        window_size: The number of bits in the ModMult window.
 
     Registers:
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
 
@@ -525,17 +531,16 @@ class _ECAddStepFour(Bloq):
             [
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n)),
+                Register('lam', QMontgomeryUInt(self.n)),
             ]
         )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        montgomery_prod = (lam * lam * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
-        x = (x - montgomery_prod) % self.mod
+        x = (x - QMontgomeryUInt(self.n).montgomery_product(lam, lam, self.n, self.mod)) % self.mod
         if lam > 0:
-            y = (lam * x * pow(2, self.n * (self.mod - 2), self.mod)) % self.mod
+            y = QMontgomeryUInt(self.n).montgomery_product(x, lam, self.n, self.mod)
         return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
@@ -550,8 +555,8 @@ class _ECAddStepFour(Bloq):
         z4_split = bb.split(z4)
         for i in range(self.n):
             lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
-        lam = bb.join(lam_split, QUInt(self.n))
-        z4 = bb.join(z4_split, QUInt(self.n))
+        lam = bb.join(lam_split, QMontgomeryUInt(self.n))
+        z4 = bb.join(z4_split, QMontgomeryUInt(self.n))
 
         # z3 = lam * lam % p.
         z4, lam, z3, z2, reduced = bb.add(
@@ -580,9 +585,9 @@ class _ECAddStepFour(Bloq):
         z4_split = bb.split(z4)
         for i in range(self.n):
             lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
-        lam = bb.join(lam_split, QUInt(self.n))
-        z4 = bb.join(z4_split, QUInt(self.n))
-        bb.add(Free(QUInt(self.n)), reg=z4)
+        lam = bb.join(lam_split, QMontgomeryUInt(self.n))
+        z4 = bb.join(z4_split, QMontgomeryUInt(self.n))
+        bb.add(Free(QMontgomeryUInt(self.n)), reg=z4)
 
         # z3 = lam * x % p.
         x, lam, z3, z4, reduced = bb.add(
@@ -598,7 +603,7 @@ class _ECAddStepFour(Bloq):
         y_split = bb.split(y)
         for i in range(self.n):
             z3_split[i], y_split[i] = bb.add(CNOT(), ctrl=z3_split[i], target=y_split[i])
-        z3 = bb.join(z3_split, QUInt(self.n))
+        z3 = bb.join(z3_split, QMontgomeryUInt(self.n))
         y = bb.join(y_split, QMontgomeryUInt(self.n))
 
         # Uncompute multiplication.
@@ -636,15 +641,15 @@ class _ECAddStepFive(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        window_size: The number of bits in the window.
+        window_size: The number of bits in the ModMult window.
 
     Registers:
         ctrl: Flag set if neither the input points nor the output point are (0, 0).
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
         lam: The lambda slope used in the addition operation.
 
@@ -666,7 +671,7 @@ class _ECAddStepFive(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
-                Register('lam', QUInt(self.n), side=Side.LEFT),
+                Register('lam', QMontgomeryUInt(self.n), side=Side.LEFT),
             ]
         )
 
@@ -721,9 +726,9 @@ class _ECAddStepFive(Bloq):
             )
             ctrl = ctrls[0]
             z4_split[i] = ctrls[1]
-        z4 = bb.join(z4_split, dtype=QUInt(self.n))
-        lam = bb.join(lam_split, dtype=QUInt(self.n))
-        bb.add(Free(QUInt(self.n)), reg=lam)
+        z4 = bb.join(z4_split, dtype=QMontgomeryUInt(self.n))
+        lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
+        bb.add(Free(QMontgomeryUInt(self.n), dirty=True), reg=lam)
 
         # Uncompute multiplication and inverse.
         x, y = bb.add(
@@ -752,7 +757,6 @@ class _ECAddStepFive(Bloq):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            ModNeg(QMontgomeryUInt(self.n), mod=self.mod): 2,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             ModInv(n=self.n, mod=self.mod): 1,
             DirtyOutOfPlaceMontgomeryModMul(
@@ -782,11 +786,11 @@ class _ECAddStepSix(Bloq):
         f3: Flag to set if (a, b) = (0, 0).
         f4: Flag to set if (x, y) = (0, 0).
         ctrl: Flag to set if neither the input points nor the output point are (0, 0).
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
 
     References:
@@ -932,10 +936,10 @@ class _ECAddStepSix(Bloq):
         y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Free all ancilla qubits in the zero state.
-        bb.add(Free(QBit()), reg=f1)
-        bb.add(Free(QBit()), reg=f2)
+        bb.add(Free(QBit(), dirty=True), reg=f1)
+        bb.add(Free(QBit(), dirty=True), reg=f2)
         bb.add(Free(QBit()), reg=f3)
-        bb.add(Free(QBit()), reg=f4)
+        bb.add(Free(QBit(), dirty=True), reg=f4)
         bb.add(Free(QBit()), reg=ctrl)
 
         # Return the output registers.
@@ -975,16 +979,16 @@ class ECAdd(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
-        window_size: The number of bits in the window.
+        window_size: The number of bits in the ModMult window.
 
     Registers:
-        a: The x component of the first input elliptic curve point of bitsize `n`.
-        b: The y component of the first input elliptic curve point of bitsize `n`.
-        x: The x component of the second input elliptic curve point of bitsize `n`, which
+        a: The x component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        b: The y component of the first input elliptic curve point of bitsize `n` in montgomery form.
+        x: The x component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the x component of the resultant curve point.
-        y: The y component of the second input elliptic curve point of bitsize `n`, which
+        y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
-        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y).
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y) in montgomery form.
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
@@ -999,11 +1003,11 @@ class ECAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('a', QUInt(self.n)),
-                Register('b', QUInt(self.n)),
-                Register('x', QUInt(self.n)),
-                Register('y', QUInt(self.n)),
-                Register('lam_r', QUInt(self.n)),
+                Register('a', QMontgomeryUInt(self.n)),
+                Register('b', QMontgomeryUInt(self.n)),
+                Register('x', QMontgomeryUInt(self.n)),
+                Register('y', QMontgomeryUInt(self.n)),
+                Register('lam_r', QMontgomeryUInt(self.n)),
             ]
         )
 
@@ -1060,11 +1064,32 @@ class ECAdd(Bloq):
         return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
     def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
-        curve_a = lam_r * 2 * b - (3 * a**2)
-        p1 = ECPoint(a, b, mod=self.mod, curve_a=curve_a)
-        p2 = ECPoint(x, y, mod=self.mod, curve_a=curve_a)
+        curve_a = (
+            QMontgomeryUInt(self.n).montgomery_to_uint(lam_r, self.n, self.mod)
+            * 2
+            * QMontgomeryUInt(self.n).montgomery_to_uint(b, self.n, self.mod)
+            - (3 * QMontgomeryUInt(self.n).montgomery_to_uint(a, self.n, self.mod) ** 2)
+        ) % self.mod
+        p1 = ECPoint(
+            QMontgomeryUInt(self.n).montgomery_to_uint(a, self.n, self.mod),
+            QMontgomeryUInt(self.n).montgomery_to_uint(b, self.n, self.mod),
+            mod=self.mod,
+            curve_a=curve_a,
+        )
+        p2 = ECPoint(
+            QMontgomeryUInt(self.n).montgomery_to_uint(x, self.n, self.mod),
+            QMontgomeryUInt(self.n).montgomery_to_uint(y, self.n, self.mod),
+            mod=self.mod,
+            curve_a=curve_a,
+        )
         result = p1 + p2
-        return {'a': a, 'b': b, 'x': result.x, 'y': result.y, 'lam_r': lam_r}
+        return {
+            'a': a,
+            'b': b,
+            'x': QMontgomeryUInt(self.n).uint_to_montgomery(result.x, self.n, self.mod),
+            'y': QMontgomeryUInt(self.n).uint_to_montgomery(result.y, self.n, self.mod),
+            'lam_r': lam_r,
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {

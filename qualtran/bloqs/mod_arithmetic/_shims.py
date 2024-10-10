@@ -28,13 +28,13 @@ import attrs
 from attrs import frozen
 
 from qualtran import Bloq, QUInt, Register, Side, Signature
-from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
-from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
+from qualtran.bloqs.arithmetic import AddK, Negate
+from qualtran.bloqs.arithmetic._shims import CHalf, CSub, Lt, MultiCToffoli
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -60,9 +60,9 @@ class _ModInvInner(Bloq):
             (CNOT(), 2),
             (Lt(self.n), 1),
             (CSwap(self.n), 2),
-            (Subtract(QUInt(self.n)), 1),
-            (Add(QUInt(self.n)), 1),
-            (CNOT(), 1),
+            (CSub(self.n), 1),
+            (CAdd(QUInt(self.n)), 1),
+            (CNOT(), 2),
             (ModDbl(QUInt(self.n), self.mod), 1),
             (CHalf(self.n), 1),
             (CSwap(self.n), 2),
@@ -140,7 +140,7 @@ class ModInv(Bloq):
         # value. Here we will just do nothing to x in that case because it won't matter in the
         # circuit anyway.
         try:
-            x = pow(int(x) * pow(2, self.n, self.mod), -1, mod=self.mod) % self.mod
+            x = pow(int(x), self.mod - 2, mod=self.mod) * pow(2, 2 * self.n, self.mod) % self.mod
         except ValueError:
             pass
 
