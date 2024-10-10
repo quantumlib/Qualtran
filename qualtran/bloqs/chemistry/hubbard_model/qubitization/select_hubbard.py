@@ -20,9 +20,19 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register, Signature
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -30,7 +40,7 @@ from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajora
 
 
 @attrs.frozen
-class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class SelectHubbard(SelectOracle):
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to SELECT for an arbitrary chemistry Hamiltonian, we:
@@ -179,6 +189,24 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
         if self.control_val is not None:
             return f'C{s}'
         return s
+
+    @property
+    def cv(self):
+        return self.control_val
+
+    def with_cv(self, *, cv: Optional[int]) -> 'SelectHubbard':
+        return attrs.evolve(self, control_val=cv)
+
+    @property
+    def ctrl_reg_name(self) -> str:
+        return 'control'
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
+            get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
+        )
+
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
 
 
 @bloq_example
