@@ -37,7 +37,7 @@ def test_kaliski_mod_inverse_classical_action(bitsize, mod):
         inv_x_montgomery = (inv_x * p2) % mod
         res = blq.call_classically(x=x_montgomery)
         assert res == cblq.call_classically(x=x_montgomery)
-
+        assert len(res) == 2
         assert res[0] == inv_x_montgomery
 
 
