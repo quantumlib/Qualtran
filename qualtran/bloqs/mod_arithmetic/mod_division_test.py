@@ -35,15 +35,10 @@ def test_kaliski_mod_inverse_classical_action(bitsize, mod):
         x_montgomery = (x * p2) % mod
         inv_x = pow(x, -1, mod)
         inv_x_montgomery = (inv_x * p2) % mod
-        res = blq.call_classically(u=mod, v=x_montgomery, r=0, s=1)
-        assert res == cblq.call_classically(u=mod, v=x_montgomery, r=0, s=1)
-        u, v, r, s = res[:4]
+        res = blq.call_classically(x=x_montgomery)
+        assert res == cblq.call_classically(x=x_montgomery)
 
-        # Invariants of the Kaliski algorithm.
-        assert u == 1
-        assert v == 0
-        assert s == mod
-        assert r == inv_x_montgomery
+        assert res[0] == inv_x_montgomery
 
 
 @pytest.mark.parametrize('bitsize', [5, 6])

@@ -34,7 +34,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import AddK
-from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, XorK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.arithmetic.subtraction import Subtract
@@ -475,24 +475,14 @@ class KaliskiModInverse(Bloq):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('x', QMontgomeryUInt(self.bitsize)),
                 Register('m', QAny(2 * self.bitsize), side=side),
                 Register('f', QBit(), side=side),
             ]
         )
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        u: Soquet,
-        v: Soquet,
-        r: Soquet,
-        s: Soquet,
-        m: Optional[Soquet] = None,
-        f: Optional[Soquet] = None,
+        self, bb: 'BloqBuilder', x: Soquet, m: Optional[Soquet] = None, f: Optional[Soquet] = None
     ) -> Dict[str, 'SoquetT']:
 
         if self.uncompute:
@@ -509,13 +499,29 @@ class KaliskiModInverse(Bloq):
             bb.free(f)
             return {'u': u, 'v': v, 'r': r, 's': s}
 
+        u = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
+        r = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
+        s = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
+        u = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=u)
+        s = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=s)
         m = bb.allocate(2 * self.bitsize)
         # m = bb.split(m)
         f = bb.allocate(1)
-        u, v, r, s, m, f = bb.add_from(
-            _KaliskiModInverseImpl(self.bitsize, self.mod), u=u, v=v, r=r, s=s, m=m, f=f
+        u, v, x, s, m, f = bb.add_from(
+            _KaliskiModInverseImpl(self.bitsize, self.mod), u=u, v=x, r=r, s=s, m=m, f=f
         )
-        return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
+
+        u = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=u)
+        s = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=s)
+
+        bb.free(u)
+        bb.free(v)
+        bb.free(s)
+
+        return {'x': x, 'm': m, 'f': f}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
+        return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa) | {
+            XorK(QMontgomeryUInt(self.bitsize), self.mod): 2,
+            XorK(QMontgomeryUInt(self.bitsize), 1): 2,
+        }
