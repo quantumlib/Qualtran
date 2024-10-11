@@ -360,7 +360,7 @@ def test_clineardepthgreaterthan_classical_action_unsigned(ctrl, dtype, bitsize)
     b = CLinearDepthGreaterThan(dtype(bitsize), ctrl)
     cb = b.decompose_bloq()
     for c, target in itertools.product(range(2), repeat=2):
-        for (x, y) in itertools.product(range(2**bitsize), repeat=2):
+        for x, y in itertools.product(range(2**bitsize), repeat=2):
             assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
                 ctrl=c, a=x, b=y, target=target
             )
@@ -372,7 +372,7 @@ def test_clineardepthgreaterthan_classical_action_signed(ctrl, bitsize):
     b = CLinearDepthGreaterThan(QInt(bitsize), ctrl)
     cb = b.decompose_bloq()
     for c, target in itertools.product(range(2), repeat=2):
-        for (x, y) in itertools.product(range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1)), repeat=2):
+        for x, y in itertools.product(range(-(2 ** (bitsize - 1)), 2 ** (bitsize - 1)), repeat=2):
             assert b.call_classically(ctrl=c, a=x, b=y, target=target) == cb.call_classically(
                 ctrl=c, a=x, b=y, target=target
             )
