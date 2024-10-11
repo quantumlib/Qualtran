@@ -19,6 +19,7 @@ import cirq
 
 from qualtran import Bloq
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
+
 from .decompose_protocol import _decompose_once_considering_known_decomposition
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)

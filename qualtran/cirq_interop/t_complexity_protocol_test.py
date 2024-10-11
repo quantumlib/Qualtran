@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import TYPE_CHECKING
 
 import cirq
 import pytest
@@ -29,9 +28,6 @@ from qualtran.cirq_interop.t_complexity_protocol import (
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
-
-if TYPE_CHECKING:
-    pass
 
 
 class DoesNotSupportTComplexity: ...
@@ -64,6 +60,11 @@ class DoesNotSupportTComplexityBloq(Bloq):
     @property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+
+def test_legacy_t_complexity_annotation():
+    # Test the deprecated `getattr(.., '_t_complexity_')
+    assert SupportsTComplexityGateWithRegisters().t_complexity() == TComplexity(t=1, clifford=2)
 
 
 def test_t_complexity_for_bloq_does_not_support():
