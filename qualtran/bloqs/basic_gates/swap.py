@@ -36,7 +36,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop import CirqQuregT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -83,9 +82,6 @@ class TwoBitSwap(Bloq):
         (x,) = x
         (y,) = y
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

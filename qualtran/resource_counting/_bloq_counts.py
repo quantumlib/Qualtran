@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-import warnings
 from collections import defaultdict
 from typing import Callable, cast, Dict, Sequence, Tuple, TYPE_CHECKING
 
@@ -295,18 +294,6 @@ class QECGatesCost(CostKey[GateCounts]):
         from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt import And, MultiTargetCNOT
-
-        if self.legacy_shims:
-            legacy_val = bloq._t_complexity_()
-            if legacy_val is not NotImplemented:
-                warnings.warn(
-                    "Please migrate explicit cost annotations to the general "
-                    "`Bloq.my_static_costs` method override.",
-                    DeprecationWarning,
-                )
-                return GateCounts(
-                    t=legacy_val.t, clifford=legacy_val.clifford, rotation=legacy_val.rotations
-                )
 
         # T gates
         if bloq_is_t_like(bloq):

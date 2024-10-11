@@ -18,7 +18,6 @@ from attrs import frozen
 from sympy import Expr
 
 from qualtran import Bloq, QAny, Register, Signature
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 @frozen
@@ -39,9 +38,6 @@ class ArbitraryClifford(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('x', QAny(bitsize=self.n))])
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def __str__(self):
         return f'ArbitraryClifford(n={self.n})'
