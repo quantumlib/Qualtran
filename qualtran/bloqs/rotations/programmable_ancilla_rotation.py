@@ -36,6 +36,7 @@ class ZPowProgrammedAncilla(Bloq):
     Signature:
         q: the ancilla qubit prepared in the above state.
     """
+
     exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
 
@@ -98,7 +99,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
 
     exponent: SymbolicFloat
@@ -164,7 +165,7 @@ def _zpow_using_programmed_ancilla_symb() -> ZPowUsingProgrammedAncilla:
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
     phi, eps = sympy.symbols(r"\phi \epsilon")
     zpow_using_programmed_ancilla_symb = ZPowUsingProgrammedAncilla(
@@ -179,7 +180,7 @@ def _zpow_using_programmed_ancilla_symb_rounds() -> ZPowUsingProgrammedAncilla:
 
     References:
         [Simulating chemistry efficiently on fault-tolerant quantum computers](https://arxiv.org/abs/1204.0567)
-        Jones et. al. 2012. Fig 4.
+        Jones et al. 2012. Fig 4.
     """
     phi, n = sympy.symbols(r"\phi n")
     zpow_using_programmed_ancilla_symb_rounds = ZPowUsingProgrammedAncilla(

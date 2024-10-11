@@ -50,6 +50,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 77.
     """
+
     num_bits_p: int
 
     @cached_property
@@ -93,6 +94,7 @@ class PrepareNuSuperPositionState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 78.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -135,6 +137,7 @@ class FlagZeroAsFailure(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -184,6 +187,7 @@ class TestNuLessThanMu(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -250,6 +254,7 @@ class TestNuInequality(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     num_bits_m: int
     is_adjoint: bool = False
@@ -345,6 +350,7 @@ class PrepareNuState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     num_bits_p: int
     m_param: int
 

@@ -35,8 +35,7 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def m_bits(self) -> SymbolicInt:
-        ...
+    def m_bits(self) -> SymbolicInt: ...
 
 
 @attrs.frozen

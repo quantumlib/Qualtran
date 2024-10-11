@@ -135,13 +135,13 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         Low, Kliuchnikov, Schaeffer. 2018.
 
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et. al. (2019). Appendix A. and B.
+        Berry et al. 2019. Appendix A. and B.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
-        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
-        if x is not None
-        else x,
+        converter=lambda x: (
+            tuple(x.tolist() if isinstance(x, np.ndarray) else x) if x is not None else x
+        ),
         default=None,
     )
     use_dirty_ancilla: bool = True

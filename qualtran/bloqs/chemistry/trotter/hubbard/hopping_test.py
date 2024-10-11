@@ -53,6 +53,4 @@ def test_hopping_tile_hwp_t_counts():
     _, counts = bloq.call_graph(generalizer=catch_rotations)
     n_rot_par = bloq.length**2 // 2
     assert counts[Rz(PHI)] == 2 * n_rot_par.bit_length()
-    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (
-        n_rot_par - n_rot_par.bit_count()
-    )
+    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (n_rot_par - n_rot_par.bit_count())

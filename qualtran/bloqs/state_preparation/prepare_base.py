@@ -38,8 +38,7 @@ class PrepareOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]:
-        ...
+    def selection_registers(self) -> Tuple[Register, ...]: ...
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:

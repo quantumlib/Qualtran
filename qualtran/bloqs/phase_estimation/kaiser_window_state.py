@@ -61,7 +61,7 @@ class KaiserWindowState(QPEWindowStateBase):
     References:
         [Analyzing Prospects for Quantum Advantage in Topological Data
         Analysis](https://arxiv.org/abs/2209.13581).
-        Berry et. al. (2022). Appendix D
+        Berry et al. (2022). Appendix D
     """
 
     bitsize: SymbolicInt
