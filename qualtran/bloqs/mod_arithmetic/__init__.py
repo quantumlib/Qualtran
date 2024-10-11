@@ -14,6 +14,6 @@
 
 from ._shims import ModInv
 from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
+from .mod_division import KaliskiModInverse
 from .mod_multiplication import CModMulK, DirtyOutOfPlaceMontgomeryModMul, ModDbl
 from .mod_subtraction import CModNeg, CModSub, ModNeg, ModSub
-from .mod_division import KaliskiModInverse

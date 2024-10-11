@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union, Optional
+from typing import Dict, Optional, Set, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -24,8 +24,8 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    QBit,
     QAny,
+    QBit,
     QMontgomeryUInt,
     Register,
     Side,
@@ -33,11 +33,11 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 from qualtran.bloqs.arithmetic.addition import AddK
-from qualtran.bloqs.arithmetic.subtraction import Subtract
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TwoBitCSwap, XGate
 from qualtran.bloqs.mcmt import And, MultiAnd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
@@ -47,9 +47,10 @@ from qualtran.resource_counting._call_graph import SympySymbolAllocator
 from qualtran.symbolics import HasLength, is_symbolic
 
 if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountDictT
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
-    from qualtran.resource_counting import BloqCountDictT
+
 
 @frozen
 class _KaliskiIterationStep1(Bloq):
@@ -91,11 +92,9 @@ class _KaliskiIterationStep1(Bloq):
             cvs = HasLength(self.bitsize)
         else:
             cvs = [0] * self.bitsize
-        return {
-            MultiAnd(cvs=cvs):1,
-            MultiAnd(cvs=cvs).adjoint(): 1,
-            CNOT(): 2,
-        }
+        return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 2}
+
+
 @frozen
 class _KaliskiIterationStep2(Bloq):
     bitsize: 'SymbolicInt'
@@ -148,10 +147,11 @@ class _KaliskiIterationStep2(Bloq):
         return {
             And(1, 0): 1,
             And(1, 0).adjoint(): 1,
-            CNOT(): 4,  
-            MultiAnd((1, 0, 0)): 1, 
-            MultiAnd((1, 0, 0)).adjoint(): 1, 
+            CNOT(): 4,
+            MultiAnd((1, 0, 0)): 1,
+            MultiAnd((1, 0, 0)).adjoint(): 1,
         }
+
 
 @frozen
 class _KaliskiIterationStep3(Bloq):
@@ -178,26 +178,29 @@ class _KaliskiIterationStep3(Bloq):
         m ^= c
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
+    ) -> Dict[str, 'SoquetT']:
         greater_than = bb.allocate(1)
-        u, v, greater_than = bb.add(LinearDepthGreaterThan(self.bitsize, signed=False), a=u, b=v, target=greater_than)
+        u, v, greater_than = bb.add(
+            LinearDepthGreaterThan(self.bitsize, signed=False), a=u, b=v, target=greater_than
+        )
 
-        (greater_than, f, b), junk, ctrl = bb.add(MultiAnd(cvs=(1, 1, 0)), ctrl=(greater_than, f, b))
-        
+        (greater_than, f, b), junk, ctrl = bb.add(
+            MultiAnd(cvs=(1, 1, 0)), ctrl=(greater_than, f, b)
+        )
+
         ctrl, a = bb.add(CNOT(), ctrl=ctrl, target=a)
         ctrl, m = bb.add(CNOT(), ctrl=ctrl, target=m)
 
-        greater_than, f, b = bb.add(MultiAnd(cvs=(1, 1, 0)).adjoint(), ctrl=(greater_than, f, b), junk=junk, target=ctrl)
-        u, v, greater_than = bb.add(LinearDepthGreaterThan(self.bitsize), a=u, b=v, target=greater_than)
+        greater_than, f, b = bb.add(
+            MultiAnd(cvs=(1, 1, 0)).adjoint(), ctrl=(greater_than, f, b), junk=junk, target=ctrl
+        )
+        u, v, greater_than = bb.add(
+            LinearDepthGreaterThan(self.bitsize), a=u, b=v, target=greater_than
+        )
         bb.free(greater_than)
-        return {
-            'u': u,
-            'v': v,
-            'b': b,
-            'a': a,
-            'm': m,
-            'f': f,
-        }
+        return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
@@ -206,6 +209,7 @@ class _KaliskiIterationStep3(Bloq):
             MultiAnd((1, 1, 0)).adjoint(): 1,
             CNOT(): 2,
         }
+
 
 @frozen
 class _KaliskiIterationStep4(Bloq):
@@ -282,11 +286,12 @@ class _KaliskiIterationStep5(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            And(1, 0) : 1,
+            And(1, 0): 1,
             And(1, 0).adjoint(): 1,
             BitwiseNot(QMontgomeryUInt(self.bitsize)): 2,
             CAdd(QMontgomeryUInt(self.bitsize)): 2,
         }
+
 
 @frozen
 class _KaliskiIterationStep6(Bloq):
@@ -366,6 +371,7 @@ class _KaliskiIterationStep6(Bloq):
             TwoBitCSwap(): self.bitsize - 1,
         }
 
+
 @frozen
 class KaliskiIteration(Bloq):
     bitsize: 'SymbolicInt'
@@ -385,30 +391,29 @@ class KaliskiIteration(Bloq):
         )
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        u: Soquet,
-        v: Soquet,
-        r: Soquet,
-        s: Soquet,
-        m: Soquet,
-        f: Soquet,
+        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
         a = bb.allocate(1)
         b = bb.allocate(1)
 
         v, m, f = bb.add(_KaliskiIterationStep1(self.bitsize), v=v, m=m, f=f)
-        u, v, b, a, m, f = bb.add(_KaliskiIterationStep2(self.bitsize), u=u, v=v, b=b, a=a, m=m, f=f)
-        u, v, b, a, m, f = bb.add(_KaliskiIterationStep3(self.bitsize), u=u, v=v, b=b, a=a, m=m, f=f)
+        u, v, b, a, m, f = bb.add(
+            _KaliskiIterationStep2(self.bitsize), u=u, v=v, b=b, a=a, m=m, f=f
+        )
+        u, v, b, a, m, f = bb.add(
+            _KaliskiIterationStep3(self.bitsize), u=u, v=v, b=b, a=a, m=m, f=f
+        )
         u, v, r, s, a = bb.add(_KaliskiIterationStep4(self.bitsize), u=u, v=v, r=r, s=s, a=a)
-        u, v, r, s, b, f = bb.add(_KaliskiIterationStep5(self.bitsize), u=u, v=v, r=r, s=s, b=b, f=f)
-        u, v, r, s, b, a, m, f = bb.add(_KaliskiIterationStep6(self.bitsize, self.mod), u=u, v=v, r=r, s=s, b=b, a=a, m=m, f=f)
+        u, v, r, s, b, f = bb.add(
+            _KaliskiIterationStep5(self.bitsize), u=u, v=v, r=r, s=s, b=b, f=f
+        )
+        u, v, r, s, b, a, m, f = bb.add(
+            _KaliskiIterationStep6(self.bitsize, self.mod), u=u, v=v, r=r, s=s, b=b, a=a, m=m, f=f
+        )
 
         bb.free(a)
         bb.free(b)
-        return {
-            'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f,
-        }
+        return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
 
 
 @frozen
@@ -424,53 +429,40 @@ class _KaliskiModInverseImpl(Bloq):
                 Register('v', QMontgomeryUInt(self.bitsize)),
                 Register('r', QMontgomeryUInt(self.bitsize)),
                 Register('s', QMontgomeryUInt(self.bitsize)),
-                Register('m', QAny(2*self.bitsize)),
+                Register('m', QAny(2 * self.bitsize)),
                 Register('f', QBit()),
             ]
         )
-    
 
     @cached_property
     def _kaliski_iteration(self):
         return KaliskiIteration(self.bitsize, self.mod)
 
-
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        u: Soquet,
-        v: Soquet,
-        r: Soquet,
-        s: Soquet,
-        m: Soquet,
-        f: Soquet,
+        self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
-        f = bb.add(XGate(), q = f)
+        f = bb.add(XGate(), q=f)
         m_arr = bb.split(m)
 
-        for i in range(2*self.bitsize):
-            u, v, r, s, m_arr[i], f = bb.add(self._kaliski_iteration, u=u, v=v, r=r, s=s, m=m_arr[i], f=f)
+        for i in range(2 * self.bitsize):
+            u, v, r, s, m_arr[i], f = bb.add(
+                self._kaliski_iteration, u=u, v=v, r=r, s=s, m=m_arr[i], f=f
+            )
 
         r = bb.add(BitwiseNot(QMontgomeryUInt(self.bitsize)), x=r)
         r = bb.add(AddK(self.bitsize, self.mod + 1, signed=False), x=r)
 
         m = bb.join(m_arr)
-        return {
-            'u': u,
-            'v': v,
-            'r': r,
-            's': s,
-            'm': m,
-            'f': f,
-        }
-    
+        return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            self._kaliski_iteration:2*self.bitsize,
+            self._kaliski_iteration: 2 * self.bitsize,
             BitwiseNot(QMontgomeryUInt(self.bitsize)): 1,
             AddK(self.bitsize, self.mod + 1, signed=False): 1,
             XGate(): 1,
         }
+
 
 @frozen
 class KaliskiModInverse(Bloq):
@@ -487,11 +479,10 @@ class KaliskiModInverse(Bloq):
                 Register('v', QMontgomeryUInt(self.bitsize)),
                 Register('r', QMontgomeryUInt(self.bitsize)),
                 Register('s', QMontgomeryUInt(self.bitsize)),
-                Register('m', QAny(2*self.bitsize), side=side),
+                Register('m', QAny(2 * self.bitsize), side=side),
                 Register('f', QBit(), side=side),
             ]
         )
-    
 
     def build_composite_bloq(
         self,
@@ -505,28 +496,26 @@ class KaliskiModInverse(Bloq):
     ) -> Dict[str, 'SoquetT']:
 
         if self.uncompute:
-            u, v, r, s, m, f = bb.add_from(_KaliskiModInverseImpl(self.bitsize, self.mod).adjoint(), u=u, v=v, r=r, s=s, m=m, f=f)
+            u, v, r, s, m, f = bb.add_from(
+                _KaliskiModInverseImpl(self.bitsize, self.mod).adjoint(),
+                u=u,
+                v=v,
+                r=r,
+                s=s,
+                m=m,
+                f=f,
+            )
             bb.free(m)
             bb.free(f)
-            return {
-                'u': u,
-                'v': v,
-                'r': r,
-                's': s,
-            }
+            return {'u': u, 'v': v, 'r': r, 's': s}
 
-        m = bb.allocate(2*self.bitsize)
+        m = bb.allocate(2 * self.bitsize)
         # m = bb.split(m)
         f = bb.allocate(1)
-        u, v, r, s, m, f = bb.add_from(_KaliskiModInverseImpl(self.bitsize, self.mod), u=u, v=v, r=r, s=s, m=m, f=f)
-        return {
-            'u': u,
-            'v': v,
-            'r': r,
-            's': s,
-            'm': m,
-            'f': f,
-        }
+        u, v, r, s, m, f = bb.add_from(
+            _KaliskiModInverseImpl(self.bitsize, self.mod), u=u, v=v, r=r, s=s, m=m, f=f
+        )
+        return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
