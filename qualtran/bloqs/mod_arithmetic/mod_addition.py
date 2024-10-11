@@ -43,7 +43,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics.types import is_symbolic
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -274,12 +274,20 @@ class CModAddK(Bloq):
 
     References:
         [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Gidney and Ekerå 2019. 
+        Uses CModAddK in the "reference implementation" in section 2.2 paragraph 4 to implement
+        controlled scaled addition. References circuit from Elementary Arithmetic Operations paper
+        cited below.
+
         [Quantum Networks for Elementary Arithmetic Operations](https://arxiv.org/abs/quant-ph/9511018).
+        Vedral et al. 1995.
+        Implements ModAdd in figure 4; because the referenced circuit is ModAdd instead of ModAddK
+        we choose to turn k into an IntState and reuse the existing CModAdd bloq.
+
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
-        Construction in the Gidney and Ekerå paper from 2019 references the second source's
-        construction in figure 4. Because the construction is simply a ModAdd bloq and not a
-        ModAddK bloq, we choose to use the bloq described in the third paper as it uses 2 fewer Add
-        bloqs.
+        Litinski et al. 2023.
+        This CModAdd circuit uses 2 fewer additions than the implementation referenced above.
+        Because of this we choose to use this CModAdd bloq instead.
     """
 
     k: Union[int, sympy.Expr]
