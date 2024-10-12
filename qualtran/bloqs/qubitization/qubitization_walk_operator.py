@@ -84,7 +84,7 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Figure 1.
+        Babbush et al. (2018). Figure 1.
     """
 
     block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]

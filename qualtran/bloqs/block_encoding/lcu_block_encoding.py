@@ -24,6 +24,7 @@ from qualtran import (
     BloqDocSpec,
     CtrlSpec,
     Register,
+    Side,
     Signature,
     SoquetT,
 )
@@ -250,7 +251,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.junk_registers
+        return tuple(reg for reg in self.prepare.junk_registers if reg.side == Side.THRU)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

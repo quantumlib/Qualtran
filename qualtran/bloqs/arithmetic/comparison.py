@@ -1008,12 +1008,7 @@ class Equals(Bloq):
             cvs = [0] * self.bitsize
         else:
             cvs = HasLength(self.bitsize)
-        return {
-            Xor(self.dtype): 2,
-            MultiControlX(cvs=cvs): 1,
-            MultiAnd(cvs=cvs).adjoint(): 1,
-            CNOT(): 1,
-        }
+        return {Xor(self.dtype): 2, MultiControlX(cvs=cvs): 1}
 
     def on_classical_vals(self, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': y, 'target': target ^ (x == y)}

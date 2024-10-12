@@ -62,7 +62,7 @@ class ControlledAddOrSubtract(Bloq):
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
-        Sanders et. al. Section II-A-1, Algorithm 1.
+        Sanders et al. Section II-A-1, Algorithm 1.
     """
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
