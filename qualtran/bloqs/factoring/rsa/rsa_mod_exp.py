@@ -26,13 +26,14 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeTypeError,
-    QBit,
     QUInt,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
+from qualtran._infra.registers import Side
+from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -80,15 +81,13 @@ class ModExp(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('exponent', QBit(), shape=(self.exp_bitsize,)),
-                Register('x', QUInt(self.x_bitsize)),
+                Register('exponent', QUInt(self.exp_bitsize)),
+                Register('x', QUInt(self.x_bitsize), side=Side.RIGHT),
             ]
         )
 
     @classmethod
-    def make_for_shor(
-        cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None
-    ):
+    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -114,28 +113,26 @@ class ModExp(Bloq):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', exponent: 'Soquet', x: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if is_symbolic(self.exp_bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
+        x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
+        exponent = bb.split(exponent)
+
         base = self.base % self.mod
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
             base = (base * base) % self.mod
 
-        return {'exponent': exponent, 'x': x}
+        return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {self._CtrlModMul(k=k): self.exp_bitsize}
+        return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
 
-    def on_classical_vals(self, exponent, x) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
-        return {
-            'exponent': exponent,
-            'x': (self.base ** QUInt(self.exp_bitsize).from_bits(exponent)) % self.mod,
-        }
+    def on_classical_vals(self, exponent) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+        return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -167,4 +164,11 @@ def _modexp() -> ModExp:
     return modexp
 
 
-_RSA_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_small, _modexp))
+@bloq_example
+def _modexp_symb() -> ModExp:
+    g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
+    modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
+    return modexp_symb
+
+
+_RSA_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_small, _modexp, _modexp_symb))
