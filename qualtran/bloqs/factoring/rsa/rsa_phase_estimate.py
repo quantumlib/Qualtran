@@ -50,15 +50,26 @@ class RSAPhaseEstimate(Bloq):
         n: The bitsize of the modulus N.
         mod: The modulus N; a part of the public key for RSA.
         base: A base for modular exponentiation.
+        exp_window_size: The window size of windowed arithmetic on the controlled modular
+            multiplications.
+        mult_window_size: The window size of windowed arithmetic on the modular product additions.
 
     References:
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Gidney and Ekerå. 2019.
+
         [Circuit for Shor's algorithm using 2n+3 qubits](https://arxiv.org/abs/quant-ph/0205095).
         Stephane Beauregard. 2003.
+
+        [Windowed quantum arithmetic](https://arxiv.org/abs/1905.07682).
+        Craig Gidney. 2019.
     """
 
     n: 'SymbolicInt'
     mod: 'SymbolicInt'
     base: 'SymbolicInt'
+    exp_window_size: 'SymbolicInt' = 1
+    mult_window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':

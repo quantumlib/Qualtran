@@ -17,6 +17,7 @@ from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -33,14 +34,16 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.registers import Side
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates.z_basis import IntState
+from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.symbolics.types import Shaped, SymbolicInt
 
 
 @frozen
@@ -54,10 +57,13 @@ class ModExp(Bloq):
     This bloq decomposes into controlled modular exponentiation for each exponent bit.
 
     Args:
-        base: The integer base of the exponentiation
-        mod: The integer modulus
-        exp_bitsize: The size of the `exponent` thru-register
-        x_bitsize: The size of the `x` right-register
+        base: The integer base of the exponentiation.
+        mod: The integer modulus.
+        exp_bitsize: The size of the `exponent` thru-register.
+        x_bitsize: The size of the `x` right-register.
+        exp_window_size: The window size of windowed arithmetic on the controlled modular
+            multiplications.
+        mult_window_size: The window size of windowed arithmetic on the modular product additions.
 
     Registers:
         exponent: The exponent
@@ -66,12 +72,17 @@ class ModExp(Bloq):
     References:
         [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
         Gidney and Ekerå. 2019.
+
+        [Windowed quantum arithmetic](https://arxiv.org/abs/1905.07682).
+        Craig Gidney. 2019.
     """
 
     base: 'SymbolicInt'
     mod: 'SymbolicInt'
     exp_bitsize: 'SymbolicInt'
     x_bitsize: 'SymbolicInt'
+    exp_window_size: 'SymbolicInt' = 1
+    mult_window_size: 'SymbolicInt' = 1
 
     def __attrs_post_init__(self):
         if not is_symbolic(self.base, self.mod):
@@ -87,7 +98,7 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None):
+    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None, exp_window_size: Optional['SymbolicInt'] = 1, mult_window_size: Optional['SymbolicInt'] = 1):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -107,7 +118,29 @@ class ModExp(Bloq):
                     g = random.randint(2, int(big_n))
                     if math.gcd(g, int(big_n)) == 1:
                         break
-        return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
+        return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n, exp_window_size=exp_window_size, mult_window_size=mult_window_size)
+
+    def qrom(self, data):
+        if is_symbolic(self.exp_bitsize) or is_symbolic(self.exp_window_size):
+            log_block_sizes = None
+            if is_symbolic(self.exp_bitsize) and not is_symbolic(self.exp_window_size):
+                # We assume that bitsize is much larger than window_size
+                log_block_sizes = (0,)
+            return QROAMClean(
+                [
+                    Shaped((2**(self.exp_window_size+self.mult_window_size),)),
+                ],
+                selection_bitsizes=(self.exp_window_size, self.mult_window_size),
+                target_bitsizes=(self.x_bitsize,),
+                log_block_sizes=log_block_sizes,
+            )
+
+        return QROAMClean(
+            [data],
+            selection_bitsizes=(self.exp_window_size, self.mult_window_size),
+            target_bitsizes=(self.x_bitsize,),
+        )
+
 
     def _CtrlModMul(self, k: 'SymbolicInt'):
         """Helper method to return a `CModMulK` with attributes forwarded."""
@@ -115,15 +148,40 @@ class ModExp(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if is_symbolic(self.exp_bitsize):
-            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
-        # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
+                raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
-        base = self.base % self.mod
-        for j in range(self.exp_bitsize - 1, 0 - 1, -1):
-            exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
-            base = (base * base) % self.mod
+        if self.exp_window_size > 1 or self.mult_window_size > 1:
+            k = self.base
+            k_inv = pow(self.base, -1, self.mod)
+
+            a = bb.split(x)
+            b = bb.add(IntState(val=0, bitsize=self.x_bitsize))
+            
+            ei = np.split(np.array(exponent), self.exp_bitsize // self.exp_window_size)
+            for i in range(self.exp_bitsize // self.exp_window_size):
+                kes = [pow(k, 2**i * x_e, self.mod) for x_e in range(2**self.exp_window_size)]
+                kes_inv = [pow(x_e, -1, self.mod) for x_e in kes]
+
+                mi = np.split(np.array(a), self.x_bitsize // self.mult_window_size)
+                for j in range(self.x_bitsize // self.mult_window_size):
+                    data = ([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
+                    ei[i], mi[j], t = bb.add(self.qrom(data), selection0_=ei[i], selection1_=mi[j])
+                    t, b = bb.add(Add(QUInt(self.x_bitsize), QUInt(self.x_bitsize), a=t, b=b))
+                    ei[i], mi[j] = bb.add(self.qrom(data).adjoint(), selection0_=ei[i], selection1_=mi[j], target=t)
+                    
+                a = np.concatenate(mi, axis=None)
+            x = bb.join(a, QUInt(self.x_bitsize))
+            exponent = np.concatenate(ei, axis=None)
+            bb.free(b)
+        else:
+            # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
+
+            base = self.base % self.mod
+            for j in range(self.exp_bitsize - 1, 0 - 1, -1):
+                exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
+                base = (base * base) % self.mod
 
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
