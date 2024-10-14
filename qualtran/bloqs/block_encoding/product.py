@@ -81,8 +81,8 @@ class Product(BlockEncoding):
         resource: The resource register (present only if bitsize > 0).
 
     References:
-        [Quantum algorithms: A survey of applications and end-to-end complexities](
-        https://arxiv.org/abs/2310.03011). Dalzell et al. (2023). Ch. 10.2.
+        [Quantum algorithms: A survey of applications and end-to-end complexities](https://arxiv.org/abs/2310.03011).
+        Dalzell et al. (2023). Ch. 10.2.
     """
 
     block_encodings: Tuple[BlockEncoding, ...] = field(
