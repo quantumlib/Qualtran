@@ -35,6 +35,8 @@ from qualtran import (
 )
 from qualtran._infra.registers import Side
 from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.arithmetic.subtraction import SubtractFrom
+from qualtran.bloqs.basic_gates.swap import Swap
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.mod_arithmetic import CModMulK
@@ -154,7 +156,6 @@ class ModExp(Bloq):
 
         if self.exp_window_size > 1 or self.mult_window_size > 1:
             k = self.base
-            k_inv = pow(self.base, -1, self.mod)
 
             a = bb.split(x)
             b = bb.add(IntState(val=0, bitsize=self.x_bitsize))
@@ -166,18 +167,43 @@ class ModExp(Bloq):
 
                 mi = np.split(np.array(a), self.x_bitsize // self.mult_window_size)
                 for j in range(self.x_bitsize // self.mult_window_size):
-                    data = ([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
-                    ei[i], mi[j], t = bb.add(self.qrom(data), selection0_=ei[i], selection1_=mi[j])
-                    t, b = bb.add(Add(QUInt(self.x_bitsize), QUInt(self.x_bitsize), a=t, b=b))
-                    ei[i], mi[j] = bb.add(self.qrom(data).adjoint(), selection0_=ei[i], selection1_=mi[j], target=t)
-                    
+                    data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
+                    ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
+                    mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
+                    ei_i, mi_i, t = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
+                    t, b = bb.add(Add(QUInt(self.x_bitsize), QUInt(self.x_bitsize)), a=t, b=b)
+                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t)
+                    ei[i] = bb.split(ei_i)
+                    mi[j] = bb.split(mi_i)
+
                 a = np.concatenate(mi, axis=None)
+                a = bb.join(a, QUInt(self.x_bitsize))
+                
+                b = bb.split(b)
+                mi = np.split(np.array(b), self.x_bitsize // self.mult_window_size)
+                for j in range(self.x_bitsize // self.mult_window_size):
+                    data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
+                    ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
+                    mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
+                    ei_i, mi_i, t = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
+                    t, a = bb.add(SubtractFrom(QUInt(self.x_bitsize)), a=t, b=a)
+                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t)
+                    ei[i] = bb.split(ei_i)
+                    mi[j] = bb.split(mi_i)
+                
+                b = np.concatenate(mi, axis=None)
+                
+                b = bb.join(b, QUInt(self.x_bitsize))
+
+                a, b = bb.add(Swap(self.x_bitsize), x=a, y=b)
+
+                a = bb.split(a)
+                    
             x = bb.join(a, QUInt(self.x_bitsize))
             exponent = np.concatenate(ei, axis=None)
             bb.free(b)
         else:
             # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
-
             base = self.base % self.mod
             for j in range(self.exp_bitsize - 1, 0 - 1, -1):
                 exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
@@ -186,8 +212,13 @@ class ModExp(Bloq):
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        k = ssa.new_symbol('k')
-        return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
+        if self.exp_window_size > 1 or self.mult_window_size > 1:
+            bloq_counts = (self.exp_bitsize // self.exp_window_size) * (self.x_bitsize // self.mult_window_size)
+            return {self.qrom: 2 * bloq_counts, self.qrom.adjoint(): 2 * bloq_counts, Add(): bloq_counts, SubtractFrom(): bloq_counts,
+                    Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+        else:
+            k = ssa.new_symbol('k')
+            return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
 
     def on_classical_vals(self, exponent) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
