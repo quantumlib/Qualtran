@@ -32,7 +32,6 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.symbolics import pi, sarg, sexp, SymbolicComplex, SymbolicFloat
 
 if TYPE_CHECKING:
@@ -108,9 +107,6 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def __str__(self) -> str:
         return f'GPhase({self.coefficient})'
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
 
 
 @bloq_example
