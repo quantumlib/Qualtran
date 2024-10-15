@@ -33,7 +33,6 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -131,9 +130,6 @@ class CNOT(Bloq):
         elif reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
 
 @bloq_example
