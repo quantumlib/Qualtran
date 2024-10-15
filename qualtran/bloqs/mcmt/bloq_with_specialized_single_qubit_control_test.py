@@ -26,6 +26,7 @@
 from typing import Optional, Sequence, Tuple
 from unittest.mock import ANY
 
+import attrs
 import pytest
 from attrs import evolve, frozen
 
@@ -46,21 +47,22 @@ class AtomWithSpecializedControl(Bloq):
         n_ctrl = 1 if self.cv is not None else 0
         return Signature.build(ctrl=n_ctrl, q=2)
 
-    def with_cv(self, *, cv: Optional[int]) -> Bloq:
-        return evolve(self, cv=cv)
-
-    @property
-    def ctrl_reg_name(self) -> str:
-        return 'ctrl'
-
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+            self,
+            ctrl_spec,
+            current_control_bit=self.cv,
+            bloq_with_ctrl=attrs.evolve(self, cv=1),
+            ctrl_reg_name='ctrl',
+            bloq_without_ctrl=attrs.evolve(self, cv=None),
+            bloq_with_ctrl_0=attrs.evolve(self, cv=0),
+        )
 
     @staticmethod
     def cost_expr_for_cv(cv: Optional[int]):
         import sympy
 
-        c_unctrl = sympy.Symbol("_c_target")
+        c_unctrl = sympy.Symbol("_c_target_")
         c_ctrl = sympy.Symbol("_c_ctrl_")
 
         if cv is None:
@@ -120,23 +122,18 @@ class TestAtom(Bloq):
         return Signature.build(q=2)
 
     @property
-    def cv(self):
-        return None
-
-    def with_cv(self, *, cv: Optional[int]) -> Optional[Bloq]:
-        if cv == 0:
-            return None
-
-        if cv is None:
-            return self
-        return CTestAtom(self.tag)
-
-    @property
     def ctrl_reg_name(self) -> str:
         return 'ctrl'
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+            self,
+            ctrl_spec,
+            current_control_bit=None,
+            bloq_with_ctrl=CTestAtom(self.tag),
+            ctrl_reg_name='ctrl',
+            bloq_without_ctrl=self,
+        )
 
 
 @frozen
@@ -147,24 +144,15 @@ class CTestAtom(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, q=2)
 
-    @property
-    def cv(self):
-        return 1
-
-    def with_cv(self, *, cv: Optional[int]) -> Optional[Bloq]:
-        if cv == 0:
-            return None
-
-        if cv is not None:
-            return self
-        return TestAtom(self.tag)
-
-    @property
-    def ctrl_reg_name(self) -> str:
-        return 'ctrl'
-
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+            self,
+            ctrl_spec,
+            current_control_bit=1,
+            bloq_with_ctrl=self,
+            ctrl_reg_name='ctrl',
+            bloq_without_ctrl=TestAtom(self.tag),
+        )
 
 
 def test_bloq_with_controlled_bloq():

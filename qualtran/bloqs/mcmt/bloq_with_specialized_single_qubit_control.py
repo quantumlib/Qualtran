@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Iterable, Optional, Protocol, runtime_checkable, Sequence, TYPE_CHECKING
+from typing import cast, Iterable, Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 
@@ -19,53 +19,52 @@ if TYPE_CHECKING:
     from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, SoquetT
 
 
-@runtime_checkable
-class BloqWithSpecializedControl(Protocol):
-    """mixin for a bloq that has a specialized single qubit controlled version."""
-
-    @property
-    def cv(self) -> Optional[int]: ...
-
-    def with_cv(self, *, cv: Optional[int]) -> Optional['Bloq']: ...
-
-    @property
-    def ctrl_reg_name(self) -> str: ...
+ControlBit = Optional[0 | 1]
 
 
 def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
-    bloq: 'BloqWithSpecializedControl', ctrl_spec: 'CtrlSpec'
+    bloq: 'Bloq',
+    ctrl_spec: 'CtrlSpec',
+    *,
+    current_control_bit: ControlBit,
+    bloq_with_ctrl: 'Bloq',
+    ctrl_reg_name: str,
+    bloq_without_ctrl: 'Bloq',
+    bloq_with_ctrl_0: Optional['Bloq'] = None,
 ) -> tuple['Bloq', 'AddControlledT']:
+    """Build the control system for a bloq with a specialized single-qubit controlled variant.
+
+    Args:
+        bloq: The current bloq of which a controlled version is requested.
+        ctrl_spec: The control specification
+        current_control_bit: The control bit of the current bloq, one of `0, 1, None`.
+        bloq_with_ctrl: The variant of this bloq with control bit `1`.
+        ctrl_reg_name: The name of the control qubit register.
+        bloq_without_ctrl: The variant of this bloq without a control.
+        bloq_with_ctrl_0: (optional) the variant of this bloq controlled by a qubit in the 0 state.
+    """
     from qualtran import Bloq, CtrlSpec, Soquet
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
     def _get_default_fallback():
-        assert isinstance(bloq, Bloq)
         return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
 
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
 
-    assert isinstance(
-        bloq, BloqWithSpecializedControl
-    ), f"{bloq} must implement protocol {BloqWithSpecializedControl}"
-
     # extract the single bit control value
-    (cv,) = ctrl_spec._cvs_tuple
+    (control_bit,) = ctrl_spec._cvs_tuple
+    control_bit = int(control_bit)
 
-    if bloq.cv is None:
+    if current_control_bit is None:
         # the easy case: use the controlled bloq
-        ctrl_bloq = bloq.with_cv(cv=cv)
+        ctrl_bloq = bloq_with_ctrl if control_bit == 1 else bloq_with_ctrl_0
         if ctrl_bloq is None:
             return _get_default_fallback()
-
-        assert isinstance(ctrl_bloq, BloqWithSpecializedControl)
-        ctrl_reg_name = ctrl_bloq.ctrl_reg_name
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
         ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            assert ctrl_bloq is not None
-
             (ctrl,) = ctrl_soqs
             in_soqs |= {ctrl_reg_name: ctrl}
 
@@ -76,11 +75,9 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
 
     else:
         # the difficult case: must combine the two controls into one
-        un_ctrl_bloq = bloq.with_cv(cv=None)
-        if un_ctrl_bloq is None:
-            return _get_default_fallback()
-
-        ctrl_bloq = ControlledViaAnd(un_ctrl_bloq, CtrlSpec(cvs=[cv, bloq.cv]))
+        ctrl_bloq = ControlledViaAnd(
+            bloq_without_ctrl, CtrlSpec(cvs=[control_bit, current_control_bit])
+        )
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
