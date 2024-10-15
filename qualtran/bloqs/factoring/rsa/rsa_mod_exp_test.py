@@ -48,8 +48,8 @@ def test_mod_exp_consistent_classical():
             base = rs.randint(1, mod)
 
         bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
-        ret1 = bloq.call_classically(exponent=exponent, x=1)
-        ret2 = bloq.decompose_bloq().call_classically(exponent=exponent, x=1)
+        ret1 = bloq.call_classically(exponent=exponent)
+        ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
         assert len(ret1) == len(ret2)
         for i in range(len(ret1)):
             np.testing.assert_array_equal(ret1[i], ret2[i])
