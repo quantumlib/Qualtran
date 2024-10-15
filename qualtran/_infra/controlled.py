@@ -250,6 +250,18 @@ class CtrlSpec:
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
+    def get_single_control_bit(self) -> Union[0, 1]:
+        """If controlled by a single qubit, return the control bit, otherwise raise"""
+        if self.num_qubits != 1:
+            raise ValueError(f"expected a single qubit control, got {self.num_qubits}")
+
+        (qdtype,) = self.qdtypes
+        (cv,) = self.cvs
+        (idx,) = Register('', qdtype, cv.shape).all_idxs()
+        (control_bit,) = qdtype.to_bits(cv[idx])
+
+        return int(control_bit)
+
 
 class AddControlledT(Protocol):
     """The signature for the `add_controlled` callback part of `ctrl_system`.

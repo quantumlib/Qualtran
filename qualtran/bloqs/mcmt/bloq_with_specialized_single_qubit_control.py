@@ -52,9 +52,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
 
-    # extract the single bit control value
-    (control_bit,) = ctrl_spec._cvs_tuple
-    control_bit = int(control_bit)
+    control_bit = ctrl_spec.get_single_control_bit()
 
     if current_control_bit is None:
         # the easy case: use the controlled bloq
