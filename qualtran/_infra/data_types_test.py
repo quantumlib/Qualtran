@@ -15,7 +15,6 @@ import math
 import random
 from typing import Any, Sequence, Union
 
-import cirq
 import numpy as np
 import pytest
 import sympy
@@ -312,6 +311,7 @@ def test_quint_to_and_from_bits():
 
 
 def test_bits_to_int():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     bitstrings = rs.choice([0, 1], size=(100, 23))
 
@@ -328,6 +328,7 @@ def test_bits_to_int():
 
 
 def test_int_to_bits():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
     bitstrings = QUInt(23).to_bits_array(nums)
