@@ -41,7 +41,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
 from qualtran.symbolics.types import SymbolicInt
 
@@ -277,9 +276,6 @@ class ZGate(Bloq):
 
         (q,) = q
         return cirq.Z(q), {'q': np.asarray([q])}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
