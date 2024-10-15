@@ -98,7 +98,7 @@ def test_bloq_decompose():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestCNOT'
+    assert str(tb) == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
     circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)

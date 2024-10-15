@@ -44,6 +44,7 @@ class PrepareZetaState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 23-24, last 3 paragraphs.
     """
+
     num_atoms: int
     lambda_zeta: int
     num_bits_nuc_pos: int

@@ -22,7 +22,7 @@ import ipywidgets
 
 from qualtran import Bloq
 
-from .bloq_counts_graph import format_counts_sigma, GraphvizCallGraph, GraphvizCounts
+from .bloq_counts_graph import format_counts_sigma, GraphvizCallGraph
 from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import draw_musical_score, get_musical_score_data
@@ -81,15 +81,13 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]
 @overload
 def show_call_graph(
     item: 'Bloq', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
-) -> None:
-    ...
+) -> None: ...
 
 
 @overload
 def show_call_graph(
     item: 'nx.Graph', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
-) -> None:
-    ...
+) -> None: ...
 
 
 def show_call_graph(
@@ -122,7 +120,7 @@ def show_call_graph(
             ).get_svg()
         )
     else:
-        IPython.display.display(GraphvizCounts(item).get_svg())
+        IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
 def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):

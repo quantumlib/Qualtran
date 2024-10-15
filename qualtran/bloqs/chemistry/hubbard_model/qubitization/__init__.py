@@ -14,7 +14,7 @@
 r"""Simulating the Hubbard model Hamiltonian using qubitization.
 
 This module follows section V. of Encoding Electronic Spectra in Quantum Circuits with Linear T
-Complexity. Babbush et. al. 2018. [arxiv:1805.03662](https://arxiv.org/abs/1805.03662).
+Complexity. Babbush et al. 2018. [arxiv:1805.03662](https://arxiv.org/abs/1805.03662).
 
 The 2D Hubbard model is a special case of the electronic structure Hamiltonian
 restricted to spins on a planar grid.

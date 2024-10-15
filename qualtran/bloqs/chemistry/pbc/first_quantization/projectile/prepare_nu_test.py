@@ -39,9 +39,7 @@ def test_prepare_nu_with_proj_t_counts():
     expected_cost += (
         2 * 4 * (num_bits_n - 1) + (num_bits_n - num_bits_p - 1) + 6 * num_bits_n + 2 + 2
     )
-    eq_c6 = (
-        3 * num_bits_n**2 + 16 * num_bits_n - num_bits_p - 6 + 4 * num_bits_m * (num_bits_n + 1)
-    )
+    eq_c6 = 3 * num_bits_n**2 + 16 * num_bits_n - num_bits_p - 6 + 4 * num_bits_m * (num_bits_n + 1)
     assert expected_cost == eq_c6 + 5
     prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param)
     qual_cost = get_cost_value(prep, QECGatesCost()).total_t_count()

@@ -76,7 +76,7 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
+        Babbush et al. 2018. Figure 1.
     """
 
     prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']

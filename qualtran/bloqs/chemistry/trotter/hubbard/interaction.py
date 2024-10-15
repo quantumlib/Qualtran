@@ -91,9 +91,9 @@ class InteractionHWP(Bloq):
         system: The system register of size 2 `length`.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) Eq. page 13 paragraph 1, and page
-            14 paragraph 3 right column. The apply 2 batches of $L^2/2$ rotations.
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238).
+        Eq. page 13 paragraph 1, and page 14 paragraph 3 right column.
+        They apply 2 batches of $L^2/2$ rotations.
     """
 
     length: SymbolicInt

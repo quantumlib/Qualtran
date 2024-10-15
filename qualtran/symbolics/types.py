@@ -15,17 +15,16 @@ from typing import overload, TypeVar, Union
 
 import sympy
 from attrs import field, frozen, validators
-from cirq._doc import document
 from typing_extensions import TypeIs
 
 SymbolicFloat = Union[float, sympy.Expr]
-document(SymbolicFloat, """A floating point value or a sympy expression.""")
+"""A floating point value or a sympy expression."""
 
 SymbolicInt = Union[int, sympy.Expr]
-document(SymbolicFloat, """A floating point value or a sympy expression.""")
+"""An integer value or a sympy expression."""
 
 SymbolicComplex = Union[complex, sympy.Expr]
-document(SymbolicComplex, """A complex value or a sympy expression.""")
+"""A complex value or a sympy expression."""
 
 
 @frozen
@@ -70,13 +69,11 @@ T = TypeVar('T')
 @overload
 def is_symbolic(
     arg: Union[T, sympy.Expr, Shaped, HasLength], /
-) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]:
-    ...
+) -> TypeIs[Union[sympy.Expr, Shaped, HasLength]]: ...
 
 
 @overload
-def is_symbolic(*args) -> bool:
-    ...
+def is_symbolic(*args) -> bool: ...
 
 
 def is_symbolic(*args) -> Union[TypeIs[Union[sympy.Expr, Shaped, HasLength]], bool]:

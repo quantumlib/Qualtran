@@ -15,12 +15,14 @@ import numpy as np
 import pytest
 
 from qualtran import Controlled, CtrlSpec, QInt, QUInt
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.mcmt.controlled_via_and import (
     _controlled_via_and_ints,
     _controlled_via_and_qbits,
     ControlledViaAnd,
 )
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
 
 def test_examples(bloq_autotester):
@@ -40,10 +42,39 @@ def test_tensor_against_naive_controlled(ctrl_spec: CtrlSpec):
     rs = np.random.RandomState(42)
     subbloq = MatrixGate.random(2, random_state=rs)
 
-    cbloq = ControlledViaAnd(subbloq, ctrl_spec)
-    naive_cbloq = Controlled(subbloq, ctrl_spec)
+    ctrl_bloq = ControlledViaAnd(subbloq, ctrl_spec)
+    naive_ctrl_bloq = Controlled(subbloq, ctrl_spec)
 
-    expected_tensor = naive_cbloq.tensor_contract()
-    actual_tensor = cbloq.tensor_contract()
+    expected_tensor = naive_ctrl_bloq.tensor_contract()
+    actual_tensor = ctrl_bloq.tensor_contract()
 
     np.testing.assert_allclose(expected_tensor, actual_tensor)
+
+
+def test_nested_controls():
+    spec1 = CtrlSpec(QUInt(4), [2, 3])
+    spec2 = CtrlSpec(QInt(4), [1, 2])
+    spec = CtrlSpec((QInt(4), QUInt(4)), ([1, 2], [2, 3]))
+
+    rs = np.random.RandomState(42)
+    bloq = MatrixGate.random(2, random_state=rs)
+
+    ctrl_bloq = ControlledViaAnd(bloq, spec1).controlled(ctrl_spec=spec2)
+    assert ctrl_bloq == ControlledViaAnd(bloq, spec)
+
+
+def test_nested_controlled_x():
+    bloq = XGate()
+
+    ctrl_bloq = ControlledViaAnd(bloq, CtrlSpec(cvs=[1, 1])).controlled(
+        ctrl_spec=CtrlSpec(cvs=[1, 1])
+    )
+    cost = get_cost_value(ctrl_bloq, QECGatesCost())
+
+    n_ands = 3
+    assert cost == GateCounts(and_bloq=n_ands, clifford=n_ands + 1, measurement=n_ands)
+
+    np.testing.assert_allclose(
+        ctrl_bloq.tensor_contract(),
+        XGate().controlled(CtrlSpec(cvs=[1, 1, 1, 1])).tensor_contract(),
+    )

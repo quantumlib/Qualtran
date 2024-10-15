@@ -110,7 +110,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.D. and Figure 11.
+        Babbush et al. (2018). Section III.D. and Figure 11.
     """
 
     selection_registers: Tuple[Register, ...] = attrs.field(
@@ -348,11 +348,13 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
     Total space will be $(2 \log(L) + \log(d) + 2 \mu + 1)$ work qubits + $log(L)$ ancillas for QROM.
 
     References:
-        [1] [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/pdf/1902.02134#page=15.30)
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
         Berry et al. (2019). Section 5, Eqs. 43, 44.
-        [2] [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et al. (2018). Section III.D. and Figure 11.
     """
+
     selection_registers: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )

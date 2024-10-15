@@ -71,7 +71,7 @@ class CtrlSpecAnd(Bloq):
 
     References:
         [Unqomp: synthesizing uncomputation in Quantum circuits](https://dl.acm.org/doi/10.1145/3453483.3454040)
-        Paradis et. al. 2021.
+        Paradis et al. 2021.
     """
 
     ctrl_spec: CtrlSpec
@@ -80,7 +80,9 @@ class CtrlSpecAnd(Bloq):
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits <= 1:
             raise ValueError(f"Expected at least 2 controls, got {self.n_ctrl_qubits}")
         for qdtype in self.ctrl_spec.qdtypes:
-            if not isinstance(qdtype, (QBit, QInt, QUInt, BQUInt, QIntOnesComp, QMontgomeryUInt)):
+            if not isinstance(
+                qdtype, (QBit, QAny, QInt, QUInt, BQUInt, QIntOnesComp, QMontgomeryUInt)
+            ):
                 raise NotImplementedError("CtrlSpecAnd currently only supports integer types")
 
     @cached_property

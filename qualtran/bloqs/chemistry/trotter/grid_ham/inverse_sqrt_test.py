@@ -81,15 +81,11 @@ def test_build_qrom_data(bitsize, poly_bitsize):
         a_bits = unique[::2]
         coeff_as_float = [fixed_point_to_float(c, poly_bitsize) for c in a_bits]
         for k in range(2, len(unique) // 2):
-            np.isclose(
-                coeff_as_float[k], poly_coeffs_a[c] / 2 ** (k / 2), atol=1 / 2**poly_bitsize
-            )
+            np.isclose(coeff_as_float[k], poly_coeffs_a[c] / 2 ** (k / 2), atol=1 / 2**poly_bitsize)
         b_bits = unique[1::2]
         coeff_as_float = [fixed_point_to_float(c, poly_bitsize) for c in b_bits]
         for k in range(2, len(unique) // 2):
-            np.isclose(
-                coeff_as_float[k], poly_coeffs_b[c] / 2 ** (k / 2), atol=1 / 2**poly_bitsize
-            )
+            np.isclose(coeff_as_float[k], poly_coeffs_b[c] / 2 ** (k / 2), atol=1 / 2**poly_bitsize)
 
 
 def multiply_fixed_point_float_by_int(

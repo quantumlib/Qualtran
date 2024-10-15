@@ -51,8 +51,8 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
         [user_spec]: The output registers of the bloqs in `ops`.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](
-        https://arxiv.org/abs/1805.03662). Babbush et. al. (2018). Section III.A. and Figure 7.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
     # type ignore needed here for Bloq as NDArray parameter
