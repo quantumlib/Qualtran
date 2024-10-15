@@ -21,7 +21,7 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.bookkeeping import Join, Split
-from qualtran.bloqs.factoring.rsa.rsa_mod_exp import _modexp, _modexp_small, _modexp_symb, ModExp
+from qualtran.bloqs.factoring.rsa.rsa_mod_exp import _modexp, _modexp_small, _modexp_symb, _modexp_window, _modexp_window_symb, ModExp
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
@@ -95,7 +95,7 @@ def test_mod_exp_t_complexity():
     assert tcomp.t > 0
 
 
-@pytest.mark.parametrize('bloq', [_modexp, _modexp_symb, _modexp_small])
+@pytest.mark.parametrize('bloq', [_modexp, _modexp_symb, _modexp_small, _modexp_window, _modexp_window_symb])
 def test_modexp(bloq_autotester, bloq):
     bloq_autotester(bloq)
 

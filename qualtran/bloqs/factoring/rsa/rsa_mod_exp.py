@@ -40,6 +40,8 @@ from qualtran.bloqs.basic_gates.swap import Swap
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
 from qualtran.bloqs.mod_arithmetic import CModMulK
+from qualtran.bloqs.mod_arithmetic.mod_addition import ModAdd
+from qualtran.bloqs.mod_arithmetic.mod_subtraction import ModSub
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -83,8 +85,8 @@ class ModExp(Bloq):
     mod: 'SymbolicInt'
     exp_bitsize: 'SymbolicInt'
     x_bitsize: 'SymbolicInt'
-    exp_window_size: 'SymbolicInt' = 1
-    mult_window_size: 'SymbolicInt' = 1
+    exp_window_size: Optional['SymbolicInt'] = None
+    mult_window_size: Optional['SymbolicInt'] = None
 
     def __attrs_post_init__(self):
         if not is_symbolic(self.base, self.mod):
@@ -100,7 +102,7 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None, exp_window_size: Optional['SymbolicInt'] = 1, mult_window_size: Optional['SymbolicInt'] = 1):
+    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None, exp_window_size: Optional['SymbolicInt'] = None, mult_window_size: Optional['SymbolicInt'] = None):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -154,7 +156,7 @@ class ModExp(Bloq):
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
-        if self.exp_window_size > 1 or self.mult_window_size > 1:
+        if self.exp_window_size is not None and self.mult_window_size is not None:
             k = self.base
 
             a = bb.split(x)
@@ -170,9 +172,10 @@ class ModExp(Bloq):
                     data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
                     ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
                     mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
-                    ei_i, mi_i, t = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
-                    t, b = bb.add(Add(QUInt(self.x_bitsize), QUInt(self.x_bitsize)), a=t, b=b)
-                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t)
+                    ei_i, mi_i, t, *junk = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
+                    t, b = bb.add(ModAdd(self.x_bitsize, self.mod), x=t, y=b)
+                    junk_mapping = {f'junk_target{i}_': junk[i] for i in range(len(junk))}
+                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t, **junk_mapping)
                     ei[i] = bb.split(ei_i)
                     mi[j] = bb.split(mi_i)
 
@@ -185,9 +188,10 @@ class ModExp(Bloq):
                     data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
                     ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
                     mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
-                    ei_i, mi_i, t = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
-                    t, a = bb.add(SubtractFrom(QUInt(self.x_bitsize)), a=t, b=a)
-                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t)
+                    ei_i, mi_i, t, *junk = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
+                    t, a = bb.add(ModSub(QUInt(self.x_bitsize), self.mod), x=t, y=a)
+                    junk_mapping = {f'junk_target{i}_': junk[i] for i in range(len(junk))}
+                    ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t, **junk_mapping)
                     ei[i] = bb.split(ei_i)
                     mi[j] = bb.split(mi_i)
                 
@@ -201,7 +205,7 @@ class ModExp(Bloq):
                     
             x = bb.join(a, QUInt(self.x_bitsize))
             exponent = np.concatenate(ei, axis=None)
-            bb.free(b)
+            bb.free(b, dirty=True)
         else:
             # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
             base = self.base % self.mod
@@ -212,10 +216,10 @@ class ModExp(Bloq):
         return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        if self.exp_window_size > 1 or self.mult_window_size > 1:
+        if self.exp_window_size is not None and self.mult_window_size is not None:
             bloq_counts = (self.exp_bitsize // self.exp_window_size) * (self.x_bitsize // self.mult_window_size)
-            return {self.qrom: 2 * bloq_counts, self.qrom.adjoint(): 2 * bloq_counts, Add(): bloq_counts, SubtractFrom(): bloq_counts,
-                    Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+            return {}#return {self.qrom: 2 * bloq_counts, self.qrom.adjoint(): 2 * bloq_counts, Add(): bloq_counts, SubtractFrom(): bloq_counts,
+                    #Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
         else:
             k = ssa.new_symbol('k')
             return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
@@ -253,11 +257,23 @@ def _modexp() -> ModExp:
     return modexp
 
 
+@bloq_example(generalizer=(ignore_split_join, _generalize_k))
+def _modexp_window() -> ModExp:
+    modexp_window = ModExp.make_for_shor(big_n=13 * 17, g=9, exp_window_size=2, mult_window_size=2)
+    return modexp_window
+
+
 @bloq_example
 def _modexp_symb() -> ModExp:
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb
 
+@bloq_example
+def _modexp_window_symb() -> ModExp:
+    g, N, n_e, n_x, w_e, w_m = sympy.symbols('g N n_e, n_x w_e w_m')
+    modexp_window_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x, exp_window_size=w_e, mult_window_size=w_m)
+    return modexp_window_symb
 
-_RSA_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_small, _modexp, _modexp_symb))
+
+_RSA_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_small, _modexp, _modexp_symb, _modexp_window, _modexp_window_symb))
