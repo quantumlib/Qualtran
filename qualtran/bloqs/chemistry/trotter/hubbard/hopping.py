@@ -174,8 +174,8 @@ class HoppingTileHWP(HoppingTile):
         system: The system register of size 2 `length`.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) see Eq. 21 and App E.
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238).
+        Eq. 21 and App E.
     """
 
     def short_name(self) -> str:
