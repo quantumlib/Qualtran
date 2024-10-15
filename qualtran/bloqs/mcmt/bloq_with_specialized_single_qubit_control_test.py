@@ -121,10 +121,6 @@ class TestAtom(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=2)
 
-    @property
-    def ctrl_reg_name(self) -> str:
-        return 'ctrl'
-
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             self,
