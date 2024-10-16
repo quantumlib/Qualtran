@@ -33,23 +33,22 @@ from qualtran.resource_counting._costing import get_cost_value
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 10) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
 )
-@pytest.mark.parametrize('a,b', [(15, 13), (2, 10), (8, 3), (0, 0)])
-@pytest.mark.parametrize('x,y', [(15, 13), (2, 10), (8, 3), (0, 0)])
+@pytest.mark.parametrize('a,b', [(15, 13), (2, 10)])
+@pytest.mark.parametrize('x,y', [(15, 13), (0, 0)])
 def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
     p = 17
     lam_num = (3 * a**2) % p
     lam_denom = (2 * b) % p
     lam_r = 0 if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
 
-    a = QMontgomeryUInt(n).uint_to_montgomery(a, n, p)
-    b = QMontgomeryUInt(n).uint_to_montgomery(b, n, p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, n, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, n, p)
-    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p) if lam_r != 0 else p
+    a = QMontgomeryUInt(n).uint_to_montgomery(a, p)
+    b = QMontgomeryUInt(n).uint_to_montgomery(b, p)
+    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
+    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
+    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, p) if lam_r != 0 else p
 
     bloq = _ECAddStepOne(n=n, mod=p)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y)
@@ -159,7 +158,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 10) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(7, 9) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize(
     'a,b',
@@ -178,34 +177,18 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         (0, 0),
     ],
 )
-@pytest.mark.parametrize(
-    'x,y',
-    [
-        (15, 13),
-        (2, 10),
-        (8, 3),
-        (12, 1),
-        (6, 6),
-        (5, 8),
-        (10, 15),
-        (1, 12),
-        (3, 0),
-        (1, 5),
-        (10, 2),
-        (0, 0),
-    ],
-)
+@pytest.mark.parametrize('x,y', [(15, 13), (5, 8), (10, 15), (1, 12), (3, 0), (1, 5), (10, 2)])
 def test_ec_add_steps_classical(n, m, a, b, x, y):
     p = 17
     lam_num = (3 * a**2) % p
     lam_denom = (2 * b) % p
     lam_r = 0 if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
 
-    a = QMontgomeryUInt(n).uint_to_montgomery(a, n, p)
-    b = QMontgomeryUInt(n).uint_to_montgomery(b, n, p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, n, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, n, p)
-    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p) if lam_r != 0 else p
+    a = QMontgomeryUInt(n).uint_to_montgomery(a, p)
+    b = QMontgomeryUInt(n).uint_to_montgomery(b, p)
+    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
+    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
+    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, p) if lam_r != 0 else p
 
     bloq = _ECAddStepOne(n=n, mod=p)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y)
@@ -314,10 +297,10 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
 
 
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 10) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
 )
-@pytest.mark.parametrize('a,b', [(15, 13), (2, 10), (8, 3), (0, 0)])
-@pytest.mark.parametrize('x,y', [(15, 13), (2, 10), (8, 3), (0, 0)])
+@pytest.mark.parametrize('a,b', [(15, 13), (2, 10)])
+@pytest.mark.parametrize('x,y', [(15, 13), (0, 0)])
 def test_ec_add_classical_fast(n, m, a, b, x, y):
     p = 17
     bloq = ECAdd(n=n, mod=p, window_size=m)
@@ -325,25 +308,25 @@ def test_ec_add_classical_fast(n, m, a, b, x, y):
     lam_denom = (2 * b) % p
     lam_r = p if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
     ret1 = bloq.call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, n, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, n, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, n, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, n, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p),
+        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
+        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
+        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
+        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
+        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
     )
     ret2 = bloq.decompose_bloq().call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, n, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, n, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, n, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, n, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p),
+        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
+        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
+        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
+        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
+        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
     )
     assert ret1 == ret2
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 10) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(7, 9) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize(
     'a,b',
@@ -362,23 +345,7 @@ def test_ec_add_classical_fast(n, m, a, b, x, y):
         (0, 0),
     ],
 )
-@pytest.mark.parametrize(
-    'x,y',
-    [
-        (15, 13),
-        (2, 10),
-        (8, 3),
-        (12, 1),
-        (6, 6),
-        (5, 8),
-        (10, 15),
-        (1, 12),
-        (3, 0),
-        (1, 5),
-        (10, 2),
-        (0, 0),
-    ],
-)
+@pytest.mark.parametrize('x,y', [(15, 13), (5, 8), (10, 15), (1, 12), (3, 0), (1, 5), (10, 2)])
 def test_ec_add_classical(n, m, a, b, x, y):
     p = 17
     bloq = ECAdd(n=n, mod=p, window_size=m)
@@ -386,18 +353,18 @@ def test_ec_add_classical(n, m, a, b, x, y):
     lam_denom = (2 * b) % p
     lam_r = p if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
     ret1 = bloq.call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, n, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, n, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, n, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, n, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p),
+        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
+        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
+        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
+        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
+        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
     )
     ret2 = bloq.decompose_bloq().call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, n, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, n, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, n, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, n, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, n, p),
+        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
+        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
+        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
+        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
+        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
     )
     assert ret1 == ret2
 

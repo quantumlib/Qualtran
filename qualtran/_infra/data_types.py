@@ -779,6 +779,7 @@ class QMontgomeryUInt(QDType):
         We follow Montgomery form as described in the above paper; namely, r = 2^bitsize.
     """
 
+    # TODO(https://github.com/quantumlib/Qualtran/issues/1471): Add modulus p as a class member.
     bitsize: SymbolicInt
 
     @property

@@ -139,16 +139,26 @@ def test_qmontgomeryuint():
 @pytest.mark.parametrize('val', [1, 5, 7, 9])
 def test_qmontgomeryuint_operations(val, p):
     qmontgomeryuint_8 = QMontgomeryUInt(8)
+    # Convert value to montgomery form and get the modular inverse.
     val_m = qmontgomeryuint_8.uint_to_montgomery(val, p)
     mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m, p)
-    assert qmontgomeryuint_8.montgomery_product(val_m, mod_inv, p) == 1
+
+    # Calculate the product in montgomery form and convert back to normal form for assertion.
+    assert (
+        qmontgomeryuint_8.montgomery_to_uint(
+            qmontgomeryuint_8.montgomery_product(val_m, mod_inv, p), p
+        )
+        == 1
+    )
 
 
 @pytest.mark.parametrize('p', [13, 17, 29])
 @pytest.mark.parametrize('val', [1, 5, 7, 9])
 def test_qmontgomeryuint_conversions(val, p):
     qmontgomeryuint_8 = QMontgomeryUInt(8)
-    assert val == qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.uint_to_montgomery(val, p), p)
+    assert val == qmontgomeryuint_8.montgomery_to_uint(
+        qmontgomeryuint_8.uint_to_montgomery(val, p), p
+    )
 
 
 def test_qgf():
