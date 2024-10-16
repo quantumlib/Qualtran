@@ -88,7 +88,8 @@ class PhaseGradientUnitary(GateWithRegisters):
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
         Appendix A: Addition for controlled rotations
 
-        [Halving the cost of quantum addition](https://quantum-journal.org/papers/q-2018-06-18-74/pdf/)
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+        Gidney (2017).
     """
 
     bitsize: 'SymbolicInt'
