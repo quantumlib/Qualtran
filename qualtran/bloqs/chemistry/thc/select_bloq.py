@@ -314,23 +314,17 @@ class SelectTHC(SelectOracle):
 
         return out_soqs
 
-    @property
-    def cv(self):
-        return self.control_val
-
-    def with_cv(self, *, cv: Optional[int]) -> 'SelectTHC':
-        return evolve(self, control_val=cv)
-
-    @property
-    def ctrl_reg_name(self) -> str:
-        return 'control'
-
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
             get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
         )
 
-        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(self, ctrl_spec)
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            bloq_without_ctrl=evolve(self, control_val=None),
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
+        )
 
 
 @bloq_example
