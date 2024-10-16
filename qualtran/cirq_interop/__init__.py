@@ -20,7 +20,7 @@ isort:skip_file
 from ._cirq_to_bloq import (
     CirqQuregT,
     CirqGateAsBloq,
-    CirqGateAsBloqBase,
+    CirqGateAsBloqMixin,
     cirq_optree_to_cbloq,
     cirq_gate_to_bloq,
     decompose_from_cirq_style_method,

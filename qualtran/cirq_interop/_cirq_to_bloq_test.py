@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Tuple
 
 import attr
 import cirq
@@ -34,7 +34,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
+from qualtran.bloqs.basic_gates import GlobalPhase, OneState, ZeroState
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
@@ -75,7 +75,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert toffoli.signature[0].shape == (3,)
 
     assert str(x) == 'cirq.X'
-    assert str(rx) == 'cirq.Rx'
+    assert str(rx) == 'cirq.Rx(0.123π)'
     assert str(toffoli) == 'cirq.TOFFOLI'
 
 
@@ -83,8 +83,10 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     and_gate = And()
     bb = BloqBuilder()
     ctrl = [bb.add(OneState()) for _ in range(2)]
-    ctrl, target = bb.add(CirqGateAsBloq(and_gate), ctrl=ctrl)
-    cbloq = bb.finalize(ctrl=ctrl, target=target)
+    target = bb.add(ZeroState())
+    q = [*ctrl, target]
+    c0, c1, target = bb.add(CirqGateAsBloq(and_gate), q=q)
+    cbloq = bb.finalize(ctrl=np.array([c0, c1]), target=target)
     state_vector = cbloq.tensor_contract()
     assert np.isclose(state_vector[7], 1)
 
@@ -199,25 +201,6 @@ def test_cirq_optree_to_cbloq():
     assert bloqs_list.count(Join(QAny(3))) == 6
     assert bloqs_list.count(Allocate(QAny(2))) == 2
     assert bloqs_list.count(Free(QAny(2))) == 2
-
-
-def test_cirq_gate_as_bloq_for_left_only_gates():
-    class LeftOnlyGate(GateWithRegisters):
-        @property
-        def signature(self):
-            return Signature([Register('junk', QAny(2), side=Side.LEFT)])
-
-        def decompose_from_registers(self, *, context, junk) -> Iterator[cirq.OP_TREE]:
-            yield cirq.CNOT(*junk)
-            yield cirq.reset_each(*junk)
-
-    # Using InteropQubitManager enables support for LeftOnlyGate's in CirqGateAsBloq.
-    cbloq = CirqGateAsBloq(gate=LeftOnlyGate()).decompose_bloq()
-    bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
-    assert bloqs_list.count(Split(QAny(2))) == 1
-    assert bloqs_list.count(Free(QBit())) == 2
-    assert bloqs_list.count(CNOT()) == 1
-    assert bloqs_list.count(CirqGateAsBloq(cirq.ResetChannel())) == 2
 
 
 def test_cirq_gate_as_bloq_decompose_raises():
