@@ -97,8 +97,7 @@ import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-
-qualtran.bloqs.factoring._factoring_shims
+import qualtran.bloqs.factoring._factoring_shims
 import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting

@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import math
-import random
 from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -61,7 +61,7 @@ class ModExp(Bloq):
 
     Registers:
         exponent: The exponent
-        x: The output register containing the result of the exponentiation
+        x [right]: The output register containing the result of the exponentiation
 
     References:
         [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
@@ -87,13 +87,19 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None):
+    def make_for_shor(
+        cls,
+        big_n: 'SymbolicInt',
+        g: Optional['SymbolicInt'] = None,
+        rs: Optional[np.random.RandomState] = None,
+    ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
             big_n: The large composite number N. Used to set `mod`. Its bitsize is used
                 to set `x_bitsize` and `exp_bitsize`.
             g: Optional base of the exponentiation. If `None`, we pick a random base.
+            rs: Optional random state which can be seeded to make base generation deterministic.
         """
         if is_symbolic(big_n):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
@@ -104,7 +110,9 @@ class ModExp(Bloq):
                 g = sympy.symbols('g')
             else:
                 while True:
-                    g = random.randint(2, int(big_n))
+                    if rs is None:
+                        rs = np.random.RandomState()
+                    g = rs.randint(2, int(big_n))
                     if math.gcd(g, int(big_n)) == 1:
                         break
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)

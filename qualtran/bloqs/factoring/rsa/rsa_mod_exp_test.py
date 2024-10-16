@@ -40,14 +40,8 @@ def test_mod_exp_consistent_classical():
 
         # Choose an exponent in a range. Set exp_bitsize=ne bit enough to fit.
         exponent = rs.randint(1, 2**n)
-        ne = 2 * n
 
-        # Choose a base smaller than mod.
-        base = rs.randint(1, mod)
-        while np.gcd(base, mod) != 1:
-            base = rs.randint(1, mod)
-
-        bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
+        bloq = ModExp.make_for_shor(big_n=mod, rs=rs)
         ret1 = bloq.call_classically(exponent=exponent)
         ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
         assert len(ret1) == len(ret2)
