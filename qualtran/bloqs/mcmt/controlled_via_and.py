@@ -50,8 +50,7 @@ class ControlledViaAnd(Controlled):
 
     @cached_property
     def _single_control_value(self) -> int:
-        assert self._is_single_bit_control()
-        return self.ctrl_spec._cvs_tuple[0]
+        return self.ctrl_spec.get_single_control_bit()
 
     def adjoint(self) -> 'ControlledViaAnd':
         return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
