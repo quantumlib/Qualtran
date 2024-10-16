@@ -154,8 +154,8 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
             apply the phasing via addition.
 
     References:
-        1. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix A: Addition for controlled rotations
     """
 
     bitsize: int

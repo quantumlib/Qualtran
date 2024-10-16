@@ -32,7 +32,6 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -51,10 +50,12 @@ class Hadamard(Bloq):
 
     This converts between the X and Z basis.
 
-    $$\begin{aligned}
+    $$
+    \begin{aligned}
     H |0\rangle = |+\rangle \\
     H |-\rangle = |1\rangle
-    \end{aligned}$$
+    \end{aligned}
+    $$
 
     Registers:
         q: The qubit
@@ -103,9 +104,6 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
-
-    def _t_complexity_(self):
-        return TComplexity(clifford=1)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
@@ -172,14 +170,6 @@ class CHadamard(Bloq):
             'ctrl': np.array([ctrl]),
             'target': np.array([target]),
         }
-
-    def _t_complexity_(self) -> 'TComplexity':
-        # This is based on the decomposition provided by `cirq.decompose_multi_controlled_rotation`
-        # which uses three cirq.MatrixGate's to do a controlled version of any single-qubit gate.
-        # The first MatrixGate happens to be a clifford, Hadamard operation in this case.
-        # The other two are considered 'rotations'.
-        # https://github.com/quantumlib/Qualtran/issues/237
-        return TComplexity(rotations=2, clifford=4)
 
     def my_static_costs(self, cost_key: 'CostKey'):
         from qualtran.resource_counting import GateCounts, QECGatesCost
