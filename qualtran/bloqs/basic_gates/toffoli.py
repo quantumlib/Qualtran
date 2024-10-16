@@ -30,7 +30,6 @@ from qualtran import (
     Register,
     Signature,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
@@ -65,9 +64,6 @@ class Toffoli(Bloq):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
-
-    def _t_complexity_(self):
-        return TComplexity(t=4)
 
     def my_tensors(
         self,

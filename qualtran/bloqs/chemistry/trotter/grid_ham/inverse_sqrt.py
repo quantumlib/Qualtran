@@ -200,8 +200,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         out: Output register to store polynomial approximation to inverse square root.
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/pdf/2308.12352.pdf)
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352).
     """
 
     x_sq_bitsize: int

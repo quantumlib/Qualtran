@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Dict, List, Tuple
 
 import attrs
-import cirq
 import networkx as nx
 import numpy as np
 import pytest
@@ -164,7 +163,8 @@ def test_map_soqs():
     assert isinstance(cbloq, CompositeBloq)
 
 
-def test_bb_composite_bloq():
+def test_to_from_cirq_circuit():
+    cirq = pytest.importorskip('cirq')
     cbloq_auto = TestTwoCNOT().decompose_bloq()
     circuit, _ = cbloq_auto.to_cirq_circuit_and_quregs(
         q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]
@@ -348,6 +348,7 @@ class TestMultiCNOT(Bloq):
 
 
 def test_complicated_target_register():
+    cirq = pytest.importorskip('cirq')
     bloq = TestMultiCNOT()
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert len(cbloq.bloq_instances) == 2 * 3

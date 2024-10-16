@@ -68,7 +68,8 @@ class Subtract(Bloq):
         b: A b_dtype.bitsize-sized input/output register (register b above).
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization, page 9](https://arxiv.org/pdf/2007.07391)
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Page 9.
     """
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
