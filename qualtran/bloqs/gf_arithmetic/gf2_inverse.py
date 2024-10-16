@@ -63,8 +63,10 @@ class GF2Inverse(Bloq):
         a^{-1} = a^{2^m - 2}
     $$
 
-    The exponential $a^{2^m - 2}$ using $\mathcal{O}(m)$ squaring and $\mathcal{O}(\log_2(m))$
-    multiplications via Itoh-Tsujii inversion. See Ref[1, 2] for more details.
+    The exponential $a^{2^m - 2}$ is computed using $\mathcal{O}(m)$ squaring and
+    $\mathcal{O}(\log_2(m))$ multiplications via Itoh-Tsujii inversion. The algorithm is described on
+    page 4 and 5 of Ref[1] and resembles binary exponentiation. The inverse is computed as $B_{n-1}^2$,
+    where $B_1 = x$ and $B_{i+j} = B_i B_j^{2^i}$.
 
     Args:
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
@@ -77,11 +79,10 @@ class GF2Inverse(Bloq):
             results from intermediate multiplications.
 
     References:
-        [Efficient quantum circuits for binary elliptic curve arithmetic:
-            reducing T -gate complexity](https://arxiv.org/abs/1209.6348)
+        [Efficient quantum circuits for binary elliptic curve arithmetic: reducing T -gate complexity](https://arxiv.org/abs/1209.6348).
+        Section 2.3
 
-        [Structure of parallel multipliers for a class of fields
-            GF(2^m)](https://doi.org/10.1016/0890-5401(89)90045-X)
+        [Structure of parallel multipliers for a class of fields GF(2^m)](https://doi.org/10.1016/0890-5401(89)90045-X)
     """
 
     bitsize: SymbolicInt
