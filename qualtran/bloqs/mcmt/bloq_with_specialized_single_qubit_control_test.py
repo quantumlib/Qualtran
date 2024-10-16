@@ -51,7 +51,7 @@ class AtomWithSpecializedControl(Bloq):
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             self,
             ctrl_spec,
-            current_control_bit=self.cv,
+            current_ctrl_bit=self.cv,
             bloq_with_ctrl=attrs.evolve(self, cv=1),
             ctrl_reg_name='ctrl',
             bloq_without_ctrl=attrs.evolve(self, cv=None),
@@ -125,7 +125,7 @@ class TestAtom(Bloq):
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             self,
             ctrl_spec,
-            current_control_bit=None,
+            current_ctrl_bit=None,
             bloq_with_ctrl=CTestAtom(self.tag),
             ctrl_reg_name='ctrl',
             bloq_without_ctrl=self,
@@ -144,7 +144,7 @@ class CTestAtom(Bloq):
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             self,
             ctrl_spec,
-            current_control_bit=1,
+            current_ctrl_bit=1,
             bloq_with_ctrl=self,
             ctrl_reg_name='ctrl',
             bloq_without_ctrl=TestAtom(self.tag),

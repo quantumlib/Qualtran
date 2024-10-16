@@ -26,7 +26,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
-    current_control_bit: ControlBit,
+    current_ctrl_bit: ControlBit,
     bloq_with_ctrl: 'Bloq',
     ctrl_reg_name: str,
     bloq_without_ctrl: 'Bloq',
@@ -37,13 +37,13 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     Args:
         bloq: The current bloq of which a controlled version is requested.
         ctrl_spec: The control specification
-        current_control_bit: The control bit of the current bloq, one of `0, 1, None`.
+        current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
         bloq_with_ctrl: The variant of this bloq with control bit `1`.
         ctrl_reg_name: The name of the control qubit register.
         bloq_without_ctrl: The variant of this bloq without a control.
         bloq_with_ctrl_0: (optional) the variant of this bloq controlled by a qubit in the 0 state.
     """
-    from qualtran import Bloq, CtrlSpec, Soquet
+    from qualtran import CtrlSpec, Soquet
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
     def _get_default_fallback():
@@ -52,9 +52,9 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
 
-    control_bit = ctrl_spec.get_single_control_bit()
+    control_bit = ctrl_spec.get_single_ctrl_bit()
 
-    if current_control_bit is None:
+    if current_ctrl_bit is None:
         # the easy case: use the controlled bloq
         ctrl_bloq = bloq_with_ctrl if control_bit == 1 else bloq_with_ctrl_0
         if ctrl_bloq is None:
@@ -74,7 +74,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     else:
         # the difficult case: must combine the two controls into one
         ctrl_bloq = ControlledViaAnd(
-            bloq_without_ctrl, CtrlSpec(cvs=[control_bit, current_control_bit])
+            bloq_without_ctrl, CtrlSpec(cvs=[control_bit, current_ctrl_bit])
         )
 
         def _adder(
