@@ -28,7 +28,6 @@ from unittest.mock import ANY
 
 import attrs
 import pytest
-from attrs import evolve, frozen
 
 from qualtran import AddControlledT, Bloq, CtrlSpec, Signature
 from qualtran.bloqs.mcmt import And
@@ -38,7 +37,7 @@ from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
 from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECGatesCost
 
 
-@frozen
+@attrs.frozen
 class AtomWithSpecializedControl(Bloq):
     cv: Optional[int] = None
 
@@ -49,8 +48,7 @@ class AtomWithSpecializedControl(Bloq):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
-            self,
-            ctrl_spec,
+            ctrl_spec=ctrl_spec,
             current_ctrl_bit=self.cv,
             bloq_with_ctrl=attrs.evolve(self, cv=1),
             ctrl_reg_name='ctrl',
@@ -113,7 +111,7 @@ def test_custom_controlled(ctrl_specs: Sequence[CtrlSpec]):
     )
 
 
-@frozen
+@attrs.frozen
 class TestAtom(Bloq):
     tag: str
 
@@ -123,8 +121,7 @@ class TestAtom(Bloq):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
-            self,
-            ctrl_spec,
+            ctrl_spec=ctrl_spec,
             current_ctrl_bit=None,
             bloq_with_ctrl=CTestAtom(self.tag),
             ctrl_reg_name='ctrl',
@@ -132,7 +129,7 @@ class TestAtom(Bloq):
         )
 
 
-@frozen
+@attrs.frozen
 class CTestAtom(Bloq):
     tag: str
 
@@ -142,8 +139,7 @@ class CTestAtom(Bloq):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
-            self,
-            ctrl_spec,
+            ctrl_spec=ctrl_spec,
             current_ctrl_bit=1,
             bloq_with_ctrl=self,
             ctrl_reg_name='ctrl',

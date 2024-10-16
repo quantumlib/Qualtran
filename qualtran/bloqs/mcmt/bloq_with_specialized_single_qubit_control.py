@@ -23,9 +23,8 @@ ControlBit = Optional[0 | 1]
 
 
 def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
-    bloq: 'Bloq',
-    ctrl_spec: 'CtrlSpec',
     *,
+    ctrl_spec: 'CtrlSpec',
     current_ctrl_bit: ControlBit,
     bloq_with_ctrl: 'Bloq',
     ctrl_reg_name: str,
@@ -35,7 +34,6 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     """Build the control system for a bloq with a specialized single-qubit controlled variant.
 
     Args:
-        bloq: The current bloq of which a controlled version is requested.
         ctrl_spec: The control specification
         current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
         bloq_with_ctrl: The variant of this bloq with control bit `1`.
@@ -47,7 +45,17 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
     def _get_default_fallback():
-        return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
+        current_bloq: 'Bloq'
+        if current_ctrl_bit is None:
+            current_bloq = bloq_without_ctrl
+        elif current_ctrl_bit == 1:
+            current_bloq = bloq_with_ctrl
+        elif current_ctrl_bit == 0:
+            current_bloq = bloq_with_ctrl_0
+        else:
+            raise ValueError(f"invalid control bit {current_ctrl_bit}")
+
+        return ControlledViaAnd.make_ctrl_system(bloq=current_bloq, ctrl_spec=ctrl_spec)
 
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
