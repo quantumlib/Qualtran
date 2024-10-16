@@ -772,7 +772,11 @@ class QMontgomeryUInt(QDType):
         bitsize: The number of qubits used to represent the integer.
 
     References:
-        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication)
+        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication).
+
+        [Performance Analysis of a Repetition Cat Code Architecture: Computing 256-bit Elliptic Curve Logarithm in 9 Hours with 126133 Cat Qubits](https://arxiv.org/abs/2302.06639).
+        Gouzien et al. 2023.
+        We follow Montgomery form as described in the above paper; namely, r = 2^bitsize.
     """
 
     bitsize: SymbolicInt
@@ -810,17 +814,42 @@ class QMontgomeryUInt(QDType):
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
-    def montgomery_inverse(self, xm, n, p):
-        return ((pow(xm, p - 2, p)) * pow(2, 2 * n, p)) % p
+    def montgomery_inverse(self, xm: int, p: int) -> int:
+        """Returns the modular inverse of an integer in montgomery form.
 
-    def montgomery_product(self, xm, ym, n, p):
-        return (xm * ym * pow(2, n * (p - 2), p)) % p
+        Args:
+            xm: An integer in montgomery form.
+            p: The modulus of the finite field.
+        """
+        return ((pow(xm, p - 2, p)) * pow(2, 2 * self.bitsize, p)) % p
 
-    def montgomery_to_uint(self, xm, n, p):
-        return (xm * pow(2, n * (p - 2), p)) % p
+    def montgomery_product(self, xm: int, ym: int, p: int) -> int:
+        """Returns the modular product of two integers in montgomery form.
 
-    def uint_to_montgomery(self, x, n, p):
-        return (x * pow(2, n, p)) % p
+        Args:
+            xm: The first montgomery form integer for the product.
+            ym: The second montgomery form integer for the product.
+            p: The modulus of the finite field.
+        """
+        return (xm * ym * pow(2, self.bitsize * (p - 2), p)) % p
+
+    def montgomery_to_uint(self, xm: int, p: int) -> int:
+        """Converts an integer in montgomery form to a normal form integer.
+
+        Args:
+            xm: An integer in montgomery form.
+            p: The modulus of the finite field.
+        """
+        return (xm * pow(2, self.bitsize * (p - 2), p)) % p
+
+    def uint_to_montgomery(self, x: int, p: int) -> int:
+        """Converts an integer into montgomery form.
+
+        Args:
+            xm: An integer.
+            p: The modulus of the finite field.
+        """
+        return (x * pow(2, self.bitsize, p)) % p
 
 
 @attrs.frozen

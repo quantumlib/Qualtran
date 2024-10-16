@@ -135,6 +135,22 @@ def test_qmontgomeryuint():
     assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
 
 
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_operations(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    val_m = qmontgomeryuint_8.uint_to_montgomery(val, p)
+    mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m, p)
+    assert qmontgomeryuint_8.montgomery_product(val_m, mod_inv, p) == 1
+
+
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_conversions(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    assert val == qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.uint_to_montgomery(val, p), p)
+
+
 def test_qgf():
     qgf_256 = QGF(characteristic=2, degree=8)
     assert str(qgf_256) == 'QGF(2**8)'
