@@ -23,6 +23,7 @@ from typing import (
     Sequence,
     Tuple,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 
@@ -44,6 +45,9 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+ControlBit: TypeAlias = int
+"""A control bit, either 0 or 1."""
 
 
 def _cvs_convert(
@@ -250,7 +254,7 @@ class CtrlSpec:
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
-    def get_single_ctrl_bit(self) -> Union[0, 1]:
+    def get_single_ctrl_bit(self) -> ControlBit:
         """If controlled by a single qubit, return the control bit, otherwise raise"""
         if self.num_qubits != 1:
             raise ValueError(f"expected a single qubit control, got {self.num_qubits}")

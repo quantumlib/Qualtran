@@ -11,23 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
     from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, SoquetT
-
-
-ControlBit = Union[0, 1]
+    from qualtran._infra.controlled import ControlBit
 
 
 def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     *,
     ctrl_spec: 'CtrlSpec',
-    current_ctrl_bit: Optional[ControlBit],
+    current_ctrl_bit: Optional['ControlBit'],
     bloq_without_ctrl: 'Bloq',
-    get_ctrl_bloq_and_ctrl_reg_name: Callable[[ControlBit], Optional[tuple['Bloq', str]]],
+    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], Optional[tuple['Bloq', str]]],
 ) -> tuple['Bloq', 'AddControlledT']:
     """Build the control system for a bloq with a specialized single-qubit controlled variant.
 
@@ -56,7 +54,12 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
         if current_ctrl_bit is None:
             current_bloq = bloq_without_ctrl
         else:
-            current_bloq, _ = get_ctrl_bloq_and_ctrl_reg_name(current_ctrl_bit)
+            ctrl_bloq_and_reg = get_ctrl_bloq_and_ctrl_reg_name(current_ctrl_bit)
+            if ctrl_bloq_and_reg is None:
+                raise ValueError(
+                    f"Expected a controlled bloq (self) matching the current control bit {current_ctrl_bit}, got None"
+                )
+            current_bloq, _ = ctrl_bloq_and_reg
 
         return ControlledViaAnd.make_ctrl_system(bloq=current_bloq, ctrl_spec=ctrl_spec)
 
