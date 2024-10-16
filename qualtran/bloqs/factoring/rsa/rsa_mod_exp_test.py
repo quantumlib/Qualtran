@@ -48,11 +48,40 @@ def test_mod_exp_consistent_classical():
             base = rs.randint(1, mod)
 
         bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
-        ret1 = bloq.call_classically(exponent=exponent, x=1)
-        ret2 = bloq.decompose_bloq().call_classically(exponent=exponent, x=1)
+        ret1 = bloq.call_classically(exponent=exponent)
+        ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
         assert len(ret1) == len(ret2)
         for i in range(len(ret1)):
             np.testing.assert_array_equal(ret1[i], ret2[i])
+
+@pytest.mark.parametrize('p', [13, 37, 131])
+def test_mod_exp_window_consistent_classical_fast(p):
+    bloq = ModExp.make_for_shor(big_n=p, exp_window_size=2, mult_window_size=2)
+
+    rs = np.random.RandomState(52)
+    n_x = int(np.ceil(np.log2(p)))
+    exponent = rs.randint(1, 2**n_x)
+    
+    ret1 = bloq.call_classically(exponent=exponent)
+    ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
+    assert len(ret1) == len(ret2)
+    for i in range(len(ret1)):
+        np.testing.assert_array_equal(ret1[i], ret2[i])
+        
+@pytest.mark.slow
+@pytest.mark.parametrize('p, w_e, w_m', [(p, w_e, w_m) for p in (13, 37) for w_e in range(1, (2 * int(np.ceil(np.log2(p)))) + 1) if (2 * int(np.ceil(np.log2(p)))) % w_e == 0 for w_m in range(1, int(np.ceil(np.log2(p))) + 1) if int(np.ceil(np.log2(p))) % w_m == 0])
+def test_mod_exp_window_consistent_classical(p, w_e, w_m):
+    bloq = ModExp.make_for_shor(big_n=p, exp_window_size=w_e, mult_window_size=w_m)
+
+    rs = np.random.RandomState(52)
+    n_x = int(np.ceil(np.log2(p)))
+    exponent = rs.randint(1, 2**n_x)
+    
+    ret1 = bloq.call_classically(exponent=exponent)
+    ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
+    assert len(ret1) == len(ret2)
+    for i in range(len(ret1)):
+        np.testing.assert_array_equal(ret1[i], ret2[i])
 
 
 def test_modexp_symb_manual():

@@ -97,8 +97,7 @@ import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-
-qualtran.bloqs.factoring._factoring_shims
+import qualtran.bloqs.factoring._factoring_shims
 import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
@@ -328,6 +327,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMClean": qualtran.bloqs.data_loading.qroam_clean.QROAMClean,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
     "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd": qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd,
