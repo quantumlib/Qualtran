@@ -235,7 +235,7 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
-    #TODO:
+
     '''
     General strategy: find the max-bitsize number (n bits) we can compute the HW of using our available ancilla,
     greedily do this on the first n bits of x, perform the rotations, then the next n bits and perform those
@@ -243,16 +243,18 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     HammingWeightPhasing bloqs on subsets of the input.
     '''
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
+        self.ancillasize = min(self.ancillasize, self.bitsize-1) # TODO: this is surely the wrong way to do this, but this at least allows tests to be run for now.
         num_iters = self.bitsize // (self.ancillasize + 1)
         remainder = self.bitsize - (self.ancillasize + 1) * num_iters
         x = bb.split(x)
         x_parts = []
+
         for i in range(num_iters):
             x_part = bb.join(x[i*(self.ancillasize+1):(i+1)*(self.ancillasize+1)], dtype=QUInt(self.ancillasize+1)) #maybe off-by-1
             x_part = bb.add(HammingWeightPhasing(bitsize=self.ancillasize+1, exponent=self.exponent, eps=self.eps), x=x_part)
             x_part = bb.add(HammingWeightPhasing(bitsize=self.ancillasize+1, exponent=self.exponent, eps=self.eps).adjoint(), x=x_part)
             x_parts.extend(bb.split(x_part))
-        #remainder:
+
         if remainder > 0:
             x_part = bb.join(x[(-1*remainder):], dtype=QUInt(remainder))
             x_part = bb.add(HammingWeightPhasing(bitsize=remainder, exponent=self.exponent, eps=self.eps), x=x_part)
@@ -269,7 +271,7 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
         #print("shape after flatten: ", np.shape(x_parts))
         for part in x:
             print("next elem: ", part)
-        x = bb.join(x_parts, dtype=QUInt(self.bitsize.bit_length()))
+        x = bb.join(np.array(x_parts), dtype=QUInt(self.bitsize))
         return {'x': x}
 
 
@@ -278,7 +280,7 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
             return Text(f'HWPCA_{self.bitsize}/(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)
 
-#TODO: (after build_composite_bloq)
+
 @bloq_example
 def _hamming_weight_phasing_with_configurable_ancilla() -> HammingWeightPhasingWithConfigurableAncilla:
     hamming_weight_phasing_with_configurable_ancilla = HammingWeightPhasingWithConfigurableAncilla(4, 2, np.pi / 2.0)

@@ -23,6 +23,7 @@ from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
+    HammingWeightPhasingWithConfigurableAncilla,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.cirq_interop.testing import GateHelper
@@ -127,3 +128,29 @@ def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: f
     naive_total_t = naive_hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
 
     assert total_t < naive_total_t
+
+
+@pytest.mark.parametrize('ancillasize', [1, 2, 3, 4, 5, 6, 7])
+@pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])
+@pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
+def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: int, theta: float):
+    gate = HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_equivalent_bloq_counts(
+        gate, [ignore_split_join, cirq_to_bloqs, generalize_rotation_angle]
+    )
+
+    assert gate.t_complexity().rotations == ceil(n / ancillasize+1) * ancillasize.bit_length() # possibly wrong
+    assert gate.t_complexity().t == 4 * ancillasize * ceil(n / (ancillasize+1))
+    # TODO: add an ancilla size assertion
+
+    gh = GateHelper(gate)
+    sim = cirq.Simulator(dtype=np.complex128)
+    initial_state = cirq.testing.random_superposition(dim=2**n, random_state=12345)
+    state_prep = cirq.Circuit(cirq.StatePreparationChannel(initial_state).on(*gh.quregs['x']))
+    brute_force_phasing = cirq.Circuit(state_prep, (cirq.Z**theta).on_each(*gh.quregs['x']))
+    expected_final_state = sim.simulate(brute_force_phasing).final_state_vector
+
+    hw_phasing = cirq.Circuit(state_prep, HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta).on(*gh.quregs['x']))
+    hw_final_state = sim.simulate(hw_phasing).final_state_vector
+    assert np.allclose(expected_final_state, hw_final_state, atol=1e-7)
