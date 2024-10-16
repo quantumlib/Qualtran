@@ -109,3 +109,41 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             return [ctrl0], [ctrl1, *out_soqs]
 
     return ctrl_bloq, _adder
+
+
+def get_ctrl_system_for_bloq_with_specialized_single_qubit_control_from_list(
+    *,
+    ctrl_spec: 'CtrlSpec',
+    current_ctrl_bit: Optional['ControlBit'],
+    bloq_without_ctrl: 'Bloq',
+    bloq_with_ctrl_1: 'Bloq',
+    ctrl_reg_name: 'str',
+    bloq_with_ctrl_0: Optional['Bloq'],
+) -> tuple['Bloq', 'AddControlledT']:
+    """Helper to construct the control system given uncontrolled and singly-controlled variants of a bloq.
+
+    See :meth:`get_ctrl_system_for_bloq_with_specialized_single_qubit_control` for details on usage.
+
+    Args:
+        ctrl_spec: The control specification
+        current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
+        bloq_without_ctrl: The variant of this bloq without a control.
+        bloq_with_ctrl_1: The variant of this bloq controlled by a single qubit in the `1` basis state.
+        ctrl_reg_name: The name of the control register for the controlled bloq variant(s).
+        bloq_with_ctrl_0: (optional) The variant of this bloq controlled by a single qubit in the `1` basis state.
+    """
+
+    def get_ctrl_bloq_and_ctrl_reg_name(cv: 'ControlBit') -> Optional[tuple['Bloq', str]]:
+        if cv == 1:
+            return bloq_with_ctrl_1, ctrl_reg_name
+        else:
+            if bloq_with_ctrl_0 is None:
+                return None
+            return bloq_with_ctrl_0, ctrl_reg_name
+
+    return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+        ctrl_spec=ctrl_spec,
+        current_ctrl_bit=current_ctrl_bit,
+        bloq_without_ctrl=bloq_without_ctrl,
+        get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
+    )
