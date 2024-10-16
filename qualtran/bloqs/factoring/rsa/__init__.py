@@ -30,7 +30,7 @@ Using Shor's algorithm for factoring, we can find p and q (the factors of n) in 
 with a quantum algorithm.
 
 References:
-    [https://en.wikipedia.org/wiki/RSA_(cryptosystem)](RSA (cryptosystem)).
+    [RSA (cryptosystem)](https://en.wikipedia.org/wiki/RSA_(cryptosystem)).
 """
 
 from .rsa_phase_estimate import RSAPhaseEstimate
