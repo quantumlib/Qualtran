@@ -106,11 +106,10 @@ class LPResourceState(QPEWindowStateBase):
 
 
     References:
-        [Optimum phase-shift estimation and the quantum description of the phase
-        difference](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.54.4564)
+        [Optimum phase-shift estimation and the quantum description of the phase difference](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.54.4564).
 
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T
-        Complexity](https://arxiv.org/abs/1805.03662) Section II-B
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section II-B
     """
 
     bitsize: SymbolicInt

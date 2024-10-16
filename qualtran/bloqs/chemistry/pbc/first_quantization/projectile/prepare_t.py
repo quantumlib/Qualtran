@@ -110,10 +110,11 @@ class PrepareTFirstQuantizationWithProj(Bloq):
         s: a register encoding bits for each component of the momenta.
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/abs/2308.12352) page 11, C3 also page 31 App A. Sec 2 b.
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352).
+        page 11, C3 also page 31 App A. Sec 2 b.
+
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 19, section B
     """
 
     num_bits_p: int
