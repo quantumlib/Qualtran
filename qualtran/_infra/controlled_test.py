@@ -100,6 +100,26 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
         assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
 
 
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=[1]), CtrlSpec(cvs=np.atleast_2d([1]))]
+)
+def test_ctrl_spec_single_bit_one(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_control_bit() == 1
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(cvs=0), CtrlSpec(cvs=[0]), CtrlSpec(cvs=np.atleast_2d([0]))]
+)
+def test_ctrl_spec_single_bit_zero(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_control_bit() == 0
+
+
+@pytest.mark.parametrize("ctrl_spec", [CtrlSpec(cvs=[1, 1]), CtrlSpec(qdtypes=QUInt(2), cvs=0)])
+def test_ctrl_spec_single_bit_raises(ctrl_spec: CtrlSpec):
+    with pytest.raises(ValueError):
+        ctrl_spec.get_single_control_bit()
+
+
 def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
     import cirq
 
