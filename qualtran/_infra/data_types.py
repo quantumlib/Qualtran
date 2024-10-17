@@ -822,7 +822,7 @@ class QMontgomeryUInt(QDType):
             xm: An integer in montgomery form.
             p: The modulus of the finite field.
         """
-        return ((pow(xm, p - 2, p)) * pow(2, 2 * self.bitsize, p)) % p
+        return ((pow(xm, -1, p)) * pow(2, 2 * self.bitsize, p)) % p
 
     def montgomery_product(self, xm: int, ym: int, p: int) -> int:
         """Returns the modular product of two integers in montgomery form.
@@ -832,7 +832,7 @@ class QMontgomeryUInt(QDType):
             ym: The second montgomery form integer for the product.
             p: The modulus of the finite field.
         """
-        return (xm * ym * pow(2, self.bitsize * (p - 2), p)) % p
+        return (xm * ym * pow(2, -self.bitsize, p)) % p
 
     def montgomery_to_uint(self, xm: int, p: int) -> int:
         """Converts an integer in montgomery form to a normal form integer.
@@ -841,16 +841,16 @@ class QMontgomeryUInt(QDType):
             xm: An integer in montgomery form.
             p: The modulus of the finite field.
         """
-        return (xm * pow(2, self.bitsize * (p - 2), p)) % p
+        return (xm * pow(2, -self.bitsize, p)) % p
 
     def uint_to_montgomery(self, x: int, p: int) -> int:
         """Converts an integer into montgomery form.
 
         Args:
-            xm: An integer.
+            x: An integer.
             p: The modulus of the finite field.
         """
-        return (x * pow(2, self.bitsize, p)) % p
+        return (x * pow(2, int(self.bitsize), p)) % p
 
 
 @attrs.frozen
