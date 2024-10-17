@@ -1372,8 +1372,9 @@ class _HalfLinearDepthGreaterThan(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        counts: 'BloqCountDictT'
         if isinstance(self.dtype, QUInt):
-            counts: 'BloqCountDictT' = {BitwiseNot(dtype): 3}
+            counts = {BitwiseNot(dtype): 3}
         else:
             counts = {BitwiseNot(dtype): 2, BitwiseNot(QUInt(dtype.bitsize)): 1}
 
