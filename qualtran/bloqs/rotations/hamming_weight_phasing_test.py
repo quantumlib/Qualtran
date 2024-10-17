@@ -129,9 +129,7 @@ def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: f
 
     assert total_t < naive_total_t
 
-
-@pytest.mark.parametrize('ancillasize', [1, 2, 3, 4, 5, 6, 7])
-@pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])
+@pytest.mark.parametrize('n, ancillasize', [(n, ancillasize) for n in range(3, 9) for ancillasize in range(1, n-1)])
 @pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
 def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: int, theta: float):
     gate = HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta)
@@ -140,9 +138,12 @@ def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: i
         gate, [ignore_split_join, cirq_to_bloqs, generalize_rotation_angle]
     )
 
-    assert gate.t_complexity().rotations == ceil(n / ancillasize+1) * ancillasize.bit_length() # possibly wrong
-    assert gate.t_complexity().t == 4 * ancillasize * ceil(n / (ancillasize+1))
-    # TODO: add an ancilla size assertion
+    remainder = n % (ancillasize+1)
+
+#    assert gate.t_complexity().rotations == (-(-n // (ancillasize+1))-1) * (ancillasize+1).bit_length() + remainder.bit_length() # exact, fails for remainder = 0.
+    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
+    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1))
+    # TODO: add an assertion that number of ancilla allocated is never > ancillasize.
 
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)

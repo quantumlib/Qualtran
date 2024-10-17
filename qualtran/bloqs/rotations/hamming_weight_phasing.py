@@ -227,7 +227,7 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     """
 
     bitsize: int
-    ancillasize: int
+    ancillasize: int # TODO: verify that ancillasize is always < bitsize-1
     exponent: float = 1
     eps: SymbolicFloat = 1e-10
 
@@ -243,34 +243,22 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     HammingWeightPhasing bloqs on subsets of the input.
     '''
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
-        self.ancillasize = min(self.ancillasize, self.bitsize-1) # TODO: this is surely the wrong way to do this, but this at least allows tests to be run for now.
         num_iters = self.bitsize // (self.ancillasize + 1)
-        remainder = self.bitsize - (self.ancillasize + 1) * num_iters
+        remainder = self.bitsize % (self.ancillasize+1)
         x = bb.split(x)
         x_parts = []
-
         for i in range(num_iters):
-            x_part = bb.join(x[i*(self.ancillasize+1):(i+1)*(self.ancillasize+1)], dtype=QUInt(self.ancillasize+1)) #maybe off-by-1
+            x_part = bb.join(x[i*(self.ancillasize+1):(i+1)*(self.ancillasize+1)], dtype=QUInt(self.ancillasize+1))
             x_part = bb.add(HammingWeightPhasing(bitsize=self.ancillasize+1, exponent=self.exponent, eps=self.eps), x=x_part)
-            x_part = bb.add(HammingWeightPhasing(bitsize=self.ancillasize+1, exponent=self.exponent, eps=self.eps).adjoint(), x=x_part)
             x_parts.extend(bb.split(x_part))
-
-        if remainder > 0:
+        if remainder > 1:
             x_part = bb.join(x[(-1*remainder):], dtype=QUInt(remainder))
             x_part = bb.add(HammingWeightPhasing(bitsize=remainder, exponent=self.exponent, eps=self.eps), x=x_part)
-            x_part = bb.add(HammingWeightPhasing(bitsize=remainder, exponent=self.exponent, eps=self.eps).adjoint(), x=x_part)
-        x_parts.extend(bb.split(x_part))
-        #print("shape prior to flatten: ", np.shape(x_parts))
-        #x_parts.flatten()
-        '''        x_parts = [
-            a
-            for x_part in x_parts
-            for a in x_part
-        ]
-        '''
-        #print("shape after flatten: ", np.shape(x_parts))
-        for part in x:
-            print("next elem: ", part)
+            x_parts.extend(bb.split(x_part))
+        if remainder == 1:
+            x_part = x[-1]
+            x_part = bb.add(ZPowGate(exponent=self.exponent, eps=self.eps), q=x_part)
+            x_parts.append(x_part)
         x = bb.join(np.array(x_parts), dtype=QUInt(self.bitsize))
         return {'x': x}
 
@@ -279,6 +267,27 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
         if reg is None:
             return Text(f'HWPCA_{self.bitsize}/(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)
+
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        num_iters = self.bitsize // (self.ancillasize + 1)
+        remainder = self.bitsize - (self.ancillasize + 1) * num_iters
+        # TODO: Surely there is a better way of doing this
+        if remainder > 1:
+
+            return {
+                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
+                HammingWeightPhasing(remainder, self.exponent, self.eps): bool(remainder),
+            }
+        elif remainder:
+            return {
+                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
+                ZPowGate(exponent=self.exponent, eps=self.eps): 1
+            }
+        else:
+            return {
+                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
+            }
 
 
 @bloq_example

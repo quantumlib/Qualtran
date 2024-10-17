@@ -1,5 +1,6 @@
 from hamming_weight_phasing import HammingWeightPhasing, HammingWeightPhasingWithConfigurableAncilla
 
+
 import numpy as np
 from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
 from qualtran import QBit, QInt, QUInt, QAny
