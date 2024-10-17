@@ -261,13 +261,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         bitsize: Number of bits used to represent each input integer. The allocated output register
             is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
         is_adjoint: Whether this is compute or uncompute version.
-        include_most_significant_bit: Whether to add an extra most significant bit (= finaly value of the carry bit).
+        include_most_significant_bit: Whether to add an extra most significant (i.e. carry) bit.
 
     Registers:
         a: A bitsize-sized input register (register a above).
         b: A bitsize-sized input register (register b above).
         c: The LEFT/RIGHT register depending on whether the gate adjoint or not.
-            This register size is either bitsize or bitsize+1 depending on `include_most_significant_bit`.
+            This register size is either bitsize or bitsize+1 depending on
+            the value of `include_most_significant_bit`.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -278,24 +279,24 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     include_most_significant_bit: bool = True
 
     @property
+    def out_bitsize(self):
+        return self.bitsize + (1 if self.include_most_significant_bit else 0)
+
+    @property
     def signature(self):
         side = Side.LEFT if self.is_adjoint else Side.RIGHT
         return Signature(
             [
                 Register('a', QUInt(self.bitsize)),
                 Register('b', QUInt(self.bitsize)),
-                Register(
-                    'c',
-                    QUInt(self.bitsize + (1 if self.include_most_significant_bit else 0)),
-                    side=side,
-                ),
+                Register('c', QUInt(self.out_bitsize), side=side),
             ]
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         if not isinstance(self.bitsize, int):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
+        return [2] * self.bitsize, [2] * self.bitsize, [2] * self.out_bitsize
 
     def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
         return a, b, c + a + b
@@ -315,12 +316,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return {
             'a': a,
             'b': b,
-            'c': add_ints(
-                int(a),
-                int(b),
-                num_bits=self.bitsize + (1 if self.include_most_significant_bit else 0),
-                is_signed=False,
-            ),
+            'c': add_ints(int(a), int(b), num_bits=self.out_bitsize, is_signed=False),
         }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -341,7 +337,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
                 cirq.CX(a[i], c[i + 1]),
                 cirq.CX(b[i], c[i]),
             ]
-            for i in range(self.bitsize - 1 + (1 if self.include_most_significant_bit else 0))
+            for i in range(self.out_bitsize - 1)
         ]
         if not self.include_most_significant_bit:
             # Update c[-1] as c[-1] ^= a[-1]^b[-1]
@@ -351,9 +347,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            And(uncompute=self.is_adjoint): self.bitsize
-            - 1
-            + (1 if self.include_most_significant_bit else 0),
+            And(uncompute=self.is_adjoint): self.out_bitsize - 1,
             CNOT(): 5 * (self.bitsize - 1) + 2 + (3 if self.include_most_significant_bit else 0),
         }
 

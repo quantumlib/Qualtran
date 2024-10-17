@@ -1234,6 +1234,24 @@ _CLinearDepthGreaterThan_DOC = BloqDocSpec(
 
 @frozen
 class _HalfLinearDepthGreaterThan(Bloq):
+    """A concrete implementation of half-circuit for greater than.
+
+    This bloq can be returned by the _HalfComparisonBase._half_greater_than_bloq abstract property.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
     dtype: Union[QInt, QUInt, QMontgomeryUInt]
     uncompute: bool = False
 
@@ -1354,9 +1372,8 @@ class _HalfLinearDepthGreaterThan(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
-        counts: 'BloqCountDictT' = {}
         if isinstance(self.dtype, QUInt):
-            counts = {BitwiseNot(dtype): 3}
+            counts: 'BloqCountDictT' = {BitwiseNot(dtype): 3}
         else:
             counts = {BitwiseNot(dtype): 2, BitwiseNot(QUInt(dtype.bitsize)): 1}
 
@@ -1372,6 +1389,33 @@ class _HalfLinearDepthGreaterThan(Bloq):
 
 @frozen
 class _HalfComparisonBase(Bloq):
+    """Parent class for the 4 comparison operations (>, >=, <, <=).
+
+    The four comparison operations can be implemented by implementing only one of them
+    and computing the others either by reversing the input order, flipping the result or both.
+
+    The choice made is to build the four opertions around greater than. Namely the greater than
+    bloq returned by `._half_greater_than_bloq`; By changing this property we can change
+    change the properties of the constructed circuit (e.g. complexity, depth, ..etc).
+
+    For example _LinearDepthHalfComparisonBase sets the property to a linear depth construction,
+    other implementations can set the property to a log depth construction.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        _op_symbol: The symbol of the comparison operation.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
     dtype: Union[QInt, QUInt, QMontgomeryUInt]
     _op_symbol: str = attrs.field(
         default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<='), repr=False
@@ -1496,6 +1540,8 @@ class _HalfComparisonBase(Bloq):
 
 @frozen
 class _LinearDepthHalfComparisonBase(_HalfComparisonBase):
+    """A wrapper around _HalfComparisonBase that sets ._half_greater_than_bloq property to a construction with linear depth."""
+
     @cached_property
     def _half_greater_than_bloq(self) -> Bloq:
         return _HalfLinearDepthGreaterThan(self.dtype, uncompute=False)
