@@ -109,9 +109,9 @@ class ModExp(Bloq):
             if is_symbolic(big_n):
                 g = sympy.symbols('g')
             else:
+                if rs is None:
+                    rs = np.random.RandomState()
                 while True:
-                    if rs is None:
-                        rs = np.random.RandomState()
                     g = rs.randint(2, int(big_n))
                     if math.gcd(g, int(big_n)) == 1:
                         break
