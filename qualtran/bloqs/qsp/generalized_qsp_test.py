@@ -201,7 +201,7 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
 
     expected_sigma: dict[Bloq, int] = {arbitrary_rotation: degree + 1}
     if degree > negative_power:
-        expected_sigma[Controlled(U, CtrlSpec(cvs=0))] = degree - negative_power
+        expected_sigma[U.controlled(ctrl_spec=CtrlSpec(cvs=0))] = degree - negative_power
     if negative_power > 0:
         expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
     if negative_power > degree:
