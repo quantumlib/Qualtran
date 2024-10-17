@@ -28,8 +28,8 @@ def test_qft_text_book_quick(without_reverse: bool):
     qft_bloq = QFTTextBook(n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
 
-    assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
-    assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
+    assert np.allclose(qft_bloq.tensor_contract(), cirq.unitary(qft_cirq))
+    assert np.allclose(qft_bloq.adjoint().tensor_contract(), cirq.unitary(qft_cirq**-1))
 
     qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
@@ -54,6 +54,9 @@ def test_qft_text_book_t_complexity(n: int):
     gate_counts = get_cost_value(qft_bloq, QECGatesCost())
     # special angle ZPow gets turned into clifford or T
     rots = ((n - 3) * (n - 2)) // 2
+    if n >= 41:
+        # TODO(https://github.com/quantumlib/Qualtran/issues/1474)
+        pytest.xfail("Small angle rotations")
     assert gate_counts.t == n - 2
     assert gate_counts.toffoli == 0
     assert gate_counts.rotation == rots

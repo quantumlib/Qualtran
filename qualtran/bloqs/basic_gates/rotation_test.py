@@ -231,7 +231,7 @@ def test_str():
     assert str(YPowGate()) == "Y**1.0"
     assert str(_ry()) == "Ry(0.7853981633974483)"
     assert str(_rx()) == "Rx(0.7853981633974483)"
-    assert str(_rz()) == "Rz(0.7853981633974483)"
+    assert str(_rz()) == "Rz(a)"
 
     assert str(CZPowGate(1.0)) == 'CZ**1.0'
     assert str(CZPowGate(0.9)) == 'CZ**0.9'
