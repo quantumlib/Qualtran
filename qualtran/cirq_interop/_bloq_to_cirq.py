@@ -122,10 +122,6 @@ class BloqAsCirqGate(cirq.Gate):
         )
         return BloqAsCirqGate(bloq=bloq).on_registers(**all_quregs), out_quregs
 
-    def _t_complexity_(self):
-        """Delegate to the bloq's t complexity."""
-        return self._bloq.t_complexity()
-
     def _num_qubits_(self) -> int:
         return total_bits(self.signature)
 

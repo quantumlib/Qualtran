@@ -27,7 +27,6 @@ from typing import (
 )
 
 import attrs
-import cirq
 import numpy as np
 from numpy.typing import NDArray
 
@@ -37,6 +36,7 @@ from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
 
     from qualtran import Bloq, BloqBuilder, CompositeBloq, ConnectionT, SoquetT
@@ -203,8 +203,10 @@ class CtrlSpec:
     def __hash__(self):
         return hash((self.qdtypes, self.shapes, self._cvs_tuple))
 
-    def to_cirq_cv(self) -> cirq.SumOfProducts:
+    def to_cirq_cv(self) -> 'cirq.SumOfProducts':
         """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
+        import cirq
+
         cirq_cv = []
         for qdtype, cv in zip(self.qdtypes, self.cvs):
             for idx in Register('', qdtype, cv.shape).all_idxs():
@@ -214,7 +216,7 @@ class CtrlSpec:
     @classmethod
     def from_cirq_cv(
         cls,
-        cirq_cv: cirq.ops.AbstractControlValues,
+        cirq_cv: 'cirq.ops.AbstractControlValues',
         *,
         qdtypes: Optional[Sequence[QDType]] = None,
         shapes: Optional[Sequence[Tuple[int, ...]]] = None,
@@ -438,6 +440,8 @@ class Controlled(GateWithRegisters):
     def _unitary_(self):
         if isinstance(self.subbloq, GateWithRegisters):
             # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
+            import cirq
+
             return cirq.unitary(
                 cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
             )
@@ -494,7 +498,11 @@ class Controlled(GateWithRegisters):
             cirq_quregs | ctrl_regs,
         )
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
         if isinstance(self.subbloq, cirq.Gate):
