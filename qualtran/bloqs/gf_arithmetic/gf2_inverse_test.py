@@ -22,7 +22,9 @@ from qualtran.bloqs.gf_arithmetic.gf2_inverse import (
     GF2Inverse,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost, QubitCount
-from qualtran.testing import assert_consistent_classical_action
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+from qualtran.symbolics import ceil, log2
+from qualtran.testing import assert_consistent_classical_action, assert_equivalent_bloq_counts
 
 
 def test_gf16_inverse(bloq_autotester):
@@ -36,8 +38,10 @@ def test_gf2_inverse_symbolic(bloq_autotester):
 def test_gf2_inverse_symbolic_toffoli_complexity():
     bloq = _gf2_inverse_symbolic.make()
     m = bloq.bitsize
-    assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - m**2 * (m - 2) == 0
-    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - m**2) == 0
+    expected_expr = m**2 * (2 * ceil(log2(m)) - 1)
+    assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - expected_expr == 0
+    expected_expr = m * (3 * ceil(log2(m)) + 2)
+    assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_expr) == 0
 
 
 def test_gf2_inverse_classical_sim_quick():
@@ -53,3 +57,9 @@ def test_gf2_inverse_classical_sim(m):
     bloq = GF2Inverse(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements[1:])
+
+
+@pytest.mark.parametrize('m', [*range(1, 12)])
+def test_gf2_equivalent_bloq_counts(m):
+    bloq = GF2Inverse(m)
+    assert_equivalent_bloq_counts(bloq, generalizer=[ignore_split_join, ignore_alloc_free])
