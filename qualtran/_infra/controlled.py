@@ -23,6 +23,7 @@ from typing import (
     Sequence,
     Tuple,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 
@@ -44,6 +45,9 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+ControlBit: TypeAlias = int
+"""A control bit, either 0 or 1."""
 
 
 def _cvs_convert(
@@ -249,6 +253,18 @@ class CtrlSpec:
             curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore[arg-type]
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
+
+    def get_single_ctrl_bit(self) -> ControlBit:
+        """If controlled by a single qubit, return the control bit, otherwise raise"""
+        if self.num_qubits != 1:
+            raise ValueError(f"expected a single qubit control, got {self.num_qubits}")
+
+        (qdtype,) = self.qdtypes
+        (cv,) = self.cvs
+        (idx,) = Register('', qdtype, cv.shape).all_idxs()
+        (control_bit,) = qdtype.to_bits(cv[idx])
+
+        return int(control_bit)
 
 
 class AddControlledT(Protocol):
