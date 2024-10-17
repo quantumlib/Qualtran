@@ -31,7 +31,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
-from qualtran.cirq_interop import CirqGateAsBloqBase
+from qualtran.cirq_interop import CirqGateAsBloqMixin
 from qualtran.symbolics import pi, sarg, sexp, SymbolicComplex, SymbolicFloat
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class GlobalPhase(CirqGateAsBloqBase):
+class GlobalPhase(CirqGateAsBloqMixin):
     r"""Applies a global phase to the circuit as a whole.
 
     The unitary effect is to multiply the state vector by the complex scalar

@@ -21,13 +21,13 @@ import sympy
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
-from qualtran.cirq_interop import CirqGateAsBloqBase
+from qualtran.cirq_interop import CirqGateAsBloqMixin
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 
 @frozen
-class ZPowGate(CirqGateAsBloqBase):
+class ZPowGate(CirqGateAsBloqMixin):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -107,7 +107,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 
 
 @frozen
-class CZPowGate(CirqGateAsBloqBase):
+class CZPowGate(CirqGateAsBloqMixin):
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
@@ -131,7 +131,7 @@ class CZPowGate(CirqGateAsBloqBase):
 
 
 @frozen
-class XPowGate(CirqGateAsBloqBase):
+class XPowGate(CirqGateAsBloqMixin):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -205,7 +205,7 @@ _X_POW_DOC = BloqDocSpec(bloq_cls=XPowGate, examples=[_x_pow])
 
 
 @frozen
-class YPowGate(CirqGateAsBloqBase):
+class YPowGate(CirqGateAsBloqMixin):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -279,7 +279,7 @@ _Y_POW_DOC = BloqDocSpec(bloq_cls=YPowGate, examples=[_y_pow])
 
 
 @frozen
-class Rz(CirqGateAsBloqBase):
+class Rz(CirqGateAsBloqMixin):
     """Single-qubit Rz gate.
 
     Args:
@@ -320,7 +320,7 @@ class Rz(CirqGateAsBloqBase):
 
 
 @frozen
-class Rx(CirqGateAsBloqBase):
+class Rx(CirqGateAsBloqMixin):
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -344,7 +344,7 @@ class Rx(CirqGateAsBloqBase):
 
 
 @frozen
-class Ry(CirqGateAsBloqBase):
+class Ry(CirqGateAsBloqMixin):
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
