@@ -217,7 +217,7 @@ class CZPowGate(Bloq):
 
         q1, q2 = q  # type: ignore
         (q1, q2), anc = bb.add(And(), ctrl=[q1, q2])
-        anc = bb.add(ZPowGate(self.exponent, self.eps), q=anc)
+        anc = bb.add(ZPowGate(self.exponent, eps=self.eps), q=anc)
         (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
 
@@ -517,9 +517,9 @@ class CRz(Bloq):
         from qualtran.bloqs.basic_gates import CNOT
 
         t = self.angle / np.pi
-        q = bb.add(ZPowGate(t / 2), q=q)
+        q = bb.add(ZPowGate(t / 2, eps=self.eps / 2), q=q)
         ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
-        q = bb.add(ZPowGate(-t / 2), q=q)
+        q = bb.add(ZPowGate(-t / 2, eps=self.eps / 2), q=q)
         ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
 
         return {'ctrl': ctrl, 'q': q}
