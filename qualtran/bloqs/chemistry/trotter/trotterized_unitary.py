@@ -74,11 +74,11 @@ class TrotterizedUnitary(Bloq):
         system: The system register to which to apply the unitary.
 
     References:
-        [Theory of Trotter Error with Commutator Scaling](
-            https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011020) Eq. 12 page 7.
+        [Theory of Trotter Error with Commutator Scaling](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011020)
+        Eq. 12 page 7.
 
-        [Trotter error with commutator scaling for the Fermi-Hubbard model](
-            https://arxiv.org/abs/2306.10603) see github repo for software to produce splittings.
+        [Trotter error with commutator scaling for the Fermi-Hubbard model](https://arxiv.org/abs/2306.10603).
+        See github repo for software to produce splittings.
     """
 
     bloqs: Sequence[Bloq]
