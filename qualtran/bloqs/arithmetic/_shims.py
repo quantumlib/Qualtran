@@ -22,8 +22,11 @@ from functools import cached_property
 
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QUInt, Register, Signature
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
@@ -37,6 +40,20 @@ class MultiCToffoli(Bloq):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {Toffoli(): self.n - 2}
+
+
+@frozen
+class CSub(Bloq):
+    n: int
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
+        )
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {CAdd(QMontgomeryUInt(self.n)): 1, BitwiseNot(QMontgomeryUInt(self.n)): 3}
 
 
 @frozen
@@ -62,3 +79,6 @@ class CHalf(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.n))])
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        return {TwoBitCSwap(): self.n}
