@@ -14,13 +14,13 @@
 from functools import cached_property
 from typing import Iterator, Optional, Tuple
 
+import attrs
 import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, BQUInt, QBit, Register, SoquetT
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
+from qualtran import AddControlledT, Bloq, BloqBuilder, BQUInt, CtrlSpec, QBit, Register, SoquetT
 from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -84,7 +84,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
+class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -148,6 +148,21 @@ class TestPauliSelectOracle(SpecializedSingleQubitControlledExtension, SelectOra
             if self.control_val is not None:
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
+            get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
+        )
+
+        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            bloq_without_ctrl=attrs.evolve(self, control_val=None),
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
 
 
 def random_qubitization_walk_operator(
