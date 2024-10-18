@@ -35,8 +35,8 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
 
     The user can provide specializations for the bloq controlled by `1` and (optionally) by `0`.
     The specialization for control bit `1` must be provided.
-    In case a specialization for a control bit `0` is not provided, the default fallback instead,
-    which wraps the bloq using the `Controlled` metabloq.
+    In case a specialization for a control bit `0` is not provided, the default fallback is used
+    instead, which wraps the bloq using the `Controlled` metabloq.
 
     Args:
         ctrl_spec: The control specification
