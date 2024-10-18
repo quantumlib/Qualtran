@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import math
-import random
 from functools import cached_property
 from typing import cast, Dict, Optional, Tuple, Union
 
 import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -28,17 +28,19 @@ from qualtran import (
     DecomposeTypeError,
     QUInt,
     Register,
-    Side,
     Signature,
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import IntState
+from qualtran._infra.registers import Side
+from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import is_symbolic
+from qualtran.symbolics.types import SymbolicInt
 
 
 @frozen
@@ -66,10 +68,10 @@ class ModExp(Bloq):
         Gidney and Ekerå. 2019.
     """
 
-    base: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    exp_bitsize: Union[int, sympy.Expr]
-    x_bitsize: Union[int, sympy.Expr]
+    base: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    exp_bitsize: 'SymbolicInt'
+    x_bitsize: 'SymbolicInt'
 
     def __attrs_post_init__(self):
         if not is_symbolic(self.base, self.mod):
@@ -85,33 +87,47 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: int, g: Optional[int] = None):
+    def make_for_shor(
+        cls,
+        big_n: 'SymbolicInt',
+        g: Optional['SymbolicInt'] = None,
+        rs: Optional[np.random.RandomState] = None,
+    ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
             big_n: The large composite number N. Used to set `mod`. Its bitsize is used
                 to set `x_bitsize` and `exp_bitsize`.
             g: Optional base of the exponentiation. If `None`, we pick a random base.
+            rs: Optional random state which can be seeded to make base generation deterministic.
         """
-        if isinstance(big_n, sympy.Expr):
+        if is_symbolic(big_n):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
         else:
             little_n = int(math.ceil(math.log2(big_n)))
         if g is None:
-            g = random.randint(2, big_n)
+            if is_symbolic(big_n):
+                g = sympy.symbols('g')
+            else:
+                if rs is None:
+                    rs = np.random.RandomState()
+                while True:
+                    g = rs.randint(2, int(big_n))
+                    if math.gcd(g, int(big_n)) == 1:
+                        break
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
-    def _CtrlModMul(self, k: Union[int, sympy.Expr]):
+    def _CtrlModMul(self, k: 'SymbolicInt'):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.x_bitsize), k=k, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
-        if isinstance(self.exp_bitsize, sympy.Expr):
-            raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
+        if is_symbolic(self.exp_bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `exp_bitsize`.")
+        # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
-        # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
         base = self.base % self.mod
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
@@ -121,9 +137,9 @@ class ModExp(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {IntState(val=1, bitsize=self.x_bitsize): 1, self._CtrlModMul(k=k): self.exp_bitsize}
+        return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
 
-    def on_classical_vals(self, exponent: int):
+    def on_classical_vals(self, exponent) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def wire_symbol(
@@ -163,4 +179,4 @@ def _modexp_symb() -> ModExp:
     return modexp_symb
 
 
-_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_symb, _modexp_small, _modexp))
+_RSA_MODEXP_DOC = BloqDocSpec(bloq_cls=ModExp, examples=(_modexp_small, _modexp, _modexp_symb))
