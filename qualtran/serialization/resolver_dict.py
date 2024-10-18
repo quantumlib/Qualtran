@@ -97,7 +97,8 @@ import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.factoring._factoring_shims
+import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
@@ -342,7 +343,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK": qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul,
-    "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
+    "qualtran.bloqs.factoring._factoring_shims.MeasureQFT": qualtran.bloqs.factoring._factoring_shims.MeasureQFT,
+    "qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate": qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate,
+    "qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp": qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,

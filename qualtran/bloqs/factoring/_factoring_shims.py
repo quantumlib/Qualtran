@@ -19,11 +19,12 @@ from attrs import frozen
 
 from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature
 from qualtran.drawing import RarrowTextBox, Text, WireSymbol
+from qualtran.symbolics import SymbolicInt
 
 
 @frozen
 class MeasureQFT(Bloq):
-    n: int
+    n: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
