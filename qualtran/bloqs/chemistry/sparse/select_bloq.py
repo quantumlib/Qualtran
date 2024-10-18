@@ -170,7 +170,7 @@ class SelectSparse(SelectOracle):
         return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
             get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
         )
 
