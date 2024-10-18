@@ -90,19 +90,22 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     else:
         # the difficult case: must combine the two controls into one
         ctrl_bloq = ControlledViaAnd(bloq_without_ctrl, CtrlSpec(cvs=[ctrl_bit, current_ctrl_bit]))
+        (ctrl_reg_name,) = ctrl_bloq.ctrl_reg_names
+        _, in_ctrl_reg_name = get_ctrl_bloq_and_ctrl_reg_name(1)
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
         ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             # extract the two control bits
             (ctrl0,) = ctrl_soqs
-            ctrl1 = in_soqs.pop('ctrl')
+            ctrl1 = in_soqs.pop(in_ctrl_reg_name)
 
             ctrl0 = cast(Soquet, ctrl0)
             ctrl1 = cast(Soquet, ctrl1)
 
             # add the singly controlled bloq
-            ctrls, *out_soqs = bb.add_t(ctrl_bloq, ctrl=[ctrl0, ctrl1], **in_soqs)
+            in_soqs |= {ctrl_reg_name: [ctrl0, ctrl1]}
+            ctrls, *out_soqs = bb.add_t(ctrl_bloq, **in_soqs)
             assert isinstance(ctrls, np.ndarray)
             ctrl0, ctrl1 = ctrls
 

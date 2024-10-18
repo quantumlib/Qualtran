@@ -23,13 +23,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import itertools
 from typing import Optional, Sequence, Tuple
 from unittest.mock import ANY
 
 import attrs
 import pytest
 
-from qualtran import AddControlledT, Bloq, CtrlSpec, Signature
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    BloqBuilder,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.mcmt.bloq_with_specialized_single_qubit_control import (
     get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
@@ -40,18 +51,24 @@ from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECG
 @attrs.frozen
 class AtomWithSpecializedControl(Bloq):
     cv: Optional[int] = None
+    ctrl_reg_name: str = 'ctrl'
+    target_reg_name: str = 'q'
 
     @property
     def signature(self) -> 'Signature':
         n_ctrl = 1 if self.cv is not None else 0
-        return Signature.build(ctrl=n_ctrl, q=2)
+        reg_name_map = {self.ctrl_reg_name: n_ctrl, self.target_reg_name: 2}
+        return Signature.build(**reg_name_map)
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
             ctrl_spec=ctrl_spec,
             current_ctrl_bit=self.cv,
             bloq_without_ctrl=attrs.evolve(self, cv=None),
-            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (attrs.evolve(self, cv=cv), 'ctrl'),
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, cv=cv),
+                self.ctrl_reg_name,
+            ),
         )
 
     @staticmethod
@@ -94,8 +111,9 @@ def OFF(n: int = 1) -> CtrlSpec:
         [OFF(4), ON(3), OFF(5)],
     ],
 )
-def test_custom_controlled(ctrl_specs: Sequence[CtrlSpec]):
-    bloq: Bloq = AtomWithSpecializedControl()
+@pytest.mark.parametrize('ctrl_reg_name', ['ctrl', 'control'])
+def test_custom_controlled(ctrl_specs: Sequence[CtrlSpec], ctrl_reg_name: str):
+    bloq: Bloq = AtomWithSpecializedControl(ctrl_reg_name=ctrl_reg_name)
     for ctrl_spec in ctrl_specs:
         bloq = bloq.controlled(ctrl_spec)
     n_ctrls = sum(ctrl_spec.num_qubits for ctrl_spec in ctrl_specs)
@@ -171,3 +189,38 @@ def test_bloq_with_controlled_bloq():
     ctrl_bloq = TestAtom('nn').controlled(CtrlSpec(cvs=[0, 0]))
     _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
     assert sigma == {And(0, 0): 1, CTestAtom('nn'): 1, And(0, 0).adjoint(): 1}
+
+
+@attrs.frozen
+class TestBloqWithDecompose(Bloq):
+    ctrl_reg_name: str
+    target_reg_name: str
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register(self.ctrl_reg_name, QBit()), Register(self.target_reg_name, QAny(2))]
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        for _ in range(2):
+            soqs = bb.add_d(
+                AtomWithSpecializedControl(
+                    cv=1, ctrl_reg_name=self.ctrl_reg_name, target_reg_name=self.target_reg_name
+                ),
+                **soqs,
+            )
+        return soqs
+
+
+@pytest.mark.parametrize(
+    ('ctrl_reg_name', 'target_reg_name'),
+    [
+        (ctrl, targ)
+        for (ctrl, targ) in itertools.product(['ctrl', 'control', 'a', 'b'], repeat=2)
+        if ctrl != targ
+    ],
+)
+def test_get_ctrl_system(ctrl_reg_name: str, target_reg_name: str):
+    bloq = TestBloqWithDecompose(ctrl_reg_name, target_reg_name).controlled()
+    _ = bloq.decompose_bloq().flatten()
