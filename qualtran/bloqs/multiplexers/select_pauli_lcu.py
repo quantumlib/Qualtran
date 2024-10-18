@@ -127,11 +127,9 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import (
-            get_ctrl_system_for_bloq_with_specialized_single_qubit_control,
-        )
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
-        return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+        return get_ctrl_system_1bit_cv(
             ctrl_spec=ctrl_spec,
             current_ctrl_bit=self.control_val,
             bloq_without_ctrl=attrs.evolve(self, control_val=None),

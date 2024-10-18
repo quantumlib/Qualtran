@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from qualtran._infra.controlled import ControlBit
 
 
-def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+def get_ctrl_system_1bit_cv(
     *,
     ctrl_spec: 'CtrlSpec',
     current_ctrl_bit: Optional['ControlBit'],
@@ -114,7 +114,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
     return ctrl_bloq, _adder
 
 
-def get_ctrl_system_for_bloq_with_specialized_single_qubit_control_from_list(
+def get_ctrl_system_1bit_cv_from_list(
     *,
     ctrl_spec: 'CtrlSpec',
     current_ctrl_bit: Optional['ControlBit'],
@@ -125,7 +125,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control_from_list(
 ) -> tuple['Bloq', 'AddControlledT']:
     """Helper to construct the control system given uncontrolled and singly-controlled variants of a bloq.
 
-    See :meth:`get_ctrl_system_for_bloq_with_specialized_single_qubit_control` for details on usage.
+    See :meth:`get_ctrl_system_1bit_cv` for details on usage.
 
     Args:
         ctrl_spec: The control specification
@@ -144,7 +144,7 @@ def get_ctrl_system_for_bloq_with_specialized_single_qubit_control_from_list(
                 return None
             return bloq_with_ctrl_0, ctrl_reg_name
 
-    return get_ctrl_system_for_bloq_with_specialized_single_qubit_control(
+    return get_ctrl_system_1bit_cv(
         ctrl_spec=ctrl_spec,
         current_ctrl_bit=current_ctrl_bit,
         bloq_without_ctrl=bloq_without_ctrl,
