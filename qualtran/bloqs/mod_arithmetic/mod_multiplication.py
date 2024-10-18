@@ -650,7 +650,8 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
             raise ValueError(f'classical action is not supported for {self}')
         if self.uncompute:
             assert (
-                target is not None and target == (x * y * pow(2, self.bitsize, self.mod)) % self.mod
+                target is not None
+                and target == (x * y * pow(2, self.bitsize * (self.mod - 2), self.mod)) % self.mod
             )
             assert qrom_indices is not None
             assert reduced is not None
