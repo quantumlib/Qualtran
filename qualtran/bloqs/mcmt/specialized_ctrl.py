@@ -91,7 +91,10 @@ def get_ctrl_system_1bit_cv(
         # the difficult case: must combine the two controls into one
         ctrl_bloq = ControlledViaAnd(bloq_without_ctrl, CtrlSpec(cvs=[ctrl_bit, current_ctrl_bit]))
         (ctrl_reg_name,) = ctrl_bloq.ctrl_reg_names
-        _, in_ctrl_reg_name = get_ctrl_bloq_and_ctrl_reg_name(1)
+
+        ctrl_1_bloq = get_ctrl_bloq_and_ctrl_reg_name(1)
+        assert ctrl_1_bloq is not None
+        _, in_ctrl_reg_name = ctrl_1_bloq
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
@@ -104,7 +107,7 @@ def get_ctrl_system_1bit_cv(
             ctrl1 = cast(Soquet, ctrl1)
 
             # add the singly controlled bloq
-            in_soqs |= {ctrl_reg_name: [ctrl0, ctrl1]}
+            in_soqs |= {ctrl_reg_name: np.array([ctrl0, ctrl1])}
             ctrls, *out_soqs = bb.add_t(ctrl_bloq, **in_soqs)
             assert isinstance(ctrls, np.ndarray)
             ctrl0, ctrl1 = ctrls
