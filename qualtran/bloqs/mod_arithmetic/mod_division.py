@@ -13,17 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
-from attrs import field, frozen
+from attrs import frozen
 
 from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QAny,
     QBit,
     QMontgomeryUInt,
@@ -41,7 +42,7 @@ from qualtran.bloqs.basic_gates import CNOT, TwoBitCSwap, XGate
 from qualtran.bloqs.mcmt import And, MultiAnd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.bloqs.swap_network import CSwapApprox
-from qualtran.resource_counting import BloqCountDictT, BloqCountT
+from qualtran.resource_counting import BloqCountDictT
 from qualtran.resource_counting._call_graph import SympySymbolAllocator
 from qualtran.symbolics import HasLength, is_symbolic
 
@@ -53,6 +54,8 @@ if TYPE_CHECKING:
 
 @frozen
 class _KaliskiIterationStep1(Bloq):
+    """The first layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
 
     @cached_property
@@ -73,6 +76,8 @@ class _KaliskiIterationStep1(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', v: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         v_arr = bb.split(v)
         ctrls = np.concatenate([v_arr, [f]])
         ctrls, junk, target = bb.add(MultiAnd(cvs=[0] * self.bitsize + [1]), ctrl=ctrls)
@@ -88,14 +93,16 @@ class _KaliskiIterationStep1(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if is_symbolic(self.bitsize):
-            cvs = HasLength(self.bitsize)
+            cvs: Union[HasLength, List[int]] = HasLength(self.bitsize)
         else:
-            cvs = [0] * self.bitsize
+            cvs = [0] * int(self.bitsize)
         return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 2}
 
 
 @frozen
 class _KaliskiIterationStep2(Bloq):
+    """The second layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
 
     @cached_property
@@ -154,6 +161,8 @@ class _KaliskiIterationStep2(Bloq):
 
 @frozen
 class _KaliskiIterationStep3(Bloq):
+    """The third layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
 
     @cached_property
@@ -215,6 +224,8 @@ class _KaliskiIterationStep3(Bloq):
 
 @frozen
 class _KaliskiIterationStep4(Bloq):
+    """The fourth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
 
     @cached_property
@@ -252,6 +263,8 @@ class _KaliskiIterationStep4(Bloq):
 
 @frozen
 class _KaliskiIterationStep5(Bloq):
+    """The fifth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
 
     @cached_property
@@ -297,6 +310,8 @@ class _KaliskiIterationStep5(Bloq):
 
 @frozen
 class _KaliskiIterationStep6(Bloq):
+    """The sixth layer of operations in figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
     mod: 'SymbolicInt'
 
@@ -342,6 +357,8 @@ class _KaliskiIterationStep6(Bloq):
         m: Soquet,
         f: Soquet,
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize, self.mod):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         m, b = bb.add(CNOT(), ctrl=m, target=b)
         a, b = bb.add(CNOT(), ctrl=a, target=b)
 
@@ -375,7 +392,9 @@ class _KaliskiIterationStep6(Bloq):
 
 
 @frozen
-class KaliskiIteration(Bloq):
+class _KaliskiIteration(Bloq):
+    """The single full iteration of Kaliski. see figure 15 of https://arxiv.org/pdf/2302.06639."""
+
     bitsize: 'SymbolicInt'
     mod: 'SymbolicInt'
 
@@ -417,9 +436,58 @@ class KaliskiIteration(Bloq):
         bb.free(b)
         return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {
+            _KaliskiIterationStep1(self.bitsize): 1,
+            _KaliskiIterationStep2(self.bitsize): 1,
+            _KaliskiIterationStep3(self.bitsize): 1,
+            _KaliskiIterationStep4(self.bitsize): 1,
+            _KaliskiIterationStep5(self.bitsize): 1,
+            _KaliskiIterationStep6(self.bitsize, self.mod): 1,
+        }
+
+    def on_classical_vals(
+        self, u: int, v: int, r: int, s: int, m: int, f: int
+    ) -> Dict[str, 'ClassicalValT']:
+        a = b = 0
+        assert m == 0
+        m ^= f & (v == 0)
+        f ^= m
+
+        a ^= f & (u % 2 == 0)
+        m ^= f & (a == 0) & (v % 2 == 0)
+        b ^= a
+        b ^= m
+
+        t = (u > v) & (b == 0) & f
+        a ^= t
+        m ^= t
+
+        if a:
+            u, v = v, u
+            r, s = s, r
+
+        if f and b == 0:
+            v -= u
+            s += r
+
+        b ^= m
+        b ^= a
+        if f:
+            assert v % 2 == 0, f'{u=} {v=} {r=} {s=} {a=} {b=} {m=} {f=}'
+            v >>= 1
+        r = (r << 1) % self.mod
+        if a:
+            u, v = v, u
+            s, r = r, s
+        a ^= s == 0
+        return {'u': u, 'v': v, 'r': r, 's': s, 'a': a, 'b': b, 'm': m, 'f': f}
+
 
 @frozen
 class _KaliskiModInverseImpl(Bloq):
+    """The full KaliskiIteration algorithm. see C5 https://arxiv.org/pdf/2302.06639"""
+
     bitsize: 'SymbolicInt'
     mod: 'SymbolicInt'
 
@@ -438,7 +506,7 @@ class _KaliskiModInverseImpl(Bloq):
 
     @cached_property
     def _kaliski_iteration(self):
-        return KaliskiIteration(self.bitsize, self.mod)
+        return _KaliskiIteration(self.bitsize, self.mod)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, m: Soquet, f: Soquet
@@ -476,6 +544,30 @@ class _KaliskiModInverseImpl(Bloq):
 
 @frozen
 class KaliskiModInverse(Bloq):
+    r"""Compute modular multiplicative inverse -inplace- of numbers in montgomery form.
+
+    Applies the transformation
+    $$
+        \ket{x} \ket{0} \rightarrow \ket{x^{-1} 2^{2n} \mod p} \ket{\mathrm{garbage}}
+    $$
+
+    Args:
+        bitsize: size of the number.
+        mod: The integer modulus.
+        uncompute: whether to compute or uncompute.
+
+    Registers:
+        x: The register for which we compute the multiplicative inverse.
+        m: A 2*bitsize register of intermediate values needed for uncomputation.
+
+    References:
+        [Performance Analysis of a Repetition Cat Code Architecture: Computing 256-bit Elliptic Curve Logarithm in 9 Hours with 126 133 Cat Qubits](https://arxiv.org/abs/2302.06639)
+            Appendix C5.
+
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+            page 8.
+    """
+
     bitsize: 'SymbolicInt'
     mod: 'SymbolicInt'
     uncompute: bool = False
@@ -499,14 +591,18 @@ class KaliskiModInverse(Bloq):
         f = bb.allocate(1)
 
         if self.uncompute:
-            u, x, r, s, m, f = bb.add_from(
-                _KaliskiModInverseImpl(self.bitsize, self.mod).adjoint(),
-                u=u,
-                v=r,
-                r=x,
-                s=s,
-                m=m,
-                f=f,
+            assert m is not None
+            u, x, r, s, m, f = cast(
+                Tuple[Soquet, Soquet, Soquet, Soquet, Soquet, Soquet],
+                bb.add_from(
+                    _KaliskiModInverseImpl(self.bitsize, self.mod).adjoint(),
+                    u=u,
+                    v=r,
+                    r=x,
+                    s=s,
+                    m=m,
+                    f=f,
+                ),
             )
             bb.free(u)
             bb.free(r)
@@ -516,11 +612,14 @@ class KaliskiModInverse(Bloq):
             return {'x': x}
 
         m = bb.allocate(2 * self.bitsize)
-        # m = bb.split(m)
         u, v, x, s, m, f = bb.add_from(
             _KaliskiModInverseImpl(self.bitsize, self.mod), u=u, v=x, r=r, s=s, m=m, f=f
         )
 
+        assert isinstance(u, Soquet)
+        assert isinstance(v, Soquet)
+        assert isinstance(s, Soquet)
+        assert isinstance(f, Soquet)
         bb.free(u)
         bb.free(v)
         bb.free(s)
@@ -529,3 +628,33 @@ class KaliskiModInverse(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
+
+    def on_classical_vals(self, x: int, m: int = 0) -> Dict[str, 'ClassicalValT']:
+        u, v, r, s, f = int(self.mod), x, 0, 1, 1
+        iteration = _KaliskiModInverseImpl(self.bitsize, self.mod)._kaliski_iteration
+        for _ in range(2 * int(self.bitsize)):
+            u, v, r, s, m_i, f = iteration.call_classically(u=u, v=v, r=r, s=s, m=0, f=f)
+            m = (m << 1) | m_i
+        assert u == 1
+        assert s == self.mod
+        assert f == 0
+        assert v == 0
+        return {'x': self.mod - r, 'm': m}
+
+
+@bloq_example
+def _kaliskimodinverse_example() -> KaliskiModInverse:
+    kaliskimodinverse_example = KaliskiModInverse(32, 10**9 + 7)
+    return kaliskimodinverse_example
+
+
+@bloq_example
+def _kaliskimodinverse_symbolic() -> KaliskiModInverse:
+    n, p = sympy.symbols('n p')
+    kaliskimodinverse_symbolic = KaliskiModInverse(n, p)
+    return kaliskimodinverse_symbolic
+
+
+_KALISKI_MOD_INVERSE_DOC = BloqDocSpec(
+    bloq_cls=KaliskiModInverse, examples=[_kaliskimodinverse_example, _kaliskimodinverse_symbolic]
+)

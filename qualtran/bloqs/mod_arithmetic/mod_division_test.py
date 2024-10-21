@@ -15,10 +15,10 @@
 import math
 
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import QMontgomeryUInt
-from qualtran.bloqs.mod_arithmetic import KaliskiModInverse
+from qualtran.bloqs.mod_arithmetic.mod_division import _kaliskimodinverse_example, KaliskiModInverse
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
@@ -53,3 +53,34 @@ def test_kaliski_mod_inverse_decomposition(bitsize, mod):
 def test_kaliski_mod_bloq_counts(bitsize, mod):
     b = KaliskiModInverse(bitsize, mod)
     qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
+
+
+def test_kaliski_symbolic_cost():
+    n, p = sympy.symbols('n p')
+    b = KaliskiModInverse(n, p)
+    cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
+    # We have some T gates since we use CSwapApprox instead of n CSWAPs.
+    total_toff = (cost['n_t'] / 4 + cost['n_ccz']) * sympy.Integer(1)
+    total_toff = total_toff.expand()
+
+    # The toffoli cost from Litinski https://arxiv.org/abs/2306.08585 is 26n^2 + 2n.
+    # The cost of Kaliski is 2*n*(cost of an iteration) + (cost of computing $p - x$)
+    #
+    #   - The cost of of computing  $p-x$ in Litinski is 2n (Neg -> Add(p)). In our
+    #       construction this is just $n-1$ (BitwiseNot -> Add(p+1)).
+    #   - The cost of an iteration in Litinski $13n$ since they ignore constants.
+    #       Our construction is exactly the same but we also count the constants
+    #       which amout to $3$. for a total cost of $13n + 3$.
+    # For example the cost of ModDbl is 2n+1. In their figure 8, they report
+    # it as just $2n$. ModDbl gets executed within the 2n loop so its contribution
+    # to the overal cost should be 4n^2 + 2n instead of just 4n^2.
+    assert total_toff == 26 * n**2 + 7 * n - 1
+
+
+def test_kaliskimodinverse_example(bloq_autotester):
+    bloq_autotester(_kaliskimodinverse_example)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('mod_division')
