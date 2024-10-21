@@ -35,9 +35,8 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, XorK
-from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.arithmetic.comparison import LinearDepthHalfGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TwoBitCSwap, XGate
 from qualtran.bloqs.mcmt import And, MultiAnd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
@@ -181,9 +180,8 @@ class _KaliskiIterationStep3(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
-        greater_than = bb.allocate(1)
-        u, v, greater_than = bb.add(
-            LinearDepthGreaterThan(self.bitsize, signed=False), a=u, b=v, target=greater_than
+        u, v, junk, greater_than = bb.add(
+            LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)), a=u, b=v
         )
 
         (greater_than, f, b), junk, ctrl = bb.add(
@@ -196,15 +194,19 @@ class _KaliskiIterationStep3(Bloq):
         greater_than, f, b = bb.add(
             MultiAnd(cvs=(1, 1, 0)).adjoint(), ctrl=(greater_than, f, b), junk=junk, target=ctrl
         )
-        u, v, greater_than = bb.add(
-            LinearDepthGreaterThan(self.bitsize), a=u, b=v, target=greater_than
+        u, v = bb.add(
+            LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)).adjoint(),
+            a=u,
+            b=v,
+            c=junk,
+            target=greater_than,
         )
-        bb.free(greater_than)
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            LinearDepthGreaterThan(self.bitsize, signed=False): 2,
+            LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)): 1,
+            LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)).adjoint(): 1,
             MultiAnd((1, 1, 0)): 1,
             MultiAnd((1, 1, 0)).adjoint(): 1,
             CNOT(): 2,
