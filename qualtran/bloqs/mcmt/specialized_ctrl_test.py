@@ -48,9 +48,9 @@ class AtomWithSpecializedControl(Bloq):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_1bit_cv(
-            ctrl_spec=ctrl_spec,
+            self,
+            ctrl_spec,
             current_ctrl_bit=self.cv,
-            bloq_without_ctrl=attrs.evolve(self, cv=None),
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
                 attrs.evolve(self, cv=cv),
                 self.ctrl_reg_name,
@@ -128,9 +128,9 @@ class TestAtom(Bloq):
             return CTestAtom(self.tag), 'ctrl'
 
         return get_ctrl_system_1bit_cv(
-            ctrl_spec=ctrl_spec,
+            self,
+            ctrl_spec,
             current_ctrl_bit=None,
-            bloq_without_ctrl=self,
             get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
         )
 
@@ -150,9 +150,9 @@ class CTestAtom(Bloq):
             return self, 'ctrl'
 
         return get_ctrl_system_1bit_cv(
-            ctrl_spec=ctrl_spec,
+            self,
+            ctrl_spec,
             current_ctrl_bit=1,
-            bloq_without_ctrl=TestAtom(self.tag),
             get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
         )
 

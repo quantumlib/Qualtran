@@ -11,20 +11,93 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from functools import cached_property
 from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING
 
+import attrs
 import numpy as np
 
+from qualtran import Bloq, QBit, Register, Signature
+
 if TYPE_CHECKING:
-    from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, SoquetT
+    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
     from qualtran._infra.controlled import ControlBit
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+
+
+@attrs.frozen
+class _MultiControlledFromSinglyControlled(Bloq):
+    """Helper bloq implementing a multi-controlled-U given access to controlled-U.
+
+    This is for internal use only. For reducing multiple controls to a single control,
+    see :class:`qualtran.bloqs.mcmt.ControlledViaAnd` and
+    :meth:`qualtran.bloqs.mcmt.specialized_ctrl.get_ctrl_system_1bit_cv`.
+
+    This bloq is used as an intermediate bloq by `get_ctrl_system_1bit_cv` in the
+    controlled-controlled-bloq case. To cleanly support further controlling this bloq,
+    the `cvs` attribute accepts a tuple (of at least two controls), and defers to
+    `ControlledViaAnd` whenever possible, and only extends the `cvs` in the edge cases.
+    """
+
+    cvs: tuple[int, ...]
+    ctrl_bloq: Bloq
+    ctrl_reg_name: str
+
+    def __attrs_post_init__(self):
+        assert len(self.cvs) >= 2, f"{self} must have at least 2 controls, got {self.cvs=}"
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register(self.ctrl_reg_name, dtype=QBit(), shape=(len(self.cvs),))]
+            + [reg for reg in self.ctrl_bloq.signature if reg.name != self.ctrl_reg_name]
+        )
+
+    @cached_property
+    def _and_bloq(self) -> Bloq:
+        from qualtran.bloqs.mcmt import And, MultiAnd
+
+        if len(self.cvs) == 2:
+            return And(*self.cvs)
+        else:
+            return MultiAnd(self.cvs)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        and_soqs = bb.add_d(self._and_bloq, ctrl=soqs.pop(self.ctrl_reg_name))
+
+        soqs |= {self.ctrl_reg_name: and_soqs.pop('target')}
+        soqs = bb.add_d(self.ctrl_bloq, **soqs)
+        and_soqs |= {'target': soqs.pop(self.ctrl_reg_name)}
+
+        soqs |= {self.ctrl_reg_name: bb.add(self._and_bloq.adjoint(), **and_soqs)}
+
+        return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self._and_bloq: 1, self.ctrl_bloq: 1, self._and_bloq.adjoint(): 1}
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec.num_qubits != 1:
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        ctrl_bloq = attrs.evolve(self, cvs=(ctrl_spec.get_single_ctrl_bit(),) + self.cvs)
+
+        def _adder(bb, ctrl_soqs, in_soqs):
+            in_soqs[self.ctrl_reg_name] = np.concatenate(ctrl_soqs, in_soqs[self.ctrl_reg_name])
+            ctrls, *out_soqs = bb.add_t(ctrl_bloq, **in_soqs)
+            return ctrls[:1], [*ctrls[1:], *out_soqs]
+
+        return ctrl_bloq, _adder
+
+    def __str__(self):
+        return f'C[{len(self.cvs)-1}][{self.ctrl_bloq}]'
 
 
 def get_ctrl_system_1bit_cv(
-    *,
+    bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
+    *,
     current_ctrl_bit: Optional['ControlBit'],
-    bloq_without_ctrl: 'Bloq',
     get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], Optional[tuple['Bloq', str]]],
 ) -> tuple['Bloq', 'AddControlledT']:
     """Build the control system for a bloq with a specialized single-qubit controlled variant.
@@ -39,29 +112,18 @@ def get_ctrl_system_1bit_cv(
     instead, which wraps the bloq using the `Controlled` metabloq.
 
     Args:
+        bloq: The current bloq.
         ctrl_spec: The control specification
         current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
-        bloq_without_ctrl: The variant of this bloq without a control.
         get_ctrl_bloq_and_ctrl_reg_name: A callable that accepts a control bit (`0` or `1`),
             and returns the controlled variant of this bloq and the name of the control register.
             If the callable returns `None`, then the default fallback is used.
     """
-    from qualtran import CtrlSpec, Soquet
+    from qualtran import Soquet
     from qualtran.bloqs.mcmt import ControlledViaAnd
 
     def _get_default_fallback():
-        current_bloq: 'Bloq'
-        if current_ctrl_bit is None:
-            current_bloq = bloq_without_ctrl
-        else:
-            ctrl_bloq_and_reg = get_ctrl_bloq_and_ctrl_reg_name(current_ctrl_bit)
-            if ctrl_bloq_and_reg is None:
-                raise ValueError(
-                    f"Expected a controlled bloq (self) matching the current control bit {current_ctrl_bit}, got None"
-                )
-            current_bloq, _ = ctrl_bloq_and_reg
-
-        return ControlledViaAnd.make_ctrl_system(bloq=current_bloq, ctrl_spec=ctrl_spec)
+        return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
 
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
@@ -89,19 +151,20 @@ def get_ctrl_system_1bit_cv(
 
     else:
         # the difficult case: must combine the two controls into one
-        ctrl_bloq = ControlledViaAnd(bloq_without_ctrl, CtrlSpec(cvs=[ctrl_bit, current_ctrl_bit]))
-        (ctrl_reg_name,) = ctrl_bloq.ctrl_reg_names
+        ctrl_1_bloq_and_reg_name = get_ctrl_bloq_and_ctrl_reg_name(1)
+        assert ctrl_1_bloq_and_reg_name is not None
+        ctrl_1_bloq, ctrl_reg_name = ctrl_1_bloq_and_reg_name
 
-        ctrl_1_bloq = get_ctrl_bloq_and_ctrl_reg_name(1)
-        assert ctrl_1_bloq is not None
-        _, in_ctrl_reg_name = ctrl_1_bloq
+        ctrl_bloq = _MultiControlledFromSinglyControlled(
+            cvs=(ctrl_bit, current_ctrl_bit), ctrl_bloq=ctrl_1_bloq, ctrl_reg_name=ctrl_reg_name
+        )
 
         def _adder(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
         ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             # extract the two control bits
             (ctrl0,) = ctrl_soqs
-            ctrl1 = in_soqs.pop(in_ctrl_reg_name)
+            ctrl1 = in_soqs.pop(ctrl_reg_name)
 
             ctrl0 = cast(Soquet, ctrl0)
             ctrl1 = cast(Soquet, ctrl1)
@@ -117,23 +180,23 @@ def get_ctrl_system_1bit_cv(
     return ctrl_bloq, _adder
 
 
-def get_ctrl_system_1bit_cv_from_list(
-    *,
+def get_ctrl_system_1bit_cv_from_bloqs(
+    bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
+    *,
     current_ctrl_bit: Optional['ControlBit'],
-    bloq_without_ctrl: 'Bloq',
     bloq_with_ctrl_1: 'Bloq',
     ctrl_reg_name: 'str',
     bloq_with_ctrl_0: Optional['Bloq'],
 ) -> tuple['Bloq', 'AddControlledT']:
-    """Helper to construct the control system given uncontrolled and singly-controlled variants of a bloq.
+    """Helper to construct the control system given singly-controlled variants of a bloq.
 
     See :meth:`get_ctrl_system_1bit_cv` for details on usage.
 
     Args:
+        bloq: The current bloq.
         ctrl_spec: The control specification
         current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
-        bloq_without_ctrl: The variant of this bloq without a control.
         bloq_with_ctrl_1: The variant of this bloq controlled by a single qubit in the `1` basis state.
         ctrl_reg_name: The name of the control register for the controlled bloq variant(s).
         bloq_with_ctrl_0: (optional) The variant of this bloq controlled by a single qubit in the `1` basis state.
@@ -148,8 +211,8 @@ def get_ctrl_system_1bit_cv_from_list(
             return bloq_with_ctrl_0, ctrl_reg_name
 
     return get_ctrl_system_1bit_cv(
-        ctrl_spec=ctrl_spec,
+        bloq,
+        ctrl_spec,
         current_ctrl_bit=current_ctrl_bit,
-        bloq_without_ctrl=bloq_without_ctrl,
         get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
     )

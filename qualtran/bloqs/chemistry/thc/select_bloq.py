@@ -318,9 +318,9 @@ class SelectTHC(SelectOracle):
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(
+            self,
             ctrl_spec=ctrl_spec,
             current_ctrl_bit=self.control_val,
-            bloq_without_ctrl=evolve(self, control_val=None),
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
         )
 
