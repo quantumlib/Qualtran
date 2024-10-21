@@ -41,8 +41,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -277,9 +277,6 @@ class ZGate(Bloq):
         (q,) = q
         return cirq.Z(q), {'q': np.asarray([q])}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
-
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -457,7 +454,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
+    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 
@@ -482,7 +479,7 @@ class IntEffect(_IntVector):
         val: The register of size `bitsize` which de-allocates the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: int):
+    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
 
 

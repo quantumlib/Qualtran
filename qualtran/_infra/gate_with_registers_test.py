@@ -151,8 +151,10 @@ t: ───t───────────────────Y───
 
 
 def test_non_unitary_controlled():
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
     bloq = BloqWithDecompose()
-    assert bloq.controlled(control_values=[0]) == Controlled(bloq, CtrlSpec(cvs=0))
+    assert bloq.controlled(control_values=[0]) == ControlledViaAnd(bloq, CtrlSpec(cvs=0))
 
 
 @pytest.mark.notebook

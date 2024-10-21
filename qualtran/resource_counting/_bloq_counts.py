@@ -297,7 +297,10 @@ class QECGatesCost(CostKey[GateCounts]):
         from qualtran.bloqs.mcmt import And, MultiTargetCNOT
 
         if self.legacy_shims:
-            legacy_val = bloq._t_complexity_()
+            if hasattr(bloq, '_t_complexity_'):
+                legacy_val = bloq._t_complexity_()
+            else:
+                legacy_val = NotImplemented
             if legacy_val is not NotImplemented:
                 warnings.warn(
                     "Please migrate explicit cost annotations to the general "
