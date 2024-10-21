@@ -93,14 +93,14 @@ class _MultiControlledFromSinglyControlled(Bloq):
         return f'C[{len(self.cvs)-1}][{self.ctrl_bloq}]'
 
 
-def get_ctrl_system_1bit_cv(
+def _get_ctrl_system_1bit_cv(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
     current_ctrl_bit: Optional['ControlBit'],
     get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], Optional[tuple['Bloq', str]]],
 ) -> tuple['Bloq', 'AddControlledT']:
-    """Build the control system for a bloq with a specialized single-qubit controlled variant.
+    """Internal method to build the control system for a bloq using single-qubit controlled variants.
 
     Uses the provided specialized implementation when a singly-controlled variant of the bloq is
     requested. When controlled by multiple qubits, the controls are reduced to a single qubit
@@ -134,6 +134,7 @@ def get_ctrl_system_1bit_cv(
         # the easy case: use the controlled bloq
         ctrl_bloq_and_ctrl_reg_name = get_ctrl_bloq_and_ctrl_reg_name(ctrl_bit)
         if ctrl_bloq_and_ctrl_reg_name is None:
+            assert ctrl_bit != 1, "invalid usage: controlled-by-1 variant must be provided"
             return _get_default_fallback()
 
         ctrl_bloq, ctrl_reg_name = ctrl_bloq_and_ctrl_reg_name
@@ -152,7 +153,9 @@ def get_ctrl_system_1bit_cv(
     else:
         # the difficult case: must combine the two controls into one
         ctrl_1_bloq_and_reg_name = get_ctrl_bloq_and_ctrl_reg_name(1)
-        assert ctrl_1_bloq_and_reg_name is not None
+        assert (
+            ctrl_1_bloq_and_reg_name is not None
+        ), "invalid usage: controlled-by-1 variant must be provided"
         ctrl_1_bloq, ctrl_reg_name = ctrl_1_bloq_and_reg_name
 
         ctrl_bloq = _MultiControlledFromSinglyControlled(
@@ -180,37 +183,71 @@ def get_ctrl_system_1bit_cv(
     return ctrl_bloq, _adder
 
 
-def get_ctrl_system_1bit_cv_from_bloqs(
+def get_ctrl_system_1bit_cv(
     bloq: 'Bloq',
     ctrl_spec: 'CtrlSpec',
     *,
     current_ctrl_bit: Optional['ControlBit'],
-    bloq_with_ctrl_1: 'Bloq',
-    ctrl_reg_name: 'str',
-    bloq_with_ctrl_0: Optional['Bloq'],
+    get_ctrl_bloq_and_ctrl_reg_name: Callable[['ControlBit'], tuple['Bloq', str]],
 ) -> tuple['Bloq', 'AddControlledT']:
-    """Helper to construct the control system given singly-controlled variants of a bloq.
+    """Build the control system for a bloq with specialized single-qubit controlled variants.
 
-    See :meth:`get_ctrl_system_1bit_cv` for details on usage.
+    Uses the provided specialized implementation when a singly-controlled variant of the bloq is
+    requested. When controlled by multiple qubits, the controls are reduced to a single qubit
+    and the singly-controlled bloq is used.
+
+    The user must provide two specializations for the bloq: controlled by `1` and by `0`.
+
+    When only one specialization (controlled by `1`) is known, use
+    :meth:`get_ctrl_system_1bit_cv_from_bloqs` instead.
 
     Args:
         bloq: The current bloq.
         ctrl_spec: The control specification
         current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
-        bloq_with_ctrl_1: The variant of this bloq controlled by a single qubit in the `1` basis state.
+        get_ctrl_bloq_and_ctrl_reg_name: A callable that accepts a control bit (`0` or `1`),
+            and returns the controlled variant of this bloq and the name of the control register.
+    """
+    return _get_ctrl_system_1bit_cv(
+        bloq,
+        ctrl_spec,
+        current_ctrl_bit=current_ctrl_bit,
+        get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
+    )
+
+
+def get_ctrl_system_1bit_cv_from_bloqs(
+    bloq: 'Bloq',
+    ctrl_spec: 'CtrlSpec',
+    *,
+    current_ctrl_bit: Optional['ControlBit'],
+    bloq_with_ctrl: 'Bloq',
+    ctrl_reg_name: 'str',
+) -> tuple['Bloq', 'AddControlledT']:
+    """Helper to construct the control system given a singly-controlled variant of a bloq.
+
+    Uses the provided specialized implementation when a singly-controlled (by `1`) variant of
+    the bloq is requested. When controlled by multiple qubits, the controls are reduced to a
+    single qubit and the singly-controlled bloq is used.
+
+    When specializations for both cases - controlled by `1` and by `0` - are known, use
+    :meth:`get_ctrl_system_1bit_cv` instead.
+
+    Args:
+        bloq: The current bloq.
+        ctrl_spec: The control specification
+        current_ctrl_bit: The control bit of the current bloq, one of `0, 1, None`.
+        bloq_with_ctrl: The variant of this bloq controlled by a single qubit in the `1` basis state.
         ctrl_reg_name: The name of the control register for the controlled bloq variant(s).
-        bloq_with_ctrl_0: (optional) The variant of this bloq controlled by a single qubit in the `1` basis state.
     """
 
     def get_ctrl_bloq_and_ctrl_reg_name(cv: 'ControlBit') -> Optional[tuple['Bloq', str]]:
         if cv == 1:
-            return bloq_with_ctrl_1, ctrl_reg_name
+            return bloq_with_ctrl, ctrl_reg_name
         else:
-            if bloq_with_ctrl_0 is None:
-                return None
-            return bloq_with_ctrl_0, ctrl_reg_name
+            return None
 
-    return get_ctrl_system_1bit_cv(
+    return _get_ctrl_system_1bit_cv(
         bloq,
         ctrl_spec,
         current_ctrl_bit=current_ctrl_bit,

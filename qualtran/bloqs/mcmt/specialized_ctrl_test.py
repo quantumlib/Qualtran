@@ -30,7 +30,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.mcmt import And
-from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+from qualtran.bloqs.mcmt.specialized_ctrl import (
+    get_ctrl_system_1bit_cv,
+    get_ctrl_system_1bit_cv_from_bloqs,
+)
 from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECGatesCost
 
 
@@ -122,16 +125,12 @@ class TestAtom(Bloq):
         return Signature.build(q=2)
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        def get_ctrl_bloq_and_ctrl_reg_name(cv):
-            if cv == 0:
-                return None
-            return CTestAtom(self.tag), 'ctrl'
-
-        return get_ctrl_system_1bit_cv(
+        return get_ctrl_system_1bit_cv_from_bloqs(
             self,
             ctrl_spec,
             current_ctrl_bit=None,
-            get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
+            bloq_with_ctrl=CTestAtom(self.tag),
+            ctrl_reg_name='ctrl',
         )
 
 
@@ -144,16 +143,8 @@ class CTestAtom(Bloq):
         return Signature.build(ctrl=1, q=2)
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        def get_ctrl_bloq_and_ctrl_reg_name(cv):
-            if cv == 0:
-                return None
-            return self, 'ctrl'
-
-        return get_ctrl_system_1bit_cv(
-            self,
-            ctrl_spec,
-            current_ctrl_bit=1,
-            get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
         )
 
 
