@@ -184,21 +184,3 @@ class Adjoint(GateWithRegisters):
             return self.subbloq.wire_symbol(reg=None).adjoint()
 
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
-
-    def _t_complexity_(self):
-        """The cirq-style `_t_complexity_` delegates to the subbloq's method with a special shim.
-
-        The cirq-style t complexity protocol does not leverage the heirarchical decomposition
-        of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
-        """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/735
-        if not hasattr(self.subbloq, '_t_complexity_'):
-            return NotImplemented
-
-        try:
-            return self.subbloq._t_complexity_(adjoint=True)  # type: ignore[call-arg]
-        except TypeError as e:
-            if 'adjoint' in str(e):
-                return self.subbloq._t_complexity_()
-            else:
-                raise e
