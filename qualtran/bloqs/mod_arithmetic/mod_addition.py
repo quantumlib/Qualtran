@@ -274,20 +274,16 @@ class CModAddK(Bloq):
 
     References:
         [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
-        Gidney and Ekerå 2019. 
-        Uses CModAddK in the "reference implementation" in section 2.2 paragraph 4 to implement
-        controlled scaled addition. References circuit from Elementary Arithmetic Operations paper
-        cited below.
-
-        [Quantum Networks for Elementary Arithmetic Operations](https://arxiv.org/abs/quant-ph/9511018).
-        Vedral et al. 1995.
-        Implements ModAdd in figure 4; because the referenced circuit is ModAdd instead of ModAddK
-        we choose to turn k into an IntState and reuse the existing CModAdd bloq.
+        Gidney and Ekerå 2019.
+        The reference implementation in section 2.2 uses CModAddK, but the circuit that it points
+        to is just ModAdd (not ModAddK). This ModAdd is less efficient than the circuit later
+        introduced in the Litinski paper so we choose to use that since it is more efficient and
+        already implemented in Qualtran.
 
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
         Litinski et al. 2023.
-        This CModAdd circuit uses 2 fewer additions than the implementation referenced above.
-        Because of this we choose to use this CModAdd bloq instead.
+        This CModAdd circuit uses 2 fewer additions than the implementation referenced in the paper
+        above. Because of this we choose to use this CModAdd bloq instead.
     """
 
     k: Union[int, sympy.Expr]
@@ -327,7 +323,7 @@ class CModAddK(Bloq):
         if reg.name == 'ctrl':
             return Circle()
         if reg.name == 'x':
-            return TextBox(f'x += {self.k} mod {self.mod}')
+            return TextBox(f'x += {self.k}')
         raise ValueError(f"Unknown register {reg}")
 
 

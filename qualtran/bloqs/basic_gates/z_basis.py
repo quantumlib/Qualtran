@@ -42,7 +42,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
-from qualtran.symbolics.types import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     import cirq

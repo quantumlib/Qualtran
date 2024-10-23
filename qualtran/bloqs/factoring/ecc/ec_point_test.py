@@ -21,6 +21,7 @@ def test_ec_point_overrides():
     assert 1 * p == p
     assert 2 * p == (p + p)
     assert 3 * p == (p + p + p)
+    assert 0 * p == ECPoint.inf(mod=17, curve_a=0)
 
 
 def test_ec_point_addition():

@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 import math
-import random
 from functools import cached_property
 from typing import Dict, Optional
 
 import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -36,15 +36,16 @@ from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.factoring._factoring_shims import MeasureQFT
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import CModMulK
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-from qualtran.symbolics.types import is_symbolic, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @frozen
 class RSAPhaseEstimate(Bloq):
-    """Perform a single phase estimation of ModExp for the given base.
+    """Perform a single phase estimation of the decomposition of Modular Exponentiation for the
+    given base.
 
-    Computes the phase estimation of a single run of Modular Exponentiation with
-    an optional, pre-set base or a random, valid base.
+    The constructor requires a pre-set base, see the make_for_shor factory method for picking a
+    random, valid base
 
     Args:
         n: The bitsize of the modulus N.
@@ -76,13 +77,19 @@ class RSAPhaseEstimate(Bloq):
         return Signature([])
 
     @classmethod
-    def make_for_shor(cls, big_n: 'SymbolicInt', g: Optional['SymbolicInt'] = None):
+    def make_for_shor(
+        cls,
+        big_n: 'SymbolicInt',
+        g: Optional['SymbolicInt'] = None,
+        rs: Optional[np.random.RandomState] = None,
+    ):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
             big_n: The large composite number N. Used to set `mod`. Its bitsize is used
                 to set `x_bitsize` and `exp_bitsize`.
             g: Optional base of the exponentiation. If `None`, we pick a random base.
+            rs: Optional random state which can be seeded to make base generation deterministic.
         """
         if is_symbolic(big_n):
             little_n = sympy.ceiling(sympy.log(big_n, 2))
@@ -92,8 +99,10 @@ class RSAPhaseEstimate(Bloq):
             if is_symbolic(big_n):
                 g = sympy.symbols('g')
             else:
+                if rs is None:
+                    rs = np.random.RandomState()
                 while True:
-                    g = random.randint(2, int(big_n))
+                    g = rs.randint(2, int(big_n))
                     if math.gcd(g, int(big_n)) == 1:
                         break
         return cls(base=g, mod=big_n, n=little_n)
