@@ -13,9 +13,8 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
-import sympy
 from attrs import frozen
 
 from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature

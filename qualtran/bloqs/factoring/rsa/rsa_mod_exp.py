@@ -75,6 +75,9 @@ class ModExp(Bloq):
         [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
         Gidney and Ekerå. 2019.
 
+        [Circuit for Shor's algorithm using 2n+3 qubits](https://arxiv.org/abs/quant-ph/0205095).
+        Stephane Beauregard. 2003.
+
         [Windowed quantum arithmetic](https://arxiv.org/abs/1905.07682).
         Craig Gidney. 2019.
     """
@@ -133,7 +136,7 @@ class ModExp(Bloq):
                 log_block_sizes = (0,)
             return QROAMClean(
                 [
-                    Shaped((2**(self.exp_window_size+self.mult_window_size),)),
+                    data,
                 ],
                 selection_bitsizes=(self.exp_window_size, self.mult_window_size),
                 target_bitsizes=(self.x_bitsize,),
@@ -218,26 +221,34 @@ class ModExp(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.exp_window_size is not None and self.mult_window_size is not None:
-            cg = {IntState(val=1, bitsize=self.x_bitsize): 1, Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+            if is_symbolic(self.exp_window_size, self.mult_window_size):
+                num_iterations = self.exp_bitsize // self.exp_window_size
+                return {self.qrom(Shaped((2**(self.exp_window_size+self.mult_window_size),))): 1,
+                        self.qrom(Shaped((2**(self.exp_window_size+self.mult_window_size),))).adjoint(): 1,
+                        ModAdd(self.x_bitsize, self.mod): 1,
+                        ModSub(QUInt(self.x_bitsize), self.mod): 1,
+                        IntState(val=1, bitsize=self.x_bitsize): 1, Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+            else:
+                cg = {IntState(val=1, bitsize=self.x_bitsize): 1, Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
 
-            k = self.base
-            for i in range(self.exp_bitsize // self.exp_window_size):
-                kes = [pow(k, 2**i * x_e, self.mod) for x_e in range(2**self.exp_window_size)]
-                kes_inv = [pow(x_e, -1, self.mod) for x_e in kes]
+                k = self.base
+                for i in range(self.exp_bitsize // self.exp_window_size):
+                    kes = [pow(k, 2**i * x_e, self.mod) for x_e in range(2**self.exp_window_size)]
+                    kes_inv = [pow(x_e, -1, self.mod) for x_e in kes]
 
-                for j in range(self.x_bitsize // self.mult_window_size):
-                    data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
-                    cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
-                    cg[ModAdd(self.x_bitsize, self.mod)] = cg.get(ModAdd(self.x_bitsize, self.mod), 0) + 1
-                    cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
+                    for j in range(self.x_bitsize // self.mult_window_size):
+                        data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
+                        cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
+                        cg[ModAdd(self.x_bitsize, self.mod)] = cg.get(ModAdd(self.x_bitsize, self.mod), 0) + 1
+                        cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
 
-                for j in range(self.x_bitsize // self.mult_window_size):
-                    data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
-                    cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
-                    cg[ModSub(QUInt(self.x_bitsize), self.mod)] = cg.get(ModSub(QUInt(self.x_bitsize), self.mod), 0) + 1
-                    cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
+                    for j in range(self.x_bitsize // self.mult_window_size):
+                        data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
+                        cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
+                        cg[ModSub(QUInt(self.x_bitsize), self.mod)] = cg.get(ModSub(QUInt(self.x_bitsize), self.mod), 0) + 1
+                        cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
 
-            return cg
+                return cg
         else:
             k = ssa.new_symbol('k')
             return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
