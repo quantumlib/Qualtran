@@ -170,14 +170,14 @@ class ModExp(Bloq):
                 mi = np.split(np.array(a), self.x_bitsize // self.mult_window_size)
                 for j in range(self.x_bitsize // self.mult_window_size):
                     data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
-                    ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
-                    mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
+                    ei_i = bb.join(ei[(self.exp_bitsize // self.exp_window_size) - i - 1], QUInt((self.exp_window_size)))
+                    mi_i = bb.join(mi[(self.x_bitsize // self.mult_window_size) - j - 1], QUInt((self.mult_window_size)))
                     ei_i, mi_i, t, *junk = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
                     t, b = bb.add(ModAdd(self.x_bitsize, self.mod), x=t, y=b)
                     junk_mapping = {f'junk_target{i}_': junk[i] for i in range(len(junk))}
                     ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t, **junk_mapping)
-                    ei[i] = bb.split(ei_i)
-                    mi[j] = bb.split(mi_i)
+                    ei[(self.exp_bitsize // self.exp_window_size) - i - 1] = bb.split(ei_i)
+                    mi[(self.x_bitsize // self.mult_window_size) - j - 1] = bb.split(mi_i)
 
                 a = np.concatenate(mi, axis=None)
                 a = bb.join(a, QUInt(self.x_bitsize))
@@ -186,14 +186,14 @@ class ModExp(Bloq):
                 mi = np.split(np.array(b), self.x_bitsize // self.mult_window_size)
                 for j in range(self.x_bitsize // self.mult_window_size):
                     data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
-                    ei_i = bb.join(ei[i], QUInt((self.exp_window_size)))
-                    mi_i = bb.join(mi[j], QUInt((self.mult_window_size)))
+                    ei_i = bb.join(ei[(self.exp_bitsize // self.exp_window_size) - i - 1], QUInt((self.exp_window_size)))
+                    mi_i = bb.join(mi[(self.x_bitsize // self.mult_window_size) - j - 1], QUInt((self.mult_window_size)))
                     ei_i, mi_i, t, *junk = bb.add(self.qrom(data), selection0=ei_i, selection1=mi_i)
                     t, a = bb.add(ModSub(QUInt(self.x_bitsize), self.mod), x=t, y=a)
                     junk_mapping = {f'junk_target{i}_': junk[i] for i in range(len(junk))}
                     ei_i, mi_i = bb.add(self.qrom(data).adjoint(), selection0=ei_i, selection1=mi_i, target0_=t, **junk_mapping)
-                    ei[i] = bb.split(ei_i)
-                    mi[j] = bb.split(mi_i)
+                    ei[(self.exp_bitsize // self.exp_window_size) - i - 1] = bb.split(ei_i)
+                    mi[(self.x_bitsize // self.mult_window_size) - j - 1] = bb.split(mi_i)
                 
                 b = np.concatenate(mi, axis=None)
                 
@@ -217,9 +217,26 @@ class ModExp(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.exp_window_size is not None and self.mult_window_size is not None:
-            bloq_counts = (self.exp_bitsize // self.exp_window_size) * (self.x_bitsize // self.mult_window_size)
-            return {}#return {self.qrom: 2 * bloq_counts, self.qrom.adjoint(): 2 * bloq_counts, Add(): bloq_counts, SubtractFrom(): bloq_counts,
-                    #Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+            cg = {IntState(val=1, bitsize=self.x_bitsize): 1, Swap(self.x_bitsize): self.exp_bitsize // self.exp_window_size}
+
+            k = self.base
+            for i in range(self.exp_bitsize // self.exp_window_size):
+                kes = [pow(k, 2**i * x_e, self.mod) for x_e in range(2**self.exp_window_size)]
+                kes_inv = [pow(x_e, -1, self.mod) for x_e in kes]
+
+                for j in range(self.x_bitsize // self.mult_window_size):
+                    data = list([(ke * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke in kes)
+                    cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
+                    cg[ModAdd(self.x_bitsize, self.mod)] = cg.get(ModAdd(self.x_bitsize, self.mod), 0) + 1
+                    cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
+
+                for j in range(self.x_bitsize // self.mult_window_size):
+                    data = list([(ke_inv * f * 2**j) % self.mod for f in range(2**self.mult_window_size)] for ke_inv in kes_inv)
+                    cg[self.qrom(data)] = cg.get(self.qrom(data), 0) + 1
+                    cg[ModSub(QUInt(self.x_bitsize), self.mod)] = cg.get(ModSub(QUInt(self.x_bitsize), self.mod), 0) + 1
+                    cg[self.qrom(data).adjoint()] = cg.get(self.qrom(data).adjoint(), 0) + 1
+
+            return cg
         else:
             k = ssa.new_symbol('k')
             return {self._CtrlModMul(k=k): self.exp_bitsize, IntState(val=1, bitsize=self.x_bitsize): 1}
@@ -259,7 +276,7 @@ def _modexp() -> ModExp:
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_window() -> ModExp:
-    modexp_window = ModExp.make_for_shor(big_n=13 * 17, g=9, exp_window_size=2, mult_window_size=2)
+    modexp_window = ModExp.make_for_shor(big_n=13 * 17, g=9, exp_window_size=8, mult_window_size=4)
     return modexp_window
 
 
