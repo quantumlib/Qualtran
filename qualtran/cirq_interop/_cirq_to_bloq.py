@@ -70,7 +70,7 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
+class _CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property
@@ -79,8 +79,6 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @cached_property
     def signature(self) -> 'Signature':
-        if isinstance(self.cirq_gate, Bloq):
-            return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
         return (
             Signature([Register('q', QBit(), shape=nqubits)])
@@ -88,14 +86,13 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
             else Signature.build(q=nqubits)
         )
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
     ) -> cirq.OP_TREE:
-        op = (
-            self.cirq_gate.on_registers(**quregs)
-            if isinstance(self.cirq_gate, GateWithRegisters)
-            else self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
-        )
+        op = self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
         try:
             return cirq.decompose_once(op)
         except TypeError as e:
@@ -111,12 +108,52 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        if isinstance(self.cirq_gate, GateWithRegisters):
-            return self.cirq_gate.as_cirq_op(qubit_manager, **in_quregs)
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
-    # Delegate all cirq-style protocols to underlying gate
+    def adjoint(self) -> 'Bloq':
+        return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
+
+    def __str__(self):
+        return f'cirq.{self.cirq_gate}'
+
+
+@frozen
+class CirqGateAsBloq(_CirqGateAsBloqBase):
+    gate: cirq.Gate
+
+    @property
+    def cirq_gate(self) -> cirq.Gate:
+        return self.gate
+
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if isinstance(cost_key, QECGatesCost):
+            t_count = _from_directly_countable_cirq(self.cirq_gate)
+            if t_count is None:
+                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
+            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
+        return NotImplemented
+
+
+class CirqGateAsBloqMixin(_CirqGateAsBloqBase, GateWithRegisters, metaclass=abc.ABCMeta):
+    """A mixin to bootstrap a bloq from a Cirq gate.
+
+    Bloq authors can inherit from this abstract class and override the `cirq_gate` property
+    to get a bloq adapted from the cirq gate. Authors can continue to customize the bloq
+    by overriding methods (like costs, string representations, ...).
+
+    This uses the same machinery as `CirqGateAsBloq`. That adapter will always be of type
+    `CirqGateAsBloq` and additional information cannot be annotated on the Cirq gate.
+
+    This interface can be used to bootstrap a bloq if you have a complicated operation
+    implemented as a Cirq gate that you cannot change to be a `GateWithRegisters` and for
+    which writing a native Bloq would be prohibitive.
+    """
+
+    @property
+    @abc.abstractmethod
+    def cirq_gate(self) -> cirq.Gate: ...
+
     def _unitary_(self):
         return cirq.unitary(self.cirq_gate, default=None)
 
@@ -133,26 +170,6 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def adjoint(self) -> 'Bloq':
         return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
-
-
-@frozen
-class CirqGateAsBloq(CirqGateAsBloqBase):
-    gate: cirq.Gate
-
-    def __str__(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
-
-    @property
-    def cirq_gate(self) -> cirq.Gate:
-        return self.gate
-
-    def my_static_costs(self, cost_key: 'CostKey'):
-        if isinstance(cost_key, QECGatesCost):
-            t_count = _from_directly_countable_cirq(self.cirq_gate)
-            if t_count is None:
-                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
