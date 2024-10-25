@@ -271,14 +271,6 @@ class ECWindowAddR(Bloq):
 
 
 @bloq_example
-def _ec_window_add_r() -> ECWindowAddR:
-    n, p, w = sympy.symbols('n p w')
-    Rx, Ry = sympy.symbols('Rx Ry')
-    ec_window_add_r = ECWindowAddR(n=n, ec_window_size=w, R=ECPoint(Rx, Ry, mod=p))
-    return ec_window_add_r
-
-
-@bloq_example
 def _ec_window_add_r_small() -> ECWindowAddR:
     n = 16
     P = ECPoint(2, 2, mod=7, curve_a=3)
