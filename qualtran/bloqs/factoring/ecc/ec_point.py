@@ -14,7 +14,7 @@
 
 from attrs import frozen
 
-from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 @frozen
@@ -49,6 +49,8 @@ class ECPoint:
         if (other.mod != self.mod) or (other.curve_a != self.curve_a):
             raise ValueError('Use consistent mod and curve')
 
+        if is_symbolic(self.x, self.y, other.x, other.y, self.mod, self.curve_a):
+            return self
         if self == -other:
             return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
         if self == ECPoint.inf(mod=self.mod, curve_a=self.curve_a):
@@ -63,7 +65,7 @@ class ECPoint:
             lam_num = (other.y - self.y) % self.mod
             lam_denom = (other.x - self.x) % self.mod
 
-        lam = (lam_num * pow(lam_denom, -1, mod=self.mod)) % self.mod
+        lam = (lam_num * pow(int(lam_denom), -1, mod=int(self.mod))) % self.mod
         xr = (lam**2 - other.x - self.x) % self.mod
         yr = (lam * (self.x - xr) - self.y) % self.mod
         return ECPoint(xr, yr, mod=self.mod, curve_a=self.curve_a)
