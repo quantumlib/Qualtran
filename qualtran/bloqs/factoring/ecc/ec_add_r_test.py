@@ -62,7 +62,7 @@ def test_ec_window_add_r_classical(n, m, ctrl, x, y, a, b):
     R = ECPoint(a, b, mod=p)
     x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
     y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
-    ctrl = QUInt(m).to_bits(ctrl % (2**m))
+    ctrl = np.array(QUInt(m).to_bits(ctrl % (2**m)))
     bloq = ECWindowAddR(n=n, R=R, ec_window_size=m, mul_window_size=m)
     ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
     ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, x=x, y=y)

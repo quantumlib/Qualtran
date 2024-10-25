@@ -15,6 +15,7 @@
 from functools import cached_property
 from typing import Dict, Optional, Tuple, Union
 
+import numpy as np
 import sympy
 from attrs import frozen
 
@@ -199,7 +200,7 @@ class ECWindowAddR(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        ctrl = bb.join(ctrl)
+        ctrl = bb.join(np.array(ctrl))
 
         ctrl, a, b, lam_r, *junk = bb.add(self.qrom, selection=ctrl)
 
