@@ -69,7 +69,8 @@ class ECPoint:
         return ECPoint(xr, yr, mod=self.mod, curve_a=self.curve_a)
 
     def __mul__(self, other):
-        assert other > 0, other
+        if other == 0:
+            return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
         x = self
         for _ in range(other - 1):
             x = x + self
