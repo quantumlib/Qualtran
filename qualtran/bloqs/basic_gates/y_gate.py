@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -22,7 +22,6 @@ from qualtran import (
     AddControlledT,
     Bloq,
     bloq_example,
-    BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
@@ -30,7 +29,6 @@ from qualtran import (
     DecomposeTypeError,
     Register,
     Signature,
-    SoquetT,
 )
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
@@ -75,19 +73,11 @@ class YGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec != CtrlSpec():
-            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        bloq = CYGate()
-
-        def _add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (ctrl,) = ctrl_soqs
-            ctrl, q = bb.add(bloq, ctrl=ctrl, target=in_soqs['q'])
-            return ((ctrl,), (q,))
-
-        return bloq, _add_ctrled
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=CYGate(), ctrl_reg_name='ctrl'
+        )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -172,6 +162,13 @@ class CYGate(Bloq):
         if reg.name == 'target':
             return TextBox('Y')
         raise ValueError(f"Unknown register {reg}.")
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
+        )
 
 
 @bloq_example

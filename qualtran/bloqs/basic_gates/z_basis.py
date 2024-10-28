@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -254,20 +254,11 @@ class ZGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec != CtrlSpec():
-            # Delegate to the general superclass behavior
-            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        bloq = CZ()
-
-        def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (ctrl_soq,) = ctrl_soqs
-            ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
-            return (ctrl_soq,), (q2,)
-
-        return bloq, add_controlled
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=CZ(), ctrl_reg_name='q1'
+        )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -339,6 +330,13 @@ class CZ(Bloq):
         if reg.name == 'q1' or reg.name == 'q2':
             return Circle()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
+        )
 
 
 @bloq_example
