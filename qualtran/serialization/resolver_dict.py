@@ -98,6 +98,7 @@ import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring._factoring_shims
+import qualtran.bloqs.factoring.ecc.ec_add
 import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
@@ -351,6 +352,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse": qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse,
     "qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration": qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration,
     "qualtran.bloqs.factoring._factoring_shims.MeasureQFT": qualtran.bloqs.factoring._factoring_shims.MeasureQFT,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFour": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFour,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFive": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFive,
+    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepSix": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepSix,
+    "qualtran.bloqs.factoring.ecc.ec_add.ECAdd": qualtran.bloqs.factoring.ecc.ec_add.ECAdd,
     "qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate": qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate,
     "qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp": qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
