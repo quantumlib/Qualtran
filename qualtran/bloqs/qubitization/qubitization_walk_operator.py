@@ -27,16 +27,14 @@ how they can be combined in `QubitizationWalkOperator`.
 """
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple, Union
+from typing import Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
-from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     LCUBlockEncoding,
@@ -53,7 +51,7 @@ from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class QubitizationWalkOperator(GateWithRegisters):  # type: ignore[misc]
     r"""Construct a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (where coefficients $w_l > 0$ and $H_l$ are unitaries),
@@ -79,8 +77,6 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
         prepare: Then PREPARE lcu gate implementing
             $\mathrm{PREPARE}|0\dots 0\rangle = \sum_l \sqrt{\frac{w_{l}}{\lambda}}
             |l\rangle = |L\rangle$
-        control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
-            None, in which case the resulting walk operator is not controlled.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
@@ -88,12 +84,6 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
     """
 
     block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]
-    control_val: Optional[int] = None
-    uncompute: bool = False
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return self.block_encoding.control_registers
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -119,57 +109,29 @@ class QubitizationWalkOperator(GateWithRegisters, SpecializedSingleQubitControll
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                *self.control_registers,
-                *self.selection_registers,
-                *self.target_registers,
-                *self.junk_registers,
-            ]
-        )
+        return Signature([*self.selection_registers, *self.target_registers, *self.junk_registers])
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
-        return ReflectionUsingPrepare(
-            self.block_encoding.signal_state, control_val=self.control_val, global_phase=-1
-        )
+        return ReflectionUsingPrepare(self.block_encoding.signal_state, global_phase=-1)
 
     @cached_property
     def sum_of_lcu_coefficients(self) -> SymbolicFloat:
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.block_encoding.alpha
 
-    def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
-        select_reg = {reg.name: quregs[reg.name] for reg in self.block_encoding.signature}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        be_soqs = {reg.name: soqs.pop(reg.name) for reg in self.block_encoding.signature}
+        soqs |= bb.add_d(self.block_encoding, **be_soqs)
 
-        reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
-        if self.uncompute:
-            yield self.reflect.adjoint().on_registers(**reflect_reg)
-            yield self.block_encoding.adjoint().on_registers(**select_reg)
-        else:
-            yield self.block_encoding.on_registers(**select_reg)
-            yield self.reflect.on_registers(**reflect_reg)
+        reflect_soqs = {reg.name: soqs.pop(reg.name) for reg in self.reflect.signature}
+        soqs |= bb.add_d(self.reflect, **reflect_soqs)
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
-        assert self.control_val is None
-        c_block = self.block_encoding.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-        if not isinstance(c_block, (SelectBlockEncoding, LCUBlockEncoding)):
-            raise TypeError(
-                f"controlled version of {self.block_encoding} = {c_block} must also be a SelectOracle"
-            )
-        return attrs.evolve(self, block_encoding=c_block, control_val=control_val)
+        return soqs
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
-        wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
+        wire_symbols = ['W'] * total_bits(self.signature)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def adjoint(self) -> 'QubitizationWalkOperator':
-        return attrs.evolve(self, uncompute=not self.uncompute)
 
     @cached_property
     def prepare(self) -> Union[PrepareOracle, BlackBoxPrepare]:
