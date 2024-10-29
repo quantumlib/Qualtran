@@ -27,6 +27,7 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
+    QBit,
     Register,
     Signature,
 )
@@ -73,10 +74,15 @@ class YGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.bookkeeping import AutoPartition
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
+        cy_wrapped = AutoPartition(
+            CYGate(), [(Register('ctrl', QBit()), ['ctrl']), (Register('q', QBit()), ['target'])]
+        )
+
         return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=CYGate(), ctrl_reg_name='ctrl'
+            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=cy_wrapped, ctrl_reg_name='ctrl'
         )
 
     def as_cirq_op(
@@ -164,10 +170,15 @@ class CYGate(Bloq):
         raise ValueError(f"Unknown register {reg}.")
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.bookkeeping import AutoPartition
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
+        cy_wrapped = AutoPartition(
+            self, [(Register('ctrl', QBit()), ['ctrl']), (Register('q', QBit()), ['target'])]
+        )
+
         return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=cy_wrapped, ctrl_reg_name='ctrl'
         )
 
 

@@ -254,10 +254,16 @@ class ZGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.bookkeeping import AutoPartition
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
+        cz = CZ()
+        cz_wrapped = AutoPartition(
+            cz, [(Register('ctrl', QBit()), ['q1']), (Register('q', QBit()), ['q2'])]
+        )
+
         return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=CZ(), ctrl_reg_name='q1'
+            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=cz_wrapped, ctrl_reg_name='ctrl'
         )
 
     def as_cirq_op(
@@ -332,10 +338,15 @@ class CZ(Bloq):
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.bookkeeping import AutoPartition
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
+        cz_wrapped = AutoPartition(
+            self, [(Register('ctrl', QBit()), ['q1']), (Register('q', QBit()), ['q2'])]
+        )
+
         return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=cz_wrapped, ctrl_reg_name='ctrl'
         )
 
 

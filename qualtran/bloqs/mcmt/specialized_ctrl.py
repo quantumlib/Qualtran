@@ -18,6 +18,7 @@ import attrs
 import numpy as np
 
 from qualtran import Bloq, QBit, Register, Signature
+from qualtran.bloqs.bookkeeping import AutoPartition
 
 if TYPE_CHECKING:
     from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
@@ -180,7 +181,12 @@ def _get_ctrl_system_1bit_cv(
 
             return [ctrl0], [ctrl1, *out_soqs]
 
-    return ctrl_bloq, _adder
+    def _unwrap(b):
+        if isinstance(b, AutoPartition):
+            return _unwrap(b.bloq)
+        return b
+
+    return _unwrap(ctrl_bloq), _adder
 
 
 def get_ctrl_system_1bit_cv(
