@@ -454,8 +454,6 @@ class _KaliskiIteration(Bloq):
         The following implementation merges together the pseudocode from Fig7 of https://arxiv.org/pdf/2001.09580
         and the circuit in figure 15 of https://arxiv.org/pdf/2302.06639; This is in order to compute the values
         of `f` and `m`.
-
-
         """
         assert m == 0
         if f == 0:
