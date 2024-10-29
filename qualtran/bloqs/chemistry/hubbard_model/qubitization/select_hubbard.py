@@ -90,6 +90,8 @@ class SelectHubbard(SelectOracle):
     def __attrs_post_init__(self):
         if self.x_dim != self.y_dim:
             raise NotImplementedError("Currently only supports the case where x_dim=y_dim.")
+        if self.control_val == 0:
+            raise ValueError("control_val=0 not supported")
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -191,16 +193,14 @@ class SelectHubbard(SelectOracle):
         return s
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        return get_ctrl_system_1bit_cv(
+        return get_ctrl_system_1bit_cv_from_bloqs(
             self,
             ctrl_spec=ctrl_spec,
             current_ctrl_bit=self.control_val,
-            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
-                attrs.evolve(self, control_val=cv),
-                'control',
-            ),
+            bloq_with_ctrl=attrs.evolve(self, control_val=1),
+            ctrl_reg_name='control',
         )
 
     def adjoint(self) -> 'Bloq':
@@ -209,7 +209,7 @@ class SelectHubbard(SelectOracle):
             SpecializeOnCtrlBit,
         )
 
-        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.BOTH)
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
 
 
 @bloq_example
