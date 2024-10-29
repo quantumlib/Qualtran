@@ -203,6 +203,14 @@ class SelectHubbard(SelectOracle):
             ),
         )
 
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.meta.adjoint_with_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.BOTH)
+
 
 @bloq_example
 def _sel_hubb() -> SelectHubbard:
