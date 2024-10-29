@@ -449,6 +449,17 @@ class _KaliskiIteration(Bloq):
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, m: int, f: int
     ) -> Dict[str, 'ClassicalValT']:
+        """This is a classical encoding of figure 15 of https://arxiv.org/pdf/2302.06639.
+
+        The variables `m` and the local variables `a` and `b` translate into evaluating the if
+        conditions in `Algorithm 2 `. The meaning of the variables are:
+            - `a`: is `u` even?
+            - `b`: are both `u` and `v` even?
+            - `m`: is `u` odd and `v` even?
+            - `f`: classically once `f = 0` the algorithm terminates.
+        `a` and `b` are local and cleaned after each iteration. The variable `m` is kept and
+        is used in uncomputation.
+        """
         a = b = 0
         assert m == 0
         m ^= f & (v == 0)

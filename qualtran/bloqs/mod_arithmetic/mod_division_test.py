@@ -18,6 +18,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
+from qualtran import QMontgomeryUInt
 from qualtran.bloqs.mod_arithmetic.mod_division import _kaliskimodinverse_example, KaliskiModInverse
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
@@ -28,17 +29,17 @@ from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_sp
 def test_kaliski_mod_inverse_classical_action(bitsize, mod):
     blq = KaliskiModInverse(bitsize, mod)
     cblq = blq.decompose_bloq()
-    p2 = pow(2, bitsize, mod)
+    dtype = QMontgomeryUInt(bitsize)
+    R = pow(2, bitsize, mod)
     for x in range(1, mod):
         if math.gcd(x, mod) != 1:
             continue
-        x_montgomery = (x * p2) % mod
-        inv_x = pow(x, -1, mod)
-        inv_x_montgomery = (inv_x * p2) % mod
+        x_montgomery = dtype.uint_to_montgomery(x, mod)
         res = blq.call_classically(x=x_montgomery)
         assert res == cblq.call_classically(x=x_montgomery)
         assert len(res) == 2
-        assert res[0] == inv_x_montgomery
+        assert res[0] == dtype.montgomery_inverse(x_montgomery, mod)
+        assert dtype.montgomery_product(res[0], x_montgomery, mod) == R
 
 
 @pytest.mark.parametrize('bitsize', [5, 6])
