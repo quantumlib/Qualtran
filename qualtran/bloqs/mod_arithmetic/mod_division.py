@@ -449,50 +449,44 @@ class _KaliskiIteration(Bloq):
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, m: int, f: int
     ) -> Dict[str, 'ClassicalValT']:
-        """This is a classical encoding of figure 15 of https://arxiv.org/pdf/2302.06639.
+        """This is the Kaliski algorithm as described in Fig7 of https://arxiv.org/pdf/2001.09580.
 
-        The variables `m` and the local variables `a` and `b` translate into evaluating the if
-        conditions in `Algorithm 2 `. The meaning of the variables are:
-            - `a`: is `u` even?
-            - `b`: are both `u` and `v` even?
-            - `m`: is `u` odd and `v` even?
-            - `f`: classically once `f = 0` the algorithm terminates.
-        `a` and `b` are local and cleaned after each iteration. The variable `m` is kept and
-        is used in uncomputation.
+        The following implementation merges together the pseudocode from Fig7 of https://arxiv.org/pdf/2001.09580
+        and the circuit in figure 15 of https://arxiv.org/pdf/2302.06639; This is in order to compute the values
+        of `f` and `m`.
+
+
         """
-        a = b = 0
         assert m == 0
-        m ^= f & (v == 0)
-        f ^= m
-
-        a ^= f & (u % 2 == 0)
-        m ^= f & (a == 0) & (v % 2 == 0)
-        b ^= a
-        b ^= m
-
-        t = (u > v) & (b == 0) & f
-        a ^= t
-        m ^= t
-
-        if a:
-            u, v = v, u
-            r, s = s, r
-
-        if f and b == 0:
-            v -= u
-            s += r
-
-        b ^= m
-        b ^= a
-        if f:
-            assert v % 2 == 0, f'{u=} {v=} {r=} {s=} {a=} {b=} {m=} {f=}'
+        if f == 0:
+            # When `f = 0` this means that the algorithm is nearly over and that we just need to
+            # double the value of `r`.
+            r = (r << 1) % self.mod
+        elif v == 0:
+            # `v = 0` is the termination condition of the algorithm and it means that the only
+            # remaining step is multiplying `r` by 2 raised to the number of remaining iterations.
+            # Classically this translates into a `r = (r * pow(2, k, p))%p` where k is the number
+            # of iterations left followed by a break statement.
+            m = u & 1
+            f = 0
+            r = (r << 1) % self.mod
+        else:
+            m = (u % 2 == 1) & (v % 2 == 0)
+            # Kaliski iteration as described in Fig7 of https://arxiv.org/pdf/2001.09580.
+            swap = (u % 2 == 0 and v % 2 == 1) or (u % 2 == 1 and v % 2 == 1 and u > v)
+            if swap:
+                u, v = v, u
+                r, s = s, r
+            if u % 2 == 1 and v % 2 == 1:
+                v -= u
+                s += r
+            assert v % 2 == 0, f'{u=} {v=} {swap=}'
             v >>= 1
-        r = (r << 1) % self.mod
-        if a:
-            u, v = v, u
-            s, r = r, s
-        a ^= s == 0
-        return {'u': u, 'v': v, 'r': r, 's': s, 'a': a, 'b': b, 'm': m, 'f': f}
+            r = (r << 1) % self.mod
+            if swap:
+                u, v = v, u
+                r, s = s, r
+        return {'u': u, 'v': v, 'r': r, 's': s, 'm': m, 'f': f}
 
 
 @frozen
@@ -574,6 +568,9 @@ class KaliskiModInverse(Bloq):
     References:
         [Performance Analysis of a Repetition Cat Code Architecture: Computing 256-bit Elliptic Curve Logarithm in 9 Hours with 126 133 Cat Qubits](https://arxiv.org/abs/2302.06639)
             Appendix C5.
+
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580)
+            Fig 7(b)
 
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
             page 8.
