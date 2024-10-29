@@ -39,7 +39,7 @@ def test_kaliski_mod_inverse_classical_action(bitsize, mod):
         assert res == cblq.call_classically(x=x_montgomery)
         assert len(res) == 2
         assert res[0] == dtype.montgomery_inverse(x_montgomery, mod)
-        assert dtype.montgomery_product(res[0], x_montgomery, mod) == R
+        assert dtype.montgomery_product(int(res[0]), x_montgomery, mod) == R
 
 
 @pytest.mark.parametrize('bitsize', [5, 6])
