@@ -31,10 +31,17 @@ from qualtran import (
 )
 from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.mcmt.specialized_ctrl import (
+    AdjointWithSpecializedCtrl,
     get_ctrl_system_1bit_cv,
     get_ctrl_system_1bit_cv_from_bloqs,
+    SpecializeOnCtrlBit,
 )
 from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECGatesCost
+
+
+def _keep_and(b):
+    # TODO remove this after https://github.com/quantumlib/Qualtran/issues/1346 is resolved.
+    return isinstance(b, And)
 
 
 @attrs.frozen
@@ -77,6 +84,9 @@ class AtomWithSpecializedControl(Bloq):
             return GateCounts(rotation=r)
 
         return NotImplemented
+
+    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.BOTH)
 
 
 def ON(n: int = 1) -> CtrlSpec:
@@ -133,6 +143,9 @@ class TestAtom(Bloq):
             ctrl_reg_name='ctrl',
         )
 
+    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
+
 
 @attrs.frozen
 class CTestAtom(Bloq):
@@ -147,13 +160,12 @@ class CTestAtom(Bloq):
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
         )
 
+    def adjoint(self) -> 'AdjointWithSpecializedCtrl':
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
+
 
 def test_bloq_with_controlled_bloq():
     assert TestAtom('g').controlled() == CTestAtom('g')
-
-    def _keep_and(b):
-        # TODO remove this after https://github.com/quantumlib/Qualtran/issues/1346 is resolved.
-        return isinstance(b, And)
 
     ctrl_bloq = CTestAtom('g').controlled()
     _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
@@ -166,6 +178,22 @@ def test_bloq_with_controlled_bloq():
     ctrl_bloq = TestAtom('nn').controlled(CtrlSpec(cvs=[0, 0]))
     _, sigma = ctrl_bloq.call_graph(keep=_keep_and)
     assert sigma == {And(0, 0): 1, CTestAtom('nn'): 1, And(0, 0).adjoint(): 1}
+
+
+def test_ctrl_adjoint():
+    assert TestAtom('a').adjoint().controlled() == CTestAtom('a').adjoint()
+
+    _, sigma = TestAtom('g').adjoint().controlled(CtrlSpec(cvs=[1, 1])).call_graph(keep=_keep_and)
+    assert sigma == {And(): 1, And().adjoint(): 1, CTestAtom('g').adjoint(): 1}
+
+    _, sigma = CTestAtom('c').adjoint().controlled().call_graph(keep=_keep_and)
+    assert sigma == {And(): 1, And().adjoint(): 1, CTestAtom('c').adjoint(): 1}
+
+    for cv in [0, 1]:
+        assert (
+            AtomWithSpecializedControl().adjoint().controlled(CtrlSpec(cvs=(cv,)))
+            == AtomWithSpecializedControl(cv=cv).adjoint()
+        )
 
 
 @attrs.frozen
