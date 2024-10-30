@@ -183,7 +183,12 @@ def test_bloq_with_controlled_bloq():
 def test_ctrl_adjoint():
     assert TestAtom('a').adjoint().controlled() == CTestAtom('a').adjoint()
 
-    _, sigma = TestAtom('g').adjoint().controlled(CtrlSpec(cvs=[1, 1])).call_graph(keep=_keep_and)
+    _, sigma = (
+        TestAtom('g')
+        .adjoint()
+        .controlled(ctrl_spec=CtrlSpec(cvs=[1, 1]))
+        .call_graph(keep=_keep_and)
+    )
     assert sigma == {And(): 1, And().adjoint(): 1, CTestAtom('g').adjoint(): 1}
 
     _, sigma = CTestAtom('c').adjoint().controlled().call_graph(keep=_keep_and)
@@ -191,7 +196,7 @@ def test_ctrl_adjoint():
 
     for cv in [0, 1]:
         assert (
-            AtomWithSpecializedControl().adjoint().controlled(CtrlSpec(cvs=(cv,)))
+            AtomWithSpecializedControl().adjoint().controlled(ctrl_spec=CtrlSpec(cvs=cv))
             == AtomWithSpecializedControl(cv=cv).adjoint()
         )
 

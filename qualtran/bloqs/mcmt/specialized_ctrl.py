@@ -18,22 +18,11 @@ from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING
 import attrs
 import numpy as np
 
-from qualtran import (
-    AddControlledT,
-    Adjoint,
-    Bloq,
-    BloqBuilder,
-    CompositeBloq,
-    CtrlSpec,
-    QBit,
-    Register,
-    Signature,
-    SoquetT,
-)
+from qualtran import Adjoint, Bloq, BloqBuilder, CompositeBloq, QBit, Register, Signature
 from qualtran.bloqs.bookkeeping import AutoPartition
 
 if TYPE_CHECKING:
-    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
+    from qualtran import AddControlledT, CtrlSpec, SoquetT
     from qualtran._infra.controlled import ControlBit
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 

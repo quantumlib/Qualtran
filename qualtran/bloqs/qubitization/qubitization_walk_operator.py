@@ -33,8 +33,15 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
-from qualtran._infra.gate_with_registers import GateWithRegisters, total_bits
+from qualtran import (
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    GateWithRegisters,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     BlackBoxPrepare,
     LCUBlockEncoding,
@@ -51,7 +58,7 @@ from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters):  # type: ignore[misc]
+class QubitizationWalkOperator(GateWithRegisters):
     r"""Construct a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (where coefficients $w_l > 0$ and $H_l$ are unitaries),
@@ -130,7 +137,7 @@ class QubitizationWalkOperator(GateWithRegisters):  # type: ignore[misc]
         return soqs
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['W'] * total_bits(self.signature)
+        wire_symbols = ['W'] * self.signature.n_qubits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     @cached_property
