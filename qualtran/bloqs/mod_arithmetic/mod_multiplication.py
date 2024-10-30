@@ -72,7 +72,7 @@ class ModDbl(Bloq):
     """
 
     dtype: Union[QUInt, QMontgomeryUInt]
-    mod: int = attrs.field()
+    mod: 'SymbolicInt' = attrs.field()
 
     @mod.validator
     def _validate_mod(self, attribute, value):

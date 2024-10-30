@@ -116,6 +116,7 @@ import qualtran.bloqs.mcmt.multi_target_cnot
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
 import qualtran.bloqs.mod_arithmetic
+import qualtran.bloqs.mod_arithmetic.mod_division
 import qualtran.bloqs.mod_arithmetic.mod_multiplication
 import qualtran.bloqs.mod_arithmetic.mod_subtraction
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
@@ -348,6 +349,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK": qualtran.bloqs.mod_arithmetic.mod_multiplication.CModMulK,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul,
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul,
+    "qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse": qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse,
+    "qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration": qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration,
     "qualtran.bloqs.factoring._factoring_shims.MeasureQFT": qualtran.bloqs.factoring._factoring_shims.MeasureQFT,
     "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne,
     "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo,
