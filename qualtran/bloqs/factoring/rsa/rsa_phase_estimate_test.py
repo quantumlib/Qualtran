@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,8 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from ._shims import ModInv
-from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
-from .mod_division import KaliskiModInverse
-from .mod_multiplication import CModMulK, DirtyOutOfPlaceMontgomeryModMul, ModDbl
-from .mod_subtraction import CModNeg, CModSub, ModNeg, ModSub
+import pytest
+
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.factoring.rsa.rsa_phase_estimate import _rsa_pe, _rsa_pe_small
+
+
+@pytest.mark.parametrize('bloq', [_rsa_pe_small, _rsa_pe])
+def test_rsa_pe(bloq_autotester, bloq):
+    bloq_autotester(bloq)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('rsa')

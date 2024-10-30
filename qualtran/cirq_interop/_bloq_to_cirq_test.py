@@ -21,7 +21,7 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, ConnectionT, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate, YGate
-from qualtran.bloqs.factoring import ModExp
+from qualtran.bloqs.factoring.rsa import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
