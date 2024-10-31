@@ -17,6 +17,12 @@ from attrs import frozen
 
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
+ec_times_x = sympy.Function("ec_times_x")
+ec_times_y = sympy.Function("ec_times_y")
+"""Support purely-symbolic ECPoint operations.
+https://docs.sympy.org/latest/guides/custom-functions.html#easy-cases-fully-symbolic-or-fully-evaluated
+"""
+
 
 @frozen
 class ECPoint:
@@ -50,9 +56,6 @@ class ECPoint:
         if (other.mod != self.mod) or (other.curve_a != self.curve_a):
             raise ValueError('Use consistent mod and curve')
 
-        if is_symbolic(self.x, self.y, other.x, other.y, self.mod, self.curve_a):
-            x, y, p = sympy.symbols('x y p')
-            return ECPoint(x=x, y=y, mod=p)
         if self == -other:
             return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
         if self == ECPoint.inf(mod=self.mod, curve_a=self.curve_a):
@@ -72,11 +75,21 @@ class ECPoint:
         yr = (lam * (self.x - xr) - self.y) % self.mod
         return ECPoint(xr, yr, mod=self.mod, curve_a=self.curve_a)
 
-    def __mul__(self, other):
-        if other == 0:
+    def __mul__(self, times):
+        if times == 0:
             return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
+        if is_symbolic(self.x, self.y):
+            # Symbolic case: use sympy.Function to opaquely represent the
+            # multiplication operation
+            return ECPoint(
+                ec_times_x(self.x, times),
+                ec_times_y(self.y, times),
+                mod=self.mod,
+                curve_a=self.curve_a,
+            )
+        # Otherwise, multiplication by an integer is repeated addition
         x = self
-        for _ in range(other - 1):
+        for _ in range(times - 1):
             x = x + self
 
         return x
