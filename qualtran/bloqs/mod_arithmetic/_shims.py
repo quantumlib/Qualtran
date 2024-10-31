@@ -24,14 +24,17 @@ from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
+import attrs
 from attrs import frozen
 
-from qualtran import Bloq, QUInt, Register, Signature
-from qualtran.bloqs.arithmetic import Add, AddK, Negate, Subtract
-from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli
+from qualtran import Bloq, QUInt, Register, Side, Signature
+from qualtran.bloqs.arithmetic import AddK, Negate
+from qualtran.bloqs.arithmetic._shims import CHalf, CSub, Lt, MultiCToffoli
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
 from qualtran.drawing import Text, TextBox, WireSymbol
+from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -57,9 +60,9 @@ class _ModInvInner(Bloq):
             (CNOT(), 2),
             (Lt(self.n), 1),
             (CSwap(self.n), 2),
-            (Subtract(QUInt(self.n)), 1),
-            (Add(QUInt(self.n)), 1),
-            (CNOT(), 1),
+            (CSub(self.n), 1),
+            (CAdd(QUInt(self.n)), 1),
+            (CNOT(), 2),
             (ModDbl(QUInt(self.n), self.mod), 1),
             (CHalf(self.n), 1),
             (CSwap(self.n), 2),
@@ -88,10 +91,21 @@ class _ModInvInner(Bloq):
 class ModInv(Bloq):
     n: int
     mod: int
+    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('x', QUInt(self.n)),
+                Register('garbage1', QUInt(self.n), side=side),
+                Register('garbage2', QUInt(self.n), side=side),
+            ]
+        )
+
+    def adjoint(self) -> 'ModInv':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Roetteler
@@ -103,6 +117,29 @@ class ModInv(Bloq):
             Swap(self.n): 1,
         }
 
+    def on_classical_vals(
+        self,
+        x: 'ClassicalValT',
+        garbage1: Optional['ClassicalValT'] = None,
+        garbage2: Optional['ClassicalValT'] = None,
+    ) -> Dict[str, ClassicalValT]:
+        # TODO(https://github.com/quantumlib/Qualtran/issues/1443): Hacky classical simulation just
+        # to confirm correctness of ECAdd circuit.
+        if self.uncompute:
+            assert garbage1 is not None
+            assert garbage2 is not None
+            return {'x': garbage1}
+        assert garbage1 is None
+        assert garbage2 is None
+
+        # Store the original x in the garbage registers for the uncompute simulation.
+        garbage1 = x
+        garbage2 = x
+
+        x = pow(int(x), self.mod - 2, mod=self.mod) * pow(2, 2 * self.n, self.mod) % self.mod
+
+        return {'x': x, 'garbage1': garbage1, 'garbage2': garbage2}
+
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -112,4 +149,8 @@ class ModInv(Bloq):
             return TextBox('x')
         elif reg.name == 'out':
             return TextBox('$x^{-1}$')
+        elif reg.name == 'garbage1':
+            return TextBox('garbage1')
+        elif reg.name == 'garbage2':
+            return TextBox('garbage2')
         raise ValueError(f'Unrecognized register name {reg.name}')

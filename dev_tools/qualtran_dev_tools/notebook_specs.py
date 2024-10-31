@@ -83,7 +83,7 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.ecc
-import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.gf_arithmetic.gf2_add_k
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
@@ -435,6 +435,10 @@ ARITHMETIC = [
             qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
             qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
             qualtran.bloqs.arithmetic.comparison._CLinearDepthGreaterThan_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_GREATERTHAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_GREATERTHANEQUAL_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_LESSTHAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._LINEAR_DEPTH_HALF_LESSTHANEQUAL_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -493,6 +497,8 @@ MOD_ARITHMETIC = [
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
             qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
             qualtran.bloqs.mod_arithmetic.mod_addition._C_MOD_ADD_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._C_MOD_ADD_K_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._CTRL_SCALE_MOD_ADD_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -515,10 +521,17 @@ MOD_ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
-        title='Modular Exponentiation',
-        module=qualtran.bloqs.factoring.mod_exp,
-        bloq_specs=[qualtran.bloqs.factoring.mod_exp._MODEXP_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
+        title='Modular Divison',
+        module=qualtran.bloqs.mod_arithmetic.mod_division,
+        bloq_specs=[qualtran.bloqs.mod_arithmetic.mod_division._KALISKI_MOD_INVERSE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Factoring RSA',
+        module=qualtran.bloqs.factoring.rsa,
+        bloq_specs=[
+            qualtran.bloqs.factoring.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
+            qualtran.bloqs.factoring.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
