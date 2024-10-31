@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Utilities for simultaneous support for Sympy symbolic objects and concrete values."""
 
 from qualtran.symbolics.math_funcs import (
     acos,
