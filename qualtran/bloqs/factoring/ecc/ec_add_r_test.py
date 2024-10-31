@@ -47,23 +47,43 @@ def test_ec_add_r(bloq_autotester, bloq):
 def test_ec_window_add_r_bloq_counts(n, window_size, a, b):
     p = 17
     R = ECPoint(a, b, mod=p)
-    bloq = ECWindowAddR(n=n, R=R, ec_window_size=window_size)
+    bloq = ECWindowAddR(n=n, R=R, add_window_size=window_size)
     qlt_testing.assert_equivalent_bloq_counts(bloq, [ignore_alloc_free, ignore_split_join])
 
 
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 9) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize('a,b', [(15, 13), (0, 0)])
 @pytest.mark.parametrize('x,y', [(15, 13), (5, 8)])
-@pytest.mark.parametrize('ctrl', [0, 1, 5, 8])
+@pytest.mark.parametrize('ctrl', [0, 1, 5])
 def test_ec_window_add_r_classical(n, m, ctrl, x, y, a, b):
     p = 17
     R = ECPoint(a, b, mod=p)
     x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
     y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
     ctrl = np.array(QUInt(m).to_bits(ctrl % (2**m)))
-    bloq = ECWindowAddR(n=n, R=R, ec_window_size=m, mul_window_size=m)
+    bloq = ECWindowAddR(n=n, R=R, add_window_size=m, mul_window_size=m)
+    ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
+    ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, x=x, y=y)
+    for i, ret1_i in enumerate(ret1):
+        np.testing.assert_array_equal(ret1_i, ret2[i])
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ['n', 'm'], [(n, m) for n in range(7, 9) for m in range(1, n + 1) if n % m == 0]
+)
+@pytest.mark.parametrize('a,b', [(15, 13), (0, 0)])
+@pytest.mark.parametrize('x,y', [(15, 13), (5, 8)])
+@pytest.mark.parametrize('ctrl', [0, 1, 5, 8])
+def test_ec_window_add_r_classical_slow(n, m, ctrl, x, y, a, b):
+    p = 17
+    R = ECPoint(a, b, mod=p)
+    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
+    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
+    ctrl = np.array(QUInt(m).to_bits(ctrl % (2**m)))
+    bloq = ECWindowAddR(n=n, R=R, add_window_size=m, mul_window_size=m)
     ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
     ret2 = bloq.decompose_bloq().call_classically(ctrl=ctrl, x=x, y=y)
     for i, ret1_i in enumerate(ret1):

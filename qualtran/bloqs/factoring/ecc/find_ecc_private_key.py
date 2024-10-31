@@ -67,7 +67,7 @@ class FindECCPrivateKey(Bloq):
         n: The bitsize of the elliptic curve points' x and y registers.
         base_point: The base point $P$ with unknown order $r$ such that $P = [r] P$.
         public_key: The public key $Q$ such that $Q = [k] P$ for private key $k$.
-        ec_window_size: The number of bits in the ECAdd window.
+        add_window_size: The number of bits in the ECAdd window.
         mul_window_size: The number of bits in the modular multiplication window.
 
     References:
@@ -78,7 +78,7 @@ class FindECCPrivateKey(Bloq):
     n: int
     base_point: ECPoint
     public_key: ECPoint
-    ec_window_size: int = 1
+    add_window_size: int = 1
     mul_window_size: int = 1
 
     @cached_property
@@ -102,7 +102,7 @@ class FindECCPrivateKey(Bloq):
         return functools.partial(
             ECPhaseEstimateR,
             n=self.n,
-            ec_window_size=self.ec_window_size,
+            add_window_size=self.add_window_size,
             mul_window_size=self.mul_window_size,
         )
 

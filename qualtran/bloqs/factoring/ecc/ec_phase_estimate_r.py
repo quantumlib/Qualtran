@@ -47,16 +47,20 @@ class ECPhaseEstimateR(Bloq):
     This is used as a subroutine in `FindECCPrivateKey`. First, we phase-estimate the
     addition of the base point $P$, then of the public key $Q$.
 
+    When the ellptic curve point addition window size is 1 we use the ECAddR bloq which has it's
+    own bespoke circuit; when it is greater than 1 we use the windowed circuit which uses
+    pre-computed classical additions loaded into the circuit.
+
     Args:
         n: The bitsize of the elliptic curve points' x and y registers.
         point: The elliptic curve point to phase estimate against.
-        ec_window_size: The number of bits in the ECAdd window.
+        add_window_size: The number of bits in the ECAdd window.
         mul_window_size: The number of bits in the modular multiplication window.
     """
 
     n: int
     point: ECPoint
-    ec_window_size: int = 1
+    add_window_size: int = 1
     mul_window_size: int = 1
 
     @cached_property
@@ -65,28 +69,32 @@ class ECPhaseEstimateR(Bloq):
 
     @property
     def ec_add(self) -> Union[functools.partial[ECAddR], functools.partial[ECWindowAddR]]:
-        if self.ec_window_size == 1:
+        if self.add_window_size == 1:
             return functools.partial(ECAddR, n=self.n)
         return functools.partial(
             ECWindowAddR,
             n=self.n,
-            ec_window_size=self.ec_window_size,
+            add_window_size=self.add_window_size,
             mul_window_size=self.mul_window_size,
         )
+
+    @property
+    def num_windows(self) -> int:
+        return self.n // self.add_window_size
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
         ctrl = [bb.add(PlusState()) for _ in range(self.n)]
 
-        if self.ec_window_size == 1:
+        if self.add_window_size == 1:
             for i in range(self.n):
                 ctrl[i], x, y = bb.add(self.ec_add(R=2**i * self.point), ctrl=ctrl[i], x=x, y=y)
         else:
-            ctrls = np.split(np.array(ctrl), self.n // self.ec_window_size)
-            for i in range(self.n // self.ec_window_size):
+            ctrls = np.split(np.array(ctrl), self.num_windows)
+            for i in range(self.num_windows):
                 ctrls[i], x, y = bb.add(
-                    self.ec_add(R=2 ** (self.ec_window_size * i) * self.point),
+                    self.ec_add(R=2 ** (self.add_window_size * i) * self.point),
                     ctrl=ctrls[i],
                     x=x,
                     y=y,
@@ -97,7 +105,7 @@ class ECPhaseEstimateR(Bloq):
         return {'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {self.ec_add(R=self.point): self.n // self.ec_window_size, MeasureQFT(n=self.n): 1}
+        return {self.ec_add(R=self.point): self.num_windows, MeasureQFT(n=self.n): 1}
 
     def __str__(self) -> str:
         return f'PE${self.point}$'
@@ -105,7 +113,7 @@ class ECPhaseEstimateR(Bloq):
 
 @bloq_example
 def _ec_pe() -> ECPhaseEstimateR:
-    n, p = sympy.symbols('n p ')
+    n, p = sympy.symbols('n p')
     Rx, Ry = sympy.symbols('R_x R_y')
     ec_pe = ECPhaseEstimateR(n=n, point=ECPoint(Rx, Ry, mod=p))
     return ec_pe

@@ -131,7 +131,7 @@ class ECWindowAddR(Bloq):
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         R: The elliptic curve point to add (NOT in montgomery form).
-        ec_window_size: The number of bits in the ECAdd window.
+        add_window_size: The number of bits in the ECAdd window.
         mul_window_size: The number of bits in the modular multiplication window.
 
     Registers:
@@ -146,14 +146,14 @@ class ECWindowAddR(Bloq):
 
     n: int
     R: ECPoint
-    ec_window_size: int
+    add_window_size: int
     mul_window_size: int = 1
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('ctrl', QBit(), shape=(self.ec_window_size,)),
+                Register('ctrl', QBit(), shape=(self.add_window_size,)),
                 Register('x', QUInt(self.n)),
                 Register('y', QUInt(self.n)),
             ]
@@ -161,25 +161,25 @@ class ECWindowAddR(Bloq):
 
     @cached_property
     def qrom(self) -> QROAMClean:
-        if is_symbolic(self.n) or is_symbolic(self.ec_window_size):
+        if is_symbolic(self.n) or is_symbolic(self.add_window_size):
             log_block_sizes = None
-            if is_symbolic(self.n) and not is_symbolic(self.ec_window_size):
+            if is_symbolic(self.n) and not is_symbolic(self.add_window_size):
                 # We assume that bitsize is much larger than window_size
                 log_block_sizes = (0,)
             return QROAMClean(
                 [
-                    Shaped((2**self.ec_window_size,)),
-                    Shaped((2**self.ec_window_size,)),
-                    Shaped((2**self.ec_window_size,)),
+                    Shaped((2**self.add_window_size,)),
+                    Shaped((2**self.add_window_size,)),
+                    Shaped((2**self.add_window_size,)),
                 ],
-                selection_bitsizes=(self.ec_window_size,),
+                selection_bitsizes=(self.add_window_size,),
                 target_bitsizes=(self.n, self.n, self.n),
                 log_block_sizes=log_block_sizes,
             )
 
         cR = self.R
         data_a, data_b, data_lam = [0], [0], [0]
-        for _ in range(1, 2**self.ec_window_size):
+        for _ in range(1, 2**self.add_window_size):
             data_a.append(QMontgomeryUInt(self.n).uint_to_montgomery(int(cR.x), int(self.R.mod)))
             data_b.append(QMontgomeryUInt(self.n).uint_to_montgomery(int(cR.y), int(self.R.mod)))
             lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
@@ -193,7 +193,7 @@ class ECWindowAddR(Bloq):
 
         return QROAMClean(
             [data_a, data_b, data_lam],
-            selection_bitsizes=(self.ec_window_size,),
+            selection_bitsizes=(self.add_window_size,),
             target_bitsizes=(self.n, self.n, self.n),
         )
 
@@ -275,7 +275,7 @@ class ECWindowAddR(Bloq):
 def _ec_window_add_r_small() -> ECWindowAddR:
     n = 16
     P = ECPoint(2, 2, mod=7, curve_a=3)
-    ec_window_add_r_small = ECWindowAddR(n=n, R=P, ec_window_size=4)
+    ec_window_add_r_small = ECWindowAddR(n=n, R=P, add_window_size=4)
     return ec_window_add_r_small
 
 

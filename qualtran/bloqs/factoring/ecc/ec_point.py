@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import sympy
 from attrs import frozen
 
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -50,7 +51,8 @@ class ECPoint:
             raise ValueError('Use consistent mod and curve')
 
         if is_symbolic(self.x, self.y, other.x, other.y, self.mod, self.curve_a):
-            return self
+            x, y, p = sympy.symbols('x y p')
+            return ECPoint(x=x, y=y, mod=p)
         if self == -other:
             return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
         if self == ECPoint.inf(mod=self.mod, curve_a=self.curve_a):
