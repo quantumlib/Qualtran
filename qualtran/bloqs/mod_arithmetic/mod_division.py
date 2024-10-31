@@ -633,7 +633,7 @@ class KaliskiModInverse(Bloq):
         return {'x': x, 'm': m}
 
     def adjoint(self) -> 'KaliskiModInverse':
-        return evolve(self, uncompute=self.uncompute ^ True)
+        return evolve(self, uncompute=not self.uncompute)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
