@@ -52,7 +52,7 @@ def test_ec_window_add_r_bloq_counts(n, window_size, a, b):
 
 
 @pytest.mark.parametrize(
-    ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
+    ['n', 'm'], [(n, m) for n in range(4, 5) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize('a,b', [(15, 13), (0, 0)])
 @pytest.mark.parametrize('x,y', [(15, 13), (5, 8)])
