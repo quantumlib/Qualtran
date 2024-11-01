@@ -521,6 +521,11 @@ MOD_ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
+        title='Modular Divison',
+        module=qualtran.bloqs.mod_arithmetic.mod_division,
+        bloq_specs=[qualtran.bloqs.mod_arithmetic.mod_division._KALISKI_MOD_INVERSE_DOC],
+    ),
+    NotebookSpecV2(
         title='Factoring RSA',
         module=qualtran.bloqs.factoring.rsa,
         bloq_specs=[
