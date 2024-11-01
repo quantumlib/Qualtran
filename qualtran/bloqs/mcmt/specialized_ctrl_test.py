@@ -18,6 +18,7 @@ from unittest.mock import ANY
 import attrs
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import (
     AddControlledT,
     Bloq,
@@ -37,7 +38,6 @@ from qualtran.bloqs.mcmt.specialized_ctrl import (
     SpecializeOnCtrlBit,
 )
 from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECGatesCost
-import qualtran.testing as qlt_testing
 
 
 def _keep_and(b):
