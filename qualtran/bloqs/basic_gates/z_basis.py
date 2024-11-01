@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -254,17 +254,20 @@ class ZGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.bookkeeping import AutoPartition
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+        if ctrl_spec != CtrlSpec():
+            # Delegate to the general superclass behavior
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        cz = CZ()
-        cz_wrapped = AutoPartition(
-            cz, [(Register('ctrl', QBit()), ['q1']), (Register('q', QBit()), ['q2'])]
-        )
+        bloq = CZ()
 
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=cz_wrapped, ctrl_reg_name='ctrl'
-        )
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl_soq,) = ctrl_soqs
+            ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
+            return (ctrl_soq,), (q2,)
+
+        return bloq, add_controlled
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -338,16 +341,31 @@ class CZ(Bloq):
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.bookkeeping import AutoPartition
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+        from qualtran.bloqs.mcmt.specialized_ctrl import _MultiControlledFromSinglyControlled
 
-        cz_wrapped = AutoPartition(
-            self, [(Register('ctrl', QBit()), ['q1']), (Register('q', QBit()), ['q2'])]
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec)
+
+        # controlled-CZ
+        ctrl_cz = _MultiControlledFromSinglyControlled(
+            cvs=(1, 1), ctrl_bloq=self, ctrl_reg_name='q1'
         )
 
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=cz_wrapped, ctrl_reg_name='ctrl'
-        )
+        def _adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            q1 = in_soqs.pop('q1')
+            q2 = in_soqs.pop('q2')
+
+            ctrl = cast(Soquet, ctrl)
+            q1 = cast(Soquet, q1)
+
+            [ctrl, q1], q2 = bb.add(ctrl_cz, q1=[ctrl, q1], q2=q2)
+
+            return [ctrl], [q1, q2]
+
+        return ctrl_cz, _adder
 
 
 @bloq_example

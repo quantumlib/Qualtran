@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -22,14 +22,16 @@ from qualtran import (
     AddControlledT,
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
-    QBit,
     Register,
     Signature,
+    Soquet,
+    SoquetT,
 )
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
@@ -74,16 +76,19 @@ class YGate(Bloq):
         ]
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.bookkeeping import AutoPartition
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        cy_wrapped = AutoPartition(
-            CYGate(), [(Register('ctrl', QBit()), ['ctrl']), (Register('q', QBit()), ['target'])]
-        )
+        bloq = CYGate()
 
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=None, bloq_with_ctrl=cy_wrapped, ctrl_reg_name='ctrl'
-        )
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            ctrl, q = bb.add(bloq, ctrl=ctrl, target=in_soqs['q'])
+            return ((ctrl,), (q,))
+
+        return bloq, _add_ctrled
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -170,16 +175,31 @@ class CYGate(Bloq):
         raise ValueError(f"Unknown register {reg}.")
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.bookkeeping import AutoPartition
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+        from qualtran.bloqs.mcmt.specialized_ctrl import _MultiControlledFromSinglyControlled
 
-        cy_wrapped = AutoPartition(
-            self, [(Register('ctrl', QBit()), ['ctrl']), (Register('q', QBit()), ['target'])]
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec)
+
+        # controlled-CY
+        ctrl_cy = _MultiControlledFromSinglyControlled(
+            cvs=(1, 1), ctrl_bloq=self, ctrl_reg_name='ctrl'
         )
 
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=cy_wrapped, ctrl_reg_name='ctrl'
-        )
+        def _adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl1,) = ctrl_soqs
+            ctrl2 = in_soqs.pop('ctrl')
+            target = in_soqs.pop('target')
+
+            ctrl1 = cast(Soquet, ctrl1)
+            ctrl2 = cast(Soquet, ctrl2)
+
+            [ctrl1, ctrl2], target = bb.add(ctrl_cy, ctrl=[ctrl1, ctrl2], target=target)
+
+            return [ctrl1], [ctrl2, target]
+
+        return ctrl_cy, _adder
 
 
 @bloq_example
