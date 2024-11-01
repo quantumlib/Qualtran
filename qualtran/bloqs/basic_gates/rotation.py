@@ -59,7 +59,6 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
-    Controlled,
     CtrlSpec,
     DecomposeTypeError,
     QBit,
@@ -445,8 +444,14 @@ class Rz(CirqGateAsBloqBase):
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
-        return Controlled.get_single_reg_ctrl_system(
-            ctrl_bloq=CRz(angle=self.angle, eps=self.eps), ctrl_reg_name='ctrl'
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            bloq=self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=None,
+            bloq_with_ctrl=CRz(self.angle, eps=self.eps),
+            ctrl_reg_name='ctrl',
         )
 
     def adjoint(self) -> 'Rz':
