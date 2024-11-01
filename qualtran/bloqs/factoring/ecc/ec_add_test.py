@@ -407,18 +407,21 @@ def test_ec_add_symbolic_cost():
     # This is why instead of using bitsize=n directly, we use bitsize=4*m=n.
     b = ECAdd(n=4 * m, window_size=4, mod=p)
     cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
-    assert cost['n_t'] == 0
+    # We have some T gates since we use CSwapApprox instead of n CSWAPs in KaliskiModInverse.
+    total_toff = (cost['n_t'] / 4 + cost['n_ccz'].subs(m, n / 4)) * sympy.Integer(1)
+    total_toff = total_toff.expand()
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
     # Based on the counts from Figures 3, 5, and 8 the toffoli count for ECAdd is 126.5n^2 + 189n.
-    # The following formula is 126.5n^2 + 175.5n - 35. We account for the discrepancy in the
-    # coefficient of n by a reduction in the toffoli cost of Montgomery ModMult, n extra toffolis
-    # in ModNeg, and 2n extra toffolis to do n 3-controlled toffolis in step 2. The expression is
-    # written with rationals because sympy comparison fails with floats.
+    # The following formula is 126.5n^2 + 195.5n - 31. We account for the discrepancy in the
+    # coefficient of n by a reduction in the toffoli cost of Montgomery ModMult, an increase in the
+    # toffoli cost for Kaliski Mod Inverse, n extra toffolis in ModNeg, 2n extra toffolis to do n
+    # 3-controlled toffolis in step 2. The expression is written with rationals because sympy
+    # comparison fails with floats.
     assert isinstance(cost['n_ccz'], sympy.Expr)
     assert (
-        cost['n_ccz'].subs(m, n / 4).expand()
-        == sympy.Rational(253, 2) * n**2 + sympy.Rational(351, 2) * n - 35
+        total_toff.subs(m, n / 4).expand()
+        == sympy.Rational(253, 2) * n**2 + sympy.Rational(391, 2) * n - 31
     )
 
 
