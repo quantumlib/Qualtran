@@ -265,6 +265,8 @@ def get_ctrl_system_1bit_cv_from_bloqs(
 class SpecializeOnCtrlBit(enum.Flag):
     """Control-specs to propagate to the subbloq.
 
+    See `AdjointWithSpecializedCtrl` for usage.
+
     Currently only allows pushing a single-qubit-control.
     """
 
@@ -276,6 +278,44 @@ class SpecializeOnCtrlBit(enum.Flag):
 
 @attrs.frozen()
 class AdjointWithSpecializedCtrl(Adjoint):
+    """Adjoint of a bloq with a specialized control implementation.
+
+    If the subbloq has a specialized control implementation, then calling
+    `Adjoint(subbloq).controlled()` propagates the controls to the subbloq.
+    This only propagates single-qubit `CtrlSpec`s, all others use the default:
+    reduced to single-qubit control using the `ControlledViaAnd` bloq.
+
+    By default in Qualtran, `Controlled(bloq).adjoint()` returns `Controlled(bloq.adjoint())`.
+    But `Adjoint(bloq).controlled()` does not propagate the controls, therefore returns
+    `Controlled(Adjoint(bloq))`.
+    This bloq helps override that behaviour for single-qubit controlled versions.
+
+    For example, if a bloq has a specialized implementation for the controlled-by-1 case:
+
+    ```py
+    class BloqWithSpecializedCtrl(Bloq):
+        ...
+
+        def adjoint(self):
+            return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.ONE)
+    ```
+
+    See `get_ctrl_system_1bit_cv` on one way to provide specialized controlled implementations
+    for bloqs. If a bloq uses the above and does not have a trivial `adjoint` implementation,
+    it is recommended to override the `adjoint` method as show above.
+
+    Caution:
+        Use this bloq _only_ when a specialized control implementation is guaranteed,
+        i.e. `subbloq.controlled()` should not return `Controlled(...)`.
+        Otherwise, it could lead to an infinite recursion.
+
+    Args:
+        subbloq: The bloq to wrap.
+        specialize_on_ctrl: Values of the control bit to propagate the control into the subbloq.
+            Can be `SpecializeOnCtrlBit.ONE` for `1` only, `SpecializeOnCtrlBit.ZERO` for `0` only,
+            or `SpecializeOnCtrlBit.BOTH` for both `0` and `1`.
+    """
+
     specialize_on_ctrl: SpecializeOnCtrlBit = SpecializeOnCtrlBit.NONE
 
     def _specialize_control(self, ctrl_spec: 'CtrlSpec') -> bool:
