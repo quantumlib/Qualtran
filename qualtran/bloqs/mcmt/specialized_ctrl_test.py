@@ -37,6 +37,7 @@ from qualtran.bloqs.mcmt.specialized_ctrl import (
     SpecializeOnCtrlBit,
 )
 from qualtran.resource_counting import CostKey, GateCounts, get_cost_value, QECGatesCost
+import qualtran.testing as qlt_testing
 
 
 def _keep_and(b):
@@ -234,3 +235,8 @@ class TestBloqWithDecompose(Bloq):
 def test_get_ctrl_system(ctrl_reg_name: str, target_reg_name: str):
     bloq = TestBloqWithDecompose(ctrl_reg_name, target_reg_name).controlled()
     _ = bloq.decompose_bloq().flatten()
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('specialized_ctrl')
