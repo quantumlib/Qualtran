@@ -179,16 +179,17 @@ class ECWindowAddR(Bloq):
 
         cR = self.R
         data_a, data_b, data_lam = [0], [0], [0]
+        mon_int = QMontgomeryUInt(self.n)
         for _ in range(1, 2**self.add_window_size):
-            data_a.append(QMontgomeryUInt(self.n).uint_to_montgomery(int(cR.x), int(self.R.mod)))
-            data_b.append(QMontgomeryUInt(self.n).uint_to_montgomery(int(cR.y), int(self.R.mod)))
+            data_a.append(mon_int.uint_to_montgomery(int(cR.x), int(self.R.mod)))
+            data_b.append(mon_int.uint_to_montgomery(int(cR.y), int(self.R.mod)))
             lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
             lam_denom = (2 * cR.y) % cR.mod
             if lam_denom != 0:
                 lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
             else:
                 lam = 0
-            data_lam.append(QMontgomeryUInt(self.n).uint_to_montgomery(int(lam), int(self.R.mod)))
+            data_lam.append(mon_int.uint_to_montgomery(int(lam), int(self.R.mod)))
             cR = cR + self.R
 
         return QROAMClean(
