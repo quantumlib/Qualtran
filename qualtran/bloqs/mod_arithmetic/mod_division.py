@@ -644,10 +644,10 @@ class KaliskiModInverse(Bloq):
         for _ in range(2 * int(self.bitsize)):
             u, v, r, s, m_i, f = iteration.call_classically(u=u, v=v, r=r, s=s, m=0, f=f)
             m = (m << 1) | m_i
-        #assert u == 1
-        #assert s == self.mod
-        #assert f == 0
-        #assert v == 0
+        # assert u == 1
+        # assert s == self.mod
+        # assert f == 0
+        # assert v == 0
         return {'x': self.mod - r, 'm': m}
 
 
