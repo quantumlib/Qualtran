@@ -341,31 +341,11 @@ class CZ(Bloq):
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import _MultiControlledFromSinglyControlled
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        if ctrl_spec != CtrlSpec():
-            return super().get_ctrl_system(ctrl_spec)
-
-        # controlled-CZ
-        ctrl_cz = _MultiControlledFromSinglyControlled(
-            cvs=(1, 1), ctrl_bloq=self, ctrl_reg_name='q1'
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
-
-        def _adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (ctrl,) = ctrl_soqs
-            q1 = in_soqs.pop('q1')
-            q2 = in_soqs.pop('q2')
-
-            ctrl = cast(Soquet, ctrl)
-            q1 = cast(Soquet, q1)
-
-            [ctrl, q1], q2 = bb.add(ctrl_cz, q1=[ctrl, q1], q2=q2)
-
-            return [ctrl], [q1, q2]
-
-        return ctrl_cz, _adder
 
 
 @bloq_example
