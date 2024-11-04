@@ -110,6 +110,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     ret2 = bloq.decompose_bloq().call_classically(
@@ -118,6 +119,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     assert ret1 == ret2
@@ -128,6 +130,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     bloq = _ECAddStepSix(n=n, mod=p)
@@ -250,6 +253,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     ret2 = bloq.decompose_bloq().call_classically(
@@ -258,6 +262,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     assert ret1 == ret2
@@ -268,6 +273,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     bloq = _ECAddStepSix(n=n, mod=p)
