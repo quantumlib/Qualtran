@@ -17,7 +17,7 @@ from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -631,6 +631,9 @@ class KaliskiModInverse(Bloq):
         bb.free(s)
         bb.free(f)
         return {'x': x, 'm': m}
+
+    def adjoint(self) -> 'KaliskiModInverse':
+        return evolve(self, uncompute=not self.uncompute)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)

@@ -98,6 +98,7 @@ import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring._factoring_shims
+import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.ecc.ec_add
 import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
@@ -333,6 +334,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMClean": qualtran.bloqs.data_loading.qroam_clean.QROAMClean,
     "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjoint,
+    "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper": qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
     "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd": qualtran.bloqs.mod_arithmetic.mod_addition.ModAdd,
@@ -352,6 +354,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse": qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse,
     "qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration": qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration,
     "qualtran.bloqs.factoring._factoring_shims.MeasureQFT": qualtran.bloqs.factoring._factoring_shims.MeasureQFT,
+    "qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR": qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR,
     "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne,
     "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo,
     "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree,
