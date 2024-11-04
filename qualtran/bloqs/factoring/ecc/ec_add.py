@@ -975,7 +975,7 @@ class _ECAddStepSix(Bloq):
         # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bugs in circuit where f1,
         # f2, and f4 are freed before being set to 0.
         bb.add(Free(QBit(), dirty=True), reg=f1)
-        bb.add(Free(QBit(), dirty=True), reg=f2)
+        bb.add(Free(QBit()), reg=f2)
         bb.add(Free(QBit()), reg=f3)
         bb.add(Free(QBit(), dirty=True), reg=f4)
         bb.add(Free(QBit()), reg=ctrl)
