@@ -413,12 +413,13 @@ def test_ec_add_symbolic_cost():
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
     # Based on the counts from Figures 3, 5, and 8 the toffoli count for ECAdd is 126.5n^2 + 189n.
-    # The following formula is 126.5n^2 + 195.5n - 31. We account for the discrepancy in the
+    # The following formula is 126.5n^2 + 203.5n - 39. We account for the discrepancy in the
     # coefficient of n by a reduction in the toffoli cost of Montgomery ModMult, an increase in the
     # toffoli cost for Kaliski Mod Inverse, n extra toffolis in ModNeg, 2n extra toffolis to do n
-    # 3-controlled toffolis in step 2. The expression is written with rationals because sympy
-    # comparison fails with floats.
-    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(391, 2) * n - 31
+    # 3-controlled toffolis in step 2. In order to fix bugs where the circuit tries to take the mod
+    # inverse of 0 we add 2 extra n-controlled toffolis and 2n extra toffolis from AddK in steps 2
+    # and 5. The expression is written with rationals because sympy comparison fails with floats.
+    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(407, 2) * n - 39
 
 
 def test_ec_add(bloq_autotester):
