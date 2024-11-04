@@ -11,16 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import enum
 from functools import cached_property
 from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING
 
 import attrs
 import numpy as np
 
-from qualtran import Bloq, QBit, Register, Signature
+from qualtran import Adjoint, Bloq, BloqBuilder, CompositeBloq, QBit, Register, Signature
+from qualtran.bloqs.bookkeeping import AutoPartition
 
 if TYPE_CHECKING:
-    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
+    from qualtran import AddControlledT, CtrlSpec, SoquetT
     from qualtran._infra.controlled import ControlBit
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
@@ -180,7 +182,12 @@ def _get_ctrl_system_1bit_cv(
 
             return [ctrl0], [ctrl1, *out_soqs]
 
-    return ctrl_bloq, _adder
+    def _unwrap(b):
+        if isinstance(b, AutoPartition):
+            return _unwrap(b.bloq)
+        return b
+
+    return _unwrap(ctrl_bloq), _adder
 
 
 def get_ctrl_system_1bit_cv(
@@ -253,3 +260,120 @@ def get_ctrl_system_1bit_cv_from_bloqs(
         current_ctrl_bit=current_ctrl_bit,
         get_ctrl_bloq_and_ctrl_reg_name=get_ctrl_bloq_and_ctrl_reg_name,
     )
+
+
+class SpecializeOnCtrlBit(enum.Flag):
+    """Control-specs to propagate to the subbloq.
+
+    See `AdjointWithSpecializedCtrl` for usage.
+
+    Currently only allows pushing a single-qubit-control.
+    """
+
+    NONE = enum.auto()
+    ZERO = enum.auto()
+    ONE = enum.auto()
+    BOTH = ZERO | ONE
+
+
+@attrs.frozen()
+class AdjointWithSpecializedCtrl(Adjoint):
+    """Adjoint of a bloq with a specialized control implementation.
+
+    If the subbloq has a specialized control implementation, then calling
+    `Adjoint(subbloq).controlled()` propagates the controls to the subbloq.
+    This only propagates single-qubit `CtrlSpec`s, all others use the default:
+    reduced to single-qubit control using the `ControlledViaAnd` bloq.
+
+    By default in Qualtran, `Controlled(bloq).adjoint()` returns `Controlled(bloq.adjoint())`.
+    But `Adjoint(bloq).controlled()` does not propagate the controls, therefore returns
+    `Controlled(Adjoint(bloq))`.
+    This bloq helps override that behaviour for single-qubit controlled versions.
+
+    For example, if a bloq has a specialized implementation for the controlled-by-1 case:
+
+    ```py
+    class BloqWithSpecializedCtrl(Bloq):
+        ...
+
+        def adjoint(self):
+            return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.ONE)
+    ```
+
+    See `get_ctrl_system_1bit_cv` on one way to provide specialized controlled implementations
+    for bloqs. If a bloq uses the above and does not have a trivial `adjoint` implementation,
+    it is recommended to override the `adjoint` method as show above.
+
+    Caution:
+        Use this bloq _only_ when a specialized control implementation is guaranteed,
+        i.e. `subbloq.controlled()` should not return `Controlled(...)`.
+        Otherwise, it could lead to an infinite recursion.
+
+    Args:
+        subbloq: The bloq to wrap.
+        specialize_on_ctrl: Values of the control bit to propagate the control into the subbloq.
+            Can be `SpecializeOnCtrlBit.ONE` for `1` only, `SpecializeOnCtrlBit.ZERO` for `0` only,
+            or `SpecializeOnCtrlBit.BOTH` for both `0` and `1`.
+    """
+
+    specialize_on_ctrl: SpecializeOnCtrlBit = SpecializeOnCtrlBit.NONE
+
+    def _specialize_control(self, ctrl_spec: 'CtrlSpec') -> bool:
+        """if True, push the control to the subbloq"""
+        if ctrl_spec.num_qubits != 1:
+            return False
+
+        cv = ctrl_spec.get_single_ctrl_bit()
+        cv_flag = SpecializeOnCtrlBit.ONE if cv == 1 else SpecializeOnCtrlBit.ZERO
+        return cv_flag in self.specialize_on_ctrl
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.controlled import _get_nice_ctrl_reg_names
+
+        if not self._specialize_control(ctrl_spec):
+            # no specialized controlled version available, fallback to default
+            return super().get_ctrl_system(ctrl_spec)
+
+        # get the builder for the controlled version of subbloq
+        ctrl_subbloq, ctrl_subbloq_adder = self.subbloq.get_ctrl_system(ctrl_spec)
+        ctrl_bloq = attrs.evolve(self, subbloq=ctrl_subbloq)
+        (ctrl_reg_name,) = _get_nice_ctrl_reg_names([reg.name for reg in self.subbloq.signature], 1)
+
+        # build a composite bloq using the control-adder
+        def _get_adj_cbloq() -> 'CompositeBloq':
+            bb, initial_soqs = BloqBuilder.from_signature(
+                self.subbloq.signature, add_registers_allowed=True
+            )
+            ctrl = bb.add_register(ctrl_reg_name, 1)
+            bb.add_register_allowed = False
+
+            (ctrl,), out_soqs_t = ctrl_subbloq_adder(bb, [ctrl], initial_soqs)
+
+            out_soqs = dict(zip([reg.name for reg in self.subbloq.signature.rights()], out_soqs_t))
+            out_soqs |= {ctrl_reg_name: ctrl}
+
+            cbloq = bb.finalize(**out_soqs)
+            return cbloq.adjoint()
+
+        adj_cbloq = _get_adj_cbloq()
+
+        def _adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl,) = ctrl_soqs
+            in_soqs |= {ctrl_reg_name: ctrl}
+            soqs = bb.add_from(adj_cbloq, **in_soqs)
+
+            # locate the correct control soquet
+            soqs = list(soqs)
+            ctrl_soq = None
+            for soq, reg in zip(soqs, adj_cbloq.signature.rights()):
+                if reg.name == ctrl_reg_name:
+                    ctrl_soq = soq
+                    soqs.remove(soq)
+                    break
+            assert ctrl_soq is not None, "ctrl_soq must be present in output soqs"
+
+            return [ctrl_soq], soqs
+
+        return ctrl_bloq, _adder
