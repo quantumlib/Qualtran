@@ -91,7 +91,9 @@ class SelectHubbard(SelectOracle):
         if self.x_dim != self.y_dim:
             raise NotImplementedError("Currently only supports the case where x_dim=y_dim.")
         if self.control_val == 0:
-            raise ValueError("control_val=0 not supported")
+            raise NotImplementedError(
+                "control_val=0 not supported, use `SelectHubbard(x, y).controlled(CtrlSpec(cvs=0))` instead"
+            )
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
