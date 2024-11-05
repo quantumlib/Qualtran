@@ -285,14 +285,6 @@ class _ECAddStepTwo(Bloq):
         # Perform controlled modular subtraction so that y = (y - b) % p iff ctrl = 1.
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
 
-        # Set flag f0 if x = 0 prior to modular inversion.
-        # if f0: add 1 to x to avoid mod inverse failure.
-        f0 = bb.allocate()
-        x_split = bb.split(x)
-        x_split, f0 = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=f0)
-        x = bb.join(x_split, dtype=QMontgomeryUInt(self.n))
-        (f0,), x = bb.add(AddK(bitsize=self.n, k=1, cvs=(1,), signed=False), ctrls=(f0,), x=x)
-
         # Perform modular inversion s.t. x = (x - a)^-1 % p.
         x, z = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
 
@@ -345,32 +337,16 @@ class _ECAddStepTwo(Bloq):
             qrom_indices=z3,
             reduced=reduced,
         )
-        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, m=z)
-
-        # if f0: subtract 1 from x to restore x.
-        # Unset flag f0 if x = 0 after subtraction.
-        (f0,), x = bb.add(AddK(bitsize=self.n, k=-1, cvs=(1,), signed=False), ctrls=(f0,), x=x)
-        x_split = bb.split(x)
-        x_split, f0 = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=f0)
-        x = bb.join(x_split, dtype=QMontgomeryUInt(self.n))
-        bb.free(f0)
+        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=z)
 
         # Return the output registers.
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs: Union[list[int], HasLength]
-        if isinstance(self.n, int):
-            cvs = [0] * self.n
-        else:
-            cvs = HasLength(self.n)
         return {
             Equals(QMontgomeryUInt(self.n)): 1,
             ModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
-            MultiControlX(cvs=cvs): 2,
-            AddK(bitsize=self.n, k=1, cvs=(1,), signed=False): 1,
-            AddK(bitsize=self.n, k=-1, cvs=(1,), signed=False): 1,
             KaliskiModInverse(bitsize=self.n, mod=self.mod): 1,
             DirtyOutOfPlaceMontgomeryModMul(
                 bitsize=self.n, window_size=self.window_size, mod=self.mod
@@ -730,14 +706,6 @@ class _ECAddStepFive(Bloq):
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
-        # Set flag f0 if x = 0 prior to modular inversion.
-        # if f0: add 1 to x to avoid mod inverse failure.
-        f0 = bb.allocate()
-        x_split = bb.split(x)
-        x_split, f0 = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=f0)
-        x = bb.join(x_split, dtype=QMontgomeryUInt(self.n))
-        (f0,), x = bb.add(AddK(bitsize=self.n, k=1, cvs=(1,), signed=False), ctrls=(f0,), x=x)
-
         # x = x ^ -1 % p.
         x, z = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
 
@@ -777,15 +745,7 @@ class _ECAddStepFive(Bloq):
             qrom_indices=z3,
             reduced=reduced,
         )
-        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, m=z)
-
-        # if f0: subtract 1 from x to restore x.
-        # Unset flag f0 if x = 0 after subtraction.
-        (f0,), x = bb.add(AddK(bitsize=self.n, k=-1, cvs=(1,), signed=False), ctrls=(f0,), x=x)
-        x_split = bb.split(x)
-        x_split, f0 = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=f0)
-        x = bb.join(x_split, dtype=QMontgomeryUInt(self.n))
-        bb.free(f0)
+        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=z)
 
         # If ctrl: x = x_r - a % p.
         ctrl, x = bb.add(CModNeg(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=x)
