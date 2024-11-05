@@ -285,7 +285,7 @@ class _ECAddStepTwo(Bloq):
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
 
         # Perform modular inversion s.t. x = (x - a)^-1 % p.
-        x, z = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
+        x, junk = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
 
         # Perform modular multiplication z4 = (y / x) % p.
         x, y, z4, z3, reduced = bb.add(
@@ -336,7 +336,7 @@ class _ECAddStepTwo(Bloq):
             qrom_indices=z3,
             reduced=reduced,
         )
-        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=z)
+        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=junk)
 
         # Return the output registers.
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
@@ -706,7 +706,7 @@ class _ECAddStepFive(Bloq):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
         # x = x ^ -1 % p.
-        x, z = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
+        x, junk = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod), x=x)
 
         # z4 = x * y % p.
         x, y, z4, z3, reduced = bb.add(
@@ -744,7 +744,7 @@ class _ECAddStepFive(Bloq):
             qrom_indices=z3,
             reduced=reduced,
         )
-        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=z)
+        x = bb.add(KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(), x=x, junk=junk)
 
         # If ctrl: x = x_r - a % p.
         ctrl, x = bb.add(CModNeg(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=x)
