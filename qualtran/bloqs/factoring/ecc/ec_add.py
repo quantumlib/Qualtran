@@ -32,7 +32,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.arithmetic.comparison import Equals
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
 from qualtran.bloqs.bookkeeping import Free
