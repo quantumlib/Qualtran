@@ -11,11 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# isort:skip_file
 
-"""Bi-directional interop between Qualtran & Cirq using Cirq-FT.
-
-isort:skip_file
-"""
+"""Bi-directional interop between Qualtran & Cirq."""
 
 from ._cirq_to_bloq import (
     CirqQuregT,
