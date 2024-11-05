@@ -36,11 +36,24 @@ def test_kaliski_mod_inverse_classical_action(bitsize, mod):
             continue
         x_montgomery = dtype.uint_to_montgomery(x, mod)
         res = blq.call_classically(x=x_montgomery)
+        print(x, x_montgomery)
         assert res == cblq.call_classically(x=x_montgomery)
         assert len(res) == 2
         assert res[0] == dtype.montgomery_inverse(x_montgomery, mod)
         assert dtype.montgomery_product(int(res[0]), x_montgomery, mod) == R
-        assert blq.adjoint().call_classically(x=res[0], m=res[1]) == (x_montgomery,)
+        assert blq.adjoint().call_classically(x=res[0], junk=res[1]) == (x_montgomery,)
+
+
+@pytest.mark.parametrize('bitsize', [5, 6])
+@pytest.mark.parametrize('mod', [3, 5, 7, 11, 13, 15])
+def test_kaliski_mod_inverse_classical_action_zero(bitsize, mod):
+    blq = KaliskiModInverse(bitsize, mod)
+    cblq = blq.decompose_bloq()
+    # When x = 0 the terminal condition is achieved at the first iteration, this corresponds to
+    # m_0 = is_terminal_0 = 1 and all other bits = 0.
+    junk = 2 ** (4 * bitsize - 1) + 2 ** (2 * bitsize - 1)
+    assert blq.call_classically(x=0) == cblq.call_classically(x=0) == (0, junk)
+    assert blq.adjoint().call_classically(x=0, junk=junk) == (0,)
 
 
 @pytest.mark.parametrize('bitsize', [5, 6])
