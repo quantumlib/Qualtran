@@ -760,16 +760,8 @@ class _ECAddStepFive(Bloq):
         return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs: Union[list[int], HasLength]
-        if isinstance(self.n, int):
-            cvs = [0] * self.n
-        else:
-            cvs = HasLength(self.n)
         return {
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
-            MultiControlX(cvs=cvs): 2,
-            AddK(bitsize=self.n, k=1, cvs=(1,), signed=False): 1,
-            AddK(bitsize=self.n, k=-1, cvs=(1,), signed=False): 1,
             KaliskiModInverse(bitsize=self.n, mod=self.mod): 1,
             DirtyOutOfPlaceMontgomeryModMul(
                 bitsize=self.n, window_size=self.window_size, mod=self.mod
