@@ -155,7 +155,7 @@ target3: ──────B[H]─────────B[H]──────
 ''',
     )
     # 3. Diagram for $Ctrl-W = Ctrl-B[H].Ctrl-R_{L}$
-    controlled_walk_op = walk.controlled().on_registers(**g.quregs, control=cirq.q('control'))
+    controlled_walk_op = walk.controlled().on_registers(**g.quregs, ctrl=cirq.q('control'))
     circuit = cirq.Circuit(cirq.decompose_once(controlled_walk_op))
     cirq.testing.assert_has_diagram(
         circuit,
