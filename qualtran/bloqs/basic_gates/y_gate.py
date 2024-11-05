@@ -173,6 +173,13 @@ class CYGate(Bloq):
             return TextBox('Y')
         raise ValueError(f"Unknown register {reg}.")
 
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
+        )
+
 
 @bloq_example
 def _cy_gate() -> CYGate:
