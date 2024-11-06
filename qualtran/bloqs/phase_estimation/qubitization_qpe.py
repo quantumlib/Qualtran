@@ -64,7 +64,6 @@ class QubitizationQPE(GateWithRegisters):
     Args:
         walk: Bloq representing the Qubitization walk operator to run the phase estimation protocol
             on.
-        m_bits: Bitsize of the phase register to be used during phase estimation.
         ctrl_state_prep: Bloq to prepare the control state on the phase register. Defaults to
             `OnEach(self.m_bits, Hadamard())`.
         qft_inv: Bloq to apply inverse QFT on the phase register. Defaults to
