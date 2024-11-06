@@ -458,9 +458,12 @@ class Controlled(GateWithRegisters):
             # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
             import cirq
 
-            return cirq.unitary(
-                cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
-            )
+            try:
+                return cirq.unitary(
+                    cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+                )
+            except ValueError:
+                pass
         if all(reg.side == Side.THRU for reg in self.subbloq.signature):
             # subbloq has only THRU registers, so the tensor contraction corresponds
             # to a unitary matrix.
