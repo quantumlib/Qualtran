@@ -14,6 +14,7 @@
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
+import numpy as np
 from attrs import frozen
 
 from qualtran import (
@@ -123,6 +124,7 @@ class CtrlSpecAnd(Bloq):
 
         flat_cvs: list[int] = []
         for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
+            assert isinstance(cv, np.ndarray)
             flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
         return tuple(flat_cvs)
 
