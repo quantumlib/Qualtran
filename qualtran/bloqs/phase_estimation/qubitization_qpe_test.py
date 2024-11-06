@@ -21,12 +21,17 @@ from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowSt
 from qualtran.bloqs.phase_estimation.qubitization_qpe import (
     _qubitization_qpe_chem_thc,
     _qubitization_qpe_hubbard_model_small,
+    _qubitization_qpe_ising,
     _qubitization_qpe_sparse_chem,
     QubitizationQPE,
 )
 from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
+
+
+def test_ising_example(bloq_autotester):
+    bloq_autotester(_qubitization_qpe_ising)
 
 
 @pytest.mark.slow
