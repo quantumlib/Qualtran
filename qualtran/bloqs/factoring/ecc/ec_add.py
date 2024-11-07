@@ -327,7 +327,13 @@ class _ECAddStepTwo(Bloq):
 
         # If lam = lam_r: return f1 = 0. (If not we will flip f1 to 0 at the end iff x_r = y_r = 0).
         # Only flip when lam is set to lam_r.
-        ancilla, lam, lam_r, f1 = bb.add(Equals(QMontgomeryUInt(self.n)).controlled(ctrl_spec=CtrlSpec(cvs=0)), ctrl=ancilla, x=lam, y=lam_r, target=f1)
+        ancilla, lam, lam_r, f1 = bb.add(
+            Equals(QMontgomeryUInt(self.n)).controlled(ctrl_spec=CtrlSpec(cvs=0)),
+            ctrl=ancilla,
+            x=lam,
+            y=lam_r,
+            target=f1,
+        )
 
         # Clear the ancilla bit and free it.
         z4, lam_r, ancilla = bb.add(Equals(QMontgomeryUInt(self.n)), x=z4, y=lam_r, target=ancilla)
@@ -742,7 +748,7 @@ class _ECAddStepFive(Bloq):
             z4_split[i] = ctrls[1]
         z4 = bb.join(z4_split, dtype=QMontgomeryUInt(self.n))
         lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
-        
+
         # If the denominator of lambda is 0, lam = lam_r so we clear lam with lam_r.
         ancilla = bb.allocate()
         x_split = bb.split(x)
@@ -896,6 +902,21 @@ class _ECAddStepSix(Bloq):
         f3 = f_ctrls[1]
         f4 = f_ctrls[2]
 
+        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
+        aby_arr = np.concatenate([bb.split(a), bb.split(b), bb.split(y)])
+        aby_arr, f2 = bb.add(MultiControlX(cvs=[0] * 3 * self.n), controls=aby_arr, target=f2)
+        aby_arr = np.split(aby_arr, 3)
+        a = bb.join(aby_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(aby_arr[1], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(aby_arr[2], dtype=QMontgomeryUInt(self.n))
+
+        xyb_arr = np.concatenate([bb.split(x), bb.split(y), bb.split(b)])
+        xyb_arr, f2 = bb.add(MultiControlX(cvs=[0] * 3 * self.n), controls=xyb_arr, target=f2)
+        xyb_arr = np.split(xyb_arr, 3)
+        x = bb.join(xyb_arr[0], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xyb_arr[1], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(xyb_arr[2], dtype=QMontgomeryUInt(self.n))
+
         # Set (x, y) to (a, b) if f4 is set.
         a_split = bb.split(a)
         x_split = bb.split(x)
@@ -915,24 +936,6 @@ class _ECAddStepSix(Bloq):
             b_split[i] = toff_ctrl[1]
         b = bb.join(b_split, QMontgomeryUInt(self.n))
         y = bb.join(y_split, QMontgomeryUInt(self.n))
-
-        # Unset f4 if (x, y) = (a, b).
-        ab = bb.join(np.concatenate([bb.split(a), bb.split(b)]), dtype=QMontgomeryUInt(2 * self.n))
-        xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
-        ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
-        ab_split = bb.split(ab)
-        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
-        xy_split = bb.split(xy)
-        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(self.n))
-        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
-
-        # Unset f3 if (a, b) = (0, 0).
-        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
-        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
-        ab_arr = np.split(ab_arr, 2)
-        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # If f1 and f2 are set, subtract a from x and add b to y.
         ancilla = bb.add(ZeroState())
@@ -956,6 +959,24 @@ class _ECAddStepSix(Bloq):
         f2 = toff_ctrl[1]
         bb.add(Free(QBit()), reg=ancilla)
 
+        # Unset f4 if (x, y) = (a, b).
+        ab = bb.join(np.concatenate([bb.split(a), bb.split(b)]), dtype=QMontgomeryUInt(2 * self.n))
+        xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
+        ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
+        ab_split = bb.split(ab)
+        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
+        xy_split = bb.split(xy)
+        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
+
+        # Unset f3 if (a, b) = (0, 0).
+        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
+        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
+        ab_arr = np.split(ab_arr, 2)
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
+
         # Unset f1 and f2 if (x, y) = (0, 0).
         xy_arr = np.concatenate([bb.split(x), bb.split(y)])
         xy_arr, junk, out = bb.add(MultiAnd(cvs=[0] * 2 * self.n), ctrl=xy_arr)
@@ -972,33 +993,35 @@ class _ECAddStepSix(Bloq):
         y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Free all ancilla qubits in the zero state.
-        # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bugs in circuit where f1,
-        # f2, and f4 are freed before being set to 0.
-        bb.add(Free(QBit(), dirty=True), reg=f1)
+        bb.add(Free(QBit()), reg=f1)
         bb.add(Free(QBit()), reg=f2)
         bb.add(Free(QBit()), reg=f3)
-        bb.add(Free(QBit(), dirty=True), reg=f4)
+        bb.add(Free(QBit()), reg=f4)
         bb.add(Free(QBit()), reg=ctrl)
 
         # Return the output registers.
         return {'a': a, 'b': b, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs: Union[list[int], HasLength]
+        cvs2: Union[list[int], HasLength]
+        cvs3: Union[list[int], HasLength]
         if isinstance(self.n, int):
-            cvs = [0] * 2 * self.n
+            cvs2 = [0] * 2 * self.n
+            cvs3 = [0] * 3 * self.n
         else:
-            cvs = HasLength(2 * self.n)
+            cvs2 = HasLength(2 * self.n)
+            cvs3 = HasLength(3 * self.n)
         return {
-            MultiControlX(cvs=cvs): 1,
+            MultiControlX(cvs=cvs2): 1,
+            MultiControlX(cvs=cvs3): 2,
             MultiControlX(cvs=[0] * 3): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
             Toffoli(): 2 * self.n + 4,
             Equals(QMontgomeryUInt(2 * self.n)): 1,
-            MultiAnd(cvs=cvs): 1,
+            MultiAnd(cvs=cvs2): 1,
             MultiTargetCNOT(2): 1,
-            MultiAnd(cvs=cvs).adjoint(): 1,
+            MultiAnd(cvs=cvs2).adjoint(): 1,
         }
 
 
