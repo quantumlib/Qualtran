@@ -20,9 +20,8 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import BQUInt, QAny, QBit, QUInt, Register
+from qualtran import BQUInt, QAny, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -52,7 +51,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SelectOracle, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class BernoulliEncoder(SelectOracle):
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -63,7 +62,7 @@ class BernoulliEncoder(SelectOracle, SpecializedSingleQubitControlledExtension):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', QBit()),)
+        return ()
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
