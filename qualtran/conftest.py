@@ -88,6 +88,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'qubitization_qpe_chem_thc',  # too slow
         'walk_op_chem_sparse',
         'qubitization_qpe_sparse_chem',  # too slow
+        'qubitization_qpe_ising',
         'trott_unitary',
         'symbolic_hamsim_by_gqsp',
         'gf16_addition',  # cannot serialize QGF
