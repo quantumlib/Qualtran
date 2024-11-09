@@ -17,10 +17,12 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
+from qualtran import Bloq
+from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.bloqs.mcmt.multi_control_pauli import (
     _ccpauli,
     _ccpauli_symb,
-    MultiControlPauli,
+    _MultiControlPauli,
     MultiControlX,
 )
 
@@ -35,10 +37,10 @@ def test_ccpauli_symb():
 
 
 @pytest.mark.parametrize("num_controls", [0, 1, 2, *range(7, 17)])
-@pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
+@pytest.mark.parametrize("pauli", [XGate(), YGate(), ZGate()])
 @pytest.mark.parametrize('cv', [0, 1])
-def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
-    gate = MultiControlPauli([cv] * num_controls, target_gate=pauli)
+def test_t_complexity_mcp(num_controls: int, pauli: Bloq, cv: int):
+    gate = _MultiControlPauli([cv] * num_controls, target_bloq=pauli)
     qlt_testing.assert_valid_bloq_decomposition(gate)
     qlt_testing.assert_equivalent_bloq_counts(gate)
 
@@ -47,8 +49,10 @@ def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
 @pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
 @pytest.mark.parametrize('cv', [0, 1])
 def test_mcp_unitary(num_controls: int, pauli: cirq.Pauli, cv: int):
+    from qualtran.cirq_interop import cirq_gate_to_bloq
+
     cvs = (cv,) * num_controls
-    gate = MultiControlPauli(cvs, target_gate=pauli)
+    gate = _MultiControlPauli(cvs, target_bloq=cirq_gate_to_bloq(pauli))
     cpauli = pauli.controlled(control_values=cvs) if num_controls else pauli
     np.testing.assert_allclose(gate.tensor_contract(), cirq.unitary(cpauli))
 
@@ -70,8 +74,8 @@ def test_multi_control_x(cvs):
         ((), 0, (), 1),
     ],
 )
-def test_classical_multi_control_pauli_target_x(cvs, x, ctrls, result):
-    bloq = MultiControlPauli(cvs=cvs, target_gate=cirq.X)
+def test_classical_multi_control_X_target_x(cvs, x, ctrls, result):
+    bloq = MultiControlX(cvs=cvs)
     cbloq = bloq.decompose_bloq()
     kwargs = {'target': x} | ({'controls': ctrls} if ctrls else {})
     bloq_classical = bloq.call_classically(**kwargs)
@@ -105,3 +109,8 @@ def test_classical_multi_control_x(cvs, x, ctrls, result):
         np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
     assert bloq_classical[-1] == result
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('multi_control_multi_target_pauli')
