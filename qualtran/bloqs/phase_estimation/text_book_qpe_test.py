@@ -15,6 +15,8 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import Signature
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
@@ -43,8 +45,9 @@ def test_textbook_phase_estimation_zpow_theta(theta):
     assert abs(simulate_theta_estimate(circuit, precision_register) - theta) < error_bound
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('num_terms', [2, 3, 4])
+@pytest.mark.parametrize(
+    'num_terms', [pytest.param(n, marks=() if n <= 2 else pytest.mark.slow) for n in [2, 3, 4]]
+)
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_state: bool):
     precision, eps = 5, 0.05
@@ -52,8 +55,8 @@ def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_s
 
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
     qubitization_lambda = np.sum(ham_coeff)
-    g = GateHelper(walk)
-    L_state = np.zeros(2 ** len(g.quregs['selection']))
+    n_select_bits = Signature(walk.selection_registers).n_qubits()
+    L_state = np.zeros(2**n_select_bits)
     L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
 
     eigen_values, eigen_vectors = np.linalg.eigh(ham.matrix())
@@ -61,22 +64,43 @@ def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_s
     state_prep = (
         LPResourceState(precision) if use_resource_state else RectangularWindowState(precision)
     )
-    gh = GateHelper(TextbookQPE(walk, ctrl_state_prep=state_prep))
+
     # 1. Construct QPE bloq
-    qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
+    qpe_bloq = TextbookQPE(walk, ctrl_state_prep=state_prep)
+
+    def should_decompose(binst):
+        from qualtran import Adjoint, Controlled
+        from qualtran.bloqs.basic_gates import Power
+        from qualtran.bloqs.qubitization import QubitizationWalkOperator
+
+        bloqs_to_decompose = (TextbookQPE, QubitizationWalkOperator, Power)
+
+        if binst.bloq_is(bloqs_to_decompose):
+            return True
+
+        if binst.bloq_is(Controlled) or binst.bloq_is(Adjoint):
+            return isinstance(binst.bloq.subbloq, bloqs_to_decompose)
+
+        return False
+
+    cbloq = qpe_bloq.as_composite_bloq().flatten(pred=should_decompose)
+    quregs = get_named_qubits(cbloq.signature.lefts())
+    qpe_circuit, quregs = cbloq.to_cirq_circuit_and_quregs(None, **quregs)
     for eig_idx, eig_val in enumerate(eigen_values):
         # Apply QPE to determine eigenvalue for walk operator W on initial state |L>|k>
         # 2. State preparation for initial eigenstate.
         L_K = np.kron(L_state, eigen_vectors[:, eig_idx].flatten())
         L_K /= abs(np.linalg.norm(L_K))
-        prep_L_K = cirq.Circuit(cirq.StatePreparationChannel(L_K).on(*selection, *target))
+        prep_L_K = cirq.Circuit(
+            cirq.StatePreparationChannel(L_K).on(*quregs['selection'], *quregs['target'])
+        )
 
         # 3. QPE circuit with state prep
-        qpe_with_init = prep_L_K + gh.circuit
+        qpe_with_init = prep_L_K + qpe_circuit
         assert len(qpe_with_init.all_qubits()) < 23
 
         # 4. Estimate theta
-        theta = simulate_theta_estimate(qpe_with_init, qpe_reg)
+        theta = simulate_theta_estimate(qpe_with_init, quregs['qpe_reg'])
         assert 0 <= theta <= 1
 
         # 5. Verify that the estimated phase is correct.
