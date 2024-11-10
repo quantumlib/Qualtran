@@ -138,6 +138,9 @@ class _KaliskiIterationStep2(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         u_arr = bb.split(u)
         v_arr = bb.split(v)
 
@@ -543,6 +546,9 @@ class _KaliskiModInverseImpl(Bloq):
         f: Soquet,
         terminal_condition: Soquet,
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         f = bb.add(XGate(), q=f)
         u = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=u)
         s = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=s)
@@ -665,6 +671,9 @@ class KaliskiModInverse(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, junk: Optional[Soquet] = None
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         u = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
         r = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
         s = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
