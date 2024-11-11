@@ -12,34 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Utilities for simultaneous support for Sympy symbolic objects and concrete values."""
+import pytest
+import sympy
 
-from qualtran.symbolics.math_funcs import (
-    acos,
-    bit_length,
-    ceil,
-    floor,
-    is_zero,
-    ln,
-    log2,
-    pi,
-    prod,
-    sabs,
-    sarg,
-    sconj,
-    sexp,
-    smax,
-    smin,
-    ssqrt,
-    ssum,
+from qualtran.symbolics import is_symbolic, Shaped, slen
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
 )
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    shape,
-    Shaped,
-    slen,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+def test_shaped(shape: tuple[int, ...]):
+    shaped = Shaped(shape=shape)
+    assert is_symbolic(shaped)
+    assert slen(shaped) == shape[0]
