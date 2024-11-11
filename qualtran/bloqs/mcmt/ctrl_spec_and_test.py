@@ -14,19 +14,33 @@
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import CtrlSpec, QUInt
 from qualtran.bloqs.mcmt.ctrl_spec_and import (
     _ctrl_on_bits,
     _ctrl_on_int,
     _ctrl_on_multiple_values,
     _ctrl_on_nd_bits,
+    _ctrl_on_symbolic_cv,
+    _ctrl_on_symbolic_cv_multi,
+    _ctrl_on_symbolic_n_ctrls,
     CtrlSpecAnd,
 )
 from qualtran.simulation.classical_sim import get_classical_truth_table
 
 
 @pytest.mark.parametrize(
-    "example", [_ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_int, _ctrl_on_multiple_values]
+    "example",
+    [
+        _ctrl_on_bits,
+        _ctrl_on_nd_bits,
+        _ctrl_on_int,
+        _ctrl_on_multiple_values,
+        _ctrl_on_symbolic_cv,
+        _ctrl_on_symbolic_cv_multi,
+        _ctrl_on_symbolic_n_ctrls,
+    ],
+    ids=lambda ex: ex.name,
 )
 def test_examples(bloq_autotester, example):
     bloq_autotester(example)
@@ -51,3 +65,8 @@ def test_truth_table_using_classical_sim(ctrl_spec: CtrlSpec):
 
         # check: target bit (last output value) matches `is_active`
         assert out_vals[-1] == ctrl_spec.is_active(*in_vals)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('ctrl_spec_and')
