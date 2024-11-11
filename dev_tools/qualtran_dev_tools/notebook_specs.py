@@ -51,6 +51,7 @@ import qualtran.bloqs.block_encoding.linear_combination
 import qualtran.bloqs.block_encoding.phase
 import qualtran.bloqs.block_encoding.product
 import qualtran.bloqs.block_encoding.sparse_matrix
+import qualtran.bloqs.block_encoding.sparse_matrix_hermitian
 import qualtran.bloqs.block_encoding.tensor_product
 import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
@@ -742,6 +743,13 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
         title='Sparse Matrix',
         module=qualtran.bloqs.block_encoding.sparse_matrix,
         bloq_specs=[qualtran.bloqs.block_encoding.sparse_matrix._SPARSE_MATRIX_DOC],
+    ),
+    NotebookSpecV2(
+        title='Sparse Matrix Hermitian',
+        module=qualtran.bloqs.block_encoding.sparse_matrix_hermitian,
+        bloq_specs=[
+            qualtran.bloqs.block_encoding.sparse_matrix_hermitian._SPARSE_MATRIX_HERMITIAN_DOC
+        ],
     ),
     NotebookSpecV2(
         title='Chebyshev Polynomial',

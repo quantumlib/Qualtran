@@ -105,19 +105,15 @@ class TwoBitSwap(Bloq):
         return self
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec != CtrlSpec():
-            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        cswap = TwoBitCSwap()
-
-        def adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (ctrl,) = ctrl_soqs
-            ctrl, x, y = bb.add(cswap, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
-            return [ctrl], [x, y]
-
-        return cswap, adder
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec,
+            current_ctrl_bit=None,
+            bloq_with_ctrl=TwoBitCSwap(),
+            ctrl_reg_name='ctrl',
+        )
 
 
 @bloq_example
@@ -200,6 +196,13 @@ class TwoBitCSwap(Bloq):
             return Circle(filled=True)
         else:
             return TextBox('×')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
+        )
 
 
 @bloq_example

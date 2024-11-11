@@ -130,6 +130,7 @@ Bloqs Library
     block_encoding/phase.ipynb
     block_encoding/linear_combination.ipynb
     block_encoding/sparse_matrix.ipynb
+    block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
 

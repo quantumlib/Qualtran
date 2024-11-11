@@ -139,6 +139,12 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
             ),
         )
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def _has_unitary_(self):
+        return True
+
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _select_pauli_lcu() -> SelectPauliLCU:

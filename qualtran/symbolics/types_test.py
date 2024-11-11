@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,9 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Simulators for quantum programs.
+import pytest
+import sympy
 
-This module includes `qualtran.simulation.classical_sim` for basis state simulation of
-classical-reversible bloqs and `qualtran.simulation.tensor` for Quimb-based tensor network
-contraction.
-"""
+from qualtran.symbolics import is_symbolic, Shaped, slen
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
+)
+def test_shaped(shape: tuple[int, ...]):
+    shaped = Shaped(shape=shape)
+    assert is_symbolic(shaped)
+    assert slen(shaped) == shape[0]
