@@ -385,7 +385,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
     "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd": qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd,
     "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd,
-    "qualtran.bloqs.mcmt.multi_control_pauli._MultiControlPauli": qualtran.bloqs.mcmt.multi_control_pauli._MultiControlPauli,
+    "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli,
     "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlX,
     "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlZ": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlZ,
     "qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT": qualtran.bloqs.mcmt.multi_target_cnot.MultiTargetCNOT,

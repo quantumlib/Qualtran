@@ -22,7 +22,7 @@ from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.bloqs.mcmt.multi_control_pauli import (
     _ccpauli,
     _ccpauli_symb,
-    _MultiControlPauli,
+    MultiControlPauli,
     MultiControlX,
 )
 
@@ -40,7 +40,7 @@ def test_ccpauli_symb():
 @pytest.mark.parametrize("pauli", [XGate(), YGate(), ZGate()])
 @pytest.mark.parametrize('cv', [0, 1])
 def test_t_complexity_mcp(num_controls: int, pauli: Bloq, cv: int):
-    gate = _MultiControlPauli([cv] * num_controls, target_bloq=pauli)
+    gate = MultiControlPauli([cv] * num_controls, target_bloq=pauli)
     qlt_testing.assert_valid_bloq_decomposition(gate)
     qlt_testing.assert_equivalent_bloq_counts(gate)
 
@@ -52,7 +52,7 @@ def test_mcp_unitary(num_controls: int, pauli: cirq.Pauli, cv: int):
     from qualtran.cirq_interop import cirq_gate_to_bloq
 
     cvs = (cv,) * num_controls
-    gate = _MultiControlPauli(cvs, target_bloq=cirq_gate_to_bloq(pauli))
+    gate = MultiControlPauli(cvs, target_bloq=cirq_gate_to_bloq(pauli))
     cpauli = pauli.controlled(control_values=cvs) if num_controls else pauli
     np.testing.assert_allclose(gate.tensor_contract(), cirq.unitary(cpauli))
 

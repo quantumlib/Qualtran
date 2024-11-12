@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import warnings
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class _MultiControlPauli(GateWithRegisters):
+class MultiControlPauli(GateWithRegisters):
     r"""Implements multi-control, single-target C^{n}P gate.
 
     Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
@@ -63,6 +63,15 @@ class _MultiControlPauli(GateWithRegisters):
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
     target_bloq: Bloq
+
+    def __attrs_post_init__(self):
+        warnings.warn(
+            "`MultiControlPauli` is deprecated. Use `bloq.controlled(...)` which now defaults"
+            "to reducing controls using an `And` ladder."
+            "For the same signature as `MultiControlPauli(cvs, target_bloq)`,"
+            "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
+            DeprecationWarning,
+        )
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -156,7 +165,7 @@ class _MultiControlPauli(GateWithRegisters):
 
 
 @frozen
-class MultiControlX(_MultiControlPauli):
+class MultiControlX(MultiControlPauli):
     r"""Implements multi-control, single-target X gate.
 
     Reduces multiple controls to a single control using an `And` ladder.
@@ -178,6 +187,9 @@ class MultiControlX(_MultiControlPauli):
     def _X(self):
         return XGate()
 
+    def __attrs_post_init__(self):
+        pass
+
 
 @bloq_example
 def _ccpauli() -> MultiControlX:
@@ -197,7 +209,7 @@ _CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlX, examples=(_ccpauli,))
 
 
 @frozen
-class MultiControlZ(_MultiControlPauli):
+class MultiControlZ(MultiControlPauli):
     r"""Implements multi-control, single-target Z gate.
 
     Reduces multiple controls to a single control using an `And` ladder.
@@ -218,3 +230,6 @@ class MultiControlZ(_MultiControlPauli):
     @target_bloq.default
     def _Z(self):
         return ZGate()
+
+    def __attrs_post_init__(self):
+        pass
