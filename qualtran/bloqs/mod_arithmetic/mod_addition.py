@@ -117,7 +117,7 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
+        y = bb.add(AddK(QMontgomeryUInt(self.bitsize + 1), k=-1 * self.mod), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
@@ -125,11 +125,9 @@ class ModAdd(Bloq):
         sign = y_split[0]
         y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
-        sign_split = bb.split(sign)
-        sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
+        sign, y = bb.add(
+            AddK(QMontgomeryUInt(self.bitsize), k=self.mod).controlled(), ctrl=sign, x=y
         )
-        sign = bb.join(sign_split)
 
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
@@ -148,8 +146,8 @@ class ModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             Add(QUInt(self.bitsize + 1)): 1,
-            AddK(self.bitsize + 1, k=-self.mod): 1,
-            AddK(self.bitsize, k=self.mod).controlled(): 1,
+            AddK(QUInt(self.bitsize + 1), k=-self.mod): 1,
+            AddK(QUInt(self.bitsize), k=self.mod).controlled(): 1,
             LinearDepthGreaterThan(self.bitsize): 1,
             XGate(): 1,
         }
@@ -512,12 +510,12 @@ class CModAdd(Bloq):
             a=x,
             b=y,
         )
-        y = bb.add(AddK(self.dtype.bitsize + 1, -self.mod, signed=False), x=y)
+        y = bb.add(AddK(QUInt(self.dtype.bitsize + 1), -self.mod), x=y)
         y_arr = bb.split(y)
         ancilla, y_arr = y_arr[0], y_arr[1:]
         y = bb.join(y_arr)
-        (ancilla,), y = bb.add(
-            AddK(self.dtype.bitsize, self.mod, signed=False, cvs=(1,)), ctrls=(ancilla,), x=y
+        ancilla, y = bb.add(
+            AddK(QUInt(self.dtype.bitsize), self.mod).controlled(), ctrl=ancilla, x=y
         )
 
         ctrl, x, y, ancilla = bb.add(
@@ -538,8 +536,8 @@ class CModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv): 1,
-            AddK(self.dtype.bitsize + 1, -self.mod, signed=False): 1,
-            AddK(self.dtype.bitsize, self.mod, cvs=(1,), signed=False): 1,
+            AddK(QUInt(self.dtype.bitsize + 1), -self.mod): 1,
+            AddK(QUInt(self.dtype.bitsize), self.mod).controlled(): 1,
             CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv): 1,
             XGate(): 1,
         }

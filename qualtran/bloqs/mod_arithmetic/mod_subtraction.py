@@ -22,6 +22,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QMontgomeryUInt,
@@ -79,38 +80,28 @@ class ModNeg(Bloq):
         ancilla = bb.allocate(1)
         ancilla = bb.add(XGate(), q=ancilla)
 
-        x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(
-            MultiControlX(cvs=[0] * self.dtype.bitsize), controls=x_arr, target=ancilla
+        x, ancilla = bb.add(
+            XGate().controlled(CtrlSpec(qdtypes=self.dtype, cvs=0)), ctrl=x, q=ancilla
         )
-        x = bb.join(x_arr)
 
         ancilla, x = bb.add(MultiTargetCNOT(self.dtype.bitsize), control=ancilla, targets=x)
-        (ancilla,), x = bb.add(
-            AddK(self.dtype.bitsize, self.mod + 1, cvs=(1,), signed=False), ctrls=(ancilla,), x=x
+        ancilla, x = bb.add(
+            AddK(QUInt(self.dtype.bitsize), self.mod + 1).controlled(), ctrl=ancilla, x=x
         )
 
-        x_arr = bb.split(x)
-        x_arr, ancilla = bb.add(
-            MultiControlX(cvs=[0] * self.dtype.bitsize).adjoint(), controls=x_arr, target=ancilla
+        x, ancilla = bb.add(
+            XGate().controlled(CtrlSpec(qdtypes=self.dtype, cvs=0)), ctrl=x, q=ancilla
         )
-        x = bb.join(x_arr)
 
         ancilla = bb.add(XGate(), q=ancilla)
         bb.free(ancilla)
         return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        cvs: Union[list[int], HasLength]
-        if isinstance(self.dtype.bitsize, int):
-            cvs = [0] * self.dtype.bitsize
-        else:
-            cvs = HasLength(self.dtype.bitsize)
         return {
-            MultiControlX(cvs): 1,
-            MultiControlX(cvs).adjoint(): 1,
+            XGate().controlled(CtrlSpec(qdtypes=self.dtype, cvs=0)): 2,
             MultiTargetCNOT(self.dtype.bitsize): 1,
-            AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1), signed=False): 1,
+            AddK(QUInt(self.dtype.bitsize), k=self.mod + 1).controlled(): 1,
             XGate(): 2,
         }
 
@@ -178,9 +169,7 @@ class CModNeg(Bloq):
         (ctrl, ancilla), apply_op = bb.add(And(self.cv, 1), ctrl=(ctrl, ancilla))
 
         apply_op, x = bb.add(MultiTargetCNOT(self.dtype.bitsize), control=apply_op, targets=x)
-        (apply_op,), x = bb.add(
-            AddK(self.dtype.bitsize, self.mod + 1, cvs=(1,), signed=False), ctrls=(apply_op,), x=x
-        )
+        apply_op, x = bb.add(AddK(self.dtype, self.mod + 1).controlled(), ctrl=apply_op, x=x)
 
         ctrl, ancilla = bb.add(And(self.cv, 1).adjoint(), ctrl=(ctrl, ancilla), target=apply_op)
 
@@ -206,7 +195,7 @@ class CModNeg(Bloq):
             And(self.cv, 1): 1,
             And(self.cv, 1).adjoint(): 1,
             MultiTargetCNOT(self.dtype.bitsize): 1,
-            AddK(self.dtype.bitsize, k=self.mod + 1, cvs=(1,), signed=False): 1,
+            AddK(self.dtype, k=self.mod + 1).controlled(): 1,
             XGate(): 2,
         }
 
@@ -279,17 +268,17 @@ class ModSub(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)
-        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False), x=x)
+        x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         x, y = bb.add(ModAdd(self.dtype.bitsize, self.mod), x=x, y=y)
-        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), x=x)
+        x = bb.add(AddK(self.dtype, self.mod + 1).adjoint(), x=x)
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             BitwiseNot(self.dtype): 2,
-            AddK(self.dtype.bitsize, self.mod + 1, signed=False): 1,
-            AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(): 1,
+            AddK(self.dtype, self.mod + 1): 1,
+            AddK(self.dtype, self.mod + 1).adjoint(): 1,
             ModAdd(self.dtype.bitsize, self.mod): 1,
         }
 
@@ -359,17 +348,17 @@ class CModSub(Bloq):
         self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)
-        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False), x=x)
+        x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         ctrl, x, y = bb.add(CModAdd(self.dtype, self.mod, self.cv), ctrl=ctrl, x=x, y=y)
-        x = bb.add(AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(), x=x)
+        x = bb.add(AddK(self.dtype, self.mod + 1).adjoint(), x=x)
         x = bb.add(BitwiseNot(self.dtype), x=x)
         return {'ctrl': ctrl, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             BitwiseNot(self.dtype): 2,
-            AddK(self.dtype.bitsize, self.mod + 1, signed=False): 1,
-            AddK(self.dtype.bitsize, self.mod + 1, signed=False).adjoint(): 1,
+            AddK(self.dtype, self.mod + 1): 1,
+            AddK(self.dtype, self.mod + 1).adjoint(): 1,
             CModAdd(self.dtype, self.mod, self.cv): 1,
         }
 
