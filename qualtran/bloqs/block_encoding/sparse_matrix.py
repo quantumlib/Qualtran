@@ -30,6 +30,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QBit,
+    QInt,
     QUInt,
     Register,
     Signature,
@@ -334,7 +335,7 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {
             Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)): 1,
-            AddK(self.system_bitsize, -self.bandsize, signed=True): 1,
+            AddK(QInt(self.system_bitsize), -self.bandsize): 1,
         }
 
     def build_composite_bloq(self, bb: BloqBuilder, l: SoquetT, i: SoquetT) -> Dict[str, SoquetT]:
@@ -342,7 +343,7 @@ class SymmetricBandedRowColumnOracle(RowColumnOracle):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
 
         i, l = bb.add(Add(QUInt(self.system_bitsize), QUInt(self.system_bitsize)), a=i, b=l)
-        l = bb.add(AddK(self.system_bitsize, -self.bandsize, signed=True), x=l)
+        l = bb.add(AddK(QInt(self.system_bitsize), -self.bandsize), x=l)
 
         return {"l": l, "i": i}
 

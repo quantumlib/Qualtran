@@ -563,7 +563,7 @@ class _KaliskiModInverseImpl(Bloq):
             )
 
         r = bb.add(BitwiseNot(QMontgomeryUInt(self.bitsize)), x=r)
-        r = bb.add(AddK(self.bitsize, self.mod + 1, signed=False), x=r)
+        r = bb.add(AddK(QMontgomeryUInt(self.bitsize), self.mod + 1), x=r)
 
         u = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=u)
         s = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=s)
@@ -610,7 +610,7 @@ class _KaliskiModInverseImpl(Bloq):
         return {
             self._kaliski_iteration: 2 * self.bitsize,
             BitwiseNot(QMontgomeryUInt(self.bitsize)): 1,
-            AddK(self.bitsize, self.mod + 1, signed=False): 1,
+            AddK(QMontgomeryUInt(self.bitsize), self.mod + 1): 1,
             XGate(): 1,
             XorK(QMontgomeryUInt(self.bitsize), self.mod): 2,
             XorK(QMontgomeryUInt(self.bitsize), 1): 2,
