@@ -74,6 +74,9 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
     )
     qpe_bloq = QubitizationQPE(walk, state_prep)
 
+    # TODO cirq simulation seems to fail for controlled `QubitizationWalkOperator`.
+    #      the following code decomposes a few levels till it gets only simulable bloqs.
+    #      https://github.com/quantumlib/Qualtran/issues/1495
     def should_decompose(binst):
         from qualtran import Adjoint, Controlled
         from qualtran.bloqs.basic_gates import Power
