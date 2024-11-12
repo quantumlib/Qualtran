@@ -15,6 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
@@ -49,8 +50,9 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_sparse_chem)
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize('num_terms', [2, 3, 4])
+@pytest.mark.parametrize(
+    'num_terms', [pytest.param(n, marks=() if n <= 2 else pytest.mark.slow) for n in [2, 3, 4]]
+)
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
     precision, eps = 5, 0.05
@@ -70,21 +72,45 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
     state_prep = (
         LPResourceState(precision) if use_resource_state else RectangularWindowState(precision)
     )
-    gh = GateHelper(QubitizationQPE(walk, ctrl_state_prep=state_prep))
-    qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
+    qpe_bloq = QubitizationQPE(walk, state_prep)
+
+    # TODO cirq simulation seems to fail for controlled `QubitizationWalkOperator`.
+    #      the following code decomposes a few levels till it gets only simulable bloqs.
+    #      https://github.com/quantumlib/Qualtran/issues/1495
+    def should_decompose(binst):
+        from qualtran import Adjoint, Controlled
+        from qualtran.bloqs.basic_gates import Power
+        from qualtran.bloqs.qubitization import QubitizationWalkOperator
+
+        bloqs_to_decompose = (QubitizationQPE, QubitizationWalkOperator, Power)
+
+        if binst.bloq_is(bloqs_to_decompose):
+            return True
+
+        if binst.bloq_is(Controlled) or binst.bloq_is(Adjoint):
+            return isinstance(binst.bloq.subbloq, bloqs_to_decompose)
+
+        return False
+
+    cbloq = qpe_bloq.as_composite_bloq().flatten(pred=should_decompose)
+    quregs = get_named_qubits(cbloq.signature.lefts())
+    qpe_circuit, quregs = cbloq.to_cirq_circuit_and_quregs(None, **quregs)
+
     for eig_idx, eig_val in enumerate(eigen_values):
         # Apply QPE to determine eigenvalue for walk operator W on initial state |L>|k>
         # 2. State preparation for initial eigenstate.
         L_K = np.kron(L_state, eigen_vectors[:, eig_idx].flatten())
         L_K /= abs(np.linalg.norm(L_K))
-        prep_L_K = cirq.Circuit(cirq.StatePreparationChannel(L_K).on(*selection, *target))
+        prep_L_K = cirq.Circuit(
+            cirq.StatePreparationChannel(L_K).on(*quregs['selection'], *quregs['target'])
+        )
 
         # 3. QPE circuit with state prep
-        qpe_with_init = prep_L_K + gh.circuit
+        qpe_with_init = prep_L_K + qpe_circuit
         assert len(qpe_with_init.all_qubits()) < 23
 
         # 4. Estimate theta
-        theta = simulate_theta_estimate(qpe_with_init, qpe_reg)
+        theta = simulate_theta_estimate(qpe_with_init, quregs['qpe_reg'])
         assert 0 <= theta <= 1
 
         # 5. Verify that the estimated phase is correct.
