@@ -34,6 +34,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import PlusState
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.symbolics.types import SymbolicInt
 
 from .._factoring_shims import MeasureQFT
 from .ec_add_r import ECAddR, ECWindowAddR
@@ -58,10 +59,10 @@ class ECPhaseEstimateR(Bloq):
         mul_window_size: The number of bits in the modular multiplication window.
     """
 
-    n: int
+    n: 'SymbolicInt'
     point: ECPoint
-    add_window_size: int = 1
-    mul_window_size: int = 1
+    add_window_size: 'SymbolicInt' = 1
+    mul_window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
