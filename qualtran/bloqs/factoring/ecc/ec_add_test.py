@@ -418,7 +418,7 @@ def test_ec_add_symbolic_cost():
     # toffoli cost for Kaliski Mod Inverse, n extra toffolis in ModNeg, 2n extra toffolis to do n
     # 3-controlled toffolis in step 2. The expression is written with rationals because sympy
     # comparison fails with floats.
-    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(391, 2) * n - 31
+    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(407, 2) * n - 31
 
 
 def test_ec_add(bloq_autotester):
