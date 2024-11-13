@@ -72,8 +72,6 @@ class _KaliskiIterationStep1(Bloq):
     def on_classical_vals(
         self, v: int, m: int, f: int, is_terminal: int
     ) -> Dict[str, 'ClassicalValT']:
-        print('here')
-        assert False
         m ^= f & (v == 0)
         assert is_terminal == 0
         is_terminal ^= m
@@ -101,10 +99,10 @@ class _KaliskiIterationStep1(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if is_symbolic(self.bitsize):
-            cvs: Union[HasLength, List[int]] = HasLength(self.bitsize)
+            cvs: Union[HasLength, List[int]] = HasLength(self.bitsize + 1)
         else:
-            cvs = [0] * int(self.bitsize)
-        return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 2}
+            cvs = [0] * int(self.bitsize) + [1]
+        return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 3}
 
 
 @frozen
@@ -200,11 +198,11 @@ class _KaliskiIterationStep3(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
-        u, v, junk, greater_than = bb.add(
+        u, v, junk_c, greater_than = bb.add(
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)), a=u, b=v
         )
 
-        (greater_than, f, b), junk, ctrl = bb.add(
+        (greater_than, f, b), junk_m, ctrl = bb.add(
             MultiAnd(cvs=(1, 1, 0)), ctrl=(greater_than, f, b)
         )
 
@@ -212,13 +210,13 @@ class _KaliskiIterationStep3(Bloq):
         ctrl, m = bb.add(CNOT(), ctrl=ctrl, target=m)
 
         greater_than, f, b = bb.add(
-            MultiAnd(cvs=(1, 1, 0)).adjoint(), ctrl=(greater_than, f, b), junk=junk, target=ctrl
+            MultiAnd(cvs=(1, 1, 0)).adjoint(), ctrl=(greater_than, f, b), junk=junk_m, target=ctrl
         )
         u, v = bb.add(
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)).adjoint(),
             a=u,
             b=v,
-            c=junk,
+            c=junk_c,
             target=greater_than,
         )
         return {'u': u, 'v': v, 'b': b, 'a': a, 'm': m, 'f': f}
@@ -394,7 +392,7 @@ class _KaliskiIterationStep6(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            CNOT(): 4,
+            CNOT(): 3,
             XGate(): 2,
             ModDbl(QMontgomeryUInt(self.bitsize), self.mod): 1,
             CSwapApprox(self.bitsize): 2,
@@ -478,7 +476,7 @@ class _KaliskiIteration(Bloq):
         of `f` and `m`.
         """
         assert m == 0
-        is_terminal = f == 1 and v == 0
+        is_terminal = int(f == 1 and v == 0)
         if f == 0:
             # When `f = 0` this means that the algorithm is nearly over and that we just need to
             # double the value of `r`.
@@ -492,7 +490,8 @@ class _KaliskiIteration(Bloq):
             f = 0
             r = (r << 1) % self.mod
         else:
-            m = (u % 2 == 1) & (v % 2 == 0)
+            m = ((u % 2 == 1) & (v % 2 == 0)) or (u % 2 == 1 and v % 2 == 1 and u > v)
+            m = int(m)
             # Kaliski iteration as described in Fig7 of https://arxiv.org/pdf/2001.09580.
             swap = (u % 2 == 0 and v % 2 == 1) or (u % 2 == 1 and v % 2 == 1 and u > v)
             if swap:
@@ -569,7 +568,7 @@ class _KaliskiModInverseImpl(Bloq):
             )
 
         r = bb.add(BitwiseNot(QMontgomeryUInt(self.bitsize)), x=r)
-        r = bb.add(AddK(self.bitsize, self.mod + 1, signed=False), x=r)
+        r = bb.add(AddK(QMontgomeryUInt(self.bitsize), self.mod + 1), x=r)
 
         u = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=u)
         s = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=s)
@@ -616,7 +615,7 @@ class _KaliskiModInverseImpl(Bloq):
         return {
             self._kaliski_iteration: 2 * self.bitsize,
             BitwiseNot(QMontgomeryUInt(self.bitsize)): 1,
-            AddK(self.bitsize, self.mod + 1, signed=False): 1,
+            AddK(QMontgomeryUInt(self.bitsize), self.mod + 1): 1,
             XGate(): 1,
             XorK(QMontgomeryUInt(self.bitsize), self.mod): 2,
             XorK(QMontgomeryUInt(self.bitsize), 1): 2,

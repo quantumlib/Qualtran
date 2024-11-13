@@ -17,13 +17,13 @@ import sympy
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QBit, QFxp, QUInt, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import IntState, Rz, TGate
+from qualtran.bloqs.basic_gates import IntState, Rz
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.rotations.rz_via_phase_gradient import (
     _rz_via_phase_gradient,
     RzViaPhaseGradient,
 )
-from qualtran.resource_counting import BloqCount, get_cost_value
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
 
 def test_examples(bloq_autotester):
@@ -34,8 +34,10 @@ def test_costs():
     n = sympy.Symbol("n")
     dtype = QUInt(n)
     bloq = RzViaPhaseGradient(angle_dtype=dtype, phasegrad_dtype=dtype)
-    # TODO need to improve this to `4 * n - 8` (i.e. Toffoli cost of `n - 2`)
-    assert get_cost_value(bloq, BloqCount.for_gateset('t')) == {TGate(): 4 * n - 4}
+    # TODO need to improve this to `n - 2` Ands.
+    assert get_cost_value(bloq, QECGatesCost()) == GateCounts(
+        and_bloq=n - 1, clifford=9 * n - 8, measurement=n - 1
+    )
 
 
 @frozen

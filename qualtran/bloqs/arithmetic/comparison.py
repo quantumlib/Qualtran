@@ -1470,20 +1470,17 @@ class _HalfComparisonBase(Bloq):
         c: Optional['ClassicalValT'] = None,
         target: Optional['ClassicalValT'] = None,
     ) -> Dict[str, 'ClassicalValT']:
+        if self._op_symbol in ('>', '<='):
+            c_val = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
+        else:
+            c_val = add_ints(int(a), -int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
         if self.uncompute:
-            assert c == add_ints(
-                int(a),
-                int(b),
-                num_bits=int(self.dtype.bitsize),
-                is_signed=isinstance(self.dtype, QInt),
-            )
+            assert c == c_val
             assert target == self._classical_comparison(a, b)
             return {'a': a, 'b': b}
-        if self._op_symbol in ('>', '<='):
-            c = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
-        else:
-            c = add_ints(int(a), -int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
-        return {'a': a, 'b': b, 'c': c, 'target': int(self._classical_comparison(a, b))}
+        assert c is None
+        assert target is None
+        return {'a': a, 'b': b, 'c': c_val, 'target': int(self._classical_comparison(a, b))}
 
     def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> Dict[str, 'SoquetT']:
         if self._op_symbol in ('>', '<='):
