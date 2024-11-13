@@ -86,11 +86,11 @@ def test_kaliski_symbolic_cost():
     #       construction this is just $n-1$ (BitwiseNot -> Add(p+1)).
     #   - The cost of an iteration in Litinski $13n$ since they ignore constants.
     #       Our construction is exactly the same but we also count the constants
-    #       which amout to $3$. for a total cost of $13n + 3$.
+    #       which amout to $3$. for a total cost of $13n + 4$.
     # For example the cost of ModDbl is 2n+1. In their figure 8, they report
     # it as just $2n$. ModDbl gets executed within the 2n loop so its contribution
     # to the overal cost should be 4n^2 + 2n instead of just 4n^2.
-    assert total_toff == 26 * n**2 + 7 * n - 1
+    assert total_toff == 26 * n**2 + 9 * n - 1
 
 
 def test_kaliskimodinverse_example(bloq_autotester):
