@@ -988,7 +988,7 @@ class Equals(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.dtype.bitsize):
+        if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
         cvs: Union[list[int], HasLength]
