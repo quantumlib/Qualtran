@@ -16,6 +16,7 @@ from typing import Dict, List, Tuple, TYPE_CHECKING
 import attrs
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import (
@@ -24,6 +25,7 @@ from qualtran import (
     CompositeBloq,
     Controlled,
     CtrlSpec,
+    DecomposeTypeError,
     QBit,
     QInt,
     QUInt,
@@ -52,6 +54,7 @@ from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
     import cirq
@@ -73,8 +76,10 @@ def test_ctrl_spec():
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
     assert cspec3.qdtypes[0].num_qubits == 64
-    assert cspec3.cvs[0] == 234234
-    assert cspec3.cvs[0][tuple()] == 234234
+    (cvs,) = cspec3.cvs
+    assert isinstance(cvs, np.ndarray)
+    assert cvs == 234234
+    assert cvs[tuple()] == 234234
 
 
 def test_ctrl_spec_shape():
@@ -97,7 +102,55 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
 
     for ctrl_spec in ctrl_specs:
         assert ctrl_spec.to_cirq_cv() == cirq_cv.expand()
-        assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
+        assert CtrlSpec.from_cirq_cv(
+            cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.concrete_shapes
+        )
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=[1]), CtrlSpec(cvs=np.atleast_2d([1]))]
+)
+def test_ctrl_spec_single_bit_one(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 1
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(cvs=0), CtrlSpec(cvs=[0]), CtrlSpec(cvs=np.atleast_2d([0]))]
+)
+def test_ctrl_spec_single_bit_zero(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 0
+
+
+@pytest.mark.parametrize("ctrl_spec", [CtrlSpec(cvs=[1, 1]), CtrlSpec(qdtypes=QUInt(2), cvs=0)])
+def test_ctrl_spec_single_bit_raises(ctrl_spec: CtrlSpec):
+    with pytest.raises(ValueError):
+        ctrl_spec.get_single_ctrl_bit()
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_cvs(shape: tuple[int, ...]):
+    ctrl_spec = CtrlSpec(cvs=Shaped(shape))
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_dtype(shape: tuple[int, ...]):
+    n = sympy.Symbol("n")
+    dtype = QUInt(n)
+
+    ctrl_spec = CtrlSpec(qdtypes=dtype, cvs=Shaped(shape))
+
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == n * np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+def test_ctrl_spec_symbolic_wire_symbol():
+    ctrl_spec = CtrlSpec(cvs=Shaped((10,)))
+    reg = Register('q', QBit())
+    assert ctrl_spec.wire_symbol(0, reg) == TextBox('ctrl')
 
 
 def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
@@ -411,11 +464,15 @@ class TestCtrlStatePrepAnd(Bloq):
         return Signature([Register('x', QBit(), shape=(3,), side=Side.RIGHT)])
 
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        if self.ctrl_spec.is_symbolic():
+            raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.ctrl_spec=}")
+
         one_or_zero = [ZeroState(), OneState()]
         ctrl_bloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
 
         ctrl_soqs = {}
         for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
             soqs = np.empty(shape=reg.shape, dtype=object)
             for idx in reg.all_idxs():
                 soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
@@ -427,6 +484,7 @@ class TestCtrlStatePrepAnd(Bloq):
         out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
 
         for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
             for idx in reg.all_idxs():
                 ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
                 bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
