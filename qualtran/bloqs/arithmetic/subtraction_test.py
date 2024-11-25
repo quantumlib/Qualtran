@@ -122,7 +122,7 @@ def test_against_classical_values(dtype):
     else:
         R1 = range(8)
         R2 = range(32)
-    for (a, b) in itertools.product(R1, R2):
+    for a, b in itertools.product(R1, R2):
         ref = subtract.call_classically(a=a, b=b)
         comp = cbloq.call_classically(a=a, b=b)
         assert ref == comp

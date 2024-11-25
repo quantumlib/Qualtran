@@ -83,9 +83,20 @@ Bloqs Library
     mod_arithmetic/mod_addition.ipynb
     mod_arithmetic/mod_subtraction.ipynb
     mod_arithmetic/mod_multiplication.ipynb
-    factoring/mod_exp.ipynb
+    mod_arithmetic/mod_division.ipynb
+    factoring/rsa/rsa.ipynb
     factoring/ecc/ec_add.ipynb
     factoring/ecc/ecc.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: GF Arithmetic:
+
+    gf_arithmetic/gf2_multiplication.ipynb
+    gf_arithmetic/gf2_addition.ipynb
+    gf_arithmetic/gf2_add_k.ipynb
+    gf_arithmetic/gf2_square.ipynb
+    gf_arithmetic/gf2_inverse.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -119,6 +130,7 @@ Bloqs Library
     block_encoding/phase.ipynb
     block_encoding/linear_combination.ipynb
     block_encoding/sparse_matrix.ipynb
+    block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
 

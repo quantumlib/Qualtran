@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Set, TYPE_CHECKING
 
 import cirq
 import pytest
@@ -30,12 +29,8 @@ from qualtran.cirq_interop.t_complexity_protocol import (
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
 
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
-
-class DoesNotSupportTComplexity:
-    ...
+class DoesNotSupportTComplexity: ...
 
 
 @frozen
@@ -67,21 +62,9 @@ class DoesNotSupportTComplexityBloq(Bloq):
         return Signature.build(q=1)
 
 
-@frozen
-class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
-    @property
-    def signature(self) -> 'Signature':
-        return Signature.build(q=1)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(SupportsTComplexityGateWithRegisters(), 5)}
-
-
-def test_t_complexity_for_bloq_via_build_call_graph():
-    bloq = SupportsTComplexityBloqViaBuildCallGraph()
-    _, sigma = bloq.call_graph(max_depth=1)
-    assert sigma != {}
-    assert t_complexity(bloq) == TComplexity(t=5, clifford=10)
+def test_legacy_t_complexity_annotation():
+    # Test the deprecated `getattr(.., '_t_complexity_')
+    assert SupportsTComplexityGateWithRegisters().t_complexity() == TComplexity(t=1, clifford=2)
 
 
 def test_t_complexity_for_bloq_does_not_support():
@@ -101,7 +84,7 @@ def test_t_complexity_compat():
 
     g = GateHelper(SupportsTComplexityGateWithRegisters())
     assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented  # type: ignore[attr-defined]
-    assert t_complexity(g.gate) == TComplexity(t=1, clifford=2)
+    assert t_complexity_compat(g.gate) == TComplexity(t=1, clifford=2)
     assert t_complexity_compat(g.operation) == TComplexity(t=1, clifford=2)
 
     assert t_complexity_compat([cirq.T, cirq.X]) == TComplexity(t=1, clifford=1)

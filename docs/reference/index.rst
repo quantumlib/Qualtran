@@ -7,7 +7,7 @@ This section of the docs provides an API reference for all symbols
 in ``qualtran``.
 
 .. toctree::
-   :hidden:
+   :maxdepth: 1
 
    qualtran.md
 

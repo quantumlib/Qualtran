@@ -315,9 +315,8 @@ class Product(Bloq):
         result: A 2*`max(a_bitsize, b_bitsize)` bit-sized output register to store the result a*b.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 81 gives a Toffoli
-        complexity for multiplying two numbers.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        pg 81 gives a Toffoli complexity for multiplying two numbers.
     """
 
     a_bitsize: SymbolicInt
@@ -377,8 +376,8 @@ class ScaleIntByReal(Bloq):
         result: a r_bitsize sized output fixed-point register.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/pdf/2007.07391.pdf) pg 70.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        pg 70.
     """
 
     r_bitsize: SymbolicInt

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from qualtran import Adjoint
-from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.basic_gates import Power, XGate
 from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
@@ -107,7 +107,7 @@ def test_qubitization_walk_operator_diagrams():
     num_sites, eps = 4, 1e-1
     walk, _ = get_walk_operator_for_1d_ising_model(num_sites, eps)
     # 1. Diagram for $W = SELECT.R_{L}$
-    g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk, decompose_once=True)
+    walk_circuit = walk.decompose_bloq().to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         walk_circuit,
         '''
@@ -128,14 +128,7 @@ target3: ──────B[H]─────────
     )
 
     # 2. Diagram for $W^{2} = B[H].R_{L}.B[H].R_{L}$
-    def decompose_twice(op):
-        ops = []
-        for sub_op in cirq.decompose_once(op):
-            ops += cirq.decompose_once(sub_op)
-        return ops
-
-    walk_squared_op = (walk**2).on_registers(**g.quregs)
-    circuit = cirq.Circuit(decompose_twice(walk_squared_op))
+    circuit = Power(walk, 2).decompose_bloq().flatten_once().to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         '''
@@ -154,13 +147,14 @@ target2: ──────B[H]─────────B[H]──────
 target3: ──────B[H]─────────B[H]─────────
 ''',
     )
+
     # 3. Diagram for $Ctrl-W = Ctrl-B[H].Ctrl-R_{L}$
-    controlled_walk_op = walk.controlled().on_registers(**g.quregs, control=cirq.q('control'))
-    circuit = cirq.Circuit(cirq.decompose_once(controlled_walk_op))
+    controlled_walk_op = walk.controlled().decompose_bloq()
+    circuit = controlled_walk_op.to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-control: ──────@──────@─────
+ctrl: ─────────@──────@─────
                │      │
 selection0: ───B[H]───R_L───
                │      │
@@ -177,22 +171,17 @@ target2: ──────B[H]─────────
 target3: ──────B[H]─────────
 ''',
     )
-    # 4. Diagram for $Ctrl-W = Ctrl-SELECT.Ctrl-R_{L}$ in terms of $Ctrl-SELECT$ and $PREPARE$.
-    gateset_to_keep = cirq.Gateset(
-        SelectPauliLCU, StatePreparationAliasSampling, MultiControlPauli, cirq.X
-    )
 
-    def keep(op):
-        ret = op in gateset_to_keep
-        if op.gate is not None and isinstance(op.gate, Adjoint):
-            ret |= op.gate.subbloq in gateset_to_keep
-        return ret
+    # 4. Diagram for $Ctrl-W = Ctrl-SELECT.Ctrl-R_{L}$ in terms of $Ctrl-SELECT$ and $PREPARE$.
+    def pred(binst):
+        bloqs_to_keep = (SelectPauliLCU, StatePreparationAliasSampling, MultiControlPauli, XGate)
+        keep = binst.bloq_is(bloqs_to_keep)
+        if binst.bloq_is(Adjoint):
+            keep |= isinstance(binst.bloq.subbloq, bloqs_to_keep)
+        return not keep
 
     greedy_mm = cirq.GreedyQubitManager(prefix="ancilla", maximize_reuse=True)
-    context = cirq.DecompositionContext(greedy_mm)
-    circuit = cirq.Circuit(
-        cirq.decompose(controlled_walk_op, keep=keep, on_stuck_raise=None, context=context)
-    )
+    circuit = controlled_walk_op.flatten(pred=pred).to_cirq_circuit(qubit_manager=greedy_mm)
     # pylint: disable=line-too-long
     cirq.testing.assert_has_diagram(
         circuit,
@@ -226,7 +215,7 @@ ancilla_12: ────────────────────keep─�
                                 │                                        │
 ancilla_13: ────────────────────less_than_equal──────────────────────────less_than_equal──────────────────
                                 │                                        │
-control: ──────@────────────────┼───────────────────────────────Z───────Z┼────────────────────────────────
+ctrl: ─────────@────────────────┼───────────────────────────────Z───────Z┼────────────────────────────────
                │                │                               │        │
 selection0: ───In───────────────StatePreparationAliasSampling───@(0)─────StatePreparationAliasSampling────
                │                │                               │        │
@@ -245,24 +234,6 @@ target3: ──────SelectPauliLCU─────────────
 ''',
     )
     # pylint: enable=line-too-long
-
-
-def test_qubitization_walk_operator_consistent_protocols_and_controlled():
-    gate, _ = get_walk_operator_for_1d_ising_model(4, 1e-1)
-    op = gate.on_registers(**get_named_qubits(gate.signature))
-    # Build controlled gate
-    equals_tester = cirq.testing.EqualsTester()
-    equals_tester.add_equality_group(
-        gate.controlled(),
-        gate.controlled(num_controls=1),
-        gate.controlled(control_values=(1,)),
-        op.controlled_by(cirq.q("control")).gate,
-    )
-    equals_tester.add_equality_group(
-        gate.controlled(control_values=(0,)),
-        gate.controlled(num_controls=1, control_values=(0,)),
-        op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
-    )
 
 
 @pytest.mark.notebook

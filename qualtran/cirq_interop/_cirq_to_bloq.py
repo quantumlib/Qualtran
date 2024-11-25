@@ -47,7 +47,7 @@ from qualtran._infra.gate_with_registers import (
     split_qubits,
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
-from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq
 from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
@@ -75,8 +75,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate:
-        ...
+    def cirq_gate(self) -> cirq.Gate: ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -147,12 +146,6 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     @property
     def cirq_gate(self) -> cirq.Gate:
         return self.gate
-
-    def _t_complexity_(self) -> 'TComplexity':
-        t_count = _from_directly_countable_cirq(self.cirq_gate)
-        if t_count is None:
-            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-        return t_count
 
     def my_static_costs(self, cost_key: 'CostKey'):
         if isinstance(cost_key, QECGatesCost):
@@ -264,9 +257,9 @@ def _ensure_in_reg_exists(
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
-        qreg_to_qvar[
-            _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
-        ] = bb.allocate(n_alloc)
+        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))] = (
+            bb.allocate(n_alloc)
+        )
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.

@@ -20,9 +20,17 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, QBit, Register, Signature
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CtrlSpec,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import GateWithRegisters, merge_qubits, total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.mcmt import MultiControlZ
@@ -41,7 +49,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class ReflectionUsingPrepare(GateWithRegisters):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s\rangle\langle s|)$ using $R_{s} =
@@ -76,7 +84,7 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
+        Babbush et al. 2018. Figure 1.
     """
 
     prepare_gate: Union['PrepareOracle', 'BlackBoxPrepare']
@@ -185,6 +193,19 @@ class ReflectionUsingPrepare(GateWithRegisters, SpecializedSingleQubitControlled
 
     def adjoint(self) -> 'ReflectionUsingPrepare':
         return self
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
 
 
 @bloq_example(generalizer=ignore_split_join)

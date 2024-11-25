@@ -20,18 +20,19 @@ import numpy as np
 from attrs import evolve, frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     BQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
     Signature,
     SoquetT,
 )
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -66,7 +67,7 @@ class THCRotations(Bloq):
         [Even more efficient quantum computations of chemistry through
             tensor hypercontraction](https://arxiv.org/pdf/2011.03494.pdf) Fig. 7.
         [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
-            Burg, Low et. al. 2021. Eq. 73
+            Burg, Low, et al. 2021. Eq. 73
     """
 
     num_mu: int
@@ -120,7 +121,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
+class SelectTHC(SelectOracle):
     r"""SELECT for THC Hamiltonian.
 
     Args:
@@ -312,6 +313,16 @@ class SelectTHC(SpecializedSingleQubitControlledExtension, SelectOracle):  # typ
             out_soqs['control'] = soqs['control']
 
         return out_soqs
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
+        )
 
 
 @bloq_example

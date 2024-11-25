@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QDType, QInt, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QMontgomeryUInt, QUInt, Signature
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 
@@ -53,7 +53,7 @@ class Negate(Bloq):
         Operator "Unary Minus". Last accessed 17 July 2024.
     """
 
-    dtype: QDType
+    dtype: Union[QUInt, QInt, QMontgomeryUInt]
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -61,7 +61,7 @@ class Negate(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)  # ~x
-        x = bb.add(AddK(self.dtype.num_qubits, k=1, signed=isinstance(self.dtype, QInt)), x=x)  # -x
+        x = bb.add(AddK(self.dtype, k=1), x=x)  # -x
         return {'x': x}
 
 

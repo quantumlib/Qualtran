@@ -83,6 +83,7 @@ class PrepareTUVSuperpositions(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 15, section A
     """
+
     num_bits_t: int
     eta: int
     lambda_zeta: int
@@ -232,8 +233,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         flags: A 4 qubit flag register indicating which component of the Hamiltonian to apply.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
     """
 
     num_bits_p: int
@@ -408,8 +408,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             components of size num_bits_n.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
     """
 
     num_bits_p: int

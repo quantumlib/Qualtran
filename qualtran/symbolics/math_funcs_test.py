@@ -18,19 +18,7 @@ import pytest
 import sympy
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.symbolics import (
-    bit_length,
-    ceil,
-    is_symbolic,
-    is_zero,
-    log2,
-    sarg,
-    sexp,
-    Shaped,
-    slen,
-    smax,
-    smin,
-)
+from qualtran.symbolics import bit_length, ceil, is_zero, log2, sarg, sexp, smax, smin
 
 
 def test_log2():
@@ -128,16 +116,6 @@ def test_bit_length_symbolic_simplify():
     b: sympy.Expr = bit_length(N - 1)
     assert b == ceil(log2(N))
     assert b.subs({N: 2**n}) == n
-
-
-@pytest.mark.parametrize(
-    "shape",
-    [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
-)
-def test_shaped(shape: tuple[int, ...]):
-    shaped = Shaped(shape=shape)
-    assert is_symbolic(shaped)
-    assert slen(shaped) == shape[0]
 
 
 def test_is_zero():

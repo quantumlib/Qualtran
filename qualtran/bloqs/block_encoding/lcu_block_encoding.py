@@ -23,11 +23,12 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CtrlSpec,
+    QBit,
     Register,
+    Side,
     Signature,
     SoquetT,
 )
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -44,7 +45,7 @@ def _total_bits(registers: Union[Tuple[Register, ...], Signature]) -> int:
 
 
 @attrs.frozen
-class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
+class SelectBlockEncoding(BlockEncoding):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the block encoding via
@@ -95,11 +96,6 @@ class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtensi
 
     select: Union[BlackBoxSelect, SelectOracle]
     prepare: Union[BlackBoxPrepare, PrepareOracle]
-    control_val: Optional[int] = None
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return self.select.control_registers
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -136,14 +132,7 @@ class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtensi
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                *self.control_registers,
-                *self.selection_registers,
-                *self.junk_registers,
-                *self.target_registers,
-            ]
-        )
+        return Signature([*self.selection_registers, *self.junk_registers, *self.target_registers])
 
     @cached_property
     def signal_state(self) -> Union[BlackBoxPrepare, PrepareOracle]:
@@ -157,26 +146,12 @@ class SelectBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtensi
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        if reg.name == 'control':
-            return Circle(filled=bool(self.control_val))
         else:
             return TextBox('B[H]')
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'SelectBlockEncoding':
-        if self.control_val is not None:
-            raise ValueError(
-                "control_val is not None but trying to build controlled SelectBlockEncoding."
-            )
-        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-        if not isinstance(c_select, SelectOracle):
-            raise TypeError(
-                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
-            )
-        return attrs.evolve(self, select=c_select, control_val=control_val)
-
 
 @attrs.frozen
-class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension):
+class LCUBlockEncoding(BlockEncoding):
     r"""LCU based block encoding using SELECT and PREPARE oracles.
 
     Builds the standard block encoding from an LCU as
@@ -230,7 +205,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return self.select.control_registers
+        return () if self.control_val is None else (Register('ctrl', QBit()),)
 
     @cached_property
     def ancilla_bitsize(self) -> int:
@@ -250,7 +225,7 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.junk_registers
+        return tuple(reg for reg in self.prepare.junk_registers if reg.side == Side.THRU)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -286,8 +261,18 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
             return {reg.name: soqs.pop(reg.name) for reg in bloq.signature.lefts()}
 
         soqs |= bb.add_d(self.prepare, **_extract_soqs(self.prepare))
-        soqs |= bb.add_d(self.select, **_extract_soqs(self.select))
+
+        select_soqs = _extract_soqs(self.select)
+        if self.control_val is None:
+            soqs |= bb.add_d(self.select, **select_soqs)
+        else:
+            _, ctrl_select_adder = self.select.get_ctrl_system(CtrlSpec(cvs=self.control_val))
+            (ctrl,), select_soqs_t = ctrl_select_adder(bb, [soqs.pop('ctrl')], select_soqs)
+            soqs |= {'ctrl': ctrl}
+            soqs |= dict(zip([reg.name for reg in self.select.signature], select_soqs_t))
+
         soqs |= bb.add_d(self.prepare.adjoint(), **_extract_soqs(self.prepare.adjoint()))
+
         return soqs
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
@@ -298,17 +283,13 @@ class LCUBlockEncoding(BlockEncoding, SpecializedSingleQubitControlledExtension)
         else:
             return TextBox('B[H]')
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'LCUBlockEncoding':
-        if self.control_val is not None:
-            raise ValueError(
-                "control_val is not None but trying to build controlled SelectBlockEncoding."
-            )
-        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-        if not isinstance(c_select, SelectOracle):
-            raise TypeError(
-                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
-            )
-        return attrs.evolve(self, select=c_select, control_val=control_val)
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.ONE)
 
 
 @bloq_example

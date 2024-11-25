@@ -27,7 +27,6 @@ from qualtran import (
     GateWithRegisters,
     Signature,
 )
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
@@ -71,9 +70,6 @@ class TestAtom(Bloq):
         if isinstance(cost_key, QECGatesCost):
             return GateCounts(t=100)
         return NotImplemented
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(100)
 
     def __repr__(self):
         if self.tag:
@@ -154,8 +150,10 @@ class TestGWRAtom(GateWithRegisters):
     def adjoint(self) -> 'TestGWRAtom':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(100)
+    def my_static_costs(self, cost_key: 'CostKey'):
+        if isinstance(cost_key, QECGatesCost):
+            return GateCounts(t=100)
+        return NotImplemented
 
     def __repr__(self):
         tag = f'{self.tag!r}' if self.tag else ''

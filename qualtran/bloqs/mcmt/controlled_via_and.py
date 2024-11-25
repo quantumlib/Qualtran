@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Iterable, Sequence, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,7 +23,7 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
+    from qualtran import AddControlledT, BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
@@ -50,8 +50,7 @@ class ControlledViaAnd(Controlled):
 
     @cached_property
     def _single_control_value(self) -> int:
-        assert self._is_single_bit_control()
-        return self.ctrl_spec._cvs_tuple[0]
+        return self.ctrl_spec.get_single_ctrl_bit()
 
     def adjoint(self) -> 'ControlledViaAnd':
         return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
@@ -125,6 +124,28 @@ class ControlledViaAnd(Controlled):
             counts[ctrl.adjoint()] += 1
 
         return counts
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        ctrl_spec_combined = CtrlSpec(
+            qdtypes=ctrl_spec.qdtypes + self.ctrl_spec.qdtypes,
+            cvs=ctrl_spec.cvs + self.ctrl_spec.cvs,
+        )
+        ctrl_bloq = ControlledViaAnd(subbloq=self.subbloq, ctrl_spec=ctrl_spec_combined)
+
+        def _adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            rhs_ctrl_soqs_t = tuple(in_soqs.pop(name) for name in self.ctrl_reg_names)
+            all_ctrl_soqs_t = tuple([*ctrl_soqs, *rhs_ctrl_soqs_t])
+
+            all_ctrl_soqs_d = dict(zip(ctrl_bloq.ctrl_reg_names, all_ctrl_soqs_t))
+            all_soqs = all_ctrl_soqs_d | in_soqs
+            all_soqs = bb.add_t(ctrl_bloq, **all_soqs)
+
+            n_ctrl_lhs = ctrl_spec.num_ctrl_reg
+            return all_soqs[:n_ctrl_lhs], all_soqs[n_ctrl_lhs:]
+
+        return ctrl_bloq, _adder
 
 
 @bloq_example

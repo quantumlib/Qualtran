@@ -20,7 +20,6 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, Register, Signature
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -50,14 +49,12 @@ class SGate(Bloq):
     Registers:
         q: The qubit
     """
+
     is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

@@ -11,19 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -42,7 +32,7 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
-    QBit,
+    QAny,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -52,24 +42,18 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import (
-        BloqCountDictT,
-        BloqCountT,
-        MutableBloqCountDictT,
-        SympySymbolAllocator,
-    )
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -260,11 +244,15 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     Args:
         bitsize: Number of bits used to represent each input integer. The allocated output register
             is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
+        is_adjoint: Whether this is compute or uncompute version.
+        include_most_significant_bit: Whether to add an extra most significant (i.e. carry) bit.
 
     Registers:
         a: A bitsize-sized input register (register a above).
         b: A bitsize-sized input register (register b above).
-        c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
+        c: The LEFT/RIGHT register depending on whether the gate adjoint or not.
+            This register size is either bitsize or bitsize+1 depending on
+            the value of `include_most_significant_bit`.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -272,6 +260,11 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
 
     bitsize: 'SymbolicInt'
     is_adjoint: bool = False
+    include_most_significant_bit: bool = True
+
+    @property
+    def out_bitsize(self):
+        return self.bitsize + (1 if self.include_most_significant_bit else 0)
 
     @property
     def signature(self):
@@ -280,14 +273,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             [
                 Register('a', QUInt(self.bitsize)),
                 Register('b', QUInt(self.bitsize)),
-                Register('c', QUInt(self.bitsize + 1), side=side),
+                Register('c', QUInt(self.out_bitsize), side=side),
             ]
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         if not isinstance(self.bitsize, int):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
+        return [2] * self.bitsize, [2] * self.bitsize, [2] * self.out_bitsize
 
     def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
         return a, b, c + a + b
@@ -307,7 +300,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         return {
             'a': a,
             'b': b,
-            'c': add_ints(int(a), int(b), num_bits=self.bitsize + 1, is_signed=False),
+            'c': add_ints(int(a), int(b), num_bits=self.out_bitsize, is_signed=False),
         }
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -328,12 +321,19 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
                 cirq.CX(a[i], c[i + 1]),
                 cirq.CX(b[i], c[i]),
             ]
-            for i in range(self.bitsize)
+            for i in range(self.out_bitsize - 1)
         ]
+        if not self.include_most_significant_bit:
+            # Update c[-1] as c[-1] ^= a[-1]^b[-1]
+            i = self.bitsize - 1
+            optree.append([cirq.CX(a[i], c[i]), cirq.CX(b[i], c[i])])
         return cirq.inverse(optree) if self.is_adjoint else optree
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {And(uncompute=self.is_adjoint): self.bitsize, CNOT(): 5 * self.bitsize}
+        return {
+            And(uncompute=self.is_adjoint): self.out_bitsize - 1,
+            CNOT(): 5 * (self.bitsize - 1) + 2 + (3 if self.include_most_significant_bit else 0),
+        }
 
     def __pow__(self, power: int):
         if power == 1:
@@ -389,180 +389,119 @@ class AddK(Bloq):
     only clifford operations.
 
     Args:
-        bitsize: Number of bits used to represent each integer.
+        dtype: data type of the input register `x`
         k: The classical integer value to be added to x.
-        cvs: A tuple of control values. Each entry specifies whether that control line is a
-            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
-        signed: A boolean condition which controls whether the x register holds a value represented
-            in 2's Complement or Unsigned. This affects the ability to add a negative constant.
+        is_controlled: if True, construct a singly-controlled bloq.
 
     Registers:
-        x: A bitsize-sized input register (register x above).
+        x: register of type `self.dtype`
 
     References:
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
-        Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
+        Haner et al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
 
-    bitsize: 'SymbolicInt'
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
     k: 'SymbolicInt'
-    cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
-    signed: bool = False
+    is_controlled: bool = False
+
+    def __attrs_post_init__(self):
+        if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
+            raise NotImplementedError(
+                "Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition."
+            )
 
     @cached_property
     def signature(self) -> 'Signature':
-        if len(self.cvs) > 0:
-            return Signature(
-                [
-                    Register('ctrls', QBit(), shape=(len(self.cvs),)),
-                    Register('x', QInt(self.bitsize) if self.signed else QUInt(self.bitsize)),
-                ]
-            )
-        else:
-            return Signature(
-                [Register('x', QInt(bitsize=self.bitsize) if self.signed else QUInt(self.bitsize))]
-            )
+        return Signature.build_from_dtypes(ctrl=QAny(1 if self.is_controlled else 0), x=self.dtype)
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+        if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
-        N = 2**self.bitsize
-        if len(self.cvs) > 0:
-            ctrls = vals['ctrls']
-        else:
-            return {
-                'x': add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
-            }
 
-        if np.all(self.cvs == ctrls):
-            x = add_ints(int(x), int(self.k), num_bits=self.bitsize, is_signed=self.signed)
+        if not self.is_controlled or vals['ctrl']:
+            is_signed = isinstance(self.dtype, QInt)
+            x = add_ints(int(x), int(self.k), num_bits=self.dtype.num_qubits, is_signed=is_signed)
 
-        return {'ctrls': ctrls, 'x': x}
+        return vals | {'x': x}
+
+    @cached_property
+    def _load_k_bloq(self) -> Bloq:
+        from qualtran.bloqs.arithmetic.bitwise import XorK
+
+        k = self.k
+        if not is_symbolic(k) and k < 0 and isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
+            # Since this is unsigned addition, adding `-v` is equivalent to adding `2**bitsize - v`
+            k %= 2**self.dtype.bitsize
+
+        xork = XorK(self.dtype, k)
+        return xork.controlled() if self.is_controlled else xork
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, **regs: SoquetT
+        self, bb: 'BloqBuilder', x: Soquet, **soqs: Soquet
     ) -> Dict[str, 'SoquetT']:
-        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+        if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
 
-        # Assign registers to variables and allocate ancilla bits for classical integer k.
-        if len(self.cvs) > 0:
-            ctrls = regs['ctrls']
-        else:
-            ctrls = None
-        k = bb.allocate(dtype=x.reg.dtype)
+        # load `k` (conditional on ctrl if present)
+        k = bb.allocate(dtype=self.dtype)
+        load_soqs = {'x': k}
+        if self.is_controlled:
+            load_soqs |= {'ctrl': soqs.pop('ctrl')}
+        load_soqs = bb.add_d(self._load_k_bloq, **load_soqs)
+        k = load_soqs.pop('x')
 
-        # Get binary representation of k and split k into separate wires.
-        k_split = bb.split(k)
-        if self.signed:
-            binary_rep = QInt(self.bitsize).to_bits(self.k)
-        else:
-            val = self.k
-            if val < 0:
-                # Since this is unsigned addition adding -v is equivalent to
-                # adding 2^bitsize - v
-                val %= 2**self.bitsize
-            binary_rep = QUInt(self.bitsize).to_bits(val)
+        # quantum-quantum addition
+        k, x = bb.add(Add(self.dtype, self.dtype), a=k, b=x)
 
-        # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
-        # controlled.
-        for i in range(self.bitsize):
-            if binary_rep[i] == 1:
-                if len(self.cvs) > 0 and ctrls is not None:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
-                    )
-                else:
-                    k_split[i] = bb.add(XGate(), q=k_split[i])
-
-        # Rejoin the qubits representing k for in-place addition.
-        k = bb.join(k_split, dtype=x.reg.dtype)
-        if not isinstance(x.reg.dtype, (QInt, QUInt, QMontgomeryUInt)):
-            raise ValueError(
-                "Only QInt, QUInt and QMontgomerUInt types are supported for composite addition."
-            )
-        k, x = bb.add(Add(x.reg.dtype, x.reg.dtype), a=k, b=x)
-
-        # Resplit the k qubits in order to undo the original bit flips to go from the binary
-        # representation back to the zero state.
-        k_split = bb.split(k)
-        for i in range(self.bitsize):
-            if binary_rep[i] == 1:
-                if len(self.cvs) > 0 and ctrls is not None:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), controls=ctrls, target=k_split[i]
-                    )
-                else:
-                    k_split[i] = bb.add(XGate(), q=k_split[i])
-
-        # Free the ancilla qubits.
-        k = bb.join(k_split, dtype=x.reg.dtype)
+        # unload `k`
+        load_soqs['x'] = k
+        load_soqs = bb.add_d(self._load_k_bloq.adjoint(), **load_soqs)
+        k = load_soqs.pop('x')
+        assert isinstance(k, Soquet)
         bb.free(k)
 
-        # Return the output registers.
-        if len(self.cvs) > 0 and ctrls is not None:
-            return {'ctrls': ctrls, 'x': x}
-        else:
-            return {'x': x}
+        return {'x': x} | load_soqs
 
-    def build_call_graph(
-        self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        loading_cost: MutableBloqCountDictT
-        if len(self.cvs) == 0:
-            loading_cost = {XGate(): self.bitsize}  # upper bound; depends on the data.
-        elif len(self.cvs) == 1:
-            loading_cost = {CNOT(): self.bitsize}  # upper bound; depends on the data.
-        else:
-            # Otherwise, use the decomposition
-            return super().build_call_graph(ssa=ssa)
-        loading_cost[Add(QUInt(self.bitsize))] = 1
-        return loading_cost
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        counts = Counter[Bloq]()
+
+        counts[self._load_k_bloq] += 1
+        counts[Add(self.dtype, self.dtype)] += 1
+        counts[self._load_k_bloq.adjoint()] += 1
+
+        return counts
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        if self.cvs:
-            # We're already controlled, use default fallback
-            return super().get_ctrl_system(ctrl_spec)
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        if ctrl_spec.num_ctrl_reg != 1:
-            # Multiple control registers, use default fallback
-            return super().get_ctrl_system(ctrl_spec)
-
-        ((qdtype, cv_shape),) = ctrl_spec.activation_function_dtypes()
-        if qdtype != QBit():
-            # Control values aren't bits, use default fallback
-            return super().get_ctrl_system(ctrl_spec)
-
-        # Supported via this class's custom `cvs` attribute.
-        bloq = attrs.evolve(self, cvs=ctrl_spec.cvs)
-
-        def _add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            ctrls, x = bb.add_t(bloq, ctrls=np.asarray(ctrl_soqs), **in_soqs)
-            return np.asarray(ctrls).tolist(), (x,)
-
-        return bloq, _add_ctrled
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec,
+            current_ctrl_bit=1 if self.is_controlled else None,
+            bloq_with_ctrl=attrs.evolve(self, is_controlled=True),
+            ctrl_reg_name='ctrl',
+        )
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _add_k() -> AddK:
     n, k = sympy.symbols('n k')
-    add_k = AddK(bitsize=n, k=k)
+    add_k = AddK(QUInt(n), k=k)
     return add_k
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _add_k_small() -> AddK:
-    add_k_small = AddK(bitsize=4, k=2, signed=False)
+    add_k_small = AddK(QUInt(4), k=2)
     return add_k_small
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _add_k_large() -> AddK:
-    add_k_large = AddK(bitsize=64, k=-23, signed=True)
+    add_k_large = AddK(QInt(64), k=-23)
     return add_k_large
 
 

@@ -12,19 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import random
-import re
 from typing import List
 
 import networkx as nx
 
 from qualtran.bloqs.for_testing import TestBloqWithCallGraph
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
-from qualtran.drawing import (
-    format_counts_graph_markdown,
-    format_counts_sigma,
-    GraphvizCallGraph,
-    GraphvizCounts,
-)
+from qualtran.drawing import format_counts_graph_markdown, format_counts_sigma, GraphvizCallGraph
 from qualtran.drawing.bloq_counts_graph import _CallGraphDrawerBase
 from qualtran.resource_counting import get_bloq_call_graph
 
@@ -53,34 +47,6 @@ def test_format_counts_graph_markdown():
    - `ArbitraryClifford(n=2)`: $\\displaystyle 9$
    - `T`: $\\displaystyle 4$
 """
-    )
-
-
-def test_graphviz_counts():
-    graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
-    gvc = GraphvizCounts(graph)
-
-    # The main test is in the drawing notebook, so please spot check that.
-    # Here: we make sure the edge labels are 5, 9 or 4 (see above)
-    dot_lines = gvc.get_graph().to_string().splitlines()
-    edge_lines = [line for line in dot_lines if '->' in line]
-    for line in edge_lines:
-        ma = re.search(r'label=(\w+)', line)
-        assert ma is not None, line
-        i = int(ma.group(1))
-        assert i in [5, 9, 4]
-
-
-def test_abbreviate_details():
-    namevals = [('x', 5), ('y', 100), ('s', 'a' * 100), ('x1', 1.2), ('x2', 1.3), ('x3', 1.4)]
-
-    assert (
-        GraphvizCounts.abbreviate_field_list(namevals)
-        == "x=5, y=100, s='aaaaaaa ..., x1=1.2, [2 addtl fields]."
-    )
-    assert (
-        GraphvizCounts.abbreviate_field_list(namevals[:5])
-        == "x=5, y=100, s='aaaaaaa ..., x1=1.2, x2=1.3"
     )
 
 

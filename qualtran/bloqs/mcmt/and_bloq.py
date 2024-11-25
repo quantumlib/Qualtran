@@ -48,7 +48,6 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import (
     big_O,
@@ -87,7 +86,7 @@ class And(GateWithRegisters):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. 2018. Section III.A. and Fig. 4.
+            Babbush et al. 2018. Section III.A. and Fig. 4.
 
         [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
@@ -125,19 +124,6 @@ class And(GateWithRegisters):
             return {ArbitraryClifford(n=2): 4 + 2 * pre_post_cliffords}
 
         return {ArbitraryClifford(n=2): 9 + 2 * pre_post_cliffords, TGate(): 4}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        if not FLAG_AND_AS_LEAF:
-            return NotImplemented
-
-        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords: Union[sympy.Order, int] = 0
-        else:
-            pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.uncompute:
-            return TComplexity(clifford=4 + 2 * pre_post_cliffords)
-
-        return TComplexity(t=4, clifford=9 + 2 * pre_post_cliffords)
 
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
