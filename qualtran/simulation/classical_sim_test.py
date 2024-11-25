@@ -12,59 +12,39 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
 from typing import Dict
 
-import cirq
 import numpy as np
 import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    BQUInt,
+    QAny,
+    QBit,
+    QDType,
+    QFxp,
+    QGF,
+    QInt,
+    QIntOnesComp,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+)
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
-    bits_to_ints,
+    add_ints,
     call_cbloq_classically,
     ClassicalValT,
-    ints_to_bits,
 )
 from qualtran.testing import execute_notebook
-
-
-def test_bits_to_int():
-    rs = np.random.RandomState(52)
-    bitstrings = rs.choice([0, 1], size=(100, 23))
-
-    nums = bits_to_ints(bitstrings)
-    assert nums.shape == (100,)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
-        assert num == ref_num
-
-    # check one input bitstring instead of array of input bitstrings.
-    (num,) = bits_to_ints([1, 0])
-    assert num == 2
-
-
-def test_int_to_bits():
-    rs = np.random.RandomState(52)
-    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
-    bitstrings = ints_to_bits(nums, w=23)
-    assert bitstrings.shape == (100, 23)
-
-    for num, bs in zip(nums, bitstrings):
-        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
-        np.testing.assert_array_equal(ref_bs, bs)
-
-    # check one input int
-    (bitstring,) = ints_to_bits(2, w=8)
-    assert bitstring.tolist() == [0, 0, 0, 0, 0, 0, 1, 0]
-
-    # check bounds
-    with pytest.raises(AssertionError):
-        ints_to_bits([4, -2], w=8)
 
 
 def test_dtype_validation():
@@ -164,6 +144,68 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(z, xarr)
 
 
+@pytest.mark.parametrize('n_bits', range(1, 5))
+def test_add_ints_unsigned(n_bits):
+    for x, y in itertools.product(range(1 << n_bits), repeat=2):
+        assert add_ints(x, y, num_bits=n_bits, is_signed=False) == (x + y) % (1 << n_bits)
+
+
+@pytest.mark.parametrize('n_bits', range(2, 5))
+def test_add_ints_signed(n_bits: int):
+    half_n = 1 << (n_bits - 1)
+    # Addition of signed ints `x` and `y` is a cyclic rotation of the interval [-2^(n-1), 2^(n-1)) by `y`.
+    interval = [*range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1))]
+    for x, y in itertools.product(range(-(2 ** (n_bits - 1)), 2 ** (n_bits - 1)), repeat=2):
+        i = x + half_n  # position of `x` in the interval
+        z = interval[(i + y) % len(interval)]  # rotate by `y`
+        assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
+
+
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('classical_sim')
+
+
+@frozen
+class TestMultiDimensionalReg(Bloq):
+    dtype: QDType
+    n: int
+    dtypes_to_assert: tuple[type, ...] = (int, np.integer)
+
+    @property
+    def signature(self):
+        return Signature(
+            [
+                Register('x', self.dtype, shape=(self.n,), side=Side.LEFT),
+                Register('y', self.dtype, shape=(self.n,), side=Side.RIGHT),
+            ]
+        )
+
+    def on_classical_vals(self, x):
+        assert all(isinstance(y, self.dtypes_to_assert) for y in x.reshape(-1))
+        return {'y': x}
+
+
+@pytest.mark.parametrize(
+    'dtype', [QBit(), QInt(5), QUInt(5), QIntOnesComp(5), BQUInt(5, 20), QFxp(5, 3, signed=True)]
+)
+def test_multidimensional_classical_sim_for_dtypes(dtype: QDType):
+    x = [*dtype.get_classical_domain()]
+    bloq = TestMultiDimensionalReg(dtype, len(x))
+    np.testing.assert_equal(bloq.call_classically(x=np.array(x))[0], x)
+
+
+def test_multidimensional_classical_sim_for_large_int():
+    dtype = QInt(100)
+    x = [2**88 - 1, 2**12 - 1, 2**54 - 1, 1 - 2**72, 1 - 2**62]
+    bloq = TestMultiDimensionalReg(dtype, len(x))
+    np.testing.assert_equal(bloq.call_classically(x=np.array(x))[0], x)
+
+
+def test_multidimensional_classical_sim_for_gqf():
+    dtype = QGF(2, 2)
+    x = dtype.gf_type.elements
+    bloq = TestMultiDimensionalReg(dtype, len(x), (dtype.gf_type,))
+    y = bloq.call_classically(x=x)[0]
+    assert isinstance(y, dtype.gf_type)
+    np.testing.assert_equal(y, x)

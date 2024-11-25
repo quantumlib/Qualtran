@@ -21,10 +21,9 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import QAny, QBit, Register
+from qualtran import QAny, QBit, QFxp, Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
-from qualtran.bloqs.select_and_prepare import SelectOracle
-from qualtran.cirq_interop import bit_tools
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.cirq_interop import testing as cq_testing
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -50,6 +49,7 @@ class ExampleSelect(SelectOracle):
         yield [cirq.CNOT(s, t) for s, t in zip(selection, target)]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('bitsize', [2, 3, 4, 5])
 @pytest.mark.parametrize('arctan_bitsize', [5, 6, 7])
 def test_phase_oracle(bitsize: int, arctan_bitsize: int):
@@ -70,7 +70,11 @@ def test_phase_oracle(bitsize: int, arctan_bitsize: int):
     prepared_state = state_vector.sum(axis=1)
     for x in range(2**bitsize):
         output_val = -2 * np.arctan(x, dtype=np.double) / np.pi
-        output_bits = [*bit_tools.iter_bits_fixed_point(np.abs(output_val), arctan_bitsize)]
+        output_bits = QFxp(arctan_bitsize, arctan_bitsize).to_bits(
+            QFxp(arctan_bitsize, arctan_bitsize).to_fixed_width_int(
+                np.abs(output_val), require_exact=False
+            )
+        )
         approx_val = np.sign(output_val) * math.fsum(
             [b * (1 / 2 ** (1 + i)) for i, b in enumerate(output_bits)]
         )

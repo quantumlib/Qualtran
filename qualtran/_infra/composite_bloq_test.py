@@ -16,10 +16,10 @@ from functools import cached_property
 from typing import Dict, List, Tuple
 
 import attrs
-import cirq
 import networkx as nx
 import numpy as np
 import pytest
+import sympy
 from numpy.typing import NDArray
 
 import qualtran.testing as qlt_testing
@@ -30,6 +30,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -39,12 +40,13 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
-from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
+from qualtran._infra.data_types import BQUInt, QAny, QBit, QFxp, QUInt
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
+from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.util_bloqs import Join
+from qualtran.symbolics import SymbolicInt
 
 
 def _manually_make_test_cbloq_cxns():
@@ -98,15 +100,15 @@ def test_composite_bloq():
     assert (
         cbloq.debug_text()
         == """\
-TestTwoBitOp()<1>
+TestTwoBitOp<1>
   LeftDangle.q1 -> ctrl
   LeftDangle.q2 -> target
-  ctrl -> TestTwoBitOp()<2>.target
-  target -> TestTwoBitOp()<2>.ctrl
+  ctrl -> TestTwoBitOp<2>.target
+  target -> TestTwoBitOp<2>.ctrl
 --------------------
-TestTwoBitOp()<2>
-  TestTwoBitOp()<1>.ctrl -> target
-  TestTwoBitOp()<1>.target -> ctrl
+TestTwoBitOp<2>
+  TestTwoBitOp<1>.ctrl -> target
+  TestTwoBitOp<1>.target -> ctrl
   ctrl -> RightDangle.q1
   target -> RightDangle.q2"""
     )
@@ -161,7 +163,8 @@ def test_map_soqs():
     assert isinstance(cbloq, CompositeBloq)
 
 
-def test_bb_composite_bloq():
+def test_to_from_cirq_circuit():
+    cirq = pytest.importorskip('cirq')
     cbloq_auto = TestTwoCNOT().decompose_bloq()
     circuit, _ = cbloq_auto.to_cirq_circuit_and_quregs(
         q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]
@@ -234,9 +237,7 @@ def test_double_use_2():
 
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(
-        BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp\(\)\.ctrl`\.'
-    ):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp\.ctrl`\.'):
         x3, y3 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
 
@@ -347,6 +348,7 @@ class TestMultiCNOT(Bloq):
 
 
 def test_complicated_target_register():
+    cirq = pytest.importorskip('cirq')
     bloq = TestMultiCNOT()
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert len(cbloq.bloq_instances) == 2 * 3
@@ -419,7 +421,6 @@ def test_test_parallel_combo_decomp():
 
 @pytest.mark.parametrize('cls', [TestSerialCombo, TestParallelCombo])
 def test_copy(cls):
-    assert cls().supports_decompose_bloq()
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
@@ -440,30 +441,30 @@ def test_add_from(call_decompose):
     assert (
         bloq.debug_text()
         == """\
-TestParallelCombo()<0>
+TestParallelCombo<0>
   LeftDangle.stuff -> reg
-  reg -> Split(dtype=QAny(bitsize=3))<1>.reg
+  reg -> Split<1>.reg
 --------------------
-Split(dtype=QAny(bitsize=3))<1>
-  TestParallelCombo()<0>.reg -> reg
-  reg[0] -> TestAtom()<2>.q
-  reg[1] -> TestAtom()<3>.q
-  reg[2] -> TestAtom()<4>.q
+Split<1>
+  TestParallelCombo<0>.reg -> reg
+  reg[0] -> TestAtom<2>.q
+  reg[1] -> TestAtom<3>.q
+  reg[2] -> TestAtom<4>.q
 --------------------
-TestAtom()<2>
-  Split(dtype=QAny(bitsize=3))<1>.reg[0] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[0]
-TestAtom()<3>
-  Split(dtype=QAny(bitsize=3))<1>.reg[1] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[1]
-TestAtom()<4>
-  Split(dtype=QAny(bitsize=3))<1>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<5>.reg[2]
+TestAtom<2>
+  Split<1>.reg[0] -> q
+  q -> Join<5>.reg[0]
+TestAtom<3>
+  Split<1>.reg[1] -> q
+  q -> Join<5>.reg[1]
+TestAtom<4>
+  Split<1>.reg[2] -> q
+  q -> Join<5>.reg[2]
 --------------------
-Join(dtype=QAny(bitsize=3))<5>
-  TestAtom()<2>.q -> reg[0]
-  TestAtom()<3>.q -> reg[1]
-  TestAtom()<4>.q -> reg[2]
+Join<5>
+  TestAtom<2>.q -> reg[0]
+  TestAtom<3>.q -> reg[1]
+  TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
     )
 
@@ -505,17 +506,16 @@ def test_flatten():
     cbloq2 = cbloq.flatten_once(lambda binst: True)
     assert len(cbloq2.bloq_instances) == 5 * 2
 
-    with pytest.raises(NotImplementedError):
-        # Will keep trying to flatten non-decomposable things
-        cbloq.flatten(lambda x: True)
-
-    cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    cbloq3 = cbloq.flatten(lambda binst: True)
     assert len(cbloq3.bloq_instances) == 5 * 2
+
+    cbloq5 = cbloq.flatten()
+    assert len(cbloq5.bloq_instances) == 5 * 2
 
 
 def test_type_error():
     bb = BloqBuilder()
-    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    a = bb.add_register_from_dtype('i', BQUInt(4, 3))
     b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))
@@ -527,7 +527,7 @@ def test_type_error():
     with pytest.raises(BloqError, match=r'.*register dtypes are not consistent.*'):
         b, a = bb.add(TestQFxp(), xx=b, yy=a)
     bb = BloqBuilder()
-    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    a = bb.add_register_from_dtype('i', BQUInt(4, 3))
     b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
     c = bb.add_register_from_dtype('k', QFxp(8, 8))
     d = bb.add_register_from_dtype('l', QUInt(8))
@@ -554,6 +554,63 @@ def test_t_complexity():
 
     assert TestSerialCombo().t_complexity().t == 3 * 100
     assert TestParallelCombo().t_complexity().t == 3 * 100
+
+
+def test_add_and_partition():
+    from qualtran import Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates import Swap
+    from qualtran.bloqs.bookkeeping.auto_partition import Unused
+
+    bb = BloqBuilder()
+    bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
+    a = bb.add_register_from_dtype('a', QAny(7))
+    b = bb.add_register_from_dtype('b', QAny(3))
+    assert a is not None
+    assert b is not None
+    a, b = bb.add_and_partition(
+        bloq, [(Register('a', QAny(7)), ['y', 'ctrl']), (Register('b', QAny(3)), ['x'])], a=a, b=b
+    )
+    cbloq = bb.finalize(a=a, b=b)
+    assert isinstance(cbloq, CompositeBloq)
+    assert len(cbloq.bloq_instances) == 1
+
+    bb = BloqBuilder()
+    a = bb.add_register_from_dtype('a', QAny(8))
+    b = bb.add_register_from_dtype('b', QAny(3))
+    c = bb.add_register_from_dtype('c', QAny(4))
+    assert a is not None
+    assert b is not None
+    assert c is not None
+    a, b, c = bb.add_and_partition(
+        bloq,
+        [
+            (Register('a', QAny(8)), ['y', 'ctrl', Unused(1)]),
+            (Register('b', QAny(3)), ['x']),
+            (Register('c', QAny(4)), [Unused(4)]),
+        ],
+        a=a,
+        b=b,
+        c=c,
+    )
+    cbloq = bb.finalize(a=a, b=b, c=c)
+    assert isinstance(cbloq, CompositeBloq)
+    assert len(cbloq.bloq_instances) == 1
+
+
+@attrs.frozen
+class TestSymbolicRegisterShape(Bloq):
+    n: 'SymbolicInt'
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('q', QBit(), shape=(self.n,))])
+
+
+def test_decompose_symbolic_register_shape_raises():
+    n = sympy.Symbol("n")
+    bloq = TestSymbolicRegisterShape(n)
+    with pytest.raises(DecomposeTypeError):
+        bloq.decompose_bloq()
 
 
 @pytest.mark.notebook

@@ -13,17 +13,17 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterator, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Optional, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
@@ -33,7 +33,7 @@ from qualtran.resource_counting.generalizers import (
 from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -57,7 +57,7 @@ class CSwapApprox(GateWithRegisters):
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
-        Low et. al. 2018. See Appendix B.2.c.
+        Low et al. 2018. See Appendix B.2.c.
     """
 
     bitsize: SymbolicInt
@@ -94,16 +94,10 @@ class CSwapApprox(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def pretty_name(self) -> str:
-        return '~swap'
-
-    def _t_complexity_(self) -> TComplexity:
-        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
-        n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
-        # 4 * n: CNOTs
-        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return TComplexity(t=4 * n, clifford=22 * n - 1)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('~swap')
+        return super().wire_symbol(reg, idx)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:
@@ -114,16 +108,12 @@ class CSwapApprox(GateWithRegisters):
             ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
         )
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return {
-            (TGate(), 4 * n),
-            (ArbitraryClifford(n=1), 16 * n),
-            (ArbitraryClifford(n=2), 6 * n - 1),
-        }
+        return {TGate(): 4 * n, ArbitraryClifford(n=1): 16 * n, ArbitraryClifford(n=2): 6 * n - 1}
 
 
 @bloq_example
@@ -154,7 +144,5 @@ def _approx_cswap_large() -> CSwapApprox:
 
 
 _APPROX_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=CSwapApprox,
-    import_line='from qualtran.bloqs.swap_network import CSwapApprox',
-    examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large),
+    bloq_cls=CSwapApprox, examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large)
 )

@@ -14,12 +14,12 @@
 """Bloq for building a Trotterized unitary"""
 
 from functools import cached_property
-from typing import Dict, Sequence, Union
+from typing import Dict, Sequence
 
 import attrs
-import sympy
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
+from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
@@ -74,17 +74,17 @@ class TrotterizedUnitary(Bloq):
         system: The system register to which to apply the unitary.
 
     References:
-        [Theory of Trotter Error with Commutator Scaling](
-            https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011020) Eq. 12 page 7.
+        [Theory of Trotter Error with Commutator Scaling](https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011020)
+        Eq. 12 page 7.
 
-        [Trotter error with commutator scaling for the Fermi-Hubbard model](
-            https://arxiv.org/abs/2306.10603) see github repo for software to produce splittings.
+        [Trotter error with commutator scaling for the Fermi-Hubbard model](https://arxiv.org/abs/2306.10603).
+        See github repo for software to produce splittings.
     """
 
     bloqs: Sequence[Bloq]
     indices: Sequence[int]
-    coeffs: Sequence[Union[float, sympy.Expr]]
-    timestep: Union[float, sympy.Expr]
+    coeffs: Sequence[SymbolicFloat]
+    timestep: SymbolicFloat
 
     def __attrs_post_init__(self):
         ref_sig = self.bloqs[0].signature

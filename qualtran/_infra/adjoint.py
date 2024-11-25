@@ -12,22 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
-import cirq
 from attrs import frozen
-from numpy.typing import NDArray
 
-from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
+from .composite_bloq import _binst_to_cxns, _cxns_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, CompositeBloq, Register, Signature, Soquet, SoquetT
+    import cirq
+
+    from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, 'SoquetT']:
@@ -35,7 +36,7 @@ def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dic
     if LeftDangle not in cbloq._binst_graph:
         return {}
     _, init_succs = _binst_to_cxns(LeftDangle, binst_graph=cbloq._binst_graph)
-    return _cxn_to_soq_dict(
+    return _cxns_to_soq_dict(
         new_signature.rights(), init_succs, get_me=lambda x: x.left, get_assign=lambda x: x.right
     )
 
@@ -68,7 +69,7 @@ def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
     for binst, preds, succs in bloqnections:
         # Instead of get_me returning the right element of a predecessor connection,
         # it's the left element of a successor connection.
-        soqs = _cxn_to_soq_dict(
+        soqs = _cxns_to_soq_dict(
             binst.bloq.signature.rights(),
             succs,
             get_me=lambda x: x.left,
@@ -142,41 +143,36 @@ class Adjoint(GateWithRegisters):
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
-        if isinstance(self.subbloq, GateWithRegisters):
-            return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
-        return super().decompose_from_registers(context=context, **quregs)
-
     def _circuit_diagram_info_(
         self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> cirq.CircuitDiagramInfo:
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
         sub_info = cirq.circuit_diagram_info(self.subbloq, args, default=NotImplemented)
         if sub_info is NotImplemented:
             return NotImplemented
         sub_info.exponent *= -1
         return sub_info
 
-    def supports_decompose_bloq(self) -> bool:
-        """Delegate to `subbloq.supports_decompose_bloq()`"""
-        return self.subbloq.supports_decompose_bloq()
-
     def adjoint(self) -> 'Bloq':
         """The 'double adjoint' brings you back to the original bloq."""
         return self.subbloq
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
-        return {(bloq.adjoint(), n) for bloq, n in self.subbloq.build_call_graph(ssa=ssa)}
-
-    def pretty_name(self) -> str:
-        """The subbloq's pretty_name with a dagger."""
-        return self.subbloq.pretty_name() + '†'
+        sub_cg = self.subbloq.build_call_graph(ssa=ssa)
+        counts = Counter['Bloq']()
+        if isinstance(sub_cg, set):
+            for bloq, n in sub_cg:
+                counts[bloq.adjoint()] += n
+        else:
+            for bloq, n in sub_cg.items():
+                counts[bloq.adjoint()] += n
+        return counts
 
     def __str__(self) -> str:
         """Delegate to subbloq's `__str__` method."""
-        return f'Adjoint(subbloq={str(self.subbloq)})'
+        return f'{str(self.subbloq)}†'
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -184,27 +180,7 @@ class Adjoint(GateWithRegisters):
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.
-        from qualtran.drawing import Text
-
         if reg is None:
-            return Text(cast(Text, self.subbloq.wire_symbol(reg=None)).text + '†')
+            return self.subbloq.wire_symbol(reg=None).adjoint()
 
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
-
-    def _t_complexity_(self):
-        """The cirq-style `_t_complexity_` delegates to the subbloq's method with a special shim.
-
-        The cirq-style t complexity protocol does not leverage the heirarchical decomposition
-        of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
-        """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/735
-        if not hasattr(self.subbloq, '_t_complexity_'):
-            return NotImplemented
-
-        try:
-            return self.subbloq._t_complexity_(adjoint=True)  # type: ignore[call-arg]
-        except TypeError as e:
-            if 'adjoint' in str(e):
-                return self.subbloq._t_complexity_()
-            else:
-                raise e

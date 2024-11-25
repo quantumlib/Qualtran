@@ -16,20 +16,19 @@
 These are for temporary convenience to lock-in the quoted literature costs.
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import attrs
-import cirq
 import numpy as np
 from attrs import field, frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt import MultiControlZ
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def qroam_cost(x, data_size: int, bitsize: int, adjoint: bool = False):
@@ -105,25 +104,25 @@ class QROAM(Bloq):
     is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f"QROAM{dag}"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = get_qroam_cost_clean_ancilla(
             self.data_size,
             self.target_bitsize,
             adjoint=self.is_adjoint,
             qroam_block_size=self.qroam_block_size,
         )
-        return {(Toffoli(), cost)}
+        return {Toffoli(): cost}
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
+    def __str__(self) -> str:
+        dag = '†' if self.is_adjoint else ''
+        return f"QROAM{dag}"
 
 
 @frozen
@@ -153,25 +152,25 @@ class QROAMTwoRegs(Bloq):
     target_bitsize: int
     is_adjoint: bool = False
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f"QROAM{dag}"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(sel=(self.data_a_size - 1).bit_length(), trg=self.target_bitsize)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
         cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
         if self.is_adjoint:
             cost += self.data_a_block_size * self.data_b_block_size
         else:
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
-        return {(Toffoli(), cost)}
+        return {Toffoli(): cost}
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
+    def __str__(self) -> str:
+        dag = '†' if self.is_adjoint else ''
+        return f"QROAM{dag}"
 
 
 @frozen
@@ -215,12 +214,10 @@ class ApplyControlledZs(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: Soquet):
         split_sys = bb.split(system)
-        ctrls, split_sys[0] = bb.add(
-            MultiControlPauli(self.cvs, cirq.Z), controls=ctrls, target=split_sys[0]
-        )
+        ctrls, split_sys[0] = bb.add(MultiControlZ(self.cvs), controls=ctrls, target=split_sys[0])
         system = bb.join(split_sys)
         return {'ctrls': ctrls, 'system': system}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # remove this method once https://github.com/quantumlib/Qualtran/issues/528 is resolved.
-        return {(Toffoli(), len(self.cvs) - 1)}
+        return {Toffoli(): len(self.cvs) - 1}

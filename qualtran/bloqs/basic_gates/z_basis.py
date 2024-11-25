@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -22,31 +22,34 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    ConnectionT,
+    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
+    QDType,
     Register,
     Side,
     Signature,
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.simulation.classical_sim import ints_to_bits
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -82,24 +85,15 @@ class _ZVector(Bloq):
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
         side = outgoing if self.state else incoming
-        tn.add(
-            qtn.Tensor(
-                data=_ONE if self.bit else _ZERO,
-                inds=(side['q'],),
-                tags=['1' if self.bit else '0', tag],
-            )
-        )
+        return [
+            qtn.Tensor(data=_ONE if self.bit else _ZERO, inds=[(side['q'], 0)], tags=[str(self)])
+        ]
 
     def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
@@ -131,9 +125,17 @@ class _ZVector(Bloq):
             op = None
         return op, {'q': np.array([q])}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        s = '1' if self.bit else '0'
+        return directional_text_box(s, side=reg.side)
 
 
 def _hide_base_fields(cls, fields):
@@ -237,20 +239,35 @@ class ZGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def decompose_bloq(self) -> CompositeBloq:
+    def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        tn.add(qtn.Tensor(data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=["Z", tag]))
+        return [
+            qtn.Tensor(
+                data=_PAULIZ, inds=[(outgoing['q'], 0), (incoming['q'], 0)], tags=[str(self)]
+            )
+        ]
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            # Delegate to the general superclass behavior
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
+        bloq = CZ()
+
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl_soq,) = ctrl_soqs
+            ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
+            return (ctrl_soq,), (q2,)
+
+        return bloq, add_controlled
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -260,14 +277,84 @@ class ZGate(Bloq):
         (q,) = q
         return cirq.Z(q), {'q': np.asarray([q])}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+
+        return TextBox('Z')
 
 
 @bloq_example
 def _zgate() -> ZGate:
     zgate = ZGate()
     return zgate
+
+
+_Z_GATE_DOC = BloqDocSpec(bloq_cls=ZGate, examples=[_zgate], call_graph_example=None)
+
+
+@frozen
+class CZ(Bloq):
+    """Two-qubit controlled-Z gate.
+
+    Registers:
+        ctrl: One-bit control register.
+        target: One-bit target register.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(q1=1, q2=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        unitary = np.diag(np.array([1, 1, 1, -1], dtype=np.complex128)).reshape((2, 2, 2, 2))
+        inds = [(outgoing['q1'], 0), (outgoing['q2'], 0), (incoming['q1'], 0), (incoming['q2'], 0)]
+
+        return [qtn.Tensor(data=unitary, inds=inds, tags=[str(self)])]
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', q1: 'CirqQuregT', q2: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (q1,) = q1
+        (q2,) = q2
+        return cirq.CZ(q1, q2), {'q1': np.array([q1]), 'q2': np.array([q2])}
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'q1' or reg.name == 'q2':
+            return Circle()
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
+        )
+
+
+@bloq_example
+def _cz() -> CZ:
+    cz = CZ()
+    return cz
+
+
+_CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
 
 
 @frozen
@@ -299,11 +386,15 @@ class _IntVector(Bloq):
             raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
 
     @cached_property
+    def dtype(self) -> QDType:
+        if self.bitsize == 1:
+            return QBit()
+        return QAny(self.bitsize)
+
+    @cached_property
     def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
-        if self.bitsize == 1:
-            return Signature([Register('val', QBit(), side=side)])
-        return Signature([Register('val', QAny(self.bitsize), side=side)])
+        return Signature([Register('val', self.dtype, side=side)])
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
@@ -328,37 +419,13 @@ class _IntVector(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+            raise DecomposeTypeError(f'Symbolic bitsize {self.bitsize} not supported')
+        bits = np.asarray(self.dtype.to_bits(self.val))
         if self.state:
             assert not val
             return self._build_composite_state(bb, bits)
         else:
             return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
-        data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
-        bitstring = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
-        data[tuple(bitstring)] = 1
-        data = data.reshape(-1)
-
-        if self.state:
-            inds = (outgoing['val'],)
-        else:
-            inds = (incoming['val'],)
-
-        tn.add(qtn.Tensor(data=data, inds=inds, tags=[f'{self.val}', tag]))
 
     def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
@@ -368,21 +435,16 @@ class _IntVector(Bloq):
         assert val == self.val, val
         return {}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity()
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {ArbitraryClifford(self.bitsize): 1}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ArbitraryClifford(self.bitsize), 1)}
-
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box, Text
-
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('')
 
         return directional_text_box(text=f'{self.val}', side=reg.side)
 
@@ -399,7 +461,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
+    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 
@@ -424,7 +486,7 @@ class IntEffect(_IntVector):
         val: The register of size `bitsize` which de-allocates the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: int):
+    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
 
 

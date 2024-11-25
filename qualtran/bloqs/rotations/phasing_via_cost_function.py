@@ -68,6 +68,7 @@ class PhasingViaCostFunction(Bloq):
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
         Appendix C: Oracles for phasing by cost function
     """
+
     cost_eval_oracle: Bloq
     phase_oracle: QvrInterface
 
@@ -124,7 +125,5 @@ def _square_via_phase_gradient() -> PhasingViaCostFunction:
 
 
 _PHASING_VIA_COST_FUNCTION = BloqDocSpec(
-    bloq_cls=PhasingViaCostFunction,
-    import_line='from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction',
-    examples=(_square_via_phase_gradient, _square_via_zpow_phasing),
+    bloq_cls=PhasingViaCostFunction, examples=(_square_via_phase_gradient, _square_via_zpow_phasing)
 )

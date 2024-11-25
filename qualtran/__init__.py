@@ -11,10 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# isort:skip_file
 
-"""qualtran
+"""The top-level Qualtran module.
 
-isort:skip_file
+Many fundamental objects for expressing quantum programs can be imported from this
+top-level namespace like `qualtran.Bloq`, `qualtran.Register`, and the various quantum
+data types (`qualtran.QBit`, `qualtran.QUInt`, ...).
+
+The standard library of quantum algorithms must be imported from the `qualtran.bloqs` submodule.
+A variety of analysis protocols are available in submodules as well like
+`qualtran.resource_counting`, `qualtran.drawing`, `qualtran.simulation`, and others.
 """
 
 # --------------------------------------------------------------------------------------------------
@@ -40,6 +47,7 @@ from ._infra.composite_bloq import (
     BloqBuilder,
     DidNotFlattenAnythingError,
     SoquetT,
+    ConnectionT,
 )
 
 from ._infra.data_types import (
@@ -50,8 +58,9 @@ from ._infra.data_types import (
     QFxp,
     QIntOnesComp,
     QUInt,
-    BoundedQUInt,
+    BQUInt,
     QMontgomeryUInt,
+    QGF,
 )
 
 # Internal imports: none

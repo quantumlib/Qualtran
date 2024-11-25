@@ -12,19 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import abc
+from collections import defaultdict
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -37,37 +28,49 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QAny,
     QBit,
+    QDType,
+    QInt,
+    QMontgomeryUInt,
     QUInt,
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
-from qualtran._infra.quantum_graph import Soquet
-from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
+from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor
+from qualtran.bloqs.arithmetic.conversions.sign_extension import SignExtend
+from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.bookkeeping import Cast
+from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
-from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import Text, TextBox
+from qualtran.drawing.musical_score import Circle, Text, TextBox
+from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.simulation.classical_sim import add_ints
+from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import (
+        BloqCountDictT,
+        MutableBloqCountDictT,
+        SympySymbolAllocator,
+    )
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
 class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
-    bitsize: int
-    less_than_val: int
+    bitsize: SymbolicInt
+    less_than_val: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -81,11 +84,11 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if reg.name == 'x':
             return TextBox("x")
         if reg.name == 'target':
-            return TextBox("z^(x<a)")
+            return TextBox("z∧(x<a)")
         raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return [2] * self.bitsize, self.less_than_val, [2]
+        return [2] * int(self.bitsize), int(self.less_than_val), [2]
 
     def with_registers(self, *new_registers) -> "LessThanConstant":
         return LessThanConstant(len(new_registers[0]), new_registers[1])
@@ -98,7 +101,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.bitsize
+        wire_symbols = ["In(x)"] * int(self.bitsize)
         wire_symbols += [f'⨁(x < {self.less_than_val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -110,7 +113,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
-        """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
+        """Decomposes the gate into N And & And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
         qubit while maintaining whether the qubit sequence is equal to the current prefix of the
@@ -140,8 +143,10 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
-        ancilla = context.qubit_manager.qalloc(self.bitsize)
-        for b, q, a in zip(iter_bits(self.less_than_val, self.bitsize), qubits, ancilla):
+        ancilla = context.qubit_manager.qalloc(int(self.bitsize))
+        for b, q, a in zip(
+            QUInt(int(self.bitsize)).to_bits(int(self.less_than_val)), qubits, ancilla
+        ):
             if b:
                 yield cirq.X(q)
                 adjoint.append(cirq.X(q))
@@ -167,17 +172,30 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
                 # b_i=0, q_i=1 => current prefixes are not equal so we need to flip `are_equal`.
                 yield cirq.CNOT(a, are_equal)
                 adjoint.append(cirq.CNOT(a, are_equal))
-
         yield from reversed(adjoint)
+        context.qubit_manager.qfree(ancilla)
+        context.qubit_manager.qfree([are_equal])
 
     def _has_unitary_(self):
         return True
 
-    def _t_complexity_(self) -> TComplexity:
-        n = self.bitsize
-        if self.less_than_val >= 2**n:
-            return TComplexity(clifford=1)
-        return TComplexity(t=4 * n, clifford=15 * n + 3 * bin(self.less_than_val).count("1") + 2)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        if (
+            not is_symbolic(self.less_than_val, self.bitsize)
+            and self.less_than_val >= 2**self.bitsize
+        ):
+            return {XGate(): 1}
+        num_set_bits = (
+            int(self.less_than_val).bit_count()
+            if not is_symbolic(self.less_than_val)
+            else self.bitsize
+        )
+        return {
+            And(): self.bitsize,
+            And().adjoint(): self.bitsize,
+            CNOT(): num_set_bits + 2 * self.bitsize,
+            XGate(): 2 * (1 + num_set_bits),
+        }
 
 
 @bloq_example
@@ -217,8 +235,7 @@ class BiQubitsMixer(GateWithRegisters):
     https://github.com/quantumlib/Qualtran/issues/389
 
     References:
-        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians
-        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+        [Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf).
     """
 
     is_adjoint: bool = False
@@ -285,10 +302,8 @@ class BiQubitsMixer(GateWithRegisters):
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.is_adjoint:
-            return TComplexity(clifford=18)
-        return TComplexity(t=8, clifford=28)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): 1, CNOT(): 9, And(uncompute=self.is_adjoint): 2}
 
     def _has_unitary_(self):
         return not self.is_adjoint
@@ -360,10 +375,8 @@ class SingleQubitCompare(GateWithRegisters):
             return self.adjoint()
         return self
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.is_adjoint:
-            return TComplexity(clifford=11)
-        return TComplexity(t=4, clifford=16)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): 1, CNOT(): 4, And(uncompute=self.is_adjoint): 1}
 
 
 @bloq_example
@@ -420,8 +433,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
 
-        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians.
-        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+        [Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf).
     """
 
     x_bitsize: 'SymbolicInt'
@@ -457,7 +469,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         if reg.name == "y":
             return TextBox('y')
         if reg.name == "target":
-            return TextBox('z^(x<=y)')
+            return TextBox('z∧(x<=y)')
         raise ValueError(f'Unknown register name {reg.name}')
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
@@ -498,6 +510,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
+        input_qubits = set(lhs + rhs + [target])
 
         n = min(len(lhs), len(rhs))
 
@@ -553,30 +566,54 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
             yield cirq.CNOT(less_than_or_equal, target)
 
         yield from reversed(adjoint)
+        all_ancilla = set([q for op in adjoint for q in op.qubits if q not in input_qubits])
+        context.qubit_manager.qfree(all_ancilla)
 
-    def _t_complexity_(self) -> TComplexity:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        if is_symbolic(self.x_bitsize, self.y_bitsize):
+            return {
+                BiQubitsMixer(): self.x_bitsize,
+                BiQubitsMixer().adjoint(): self.x_bitsize,
+                SingleQubitCompare(): 1,
+                SingleQubitCompare().adjoint(): 1,
+            }
+
         n = min(self.x_bitsize, self.y_bitsize)
         d = max(self.x_bitsize, self.y_bitsize) - n
         is_second_longer = self.y_bitsize > self.x_bitsize
-        if d == 0:
-            # When both registers are of the same size the T complexity is
-            # 8n - 4 same as in the second reference.
-            return TComplexity(t=8 * n - 4, clifford=46 * n - 17)
-        else:
-            # When the registers differ in size and `n` is the size of the smaller one and
-            # `d` is the difference in size. The T complexity is the sum of the tree
-            # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
-            # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
-            # From the decomposition we get that the constant is -4 as well as the clifford counts.
+        ret: Dict['Bloq', int] = defaultdict(lambda: 0)
+        if d > 0:
             if d == 1:
-                return TComplexity(t=8 * n, clifford=46 * n + 3 + 2 * is_second_longer)
+                ret[CNOT()] += 2
+                ret[XGate()] += 2
+            elif d == 2:
+                ret[And(0, 0)] += 1
+                ret[And(0, 0).adjoint()] += 1
             else:
-                return TComplexity(
-                    t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 14 + 2 * is_second_longer
-                )
+                ret[MultiAnd(cvs=[0] * d)] += 1
+                ret[MultiAnd(cvs=[0] * d).adjoint()] += 1
+            if is_second_longer:
+                ret[CNOT()] += 1
+                ret[XGate()] += 1
+        ret[BiQubitsMixer()] += n - 1
+        ret[BiQubitsMixer().adjoint()] += n - 1
+        ret[SingleQubitCompare()] += 1
+        ret[SingleQubitCompare().adjoint()] += 1
+        if not d:
+            ret[XGate()] += 1
+            ret[CNOT()] += 1
+        else:
+            ret[And(1, 0)] += 1
+            ret[And(1, 0).adjoint()] += 1
+            ret[CNOT()] += 1
+
+        return ret
 
     def _has_unitary_(self):
         return True
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
 
 @bloq_example
@@ -628,12 +665,6 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("a>b")
@@ -645,12 +676,17 @@ class GreaterThan(Bloq):
             return TextBox("⨁(a > b)")
         raise ValueError(f'Unknown register name {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        tc = t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
-        return {(TGate(), tc.t)}
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        a, b, target = bb.add(
+            LessThanEqual(self.a_bitsize, self.b_bitsize), x=a, y=b, target=target
+        )
+        target = bb.add(XGate(), q=target)
+        return {'a': a, 'b': b, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {LessThanEqual(self.a_bitsize, self.b_bitsize): 1, XGate(): 1}
 
 
 @bloq_example
@@ -691,8 +727,8 @@ class LinearDepthGreaterThan(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
 
-    bitsize: int
-    signed: bool
+    bitsize: 'SymbolicInt'
+    signed: bool = False
 
     @property
     def signature(self):
@@ -714,13 +750,16 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = np.asarray([a, b])
-            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
+            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), controls=ctrls, target=target)
             a, b = ctrls
             # Return the output registers.
             return {'a': a, 'b': b, 'target': target}
@@ -840,6 +879,25 @@ class LinearDepthGreaterThan(Bloq):
             return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        if self.bitsize == 1:
+            return {MultiControlX(cvs=(1, 0)): 1}
+
+        if self.signed:
+            return {
+                CNOT(): 6 * self.bitsize - 7,
+                XGate(): 2 * self.bitsize + 2,
+                And(): self.bitsize - 1,
+                And(uncompute=True): self.bitsize - 1,
+            }
+
+        return {
+            CNOT(): 6 * self.bitsize - 1,
+            XGate(): 2 * self.bitsize + 4,
+            And(): self.bitsize,
+            And(uncompute=True): self.bitsize,
+        }
+
 
 @frozen
 class GreaterThanConstant(Bloq):
@@ -868,12 +926,6 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def _t_complexity_(self) -> TComplexity:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
-
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
@@ -883,12 +935,8 @@ class GreaterThanConstant(Bloq):
             return TextBox(f"⨁(x > {self.val})")
         raise ValueError(f'Unknown register symbol {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        tc = t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
-        return {(TGate(), tc.t)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {LessThanConstant(self.bitsize, less_than_val=self.val): 1}
 
 
 @bloq_example
@@ -901,8 +949,86 @@ _GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k]
 
 
 @frozen
+class Equals(Bloq):
+    r"""Implements |x>|y>|t> => |x>|y>|t ⨁ (x = y)> using $n-1$ Toffoli gates.
+
+    Args:
+        dtype: Data type of the input registers `x` and `y`.
+
+    Registers:
+        x: First input register.
+        y: Second input register.
+        target: Register to hold result of comparison.
+    """
+
+    dtype: QDType
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(x=self.dtype, y=self.dtype, target=QBit())
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.dtype.num_qubits
+
+    def is_symbolic(self):
+        return is_symbolic(self.dtype)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text("")
+        if reg.name == 'x':
+            return TextBox("In(x)")
+        if reg.name == 'y':
+            return TextBox("In(y)")
+        elif reg.name == 'target':
+            return TextBox("⨁(x = y)")
+        raise ValueError(f'Unknown register symbol {reg.name}')
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.bitsize, int):
+            cvs = [0] * self.bitsize
+        else:
+            cvs = HasLength(self.bitsize)
+
+        x, y = bb.add(Xor(self.dtype), x=x, y=y)
+        y_split = bb.split(y)
+        y_split, target = bb.add(MultiControlX(cvs=cvs), controls=y_split, target=target)
+        y = bb.join(y_split, self.dtype)
+        x, y = bb.add(Xor(self.dtype), x=x, y=y)
+
+        return {'x': x, 'y': y, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        cvs: Union[list[int], HasLength]
+        if isinstance(self.bitsize, int):
+            cvs = [0] * self.bitsize
+        else:
+            cvs = HasLength(self.bitsize)
+        return {Xor(self.dtype): 2, MultiControlX(cvs=cvs): 1}
+
+    def on_classical_vals(self, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'y': y, 'target': target ^ (x == y)}
+
+
+@bloq_example
+def _equals() -> Equals:
+    equals = Equals(QUInt(4))
+    return equals
+
+
+_EQUALS_DOC = BloqDocSpec(bloq_cls=Equals, examples=[_equals])
+
+
+@frozen
 class EqualsAConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
+    r"""Implements $U_a|x\rangle|z\rangle = |x\rangle |z \oplus (x = a)\rangle$
 
     The bloq_counts and t_complexity are derived from:
     https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
@@ -916,15 +1042,12 @@ class EqualsAConstant(Bloq):
         target: Register to hold result of comparison.
     """
 
-    bitsize: int
-    val: int
+    bitsize: SymbolicInt
+    val: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=4 * (self.bitsize - 1))
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
@@ -935,10 +1058,29 @@ class EqualsAConstant(Bloq):
             return TextBox(f"⨁(x = {self.val})")
         raise ValueError(f'Unknown register symbol {reg.name}')
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        return {(TGate(), 4 * (self.bitsize - 1))}
+    def is_symbolic(self):
+        return is_symbolic(self.bitsize, self.val)
+
+    @property
+    def bits_k(self) -> Union[tuple[int, ...], HasLength]:
+        if is_symbolic(self.bitsize) or is_symbolic(self.val):
+            return HasLength(self.bitsize)
+
+        return tuple(QUInt(self.bitsize).to_bits(self.val))
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic {self.bitsize=}")
+
+        xs = bb.split(x)
+        xs, target = bb.add(MultiControlX(self.bits_k), controls=xs, target=target)
+        x = bb.join(xs)
+        return {'x': x, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {MultiControlX(self.bits_k): 1}
 
 
 def _make_equals_a_constant():
@@ -954,3 +1096,610 @@ def _eq_k() -> EqualsAConstant:
 
 
 _EQUALS_K_DOC = BloqDocSpec(bloq_cls=EqualsAConstant, examples=[_eq_k])
+
+
+@frozen
+class CLinearDepthGreaterThan(Bloq):
+    r"""Controlled greater than between two integers.
+
+    Implements $\ket{c}\ket{a}\ket{b}\ket{t} \xrightarrow[]{} \ket{c}\ket{a}\ket{b}\ket{t ⨁ ((a > b)c)}>$
+    using $n+2$ Toffoli gates.
+
+    Note: the true cost is $n+1$ but an extra Toffoli comes from OutOfPlaceAdder which operates
+    on $n+1$ qubits rather than $n$. Changing the definition of OutOfPlaceAdder will remove this
+    extra Toffoli.
+
+    This comparator relies on the fact that ~(~b + a) = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and uncomputing the addition circuit.
+
+    Args:
+        dtype: type of the integer registers.
+        cv: ctrl value at which the bloq is active.
+
+    Registers:
+        a: dtype input registers.
+        b: dtype input registers.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+            page 7.
+    """
+
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    cv: int = 1
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build_from_dtypes(ctrl=QBit(), a=self.dtype, b=self.dtype, target=QBit())
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
+            return Circle(filled=self.cv == 1)
+        if reg.name == "a":
+            return TextBox('a')
+        if reg.name == "b":
+            return TextBox('b')
+        if reg.name == "target":
+            return TextBox('t⨁((a>b)c)')
+        raise ValueError(f'Unknown register name {reg.name}')
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
+        else:
+            a = bb.join(np.concatenate([[bb.allocate(1)], bb.split(a)]))
+            b = bb.join(np.concatenate([[bb.allocate(1)], bb.split(b)]))
+
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        b = bb.add(BitwiseNot(dtype), x=b)  # b := -b-1
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=b)
+        a, b, c = bb.add(OutOfPlaceAdder(self.dtype.bitsize + 1), a=a, b=b)  # c := a - b - 1
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize + 1)), x=c)  # c := b - a
+
+        # Update `target`
+        c_arr = bb.split(c)
+        # The sign bit is usually the 0th bit however since we already appended an extra bit
+        # to the input registers and OutOfPlaceAdder is unsigned and stores the result in
+        # number bits + 1 (i.e. we are adding two extra bits), the sign bit becomes the 1st bit
+        # with the 0th bit indicating whether an overflow happened or not.
+        (ctrl, c_arr[1]), target = bb.add(
+            MultiControlX((self.cv, 1)), controls=np.array([ctrl, c_arr[1]]), target=target
+        )
+        c = bb.join(c_arr)
+
+        # Uncompute
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize + 1)), x=c)
+        a, b = bb.add(OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(), a=a, b=b, c=c)
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=b)
+        b = bb.add(BitwiseNot(dtype), x=b)
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=b)
+        else:
+            a_arr = bb.split(a)
+            a = bb.join(a_arr[1:])
+            b_arr = bb.split(b)
+            b = bb.join(b_arr[1:])
+            bb.free(a_arr[0])
+            bb.free(b_arr[0])
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
+
+    def on_classical_vals(
+        self, ctrl: int, a: int, b: int, target: int
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == self.cv:
+            return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target ^ (a > b)}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        signed_ops: 'MutableBloqCountDictT' = {}
+        if isinstance(self.dtype, QInt):
+            signed_ops = {
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)): 2,
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(): 2,
+            }
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        return {
+            BitwiseNot(dtype): 2,
+            BitwiseNot(QUInt(dtype.bitsize + 1)): 2,
+            OutOfPlaceAdder(self.dtype.bitsize + 1).adjoint(): 1,
+            OutOfPlaceAdder(self.dtype.bitsize + 1): 1,
+            MultiControlX((self.cv, 1)): 1,
+            **signed_ops,
+        }
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _clineardepthgreaterthan_example() -> CLinearDepthGreaterThan:
+    clineardepthgreaterthan_example = CLinearDepthGreaterThan(QInt(5))
+    return clineardepthgreaterthan_example
+
+
+_CLinearDepthGreaterThan_DOC = BloqDocSpec(
+    bloq_cls=CLinearDepthGreaterThan, examples=[_clineardepthgreaterthan_example]
+)
+
+
+@frozen
+class _HalfLinearDepthGreaterThan(Bloq):
+    """A concrete implementation of half-circuit for greater than.
+
+    This bloq can be returned by the _HalfComparisonBase._half_greater_than_bloq abstract property.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> Signature:
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('a', self.dtype),
+                Register('b', self.dtype),
+                Register('c', QUInt(bitsize=self.dtype.bitsize + 1), side=side),
+                Register('target', QBit(), side=side),
+            ]
+        )
+
+    def adjoint(self) -> '_HalfLinearDepthGreaterThan':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> Dict[str, 'SoquetT']:
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
+        else:
+            a = bb.join(np.concatenate([[bb.allocate(1)], bb.split(a)]))
+            b = bb.join(np.concatenate([[bb.allocate(1)], bb.split(b)]))
+
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        b = bb.add(BitwiseNot(dtype), x=b)  # b := -b-1
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=b)
+        a, b, c = bb.add(
+            OutOfPlaceAdder(self.dtype.bitsize + 1, include_most_significant_bit=False), a=a, b=b
+        )  # c := a - b - 1
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize)), x=c)  # c := b - a
+
+        # Update `target`
+        c_arr = bb.split(c)
+        target = bb.allocate(1)
+        c_arr[0], target = bb.add(CNOT(), ctrl=c_arr[0], target=target)
+        c = bb.join(c_arr)
+
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=b)
+        b = bb.add(BitwiseNot(dtype), x=b)
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=b)
+        else:
+            a_arr = bb.split(a)
+            a = bb.join(a_arr[1:])
+            b_arr = bb.split(b)
+            b = bb.join(b_arr[1:])
+            bb.free(a_arr[0])
+            bb.free(b_arr[0])
+        return {'a': a, 'b': b, 'c': c, 'target': target}
+
+    def _uncompute(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', c: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=b)
+        else:
+            a = bb.join(np.concatenate([[bb.allocate(1)], bb.split(a)]))
+            b = bb.join(np.concatenate([[bb.allocate(1)], bb.split(b)]))
+
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        b = bb.add(BitwiseNot(dtype), x=b)  # b := -b-1
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)), reg=b)
+
+        c_arr = bb.split(c)
+        c_arr[0], target = bb.add(CNOT(), ctrl=c_arr[0], target=target)
+        c = bb.join(c_arr)
+
+        c = bb.add(BitwiseNot(QUInt(dtype.bitsize)), x=c)
+        a, b = bb.add(
+            OutOfPlaceAdder(self.dtype.bitsize + 1, include_most_significant_bit=False).adjoint(),
+            a=a,
+            b=b,
+            c=c,
+        )
+        a = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=a)
+        b = bb.add(Cast(dtype, QUInt(dtype.bitsize)).adjoint(), reg=b)
+        b = bb.add(BitwiseNot(dtype), x=b)
+
+        if isinstance(self.dtype, QInt):
+            a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=a)
+            b = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(), x=b)
+        else:
+            a_arr = bb.split(a)
+            a = bb.join(a_arr[1:])
+            b_arr = bb.split(b)
+            b = bb.join(b_arr[1:])
+            bb.free(a_arr[0])
+            bb.free(b_arr[0])
+        bb.free(target)
+        return {'a': a, 'b': b}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        a: 'Soquet',
+        b: 'Soquet',
+        c: Optional['Soquet'] = None,
+        target: Optional['Soquet'] = None,
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
+        if self.uncompute:
+            # Uncompute
+            assert c is not None
+            assert target is not None
+            return self._uncompute(bb, a, b, c, target)
+        else:
+            assert c is None
+            assert target is None
+            return self._compute(bb, a, b)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        dtype = attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1)
+        counts: 'BloqCountDictT'
+        if isinstance(self.dtype, QUInt):
+            counts = {BitwiseNot(dtype): 3}
+        else:
+            counts = {BitwiseNot(dtype): 2, BitwiseNot(QUInt(dtype.bitsize)): 1}
+
+        counts[CNOT()] = 1
+
+        adder = OutOfPlaceAdder(self.dtype.bitsize + 1, include_most_significant_bit=False)
+        if self.uncompute:
+            adder = adder.adjoint()
+        counts[adder] = 1
+
+        return counts
+
+
+@frozen
+class _HalfComparisonBase(Bloq):
+    """Parent class for the 4 comparison operations (>, >=, <, <=).
+
+    The four comparison operations can be implemented by implementing only one of them
+    and computing the others either by reversing the input order, flipping the result or both.
+
+    The choice made is to build the four opertions around greater than. Namely the greater than
+    bloq returned by `._half_greater_than_bloq`; By changing this property we can change
+    change the properties of the constructed circuit (e.g. complexity, depth, ..etc).
+
+    For example _LinearDepthHalfComparisonBase sets the property to a linear depth construction,
+    other implementations can set the property to a log depth construction.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        _op_symbol: The symbol of the comparison operation.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    dtype: Union[QInt, QUInt, QMontgomeryUInt]
+    _op_symbol: str = attrs.field(
+        default='>', validator=lambda _, __, s: s in ('>', '<', '>=', '<='), repr=False
+    )
+    uncompute: bool = False
+
+    @cached_property
+    def signature(self) -> Signature:
+        side = Side.LEFT if self.uncompute else Side.RIGHT
+        return Signature(
+            [
+                Register('a', self.dtype),
+                Register('b', self.dtype),
+                Register('c', QUInt(bitsize=self.dtype.bitsize + 1), side=side),
+                Register('target', QBit(), side=side),
+            ]
+        )
+
+    def adjoint(self) -> '_HalfComparisonBase':
+        return attrs.evolve(self, uncompute=self.uncompute ^ True)
+
+    @cached_property
+    @abc.abstractmethod
+    def _half_greater_than_bloq(self) -> Bloq:
+        raise NotImplementedError()
+
+    def _classical_comparison(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Union[bool, np.bool_, NDArray[np.bool_]]:
+        if self._op_symbol == '>':
+            return a > b
+        elif self._op_symbol == '<':
+            return a < b
+        elif self._op_symbol == '>=':
+            return a >= b
+        else:
+            return a <= b
+
+    def on_classical_vals(
+        self,
+        a: 'ClassicalValT',
+        b: 'ClassicalValT',
+        c: Optional['ClassicalValT'] = None,
+        target: Optional['ClassicalValT'] = None,
+    ) -> Dict[str, 'ClassicalValT']:
+        if self._op_symbol in ('>', '<='):
+            c_val = add_ints(-int(a), int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
+        else:
+            c_val = add_ints(int(a), -int(b), num_bits=self.dtype.bitsize + 1, is_signed=False)
+        if self.uncompute:
+            assert c == c_val
+            assert target == self._classical_comparison(a, b)
+            return {'a': a, 'b': b}
+        assert c is None
+        assert target is None
+        return {'a': a, 'b': b, 'c': c_val, 'target': int(self._classical_comparison(a, b))}
+
+    def _compute(self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet') -> Dict[str, 'SoquetT']:
+        if self._op_symbol in ('>', '<='):
+            a, b, c, target = bb.add_from(self._half_greater_than_bloq, a=a, b=b)  # type: ignore
+        else:
+            b, a, c, target = bb.add_from(self._half_greater_than_bloq, a=b, b=a)  # type: ignore
+
+        if self._op_symbol in ('<=', '>='):
+            target = bb.add(XGate(), q=target)
+
+        return {'a': a, 'b': b, 'c': c, 'target': target}
+
+    def _uncompute(
+        self, bb: 'BloqBuilder', a: 'Soquet', b: 'Soquet', c: 'Soquet', target: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if self._op_symbol in ('<=', '>='):
+            target = bb.add(XGate(), q=target)
+
+        if self._op_symbol in ('>', '<='):
+            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=a, b=b, c=c, target=target)  # type: ignore
+        else:
+            a, b = bb.add_from(self._half_greater_than_bloq.adjoint(), a=b, b=a, c=c, target=target)  # type: ignore
+
+        return {'a': a, 'b': b}
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        a: 'Soquet',
+        b: 'Soquet',
+        c: Optional['Soquet'] = None,
+        target: Optional['Soquet'] = None,
+    ) -> Dict[str, 'SoquetT']:
+        if self.uncompute:
+            assert c is not None
+            assert target is not None
+            return self._uncompute(bb, a, b, c, target)
+        else:
+            assert c is None
+            assert target is None
+            return self._compute(bb, a, b)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        extra_ops = {}
+        if isinstance(self.dtype, QInt):
+            extra_ops = {
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)): 2,
+                SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)).adjoint(): 2,
+            }
+        if self._op_symbol in ('>=', '<='):
+            extra_ops[XGate()] = 1
+        adder = self._half_greater_than_bloq
+        if self.uncompute:
+            adder = adder.adjoint()
+        adder_call_graph = adder.build_call_graph(ssa)
+        assert isinstance(adder_call_graph, dict)
+        counts: defaultdict['Bloq', Union[int, sympy.Expr]] = defaultdict(lambda: 0)
+        counts.update(adder_call_graph)
+        for k, v in extra_ops.items():
+            counts[k] += v
+        return counts
+
+
+@frozen
+class _LinearDepthHalfComparisonBase(_HalfComparisonBase):
+    """A wrapper around _HalfComparisonBase that sets ._half_greater_than_bloq property to a construction with linear depth."""
+
+    @cached_property
+    def _half_greater_than_bloq(self) -> Bloq:
+        return _HalfLinearDepthGreaterThan(self.dtype, uncompute=False)
+
+
+@frozen
+class LinearDepthHalfGreaterThan(_LinearDepthHalfComparisonBase):
+    r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
+
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a>b}$ using $n$ And gates.
+
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and keeping $c$ for the uncomputation.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    _op_symbol: str = attrs.field(default='>', repr=False, init=False)
+
+
+@frozen
+class LinearDepthHalfGreaterThanEqual(_LinearDepthHalfComparisonBase):
+    r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
+
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a \geq b}$ using $n$ And gates.
+
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and keeping $c$ for the uncomputation.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a >= b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    _op_symbol: str = attrs.field(default='>=', repr=False, init=False)
+
+
+@frozen
+class LinearDepthHalfLessThan(_LinearDepthHalfComparisonBase):
+    r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
+
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{a-b}\ket{a<b}$ using $n$ And gates.
+
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and keeping $c$ for the uncomputation.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a < b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    _op_symbol: str = attrs.field(default='<', repr=False, init=False)
+
+
+@frozen
+class LinearDepthHalfLessThanEqual(_LinearDepthHalfComparisonBase):
+    r"""Compare two integers while keeping necessary ancillas for zero cost uncomputation.
+
+    Implements $\ket{a}\ket{b}\ket{0}\ket{0} \rightarrow \ket{a}\ket{b}\ket{b-a}\ket{a \leq b}$ using $n$ And gates.
+
+    This comparator relies on the fact that c = (b' + a)' = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and keeping $c$ for the uncomputation.
+
+    Args:
+        dtype: dtype of the two integers a and b.
+        uncompute: whether this bloq uncomputes or computes the comparison.
+
+    Registers:
+        a: first input register.
+        b: second input register.
+        c: ancilla register that will contain $b-a$ and will be used for uncomputation.
+        target: A single bit output register to store the result of a <= b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+    """
+
+    _op_symbol: str = attrs.field(default='<=', repr=False, init=False)
+
+
+@bloq_example
+def _lineardepthhalfgreaterthan_small() -> LinearDepthHalfGreaterThan:
+    lineardepthhalfgreaterthan_small = LinearDepthHalfGreaterThan(QUInt(3))
+    return lineardepthhalfgreaterthan_small
+
+
+@bloq_example
+def _lineardepthhalflessthan_small() -> LinearDepthHalfLessThan:
+    lineardepthhalflessthan_small = LinearDepthHalfLessThan(QUInt(3))
+    return lineardepthhalflessthan_small
+
+
+@bloq_example
+def _lineardepthhalfgreaterthanequal_small() -> LinearDepthHalfGreaterThanEqual:
+    lineardepthhalfgreaterthanequal_small = LinearDepthHalfGreaterThanEqual(QUInt(3))
+    return lineardepthhalfgreaterthanequal_small
+
+
+@bloq_example
+def _lineardepthhalflessthanequal_small() -> LinearDepthHalfLessThanEqual:
+    lineardepthhalflessthanequal_small = LinearDepthHalfLessThanEqual(QUInt(3))
+    return lineardepthhalflessthanequal_small
+
+
+_LINEAR_DEPTH_HALF_GREATERTHAN_DOC = BloqDocSpec(
+    bloq_cls=LinearDepthHalfGreaterThan, examples=[_lineardepthhalfgreaterthan_small]
+)
+
+
+_LINEAR_DEPTH_HALF_LESSTHAN_DOC = BloqDocSpec(
+    bloq_cls=LinearDepthHalfLessThan, examples=[_lineardepthhalflessthan_small]
+)
+
+
+_LINEAR_DEPTH_HALF_GREATERTHANEQUAL_DOC = BloqDocSpec(
+    bloq_cls=LinearDepthHalfGreaterThanEqual, examples=[_lineardepthhalfgreaterthanequal_small]
+)
+
+
+_LINEAR_DEPTH_HALF_LESSTHANEQUAL_DOC = BloqDocSpec(
+    bloq_cls=LinearDepthHalfLessThanEqual, examples=[_lineardepthhalflessthanequal_small]
+)

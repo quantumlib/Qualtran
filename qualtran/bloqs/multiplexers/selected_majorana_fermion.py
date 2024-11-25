@@ -22,7 +22,7 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran import QAny, QBit, Register
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 
@@ -37,7 +37,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
 
     Args:
-        selection_regs: Indexing `select` signature of type `Register(dtype=BoundedQUInt)`.
+        selection_regs: Indexing `select` signature of type `Register(dtype=BQUInt)`.
             It also contains information about the iteration length of each selection register.
         control_regs: Control signature for constructing a controlled version of the gate.
         target_gate: Single qubit gate to be applied to the target qubits.
@@ -66,7 +66,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         """Helper constructor to automatically deduce selection_regs attribute."""
         return SelectedMajoranaFermion(
             selection_regs=Register(
-                'selection', BoundedQUInt(len(quregs['selection']), len(quregs['target']))
+                'selection', BQUInt(len(quregs['selection']), len(quregs['target']))
             ),
             target_gate=target_gate,
         ).on_registers(**quregs)
@@ -134,3 +134,6 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield cirq.CNOT(control, *accumulator)
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
+
+    def __str__(self):
+        return f'SelectedMajoranaFermion({self.target_gate})'

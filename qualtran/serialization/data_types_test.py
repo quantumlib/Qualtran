@@ -17,7 +17,8 @@ from typing import Union
 import pytest
 import sympy
 
-from qualtran import BoundedQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QUInt
+from qualtran import BQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
+from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.serialization.data_types import data_type_from_proto, data_type_to_proto
 
 
@@ -37,6 +38,7 @@ def test_basic_data_types(num_qbits: Union[int, sympy.Expr]):
     round_trip_qdt(QInt(num_qbits))
     round_trip_qdt(QAny(num_qbits))
     round_trip_qdt(QIntOnesComp(num_qbits))
+    round_trip_qdt(QMontgomeryUInt(num_qbits))
     round_trip_qdt(QUInt(num_qbits))
 
 
@@ -51,7 +53,7 @@ def test_basic_data_types(num_qbits: Union[int, sympy.Expr]):
     ],
 )
 def test_bounded_quint(num_qbits: int, iteration_length):
-    round_trip_qdt(BoundedQUInt(num_qbits, iteration_length))
+    round_trip_qdt(BQUInt(num_qbits, iteration_length))
 
 
 @pytest.mark.parametrize(

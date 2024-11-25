@@ -23,7 +23,7 @@ electron repulsion integrals.
 """
 
 from functools import cached_property
-from typing import Dict, Iterable, Set, TYPE_CHECKING
+from typing import Dict, Iterable, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -41,22 +41,25 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran._infra.data_types import BQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
-class SingleFactorizationOneBody(Bloq):
+class SingleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of single factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
@@ -94,6 +97,7 @@ class SingleFactorizationOneBody(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig. 15 page 43.
     """
+
     num_aux: int
     num_spin_orb: int
     num_bits_state_prep: int
@@ -116,29 +120,50 @@ class SingleFactorizationOneBody(Bloq):
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register(
-                "l",
-                BoundedQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1),
+                "l", BQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1)
             ),
             Register(
                 "p",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "q",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("rot_aa", BoundedQUInt(bitsize=1)),
-            Register("swap_pq", BoundedQUInt(bitsize=1)),
-            Register("spin", BoundedQUInt(bitsize=1)),
+            Register("rot_aa", BQUInt(bitsize=1)),
+            Register("swap_pq", BQUInt(bitsize=1)),
+            Register("spin", BQUInt(bitsize=1)),
         )
 
     @property
@@ -148,6 +173,10 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return ()
+
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     @cached_property
     def signature(self) -> Signature:
@@ -221,7 +250,7 @@ class SingleFactorizationOneBody(Bloq):
             'sys': sys,
         }
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         iprep = InnerPrepareSingleFactorization(
             self.num_aux,
             self.num_spin_orb,
@@ -240,16 +269,16 @@ class SingleFactorizationOneBody(Bloq):
         ).adjoint()
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return {
-            (iprep, 1),
-            (iprep_dag, 1),
-            (CSwap(n), 2),
-            (SelectSingleFactorization(num_spin_orb=self.num_spin_orb), 1),
-            (Hadamard(), 4),
+            iprep: 1,
+            iprep_dag: 1,
+            CSwap(n): 2,
+            SelectSingleFactorization(num_spin_orb=self.num_spin_orb): 1,
+            Hadamard(): 4,
         }
 
 
 @frozen
-class SingleFactorizationBlockEncoding(Bloq):
+class SingleFactorizationBlockEncoding(BlockEncoding):
     r"""Block encoding of single factorization Hamiltonian.
 
     Implements Fig. 15 in the reference.
@@ -284,6 +313,7 @@ class SingleFactorizationBlockEncoding(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Fig 15, page 43.
     """
+
     num_spin_orb: int
     num_aux: int
     num_bits_state_prep: int
@@ -297,6 +327,28 @@ class SingleFactorizationBlockEncoding(Bloq):
     @property
     def control_registers(self) -> Iterable[Register]:
         return (Register('ctrl', QBit(), shape=(3,)),)
+
+    @property
+    def alpha(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @property
+    def epsilon(self) -> float:
+        # TODO: implement, see https://github.com/quantumlib/Qualtran/issues/1247
+        raise NotImplementedError
+
+    @cached_property
+    def ancilla_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.selection_registers)
+
+    @cached_property
+    def resource_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.junk_registers)
+
+    @cached_property
+    def system_bitsize(self) -> int:
+        return sum(r.total_bits() for r in self.target_registers)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -326,6 +378,10 @@ class SingleFactorizationBlockEncoding(Bloq):
                 *self.target_registers,
             ]
         )
+
+    @property
+    def signal_state(self) -> BlackBoxPrepare:
+        return BlackBoxPrepare(PrepareIdentity(self.selection_registers))
 
     def build_composite_bloq(
         self,
@@ -375,14 +431,16 @@ class SingleFactorizationBlockEncoding(Bloq):
         )
         # reflect about the inner state preparation registers, controlled on succ_l and l_ne_zero.
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        succ_l, l_ne_zero, p, q, swap_pq, spin = bb.add(
-            Reflection((1, 1, n_n, n_n, 1, 1), cvs=(1, 1, 0, 0, 0, 0)),
-            reg0=succ_l,
-            reg1=l_ne_zero,
-            reg2=p,
-            reg3=q,
-            reg4=swap_pq,
-            reg5=spin,
+        # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+        succ_l, p, q, swap_pq, spin = bb.add(
+            ReflectionUsingPrepare.reflection_around_zero(
+                bitsizes=(n_n, n_n, 1, 1), control_val=1, global_phase=-1
+            ),
+            control=succ_l,
+            reg0_=p,
+            reg1_=q,
+            reg2_=swap_pq,
+            reg3_=spin,
         )
         # apply one-body again
         succ_l, l_ne_zero, succ_pq, l, p, q, swap_pq, spin, rot_aa[1], sys = bb.add(

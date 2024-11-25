@@ -12,34 +12,38 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence
 
 import cirq
 import numpy as np
 import pytest
 import sympy
 from attrs import define
-from numpy.polynomial import Polynomial
-from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
-from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.symbolics import Shaped
-
-from .generalized_qsp import (
+from qualtran.bloqs.qsp.generalized_qsp import (
     _gqsp,
     _gqsp_with_large_negative_power,
     _gqsp_with_negative_power,
-    assert_is_qsp_polynomial,
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
+)
+from qualtran.linalg.polynomial.basic import evaluate_polynomial_of_unitary_matrix
+from qualtran.linalg.polynomial.qsp_testing import (
+    assert_is_qsp_polynomial,
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle,
+    random_qsp_polynomial,
     scale_down_to_qsp_polynomial,
 )
+from qualtran.linalg.testing import assert_matrices_almost_equal
+from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.symbolics import Shaped
+from qualtran.testing import execute_notebook
 
 
 def test_gqsp_example(bloq_autotester):
@@ -48,61 +52,17 @@ def test_gqsp_example(bloq_autotester):
     bloq_autotester(_gqsp_with_large_negative_power)
 
 
-def assert_angles_almost_equal(
-    actual: Union[float, Sequence[float]], desired: Union[float, Sequence[float]]
-):
-    """Helper to check if two angle sequences are equal (up to multiples of 2*pi)"""
-    np.testing.assert_almost_equal(np.exp(np.array(actual) * 1j), np.exp(np.array(desired) * 1j))
-
-
-def check_polynomial_pair_on_random_points_on_unit_circle(
-    P: Union[Sequence[complex], Polynomial, Shaped],
-    Q: Union[Sequence[complex], Polynomial, Shaped],
-    *,
-    random_state: np.random.RandomState,
-    rtol: float = 1e-7,
-    n_points: int = 1000,
-):
-    P = Polynomial(P)
-    Q = Polynomial(Q)
-
-    for _ in range(n_points):
-        z = np.exp(random_state.random() * np.pi * 2j)
-        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
-
-
-def random_qsp_polynomial(
-    degree: int, *, random_state: np.random.RandomState, only_real_coeffs=False
-) -> Sequence[complex]:
-    poly = random_state.random(size=degree) / degree
-    if not only_real_coeffs:
-        poly = poly * np.exp(random_state.random(size=degree) * np.pi * 2j)
-    return list(poly)
-
-
-@pytest.mark.parametrize("degree", [4, 5])
-def test_complementary_polynomial_quick(degree: int):
-    random_state = np.random.RandomState(42)
-
-    for _ in range(2):
-        P = random_qsp_polynomial(degree, random_state=random_state)
-        Q = qsp_complementary_polynomial(P, verify=True)
-        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
+@pytest.mark.parametrize("degree", [3, 4, 5, 10, 40, pytest.param(100, marks=pytest.mark.slow)])
 def test_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
 
-    for _ in range(10):
+    for _ in range(5):
         P = random_qsp_polynomial(degree, random_state=random_state)
         Q = qsp_complementary_polynomial(P, verify=True)
-        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
+@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, pytest.param(100, marks=pytest.mark.slow)])
 def test_real_polynomial_has_real_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
 
@@ -113,32 +73,13 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
         assert np.isreal(Q).all()
 
 
-def evaluate_polynomial_of_matrix(
-    P: Sequence[complex], U: NDArray, *, negative_power: int = 0
-) -> NDArray:
-    assert U.ndim == 2 and U.shape[0] == U.shape[1]
-
-    pow_U = np.linalg.matrix_power(U.conj().T, negative_power)
-    result = np.zeros(U.shape, dtype=U.dtype)
-
-    for c in P:
-        result += pow_U * c
-        pow_U = pow_U @ U
-
-    return result
-
-
-def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
-    assert A.shape == B.shape
-    assert np.linalg.norm(A - B) <= atol
-
-
 def verify_generalized_qsp(
     U: GateWithRegisters,
     P: Sequence[complex],
     Q: Optional[Sequence[complex]] = None,
     *,
     negative_power: int = 0,
+    tolerance: float = 1e-5,
 ):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
@@ -150,23 +91,28 @@ def verify_generalized_qsp(
         gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
 
-    expected_top_left = evaluate_polynomial_of_matrix(
-        P, input_unitary, negative_power=negative_power
+    expected_top_left = evaluate_polynomial_of_unitary_matrix(
+        P, input_unitary, offset=-negative_power
     )
     actual_top_left = result_unitary[:N, :N]
-    assert_matrices_almost_equal(expected_top_left, actual_top_left)
+    assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=tolerance)
 
     assert not isinstance(gqsp_U.Q, Shaped)
-    expected_bottom_left = evaluate_polynomial_of_matrix(
-        gqsp_U.Q, input_unitary, negative_power=negative_power
+    expected_bottom_left = evaluate_polynomial_of_unitary_matrix(
+        gqsp_U.Q, input_unitary, offset=-negative_power
     )
     actual_bottom_left = result_unitary[N:, :N]
-    assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
+    assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left, atol=tolerance)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
-@pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 150, 180])
+@pytest.mark.parametrize(
+    "degree",
+    [
+        pytest.param(degree, marks=pytest.mark.slow if degree > 40 else ())
+        for degree in [2, 3, 5, 20, 40, 100, 150, 180]
+    ],
+)
 def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree: int):
     random_state = np.random.RandomState(42)
 
@@ -176,9 +122,14 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
         verify_generalized_qsp(U, P)
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
-@pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 120])
+@pytest.mark.parametrize(
+    "degree",
+    [
+        pytest.param(degree, marks=pytest.mark.slow if degree > 40 else ())
+        for degree in [2, 3, 5, 40, 60, 100, 120]
+    ],
+)
 @pytest.mark.parametrize("negative_power", [0, 1, 2])
 def test_generalized_qsp_with_complex_poly_on_random_unitaries(
     bitsize: int, degree: int, negative_power: int
@@ -222,7 +173,7 @@ def test_call_graph(negative_power: int):
 
 @bloq_example
 def _gqsp_1d_ising() -> GeneralizedQSP:
-    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    W, _ = get_walk_operator_for_1d_ising_model(2, 1e-4)
     gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
     return gqsp_1d_ising
 
@@ -248,12 +199,15 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
 
     _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    assert sigma == {
-        arbitrary_rotation: degree + 1,
-        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
-        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
-        U.adjoint(): max(0, negative_power - degree),
-    }
+    expected_sigma: dict[Bloq, int] = {arbitrary_rotation: degree + 1}
+    if degree > negative_power:
+        expected_sigma[U.controlled(ctrl_spec=CtrlSpec(cvs=0))] = degree - negative_power
+    if negative_power > 0:
+        expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
+    if negative_power > degree:
+        expected_sigma[U.adjoint()] = negative_power - degree
+
+    assert sigma == expected_sigma
 
 
 @define(slots=False)
@@ -297,7 +251,7 @@ class SymbolicGQSP:
         return float(sum(abs(c) for c in sympy.Poly(M, U).coeffs()))
 
     def verify(self):
-        check_polynomial_pair_on_random_points_on_unit_circle(
+        check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
             self.P, self.Q, random_state=np.random.RandomState(42)
         )
         U = sympy.symbols('U')
@@ -314,8 +268,13 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("degree", [2, 3, 4, 5, 10])
+@pytest.mark.parametrize(
+    "degree",
+    [
+        pytest.param(degree, marks=pytest.mark.slow if degree >= 5 else ())
+        for degree in [2, 3, 4, 5, 10]
+    ],
+)
 def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     random_state = np.random.RandomState(102)
 
@@ -327,7 +286,7 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
 @pytest.mark.parametrize("t", [2, 5, 7])
 @pytest.mark.parametrize("precision", [1e-4, 1e-7, 1e-9])
 def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, precision: float):
-    from qualtran.linalg.jacobi_anger_approximations import (
+    from qualtran.linalg.polynomial.jacobi_anger_approximations import (
         approx_exp_cos_by_jacobi_anger,
         degree_jacobi_anger_approximation,
     )
@@ -345,7 +304,12 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     assert_is_qsp_polynomial(list(P))
 
     Q = qsp_complementary_polynomial(list(P), verify=True, verify_precision=1e-5)
-    check_polynomial_pair_on_random_points_on_unit_circle(
+    check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
         list(P), Q, random_state=random_state, rtol=precision
     )
     verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('generalized_qsp')

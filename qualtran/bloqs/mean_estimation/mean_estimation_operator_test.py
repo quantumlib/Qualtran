@@ -20,18 +20,14 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import (
-    get_named_qubits,
-    SpecializedSingleQubitControlledGate,
-    total_bits,
-)
+from qualtran import BQUInt, QAny, QUInt, Register
+from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
 )
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.cirq_interop import bit_tools
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -44,7 +40,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('q', BoundedQUInt(self.nqubits, 2)),)
+        return (Register('q', BQUInt(self.nqubits, 2)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid]
@@ -55,7 +51,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class BernoulliEncoder(SelectOracle):
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -66,11 +62,11 @@ class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # t
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', QBit()),)
+        return ()
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('q', BoundedQUInt(self.selection_bitsize, 2)),)
+        return (Register('q', BQUInt(self.selection_bitsize, 2)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -79,8 +75,8 @@ class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # t
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
-        y0_bin = bit_tools.iter_bits(self.y[0], self.target_bitsize)
-        y1_bin = bit_tools.iter_bits(self.y[1], self.target_bitsize)
+        y0_bin = QUInt(self.target_bitsize).to_bits(self.y[0])
+        y1_bin = QUInt(self.target_bitsize).to_bits(self.y[1])
 
         for y0, y1, tq in zip(y0_bin, y1_bin, t):
             if y0:
@@ -220,10 +216,8 @@ class GroverEncoder(SelectOracle):
     def decompose_from_registers(  # type:ignore[override]
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
-        selection_cv = [
-            *bit_tools.iter_bits(self.marked_item, total_bits(self.selection_registers))
-        ]
-        yval_bin = [*bit_tools.iter_bits(self.marked_val, total_bits(self.target_registers))]
+        selection_cv = QUInt(total_bits(self.selection_registers)).to_bits(self.marked_item)
+        yval_bin = QUInt(total_bits(self.target_registers)).to_bits(self.marked_val)
 
         for b, q in zip(yval_bin, target):
             if b:

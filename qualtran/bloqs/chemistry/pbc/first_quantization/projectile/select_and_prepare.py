@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -24,7 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     QBit,
     Register,
@@ -49,12 +49,13 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
     MultiplexedCSwap3D,
     UniformSuperpostionIJFirstQuantization,
 )
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -82,6 +83,7 @@ class PrepareTUVSuperpositions(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 15, section A
     """
+
     num_bits_t: int
     eta: int
     lambda_zeta: int
@@ -102,15 +104,17 @@ class PrepareTUVSuperpositions(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
-        return 'PREP TUV'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP TUV")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
-            return set()
+            return {}
         else:
-            return {(Toffoli(), 6 * self.num_bits_t + 2)}
+            return {Toffoli(): 6 * self.num_bits_t + 2}
 
 
 @frozen
@@ -131,7 +135,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
         return Signature(
             [
                 Register('ctrl', QBit(), shape=(len(self.cvs),)),
-                Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+                Register('sel', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
                 Register('targets', QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
                 Register('junk', QAny(bitsize=self.num_bits_n), shape=(3,)),
             ]
@@ -139,7 +143,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(self.pretty_name())
+            return Text('MultiSwap')
         if reg.name == 'sel':
             return TextBox('In')
         elif reg.name == 'targets':
@@ -229,8 +233,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         flags: A 4 qubit flag register indicating which component of the Hamiltonian to apply.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
     """
 
     num_bits_p: int
@@ -256,21 +259,21 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         # overflow: 3 * 2 qubits are missing.
         # l: should not be reflected on.
         return (
-            Register('tuv', BoundedQUInt(bitsize=1, iteration_length=2)),
-            Register('tepm', BoundedQUInt(bitsize=2, iteration_length=3)),
-            Register('uv', BoundedQUInt(bitsize=2, iteration_length=4)),
-            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register("w", BoundedQUInt(iteration_length=3, bitsize=2)),
-            Register("w_mean", BoundedQUInt(iteration_length=3, bitsize=2)),
-            Register("r", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("s", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("mu", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
-            Register("m", BoundedQUInt(bitsize=n_m)),
-            Register("l", BoundedQUInt(bitsize=n_at)),
+            Register('tuv', BQUInt(bitsize=1, iteration_length=2)),
+            Register('tepm', BQUInt(bitsize=2, iteration_length=3)),
+            Register('uv', BQUInt(bitsize=2, iteration_length=4)),
+            Register('i', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", BQUInt(iteration_length=3, bitsize=2)),
+            Register("w_mean", BQUInt(iteration_length=3, bitsize=2)),
+            Register("r", BQUInt(bitsize=self.num_bits_n)),
+            Register("s", BQUInt(bitsize=self.num_bits_n)),
+            Register("mu", BQUInt(bitsize=self.num_bits_n)),
+            Register("nu_x", BQUInt(bitsize=n_nu)),
+            Register("nu_y", BQUInt(bitsize=n_nu)),
+            Register("nu_z", BQUInt(bitsize=n_nu)),
+            Register("m", BQUInt(bitsize=n_m)),
+            Register("l", BQUInt(bitsize=n_at)),
         )
 
     @cached_property
@@ -281,8 +284,10 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("PREP")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -403,8 +408,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             components of size num_bits_n.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
     """
 
     num_bits_p: int
@@ -433,18 +437,18 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         n_at = (self.num_atoms - 1).bit_length()
         n_m = (self.m_param - 1).bit_length()
         return (
-            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register("w", BoundedQUInt(bitsize=3)),
-            Register("w_mean", BoundedQUInt(bitsize=3)),
-            Register("r", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("s", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("mu", BoundedQUInt(bitsize=self.num_bits_n)),
-            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
-            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
-            Register("m", BoundedQUInt(bitsize=n_m)),
-            Register("l", BoundedQUInt(bitsize=n_at)),
+            Register('i', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", BQUInt(bitsize=3)),
+            Register("w_mean", BQUInt(bitsize=3)),
+            Register("r", BQUInt(bitsize=self.num_bits_n)),
+            Register("s", BQUInt(bitsize=self.num_bits_n)),
+            Register("mu", BQUInt(bitsize=self.num_bits_n)),
+            Register("nu_x", BQUInt(bitsize=n_nu)),
+            Register("nu_y", BQUInt(bitsize=n_nu)),
+            Register("nu_z", BQUInt(bitsize=n_nu)),
+            Register("m", BQUInt(bitsize=n_m)),
+            Register("l", BQUInt(bitsize=n_at)),
         )
 
     @cached_property
@@ -460,8 +464,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def pretty_name(self) -> str:
-        return r'SELECT'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SELECT")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,
@@ -603,13 +609,9 @@ def _sel_first_quant() -> SelectFirstQuantizationWithProj:
 
 
 _FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC = BloqDocSpec(
-    bloq_cls=PrepareFirstQuantizationWithProj,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import PrepareFirstQuantizationWithProj',
-    examples=(_prep_first_quant,),
+    bloq_cls=PrepareFirstQuantizationWithProj, examples=(_prep_first_quant,)
 )
 
 _FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC = BloqDocSpec(
-    bloq_cls=SelectFirstQuantizationWithProj,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import SelectFirstQuantizationWithProj',
-    examples=(_sel_first_quant,),
+    bloq_cls=SelectFirstQuantizationWithProj, examples=(_sel_first_quant,)
 )

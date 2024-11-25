@@ -12,25 +12,33 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Utilities for simultaneous support for Sympy symbolic objects and concrete values."""
 
 from qualtran.symbolics.math_funcs import (
     acos,
     bit_length,
     ceil,
     floor,
+    is_zero,
+    ln,
     log2,
     pi,
     prod,
     sabs,
+    sarg,
     sconj,
-    shape,
-    slen,
+    sexp,
     smax,
     smin,
+    ssqrt,
+    ssum,
 )
 from qualtran.symbolics.types import (
+    HasLength,
     is_symbolic,
+    shape,
     Shaped,
+    slen,
     SymbolicComplex,
     SymbolicFloat,
     SymbolicInt,

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
-
+from functools import cached_property
 from typing import Tuple, TYPE_CHECKING, Union
 
 from attrs import field, frozen
@@ -143,7 +143,7 @@ class Connection:
     left: Soquet
     right: Soquet
 
-    @property
+    @cached_property
     def shape(self) -> int:
         ls = self.left.reg.bitsize
         rs = self.right.reg.bitsize

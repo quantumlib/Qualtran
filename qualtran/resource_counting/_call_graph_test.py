@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Tuple
 
 import attrs
 import networkx as nx
@@ -24,13 +25,16 @@ from attrs import field, frozen
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
+from qualtran.bloqs.bookkeeping import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import (
+    BloqCountDictT,
     BloqCountT,
     get_bloq_call_graph,
     get_bloq_callee_counts,
+    MutableBloqCountDictT,
     SympySymbolAllocator,
 )
+from qualtran.resource_counting.generalizers import generalize_rotation_angle
 from qualtran.symbolics import SymbolicInt
 
 
@@ -42,8 +46,8 @@ class BigBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
-        return {(SubBloq(unrelated_param=0.5), sympy.log(self.bitsize))}
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> 'BloqCountDictT':
+        return {SubBloq(unrelated_param=0.5): sympy.log(self.bitsize)}
 
 
 @frozen
@@ -70,8 +74,8 @@ class SubBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 3)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {TGate(): 3}
 
 
 def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
@@ -147,10 +151,13 @@ class OnlyCallGraphBloqShim(Bloq):
     def signature(self) -> 'Signature':
         return Signature([])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return set(self.callees)
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        counts: 'MutableBloqCountDictT' = defaultdict(int)
+        for bloq, count in self.callees:
+            counts[bloq] += count
+        return counts
 
-    def pretty_name(self):
+    def __str__(self):
         return self.name
 
 
@@ -227,3 +234,18 @@ def test_funnel_graph_generalize():
 
     assert edgeset == {('x', 'a', 2), ('a', 'b', 1), ('b', 'c', 1)}
     assert sigma == {'c': 2}
+
+
+def test_multiple_overlaping_call_graph_entries():
+    b = OnlyCallGraphBloqShim(name='multi', callees=[(TGate(), 1), (TGate(), 2)])
+    counts = get_bloq_callee_counts(b)
+    assert counts == [(TGate(), 3)]
+
+    b = OnlyCallGraphBloqShim(name='sep', callees=[(TGate(), 1), (TGate().adjoint(), 2)])
+    counts = get_bloq_callee_counts(b)
+    # TODO: set needed because of https://github.com/quantumlib/Qualtran/issues/845
+    assert set(counts) == {(TGate(), 1), (TGate().adjoint(), 2)}
+
+    b = OnlyCallGraphBloqShim(name='for_gen', callees=[(TGate(), 1), (TGate().adjoint(), 2)])
+    counts = get_bloq_callee_counts(b, generalizer=generalize_rotation_angle)
+    assert counts == [(TGate(), 3)]

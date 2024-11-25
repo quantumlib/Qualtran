@@ -17,11 +17,10 @@ import random
 import cirq
 import pytest
 
-from qualtran import BoundedQUInt, Register
-from qualtran.bloqs.basic_gates import TGate
+from qualtran import BQUInt, QUInt, Register
 from qualtran.bloqs.swap_network.multiplexed_cswap import _multiplexed_cswap, MultiplexedCSwap
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.testing import assert_valid_bloq_decomposition
 
 random.seed(12345)
@@ -33,7 +32,7 @@ random.seed(12345)
 def test_cswap_lth_reg(selection_bitsize, iteration_length, target_bitsize):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = MultiplexedCSwap(
-        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
+        Register('selection', BQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
     g = GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
@@ -41,14 +40,14 @@ def test_cswap_lth_reg(selection_bitsize, iteration_length, target_bitsize):
         # Initial qubit values
         qubit_vals = {q: 0 for q in g.all_qubits}
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         # swap the nth register (x{n}) with the ancilla (y)
         # put some non-zero numbers in the registers for comparison.
-        qubit_vals.update(zip(g.quregs['targets'][n], iter_bits(n + 1, target_bitsize)))
+        qubit_vals.update(zip(g.quregs['targets'][n], QUInt(target_bitsize).to_bits(n + 1)))
         initial_state = [qubit_vals[x] for x in g.all_qubits]
         qubit_vals.update(zip(g.quregs['targets'][n], [0] * len(g.quregs['targets'][n])))
-        qubit_vals.update(zip(g.quregs['output'], iter_bits(n + 1, target_bitsize)))
+        qubit_vals.update(zip(g.quregs['output'], QUInt(target_bitsize).to_bits(n + 1)))
         final_state = [qubit_vals[x] for x in g.all_qubits]
         assert_circuit_inp_out_cirqsim(
             g.decomposed_circuit, g.all_qubits, initial_state, final_state
@@ -62,7 +61,7 @@ def test_multiplexed_cswap_bloq_has_consistent_decomposition(
     selection_bitsize, iteration_length, target_bitsize
 ):
     bloq = MultiplexedCSwap(
-        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
+        Register('selection', BQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
     assert_valid_bloq_decomposition(bloq)
@@ -73,12 +72,18 @@ def test_multiplexed_cswap_bloq_has_consistent_decomposition(
 )
 def test_multiplexed_cswap_t_counts(selection_bitsize, iteration_length, target_bitsize):
     bloq = MultiplexedCSwap(
-        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
+        Register('selection', BQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
-    expected = 4 * (iteration_length - 2) + 7 * (iteration_length * target_bitsize)
-    assert bloq.t_complexity().t == expected
-    assert bloq.call_graph()[1][TGate()] == expected
+    expected_t = 4 * (iteration_length - 2) + 7 * (iteration_length * target_bitsize)
+    assert bloq.t_complexity().t == expected_t
+    gc = get_cost_value(bloq, QECGatesCost())
+    assert gc == GateCounts(
+        and_bloq=iteration_length - 2,
+        measurement=iteration_length - 2,  # and^dag,
+        cswap=iteration_length * target_bitsize,
+        clifford=gc.clifford,  # don't test this
+    )
 
 
 def test_multiplexed_cswap(bloq_autotester):

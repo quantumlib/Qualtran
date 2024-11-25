@@ -51,23 +51,8 @@ from typing import Dict
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QBit, QFxp, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, Toffoli, XGate
-from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-
-
-class RzAddIntoPhaseGradient(AddIntoPhaseGrad):
-    r"""Temporary controlled adder to give the right complexity for Rz rotations by
-    phase gradient state addition.
-
-    References:
-         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/abs/2007.07391).
-        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
-        rotations
-    """
-
-    def bloq_counts(self):
-        return {Toffoli(): self.x_bitsize - 2}
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
+from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
 
 
 @frozen
@@ -101,11 +86,11 @@ class RealGivensRotationByPhaseGradient(Bloq):
         phase_gradient: QFxp data type representing the phase gradient register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/abs/2007.07391).
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
         Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
-        rotations
+        rotations.
     """
+
     phasegrad_bitsize: int
 
     @cached_property
@@ -113,8 +98,19 @@ class RealGivensRotationByPhaseGradient(Bloq):
         return Signature.build_from_dtypes(
             target_i=QBit(),
             target_j=QBit(),
-            rom_data=QFxp(self.phasegrad_bitsize, self.phasegrad_bitsize, signed=False),
-            phase_gradient=QFxp(self.phasegrad_bitsize, self.phasegrad_bitsize, signed=False),
+            rom_data=self.phasegrad_dtype,
+            phase_gradient=self.phasegrad_dtype,
+        )
+
+    @cached_property
+    def phasegrad_dtype(self):
+        return QFxp(self.phasegrad_bitsize, self.phasegrad_bitsize, signed=False)
+
+    @property
+    def add_into_phasegrad(self) -> RzViaPhaseGradient:
+        # set up rz-rotation via phase-gradient state
+        return RzViaPhaseGradient(
+            angle_dtype=self.phasegrad_dtype, phasegrad_dtype=self.phasegrad_dtype
         )
 
     def build_composite_bloq(
@@ -125,15 +121,6 @@ class RealGivensRotationByPhaseGradient(Bloq):
         rom_data: SoquetT,
         phase_gradient: SoquetT,
     ) -> Dict[str, SoquetT]:
-        # set up rz-rotation via phase-gradient state
-        add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-            x_bitsize=self.phasegrad_bitsize,
-            phase_bitsize=self.phasegrad_bitsize,
-            right_shift=0,
-            sign=1,
-            controlled_by=1,
-        )
-
         # clifford block
         target_i = bb.add(XGate(), q=target_i)
         target_j = bb.add(SGate(), q=target_j)
@@ -144,10 +131,10 @@ class RealGivensRotationByPhaseGradient(Bloq):
 
         # parallel rz (Can probably be improved with single out of place adder into a single ancilla
         target_i, rom_data, phase_gradient = bb.add(
-            add_into_phasegrad_gate, x=rom_data, phase_grad=phase_gradient, ctrl=target_i
+            self.add_into_phasegrad, q=target_i, angle=rom_data, phase_grad=phase_gradient
         )
         target_j, rom_data, phase_gradient = bb.add(
-            add_into_phasegrad_gate, x=rom_data, phase_grad=phase_gradient, ctrl=target_j
+            self.add_into_phasegrad, q=target_j, angle=rom_data, phase_grad=phase_gradient
         )
 
         # clifford block
@@ -242,16 +229,13 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
         )
 
         # set up rz-rotation on j-bit by phase-gradient state
-        add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-            x_bitsize=self.phasegrad_bitsize,
-            phase_bitsize=self.phasegrad_bitsize,
-            right_shift=0,
-            sign=1,
-            controlled_by=1,
-        )
         target_j, cplx_rom_data, phase_gradient = bb.add(
-            add_into_phasegrad_gate, x=cplx_rom_data, phase_grad=phase_gradient, ctrl=target_j
+            real_givens_gate.add_into_phasegrad,
+            q=target_j,
+            angle=cplx_rom_data,
+            phase_grad=phase_gradient,
         )
+
         return {
             'target_i': target_i,
             'target_j': target_j,

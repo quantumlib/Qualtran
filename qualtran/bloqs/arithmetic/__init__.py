@@ -12,25 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.arithmetic.addition import (
-    Add,
-    AddConstantMod,
-    OutOfPlaceAdder,
-    SimpleAddConstant,
-    Subtract,
-)
+from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
+    CLinearDepthGreaterThan,
+    Equals,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthHalfGreaterThan,
+    LinearDepthHalfGreaterThanEqual,
+    LinearDepthHalfLessThan,
+    LinearDepthHalfLessThanEqual,
     SingleQubitCompare,
 )
-from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement, ToContiguousIndex
+from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+from qualtran.bloqs.arithmetic.conversions import (
+    SignedIntegerToTwosComplement,
+    SignExtend,
+    ToContiguousIndex,
+)
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import (
+    InvertRealNumber,
     MultiplyTwoReals,
     PlusEqualProduct,
     Product,
@@ -39,6 +46,9 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SquareRealNumber,
     SumOfSquares,
 )
+from qualtran.bloqs.arithmetic.negate import Negate
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+from qualtran.bloqs.arithmetic.subtraction import Subtract, SubtractFrom
+from qualtran.bloqs.arithmetic.trigonometric import ArcSin
 
-from ._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub
+from ._shims import CHalf, Lt, MultiCToffoli

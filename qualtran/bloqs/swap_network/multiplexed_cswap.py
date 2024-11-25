@@ -57,6 +57,7 @@ class MultiplexedCSwap(UnaryIterationGate):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 20 paragraph 2.
     """
+
     selection_regs: Tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
@@ -108,21 +109,17 @@ class MultiplexedCSwap(UnaryIterationGate):
 
 @bloq_example
 def _multiplexed_cswap() -> MultiplexedCSwap:
-    from qualtran import BoundedQUInt
+    from qualtran import BQUInt
 
     selection_bitsize = 3
     iteration_length = 5
     target_bitsize = 2
     multiplexed_cswap = MultiplexedCSwap(
-        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
+        Register('selection', BQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
 
     return multiplexed_cswap
 
 
-_MULTIPLEXED_CSWAP_DOC = BloqDocSpec(
-    bloq_cls=MultiplexedCSwap,
-    import_line='from qualtran.bloqs.swap_network import MultiplexedCSwap',
-    examples=(_multiplexed_cswap,),
-)
+_MULTIPLEXED_CSWAP_DOC = BloqDocSpec(bloq_cls=MultiplexedCSwap, examples=(_multiplexed_cswap,))

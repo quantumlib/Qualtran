@@ -14,16 +14,18 @@
 from functools import cached_property
 from typing import Iterator, Optional, Tuple
 
+import attrs
 import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran import AddControlledT, Bloq, BloqBuilder, BQUInt, CtrlSpec, QBit, Register, SoquetT
+from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 
 
 @frozen
@@ -54,7 +56,7 @@ class TestPrepareOracle(PrepareOracle):
 
     @property
     def selection_registers(self) -> tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
+        return (Register('selection', BQUInt(bitsize=self.U.bitsize)),)
 
     @property
     def l1_norm_of_coeffs(self) -> float:
@@ -82,7 +84,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -126,11 +128,11 @@ class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', BoundedQUInt(bitsize=self.select_bitsize)),)
+        return (Register('selection', BQUInt(bitsize=self.select_bitsize)),)
 
     @property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', BoundedQUInt(bitsize=self.target_bitsize)),)
+        return (Register('target', BQUInt(bitsize=self.target_bitsize)),)
 
     def decompose_from_registers(
         self,
@@ -146,6 +148,19 @@ class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):
             if self.control_val is not None:
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
 
 
 def random_qubitization_walk_operator(
@@ -180,4 +195,4 @@ def random_qubitization_walk_operator(
         ]
     )
 
-    return QubitizationWalkOperator(prepare=prepare, select=select), ham
+    return QubitizationWalkOperator(SelectBlockEncoding(prepare=prepare, select=select)), ham

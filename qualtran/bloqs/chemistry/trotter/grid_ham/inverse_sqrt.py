@@ -13,19 +13,18 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QInt, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QFxp, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
-from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
@@ -94,22 +93,22 @@ def build_qrom_data_for_poly_fit(
     for i, (a, b) in enumerate(zip(poly_coeffs_a, poly_coeffs_b)):
         # In practice we should set x = 0 to some large constant, but we will just skip for now.
         # x = 1
-        _, coeff = float_as_fixed_width_int(a, target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a)
         data[i, 1] = coeff
         # x = 2
-        _, coeff = float_as_fixed_width_int(b, target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(b)
         data[i, 2] = coeff
         # x = 3
-        _, coeff = float_as_fixed_width_int(a / 2 ** (1 / 2), target_bitsize)
+        coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a / 2 ** (1 / 2))
         data[i, 3] = coeff
         start = 4
         for k in range(2, selection_bitsize):
-            _, coeff = float_as_fixed_width_int(a / 2 ** (k / 2), target_bitsize)
+            coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(a / 2 ** (k / 2))
             # Number of time to repeat the data.
             data_size = max(1, 2 ** (k - 1))
             end = start + data_size
             data[i, start:end] = coeff
-            _, coeff = float_as_fixed_width_int(b / 2 ** (k / 2), target_bitsize)
+            coeff = QFxp(target_bitsize, target_bitsize).to_fixed_width_int(b / 2 ** (k / 2))
             start += data_size
             end += data_size
             data[i, start:end] = coeff
@@ -166,18 +165,12 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y = x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y=x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return (
-            SquareRealNumber(self.poly_bitsize).t_complexity()
-            + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
-            + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
-            + Add(QInt(self.target_bitsize)).t_complexity()
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
         # 2. scale y^2 by x
@@ -185,12 +178,12 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 4. multiply y^2 x by y
         # 5. add 3. and 4.
         return {
-            (SquareRealNumber(self.poly_bitsize), 1),
+            SquareRealNumber(self.poly_bitsize): 1,
             # TODO: When decomposing we will potentially need to cast into a larger register.
             # See: https://github.com/quantumlib/Qualtran/issues/655
-            (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize), 1),
-            (MultiplyTwoReals(self.target_bitsize), 2),
-            (Add(QInt(self.target_bitsize)), 1),
+            ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize): 1,
+            MultiplyTwoReals(self.target_bitsize): 2,
+            Add(QInt(self.target_bitsize)): 1,
         }
 
 
@@ -207,8 +200,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         out: Output register to store polynomial approximation to inverse square root.
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/pdf/2308.12352.pdf)
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352).
     """
 
     x_sq_bitsize: int
@@ -225,22 +217,15 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y ~ x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y~x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # There are 3 multiplications and subtractions, the shifts (-1, -3/2)
-        # are not included in Fusion estimates as these can be achieved with
-        # Clifford gates only.
-        return 3 * (
-            Add(QInt(self.poly_bitsize)).t_complexity()
-            + MultiplyTwoReals(self.poly_bitsize).t_complexity()
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize)), 3)}
+        return {MultiplyTwoReals(self.poly_bitsize): 3, Add(QInt(self.poly_bitsize)): 3}
 
 
 @bloq_example

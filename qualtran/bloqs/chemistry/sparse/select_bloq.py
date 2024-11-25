@@ -14,32 +14,35 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
+import attrs
 import cirq
 from attrs import frozen
 
 from qualtran import (
+    AddControlledT,
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    BQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
     SoquetT,
 )
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import SGate
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
-from qualtran.bloqs.select_and_prepare import SelectOracle
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
-class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
+class SelectSparse(SelectOracle):
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
@@ -76,35 +79,35 @@ class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type:
         return (
             Register(
                 "p",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "q",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "r",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
             Register(
                 "s",
-                BoundedQUInt(
+                BQUInt(
                     bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("alpha", BoundedQUInt(1)),
-            Register("beta", BoundedQUInt(1)),
-            Register("flag_1b", BoundedQUInt(1)),
+            Register("alpha", BQUInt(1)),
+            Register("beta", BQUInt(1)),
+            Register("flag_1b", BQUInt(1)),
         )
 
     @cached_property
@@ -152,7 +155,7 @@ class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type:
             out_soqs['control'] = soqs['control']
         return out_soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
         # is a bit misleading as applying that circuit twice would square the
@@ -164,7 +167,20 @@ class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type:
         maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y, control_regs=())
         c_maj_x = SelectedMajoranaFermion(sel_pa, target_gate=cirq.X)
         c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
-        return {(SGate(), 1), (maj_x, 1), (c_maj_x, 1), (maj_y, 1), (c_maj_y, 1)}
+        return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
 
 
 @bloq_example
@@ -174,8 +190,4 @@ def _sel_sparse() -> SelectSparse:
     return sel_sparse
 
 
-_SPARSE_SELECT = BloqDocSpec(
-    bloq_cls=SelectSparse,
-    import_line='from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse',
-    examples=(_sel_sparse,),
-)
+_SPARSE_SELECT = BloqDocSpec(bloq_cls=SelectSparse, examples=(_sel_sparse,))

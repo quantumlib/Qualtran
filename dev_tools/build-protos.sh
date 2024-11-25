@@ -88,7 +88,7 @@ if (( opt_check )); then
         my_exit_code=1
     fi
     for f in "${new_generated_files[@]}"; do
-        cmp "${outdir}/${f}" "${topdir}/src/${f}" || my_exit_code=1
+        cmp "${outdir}/${f}" "${topdir}/${f}" || my_exit_code=1
     done
     # clean up after a successful check
     if (( my_exit_code == 0 )); then

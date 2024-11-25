@@ -31,11 +31,13 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.basic_gates.swap import (
     _controlled_swap_matrix,
+    _cswap,
     _cswap_large,
     _cswap_small,
-    _cswap_symb,
+    _swap,
     _swap_matrix,
     _swap_small,
+    Swap,
 )
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -62,6 +64,11 @@ def test_two_bit_swap_unitary_vs_cirq():
     np.testing.assert_array_equal(swap.tensor_contract(), cirq.unitary(cirq.SWAP))
 
 
+def test_two_bit_cswap_unitary_vs_cirq():
+    swap = TwoBitCSwap()
+    np.testing.assert_allclose(swap.tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8)
+
+
 def test_two_bit_swap_as_cirq_op():
     q = cirq.LineQubit.range(2)
     expected_circuit = cirq.Circuit(cirq.SWAP(*q))
@@ -76,6 +83,10 @@ def test_two_bit_swap_call_classically():
     x, y = swap.call_classically(x=0, y=1)
     assert x == 1
     assert y == 0
+
+
+def test_two_bit_swap_controlled():
+    assert TwoBitSwap().controlled() == TwoBitCSwap()
 
 
 def _set_ctrl_two_bit_swap(ctrl_bit):
@@ -93,16 +104,13 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
 
 def test_two_bit_cswap():
     cswap = TwoBitCSwap()
-    np.testing.assert_array_equal(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP))
-    np.testing.assert_allclose(
-        cswap.decompose_bloq().tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8
-    )
+    np.testing.assert_allclose(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8)
 
     # Zero ctrl -- it's identity
-    np.testing.assert_array_equal(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract())
+    np.testing.assert_allclose(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract(), atol=1e-8)
     # One ctrl -- it's swap
-    np.testing.assert_array_equal(
-        _swap_matrix().reshape(4, 4), _set_ctrl_two_bit_swap(1).tensor_contract()
+    np.testing.assert_allclose(
+        _swap_matrix().reshape(4, 4), _set_ctrl_two_bit_swap(1).tensor_contract(), atol=1e-8
     )
 
     # classical logic
@@ -159,13 +167,15 @@ def test_cswap_unitary():
     cswap = CSwap(bitsize=4)
 
     # Zero ctrl -- it's identity
-    np.testing.assert_array_equal(np.eye(2 ** (4 * 2)), _set_ctrl_swap(0, cswap).tensor_contract())
+    np.testing.assert_allclose(
+        np.eye(2 ** (4 * 2)), _set_ctrl_swap(0, cswap).tensor_contract(), atol=1e-8
+    )
 
     # One ctrl -- it's multi-swap
     qubits = cirq.LineQubit.range(8)
     q_x, q_y = qubits[:4], qubits[4:]
     unitary = cirq.unitary(cirq.Circuit(cirq.SWAP(x, y) for x, y in zip(q_x, q_y)))
-    np.testing.assert_array_equal(unitary, _set_ctrl_swap(1, cswap).tensor_contract())
+    np.testing.assert_allclose(unitary, _set_ctrl_swap(1, cswap).tensor_contract(), atol=1e-8)
 
 
 def test_cswap_classical():
@@ -191,6 +201,7 @@ def test_cswap_bloq_counts():
     assert counts1 == counts2
 
     assert t_complexity(CSwap(1)) == TComplexity(t=7, clifford=10)
+    assert t_complexity(CSwap(10)) == TComplexity(t=70, clifford=100)
     assert t_complexity(TwoBitCSwap()) == TComplexity(t=7, clifford=10)
 
 
@@ -204,8 +215,19 @@ def test_cswap_symbolic():
         cswap.decompose_bloq()
 
 
+def test_swap_controlled():
+    bitsize = 4
+    assert Swap(bitsize).controlled() == CSwap(bitsize)
+
+
 def test_swap_small(bloq_autotester):
     bloq_autotester(_swap_small)
+
+
+def test_swap_symb(bloq_autotester):
+    if bloq_autotester.check_name == 'serialize':
+        pytest.skip("Sympy equality with assumptions.")
+    bloq_autotester(_swap)
 
 
 def test_cswap_small(bloq_autotester):
@@ -217,4 +239,6 @@ def test_cswap_large(bloq_autotester):
 
 
 def test_cswap_symb(bloq_autotester):
-    bloq_autotester(_cswap_symb)
+    if bloq_autotester.check_name == 'serialize':
+        pytest.skip("Sympy equality with assumptions.")
+    bloq_autotester(_cswap)

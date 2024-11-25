@@ -25,6 +25,7 @@ from qualtran.bloqs.chemistry.df.double_factorization import (
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import execute_notebook
 
 
@@ -71,7 +72,7 @@ def test_compare_cost_to_openfermion():
         num_bits_rot_aa_inner=7,
         num_bits_rot=num_bits_rot,
     )
-    _, counts = bloq.call_graph()
+    t_counts = get_cost_value(bloq, QECGatesCost()).total_t_count()
     # https://github.com/quantumlib/OpenFermion/issues/839
     of_cost = compute_cost(
         num_spin_orb, lambd, 1e-3, num_aux, num_eig, num_bits_state_prep, num_bits_rot, 10_000
@@ -83,16 +84,14 @@ def test_compare_cost_to_openfermion():
     prog_rot_qrom_diff = 60
     missing_toffoli = 4  # need one more toffoli for second application of CZ
     swap_cost = 4 * (7 - 4) * num_spin_orb // 2
-    qual_cost = (
-        counts[TGate()] - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli - swap_cost
-    )
+    qual_cost = t_counts - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli - swap_cost
     # correct the expected cost by using a different uniform superposition algorithm
     # see: https://github.com/quantumlib/Qualtran/issues/611
     eta = power_two(num_aux + 1)
     cost1a = 4 * 2 * (3 * nl - 3 * eta + 2 * 7 - 9)
     prep = PrepareUniformSuperposition(num_aux + 1)
-    cost1a_mod = prep.call_graph()[1][TGate()]
-    cost1a_mod += prep.adjoint().call_graph()[1][TGate()]
+    cost1a_mod = get_cost_value(prep, QECGatesCost()).total_t_count()
+    cost1a_mod += get_cost_value(prep.adjoint(), QECGatesCost()).total_t_count()
     delta_uni_prep = cost1a_mod - cost1a
     qual_cost -= delta_uni_prep
     inner_refl = num_bits_state_prep + 1
@@ -100,7 +99,9 @@ def test_compare_cost_to_openfermion():
     qpe_toff = 2
     of_cost = of_cost - inner_refl - walk_refl - qpe_toff
     of_cost *= 4
-    assert of_cost == qual_cost
+    # Missing a control on l_ne_zero: https://github.com/quantumlib/Qualtran/issues/1022
+    delta_refl_missing_ctrl = 4
+    assert of_cost == qual_cost + delta_refl_missing_ctrl
 
 
 @pytest.mark.notebook

@@ -19,11 +19,10 @@ from collections import defaultdict
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
-import numpy as np
 import sympy
 from attrs import field, frozen
 
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicInt
 
 from .data_types import QAny, QBit, QDType
 
@@ -46,18 +45,17 @@ class Side(enum.Flag):
 
 @frozen
 class Register:
-    """A data type describing a register of qubits.
+    """A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
-    Each register has a name as well as attributes describing the quantum data expected
-    to be passed to the register. A collection of `Register` objects can be used to define
-    a bloq's signature, see the `Signature` class.
+    Each register has a name and a quantum data type. A collection of `Register` objects are used
+    to define a bloq's signature, see the `Signature` class.
 
     Attributes:
-        name: The string name of the register
-        _bitsize: The number of (qu)bits in the register OR the quantum data type of the register.
-            If an integer is given it will be converted into either a QAny
-            dtype or QBit dtype (_bitsize = 1).
-        shape: A tuple of integer dimensions to declare a multidimensional register. The
+        name: The string name of the register. This name is used to 'wire up' quantum inputs
+            by name, analogous to Python's keyword-arguments.
+        dtype: The quantum data type of the register, for example `QBit()`, `QUInt(n)`, `QAny(n)`,
+            or any of the data types provided in the top-level `qualtran` namespace.
+        shape: An optional tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
             for more information.
@@ -100,7 +98,7 @@ class Register:
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
-        return self.bitsize * int(np.prod(self.shape))
+        return self.bitsize * prod(self.shape_symbolic)
 
     def adjoint(self) -> 'Register':
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
@@ -203,9 +201,9 @@ class Signature:
         is taken to be the greater of the number of left or right qubits. A bloq with this
         signature uses at least this many qubits.
         """
-        left_size = sum(reg.total_bits() for reg in self.lefts())
-        right_size = sum(reg.total_bits() for reg in self.rights())
-        return max(left_size, right_size)
+        left_size = ssum(reg.total_bits() for reg in self.lefts())
+        right_size = ssum(reg.total_bits() for reg in self.rights())
+        return smax(left_size, right_size)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'

@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     BloqBuilder,
-    BoundedQUInt,
+    BQUInt,
     QAny,
     QBit,
     QFxp,
@@ -65,7 +65,7 @@ class TestMultiRegister(Bloq):
         zz = bb.join(np.array([a, b, c]))
         return {'xx': xx, 'yy': yy, 'zz': zz}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return 'xyz'
 
 
@@ -73,7 +73,7 @@ class TestMultiRegister(Bloq):
 class TestBoundedQUInt(Bloq):
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('xx', BoundedQUInt(4, 3)), Register('yy', QFxp(8, 6, True))])
+        return Signature([Register('xx', BQUInt(4, 3)), Register('yy', QFxp(8, 6, True))])
 
 
 @frozen
@@ -97,7 +97,7 @@ class TestMultiTypedRegister(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('a', BoundedQUInt(4, 3)),
+                Register('a', BQUInt(4, 3)),
                 Register('b', QFxp(8, 6, True)),
                 Register('c', QFxp(8, 8)),
                 Register('d', QUInt(8)),
@@ -111,5 +111,5 @@ class TestMultiTypedRegister(Bloq):
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
         return {'a': a, 'b': b, 'c': c, 'd': d}
 
-    def pretty_name(self) -> str:
+    def __str__(self) -> str:
         return 'abcd[T]'

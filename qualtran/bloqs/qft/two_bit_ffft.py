@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Set, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    ConnectionT,
     QBit,
     Register,
     Signature,
@@ -34,13 +35,14 @@ from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.rotation import Rz
 from qualtran.bloqs.basic_gates.s_gate import SGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.drawing import Text, WireSymbol
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.symbolics.types import SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 def _fkn_matrix(k: int, n: int) -> NDArray[np.complex128]:
@@ -85,38 +87,34 @@ class TwoBitFFFT(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QBit()), Register('y', QBit())])
 
-    def pretty_name(self) -> str:
-        return 'F(k, n)'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('F(k, n)')
+        return super().wire_symbol(reg, idx)
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        out_inds = [outgoing['x'], outgoing['y']]
-        in_inds = [incoming['x'], incoming['y']]
+        # TODO: https://github.com/quantumlib/Qualtran/issues/873. This tensor definition
+        #       isn't used by default since this isn't (yet) a "leaf bloq".
+
+        out_inds = [(outgoing['x'], 0), (outgoing['y'], 0)]
+        in_inds = [(incoming['x'], 0), (incoming['y'], 0)]
         matrix = _fkn_matrix(self.k, self.n)
         matrix = matrix.conj().T if self.is_adjoint else matrix
-        tn.add(
-            qtn.Tensor(
-                data=matrix.reshape((2,) * 4),
-                inds=out_inds + in_inds,
-                tags=[self.pretty_name(), tag],
-            )
-        )
+        return [
+            qtn.Tensor(data=matrix.reshape((2,) * 4), inds=out_inds + in_inds, tags=[str(self)])
+        ]
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
-            (Rz(2 * np.pi * self.k / self.n, eps=self.eps), 1),
-            (SGate(), 3),
-            (Hadamard(), 6),
-            (TGate(), 2),
-            (CNOT(), 3),
+            Rz(2 * np.pi * self.k / self.n, eps=self.eps): 1,
+            SGate(): 3,
+            Hadamard(): 6,
+            TGate(): 2,
+            CNOT(): 3,
         }
 
     def build_composite_bloq(
@@ -147,8 +145,4 @@ def _two_bit_ffft() -> TwoBitFFFT:
     return two_bit_ffft
 
 
-_TWO_BIT_FFFT_DOC = BloqDocSpec(
-    bloq_cls=TwoBitFFFT,
-    import_line='from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT',
-    examples=[_two_bit_ffft],
-)
+_TWO_BIT_FFFT_DOC = BloqDocSpec(bloq_cls=TwoBitFFFT, examples=[_two_bit_ffft])

@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, DanglingT, QAny, Signature, Soquet, SoquetT
-from qualtran.bloqs.util_bloqs import Join, Split
+from qualtran import Bloq, BloqBuilder, Connection, ConnectionT, DanglingT, QAny, Signature
+from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.simulation.tensor import cbloq_to_quimb
 
 
@@ -30,17 +30,12 @@ class TensorAdderSimple(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=1)
 
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         assert list(incoming.keys()) == ['x']
         assert list(outgoing.keys()) == ['x']
-        tn.add(qtn.Tensor(data=np.eye(2), inds=(incoming['x'], outgoing['x']), tags=[tag]))
+        return [qtn.Tensor(data=np.eye(2), inds=[(incoming['x'], 0), (outgoing['x'], 0)])]
 
 
 def test_cbloq_to_quimb():
@@ -52,11 +47,12 @@ def test_cbloq_to_quimb():
     x = bb.add(TensorAdderSimple(), x=x)
     cbloq = bb.finalize(x=x)
 
-    tn, _ = cbloq_to_quimb(cbloq)
+    tn = cbloq_to_quimb(cbloq)
     assert len(tn.tensors) == 4
-    for oi in tn.outer_inds():
-        assert isinstance(oi, Soquet)
-        assert isinstance(oi.binst, DanglingT)
+    for outer_ind in tn.outer_inds():
+        cxn, j = outer_ind
+        assert isinstance(cxn, Connection)
+        assert isinstance(cxn.left.binst, DanglingT) or isinstance(cxn.right.binst, DanglingT)
 
 
 def test_cbloq_to_quimb_with_no_ops_on_register():

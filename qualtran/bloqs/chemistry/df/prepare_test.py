@@ -15,7 +15,7 @@
 
 from openfermion.resource_estimates.utils import power_two, QI, QR
 
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.df.prepare import (
     _indexed_data,
     _prep_inner,
@@ -27,6 +27,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prep_inner(bloq_autotester):
@@ -48,13 +49,11 @@ def test_outerprep_t_counts():
     outer_prep = OuterPrepareDoubleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     )
-    _, counts = outer_prep.call_graph()
-    toff = counts[TGate()] // 4
+    toff = get_cost_value(outer_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     outer_prep = OuterPrepareDoubleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
-    _, counts = outer_prep.call_graph()
-    toff += counts[TGate()] // 4
+    toff += get_cost_value(outer_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     # The output size for the QROM for the first state preparation in Eq. (C27)
     eta = power_two(num_aux + 1)
     nl = num_aux.bit_length()
@@ -65,13 +64,13 @@ def test_outerprep_t_counts():
     # correct the expected cost by using a different uniform superposition algorithm
     # https://github.com/quantumlib/Qualtran/issues/611
     prep = PrepareUniformSuperposition(num_aux + 1)
-    cost1a_mod = prep.call_graph()[1][TGate()] // 4
-    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
+    cost1a_mod = get_cost_value(prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
+    cost1a_mod += get_cost_value(prep.adjoint(), QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     assert cost1a != cost1a_mod
     assert toff == cost1a_mod + cost1b + cost1cd
 
 
-def test_indexed_data_t_counts():
+def test_indexed_data_toffoli_counts():
     num_spin_orb = 108
     num_aux = 360
     num_bits_rot_aa = 7
@@ -80,12 +79,12 @@ def test_indexed_data_t_counts():
         num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot_aa
     )
     _, counts = in_l_data_l.call_graph()
-    toff = counts[TGate()] // 4
+    toff = counts[Toffoli()]
     in_l_data_l = OutputIndexedData(
         num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
     _, counts = in_l_data_l.call_graph()
-    toff += counts[TGate()] // 4
+    toff += counts[Toffoli()]
     # captured from cost2 in openfermion df.compute_cost
     nxi = (num_spin_orb // 2 - 1).bit_length()
     nlxi = (num_eig + num_spin_orb // 2 - 1).bit_length()
@@ -107,8 +106,7 @@ def test_inner_prepare_t_counts():
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
     )
-    _, counts = in_prep.call_graph()
-    toff = counts[TGate()] // 4
+    toff = get_cost_value(in_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     in_prep = InnerPrepareDoubleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
@@ -116,8 +114,7 @@ def test_inner_prepare_t_counts():
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
     ).adjoint()
-    _, counts = in_prep.call_graph()
-    toff += counts[TGate()] // 4
+    toff += get_cost_value(in_prep, QECGatesCost()).total_t_and_ccz_count()['n_ccz']
     toff *= 2  # cost is for the two applications of the in-prep, in-prep^
     # application of ciruit.
     # captured from cost3 in openfermion df.compute_cost

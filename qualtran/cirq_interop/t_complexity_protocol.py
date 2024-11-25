@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Callable, Hashable, Iterable, Optional, Protocol, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq, Controlled
-from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
+from qualtran import Bloq
 from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
+
+from .decompose_protocol import _decompose_once_considering_known_decomposition
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 _ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
@@ -58,23 +59,15 @@ class TComplexity:
     def __rmul__(self, other: int) -> 'TComplexity':
         return self.__mul__(other)
 
+    def asdict(self):
+        return {'t': self.t, 'rotations': self.rotations, 'clifford': self.clifford}
+
     def __str__(self) -> str:
         return (
             f'T-count:   {self.t:g}\n'
             f'Rotations: {self.rotations:g}\n'
             f'Cliffords: {self.clifford:g}\n'
         )
-
-
-class SupportsTComplexity(Protocol):
-    """An object whose TComplexity can be computed.
-
-    An object whose TComplexity can be computed either implements the `_t_complexity_` function
-    or is of a type that SupportsDecompose.
-    """
-
-    def _t_complexity_(self) -> TComplexity:
-        """Returns the TComplexity."""
 
 
 def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
@@ -89,15 +82,10 @@ def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
     return None
 
 
-def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
+def _from_directly_countable_cirq(stc: Any) -> Optional[TComplexity]:
     """Directly count a clifford, T or Rotation (if it is one)."""
-    from qualtran.bloqs.basic_gates import TGate
-
-    if isinstance(stc, TGate):
-        return TComplexity(t=1)
-
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
-        return None
+        raise TypeError(f"This strategy should only be used on Cirq gates/operations, not {stc!r}")
 
     if isinstance(stc, cirq.GlobalPhaseGate) or (
         isinstance(stc, cirq.Operation) and isinstance(stc.gate, cirq.GlobalPhaseGate)
@@ -118,21 +106,10 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
     if stc in _ROTS_GATESET:
         return TComplexity(rotations=1)
 
-    if isinstance(stc, Controlled) and cirq.num_qubits(stc) <= 2:
-        # We need this hack temporarily because we assume access to decomposition
-        # of a C-U gate where $U$ is a single qubit rotation. Cirq has this decomposition
-        # but the right thing to do in Qualtran is to add explicit bloqs and annotate
-        # them with costs. See https://github.com/quantumlib/Qualtran/issues/878
-        from qualtran._infra.gate_with_registers import get_named_qubits
-
-        quregs = get_named_qubits(stc.signature)
-        qm = cirq.SimpleQubitManager()
-        op, _ = stc.as_cirq_op(qubit_manager=qm, **quregs)
-        return t_complexity(cirq.decompose_once(op))
-
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.
         return TComplexity(rotations=1)
+
     return None
 
 
@@ -141,30 +118,11 @@ def _from_iterable(it: Any) -> Optional[TComplexity]:
         return None
     t = TComplexity()
     for v in it:
-        r = t_complexity(v)
+        r = t_complexity_compat(v)
         if r is None:
             return None
         t = t + r
     return t
-
-
-def _from_bloq_build_call_graph(stc: Any) -> Optional[TComplexity]:
-    # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
-    from qualtran.resource_counting import get_bloq_callee_counts
-    from qualtran.resource_counting.generalizers import cirq_to_bloqs
-
-    if not isinstance(stc, Bloq):
-        return None
-    callee_counts = get_bloq_callee_counts(bloq=stc, generalizer=cirq_to_bloqs)
-    if len(callee_counts) == 0:
-        return None
-    ret = TComplexity()
-    for bloq, n in callee_counts:
-        r = t_complexity(bloq)
-        if r is None:
-            return None
-        ret += n * r
-    return ret
 
 
 def _from_cirq_decomposition(stc: Any) -> Optional[TComplexity]:
@@ -211,21 +169,40 @@ def _t_complexity_from_strategies(
 def _t_complexity_for_gate_or_op(
     gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
-
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate
 
     strategies = [
         _from_explicit_annotation,
-        _from_bloq_build_call_graph,
-        _from_directly_countable,
+        _from_directly_countable_cirq,
         _from_cirq_decomposition,
     ]
     return _t_complexity_from_strategies(gate_or_op, strategies)
 
 
-def t_complexity(stc: Any) -> TComplexity:
-    """Returns the TComplexity.
+def t_complexity(bloq: Bloq) -> TComplexity:
+    """Returns the TComplexity of a bloq.
+
+    Args:
+        bloq: The bloq to compute the T complexity.
+
+    Returns:
+        The TComplexity of the given object.
+
+    Raises:
+        TypeError: if none of the strategies can derive the t complexity.
+    """
+    from qualtran.resource_counting import get_cost_value, QECGatesCost
+
+    return get_cost_value(bloq, QECGatesCost(legacy_shims=True)).to_legacy_t_complexity()
+
+
+def t_complexity_compat(stc: Any) -> TComplexity:
+    """Returns the TComplexity of a bloq or some Cirq objects.
+
+    The main `t_complexity` function now expects a `Bloq`. Historically, there were strategies
+    to derive t complexities from other container classes (`cirq.Circuit`, `cirq.Moment`) and
+    gates/operations.
 
     Args:
         stc: an object to compute its TComplexity.
@@ -236,23 +213,13 @@ def t_complexity(stc: Any) -> TComplexity:
     Raises:
         TypeError: if the methods fails to compute TComplexity.
     """
-    if isinstance(stc, (cirq.Gate, cirq.Operation, Bloq)) and isinstance(stc, Hashable):
+    if isinstance(stc, (cirq.AbstractCircuit, cirq.Moment, list)):
+        ret = _from_iterable(stc)
+    elif isinstance(stc, (cirq.Gate, cirq.Operation)):
         ret = _t_complexity_for_gate_or_op(stc)
     else:
-        strategies = [
-            _from_explicit_annotation,
-            _from_directly_countable,
-            _from_bloq_build_call_graph,
-            _from_cirq_decomposition,
-            _from_iterable,
-        ]
-        ret = _t_complexity_from_strategies(stc, strategies)
+        ret = None
 
     if ret is None:
         raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
     return ret
-
-
-t_complexity.cache_clear = _t_complexity_for_gate_or_op.cache_clear  # type: ignore[attr-defined]
-t_complexity.cache_info = _t_complexity_for_gate_or_op.cache_info  # type: ignore[attr-defined]
-t_complexity.cache = _t_complexity_for_gate_or_op.cache  # type: ignore[attr-defined]

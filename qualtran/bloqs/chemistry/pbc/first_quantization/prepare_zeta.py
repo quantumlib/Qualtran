@@ -14,7 +14,7 @@
 r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian.
 """
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -23,7 +23,7 @@ from qualtran import Bloq, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -44,6 +44,7 @@ class PrepareZetaState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 23-24, last 3 paragraphs.
     """
+
     num_atoms: int
     lambda_zeta: int
     num_bits_nuc_pos: int
@@ -56,11 +57,11 @@ class PrepareZetaState(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # Really Er(x), eq 91. In practice we will replace this with the
             # appropriate qrom call down the line.
-            return {(Toffoli(), int(np.ceil(self.lambda_zeta**0.5)))}
+            return {Toffoli(): int(np.ceil(self.lambda_zeta**0.5))}
         else:
 
-            return {(Toffoli(), self.lambda_zeta)}
+            return {Toffoli(): self.lambda_zeta}

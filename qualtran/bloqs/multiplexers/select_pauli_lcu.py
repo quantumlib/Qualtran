@@ -22,10 +22,19 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+)
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
-from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,
@@ -39,7 +48,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIterationGate):  # type: ignore[misc]
+class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -59,6 +68,7 @@ class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIt
             dense pauli string must contain `target_bitsize` terms.
         control_val: Optional control value. If specified, a singly controlled gate is constructed.
     """
+
     selection_bitsize: int
     target_bitsize: int
     select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
@@ -82,9 +92,7 @@ class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIt
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register('selection', BoundedQUInt(self.selection_bitsize, len(self.select_unitaries))),
-        )
+        return (Register('selection', BQUInt(self.selection_bitsize, len(self.select_unitaries))),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -117,6 +125,25 @@ class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIt
         """
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def _has_unitary_(self):
+        return True
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

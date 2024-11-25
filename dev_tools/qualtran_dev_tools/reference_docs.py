@@ -362,7 +362,7 @@ def apply_fixups(reporoot: Path):
     output_dir = reporoot / 'docs/reference'
     remove_extra_files(output_dir)
 
-    page_paths = output_dir.glob('qualtran/**/*.md')
+    page_paths = output_dir.glob('**/*.md')
     for path in page_paths:
         if fixup_all_symbols_page(path):
             continue

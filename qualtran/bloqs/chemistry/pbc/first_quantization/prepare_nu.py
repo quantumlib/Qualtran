@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -23,9 +23,10 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -49,6 +50,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 77.
     """
+
     num_bits_p: int
 
     @cached_property
@@ -57,11 +59,15 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
             [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {Toffoli(): (self.num_bits_p - 1)}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Toffoli(), (self.num_bits_p - 1))}
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'PREP √(2^μ)|μ⟩')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -88,6 +94,7 @@ class PrepareNuSuperPositionState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 78.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -103,12 +110,16 @@ class PrepareNuSuperPositionState(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
-        return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {(Toffoli(), (3 * (self.num_bits_p - 1)))}
+        return {Toffoli(): (3 * (self.num_bits_p - 1))}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'PREP (2^-μ)|μ⟩|ν⟩')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -126,6 +137,7 @@ class FlagZeroAsFailure(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -140,20 +152,24 @@ class FlagZeroAsFailure(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'$\nu\ne -0$'
-
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # This can be inverted with cliffords.
-            return set()
+            return {}
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.
-            return {(Toffoli(), (3 * self.num_bits_p + 2))}
+            return {Toffoli(): (3 * self.num_bits_p + 2)}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'ν≠−0')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -171,6 +187,7 @@ class TestNuLessThanMu(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     is_adjoint: bool = False
 
@@ -189,16 +206,20 @@ class TestNuLessThanMu(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def pretty_name(self) -> str:
-        return r'$\nu < 2^{\mu-2}$'
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
             # This can be inverted with cliffords.
-            return {(Toffoli(), 0)}
+            return {Toffoli(): 0}
         else:
             # n_p controlled Toffolis with four controls.
-            return {(Toffoli(), 3 * self.num_bits_p)}
+            return {Toffoli(): 3 * self.num_bits_p}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'ν<2^(μ−2)')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -233,6 +254,7 @@ class TestNuInequality(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 21, Eq 80.
     """
+
     num_bits_p: int
     num_bits_m: int
     is_adjoint: bool = False
@@ -257,15 +279,12 @@ class TestNuInequality(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
-
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.is_adjoint:
-            return {(Toffoli(), 0)}
+            return {Toffoli(): 0}
         else:
             # 1. Compute $\nu_x^2 + \nu_y^2 + \nu_z^2$
             cost_1 = (SumOfSquares(self.num_bits_p, k=3), 1)
@@ -276,7 +295,14 @@ class TestNuInequality(Bloq):
             cost_3 = (GreaterThan(self.num_bits_m, 2 * self.num_bits_p + 2), 1)
             # 4. 3 Toffoli for overall success
             cost_4 = (Toffoli(), 3)
-            return {cost_1, cost_2, cost_3, cost_4}
+            return dict([cost_1, cost_2, cost_3, cost_4])
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'(2^(μ-2))^2 M > m ν^2')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -324,6 +350,7 @@ class PrepareNuState(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     num_bits_p: int
     m_param: int
 
@@ -338,9 +365,6 @@ class PrepareNuState(Bloq):
                 Register("flag_nu", QBit()),
             ]
         )
-
-    def pretty_name(self) -> str:
-        return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
@@ -364,7 +388,7 @@ class PrepareNuState(Bloq):
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # 1. Prepare unary encoded superposition state (Eq 77)
         cost_1 = (PrepareMuUnaryEncodedOneHot(self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
@@ -377,4 +401,11 @@ class PrepareNuState(Bloq):
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
         cost_6 = (TestNuInequality(self.num_bits_p, n_m), 1)
-        return {cost_1, cost_2, cost_3, cost_4, cost_6}
+        return dict([cost_1, cost_2, cost_3, cost_4, cost_6])
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(r"PREP 1/‖ν‖ ∣ν⟩")
+        return super().wire_symbol(reg, idx)

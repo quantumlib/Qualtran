@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Optional, Tuple
 
 from attrs import frozen
 from numpy.typing import NDArray
@@ -31,6 +31,7 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic import SumOfSquares
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
+from qualtran.drawing import Text, WireSymbol
 
 
 @frozen
@@ -65,8 +66,10 @@ class KineticEnergy(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'U_T(dt)'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("U_T(dt)")
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: NDArray[Soquet]) -> Dict[str, SoquetT]:  # type: ignore[type-var]
         bitsize = (self.num_grid - 1).bit_length() + 1
@@ -85,8 +88,4 @@ def _kinetic_energy() -> KineticEnergy:
     return kinetic_energy
 
 
-_KINETIC_ENERGY = BloqDocSpec(
-    bloq_cls=KineticEnergy,
-    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import KineticEnergy',
-    examples=(_kinetic_energy,),
-)
+_KINETIC_ENERGY = BloqDocSpec(bloq_cls=KineticEnergy, examples=(_kinetic_energy,))

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -22,6 +22,8 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    ConnectionT,
+    DecomposeTypeError,
     GateWithRegisters,
     QFxp,
     QUInt,
@@ -29,39 +31,76 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import TGate, Toffoli
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.symbolics import smax
+from qualtran.bloqs.arithmetic.subtraction import Subtract
+from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
+from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.drawing import Text, WireSymbol
+from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
 class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Performs result += a * b"""
+    """Performs result += a * b.
 
-    a_bitsize: int
-    b_bitsize: int
-    result_bitsize: int
+    Args:
+        a_bitsize: bitsize of input `a`.
+        b_bitsize: bitsize of input `b`.
+        result_bitsize: bitsize of the output register.
+        is_adjoint: If true, performs `result -= a * b` instead. Defaults to False.
+
+    Registers:
+        a: QUInt of `a_bitsize` bits.
+        b: QUInt of `b_bitsize` bits.
+        result: QUInt of `result_bitsize` bits.
+    """
+
+    a_bitsize: SymbolicInt
+    b_bitsize: SymbolicInt
+    result_bitsize: SymbolicInt
     is_adjoint: bool = False
 
-    def pretty_name(self) -> str:
-        return "result -= a*b" if self.is_adjoint else "result += a*b"
+    def __attrs_post_init__(self):
+        res_has_enough = self.a_bitsize + self.b_bitsize <= self.result_bitsize
+        if not is_symbolic(res_has_enough) and not res_has_enough:
+            raise ValueError(
+                f"{self.result_bitsize=} must be at least the sum of input "
+                f"bitsizes {self.a_bitsize} + {self.b_bitsize}"
+            )
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("result -= a*b") if self.is_adjoint else Text("result += a*b")
+        return super().wire_symbol(reg, idx)
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            a=QUInt(self.a_bitsize),
-            b=QUInt(self.b_bitsize),
-            result=QFxp(self.result_bitsize, self.result_bitsize),
-        )
+        return Signature.build_from_dtypes(a=self.a_dtype, b=self.b_dtype, result=self.result_dtype)
+
+    @property
+    def a_dtype(self):
+        return QUInt(self.a_bitsize)
+
+    @property
+    def b_dtype(self):
+        return QUInt(self.b_bitsize)
+
+    @property
+    def result_dtype(self):
+        return QUInt(self.result_bitsize)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if is_symbolic(self.a_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
+        if is_symbolic(self.b_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
+        if is_symbolic(self.result_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
 
     def adjoint(self) -> 'PlusEqualProduct':
@@ -77,40 +116,27 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # TODO: The T-complexity here is approximate.
-        return TComplexity(t=8 * max(self.a_bitsize, self.b_bitsize) ** 2)
-
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if is_symbolic(self.a_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.a_bitsize} not supported')
+        if is_symbolic(self.b_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.b_bitsize} not supported')
+        if is_symbolic(self.result_bitsize):
+            raise ValueError(f'Symbolic bitsize {self.result_bitsize} not supported')
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
         wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return PlusEqualProduct(
-                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.is_adjoint
-            )
-        raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+        return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
 
-        _add_my_tensors_from_gate(
-            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(TGate(), 8 * smax(self.a_bitsize, self.b_bitsize) ** 2)}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        # TODO: The T-complexity here is approximate.
+        return {TGate(): 8 * smax(self.a_bitsize, self.b_bitsize) ** 2}
 
 
 @bloq_example
@@ -142,7 +168,7 @@ class Square(Bloq):
         Quantization](https://arxiv.org/abs/2105.12767). pg 76 for Toffoli complexity.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     uncompute: bool = False
 
     @property
@@ -163,39 +189,40 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def pretty_name(self) -> str:
-        return "a^2"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("a^2")
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
-        return TComplexity(t=4 * num_toff)
+        return {Toffoli(): num_toff}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_toff = self.bitsize * (self.bitsize - 1)
-        return {(Toffoli(), num_toff)}
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot get tensors for symbolic {self=}")
+
+        n = self.bitsize
         N = 2**self.bitsize
         data = np.zeros((N, N, N**2), dtype=np.complex128)
         for x in range(N):
             data[x, x, x**2] = 1
 
         trg = incoming['result'] if self.uncompute else outgoing['result']
-        tn.add(
-            qtn.Tensor(data=data, inds=(incoming['a'], outgoing['a'], trg), tags=['Square', tag])
+        inds = (
+            [(incoming['a'], j) for j in range(n)]
+            + [(outgoing['a'], j) for j in range(n)]
+            + [(trg, j) for j in range(2 * n)]
         )
+        data = data.reshape((2,) * (4 * n))
+        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
 
     def adjoint(self) -> 'Bloq':
         return Square(self.bitsize, not self.uncompute)
@@ -234,8 +261,8 @@ class SumOfSquares(Bloq):
         complexity for squaring.
     """
 
-    bitsize: int
-    k: int
+    bitsize: SymbolicInt
+    k: SymbolicInt
 
     @property
     def signature(self):
@@ -250,23 +277,16 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "SOS"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('SOS')
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_toff = self.k * self.bitsize**2 - self.bitsize
-        if self.k % 3 == 0:
-            num_toff -= 1
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -295,13 +315,12 @@ class Product(Bloq):
         result: A 2*`max(a_bitsize, b_bitsize)` bit-sized output register to store the result a*b.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 81 gives a Toffoli
-        complexity for multiplying two numbers.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        pg 81 gives a Toffoli complexity for multiplying two numbers.
     """
 
-    a_bitsize: int
-    b_bitsize: int
+    a_bitsize: SymbolicInt
+    b_bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -313,19 +332,17 @@ class Product(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a*b"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a*b')
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -359,12 +376,12 @@ class ScaleIntByReal(Bloq):
         result: a r_bitsize sized output fixed-point register.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/pdf/2007.07391.pdf) pg 70.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        pg 70.
     """
 
-    r_bitsize: int
-    i_bitsize: int
+    r_bitsize: SymbolicInt
+    i_bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -378,21 +395,17 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "r*i"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('r*i')
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
-        # Eq. D8, we are assuming dA and dB there are assumed as inputs and the
-        # user has ensured these are large enough for their desired precision.
-        num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
         # the user has ensured these are large enough for their desired
         # precision.
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -429,7 +442,7 @@ class MultiplyTwoReals(Bloq):
         Appendix D. Section 5. (p. 71).
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @property
     def signature(self):
@@ -441,18 +454,15 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a*b"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a*b')
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Eq. D13, there it is suggested keeping both registers the same size is optimal.
-        num_toff = self.bitsize**2 - self.bitsize - 1
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -489,10 +499,10 @@ class SquareRealNumber(Bloq):
         Appendix D. Section 6. (p. 74).
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     def __attrs_post_init__(self):
-        if self.bitsize < 3:
+        if not is_symbolic(self.bitsize) and self.bitsize < 3:
             raise ValueError("bitsize must be at least 3 for SquareRealNumber bloq to make sense.")
 
     @property
@@ -505,17 +515,15 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return "a^2"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('a^2')
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self):
-        num_toff = self.bitsize**2 // 2 - 4
-        return TComplexity(t=4 * num_toff)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Bottom of page 74
         num_toff = self.bitsize**2 // 2 - 4
-        return {(Toffoli(), num_toff)}
+        return {Toffoli(): num_toff}
 
 
 @bloq_example
@@ -525,3 +533,75 @@ def _square_real_number() -> SquareRealNumber:
 
 
 _SQUARE_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=SquareRealNumber, examples=[_square_real_number])
+
+
+@frozen
+class InvertRealNumber(Bloq):
+    r"""Invert a fixed-point representation of a real number.
+
+    Implements the unitary:
+    $$
+        |a\rangle|0\rangle \rightarrow |a\rangle|1/a\rangle
+    $$
+    where $a \ge 1$.
+
+    Args:
+        bitsize: Number of bits used to represent the number.
+        num_frac: Number of fraction bits in the number.
+
+    Registers:
+        a: `bitsize`-sized input register.
+        result: `bitsize`-sized output register.
+
+        References:
+        [Quantum Algorithms and Circuits for Scientific Computing](https://arxiv.org/pdf/1511.08253). Section 2.1.
+    """
+
+    bitsize: SymbolicInt
+    num_frac: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if self.num_frac == self.bitsize:
+            raise ValueError("num_frac must be < bitsize since a >= 1.")
+
+    @property
+    def signature(self):
+        return Signature(
+            [
+                Register("a", QFxp(self.bitsize, self.num_frac)),
+                Register("result", QFxp(self.bitsize, self.num_frac)),
+            ]
+        )
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('1/a')
+        return super().wire_symbol(reg, idx)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        # initial approximation: Figure 4
+        num_int = self.bitsize - self.num_frac
+        # Newton-Raphson: Eq. (1)
+        # x' = -a * x^2 + 2 * x
+        num_iters = ceil(log2(self.bitsize))
+        # TODO: When decomposing we will potentially need to use larger registers.
+        # Related issue: https://github.com/quantumlib/Qualtran/issues/655
+        return {
+            Toffoli(): num_int - 1,
+            CNOT(): 2 + num_int - 1,
+            MultiControlX(cvs=HasLength(num_int)): 1,
+            XGate(): 1,
+            SquareRealNumber(self.bitsize): num_iters,  # x^2
+            MultiplyTwoReals(self.bitsize): num_iters,  # a * x^2
+            ScaleIntByReal(self.bitsize, 2): num_iters,  # 2 * x
+            Subtract(QUInt(self.bitsize)): num_iters,  # 2 * x - a * x^2
+        }
+
+
+@bloq_example
+def _invert_real_number() -> InvertRealNumber:
+    invert_real_number = InvertRealNumber(bitsize=10, num_frac=7)
+    return invert_real_number
+
+
+_INVERT_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=InvertRealNumber, examples=[_invert_real_number])

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Protocol, runtime_checkable, Union
+from typing import Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -20,17 +20,10 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
+from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
 from qualtran.cirq_interop import CirqGateAsBloqBase
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
-
-
-@runtime_checkable
-class _HasEps(Protocol):
-    """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
-
-    eps: float
 
 
 @frozen
@@ -76,14 +69,16 @@ class ZPowGate(CirqGateAsBloqBase):
     """
 
     exponent: SymbolicFloat = 1.0
-    global_shift: float = 0.0
-    eps: float = 1e-11
+    global_shift: SymbolicFloat = 0.0
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
+        if isinstance(self.global_shift, sympy.Expr):
+            raise TypeError(f"cirq.ZPowGate does not support symbolic {self.global_shift=}")
         return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def __pow__(self, power):
@@ -92,6 +87,14 @@ class ZPowGate(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'ZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'Z**{self.exponent}'
 
 
 @bloq_example
@@ -107,7 +110,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -116,17 +119,15 @@ class CZPowGate(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        if cirq.has_stabilizer_effect(self.cirq_gate):
-            return TComplexity(clifford=1)
-        return TComplexity(rotations=1)
-
     def __pow__(self, power):
         g = self.cirq_gate**power
         return CZPowGate(g.exponent, g.global_shift, self.eps)
 
     def adjoint(self) -> 'CZPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+    def __str__(self):
+        return f'CZ**{self.exponent}'
 
 
 @frozen
@@ -170,9 +171,10 @@ class XPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -183,6 +185,14 @@ class XPowGate(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'XPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'X**{self.exponent}'
 
 
 @bloq_example
@@ -235,9 +245,10 @@ class YPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
+
     exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -248,6 +259,14 @@ class YPowGate(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'YPowGate':
         return attrs.evolve(self, exponent=-self.exponent)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'Y**{self.exponent}'
 
 
 @bloq_example
@@ -291,11 +310,19 @@ class Rz(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rz':
         return attrs.evolve(self, angle=-self.angle)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'Rz({self.angle})'
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -307,11 +334,19 @@ class Rx(CirqGateAsBloqBase):
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
 
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'Rx({self.angle})'
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: SymbolicFloat = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -322,6 +357,14 @@ class Ry(CirqGateAsBloqBase):
 
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        return TextBox(str(self))
+
+    def __str__(self):
+        return f'Ry({self.angle})'
 
 
 @bloq_example

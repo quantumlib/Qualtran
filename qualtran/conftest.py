@@ -79,22 +79,68 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     if bloq_ex.name in [
         'prep_sparse',
         'thc_prep',
-        'modmul_symb',
         'modexp',
-        'modexp_small',
-        'modexp_symb',
         'apply_z_to_odd',
-        'lp_resource_state_symbolic',
         'select_pauli_lcu',
+        'sel_hubb',
         'walk_op',
         'thc_walk_op',  # thc_prep does not serialize
         'qubitization_qpe_chem_thc',  # too slow
         'walk_op_chem_sparse',
         'qubitization_qpe_sparse_chem',  # too slow
+        'qubitization_qpe_ising',
         'trott_unitary',
-        'hubbard_time_evolution_by_gqsp',
         'symbolic_hamsim_by_gqsp',
+        'gf16_addition',  # cannot serialize QGF
+        'gf2_addition_symbolic',  # cannot serialize QGF
+        'gf16_add_k',  # cannot serialize QGF
+        'gf2_add_k_symbolic',  # cannot serialize QGF
+        'gf16_multiplication',  # cannot serialize QGF
+        'gf2_multiplication_symbolic',  # cannot serialize QGF
+        'gf16_square',  # cannot serialize QGF
+        'gf2_square_symbolic',  # cannot serialize QGF
+        'gf16_inverse',  # cannot serialize QGF
+        'gf2_inverse_symbolic',  # cannot serialize QGF
         'gqsp_1d_ising',
+        'auto_partition',
+        'unitary_block_encoding',
+        'unitary_block_encoding_properties',
+        'tensor_product_block_encoding',
+        'tensor_product_block_encoding_properties',
+        'tensor_product_block_encoding_symb',
+        'product_block_encoding',
+        'product_block_encoding_properties',
+        'product_block_encoding_symb',
+        'apply_lth_bloq',
+        'linear_combination_block_encoding',
+        'phase_block_encoding',
+        'state_prep_alias_symb',  # cannot serialize Shaped
+        'sparse_matrix_block_encoding',
+        'sparse_matrix_symb_block_encoding',
+        'sparse_matrix_hermitian_block_encoding',
+        'sparse_matrix_symb_hermitian_block_encoding',
+        'sparse_state_prep_alias_symb',  # cannot serialize Shaped
+        'sparse_permutation',  # contains nested tuple of inhomogeneous shape
+        'permutation_cycle_symb',  # cannot serialize Shaped
+        'permutation_cycle_symb_N',  # sympy variable assumptions dropped by serialized
+        'permutation_symb',  # cannot serialize shaped
+        'permutation_symb_with_cycles',  # Object arrays cannot be saved when allow_pickle=False
+        'sparse_permutation_with_symbolic_N',  # setting an array element with a sequence.
+        'state_prep_via_rotation_symb',  # cannot serialize HasLength
+        'state_prep_via_rotation_symb_phasegrad',  # cannot serialize Shaped
+        'sparse_state_prep_via_rotations',  # cannot serialize Permutation
+        'sparse_state_prep_via_rotations_with_large_target_bitsize',  # setting an array element with a sequence.
+        'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
+        'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition
+        'chebyshev_poly_even',
+        'scaled_chebyshev_poly_even',
+        'scaled_chebyshev_poly_odd',
+        'black_box_select',  # cannot serialize AutoPartition
+        'black_box_prepare',  # cannot serialize AutoPartition
+        'kaiser_window_state_symbolic',  # Split cannot have a symbolic data type.
+        'ctrl_on_symbolic_cv',  # cannot serialize Shaped
+        'ctrl_on_symbolic_cv_multi',  # cannot serialize Shaped
+        'ctrl_on_symbolic_n_ctrls',  # cannot serialize Shaped
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 

@@ -21,7 +21,7 @@ import cirq
 import numpy as np
 import sympy
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 
@@ -47,8 +47,9 @@ class ApplyGateToLthQubit(UnaryIterationGate):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.A. and Figure 7.
+        Babbush et al. (2018). Section III.A. and Figure 7.
     """
+
     selection_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
@@ -64,7 +65,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return ApplyGateToLthQubit(
-            Register('selection', BoundedQUInt(len(quregs['selection']), len(quregs['target']))),
+            Register('selection', BQUInt(len(quregs['selection']), len(quregs['target']))),
             nth_gate=nth_gate,
             control_regs=Register('control', QAny(len(quregs['control']))),
         ).on_registers(**quregs)
@@ -125,7 +126,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
 
 @bloq_example
 def _apply_z_to_odd() -> ApplyGateToLthQubit:
-    from qualtran import BoundedQUInt, Register
+    from qualtran import BQUInt, Register
 
     def _z_to_odd(n: int):
         if n % 2 == 1:
@@ -133,7 +134,7 @@ def _apply_z_to_odd() -> ApplyGateToLthQubit:
         return cirq.I
 
     apply_z_to_odd = ApplyGateToLthQubit(
-        Register('selection', BoundedQUInt(3, 4)),
+        Register('selection', BQUInt(3, 4)),
         nth_gate=_z_to_odd,
         control_regs=Signature.build(control=2),
     )
@@ -141,7 +142,7 @@ def _apply_z_to_odd() -> ApplyGateToLthQubit:
     return apply_z_to_odd
 
 
-_APPLYLTH_DOC = BloqDocSpec(
+_APPLY_TO_LTH_TARGET_DOC = BloqDocSpec(
     bloq_cls=ApplyGateToLthQubit,
     import_line='from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit',
     examples=(_apply_z_to_odd,),

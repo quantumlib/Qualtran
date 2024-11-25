@@ -15,13 +15,13 @@
 import numpy as np
 import pytest
 
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
     _prep_first_quant,
     _sel_first_quant,
     PrepareFirstQuantizationWithProj,
     SelectFirstQuantizationWithProj,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -45,13 +45,12 @@ def test_select_t_costs():
     num_atoms = 10
     lambda_zeta = 10
     num_bits_nuc_pos = 41
-    cost = 0
 
     sel_first_quant = SelectFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
     )
     assert_valid_bloq_decomposition(sel_first_quant)
-    cost += sel_first_quant.call_graph()[1][TGate()]
+    cost = get_cost_value(sel_first_quant, QECGatesCost()).total_t_count()
 
     # Swaps
     expected_cost = 7 * (12 * eta * num_bits_p + 6 * num_bits_n) + 4 * (4 * eta - 6)  #
@@ -68,7 +67,7 @@ def test_select_t_costs():
     assert cost == expected_cost
 
 
-def test_prepare_t_costs():
+def test_prepare_toffoli_costs():
     num_bits_p = 6
     num_bits_n = 8
     eta = 10
@@ -90,7 +89,7 @@ def test_prepare_t_costs():
         num_bits_rot_aa=b_r,
         num_bits_t=num_bits_t,
     )
-    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    cost += get_cost_value(prep_first_quant, QECGatesCost()).total_toffoli_only()
     prep_first_quant = PrepareFirstQuantizationWithProj(
         num_bits_p,
         num_bits_n,
@@ -102,7 +101,7 @@ def test_prepare_t_costs():
         num_bits_rot_aa=b_r,
         num_bits_t=num_bits_t,
     ).adjoint()
-    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    cost += get_cost_value(prep_first_quant, QECGatesCost()).total_toffoli_only()
     n_eta = (eta - 1).bit_length()
     expected_cost = 6 * num_bits_t + 2  # C1
     expected_cost += 14 * n_eta + 8 * b_r - 36  # C2

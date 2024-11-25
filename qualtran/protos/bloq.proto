@@ -18,6 +18,7 @@ syntax = "proto3";
 
 import "qualtran/protos/annotations.proto";
 import "qualtran/protos/args.proto";
+import "qualtran/protos/ec_point.proto";
 import "qualtran/protos/registers.proto";
 import "qualtran/protos/data_types.proto";
 import "qualtran/protos/ctrl_spec.proto";
@@ -49,6 +50,8 @@ message BloqArg {
     // Ctrl Spec for controlled bloqs
     CtrlSpec ctrl_spec = 12;
     Complex complex_val = 13;
+    // An elliptical curve point for ECC bloqs
+    ECPoint ec_point = 14;
   }
 }
 

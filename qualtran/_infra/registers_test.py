@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import cirq
 import numpy as np
 import pytest
 import sympy
 
-from qualtran import BoundedQUInt, QAny, QBit, QInt, Register, Side, Signature
+from qualtran import BQUInt, QAny, QBit, QInt, Register, Side, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.symbolics import is_symbolic
 
@@ -47,7 +46,7 @@ def test_multidim_register():
 
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
 def test_selection_registers_indexing(n, N, m, M):
-    dtypes = [BoundedQUInt(n, N), BoundedQUInt(m, M)]
+    dtypes = [BQUInt(n, N), BQUInt(m, M)]
     regs = [Register(sym, dtype) for sym, dtype in zip(['x', 'y'], dtypes)]
     for x in range(int(dtypes[0].iteration_length)):
         for y in range(int(dtypes[1].iteration_length)):
@@ -59,17 +58,17 @@ def test_selection_registers_indexing(n, N, m, M):
 
 def test_selection_registers_consistent():
     with pytest.raises(ValueError, match=".*iteration length is too large "):
-        _ = Register('a', BoundedQUInt(3, 10))
+        _ = Register('a', BQUInt(3, 10))
 
     selection_reg = Signature(
         [
-            Register('n', BoundedQUInt(bitsize=3, iteration_length=5)),
-            Register('m', BoundedQUInt(bitsize=4, iteration_length=12)),
+            Register('n', BQUInt(bitsize=3, iteration_length=5)),
+            Register('m', BQUInt(bitsize=4, iteration_length=12)),
         ]
     )
-    assert selection_reg[0] == Register('n', BoundedQUInt(3, 5))
-    assert selection_reg[1] == Register('m', BoundedQUInt(4, 12))
-    assert selection_reg[:1] == tuple([Register('n', BoundedQUInt(3, 5))])
+    assert selection_reg[0] == Register('n', BQUInt(3, 5))
+    assert selection_reg[1] == Register('m', BQUInt(4, 12))
+    assert selection_reg[:1] == tuple([Register('n', BQUInt(3, 5))])
 
 
 def test_registers_getitem_raises():
@@ -77,7 +76,7 @@ def test_registers_getitem_raises():
     with pytest.raises(TypeError, match="indices must be integers or slices"):
         _ = g[2.5]  # type: ignore[call-overload]
 
-    selection_reg = Signature([Register('n', BoundedQUInt(bitsize=3, iteration_length=5))])
+    selection_reg = Signature([Register('n', BQUInt(bitsize=3, iteration_length=5))])
     with pytest.raises(TypeError, match='indices must be integers or slices'):
         _ = selection_reg[2.5]  # type: ignore[call-overload]
 
@@ -100,6 +99,13 @@ def test_signature():
 
     assert list(signature) == [r1, r2, r3]
 
+
+def test_get_named_qubits():
+    cirq = pytest.importorskip('cirq')
+    r1 = Register("r1", QAny(5))
+    r2 = Register("r2", QAny(2))
+    r3 = Register("r3", QBit())
+    signature = Signature([r1, r2, r3])
     expected_named_qubits = {
         "r1": cirq.NamedQubit.range(5, prefix="r1"),
         "r2": cirq.NamedQubit.range(2, prefix="r2"),
@@ -120,6 +126,13 @@ def test_signature():
         ]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
+
+
+def test_signature_symbolic():
+    n_x, n_y = sympy.symbols('n_x n_y')
+    signature = Signature.build(x=n_x, y=n_y)
+    assert signature.n_qubits() == n_x + n_y
+    assert str(signature.n_qubits()) == 'n_x + n_y'
 
 
 def test_signature_build():
@@ -172,6 +185,7 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
+    cirq = pytest.importorskip('cirq')
     regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)

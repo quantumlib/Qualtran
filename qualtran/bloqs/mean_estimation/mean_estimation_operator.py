@@ -13,17 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, Tuple, TYPE_CHECKING
 
 import attrs
-import cirq
 from numpy.typing import NDArray
 
-from qualtran import CtrlSpec, Register, Signature
-from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
-from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
-from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.multiplexers.select_base import SelectOracle
+from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+
+if TYPE_CHECKING:
+    import cirq
 
 
 @attrs.frozen
@@ -63,7 +65,7 @@ class CodeForRandomVariable:
 
 
 @attrs.frozen
-class MeanEstimationOperator(SpecializedSingleQubitControlledGate):
+class MeanEstimationOperator(GateWithRegisters):
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
 
     The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the
@@ -82,22 +84,15 @@ class MeanEstimationOperator(SpecializedSingleQubitControlledGate):
     """
 
     code: CodeForRandomVariable
-    control_val: Optional[int] = None
     arctan_bitsize: int = 32
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
-        return ReflectionUsingPrepare(
-            self.code.synthesizer, global_phase=-1, control_val=self.control_val
-        )
+        return ReflectionUsingPrepare(self.code.synthesizer, global_phase=-1)
 
     @cached_property
     def select(self) -> ComplexPhaseOracle:
         return ComplexPhaseOracle(self.code.encoder, self.arctan_bitsize)
-
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return self.code.encoder.control_registers
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -105,28 +100,23 @@ class MeanEstimationOperator(SpecializedSingleQubitControlledGate):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.control_registers, *self.selection_registers])
+        return Signature([*self.selection_registers])
 
     def decompose_from_registers(
         self,
         *,
-        context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Iterator[cirq.OP_TREE]:
+        context: 'cirq.DecompositionContext',
+        **quregs: NDArray['cirq.Qid'],  # type:ignore[type-var]
+    ) -> Iterator['cirq.OP_TREE']:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
         yield self.select.on_registers(**select_reg)
         yield self.reflect.on_registers(**reflect_reg)
 
-    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'MeanEstimationOperator':
-        c_encoder = self.code.encoder.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
-        assert isinstance(c_encoder, SelectOracle)
-        c_code = attrs.evolve(self.code, encoder=c_encoder)
-        return attrs.evolve(self, code=c_code, control_val=control_val)
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = []
-        if self.control_val is not None:
-            wire_symbols.append("@" if self.control_val == 1 else "(0)")
-        wire_symbols += ['U_ko'] * (total_bits(self.signature) - total_bits(self.control_registers))
+        wire_symbols = ['U_ko'] * self.signature.n_qubits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

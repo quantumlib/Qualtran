@@ -135,3 +135,7 @@ dmypy.json
 mod_exp_bloq.json
 mod_exp_cbloq.json
 musical_score_example.json
+ui_export/
+
+# Jupyter
+jupyter_kernel.lock

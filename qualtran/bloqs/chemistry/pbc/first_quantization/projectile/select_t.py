@@ -13,15 +13,16 @@
 #  limitations under the License.
 r"""Bloqs for SELECT T for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -51,6 +52,7 @@ class SelectTFirstQuantizationWithProj(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 20, section B
     """
+
     num_bits_n: int
     eta: int
 
@@ -69,14 +71,16 @@ class SelectTFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'SEL $T$'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SEL T")
+        return super().wire_symbol(reg, idx)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Modification of the SEL T costs from the first quantized bloq with n_p replace with n_n.
         # The + 1 is from an additional Toffoli for the selection between the
         # square and the product of the momentum offset of the projectile.
-        return {(Toffoli(), (5 * (self.num_bits_n - 1) + 2 + 1))}
+        return {Toffoli(): (5 * (self.num_bits_n - 1) + 2 + 1)}
 
 
 @bloq_example

@@ -26,7 +26,7 @@ import tempfile
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
-from qualtran import DanglingT, LeftDangle, QBit, Side, Soquet
+from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side, Soquet
 from qualtran.drawing.musical_score import (
     _soq_to_symb,
     Circle,
@@ -50,10 +50,16 @@ def _format_label_text(label: str, scale: float = 0.8) -> str:
     replacements = {
         '&': r'\&',
         '_': r'\_',
+        '<=': r'$\le$',
+        '>=': r'$\ge$',
         '<': r'$<$',
         '>': r'$>$',
         '⨁': r'$\oplus$',
+        '⊕': r'$\oplus$',
+        '⇋': r'$\rightleftharpoons$',
+        '⨂': r'$\otimes$',
         '∧': r'$\land$',
+        '†': r'$^\dagger$',
     }
     for key, val in replacements.items():
         label = label.replace(key, val)
@@ -141,13 +147,26 @@ class QpicCircuit:
         # don't have any incoming or outgoing edges.
         self.empty_wire = None
 
-    def add_wires_for_signature(self, signature: 'Signature') -> None:
-        for reg in signature:
+    def add_left_wires_for_signature(self, signature: 'Signature') -> None:
+        for reg in signature.lefts():
             for idx in reg.all_idxs():
                 self._alloc_wire_for_soq(Soquet(LeftDangle, reg, idx))
         # Add horizontal blank space since left dangling wires would have annotations
         # corresponding to their QDType, which takes up horizontal space.
         self.wires += ['LABEL length=10']
+
+    def add_right_wires_for_signature(self, signature: 'Signature') -> None:
+        add_space = False
+        for reg in signature.rights():
+            if reg.side & Side.LEFT:
+                continue
+            for idx in reg.all_idxs():
+                soq = Soquet(RightDangle, reg, idx)
+                wire_name = self.wire_manager.soq_to_wirename(self.soq_map[soq])
+                self.gates += [f'{wire_name} / {_format_label_text(soq.pretty(), scale=0.5)} ']
+                add_space = True
+        if add_space:
+            self.gates += ['LABEL length=10']
 
     @property
     def data(self) -> List[str]:
@@ -264,9 +283,10 @@ def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None
     """
     cbloq = bloq.as_composite_bloq()
     qpic_circuit = QpicCircuit()
-    qpic_circuit.add_wires_for_signature(cbloq.signature)
+    qpic_circuit.add_left_wires_for_signature(cbloq.signature)
     for binst, pred, succ in cbloq.iter_bloqnections():
         qpic_circuit.add_bloq(binst.bloq, pred, succ)
+    qpic_circuit.add_right_wires_for_signature(cbloq.signature)
     if file_path:
         with open(file_path, 'w') as f:
             f.write('\n'.join(qpic_circuit.data))

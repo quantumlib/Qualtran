@@ -35,8 +35,8 @@ from qualtran import (
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
+from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -74,10 +74,9 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
-    assert str(x) == 'X'
-    assert x.pretty_name() == 'cirq.X'
-    assert rx.pretty_name() == 'cirq.Rx'
-    assert toffoli.pretty_name() == 'cirq.TOFFOLI'
+    assert str(x) == 'cirq.X'
+    assert str(rx) == 'cirq.Rx'
+    assert str(toffoli) == 'cirq.TOFFOLI'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
@@ -89,7 +88,7 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     state_vector = cbloq.tensor_contract()
     assert np.isclose(state_vector[7], 1)
 
-    with pytest.raises(NotImplementedError, match="supported only for unitary gates"):
+    with pytest.raises(NotImplementedError, match=r".*only supported for unitary gates.*"):
         _ = CirqGateAsBloq(And(uncompute=True)).as_composite_bloq().tensor_contract()
 
 
@@ -99,7 +98,7 @@ def test_bloq_decompose():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestCNOT'
+    assert str(tb) == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
     circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)
@@ -162,9 +161,11 @@ def test_cirq_optree_to_cbloq():
     cbloq = cirq_optree_to_cbloq(circuit)
     assert cbloq.signature == qualtran.Signature([qualtran.Register('qubits', QBit(), shape=(28,))])
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
-    assert all(bloq_instances[i].bloq == Join(QAny(2)) for i in range(14))
-    assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
-    assert bloq_instances[14].bloq.signature == qualtran.Signature(
+    # Greedy iteration of iter_bloqnections first joins only qubits needed
+    # for the first gate.
+    assert all(bloq_instances[i].bloq == Join(QAny(2)) for i in range(12))
+    assert bloq_instances[12].bloq == CirqGateWithRegisters(reg1)
+    assert bloq_instances[12].bloq.signature == qualtran.Signature(
         [qualtran.Register('x', QAny(bitsize=2), shape=(3, 4))]
     )
     assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
@@ -226,4 +227,4 @@ def test_cirq_gate_as_bloq_decompose_raises():
 
 
 def test_cirq_gate_as_bloq_diagram_info():
-    assert cirq.circuit_diagram_info(GlobalPhase(1j)) is None
+    assert cirq.circuit_diagram_info(GlobalPhase(exponent=0.5)) is None

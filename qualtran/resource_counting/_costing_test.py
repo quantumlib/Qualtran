@@ -74,7 +74,7 @@ def test_get_cost_value_static():
     # Should not have to recurse into H, T^dag; which is only used by Func1
     cost = TestCostKey()
     _ = get_cost_value(algo_mod, cost)
-    assert len(cost._log) == 4
+    assert len(cost._log) == 3
     assert 'Func2' in [str(b) for b in cost._log]
     assert 'Func1' not in [str(b) for b in cost._log]
     assert TGate().adjoint() not in cost._log
@@ -91,7 +91,7 @@ def test_get_cost_value_static_user_provided():
     # Should not call "compute" for Func1, since we supplied an existing cache
     # Should not have to recurse into H, T^dag; which is only used by Func1
     _ = get_cost_value(algo, cost, costs_cache={func1: 0})
-    assert len(cost._log) == 4
+    assert len(cost._log) == 3
     assert 'Func2' in [str(b) for b in cost._log]
     assert 'Func1' not in [str(b) for b in cost._log]
     assert TGate().adjoint() not in cost._log

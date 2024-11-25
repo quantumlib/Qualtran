@@ -14,7 +14,7 @@
 
 from openfermion.resource_estimates.utils import QI, QR
 
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 
 
@@ -27,12 +27,12 @@ def test_rotations():
         num_aux=num_aux, num_eig=num_eig, num_spin_orb=num_spin_orb, num_bits_rot=num_bits_rot
     )
     _, counts = rot.call_graph()
-    toff = counts[TGate()] // 4
+    toff = counts[Toffoli()]
     rot = ProgRotGateArray(
         num_aux=num_aux, num_eig=num_eig, num_spin_orb=num_spin_orb, num_bits_rot=num_bits_rot
     ).adjoint()
     _, counts = rot.call_graph()
-    toff += counts[TGate()] // 4
+    toff += counts[Toffoli()]
     toff *= 2  # cost is for the two applications of the (rot, rot^) pair
     # the rot gate array includes the offset addition, qrom and cost for applying the rotations.
     # it does not include the swaps and the controlled Z which is included in the openfermion costs.

@@ -11,23 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import random
 from typing import Dict, Tuple, Union
 
+import cirq
+import numpy as np
 import pytest
 import sympy
 
-import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.swap_network.cswap_approx import (
     _approx_cswap_large,
     _approx_cswap_small,
     _approx_cswap_symb,
     CSwapApprox,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
@@ -36,6 +37,17 @@ random.seed(12345)
 def test_cswap_approx_decomp():
     csa = CSwapApprox(10)
     assert_valid_bloq_decomposition(csa)
+
+
+def test_cswap_approx_decomposition():
+    csa = CSwapApprox(4)
+    circuit = (
+        csa.as_composite_bloq().to_cirq_circuit()
+        + csa.adjoint().as_composite_bloq().to_cirq_circuit()
+    )
+    initial_state = cirq.testing.random_superposition(2**9, random_state=1234)
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit, initial_state=initial_state)
+    np.testing.assert_allclose(result.final_state_vector, initial_state)
 
 
 @pytest.mark.parametrize('n', [5, 32])
@@ -56,13 +68,9 @@ def get_t_count_and_clifford(
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity_cswap(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
-
-
-@pytest.mark.parametrize("n", [*range(1, 6)])
 def test_t_complexity_cswap_approx(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
+    actual = t_complexity(CSwapApprox(n))
+    assert actual == TComplexity(t=4 * n, clifford=22 * n - 1)
 
 
 @pytest.mark.parametrize("n", [*range(2, 6)])

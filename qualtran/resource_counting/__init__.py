@@ -12,16 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Counting resource usage (bloqs, qubits)
-
-isort:skip_file
-"""
+# isort:skip_file
+"""Analysis routines for computing costs and resource counts."""
 
 from ._generalization import GeneralizerT
 
 from ._call_graph import (
+    BloqCountDictT,
     BloqCountT,
     big_O,
+    MutableBloqCountDictT,
     SympySymbolAllocator,
     get_bloq_callee_counts,
     get_bloq_call_graph,
@@ -30,5 +30,9 @@ from ._call_graph import (
 )
 
 from ._costing import GeneralizerT, get_cost_value, get_cost_cache, query_costs, CostKey, CostValT
+
+from ._success_prob import SuccessProb
+from ._qubit_counts import QubitCount
+from ._bloq_counts import BloqCount, QECGatesCost, GateCounts
 
 from . import generalizers

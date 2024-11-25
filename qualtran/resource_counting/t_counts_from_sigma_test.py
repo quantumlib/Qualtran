@@ -19,7 +19,6 @@ from qualtran.bloqs.basic_gates import (
     Rx,
     Ry,
     Rz,
-    SU2RotationGate,
     TGate,
     Toffoli,
     XPowGate,
@@ -27,23 +26,7 @@ from qualtran.bloqs.basic_gates import (
     ZPowGate,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.t_counts_from_sigma import (
-    _get_all_rotation_types,
-    t_counts_from_sigma,
-)
-
-
-def test_all_rotation_types():
-    assert set(_get_all_rotation_types()) == {
-        CZPowGate,
-        Rx,
-        Ry,
-        Rz,
-        XPowGate,
-        YPowGate,
-        ZPowGate,
-        SU2RotationGate,
-    }
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
 def test_t_counts_from_sigma():
@@ -67,6 +50,7 @@ def test_t_counts_from_sigma():
     }
     expected_t_count = (
         +100
+        + 200 * 4
         + 1 * TComplexity.rotation_cost(z_eps1)
         + 5 * TComplexity.rotation_cost(z_eps2)
         + 9 * TComplexity.rotation_cost(x_eps)

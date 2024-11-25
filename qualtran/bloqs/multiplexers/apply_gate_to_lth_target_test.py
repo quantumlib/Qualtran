@@ -16,13 +16,12 @@ import cirq
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BQUInt, QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import (
     _apply_z_to_odd,
     ApplyGateToLthQubit,
 )
-from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
 
 
@@ -35,11 +34,13 @@ def test_notebook():
     qlt_testing.execute_notebook('apply_gate_to_lth_target')
 
 
-@pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
+@pytest.mark.parametrize(
+    "selection_bitsize,target_bitsize", [[3, 5], pytest.param(3, 7, marks=pytest.mark.slow), [4, 5]]
+)
 def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = ApplyGateToLthQubit(
-        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)), lambda _: cirq.X
+        Register('selection', BQUInt(selection_bitsize, target_bitsize)), lambda _: cirq.X
     )
     g = GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
     # Upper bounded because not all ancillas may be used as part of unary iteration.
@@ -54,7 +55,7 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
         # All controls 'on' to activate circuit
         qubit_vals.update({c: 1 for c in g.quregs['control']})
         # Set selection according to `n`
-        qubit_vals.update(zip(g.quregs['selection'], iter_bits(n, selection_bitsize)))
+        qubit_vals.update(zip(g.quregs['selection'], QUInt(selection_bitsize).to_bits(n)))
 
         initial_state = [qubit_vals[x] for x in g.all_qubits]
         qubit_vals[g.quregs['target'][n]] = 1
@@ -67,7 +68,7 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
 def test_apply_gate_to_lth_qubit_diagram():
     # Apply Z gate to all odd targets and Identity to even targets.
     gate = ApplyGateToLthQubit(
-        Register('selection', BoundedQUInt(3, 5)),
+        Register('selection', BQUInt(3, 5)),
         lambda n: cirq.Z if n & 1 else cirq.I,
         control_regs=Signature.build(control=2),
     )
@@ -102,7 +103,7 @@ target4: ──────I────
 
 def test_apply_gate_to_lth_qubit_make_on():
     gate = ApplyGateToLthQubit(
-        Register('selection', BoundedQUInt(3, 5)),
+        Register('selection', BQUInt(3, 5)),
         lambda n: cirq.Z if n & 1 else cirq.I,
         control_regs=Signature.build(control=2),
     )
@@ -122,7 +123,7 @@ def test_apply_gate_to_lth_qubit_make_on():
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
 def test_bloq_has_consistent_decomposition(selection_bitsize, target_bitsize):
     bloq = ApplyGateToLthQubit(
-        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)),
+        Register('selection', BQUInt(selection_bitsize, target_bitsize)),
         lambda n: cirq.Z if n & 1 else cirq.I,
         control_regs=Signature.build(control=2),
     )

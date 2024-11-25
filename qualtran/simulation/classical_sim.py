@@ -14,7 +14,19 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Type, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+    Union,
+)
 
 import networkx as nx
 import numpy as np
@@ -34,41 +46,48 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
+if TYPE_CHECKING:
+    from qualtran import QDType
+
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
-    """Returns the integer specified by the given big-endian bitstrings.
+def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
+    from qualtran._infra.data_types import QBit, QInt, QUInt
 
-    Args:
-        bitstrings: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
-    Returns:
-        An array of integers; one for each bitstring.
-    """
-    bitstrings = np.atleast_2d(bitstrings)
-    if bitstrings.shape[1] > 64:
-        raise NotImplementedError()
-    basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
-    return np.sum(basis * bitstrings, axis=1)
+    if isinstance(dtype, QUInt):
+        if dtype.bitsize <= 8:
+            return np.uint8
+        elif dtype.bitsize <= 16:
+            return np.uint16
+        elif dtype.bitsize <= 32:
+            return np.uint32
+        elif dtype.bitsize <= 64:
+            return np.uint64
+
+    if isinstance(dtype, QInt):
+        if dtype.bitsize <= 8:
+            return np.int8
+        elif dtype.bitsize <= 16:
+            return np.int16
+        elif dtype.bitsize <= 32:
+            return np.int32
+        elif dtype.bitsize <= 64:
+            return np.int64
+
+    if isinstance(dtype, QBit):
+        return np.uint8
+
+    return object
 
 
-def ints_to_bits(
-    x: Union[int, np.integer, Sequence[int], NDArray[np.integer]], w: int
-) -> NDArray[np.uint8]:
-    """Returns the big-endian bitstrings specified by the given integers.
+def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
+    from qualtran._infra.data_types import QGF
 
-    Args:
-        x: An integer or array of unsigned integers.
-        w: The bit width of the returned bitstrings.
-    """
-    x = np.atleast_1d(x)
-    if not np.issubdtype(x.dtype, np.uint):
-        assert np.all(x >= 0)
-        assert np.iinfo(x.dtype).bits <= 64
-        x = x.astype(np.uint64)
-    assert w <= np.iinfo(x.dtype).bits
-    mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
-    return (x & mask).astype(bool).astype(np.uint8).T
+    if isinstance(reg.dtype, QGF):
+        return reg.dtype.gf_type.Zeros(reg.shape)
+
+    return np.empty(reg.shape, dtype=_numpy_dtype_from_qdtype(reg.dtype))
 
 
 def _get_in_vals(
@@ -78,21 +97,7 @@ def _get_in_vals(
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
-    if reg.bitsize <= 8:
-        dtype: Type = np.uint8
-    elif reg.bitsize <= 16:
-        dtype = np.uint16
-    elif reg.bitsize <= 32:
-        dtype = np.uint32
-    elif reg.bitsize <= 64:
-        dtype = np.uint64
-    else:
-        raise NotImplementedError(
-            "We currently only support up to 64-bit "
-            "multi-dimensional registers in classical simulation."
-        )
-
-    arg = np.empty(reg.shape, dtype=dtype)
+    arg = _empty_ndarray_from_reg(reg)
     for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
@@ -123,7 +128,7 @@ def _update_assign_from_vals(
 
         if reg.shape:
             # `val` is an array
-            val = np.asarray(val)
+            val = np.asanyarray(val)
             if val.shape != reg.shape:
                 raise ValueError(
                     f"Incorrect shape {val.shape} received for {debug_str}. " f"Want {reg.shape}."
@@ -271,3 +276,33 @@ def format_classical_truth_table(
         for invals, outvals in truth_table
     ]
     return '\n'.join([heading] + entries)
+
+
+def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
+    r"""Performs addition modulo $2^\mathrm{num\_bits}$ of (un)signed in a reversible way.
+
+    Addition of signed integers can result in an overflow. In most classical programming languages (e.g. C++)
+    what happens when an overflow happens is left as an implementation detail for compiler designers. However,
+    for quantum subtraction, the operation should be unitary and that means that the unitary of the bloq should
+    be a permutation matrix.
+
+    If we hold `a` constant then the valid range of values of $b \in [-2^{\mathrm{num\_bits}-1}, 2^{\mathrm{num\_bits}-1})$
+    gets shifted forward or backward by `a`. To keep the operation unitary overflowing values wrap around. This is the same
+    as moving the range $2^\mathrm{num\_bits}$ by the same amount modulo $2^\mathrm{num\_bits}$. That is add
+    $2^{\mathrm{num\_bits}-1})$ before addition modulo and then remove it.
+
+    Args:
+        a: left operand of addition.
+        b: right operand of addition.
+        num_bits: optional num_bits. When specified addition is done in the interval [0, 2**num_bits) or
+            [-2**(num_bits-1), 2**(num_bits-1)) based on the value of `is_signed`.
+        is_signed: boolean whether the numbers are unsigned or signed ints. This value is only used when
+            `num_bits` is provided.
+    """
+    c = a + b
+    if num_bits is not None:
+        N = 2**num_bits
+        if is_signed:
+            return (c + N // 2) % N - N // 2
+        return c % N
+    return c

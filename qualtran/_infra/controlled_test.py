@@ -14,16 +14,18 @@
 from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import attrs
-import cirq
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     Controlled,
     CtrlSpec,
+    DecomposeTypeError,
     QBit,
     QInt,
     QUInt,
@@ -34,10 +36,12 @@ from qualtran import (
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
+    GlobalPhase,
     IntEffect,
     IntState,
     OneState,
     Swap,
+    TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
@@ -49,8 +53,12 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran import SoquetT
 
 
@@ -68,9 +76,10 @@ def test_ctrl_spec():
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
     assert cspec3.qdtypes[0].num_qubits == 64
-    assert cspec3.cvs[0] == 234234
-    assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
+    (cvs,) = cspec3.cvs
+    assert isinstance(cvs, np.ndarray)
+    assert cvs == 234234
+    assert cvs[tuple()] == 234234
 
 
 def test_ctrl_spec_shape():
@@ -81,6 +90,7 @@ def test_ctrl_spec_shape():
 
 
 def test_ctrl_spec_to_cirq_cv_roundtrip():
+    cirq = pytest.importorskip('cirq')
     cirq_cv = cirq.ProductOfSums([0, 1, 0, 1])
     assert CtrlSpec.from_cirq_cv(cirq_cv) == CtrlSpec(cvs=[0, 1, 0, 1])
 
@@ -92,19 +102,71 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
 
     for ctrl_spec in ctrl_specs:
         assert ctrl_spec.to_cirq_cv() == cirq_cv.expand()
-        assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
+        assert CtrlSpec.from_cirq_cv(
+            cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.concrete_shapes
+        )
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=[1]), CtrlSpec(cvs=np.atleast_2d([1]))]
+)
+def test_ctrl_spec_single_bit_one(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 1
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(cvs=0), CtrlSpec(cvs=[0]), CtrlSpec(cvs=np.atleast_2d([0]))]
+)
+def test_ctrl_spec_single_bit_zero(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 0
+
+
+@pytest.mark.parametrize("ctrl_spec", [CtrlSpec(cvs=[1, 1]), CtrlSpec(qdtypes=QUInt(2), cvs=0)])
+def test_ctrl_spec_single_bit_raises(ctrl_spec: CtrlSpec):
+    with pytest.raises(ValueError):
+        ctrl_spec.get_single_ctrl_bit()
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_cvs(shape: tuple[int, ...]):
+    ctrl_spec = CtrlSpec(cvs=Shaped(shape))
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_dtype(shape: tuple[int, ...]):
+    n = sympy.Symbol("n")
+    dtype = QUInt(n)
+
+    ctrl_spec = CtrlSpec(qdtypes=dtype, cvs=Shaped(shape))
+
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == n * np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+def test_ctrl_spec_symbolic_wire_symbol():
+    ctrl_spec = CtrlSpec(cvs=Shaped((10,)))
+    reg = Register('q', QBit())
+    assert ctrl_spec.wire_symbol(0, reg) == TextBox('ctrl')
+
+
+def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
+    left_quregs = get_named_qubits(bloq.signature.lefts())
+    circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
+    circuit2 = cirq.Circuit(
+        gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
 
 
 def test_ctrl_bloq_as_cirq_op():
+    cirq = pytest.importorskip('cirq')
     subbloq = XGate()
-
-    def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
-        left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
-        circuit2 = cirq.Circuit(
-            gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
-        )
-        cirq.testing.assert_same_circuits(circuit1, circuit2)
 
     # Simple ctrl spec
     _test_cirq_equivalence(subbloq, cirq.X)
@@ -127,6 +189,19 @@ def test_ctrl_bloq_as_cirq_op():
     circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # controlled composite subbloqs
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    cbloq = CompositeBloq.from_cirq_circuit(circuit).controlled().as_composite_bloq()
+    quregs = get_named_qubits(cbloq.signature.lefts())
+
+    circuit1 = cbloq.to_cirq_circuit(qubit_manager=None, cirq_quregs=quregs)
+    ctrl = quregs['ctrl'][0]
+    q = quregs['qubits'][0][0]
+    circuit2 = cirq.Circuit(
+        cirq.CircuitOperation(cirq.Circuit(cirq.X(q)).freeze()).controlled_by(ctrl)
     )
     cirq.testing.assert_same_circuits(circuit1, circuit2)
 
@@ -194,34 +269,34 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-Split(dtype=QAny(bitsize=3))<0>
+Split<0>
   LeftDangle.reg -> reg
-  reg[0] -> C[TestAtom()]<1>.q
-  reg[1] -> C[TestAtom()]<2>.q
-  reg[2] -> C[TestAtom()]<3>.q
+  reg[0] -> C[TestAtom]<1>.q
+  reg[1] -> C[TestAtom]<2>.q
+  reg[2] -> C[TestAtom]<3>.q
 --------------------
-C[TestAtom()]<1>
+C[TestAtom]<1>
   LeftDangle.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[0] -> q
-  ctrl -> C[TestAtom()]<2>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[0]
+  Split<0>.reg[0] -> q
+  ctrl -> C[TestAtom]<2>.ctrl
+  q -> Join<4>.reg[0]
 --------------------
-C[TestAtom()]<2>
-  C[TestAtom()]<1>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[1] -> q
-  ctrl -> C[TestAtom()]<3>.ctrl
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[1]
+C[TestAtom]<2>
+  C[TestAtom]<1>.ctrl -> ctrl
+  Split<0>.reg[1] -> q
+  ctrl -> C[TestAtom]<3>.ctrl
+  q -> Join<4>.reg[1]
 --------------------
-C[TestAtom()]<3>
-  C[TestAtom()]<2>.ctrl -> ctrl
-  Split(dtype=QAny(bitsize=3))<0>.reg[2] -> q
-  q -> Join(dtype=QAny(bitsize=3))<4>.reg[2]
+C[TestAtom]<3>
+  C[TestAtom]<2>.ctrl -> ctrl
+  Split<0>.reg[2] -> q
+  q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join(dtype=QAny(bitsize=3))<4>
-  C[TestAtom()]<1>.q -> reg[0]
-  C[TestAtom()]<2>.q -> reg[1]
-  C[TestAtom()]<3>.q -> reg[2]
+Join<4>
+  C[TestAtom]<1>.q -> reg[0]
+  C[TestAtom]<2>.q -> reg[1]
+  C[TestAtom]<3>.q -> reg[2]
   reg -> RightDangle.reg"""
     )
 
@@ -231,7 +306,7 @@ def test_doubly_controlled():
     assert (
         bloq.as_composite_bloq().debug_text()
         == """\
-C[C[TestAtom()]]<0>
+C[C[TestAtom]]<0>
   LeftDangle.ctrl2 -> ctrl2
   LeftDangle.ctrl -> ctrl
   LeftDangle.q -> q
@@ -324,10 +399,12 @@ def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
 
 
-def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
-    cbloq = Controlled(bloq, ctrl_spec)
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
-    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
 interesting_ctrl_specs = [
@@ -341,12 +418,34 @@ interesting_ctrl_specs = [
 
 @pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
 def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
+    cirq = pytest.importorskip('cirq')
     # Test one qubit unitaries
     _verify_ctrl_tensor_for_unitary(ctrl_spec, XGate(), cirq.X)
     _verify_ctrl_tensor_for_unitary(ctrl_spec, YGate(), cirq.Y)
     _verify_ctrl_tensor_for_unitary(ctrl_spec, ZGate(), cirq.Z)
     # Test multi-qubit unitaries with non-trivial signature
     _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
+
+
+def test_controlled_tensor_without_decompose():
+    cirq = pytest.importorskip('cirq')
+    ctrl_spec = CtrlSpec()
+    bloq = TwoBitCSwap()
+    ctrl_bloq = Controlled(bloq, ctrl_spec)
+    cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
+
+    tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
+    # pylint: disable=unbalanced-tuple-unpacking
+    right, left = get_right_and_left_inds(tn, ctrl_bloq.signature)
+    # pylint: enable=unbalanced-tuple-unpacking
+    np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
+    np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
+
+
+def test_controlled_global_phase_tensor():
+    bloq = GlobalPhase.from_coefficient(1.0j).controlled()
+    should_be = np.diag([1, 1.0j])
+    np.testing.assert_allclose(bloq.tensor_contract(), should_be)
 
 
 @attrs.frozen
@@ -365,11 +464,15 @@ class TestCtrlStatePrepAnd(Bloq):
         return Signature([Register('x', QBit(), shape=(3,), side=Side.RIGHT)])
 
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        if self.ctrl_spec.is_symbolic():
+            raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.ctrl_spec=}")
+
         one_or_zero = [ZeroState(), OneState()]
-        cbloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
+        ctrl_bloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
 
         ctrl_soqs = {}
-        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
             soqs = np.empty(shape=reg.shape, dtype=object)
             for idx in reg.all_idxs():
                 soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
@@ -377,10 +480,11 @@ class TestCtrlStatePrepAnd(Bloq):
 
         and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
 
-        ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
+        ctrl_soqs = bb.add_d(ctrl_bloq, **ctrl_soqs, ctrl=and_ctrl)
         out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
 
-        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
             for idx in reg.all_idxs():
                 ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
                 bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
@@ -388,8 +492,8 @@ class TestCtrlStatePrepAnd(Bloq):
 
 
 def _verify_ctrl_tensor_for_and(ctrl_spec: CtrlSpec, and_ctrl: Tuple[int, int]):
-    cbloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
-    bloq_tensor = cbloq.tensor_contract()
+    bloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
+    bloq_tensor = bloq.tensor_contract()
     cirq_state_vector = GateHelper(And(*and_ctrl)).circuit.final_state_vector(
         initial_state=and_ctrl + (0,)
     )
@@ -406,6 +510,7 @@ def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
 
 
 def test_controlled_diagrams():
+    cirq = pytest.importorskip('cirq')
     ctrl_gate = XPowGate(0.25).controlled()
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_gate.on_registers(**get_named_qubits(ctrl_gate.signature))),

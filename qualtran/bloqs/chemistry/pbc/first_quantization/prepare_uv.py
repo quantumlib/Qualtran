@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -30,9 +30,10 @@ from qualtran import (
 )
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -58,6 +59,7 @@ class PrepareUVFirstQuantization(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
         page 19, section B
     """
+
     num_bits_p: int
     eta: int
     num_atoms: int
@@ -81,9 +83,6 @@ class PrepareUVFirstQuantization(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return r'PREP $UV$'
-
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
@@ -93,13 +92,20 @@ class PrepareUVFirstQuantization(Bloq):
         l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
-            (PrepareNuState(self.num_bits_p, self.m_param), 1),
-            (PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), 1),
+            PrepareNuState(self.num_bits_p, self.m_param): 1,
+            PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos): 1,
         }
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('PREP UV')
+        return super().wire_symbol(reg, idx)
 
 
 @bloq_example

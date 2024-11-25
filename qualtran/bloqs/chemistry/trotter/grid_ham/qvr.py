@@ -14,16 +14,16 @@
 """Quantum Variable Rotation."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
@@ -47,23 +47,22 @@ class QuantumVariableRotation(Bloq):
             computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
             Fig 14.
     """
+
     phi_bitsize: int
 
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('phi', QAny(bitsize=self.phi_bitsize))])
 
-    def pretty_name(self) -> str:
-        return 'e^{i*phi}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("e^{i*phi}")
+        return super().wire_symbol(reg, idx)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
-        return self.phi_bitsize * Rz(0.0).t_complexity()
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
-        return {(Rz(theta), self.phi_bitsize)}
+        return {Rz(theta): self.phi_bitsize}
 
 
 @bloq_example

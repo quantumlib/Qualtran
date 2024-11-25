@@ -13,18 +13,28 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, List
 
-import cirq
 import numpy as np
+import pytest
 import quimb.tensor as qtn
 from attrs import frozen
-from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet, SoquetT
-from qualtran._infra.composite_bloq import _get_dangling_soquets
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    Connection,
+    ConnectionT,
+    QAny,
+    QBit,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
-from qualtran.simulation.tensor import bloq_to_dense, get_right_and_left_inds
+from qualtran.simulation.tensor import bloq_to_dense
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -40,62 +50,44 @@ class TensorAdderTester(Bloq):
             ]
         )
 
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
         assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
         assert isinstance(in_qubits, np.ndarray)
         assert in_qubits.shape == (2,)
-        assert isinstance(incoming['x'], Soquet)
-        assert incoming['x'].reg.bitsize == 2
+        assert isinstance(incoming['x'], Connection)
+        assert incoming['x'].right.reg.bitsize == 2
 
         assert sorted(outgoing.keys()) == ['qubits', 'y']
         out_qubits = outgoing['qubits']
         assert isinstance(out_qubits, np.ndarray)
         assert out_qubits.shape == (2,)
-        assert isinstance(outgoing['y'], Soquet)
-        assert outgoing['y'].reg.bitsize == 1
+        assert isinstance(outgoing['y'], Connection)
+        assert outgoing['y'].left.reg.bitsize == 1
 
         data = np.zeros((2**2, 2, 2, 2, 2, 2))
         data[3, 0, 1, 0, 1, 0] = 1
-        tn.add(
+        data = data.reshape((2,) * 7)
+        return [
             qtn.Tensor(
                 data=data,
-                inds=(
-                    incoming['x'],
-                    in_qubits[0],
-                    in_qubits[1],
-                    outgoing['y'],
-                    out_qubits[0],
-                    out_qubits[1],
-                ),
-                tags=[tag],
+                inds=[
+                    (incoming['x'], 0),
+                    (incoming['x'], 1),
+                    (in_qubits[0], 0),
+                    (in_qubits[1], 0),
+                    (outgoing['y'], 0),
+                    (out_qubits[0], 0),
+                    (out_qubits[1], 0),
+                ],
             )
-        )
-
-
-def _old_bloq_to_dense(bloq: Bloq) -> NDArray:
-    """Old code for tensor-contracting a bloq without wrapping it in length-1 composite bloq."""
-    tn = qtn.TensorNetwork([])
-    lsoqs = _get_dangling_soquets(bloq.signature, right=False)
-    rsoqs = _get_dangling_soquets(bloq.signature, right=True)
-    bloq.add_my_tensors(tn, None, incoming=lsoqs, outgoing=rsoqs)
-
-    inds = get_right_and_left_inds(bloq.signature)
-    matrix = tn.to_dense(*inds)
-    return matrix
+        ]
 
 
 def test_bloq_to_dense():
-    mat1 = _old_bloq_to_dense(TensorAdderTester())
     mat2 = bloq_to_dense(TensorAdderTester())
-    np.testing.assert_allclose(mat1, mat2, atol=1e-8)
 
     # Right inds: qubits=(1,0), y=0
     right = 1 * 2**2 + 0 * 2**1 + 0 * 2**0
@@ -129,6 +121,7 @@ class XDoubleNest(Bloq):
 
 
 def test_nest():
+    cirq = pytest.importorskip('cirq')
     x = XNest()
     should_be = cirq.unitary(cirq.X)
     np.testing.assert_allclose(should_be, x.tensor_contract())
@@ -136,6 +129,7 @@ def test_nest():
 
 
 def test_double_nest():
+    cirq = pytest.importorskip('cirq')
     xx = XDoubleNest()
     should_be = cirq.unitary(cirq.X)
     np.testing.assert_allclose(should_be, xx.tensor_contract())
@@ -158,6 +152,7 @@ class BloqWithNonTrivialInds(Bloq):
 
 
 def test_bloq_with_non_trivial_inds():
+    cirq = pytest.importorskip('cirq')
     bloq = BloqWithNonTrivialInds()
     assert_valid_bloq_decomposition(bloq)
     cirq_qubits = cirq.LineQubit.range(2)
@@ -166,3 +161,49 @@ def test_bloq_with_non_trivial_inds():
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
     np.testing.assert_allclose(cirq_unitary, bloq.decompose_bloq().tensor_contract())
     np.testing.assert_allclose(cirq_unitary, bloq.tensor_contract())
+
+
+class BloqWithTensorsAndDecomp(Bloq):
+    def __init__(self):
+        self.called_build_composite_bloq = False
+        self.called_my_tensors = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(a=1, b=1)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+        self.called_build_composite_bloq = True
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        return {'a': a, 'b': b}
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        self.called_my_tensors = True
+        return [
+            qtn.Tensor(
+                data=np.eye(4).reshape((2, 2, 2, 2)),
+                inds=[
+                    (outgoing['a'], 0),
+                    (outgoing['b'], 0),
+                    (incoming['a'], 0),
+                    (incoming['b'], 0),
+                ],
+            )
+        ]
+
+
+def test_bloq_stop_flattening():
+    bloq = BloqWithTensorsAndDecomp()
+    u2 = bloq_to_dense(bloq, full_flatten=True)
+    assert bloq.called_build_composite_bloq
+    assert not bloq.called_my_tensors
+
+    bloq = BloqWithTensorsAndDecomp()
+    u1 = bloq_to_dense(bloq, full_flatten=False)
+    assert not bloq.called_build_composite_bloq
+    assert bloq.called_my_tensors
+
+    np.testing.assert_allclose(u1, u2)

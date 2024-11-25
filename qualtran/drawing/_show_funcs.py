@@ -15,12 +15,14 @@
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
 import os
-from typing import Dict, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
 
 import IPython.display
 import ipywidgets
 
-from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
+from qualtran import Bloq
+
+from .bloq_counts_graph import format_counts_sigma, GraphvizCallGraph
 from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import draw_musical_score, get_musical_score_data
@@ -29,8 +31,6 @@ from .qpic_diagram import qpic_diagram_for_bloq
 if TYPE_CHECKING:
     import networkx as nx
     import sympy
-
-    from qualtran import Bloq
 
 
 def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
@@ -53,7 +53,10 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:
-        raise ValueError(f"Unknown `show_bloq` type: {type}.")
+        raise ValueError(
+            f"Unknown `show_bloq` type: {type}."
+            "Allowed types are [graph, dtype, musical_score, latex]"
+        )
 
 
 def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]] = None):
@@ -75,9 +78,49 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]
     IPython.display.display(box)
 
 
-def show_call_graph(g: 'nx.DiGraph') -> None:
-    """Display a graph representation of the counts graph `g`."""
-    IPython.display.display(GraphvizCounts(g).get_svg())
+@overload
+def show_call_graph(
+    item: 'Bloq', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+) -> None: ...
+
+
+@overload
+def show_call_graph(
+    item: 'nx.Graph', /, *, max_depth: Optional[int] = None, agg_gate_counts: Optional[str] = None
+) -> None: ...
+
+
+def show_call_graph(
+    item: Union['Bloq', 'nx.Graph'],
+    /,
+    *,
+    max_depth: Optional[int] = None,
+    agg_gate_counts: Optional[str] = None,
+) -> None:
+    """Display a graph representation of the call graph.
+
+    Args:
+        item: Either a networkx graph or a bloq. If a networkx graph, it should be a "call graph"
+            which is passed verbatim to the graph drawer and the additional arguments to this
+            function are ignored. If it is a bloq, the factory
+            method `GraphvizCallGraph.from_bloq()` is used to construct the call graph, compute
+            relevant costs, and display the call graph annotated with the costs.
+        max_depth: The maximum depth (from the root bloq) of the call graph to draw. Note
+            that the cost computations will walk the whole call graph, but only the nodes
+            within this depth will be drawn.
+        agg_gate_counts: One of 'factored', 'total_t', 't_and_ccz', or 'beverland' to
+            (optionally) aggregate the gate counts. If not specified, the 'factored'
+            approach is used where each type of gate is counted individually.
+
+    """
+    if isinstance(item, Bloq):
+        IPython.display.display(
+            GraphvizCallGraph.from_bloq(
+                item, max_depth=max_depth, agg_gate_counts=agg_gate_counts
+            ).get_svg()
+        )
+    else:
+        IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
 def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
