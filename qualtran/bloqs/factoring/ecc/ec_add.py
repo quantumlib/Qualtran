@@ -50,7 +50,7 @@ from qualtran.bloqs.mod_arithmetic import (
 )
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics.types import HasLength, is_symbolic
+from qualtran.symbolics.types import HasLength, is_symbolic, SymbolicInt
 
 from .ec_point import ECPoint
 
@@ -81,8 +81,8 @@ class _ECAddStepOne(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -215,9 +215,9 @@ class _ECAddStepTwo(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
-    window_size: int = 1
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -252,7 +252,9 @@ class _ECAddStepTwo(Bloq):
                 f1 = 0
             else:
                 lam = QMontgomeryUInt(self.n).montgomery_product(
-                    int(y), QMontgomeryUInt(self.n).montgomery_inverse(int(x), self.mod), self.mod
+                    int(y),
+                    QMontgomeryUInt(self.n).montgomery_inverse(int(x), int(self.mod)),
+                    int(self.mod),
                 )
         else:
             lam = 0
@@ -302,7 +304,7 @@ class _ECAddStepTwo(Bloq):
         # If ctrl = 1 and x != a: lam = (y - b) / (x - a) % p.
         z4_split = bb.split(z4)
         lam_split = bb.split(lam)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             ctrls = [f1, ctrl, z4_split[i]]
             ctrls, lam_split[i] = bb.add(
                 MultiControlX(cvs=[0, 1, 1]), controls=ctrls, target=lam_split[i]
@@ -314,7 +316,7 @@ class _ECAddStepTwo(Bloq):
 
         # If ctrl = 1 and x = a: lam = lam_r.
         lam_r_split = bb.split(lam_r)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             ctrls = [f1, ctrl, lam_r_split[i]]
             ctrls, lam_split[i] = bb.add(
                 MultiControlX(cvs=[1, 1, 1]), controls=ctrls, target=lam_split[i]
@@ -398,9 +400,9 @@ class _ECAddStepThree(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
-    window_size: int = 1
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -470,7 +472,7 @@ class _ECAddStepThree(Bloq):
         z1 = bb.add(IntState(bitsize=self.n, val=0))
         a_split = bb.split(a)
         z1_split = bb.split(z1)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
         a = bb.join(a_split, QMontgomeryUInt(self.n))
         z1 = bb.join(z1_split, QMontgomeryUInt(self.n))
@@ -487,7 +489,7 @@ class _ECAddStepThree(Bloq):
         z1 = bb.add(ModDbl(QMontgomeryUInt(self.n), mod=self.mod).adjoint(), x=z1)
         a_split = bb.split(a)
         z1_split = bb.split(z1)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             a_split[i], z1_split[i] = bb.add(CNOT(), ctrl=a_split[i], target=z1_split[i])
         a = bb.join(a_split, QMontgomeryUInt(self.n))
         z1 = bb.join(z1_split, QMontgomeryUInt(self.n))
@@ -535,9 +537,9 @@ class _ECAddStepFour(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
-    window_size: int = 1
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -553,10 +555,10 @@ class _ECAddStepFour(Bloq):
         self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         x = (
-            x - QMontgomeryUInt(self.n).montgomery_product(int(lam), int(lam), self.mod)
+            x - QMontgomeryUInt(self.n).montgomery_product(int(lam), int(lam), int(self.mod))
         ) % self.mod
         if lam > 0:
-            y = QMontgomeryUInt(self.n).montgomery_product(int(x), int(lam), self.mod)
+            y = QMontgomeryUInt(self.n).montgomery_product(int(x), int(lam), int(self.mod))
         return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
@@ -569,7 +571,7 @@ class _ECAddStepFour(Bloq):
         z4 = bb.add(IntState(bitsize=self.n, val=0))
         lam_split = bb.split(lam)
         z4_split = bb.split(z4)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
         lam = bb.join(lam_split, QMontgomeryUInt(self.n))
         z4 = bb.join(z4_split, QMontgomeryUInt(self.n))
@@ -599,7 +601,7 @@ class _ECAddStepFour(Bloq):
         )
         lam_split = bb.split(lam)
         z4_split = bb.split(z4)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             lam_split[i], z4_split[i] = bb.add(CNOT(), ctrl=lam_split[i], target=z4_split[i])
         lam = bb.join(lam_split, QMontgomeryUInt(self.n))
         z4 = bb.join(z4_split, QMontgomeryUInt(self.n))
@@ -617,7 +619,7 @@ class _ECAddStepFour(Bloq):
         # y = y_r + b % p.
         z3_split = bb.split(z3)
         y_split = bb.split(y)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             z3_split[i], y_split[i] = bb.add(CNOT(), ctrl=z3_split[i], target=y_split[i])
         z3 = bb.join(z3_split, QMontgomeryUInt(self.n))
         y = bb.join(y_split, QMontgomeryUInt(self.n))
@@ -675,9 +677,9 @@ class _ECAddStepFive(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
-    window_size: int = 1
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -739,7 +741,7 @@ class _ECAddStepFive(Bloq):
         # If ctrl: lam = 0.
         z4_split = bb.split(z4)
         lam_split = bb.split(lam)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             ctrls = [ctrl, z4_split[i]]
             ctrls, lam_split[i] = bb.add(
                 MultiControlX(cvs=[1, 1]), controls=ctrls, target=lam_split[i]
@@ -845,8 +847,8 @@ class _ECAddStepSix(Bloq):
         Fig 10.
     """
 
-    n: int
-    mod: int
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -925,7 +927,7 @@ class _ECAddStepSix(Bloq):
         # Set (x, y) to (a, b) if f4 is set.
         a_split = bb.split(a)
         x_split = bb.split(x)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             toff_ctrl = [f4, a_split[i]]
             toff_ctrl, x_split[i] = bb.add(Toffoli(), ctrl=toff_ctrl, target=x_split[i])
             f4 = toff_ctrl[0]
@@ -934,7 +936,7 @@ class _ECAddStepSix(Bloq):
         x = bb.join(x_split, QMontgomeryUInt(self.n))
         b_split = bb.split(b)
         y_split = bb.split(y)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             toff_ctrl = [f4, b_split[i]]
             toff_ctrl, y_split[i] = bb.add(Toffoli(), ctrl=toff_ctrl, target=y_split[i])
             f4 = toff_ctrl[0]
@@ -1061,9 +1063,9 @@ class ECAdd(Bloq):
         Litinski. 2023. Fig 5.
     """
 
-    n: int
-    mod: int
-    window_size: int = 1
+    n: 'SymbolicInt'
+    mod: 'SymbolicInt'
+    window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -1132,20 +1134,20 @@ class ECAdd(Bloq):
 
     def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         curve_a = (
-            QMontgomeryUInt(self.n).montgomery_to_uint(lam_r, self.mod)
+            QMontgomeryUInt(self.n).montgomery_to_uint(lam_r, int(self.mod))
             * 2
-            * QMontgomeryUInt(self.n).montgomery_to_uint(b, self.mod)
-            - (3 * QMontgomeryUInt(self.n).montgomery_to_uint(a, self.mod) ** 2)
+            * QMontgomeryUInt(self.n).montgomery_to_uint(b, int(self.mod))
+            - (3 * QMontgomeryUInt(self.n).montgomery_to_uint(a, int(self.mod)) ** 2)
         ) % self.mod
         p1 = ECPoint(
-            QMontgomeryUInt(self.n).montgomery_to_uint(a, self.mod),
-            QMontgomeryUInt(self.n).montgomery_to_uint(b, self.mod),
+            QMontgomeryUInt(self.n).montgomery_to_uint(a, int(self.mod)),
+            QMontgomeryUInt(self.n).montgomery_to_uint(b, int(self.mod)),
             mod=self.mod,
             curve_a=curve_a,
         )
         p2 = ECPoint(
-            QMontgomeryUInt(self.n).montgomery_to_uint(x, self.mod),
-            QMontgomeryUInt(self.n).montgomery_to_uint(y, self.mod),
+            QMontgomeryUInt(self.n).montgomery_to_uint(x, int(self.mod)),
+            QMontgomeryUInt(self.n).montgomery_to_uint(y, int(self.mod)),
             mod=self.mod,
             curve_a=curve_a,
         )
@@ -1153,8 +1155,8 @@ class ECAdd(Bloq):
         return {
             'a': a,
             'b': b,
-            'x': QMontgomeryUInt(self.n).uint_to_montgomery(result.x, self.mod),
-            'y': QMontgomeryUInt(self.n).uint_to_montgomery(result.y, self.mod),
+            'x': QMontgomeryUInt(self.n).uint_to_montgomery(result.x, int(self.mod)),
+            'y': QMontgomeryUInt(self.n).uint_to_montgomery(result.y, int(self.mod)),
             'lam_r': lam_r,
         }
 

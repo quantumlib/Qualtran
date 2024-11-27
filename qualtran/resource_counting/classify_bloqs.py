@@ -229,7 +229,7 @@ def bloq_is_rotation(b: Bloq) -> bool:
     )
 
     if isinstance(b, Controlled):
-        if b.ctrl_spec.num_qubits > 1:
+        if b.ctrl_spec.num_qubits != 1:
             return False
 
         # TODO https://github.com/quantumlib/Qualtran/issues/878

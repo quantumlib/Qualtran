@@ -36,7 +36,7 @@ from qualtran.bloqs.data_loading import QROAMClean
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.symbolics import is_symbolic, Shaped
+from qualtran.symbolics import is_symbolic, Shaped, SymbolicInt
 
 from .ec_add import ECAdd
 from .ec_point import ECPoint
@@ -75,7 +75,7 @@ class ECAddR(Bloq):
 
     """
 
-    n: int
+    n: 'SymbolicInt'
     R: ECPoint
 
     @cached_property
@@ -144,10 +144,10 @@ class ECWindowAddR(Bloq):
         Litinski. 2013. Section 1, eq. (3) and (4).
     """
 
-    n: int
+    n: 'SymbolicInt'
     R: ECPoint
-    add_window_size: int
-    mul_window_size: int = 1
+    add_window_size: 'SymbolicInt'
+    mul_window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':

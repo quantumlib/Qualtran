@@ -31,6 +31,7 @@ import attrs
 import numpy as np
 from numpy.typing import NDArray
 
+from ..symbolics import is_symbolic, prod, Shaped, SymbolicInt
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import QBit, QDType
 from .gate_with_registers import GateWithRegisters
@@ -55,18 +56,21 @@ def _cvs_convert(
         int,
         np.integer,
         NDArray[np.integer],
+        Shaped,
         Sequence[Union[int, np.integer]],
         Sequence[Sequence[Union[int, np.integer]]],
-        Sequence[NDArray[np.integer]],
+        Sequence[Union[NDArray[np.integer], Shaped]],
     ]
-) -> Tuple[NDArray[np.integer], ...]:
+) -> Tuple[Union[NDArray[np.integer], Shaped], ...]:
+    if isinstance(cvs, Shaped):
+        return (cvs,)
     if isinstance(cvs, (int, np.integer)):
         return (np.array(cvs),)
     if isinstance(cvs, np.ndarray):
         return (cvs,)
     if all(isinstance(cv, (int, np.integer)) for cv in cvs):
         return (np.asarray(cvs),)
-    return tuple(np.asarray(cv) for cv in cvs)
+    return tuple(cv if isinstance(cv, Shaped) else np.asarray(cv) for cv in cvs)
 
 
 @attrs.frozen(eq=False)
@@ -115,7 +119,9 @@ class CtrlSpec:
     qdtypes: Tuple[QDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
-    cvs: Tuple[NDArray[np.integer], ...] = attrs.field(default=1, converter=_cvs_convert)
+    cvs: Tuple[Union[NDArray[np.integer], Shaped], ...] = attrs.field(
+        default=1, converter=_cvs_convert
+    )
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)
@@ -125,19 +131,29 @@ class CtrlSpec:
         return len(self.qdtypes)
 
     @cached_property
-    def shapes(self) -> Tuple[Tuple[int, ...], ...]:
+    def shapes(self) -> Tuple[Tuple[SymbolicInt, ...], ...]:
         """Tuple of shapes of control registers represented by this CtrlSpec."""
         return tuple(cv.shape for cv in self.cvs)
 
     @cached_property
-    def num_qubits(self) -> int:
+    def concrete_shapes(self) -> tuple[tuple[int, ...], ...]:
+        """Tuple of shapes of control registers represented by this CtrlSpec."""
+        shapes = self.shapes
+        if is_symbolic(*shapes):
+            raise ValueError(f"cannot get concrete shapes: found symbolic {self.shapes}")
+        return shapes  # type: ignore
+
+    @cached_property
+    def num_qubits(self) -> SymbolicInt:
         """Total number of qubits required for control registers represented by this CtrlSpec."""
         return sum(
-            dtype.num_qubits * int(np.prod(shape))
-            for dtype, shape in zip(self.qdtypes, self.shapes)
+            dtype.num_qubits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes)
         )
 
-    def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
+    def is_symbolic(self):
+        return is_symbolic(*self.qdtypes) or is_symbolic(*self.cvs)
+
+    def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[SymbolicInt, ...]]]:
         """The data types that serve as input to the 'activation function'.
 
         The activation function takes in (quantum) inputs of these types and shapes and determines
@@ -165,6 +181,8 @@ class CtrlSpec:
         Returns:
             True if the specific input values evaluate to `True` for this CtrlSpec.
         """
+        if self.is_symbolic():
+            raise ValueError(f"Cannot compute activation for symbolic {self}")
         if len(vals) != self.num_ctrl_reg:
             raise ValueError(f"Incorrect number of inputs for {self}: {len(vals)}.")
 
@@ -180,19 +198,31 @@ class CtrlSpec:
         return True
 
     def wire_symbol(self, i: int, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        # Return a circle for bits; a box otherwise.
         from qualtran.drawing import Circle, TextBox
 
-        if reg.bitsize == 1:
-            cv = self.cvs[i][idx]
-            return Circle(filled=(cv == 1))
+        cvs = self.cvs[i]
 
-        cv = self.cvs[i][idx]
-        return TextBox(f'{cv}')
+        if is_symbolic(cvs):
+            # control value is not given
+            return TextBox('ctrl')
+
+        # Return a circle for bits; a box otherwise.
+        cv = cvs[idx]
+        if reg.bitsize == 1:
+            return Circle(filled=(cv == 1))
+        else:
+            return TextBox(f'{cv}')
 
     @cached_property
-    def _cvs_tuple(self) -> Tuple[int, ...]:
-        return tuple(cv for cvs in self.cvs for cv in tuple(cvs.reshape(-1)))
+    def __cvs_tuple(self) -> Tuple[Union[tuple[int, ...], Shaped], ...]:
+        """Serialize the control values for hashing and equality checking."""
+
+        def _serialize(cvs) -> Union[tuple[int, ...], Shaped]:
+            if isinstance(cvs, Shaped):
+                return cvs
+            return tuple(cvs.reshape(-1))
+
+        return tuple(_serialize(cvs) for cvs in self.cvs)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CtrlSpec):
@@ -201,18 +231,22 @@ class CtrlSpec:
         return (
             other.qdtypes == self.qdtypes
             and other.shapes == self.shapes
-            and other._cvs_tuple == self._cvs_tuple
+            and other.__cvs_tuple == self.__cvs_tuple
         )
 
     def __hash__(self):
-        return hash((self.qdtypes, self.shapes, self._cvs_tuple))
+        return hash((self.qdtypes, self.shapes, self.__cvs_tuple))
 
     def to_cirq_cv(self) -> 'cirq.SumOfProducts':
         """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
         import cirq
 
+        if self.is_symbolic():
+            raise ValueError(f"Cannot convert symbolic {self} to cirq control values.")
+
         cirq_cv = []
         for qdtype, cv in zip(self.qdtypes, self.cvs):
+            assert isinstance(cv, np.ndarray)
             for idx in Register('', qdtype, cv.shape).all_idxs():
                 cirq_cv += [*qdtype.to_bits(cv[idx])]
         return cirq.SumOfProducts([tuple(cirq_cv)])
@@ -256,11 +290,14 @@ class CtrlSpec:
 
     def get_single_ctrl_bit(self) -> ControlBit:
         """If controlled by a single qubit, return the control bit, otherwise raise"""
+        if self.is_symbolic():
+            raise ValueError(f"cannot get ctrl bit for symbolic {self}")
         if self.num_qubits != 1:
             raise ValueError(f"expected a single qubit control, got {self.num_qubits}")
 
         (qdtype,) = self.qdtypes
         (cv,) = self.cvs
+        assert isinstance(cv, np.ndarray)
         (idx,) = Register('', qdtype, cv.shape).all_idxs()
         (control_bit,) = qdtype.to_bits(cv[idx])
 
@@ -458,9 +495,19 @@ class Controlled(GateWithRegisters):
             # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
             import cirq
 
-            return cirq.unitary(
-                cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
-            )
+            # TODO It would be ideal to use `tensor_contract` always,
+            #      but at the moment it's about 5-10x slower than `cirq.unitary`.
+            #      So we default to `cirq.unitary`, and only use `tensor_contract` if it fails.
+            #      https://github.com/quantumlib/Qualtran/issues/1336
+            # TODO `cirq.ControlledGate` fails to correctly verify `subbloq` using
+            #      a compute-uncompute `And` pair is unitary.
+            #      https://github.com/quantumlib/Qualtran/issues/1488
+            try:
+                return cirq.unitary(
+                    cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+                )
+            except ValueError:
+                pass  # use the tensor contraction instead
         if all(reg.side == Side.THRU for reg in self.subbloq.signature):
             # subbloq has only THRU registers, so the tensor contraction corresponds
             # to a unitary matrix.
