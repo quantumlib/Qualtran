@@ -754,10 +754,12 @@ class _ECAddStepFive(Bloq):
         # If the denominator of lambda is 0, lam = lam_r so we clear lam with lam_r.
         ancilla = bb.allocate()
         x_split = bb.split(x)
-        x_split, ancilla = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=ancilla)
+        x_split, ancilla = bb.add(
+            MultiControlX(cvs=[0] * int(self.n)), controls=x_split, target=ancilla
+        )
         lam_r_split = bb.split(lam_r)
         lam_split = bb.split(lam)
-        for i in range(self.n):
+        for i in range(int(self.n)):
             ctrls = [ctrl, ancilla, lam_r_split[i]]
             ctrls, lam_split[i] = bb.add(
                 MultiControlX(cvs=[1, 1, 1]), controls=ctrls, target=lam_split[i]
@@ -767,7 +769,9 @@ class _ECAddStepFive(Bloq):
             lam_r_split[i] = ctrls[2]
         lam_r = bb.join(lam_r_split, dtype=QMontgomeryUInt(self.n))
         lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
-        x_split, ancilla = bb.add(MultiControlX(cvs=[0] * self.n), controls=x_split, target=ancilla)
+        x_split, ancilla = bb.add(
+            MultiControlX(cvs=[0] * int(self.n)), controls=x_split, target=ancilla
+        )
         x = bb.join(x_split, dtype=QMontgomeryUInt(self.n))
         bb.free(ancilla)
         bb.add(Free(QMontgomeryUInt(self.n)), reg=lam)
@@ -971,11 +975,11 @@ class _ECAddStepSix(Bloq):
         xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
         ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
         ab_split = bb.split(ab)
-        a = bb.join(ab_split[: self.n], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(ab_split[self.n :], dtype=QMontgomeryUInt(self.n))
+        a = bb.join(ab_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
         xy_split = bb.split(xy)
-        x = bb.join(xy_split[: self.n], dtype=QMontgomeryUInt(self.n))
-        y = bb.join(xy_split[self.n :], dtype=QMontgomeryUInt(self.n))
+        x = bb.join(xy_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
 
         # Unset f3 if (a, b) = (0, 0).
         ab_arr = np.concatenate([bb.split(a), bb.split(b)])
