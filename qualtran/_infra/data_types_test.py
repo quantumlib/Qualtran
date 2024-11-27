@@ -295,6 +295,9 @@ def test_qint_to_and_from_bits():
         assert qint4.from_bits(qint4.to_bits(x)) == x
     assert list(qint4.to_bits(-2)) == [1, 1, 1, 0]
     assert list(QInt(4).to_bits(2)) == [0, 0, 1, 0]
+    # MSB at lowest index -- big-endian
+    assert qint4.from_bits([0, 0, 0, 1]) == 1
+    assert qint4.from_bits([0, 0, 0, 1]) < qint4.from_bits([0, 1, 0, 0])
     assert qint4.from_bits(qint4.to_bits(-2)) == -2
     assert qint4.from_bits(qint4.to_bits(2)) == 2
     with pytest.raises(ValueError):
@@ -325,6 +328,10 @@ def test_quint_to_and_from_bits():
     assert [*quint4.get_classical_domain()] == [*range(0, 16)]
     assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
     assert quint4.from_bits(quint4.to_bits(10)) == 10
+    # MSB at lowest index -- big-endian
+    assert quint4.from_bits([0, 0, 0, 1]) == 1
+    assert quint4.from_bits([0, 0, 0, 1]) < quint4.from_bits([1, 0, 0, 0])
+
     for x in range(16):
         assert quint4.from_bits(quint4.to_bits(x)) == x
     with pytest.raises(ValueError):
