@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import warnings
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
-import cirq
 import numpy as np
 import sympy
 from attrs import field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -33,14 +33,16 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import XGate
-from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length, is_symbolic
+from qualtran.bloqs.basic_gates import XGate, ZGate
+from qualtran.bloqs.mcmt.and_bloq import _to_tuple_or_has_length
 from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
-from qualtran.symbolics import HasLength, SymbolicInt
+from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.symbolics import HasLength, is_symbolic, Shaped, slen, SymbolicInt
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -60,7 +62,16 @@ class MultiControlPauli(GateWithRegisters):
     """
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
-    target_gate: cirq.Pauli
+    target_bloq: Bloq
+
+    def __attrs_post_init__(self):
+        warnings.warn(
+            "`MultiControlPauli` is deprecated. Use `bloq.controlled(...)` which now defaults"
+            "to reducing controls using an `And` ladder."
+            "For the same signature as `MultiControlPauli(cvs, target_bloq)`,"
+            "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
+            DeprecationWarning,
+        )
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -72,7 +83,7 @@ class MultiControlPauli(GateWithRegisters):
 
     @property
     def n_ctrls(self) -> SymbolicInt:
-        return self.cvs.n if isinstance(self.cvs, HasLength) else len(self.cvs)
+        return slen(self.cvs)
 
     @property
     def concrete_cvs(self) -> Tuple[int, ...]:
@@ -81,14 +92,11 @@ class MultiControlPauli(GateWithRegisters):
         return self.cvs
 
     @property
-    def target_bloq(self) -> Bloq:
-        from qualtran.cirq_interop import cirq_gate_to_bloq
-
-        return cirq_gate_to_bloq(self.target_gate)
-
-    @property
     def _multi_ctrl_bloq(self) -> ControlledViaAnd:
-        ctrl_spec = CtrlSpec(cvs=(np.array(self.concrete_cvs),))
+        cvs: Union[NDArray[np.integer], Shaped] = (
+            Shaped((self.n_ctrls,)) if is_symbolic(self.n_ctrls) else np.array(self.concrete_cvs)
+        )
+        ctrl_spec = CtrlSpec(cvs=(cvs,))
         return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -109,52 +117,46 @@ class MultiControlPauli(GateWithRegisters):
 
         return {'controls': out_soqs[ctrl_reg_name], 'target': out_soqs[target_reg_name]}
 
-    def __str__(self) -> str:
-        n = self.n_ctrls
-        ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
-        return f'{ctrl}{self.target_gate!s}'
-
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@" if b else "@(0)" for b in self.concrete_cvs]
-        wire_symbols += [str(self.target_gate)]
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        controls, target = vals.get('controls', np.array([])), vals.get('target', 0)
-        if self.target_gate not in (cirq.X, XGate()):
-            raise NotImplementedError(f"{self} is not classically simulatable.")
-
-        if np.all(self.concrete_cvs == controls):
-            target = (target + 1) % 2
-
-        return {'controls': controls, 'target': target}
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if self.n_ctrls == 0:
             return {self.target_bloq: 1}
-
-        if is_symbolic(self.cvs):
-            # TODO CtrlSpec does not support symbolic cvs yet.
-            #      remove this case once support is added.
-            #      https://github.com/quantumlib/Qualtran/issues/1168
-            from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-
-            if self.n_ctrls == 1:
-                return {self.target_bloq.controlled(): 1}
-            elif self.n_ctrls == 2:
-                and_bloq = And(ssa.new_symbol('cv1'), ssa.new_symbol('cv2'))
-                return {self.target_bloq.controlled(): 1, and_bloq: 1, and_bloq.adjoint(): 1}
-            else:
-                m_and_bloq = MultiAnd(self.cvs)
-                return {self.target_bloq.controlled(): 1, m_and_bloq: 1, m_and_bloq.adjoint(): 1}
-
         return {self._multi_ctrl_bloq: 1}
 
+    def __str__(self) -> str:
+        n = self.n_ctrls
+        ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
+        return f'{ctrl}{self.target_bloq!s}'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return TextBox(str(self))
+        if reg.name == 'target':
+            (target_reg,) = tuple(self.target_bloq.signature)
+            return self.target_bloq.wire_symbol(target_reg)
+
+        (i,) = idx
+        cv = self.concrete_cvs[i]
+        return Circle(filled=(cv == 1))
+
+    def _circuit_diagram_info_(self, args) -> 'cirq.CircuitDiagramInfo':
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+
+        return _wire_symbol_to_cirq_diagram_info(self, args)
+
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
+        import cirq
+
+        from qualtran.cirq_interop import BloqAsCirqGate
+
+        target_gate = (
+            self.target_bloq
+            if isinstance(self.target_bloq, cirq.Gate)
+            else BloqAsCirqGate(self.target_bloq)
+        )
         cpauli = (
-            self.target_gate.controlled(control_values=self.concrete_cvs)
+            target_gate.controlled(control_values=self.concrete_cvs)
             if self.n_ctrls
-            else self.target_gate
+            else target_gate
         )
         return cirq.apply_unitary(cpauli, args)
 
@@ -162,46 +164,72 @@ class MultiControlPauli(GateWithRegisters):
         return not is_symbolic(self.n_ctrls)
 
 
-@bloq_example
-def _ccpauli() -> MultiControlPauli:
-    ccpauli = MultiControlPauli(cvs=(1, 0, 1, 0, 1), target_gate=cirq.X)
-    return ccpauli
-
-
-@bloq_example
-def _ccpauli_symb() -> MultiControlPauli:
-    from qualtran.symbolics import HasLength
-
-    ccpauli_symb = MultiControlPauli(cvs=HasLength(sympy.Symbol("n")), target_gate=cirq.X)
-    return ccpauli_symb
-
-
-_CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlPauli, examples=(_ccpauli,))
-
-
 @frozen
 class MultiControlX(MultiControlPauli):
     r"""Implements multi-control, single-target X gate.
 
-    See :class:`MultiControlPauli` for implementation and costs.
+    Reduces multiple controls to a single control using an `And` ladder.
+    See class `ControlledViaAnd` for details on construction.
+
+    Alternatively, one can directly use `XGate().controlled(CtrlSpec(cvs=cvs))`
+
+    Args:
+        cvs: a tuple of `n` control bits, or a `HasLength(n)` to control by `n` 1s.
+
+    Registers:
+        controls: control register of type `QBit` and shape `(n,)`.
+        target: single qubit target register.
     """
 
-    target_gate: cirq.Pauli = field(init=False)
+    target_bloq: Bloq = field(init=False)
 
-    @target_gate.default
+    @target_bloq.default
     def _X(self):
-        return cirq.X
+        return XGate()
+
+    def __attrs_post_init__(self):
+        pass
+
+
+@bloq_example
+def _ccpauli() -> MultiControlX:
+    ccpauli = MultiControlX(cvs=(1, 0, 1, 0, 1))
+    return ccpauli
+
+
+@bloq_example
+def _ccpauli_symb() -> MultiControlX:
+    from qualtran.symbolics import HasLength
+
+    ccpauli_symb = MultiControlX(cvs=HasLength(sympy.Symbol("n")))
+    return ccpauli_symb
+
+
+_CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlX, examples=(_ccpauli,))
 
 
 @frozen
 class MultiControlZ(MultiControlPauli):
     r"""Implements multi-control, single-target Z gate.
 
-    See :class:`MultiControlPauli` for implementation and costs.
+    Reduces multiple controls to a single control using an `And` ladder.
+    See class `ControlledViaAnd` for details on construction.
+
+    Alternatively, one can directly use `ZGate().controlled(CtrlSpec(cvs=cvs))`
+
+    Args:
+        cvs: a tuple of `n` control bits, or a `HasLength(n)` to control by `n` 1s.
+
+    Registers:
+        controls: control register of type `QBit` and shape `(n,)`.
+        target: single qubit target register.
     """
 
-    target_gate: cirq.Pauli = field(init=False)
+    target_bloq: Bloq = field(init=False)
 
-    @target_gate.default
+    @target_bloq.default
     def _Z(self):
-        return cirq.Z
+        return ZGate()
+
+    def __attrs_post_init__(self):
+        pass
