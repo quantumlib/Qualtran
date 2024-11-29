@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QMontgomeryUInt,
@@ -32,7 +33,6 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran import CtrlSpec
 from qualtran.bloqs.arithmetic.comparison import Equals
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
 from qualtran.bloqs.bookkeeping import Free
