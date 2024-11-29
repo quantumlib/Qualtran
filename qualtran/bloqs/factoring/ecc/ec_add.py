@@ -32,7 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.controlled import CtrlSpec
+from qualtran import CtrlSpec
 from qualtran.bloqs.arithmetic.comparison import Equals
 from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
 from qualtran.bloqs.bookkeeping import Free
