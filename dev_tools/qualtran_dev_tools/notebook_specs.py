@@ -37,6 +37,7 @@ import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -491,6 +492,15 @@ ARITHMETIC = [
         title='Trigonometric Functions',
         module=qualtran.bloqs.arithmetic.trigonometric,
         bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
+    ),
+    NotebookSpecV2(
+        title='List Functions',
+        module=qualtran.bloqs.arithmetic.lists,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.lists.sort_in_place._SORT_IN_PLACE_DOC,
+            qualtran.bloqs.arithmetic.lists.symmetric_difference._SYMMETRIC_DIFFERENCE_DOC,
+            qualtran.bloqs.arithmetic.lists.has_duplicates._HAS_DUPLICATES_DOC,
+        ],
     ),
 ]
 
