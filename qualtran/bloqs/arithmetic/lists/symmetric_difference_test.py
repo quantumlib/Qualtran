@@ -15,21 +15,22 @@ from unittest.mock import ANY
 
 import pytest
 
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.arithmetic.lists.symmetric_difference import (
+    _symm_diff,
+    _symm_diff_equal_size_symb,
+    _symm_diff_symb,
+)
 from qualtran.resource_counting import big_O, GateCounts, get_cost_value, QECGatesCost
 from qualtran.symbolics import ceil, log2
 
-from .symmetric_difference import _symm_diff, _symm_diff_equal_size
 
-
-@pytest.mark.parametrize("bloq_ex", [_symm_diff, _symm_diff_equal_size])
+@pytest.mark.parametrize("bloq_ex", [_symm_diff, _symm_diff_symb, _symm_diff_equal_size_symb])
 def test_examples(bloq_autotester, bloq_ex):
-    if bloq_autotester.check_name == 'serialize':
-        pytest.skip()
-
     bloq_autotester(bloq_ex)
 
 
-@pytest.mark.parametrize("bloq_ex", [_symm_diff, _symm_diff_equal_size])
+@pytest.mark.parametrize("bloq_ex", [_symm_diff_symb, _symm_diff_equal_size_symb])
 def test_cost(bloq_ex):
     bloq = bloq_ex()
     gc = get_cost_value(bloq, QECGatesCost())
@@ -58,6 +59,4 @@ def test_cost(bloq_ex):
 
 @pytest.mark.notebook
 def test_notebook():
-    from qualtran.testing import execute_notebook
-
-    execute_notebook('arithmetic')
+    qlt_testing.execute_notebook('lists')

@@ -18,8 +18,7 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran import QInt, QUInt
-
-from .has_duplicates import (
+from qualtran.bloqs.arithmetic.lists.has_duplicates import (
     _has_duplicates,
     _has_duplicates_symb,
     _has_duplicates_symb_len,

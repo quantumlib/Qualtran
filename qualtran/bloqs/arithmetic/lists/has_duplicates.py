@@ -172,6 +172,5 @@ def _has_duplicates_symb_len() -> HasDuplicates:
 
 
 _HAS_DUPLICATES_DOC = BloqDocSpec(
-    bloq_cls=HasDuplicates,
-    examples=[_has_duplicates_symb, _has_duplicates, _has_duplicates_symb_len],
+    bloq_cls=HasDuplicates, examples=[_has_duplicates_symb, _has_duplicates]
 )

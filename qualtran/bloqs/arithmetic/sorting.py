@@ -251,7 +251,7 @@ class BitonicMerge(Bloq):
         k = self.half_length
         if is_symbolic(k):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-        if (k & (k - 1)) == 0:
+        if (k & (k - 1)) != 0:
             # TODO(#1090) support non-power-of-two input lengths
             raise DecomposeNotImplementedError("length of input lists must be a power of 2")
 
