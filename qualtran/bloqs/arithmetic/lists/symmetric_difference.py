@@ -103,28 +103,33 @@ class SymmetricDifference(Bloq):
 
 @bloq_example
 def _symm_diff() -> SymmetricDifference:
-    import sympy
-
-    from qualtran.symbolics import bit_length
-
-    n, k, c = sympy.symbols("n k c", positive=True, integer=True)
-    dtype = QUInt(bit_length(n - 1))
-    symm_diff = SymmetricDifference(n_lhs=c * k, n_rhs=k, n_diff=c * k, dtype=dtype)
+    dtype = QUInt(4)
+    symm_diff = SymmetricDifference(n_lhs=4, n_rhs=2, n_diff=4, dtype=dtype)
     return symm_diff
 
 
 @bloq_example
-def _symm_diff_equal_size() -> SymmetricDifference:
+def _symm_diff_symb() -> SymmetricDifference:
     import sympy
 
     from qualtran.symbolics import bit_length
 
     n, k, c = sympy.symbols("n k c", positive=True, integer=True)
     dtype = QUInt(bit_length(n - 1))
-    symm_diff_equal_size = SymmetricDifference(n_lhs=c * k, n_rhs=c * k, n_diff=k, dtype=dtype)
-    return symm_diff_equal_size
+    symm_diff_symb = SymmetricDifference(n_lhs=c * k, n_rhs=k, n_diff=c * k, dtype=dtype)
+    return symm_diff_symb
 
 
-_SYMMETRIC_DIFFERENCE_DOC = BloqDocSpec(
-    bloq_cls=SymmetricDifference, examples=[_symm_diff, _symm_diff_equal_size]
-)
+@bloq_example
+def _symm_diff_equal_size_symb() -> SymmetricDifference:
+    import sympy
+
+    from qualtran.symbolics import bit_length
+
+    n, k, c = sympy.symbols("n k c", positive=True, integer=True)
+    dtype = QUInt(bit_length(n - 1))
+    symm_diff_equal_size_symb = SymmetricDifference(n_lhs=c * k, n_rhs=c * k, n_diff=k, dtype=dtype)
+    return symm_diff_equal_size_symb
+
+
+_SYMMETRIC_DIFFERENCE_DOC = BloqDocSpec(bloq_cls=SymmetricDifference, examples=[_symm_diff])
