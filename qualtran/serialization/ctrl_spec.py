@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from qualtran import CtrlSpec
 from qualtran.protos import ctrl_spec_pb2
 from qualtran.serialization import args, data_types
+from qualtran.symbolics import Shaped
 
 
 def ctrl_spec_from_proto(spec: ctrl_spec_pb2.CtrlSpec) -> CtrlSpec:
@@ -25,7 +25,12 @@ def ctrl_spec_from_proto(spec: ctrl_spec_pb2.CtrlSpec) -> CtrlSpec:
 
 
 def ctrl_spec_to_proto(spec: CtrlSpec) -> ctrl_spec_pb2.CtrlSpec:
+    def cvs_to_proto(cvs):
+        if isinstance(cvs, Shaped):
+            raise ValueError("cannot serialize Shaped")
+        return args.ndarray_to_proto(cvs)
+
     return ctrl_spec_pb2.CtrlSpec(
         qdtypes=[data_types.data_type_to_proto(dtype) for dtype in spec.qdtypes],
-        cvs=[args.ndarray_to_proto(cvs) for cvs in spec.cvs],
+        cvs=[cvs_to_proto(cvs) for cvs in spec.cvs],
     )

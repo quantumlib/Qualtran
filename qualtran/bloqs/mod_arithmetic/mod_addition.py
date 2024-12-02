@@ -23,6 +23,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     QMontgomeryUInt,
@@ -35,8 +36,9 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.arithmetic.comparison import CLinearDepthGreaterThan, LinearDepthGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.basic_gates import IntEffect, IntState, XGate
 from qualtran.bloqs.bookkeeping import Cast
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -89,7 +91,7 @@ class ModAdd(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
-            raise NotImplementedError(f'symbolic decomposition is not supported for {self}')
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -115,7 +117,7 @@ class ModAdd(Bloq):
         x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
-        y = bb.add(AddK(bitsize=self.bitsize + 1, k=-1 * self.mod, signed=False, cvs=()), x=y)
+        y = bb.add(AddK(QMontgomeryUInt(self.bitsize + 1), k=-1 * self.mod), x=y)
 
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
@@ -123,11 +125,9 @@ class ModAdd(Bloq):
         sign = y_split[0]
         y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
-        sign_split = bb.split(sign)
-        sign_split, y = bb.add(
-            AddK(bitsize=self.bitsize, k=self.mod, signed=False, cvs=(1,)), x=y, ctrls=sign_split
+        sign, y = bb.add(
+            AddK(QMontgomeryUInt(self.bitsize), k=self.mod).controlled(), ctrl=sign, x=y
         )
-        sign = bb.join(sign_split)
 
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
@@ -146,8 +146,8 @@ class ModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             Add(QUInt(self.bitsize + 1)): 1,
-            AddK(self.bitsize + 1, k=-self.mod): 1,
-            AddK(self.bitsize, k=self.mod).controlled(): 1,
+            AddK(QUInt(self.bitsize + 1), k=-self.mod): 1,
+            AddK(QUInt(self.bitsize), k=self.mod).controlled(): 1,
             LinearDepthGreaterThan(self.bitsize): 1,
             XGate(): 1,
         }
@@ -269,6 +269,19 @@ class CModAddK(Bloq):
     Registers:
         ctrl: The control bit
         x: The register to perform the in-place modular addition.
+
+    References:
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Gidney and Ekerå 2019.
+        The reference implementation in section 2.2 uses CModAddK, but the circuit that it points
+        to is just ModAdd (not ModAddK). This ModAdd is less efficient than the circuit later
+        introduced in the Litinski paper so we choose to use that since it is more efficient and
+        already implemented in Qualtran.
+
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585).
+        Litinski et al. 2023.
+        This CModAdd circuit uses 2 fewer additions than the implementation referenced in the paper
+        above. Because of this we choose to use this CModAdd bloq instead.
     """
 
     k: Union[int, sympy.Expr]
@@ -279,12 +292,53 @@ class CModAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        k = ssa.new_symbol('k')
-        return {AddK(k=k, bitsize=self.bitsize).controlled(): 5}
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        k = bb.add(IntState(bitsize=self.bitsize, val=self.k))
+        ctrl, k, x = bb.add(CModAdd(QUInt(self.bitsize), mod=self.mod), ctrl=ctrl, x=k, y=x)
+        bb.add(IntEffect(bitsize=self.bitsize, val=self.k), val=k)
+        return {'ctrl': ctrl, 'x': x}
 
-    def short_name(self) -> str:
-        return f'x += {self.k} % {self.mod}'
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == 0:
+            return {'ctrl': 0, 'x': x}
+
+        assert ctrl == 1, 'Bad ctrl value.'
+        x = (x + self.k) % self.mod
+        return {'ctrl': ctrl, 'x': x}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {CModAdd(QUInt(self.bitsize), mod=self.mod): 1}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f"mod {self.mod}")
+        if reg.name == 'ctrl':
+            return Circle()
+        if reg.name == 'x':
+            return TextBox(f'x += {self.k}')
+        raise ValueError(f"Unknown register {reg}")
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _cmod_add_k() -> CModAddK:
+    n, m, k = sympy.symbols('n m k')
+    cmod_add_k = CModAddK(bitsize=n, mod=m, k=k)
+    return cmod_add_k
+
+
+@bloq_example
+def _cmod_add_k_small() -> CModAddK:
+    cmod_add_k_small = CModAddK(bitsize=4, mod=7, k=1)
+    return cmod_add_k_small
+
+
+_C_MOD_ADD_K_DOC = BloqDocSpec(bloq_cls=CModAddK, examples=[_cmod_add_k, _cmod_add_k_small])
 
 
 @frozen
@@ -300,6 +354,12 @@ class CtrlScaleModAdd(Bloq):
         ctrl: The control bit
         x: The 'source' quantum register containing the integer to be scaled and added to `y`.
         y: The 'destination' quantum register to which the addition will apply.
+
+    References:
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Construction based on description in section 2.2 paragraph 4. We add n And/And† bloqs
+        because the bloq is controlled, but the construction also involves modular addition
+        controlled on the qubits comprising register x.
     """
 
     k: Union[int, sympy.Expr]
@@ -316,9 +376,38 @@ class CtrlScaleModAdd(Bloq):
             ]
         )
 
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', x: 'Soquet', y: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+        x_split = bb.split(x)
+        for i in range(int(self.bitsize)):
+            and_ctrl = [ctrl, x_split[i]]
+            and_ctrl, ancilla = bb.add(And(), ctrl=and_ctrl)
+            ancilla, y = bb.add(
+                CModAddK(
+                    k=((self.k * 2 ** (self.bitsize - 1 - i)) % self.mod),
+                    bitsize=self.bitsize,
+                    mod=self.mod,
+                ),
+                ctrl=ancilla,
+                x=y,
+            )
+            and_ctrl = bb.add(And().adjoint(), ctrl=and_ctrl, target=ancilla)
+            ctrl = and_ctrl[0]
+            x_split[i] = and_ctrl[1]
+        x = bb.join(x_split, dtype=QUInt(self.bitsize))
+
+        return {'ctrl': ctrl, 'x': x, 'y': y}
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         k = ssa.new_symbol('k')
-        return {CModAddK(k=k, bitsize=self.bitsize, mod=self.mod): self.bitsize}
+        return {
+            CModAddK(k=k, bitsize=self.bitsize, mod=self.mod): self.bitsize,
+            And(): self.bitsize,
+            And().adjoint(): self.bitsize,
+        }
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -342,6 +431,24 @@ class CtrlScaleModAdd(Bloq):
         if reg.name == 'y':
             return TextBox(f'y += x*{self.k}')
         raise ValueError(f"Unknown register {reg}")
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_scale_mod_add() -> CtrlScaleModAdd:
+    n, m, k = sympy.symbols('n m k')
+    ctrl_scale_mod_add = CtrlScaleModAdd(bitsize=n, mod=m, k=k)
+    return ctrl_scale_mod_add
+
+
+@bloq_example
+def _ctrl_scale_mod_add_small() -> CtrlScaleModAdd:
+    ctrl_scale_mod_add_small = CtrlScaleModAdd(bitsize=4, mod=7, k=1)
+    return ctrl_scale_mod_add_small
+
+
+_CTRL_SCALE_MOD_ADD_DOC = BloqDocSpec(
+    bloq_cls=CtrlScaleModAdd, examples=[_ctrl_scale_mod_add, _ctrl_scale_mod_add_small]
+)
 
 
 @frozen
@@ -390,6 +497,8 @@ class CModAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         y_arr = bb.split(y)
         ancilla = bb.allocate(1)
         x = bb.add(Cast(self.dtype, QUInt(self.dtype.bitsize)), reg=x)
@@ -401,12 +510,12 @@ class CModAdd(Bloq):
             a=x,
             b=y,
         )
-        y = bb.add(AddK(self.dtype.bitsize + 1, -self.mod, signed=False), x=y)
+        y = bb.add(AddK(QUInt(self.dtype.bitsize + 1), -self.mod), x=y)
         y_arr = bb.split(y)
         ancilla, y_arr = y_arr[0], y_arr[1:]
         y = bb.join(y_arr)
-        (ancilla,), y = bb.add(
-            AddK(self.dtype.bitsize, self.mod, signed=False, cvs=(1,)), ctrls=(ancilla,), x=y
+        ancilla, y = bb.add(
+            AddK(QUInt(self.dtype.bitsize), self.mod).controlled(), ctrl=ancilla, x=y
         )
 
         ctrl, x, y, ancilla = bb.add(
@@ -427,8 +536,8 @@ class CModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {
             CAdd(QUInt(self.dtype.bitsize), QUInt(self.dtype.bitsize + 1), cv=self.cv): 1,
-            AddK(self.dtype.bitsize + 1, -self.mod, signed=False): 1,
-            AddK(self.dtype.bitsize, self.mod, cvs=(1,), signed=False): 1,
+            AddK(QUInt(self.dtype.bitsize + 1), -self.mod): 1,
+            AddK(QUInt(self.dtype.bitsize), self.mod).controlled(): 1,
             CLinearDepthGreaterThan(QUInt(self.dtype.bitsize), cv=self.cv): 1,
             XGate(): 1,
         }

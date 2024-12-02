@@ -11,3 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""Simulators for quantum programs.
+
+This module includes `qualtran.simulation.classical_sim` for basis state simulation of
+classical-reversible bloqs and `qualtran.simulation.tensor` for Quimb-based tensor network
+contraction.
+"""

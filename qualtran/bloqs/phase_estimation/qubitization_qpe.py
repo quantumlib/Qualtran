@@ -64,7 +64,6 @@ class QubitizationQPE(GateWithRegisters):
     Args:
         walk: Bloq representing the Qubitization walk operator to run the phase estimation protocol
             on.
-        m_bits: Bitsize of the phase register to be used during phase estimation.
         ctrl_state_prep: Bloq to prepare the control state on the phase register. Defaults to
             `OnEach(self.m_bits, Hadamard())`.
         qft_inv: Bloq to apply inverse QFT on the phase register. Defaults to
@@ -119,7 +118,7 @@ class QubitizationQPE(GateWithRegisters):
         qpre_reg = quregs['qpe_reg']
 
         yield self.ctrl_state_prep.on(*qpre_reg)
-        yield walk_controlled.on_registers(**walk_regs, control=qpre_reg[-1])
+        yield walk_controlled.on_registers(**walk_regs, ctrl=qpre_reg[-1])
         walk = self.walk**2
         for i in range(self.m_bits - 2, -1, -1):
             yield reflect_controlled.on_registers(control=qpre_reg[i], **reflect_regs)
@@ -141,6 +140,16 @@ class QubitizationQPE(GateWithRegisters):
 
     def __str__(self) -> str:
         return f'QubitizationQPE[{self.m_bits}]'
+
+
+@bloq_example
+def _qubitization_qpe_ising() -> QubitizationQPE:
+    from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
+    from qualtran.bloqs.phase_estimation import RectangularWindowState
+
+    walk, _ = get_walk_operator_for_1d_ising_model(4, 0.1)
+    qubitization_qpe_ising = QubitizationQPE(walk, RectangularWindowState(4))
+    return qubitization_qpe_ising
 
 
 @bloq_example
@@ -252,5 +261,6 @@ _QUBITIZATION_QPE_DOC = BloqDocSpec(
         _qubitization_qpe_hubbard_model_small,
         _qubitization_qpe_sparse_chem,
         _qubitization_qpe_chem_thc,
+        _qubitization_qpe_ising,
     ),
 )
