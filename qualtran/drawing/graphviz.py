@@ -403,6 +403,24 @@ class PrettyGraphDrawer(GraphDrawer):
             arrowsize=0.25,
         )
 
+    def cxn_label(self, cxn: Connection) -> str:
+        import sympy
+
+        from qualtran.symbolics import is_symbolic
+
+        n = cxn.shape
+        if not is_symbolic(n):
+            return str(n)
+
+        label = sympy.printing.pretty(n)
+        label_lines = label.split('\n')
+        if len(label_lines) > 1:
+            return str(n)[:10] + " ..."
+
+        if len(label) > 15:
+            return label[:15] + " ..."
+        return label
+
 
 class TypedGraphDrawer(PrettyGraphDrawer):
     """A graph drawer where edges are annotated by data type."""

@@ -11,15 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .kikuchi_adjacency_list import KikuchiNonZeroIndex
-from .kikuchi_adjacency_matrix import KikuchiMatrixEntry
-from .kikuchi_block_encoding import KikuchiHamiltonian, KikuchiMatrixEntry, KikuchiNonZeroIndex
-from .kikuchi_guiding_state import GuidingState, SimpleGuidingState
-from .kxor_instance import Constraint, KXorInstance
-from .load_kxor_instance import LoadConstraintScopes, LoadUniqueScopeIndex, PRGAUniqueConstraintRHS
-from .planted_noisy_kxor import (
-    AliceTheorem,
-    PlantedNoisyKXOR,
-    KikuchiAverageDegreeTheorem,
-    GuidingStateOverlapTheorem,
-)
+from qualtran.symbolics.types import SymbolicInt
+
+
+def extract_int(x: SymbolicInt) -> SymbolicInt:
+    """Extract a raw python int if the input is sympy.Integer, otherwise return as-is."""
+    try:
+        result = int(x)
+        return result
+    except TypeError:
+        return x
