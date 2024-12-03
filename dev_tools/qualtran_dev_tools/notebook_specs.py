@@ -876,6 +876,13 @@ OPTIMIZATION: List[NotebookSpecV2] = [
             qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding._KIKUCHI_HAMILTONIAN_DOC
         ],
     ),
+    NotebookSpecV2(
+        title='Algorithm: Planted Noisy kXOR',
+        module=qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor._PLANTED_NOISY_KXOR_DOC
+        ],
+    ),
 ]
 
 # --------------------------------------------------------------------------
