@@ -190,6 +190,9 @@ class MultiControlX(MultiControlPauli):
     def __attrs_post_init__(self):
         pass
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @bloq_example
 def _ccpauli() -> MultiControlX:
@@ -233,3 +236,6 @@ class MultiControlZ(MultiControlPauli):
 
     def __attrs_post_init__(self):
         pass
+
+    def adjoint(self) -> 'Bloq':
+        return self

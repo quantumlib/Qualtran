@@ -45,7 +45,8 @@ from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
-from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import bit_length
 
@@ -186,7 +187,7 @@ class SparseMatrixHermitian(BlockEncoding):
             ],
         )
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> set[BloqCountT]:
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
         counts[self.diffusion] += 1
@@ -202,7 +203,7 @@ class SparseMatrixHermitian(BlockEncoding):
         counts[self.col_oracle.adjoint()] += 1
         counts[self.diffusion.adjoint()] += 1
 
-        return set(counts.items())
+        return counts
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, **soqs
@@ -282,7 +283,7 @@ class UniformSqrtEntryOracle(SqrtEntryOracle):
         return soqs
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _sparse_matrix_hermitian_block_encoding() -> SparseMatrixHermitian:
     from qualtran.bloqs.block_encoding.sparse_matrix import TopLeftRowColumnOracle
     from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import UniformSqrtEntryOracle
