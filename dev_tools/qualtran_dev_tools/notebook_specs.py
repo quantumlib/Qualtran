@@ -66,6 +66,7 @@ import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
@@ -309,6 +310,7 @@ CHEMISTRY: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv._PREPARE_UV,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_t._SELECT_T,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_uv._SELECT_UV,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta._PREPARE_ZETA,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
     ),
