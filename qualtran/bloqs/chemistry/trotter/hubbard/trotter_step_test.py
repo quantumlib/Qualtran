@@ -13,12 +13,12 @@
 #  limitations under the License.
 import pytest
 
+from qualtran.bloqs.chemistry.trotter.hubbard.interaction_test import catch_rotations
 from qualtran.bloqs.chemistry.trotter.hubbard.trotter_step import (
     build_plaq_unitary_second_order_suzuki,
 )
-from qualtran.bloqs.chemistry.trotter.hubbard.interaction_test import catch_rotations
-from qualtran.testing import execute_notebook
 from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.testing import execute_notebook
 
 
 def test_second_order_suzuki_costs():

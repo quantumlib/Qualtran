@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from attrs import evolve, frozen
 
-from qualtran import Bloq, QAny, Register, Signature, bloq_example, BloqDocSpec
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:

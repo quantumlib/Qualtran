@@ -12,13 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import attrs
+
+from qualtran import Bloq
+from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
+from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.trotter.hubbard.interaction import _interaction, _interaction_hwp
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
-from qualtran.bloqs.basic_gates import Rz
-from qualtran import Bloq
 
 
 def catch_rotations(bloq) -> Bloq:
