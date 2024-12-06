@@ -31,7 +31,6 @@ def test_second_order_suzuki_costs():
     # there are 3 hopping unitaries contributing 8 Ts from from the F gate
     assert costs.total_t_count(ts_per_rotation=0) == (3 * length**2 // 2) * 8
     # 3 hopping unitaries and 2 interaction unitaries
-    print(costs.rotation, (3 * length**2 + 2 * length**2))
     assert costs.rotation == (3 * length**2 + 2 * length**2), 3 * length**2 + 2 * length**2
 
 
