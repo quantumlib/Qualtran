@@ -41,7 +41,6 @@ def test_newton_raphson_inverse_sqrt_bloq_counts():
     poly_bitsize = 15
     target_bitsize = 22
     bloq = NewtonRaphsonApproxInverseSquareRoot(int_bitsize, poly_bitsize, target_bitsize)
-    _, counts = bloq.call_graph()
     cost_square = poly_bitsize**2 // 2 - 4
     cost_scale = poly_bitsize * (2 * int_bitsize - 1) - int_bitsize**2
     cost_mult = 2 * (target_bitsize**2 - target_bitsize - 1)

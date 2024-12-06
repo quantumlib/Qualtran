@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import _prepare_zeta
 
 
-def test_uniform_superposition_ij():
-    prep = PrepareZetaState(num_atoms=10, lambda_zeta=20, num_bits_nuc_pos=8)
+def test_prepare_zeta(bloq_autotester):
+    bloq_autotester(_prepare_zeta)
