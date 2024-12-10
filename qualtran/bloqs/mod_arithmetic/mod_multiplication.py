@@ -29,7 +29,9 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     QBit,
+    QInt,
     QMontgomeryUInt,
     QUInt,
     Register,
@@ -90,6 +92,9 @@ class ModDbl(Bloq):
         return {'x': x}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -103,7 +108,7 @@ class ModDbl(Bloq):
         )
 
         # Add constant -p to the x register.
-        x = bb.add(AddK(bitsize=self.dtype.bitsize + 2, k=-self.mod, signed=False), x=x)
+        x = bb.add(AddK(QInt(self.dtype.bitsize + 2), k=-self.mod), x=x)
 
         # Split the three bit pieces again so that we can use the sign to control our constant
         # addition circuit.
@@ -112,10 +117,8 @@ class ModDbl(Bloq):
         x = bb.join(x_split[1:], dtype=attrs.evolve(self.dtype, bitsize=self.dtype.bitsize + 1))
 
         # Add constant p to the x register if the result of the last modular reduction is negative.
-        (sign,), x = bb.add(
-            AddK(bitsize=self.dtype.bitsize + 1, k=self.mod, signed=False, cvs=(1,)),
-            ctrls=(sign,),
-            x=x,
+        sign, x = bb.add(
+            AddK(QUInt(self.dtype.bitsize + 1), k=self.mod).controlled(), ctrl=sign, x=x
         )
 
         # Split the lower bit ancilla from the x register for use in resetting the other ancilla bit
@@ -145,8 +148,8 @@ class ModDbl(Bloq):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            AddK(self.dtype.bitsize + 2, -self.mod, signed=False): 1,
-            AddK(self.dtype.bitsize + 1, self.mod, cvs=(1,), signed=False): 1,
+            AddK(QInt(self.dtype.bitsize + 2), -self.mod): 1,
+            AddK(QUInt(self.dtype.bitsize + 1), self.mod).controlled(): 1,
             CNOT(): 1,
             XGate(): 2,
         }
@@ -520,8 +523,8 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         target = bb.join(target_arr[-self.bitsize :])
         reduced = bb.add(XGate(), q=reduced)
         target, reduced = bb.add(LessThanConstant(self.bitsize, self.mod), x=target, target=reduced)
-        (reduced,), target = bb.add(
-            AddK(self.bitsize, self.mod, cvs=(1,), signed=False), ctrls=(reduced,), x=target
+        reduced, target = bb.add(
+            AddK(QUInt(self.bitsize), self.mod).controlled(), ctrl=reduced, x=target
         )
 
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
@@ -529,7 +532,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         num_windows = (self.bitsize + self.window_size - 1) // self.window_size
         return {
-            AddK(self.bitsize, self.mod, cvs=(1,), signed=False): 1,
+            AddK(QUInt(self.bitsize), self.mod).controlled(): 1,
             LessThanConstant(bitsize=self.bitsize, less_than_val=self.mod): 1,
             XGate(): 1,
             self._window: num_windows,

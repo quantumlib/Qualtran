@@ -147,6 +147,7 @@ import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -428,6 +429,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
     "qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient": qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient,
+    "qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient": qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
     "qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare": qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare,
     "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,

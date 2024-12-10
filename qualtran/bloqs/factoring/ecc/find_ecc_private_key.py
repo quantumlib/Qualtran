@@ -75,11 +75,11 @@ class FindECCPrivateKey(Bloq):
         Litinski. 2023. Figure 4 (a).
     """
 
-    n: int
+    n: 'SymbolicInt'
     base_point: ECPoint
     public_key: ECPoint
-    add_window_size: int = 1
-    mul_window_size: int = 1
+    add_window_size: 'SymbolicInt' = 1
+    mul_window_size: 'SymbolicInt' = 1
 
     @cached_property
     def signature(self) -> 'Signature':

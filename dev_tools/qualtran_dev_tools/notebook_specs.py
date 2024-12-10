@@ -119,6 +119,8 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -636,6 +638,18 @@ ROT_QFT_PE = [
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC,
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='ZPow Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.zpow_via_phase_gradient,
+        bloq_specs=[
+            qualtran.bloqs.rotations.zpow_via_phase_gradient._ZPOW_CONST_VIA_PHASE_GRADIENT_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Rz Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.rz_via_phase_gradient,
+        bloq_specs=[qualtran.bloqs.rotations.rz_via_phase_gradient._RZ_VIA_PHASE_GRADIENT_DOC],
     ),
     NotebookSpecV2(
         title='Programmable Rotation Gate Array',

@@ -221,7 +221,7 @@ def bloq_is_rotation(b: Bloq) -> bool:
     from qualtran.bloqs.basic_gates.rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 
     if isinstance(b, Controlled):
-        if b.ctrl_spec.num_qubits > 1:
+        if b.ctrl_spec.num_qubits != 1:
             return False
 
         # TODO https://github.com/quantumlib/Qualtran/issues/878

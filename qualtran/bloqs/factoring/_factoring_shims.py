@@ -13,13 +13,29 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
+import numpy as np
+import sympy
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    DecomposeTypeError,
+    QBit,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.qft import QFTTextBook
 from qualtran.drawing import RarrowTextBox, Text, WireSymbol
-from qualtran.symbolics import SymbolicInt
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+from qualtran.symbolics.types import SymbolicInt
 
 
 @frozen
@@ -30,8 +46,21 @@ class MeasureQFT(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QBit(), shape=(self.n,), side=Side.LEFT)])
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        raise DecomposeTypeError('MeasureQFT is a placeholder, atomic bloq.')
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+        if isinstance(self.n, sympy.Expr):
+            raise DecomposeTypeError("Cannot decompose symbolic `n`.")
+
+        x = bb.join(np.array(x), dtype=QUInt(self.n))
+        x = bb.add(QFTTextBook(self.n), q=x)
+        x = bb.split(x)
+
+        for i in range(self.n):
+            bb.add(Measure(), q=x[i])
+
+        return {}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {QFTTextBook(self.n): 1, Measure(): self.n}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
