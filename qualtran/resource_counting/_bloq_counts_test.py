@@ -105,7 +105,7 @@ def test_qec_gates_cost_cbloq():
         # And
         [mcmt.And(), GateCounts(and_bloq=1)],
         # Rotations
-        [basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11), GateCounts(rotation=1)],
+        [basic_gates.ZPowGate(exponent=0.1, eps=1e-11), GateCounts(rotation=1)],
         [
             rotations.phase_gradient.PhaseGradientUnitary(
                 bitsize=10, exponent=1, is_controlled=False, eps=1e-10

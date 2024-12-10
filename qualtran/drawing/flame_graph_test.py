@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
+
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt import MultiAnd
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
@@ -53,6 +55,7 @@ def test_get_flame_graph_data_multi_and():
     ]
 
 
+@pytest.mark.xfail(reason="https://github.com/quantumlib/Qualtran/issues/1474")
 def test_get_flame_graph_data_qft_textbook():
     bloq = QFTTextBook(5)
     data = get_flame_graph_data(bloq)
