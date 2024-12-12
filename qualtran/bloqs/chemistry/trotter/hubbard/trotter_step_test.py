@@ -13,7 +13,6 @@
 #  limitations under the License.
 import pytest
 
-from qualtran.bloqs.chemistry.trotter.hubbard.interaction_test import catch_rotations
 from qualtran.bloqs.chemistry.trotter.hubbard.trotter_step import (
     build_plaq_unitary_second_order_suzuki,
 )
@@ -24,10 +23,9 @@ from qualtran.testing import execute_notebook
 def test_second_order_suzuki_costs():
     length = 8
     u = 4
-    dt = 0.1
+    dt = 0.1234
     unitary = build_plaq_unitary_second_order_suzuki(length, u, dt)
-    # _, sigma = unitary.call_graph(generalizer=catch_rotations)
-    costs = get_cost_value(unitary, QECGatesCost(), generalizer=catch_rotations)
+    costs = get_cost_value(unitary, QECGatesCost())
     # there are 3 hopping unitaries contributing 8 Ts from from the F gate
     assert costs.total_t_count(ts_per_rotation=0) == (3 * length**2 // 2) * 8
     # 3 hopping unitaries and 2 interaction unitaries
