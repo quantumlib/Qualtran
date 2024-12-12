@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperpostionIJFirstQuantization,
 )
@@ -20,6 +19,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import (
     _prepare_t,
     PrepareTFirstQuantization,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prepare_t(bloq_autotester):
@@ -33,15 +33,12 @@ def test_prepare_kinetic_t_counts():
     n_eta = (eta - 1).bit_length()
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
-    _, counts = uni.call_graph()
-    qual_cost = counts[Toffoli()]
+
+    qual_cost = get_cost_value(uni, QECGatesCost()).total_toffoli_only()
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r).adjoint()
-    _, counts = uni.call_graph()
-    qual_cost += counts[Toffoli()]
+    qual_cost += get_cost_value(uni, QECGatesCost()).total_toffoli_only()
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
-    _, counts = prep.call_graph()
-    qual_cost += counts[Toffoli()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r).adjoint()
-    _, counts = prep.call_graph()
-    qual_cost += counts[Toffoli()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     assert qual_cost == expected_cost

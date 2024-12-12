@@ -14,13 +14,13 @@
 
 import pytest
 
-from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
     _prep_power_two_proj,
     _prep_t_proj,
     PreparePowerTwoStateWithProj,
     PrepareTFirstQuantizationWithProj,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_prep_t_proj(bloq_autotester):
@@ -39,13 +39,11 @@ def test_prepare_kinetic_t_proj_counts():
     expected_cost = 2 * (2 * num_bits_n + 9) + 2 * (num_bits_n - num_bits_p) + 20
     qual_cost = 0
     prep = PrepareTFirstQuantizationWithProj(num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r)
-    _, counts = prep.call_graph()
-    qual_cost += counts[Toffoli()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     prep = PrepareTFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r
     ).adjoint()
-    _, counts = prep.call_graph()
-    qual_cost += counts[Toffoli()]
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     assert qual_cost == expected_cost
 
 

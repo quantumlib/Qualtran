@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from attrs import evolve, frozen
 
-from qualtran import Bloq, QAny, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -65,3 +65,22 @@ class PrepareZetaState(Bloq):
         else:
 
             return {Toffoli(): self.lambda_zeta}
+
+
+@bloq_example
+def _prepare_zeta() -> PrepareZetaState:
+    num_atoms = 10
+    lambda_zeta = 10
+    num_bits_nuc_pos = 8
+
+    prepare_zeta = PrepareZetaState(
+        num_atoms=num_atoms, lambda_zeta=lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
+    )
+    return prepare_zeta
+
+
+_PREPARE_ZETA = BloqDocSpec(
+    bloq_cls=PrepareZetaState,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState',
+    examples=(_prepare_zeta,),
+)
