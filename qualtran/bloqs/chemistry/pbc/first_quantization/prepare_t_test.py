@@ -33,19 +33,15 @@ def test_prepare_kinetic_t_counts():
     n_eta = (eta - 1).bit_length()
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
-    counts = get_cost_value(uni, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost = cost_dict['n_ccz']
+    toffolis = get_cost_value(uni, QECGatesCost()).total_toffoli_only()
+    qual_cost = toffolis
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r).adjoint()
-    counts = get_cost_value(uni, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost += cost_dict['n_ccz']
+    toffolis = get_cost_value(uni, QECGatesCost()).total_toffoli_only()
+    qual_cost += toffolis
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
-    counts = get_cost_value(prep, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost += cost_dict['n_ccz']
+    toffolis = get_cost_value(prep, QECGatesCost()).total_toffoli_only()
+    qual_cost += toffolis
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r).adjoint()
-    counts = get_cost_value(prep, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost += cost_dict['n_ccz']
+    toffolis = get_cost_value(prep, QECGatesCost()).total_toffoli_only()
+    qual_cost += toffolis
     assert qual_cost == expected_cost
