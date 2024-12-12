@@ -24,3 +24,5 @@ from qualtran.bloqs.rotations.phase_gradient import (
 from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction
 from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArray
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient, QvrZPow
+from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
+from qualtran.bloqs.rotations.zpow_via_phase_gradient import ZPowConstViaPhaseGradient
