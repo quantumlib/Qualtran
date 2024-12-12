@@ -16,6 +16,7 @@ import pytest
 import sympy
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, QBit, QFxp, QUInt, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import IntState, Rz
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
@@ -87,3 +88,8 @@ def test_tensor(bitsize: int):
         expected = Rz(theta).tensor_contract()
 
         np.testing.assert_allclose(actual, expected, atol=1 / 2**bitsize)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('rz_via_phase_gradient')
