@@ -25,6 +25,5 @@ def test_sel_t_proj(bloq_autotester):
 def test_select_kinetic_t_counts():
     num_bits_n = 6
     sel = SelectTFirstQuantizationWithProj(num_bits_n, 10)
-    counts = get_cost_value(sel, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    assert cost_dict['n_ccz'] == 5 * (num_bits_n - 1) + 2 + 1
+    toffolis = get_cost_value(sel, QECGatesCost()).total_toffoli_only()
+    assert toffolis == 5 * (num_bits_n - 1) + 2 + 1

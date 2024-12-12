@@ -39,16 +39,11 @@ def test_prepare_kinetic_t_proj_counts():
     expected_cost = 2 * (2 * num_bits_n + 9) + 2 * (num_bits_n - num_bits_p) + 20
     qual_cost = 0
     prep = PrepareTFirstQuantizationWithProj(num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r)
-    _, counts = prep.call_graph()
-    counts = get_cost_value(prep, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost += cost_dict['n_ccz']
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     prep = PrepareTFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r
     ).adjoint()
-    counts = get_cost_value(prep, QECGatesCost())
-    cost_dict = counts.total_t_and_ccz_count()
-    qual_cost += cost_dict['n_ccz']
+    qual_cost += get_cost_value(prep, QECGatesCost()).total_toffoli_only()
     assert qual_cost == expected_cost
 
 
