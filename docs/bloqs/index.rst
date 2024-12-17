@@ -75,6 +75,7 @@ Bloqs Library
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
     arithmetic/trigonometric/trigonometric.ipynb
+    arithmetic/lists/lists.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -135,6 +136,16 @@ Bloqs Library
     block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Paper: Quartic Quantum Speedups for Planted Inference:
+
+    max_k_xor_sat/guided_hamiltonian/guided_hamiltonian.ipynb
+    max_k_xor_sat/load_kxor_instance.ipynb
+    max_k_xor_sat/guiding_state.ipynb
+    max_k_xor_sat/kikuchi_block_encoding.ipynb
+    max_k_xor_sat/planted_noisy_kxor.ipynb
 
 .. toctree::
     :maxdepth: 2
