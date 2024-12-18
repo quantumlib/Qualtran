@@ -74,7 +74,7 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     cirq_gate: cirq.Gate = cirq.PhaseGradientGate(num_qubits=n, exponent=exponent)
     if controlled:
         cirq_gate = cirq_gate.controlled()
-    assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate), atol=eps)
+    assert np.allclose(bloq.tensor_contract(), cirq.unitary(cirq_gate), atol=eps)
 
 
 @pytest.mark.parametrize("controlled_by", [None, 0, 1])
