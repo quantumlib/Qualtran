@@ -389,6 +389,12 @@ def test_util_convenience_methods():
     assert len(cbloq.connections) == 1 + 10 + 1
 
 
+def test_join_list():
+    bb = BloqBuilder()
+    qs = [bb.allocate() for _ in range(10)]
+    _ = bb.join(qs)
+
+
 def test_util_convenience_methods_errors():
     bb = BloqBuilder()
 
