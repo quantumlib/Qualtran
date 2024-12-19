@@ -480,11 +480,11 @@ def cirq_optree_to_cbloq(
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
     in_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in in_quregs.items()
     }
     out_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
         for k, v in out_quregs.items()
     }
 
@@ -515,7 +515,7 @@ def cirq_optree_to_cbloq(
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore[arg-type]
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 
