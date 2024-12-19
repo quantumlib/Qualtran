@@ -108,7 +108,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
-    exponent: float = 1.0
+    exponent: SymbolicFloat = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
