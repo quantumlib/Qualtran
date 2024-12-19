@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import (
     _select_t,
     SelectTFirstQuantization,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_select_t(bloq_autotester):
@@ -25,5 +25,5 @@ def test_select_t(bloq_autotester):
 def test_select_kinetic_t_counts():
     num_bits_p = 6
     sel = SelectTFirstQuantization(num_bits_p, 10)
-    _, counts = sel.call_graph()
-    assert counts[Toffoli()] == 5 * (num_bits_p - 1) + 2
+    toffolis = get_cost_value(sel, QECGatesCost()).total_toffoli_only()
+    assert toffolis == 5 * (num_bits_p - 1) + 2

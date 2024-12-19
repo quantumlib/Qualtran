@@ -150,9 +150,11 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     def my_static_costs(self, cost_key: 'CostKey'):
         if isinstance(cost_key, QECGatesCost):
             t_count = _from_directly_countable_cirq(self.cirq_gate)
-            if t_count is None:
-                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
+            if t_count is not None:
+                return GateCounts(
+                    t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford
+                )
+        return NotImplemented
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
