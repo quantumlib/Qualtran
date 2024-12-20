@@ -15,7 +15,7 @@ import pytest
 from openfermion.resource_estimates.df.compute_cost_df import compute_cost
 from openfermion.resource_estimates.utils import power_two
 
-from qualtran.bloqs.basic_gates import TGate
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.df.double_factorization import (
     _df_block_encoding,
     _df_one_body,
@@ -26,7 +26,6 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.testing import execute_notebook
 
 
 def test_df_block_encoding(bloq_autotester):
@@ -51,9 +50,7 @@ def test_compare_cost_one_body_decomp():
         num_bits_rot_aa=7,
         num_bits_rot=num_bits_rot,
     )
-    costs = bloq.call_graph()[1]
-    cbloq_costs = bloq.decompose_bloq().call_graph()[1]
-    assert costs[TGate()] == cbloq_costs[TGate()]
+    qlt_testing.assert_equivalent_bloq_counts(bloq)
 
 
 def test_compare_cost_to_openfermion():
@@ -106,4 +103,4 @@ def test_compare_cost_to_openfermion():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook("double_factorization")
+    qlt_testing.execute_notebook("double_factorization")
