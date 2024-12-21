@@ -141,6 +141,9 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'ctrl_on_symbolic_cv',  # cannot serialize Shaped
         'ctrl_on_symbolic_cv_multi',  # cannot serialize Shaped
         'ctrl_on_symbolic_n_ctrls',  # cannot serialize Shaped
+        'has_duplicates_symb_len',  # cannot serialize HasLength
+        'symm_diff_symb',  # round trip fail: sympy assumptions not serialized
+        'symm_diff_equal_size_symb',  # round trip fail: sympy assumptions not serialized
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
