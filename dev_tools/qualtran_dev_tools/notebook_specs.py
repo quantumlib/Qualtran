@@ -37,6 +37,7 @@ import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -92,6 +93,8 @@ import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.gf_arithmetic.gf2_square
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
+import qualtran.bloqs.max_k_xor_sat
+import qualtran.bloqs.max_k_xor_sat.guided_hamiltonian
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
@@ -491,6 +494,15 @@ ARITHMETIC = [
         title='Trigonometric Functions',
         module=qualtran.bloqs.arithmetic.trigonometric,
         bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
+    ),
+    NotebookSpecV2(
+        title='List Functions',
+        module=qualtran.bloqs.arithmetic.lists,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.lists.sort_in_place._SORT_IN_PLACE_DOC,
+            qualtran.bloqs.arithmetic.lists.symmetric_difference._SYMMETRIC_DIFFERENCE_DOC,
+            qualtran.bloqs.arithmetic.lists.has_duplicates._HAS_DUPLICATES_DOC,
+        ],
     ),
 ]
 
@@ -894,6 +906,49 @@ OTHER: List[NotebookSpecV2] = [
     ),
 ]
 
+# --------------------------------------------------------------------------
+# -----   Quartic Speedups paper  ------------------------------------------
+# --------------------------------------------------------------------------
+ALGO_QUARTIC_SPEEDUPS = [
+    # -----   Preliminaries  ------------------------------------------
+    NotebookSpecV2(
+        title='Guided (sparse) Hamiltonian Problem',
+        module=qualtran.bloqs.max_k_xor_sat.guided_hamiltonian.guided_hamiltonian,
+        bloq_specs=[
+            qualtran.bloqs.max_k_xor_sat.guided_hamiltonian.guided_hamiltonian._GUIDED_HAMILTONIAN_DOC,
+            qualtran.bloqs.max_k_xor_sat.guided_hamiltonian.guided_hamiltonian._GUIDED_HAMILTONIAN_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    # -----   Algorithm  ------------------------------------------
+    NotebookSpecV2(
+        title='kXOR: Instance load Oracles',
+        module=qualtran.bloqs.max_k_xor_sat.load_kxor_instance,
+        bloq_specs=[qualtran.bloqs.max_k_xor_sat.load_kxor_instance._LOAD_INSTANCE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Noisy kXOR: Guiding State',
+        module=qualtran.bloqs.max_k_xor_sat.guiding_state,
+        bloq_specs=[
+            qualtran.bloqs.max_k_xor_sat.guiding_state._SIMPLE_GUIDING_STATE_DOC,
+            qualtran.bloqs.max_k_xor_sat.guiding_state._GUIDING_STATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Noisy kXOR: Block-encoding the Kikuchi Matrix',
+        module=qualtran.bloqs.max_k_xor_sat.kikuchi_block_encoding,
+        bloq_specs=[
+            qualtran.bloqs.max_k_xor_sat.kikuchi_adjacency_matrix._KIKUCHI_MATRIX_ENTRY_DOC,
+            qualtran.bloqs.max_k_xor_sat.kikuchi_adjacency_list._KIKUCHI_NONZERO_INDEX_DOC,
+            qualtran.bloqs.max_k_xor_sat.kikuchi_block_encoding._KIKUCHI_HAMILTONIAN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Algorithm: Planted Noise kXOR',
+        module=qualtran.bloqs.max_k_xor_sat.planted_noisy_kxor,
+        bloq_specs=[qualtran.bloqs.max_k_xor_sat.planted_noisy_kxor._PLANTED_NOISY_KXOR_DOC],
+    ),
+]
+
 NB_BY_SECTION = [
     ('Basic Gates', BASIC_GATES),
     ('Chemistry', CHEMISTRY),
@@ -902,5 +957,6 @@ NB_BY_SECTION = [
     ('GF Arithmetic', GF_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
+    ('Paper: Quartic Quantum Speedups for Planted Inference', ALGO_QUARTIC_SPEEDUPS),
     ('Other', OTHER),
 ]
