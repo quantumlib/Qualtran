@@ -35,6 +35,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _cswap_large,
     _cswap_small,
     _swap,
+    _swap_large,
     _swap_matrix,
     _swap_small,
     Swap,
@@ -222,6 +223,10 @@ def test_swap_controlled():
 
 def test_swap_small(bloq_autotester):
     bloq_autotester(_swap_small)
+
+
+def test_swap_large(bloq_autotester):
+    bloq_autotester(_swap_large)
 
 
 def test_swap_symb(bloq_autotester):
