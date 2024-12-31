@@ -54,7 +54,7 @@ def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
         else:
             output_t = np.array([])
 
-        matrix[*np.atleast_1d(output_t), *np.atleast_1d(input_t)] = 1
+        matrix[tuple([*np.atleast_1d(output_t), *np.atleast_1d(input_t)])] = 1
 
     shape: tuple[int, ...]
     if n_qubits_left == 0 and n_qubits_right == 0:
