@@ -25,7 +25,7 @@ def _bits_to_classical_reg_data(reg: Register, bits):
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
-def tensor_from_classical_sim(bloq: Bloq) -> NDArray[np.complex64]:
+def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
     left_qubit_counts = tuple(r.total_bits() for r in bloq.signature.lefts())
     left_qubit_splits = np.cumsum(left_qubit_counts)
 
@@ -44,9 +44,15 @@ def tensor_from_classical_sim(bloq: Bloq) -> NDArray[np.complex64]:
         }
         out_args = bloq.call_classically(**in_kwargs)
 
-        output_t = np.concatenate(
-            [r.dtype.to_bits_array(vals).flat for r, vals in zip(bloq.signature.rights(), out_args)]
-        )
+        if out_args:
+            output_t = np.concatenate(
+                [
+                    r.dtype.to_bits_array(np.asarray(vals)).flat
+                    for r, vals in zip(bloq.signature.rights(), out_args)
+                ]
+            )
+        else:
+            output_t = np.array([])
 
         matrix[*np.atleast_1d(output_t), *np.atleast_1d(input_t)] = 1
 
