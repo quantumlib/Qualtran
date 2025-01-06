@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -306,7 +306,7 @@ class MultiplyPolyByConstantMod(Bloq):
         res = res[::-1]
         return {'g': res}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: Sequenc['Soquet']) -> Dict[str, 'Soquet']:
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
