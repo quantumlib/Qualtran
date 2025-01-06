@@ -306,7 +306,7 @@ class MultiplyPolyByConstantMod(Bloq):
         res = res[::-1]
         return {'g': res}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: Sequenc['Soquet']) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: Sequence['Soquet']) -> Dict[str, 'Soquet']:
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
