@@ -988,6 +988,9 @@ class Equals(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         cvs: Union[list[int], HasLength]
         if isinstance(self.bitsize, int):
             cvs = [0] * self.bitsize
@@ -1151,6 +1154,8 @@ class CLinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet', target: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
         if isinstance(self.dtype, QInt):
             a = bb.add(SignExtend(self.dtype, QInt(self.dtype.bitsize + 1)), x=a)
@@ -1360,6 +1365,9 @@ class _HalfLinearDepthGreaterThan(Bloq):
         c: Optional['Soquet'] = None,
         target: Optional['Soquet'] = None,
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         if self.uncompute:
             # Uncompute
             assert c is not None
