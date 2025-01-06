@@ -20,7 +20,6 @@ import qualtran.testing as qlt_testing
 from qualtran import QGF
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
-    _gf2_multiply_by_constant_modulu,
     _gf16_multiplication,
     GF2Multiplication,
     MultiplyPolyByConstantMod,
@@ -36,10 +35,6 @@ def test_gf16_multiplication(bloq_autotester):
 
 def test_gf2_multiplication_symbolic(bloq_autotester):
     bloq_autotester(_gf2_multiplication_symbolic)
-
-
-def test_gf2_multiply_by_constant_modulu(bloq_autotester):
-    bloq_autotester(_gf2_multiply_by_constant_modulu)
 
 
 def test_synthesize_lr_circuit():
