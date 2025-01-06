@@ -149,3 +149,8 @@ def test_multiply_by_constant_mod_counts(m_x):
     for f_x in elements:
         blq = MultiplyPolyByConstantMod(f_x, m_x)
         qlt_testing.assert_equivalent_bloq_counts(blq)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('gf2_multiplication')
