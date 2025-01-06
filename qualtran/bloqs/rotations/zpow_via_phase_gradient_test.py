@@ -14,6 +14,7 @@
 import pytest
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
@@ -36,9 +37,6 @@ from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
     ],
 )
 def test_examples(bloq_autotester, bloq):
-    if bloq_autotester.check_name == 'serialize':
-        pytest.skip()
-
     bloq_autotester(bloq)
 
 
@@ -95,3 +93,8 @@ def test_unitary(exponent: float, phase_grad_bitsize: int):
     actual = bloq.tensor_contract()
     expected = ZPowGate(exponent).tensor_contract()
     assert_unitaries_equivalent_upto_global_phase(actual, expected, atol=2**-phase_grad_bitsize)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('zpow_via_phase_gradient')

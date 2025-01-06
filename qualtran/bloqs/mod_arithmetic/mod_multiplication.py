@@ -29,6 +29,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     QBit,
     QInt,
     QMontgomeryUInt,
@@ -91,6 +92,9 @@ class ModDbl(Bloq):
         return {'x': x}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.dtype.bitsize):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
