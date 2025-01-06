@@ -558,7 +558,10 @@ GF_ARITHMETIC = [
     NotebookSpecV2(
         title='GF($2^m$) Multiplication',
         module=qualtran.bloqs.gf_arithmetic.gf2_multiplication,
-        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC],
+        bloq_specs=[
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_BY_CONSTANT_MOD_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='GF($2^m$) Addition',

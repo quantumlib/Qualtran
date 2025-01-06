@@ -14,15 +14,19 @@
 
 import numpy as np
 import pytest
-from galois import GF
+from galois import GF, Poly
 
+import qualtran.testing as qlt_testing
 from qualtran import QGF
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
+    _gf2_multiply_by_constant_modulu,
     _gf16_multiplication,
     GF2Multiplication,
+    MultiplyPolyByConstantMod,
     SynthesizeLRCircuit,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -32,6 +36,10 @@ def test_gf16_multiplication(bloq_autotester):
 
 def test_gf2_multiplication_symbolic(bloq_autotester):
     bloq_autotester(_gf2_multiplication_symbolic)
+
+
+def test_gf2_multiply_by_constant_modulu(bloq_autotester):
+    bloq_autotester(_gf2_multiply_by_constant_modulu)
 
 
 def test_synthesize_lr_circuit():
@@ -89,3 +97,55 @@ def test_gf2_multiplication_classical_sim(m):
     bloq = GF2Multiplication(m, plus_equal_prod=False)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)
+
+
+@pytest.mark.parametrize('m_x', [Poly.Degrees([2, 1, 0]), Poly.Degrees([3, 1, 0])])
+def test_multiply_by_constant_mod_classical_action(m_x):
+    n = len(m_x.coeffs) - 1
+    gf = GF(2, n, irreducible_poly=m_x)
+    QGFM = QGF(2, n)
+    elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
+    for f_x in elements:
+        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        cblq = blq.decompose_bloq()
+        for g_x in elements:
+            g = [0] * n
+            g[-len(g_x.coeffs) :] = [int(x) for x in g_x.coeffs]
+            np.testing.assert_allclose(blq.call_classically(g=g), cblq.call_classically(g=g))
+
+
+@pytest.mark.parametrize(
+    ['m_x', 'cnot_count'], [[Poly.Degrees([2, 1, 0]), 0], [Poly.Degrees([3, 1, 0]), 0]]
+)
+def test_multiply_by_constant_mod_cost(m_x, cnot_count):
+    n = len(m_x.coeffs) - 1
+    gf = GF(2, n, irreducible_poly=m_x)
+    QGFM = QGF(2, n)
+    elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
+    for f_x in elements:
+        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        cost = get_cost_value(blq, QECGatesCost())
+        assert cost.total_t_count() == 0
+        assert cost.clifford < n**2
+
+
+@pytest.mark.parametrize('m_x', [Poly.Degrees([2, 1, 0]), Poly.Degrees([3, 1, 0])])
+def test_multiply_by_constant_mod_decomposition(m_x):
+    n = len(m_x.coeffs) - 1
+    gf = GF(2, n, irreducible_poly=m_x)
+    QGFM = QGF(2, n)
+    elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
+    for f_x in elements:
+        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [Poly.Degrees([2, 1, 0]), Poly.Degrees([3, 1, 0])])
+def test_multiply_by_constant_mod_counts(m_x):
+    n = len(m_x.coeffs) - 1
+    gf = GF(2, n, irreducible_poly=m_x)
+    QGFM = QGF(2, n)
+    elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
+    for f_x in elements:
+        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        qlt_testing.assert_equivalent_bloq_counts(blq)

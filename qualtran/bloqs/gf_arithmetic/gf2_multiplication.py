@@ -247,3 +247,106 @@ def _gf2_multiplication_symbolic() -> GF2Multiplication:
 _GF2_MULTIPLICATION_DOC = BloqDocSpec(
     bloq_cls=GF2Multiplication, examples=(_gf16_multiplication, _gf2_multiplication_symbolic)
 )
+
+
+@attrs.frozen
+class MultiplyPolyByConstantMod(Bloq):
+    r"""Multiply a polynomial by $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
+
+    Args:
+        f_x: The polynomial to mulitply with, given either a galois.Poly or as
+            a sequence degrees.
+        m_x: The modulus polynomial, given either a galois.Poly or as
+            a sequence degrees.
+
+    Registers:
+        g: The polynomial coefficients (in GF(2)).
+
+    Regerences:
+        - [Space-efficient quantum multiplication of polynomials for binary finite fields with
+            sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 1
+    """
+
+    f_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+    m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+
+    def __attrs_post_init__(self):
+        assert self.m_x.is_irreducible()
+        assert self.f_x.degrees.max() < self.m_x.degrees.max()
+
+    @cached_property
+    def n(self):
+        return self.m_x.degrees.max()
+
+    @cached_property
+    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Returns the LUP decomposition of the matrix representing the operation.
+
+        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
+        by a full rank matrix that can be decomposed into PLU where L and U are lower
+        and upper traingular matricies and P is a permutation matrix.
+        """
+        n = self.n
+        matrix = np.zeros((n, n), dtype=int)
+        for i in range(n):
+            p = (self.f_x * Poly.Degrees([i])) % self.m_x
+            for j in p.nonzero_degrees:
+                matrix[j, i] = 1
+        P, L, U = GF(2)(matrix).plu_decompose()
+        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('g', QBit(), shape=(self.n,))])
+
+    def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
+        p = (Poly(g[::-1], GF(2)) * self.f_x) % self.m_x
+        res = p.coefficients().tolist()
+        res = [0 for _ in range(self.n - len(res))] + res
+        res = res[::-1]
+        return {'g': res}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'Soquet']:
+        L, U, P = self.lup
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if U[i, j]:
+                    g[j], g[i] = bb.add(CNOT(), ctrl=g[j], target=g[i])
+
+        for i in reversed(range(self.n)):
+            for j in reversed(range(i)):
+                if L[i, j]:
+                    g[j], g[i] = bb.add(CNOT(), ctrl=g[j], target=g[i])
+
+        column = [*range(self.n)]
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if P[i, column[j]]:
+                    g[i], g[j] = g[j], g[i]
+                    column[i], column[j] = column[j], column[i]
+        return {'g': g}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        L, U, _ = self.lup
+        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
+        cnots = np.sum(L) + np.sum(U) - 2 * self.n
+        if cnots:
+            return {CNOT(): cnots}
+        return {}
+
+
+@bloq_example
+def _gf2_multiply_by_constant_modulu() -> MultiplyPolyByConstantMod:
+    fx = [2, 0]  # x^2 + 1
+    mx = [0, 1, 3]  # x^3 + x + 1
+    gf2_multiply_by_constant_modulu = MultiplyPolyByConstantMod(fx, mx)
+    return gf2_multiply_by_constant_modulu
+
+
+_MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
+    bloq_cls=MultiplyPolyByConstantMod, examples=(_gf2_multiply_by_constant_modulu,)
+)
