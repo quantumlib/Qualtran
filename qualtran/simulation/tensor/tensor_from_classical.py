@@ -12,25 +12,29 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import Bloq, Register
 
+if TYPE_CHECKING:
+    from qualtran.simulation.classical_sim import ClassicalValT
 
-def _bits_to_classical_reg_data(reg: Register, bits):
+
+def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
     if reg.shape == ():
         return reg.dtype.from_bits(bits)
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
 def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
-    left_qubit_counts = tuple(r.total_bits() for r in bloq.signature.lefts())
+    left_qubit_counts = tuple(reg.total_bits() for reg in bloq.signature.lefts())
     left_qubit_splits = np.cumsum(left_qubit_counts)
 
     n_qubits_left = sum(left_qubit_counts)
-    n_qubits_right = sum(r.total_bits() for r in bloq.signature.rights())
+    n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
 
     matrix = np.zeros((2,) * (n_qubits_right + n_qubits_left))
 
@@ -38,17 +42,17 @@ def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
         *inputs_t, last = np.split(input_t, left_qubit_splits)
         assert np.size(last) == 0
 
-        in_kwargs = {
-            r.name: _bits_to_classical_reg_data(r, bits)
-            for r, bits in zip(bloq.signature.lefts(), inputs_t)
+        input_kwargs = {
+            reg.name: _bits_to_classical_reg_data(reg, bits)
+            for reg, bits in zip(bloq.signature.lefts(), inputs_t)
         }
-        out_args = bloq.call_classically(**in_kwargs)
+        output_args = bloq.call_classically(**input_kwargs)
 
-        if out_args:
+        if output_args:
             output_t = np.concatenate(
                 [
-                    r.dtype.to_bits_array(np.asarray(vals)).flat
-                    for r, vals in zip(bloq.signature.rights(), out_args)
+                    reg.dtype.to_bits_array(np.asarray(vals)).flat
+                    for reg, vals in zip(bloq.signature.rights(), output_args)
                 ]
             )
         else:
