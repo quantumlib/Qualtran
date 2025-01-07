@@ -17,7 +17,6 @@ from typing import Dict, Set, TYPE_CHECKING, Union
 import attrs
 import numpy as np
 from galois import GF, Poly
-from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -34,7 +33,7 @@ from qualtran.bloqs.basic_gates import CNOT, Toffoli
 from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, Soquet
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -307,10 +306,11 @@ class MultiplyPolyByConstantMod(Bloq):
         res = res[::-1]
         return {'g': res}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: NDArray['Soquet']) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'SoquetT') -> Dict[str, 'SoquetT']:
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+        assert isinstance(g, np.ndarray)
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if U[i, j]:

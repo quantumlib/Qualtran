@@ -104,9 +104,9 @@ def test_multiply_by_constant_mod_classical_action(m_x):
         blq = MultiplyPolyByConstantMod(f_x, m_x)
         cblq = blq.decompose_bloq()
         for g_x in elements:
-            g = [0] * n
+            g = np.zeros(n, dtype=int)
             g[-len(g_x.coeffs) :] = [int(x) for x in g_x.coeffs]
-            np.testing.assert_allclose(blq.call_classically(g=g), cblq.call_classically(g=g))
+            np.testing.assert_allclose(blq.call_classically(g=g)[0], cblq.call_classically(g=g)[0])
 
 
 @pytest.mark.parametrize(
