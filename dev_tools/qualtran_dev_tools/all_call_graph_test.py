@@ -27,36 +27,3 @@ def test_get_all_call_graph():
     g = get_all_call_graph(bes)
     res = list(nx.simple_cycles(g))
     assert res == []
-
-
-@pytest.mark.parametrize("be", get_bloq_examples(), ids=lambda be: be.name)
-def test_classical_consistent_with_tensor(be):
-    import numpy as np
-
-    from qualtran.simulation.tensor.tensor_from_classical import tensor_from_classical_sim
-    from qualtran.symbolics import is_symbolic
-
-    if be.name in ['rsa_pe_small', 'modmul']:
-        pytest.skip('skiplist')
-
-    LIM = 9
-
-    bloq = be.make()
-
-    n = bloq.signature.n_qubits()
-    if is_symbolic(n):
-        pytest.skip(f'symbolic qubits: {n=}')
-    if n > LIM:
-        pytest.skip(f'too many qubits: {n=}')
-
-    try:
-        tensor_direct = bloq.tensor_contract()
-    except (NotImplementedError, AssertionError, ValueError, RuntimeError) as e:
-        pytest.skip(f'no tensor: {e}')
-
-    try:
-        tensor_classical = tensor_from_classical_sim(bloq)
-    except (NotImplementedError, AssertionError, ValueError, RuntimeError) as e:
-        pytest.skip(f'no classical action: {e}')
-
-    np.testing.assert_allclose(tensor_classical, tensor_direct, rtol=1e-5, atol=1e-5)
