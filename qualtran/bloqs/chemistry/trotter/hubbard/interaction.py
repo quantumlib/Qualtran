@@ -130,7 +130,7 @@ _INTERACTION_DOC = BloqDocSpec(
 @bloq_example
 def _interaction_hwp() -> InteractionHWP:
     length = 8
-    angle = 0.5
+    angle = 0.52728
     hubb_u = 4.0
     interaction_hwp = InteractionHWP(length, angle, hubb_u)
     return interaction_hwp
