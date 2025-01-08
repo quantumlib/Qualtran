@@ -262,8 +262,8 @@ class MultiplyPolyByConstantMod(Bloq):
     Registers:
         g: The polynomial coefficients (in GF(2)).
 
-    Regerences:
-        - [Space-efficient quantum multiplication of polynomials for binary finite fields with
+    References:
+        [Space-efficient quantum multiplication of polynomials for binary finite fields with
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 1
     """
 
