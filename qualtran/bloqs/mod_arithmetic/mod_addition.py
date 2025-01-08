@@ -87,7 +87,9 @@ class ModAdd(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'x': x, 'y': (x + y) % self.mod}
+        if x < self.mod and y < self.mod:
+            y = (x + y) % self.mod
+        return {'x': x, 'y': y}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
@@ -307,7 +309,10 @@ class CModAddK(Bloq):
             return {'ctrl': 0, 'x': x}
 
         assert ctrl == 1, 'Bad ctrl value.'
-        x = (x + self.k) % self.mod
+
+        if x < self.mod:
+            x = (x + self.k) % self.mod
+
         return {'ctrl': ctrl, 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
@@ -492,7 +497,9 @@ class CModAdd(Bloq):
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
-        return {'ctrl': ctrl, 'x': x, 'y': (x + y) % self.mod}
+        if x < self.mod and y < self.mod:
+            y = (x + y) % self.mod
+        return {'ctrl': ctrl, 'x': x, 'y': y}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl, x: Soquet, y: Soquet
