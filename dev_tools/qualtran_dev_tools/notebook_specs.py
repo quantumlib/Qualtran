@@ -66,6 +66,7 @@ import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
@@ -119,6 +120,8 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -309,6 +312,7 @@ CHEMISTRY: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv._PREPARE_UV,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_t._SELECT_T,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_uv._SELECT_UV,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta._PREPARE_ZETA,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
     ),
@@ -633,6 +637,18 @@ ROT_QFT_PE = [
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC,
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='ZPow Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.zpow_via_phase_gradient,
+        bloq_specs=[
+            qualtran.bloqs.rotations.zpow_via_phase_gradient._ZPOW_CONST_VIA_PHASE_GRADIENT_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Rz Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.rz_via_phase_gradient,
+        bloq_specs=[qualtran.bloqs.rotations.rz_via_phase_gradient._RZ_VIA_PHASE_GRADIENT_DOC],
     ),
     NotebookSpecV2(
         title='Programmable Rotation Gate Array',

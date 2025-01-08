@@ -25,6 +25,7 @@ def t_counts_from_sigma(sigma: Mapping['Bloq', SymbolicInt]) -> SymbolicInt:
     import cirq
 
     from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
+    from qualtran.bloqs.mcmt import And
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting.classify_bloqs import bloq_is_rotation
 
@@ -32,6 +33,9 @@ def t_counts_from_sigma(sigma: Mapping['Bloq', SymbolicInt]) -> SymbolicInt:
     ret += sigma.get(Toffoli(), 0) * 4
     ret += sigma.get(TwoBitCSwap(), 0) * 7
     for bloq, counts in sigma.items():
+        if isinstance(bloq, And) and not bloq.uncompute:
+            ret += counts * 4
+
         if bloq_is_rotation(bloq) and not cirq.has_stabilizer_effect(bloq):
             if isinstance(bloq, Controlled):
                 # TODO native controlled rotation bloqs missing (CRz, CRy etc.)
