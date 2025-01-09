@@ -167,5 +167,5 @@ def test_subtractfrom_classical_action(bitsize):
     dtype = QInt(bitsize)
     blq = SubtractFrom(dtype)
     qlt_testing.assert_consistent_classical_action(
-        blq, a=dtype.get_classical_domain(), b=dtype.get_classical_domain()
+        blq, a=tuple(dtype.get_classical_domain()), b=tuple(dtype.get_classical_domain())
     )

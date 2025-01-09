@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import math
 from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
@@ -271,10 +270,14 @@ class SubtractFrom(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        bitsize = self.dtype.bitsize
         return {
             'a': a,
-            'b': add_ints(b, -a, num_bits=bitsize, is_signed=isinstance(self.dtype, QInt)),
+            'b': add_ints(
+                int(b),
+                -int(a),
+                num_bits=int(self.dtype.bitsize),
+                is_signed=isinstance(self.dtype, QInt),
+            ),
         }
 
     def wire_symbol(
