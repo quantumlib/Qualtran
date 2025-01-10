@@ -46,9 +46,11 @@ from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
+    import pyzx as zx
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.pyzx_interop.bloq_to_pyzx_circuit import ZXAncillaManager
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -136,6 +138,28 @@ class _ZVector(Bloq):
             return Text('')
         s = '1' if self.bit else '0'
         return directional_text_box(s, side=reg.side)
+
+    def as_zx_gates(
+        self, ancilla_manager: 'ZXAncillaManager', /, **qubits: NDArray[np.integer]
+    ) -> tuple[list['zx.circuit.Gate'], dict[str, NDArray[np.integer]]]:
+        import pyzx as zx
+
+        if self.state:
+            qubit = ancilla_manager.allocate()
+
+            gates = [zx.circuit.gates.InitAncilla(qubit), zx.circuit.gates.HAD(qubit)]
+            if self.bit:
+                gates = gates + [zx.circuit.gates.NOT(qubit)]
+
+            return gates, {'q': np.array([qubit])}
+        else:
+            (qubit,) = qubits.pop('q')
+
+            gates = [zx.circuit.gates.HAD(qubit), zx.circuit.gates.PostSelect(qubit)]
+            if self.bit:
+                gates = [zx.circuit.gates.NOT(qubit)] + gates
+
+            return gates, {}
 
 
 def _hide_base_fields(cls, fields):
@@ -284,6 +308,14 @@ class ZGate(Bloq):
             return Text('')
 
         return TextBox('Z')
+
+    def as_zx_gates(
+        self, ancilla_manager, /, q: NDArray[np.integer]
+    ) -> tuple[list['zx.circuit.Gate'], dict[str, NDArray[np.integer]]]:
+        import pyzx as zx
+
+        (qubit,) = q
+        return [zx.circuit.Z(qubit)], {'q': q}
 
 
 @bloq_example
