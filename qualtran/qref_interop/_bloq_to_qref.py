@@ -362,7 +362,7 @@ def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
     return [str(symbol) for symbol in symbols]
 
 
-def _wrap_in_repetition(routine: RoutineV1, count: int | str) -> RoutineV1:
+def _wrap_in_repetition(routine: RoutineV1, count: Union[int, str]) -> RoutineV1:
     """Returns a routine with a repetition containing a single child.
     The repetition used is a constant sequence with count specified by input parameter.
     """
