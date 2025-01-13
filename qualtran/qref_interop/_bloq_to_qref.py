@@ -27,6 +27,7 @@
 from functools import singledispatch
 from typing import Any, Iterable, Optional, Union
 
+import networkx as nx
 import sympy
 from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 
@@ -127,9 +128,23 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
     return f"{_bloq_type(instance.bloq)}_{instance.i}"
 
 
-def bloq_to_qref(obj) -> SchemaV1:
-    """Converts Bloq to QREF SchemaV1 object."""
-    return SchemaV1(version="v1", program=bloq_to_routine(obj))
+def bloq_to_qref(
+    obj: Bloq | CompositeBloq | BloqInstance, from_callgraph: bool = False
+) -> SchemaV1:
+    """Converts Bloq to QREF SchemaV1 object.
+
+    Args:
+        obj: bloq to be converted
+        from_callgraph: a flag indicating whether conversion should be performed using only the information
+            from callgraph. It's useful when a bloq doesn't have a full decomposition, but has a callgraph.
+
+    """
+    if from_callgraph:
+        if isinstance(obj, BloqInstance):
+            raise ValueError("BloqInstance object can't be used to generate a callgraph.")
+        return SchemaV1(version="v1", program=bloq_to_routine_from_callgraph(obj))
+    else:
+        return SchemaV1(version="v1", program=bloq_to_routine(obj))
 
 
 @singledispatch
@@ -156,10 +171,11 @@ def _composite_bloq_to_routine(bloq: CompositeBloq, name: Optional[str] = None) 
 
     See `import_from_qualtran` for more info.
     """
+    connections = [_import_connection(c) for c in bloq.connections]
     return RoutineV1(
         **_extract_common_bloq_attributes(bloq, name),
         children=[bloq_to_routine(instance) for instance in bloq.bloq_instances],
-        connections=[_import_connection(c) for c in bloq.connections],
+        connections=connections,
     )
 
 
@@ -197,20 +213,26 @@ def _names_and_dir_from_register(reg: Register) -> Iterable[tuple[str, str]]:
         yield (f"in_{reg.name}", "input")
 
 
-def _expand_name_if_needed(reg_name, shape) -> Iterable[str]:
+def _expand_name_if_needed(reg_name, reg) -> Iterable[str]:
     """Given a register name, expand it into sequence of names if it has nontrivial shape.
 
     Examples:
         "reg", () -> "reg"
         "reg", (3,) -> "reg_0", "reg_1", "reg_2"
     """
-    if len(shape) > 1:
+    try:
+        reg.shape
+    # This is for the case when shape is symbolic
+    except ValueError:
+        return (reg_name,)
+
+    if len(reg.shape) > 1:
         raise NotImplementedError(
             "Registers with two or more dimensional shape are not yet supported. "
             f"The error was caused by register {reg_name}."
         )
 
-    return (reg_name,) if shape == () else (f"{reg_name}_{i}" for i in range(shape[0]))
+    return (reg_name,) if reg.shape == () else (f"{reg_name}_{i}" for i in range(reg.shape[0]))
 
 
 def _ports_from_register(reg: Register) -> Iterable[PortV1]:
@@ -243,7 +265,7 @@ def _ports_from_register(reg: Register) -> Iterable[PortV1]:
                 size=reg.bitsize if isinstance(reg.bitsize, int) else str(reg.bitsize),
             )
             for flat_name, direction in _names_and_dir_from_register(reg)
-            for expanded_name in _expand_name_if_needed(flat_name, reg.shape)
+            for expanded_name in _expand_name_if_needed(flat_name, reg)
         ],
         key=lambda p: p.name,
     )
@@ -338,3 +360,54 @@ def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
         symbols = symbols | sympy.sympify(port.size).free_symbols
 
     return [str(symbol) for symbol in symbols]
+
+
+def _wrap_in_repetition(routine: RoutineV1, count: int | str) -> RoutineV1:
+    """Returns a routine with a repetition containing a single child.
+    The repetition used is a constant sequence with count specified by input parameter.
+    """
+    return RoutineV1(
+        **{
+            "name": routine.name + "_repeated",
+            "input_params": routine.input_params,
+            "children": [routine],
+            "repetition": {"count": str(count), "sequence": {"type": "constant"}},
+        }
+    )
+
+
+def _call_graph_to_routine_map(call_graph: nx.DiGraph) -> dict[Bloq, RoutineV1]:
+    """Creates a dictionary which maps bloqs into corresponding QREF routines."""
+    names = []  # To keep track of unique names
+    counter = 0  # To modify names if duplicates occur
+    nodes_to_routine_map = {}
+    for node in call_graph.nodes:
+        routine = bloq_to_routine(node)
+        if routine.name in names:
+            counter += 1
+            routine.name = f"{routine.name}_{counter}"
+        names.append(routine.name)
+        nodes_to_routine_map[node] = routine
+    return nodes_to_routine_map
+
+
+def bloq_to_routine_from_callgraph(bloq: Bloq | CompositeBloq) -> RoutineV1:
+    """Creates a QREF routine based on the information coming from a bloq's call graph."""
+    call_graph = bloq.call_graph()[0]
+    nodes_to_routine_map = _call_graph_to_routine_map(call_graph)
+
+    for routine in nodes_to_routine_map.values():
+        routine.ports = []
+        routine.connections = []
+
+    for edge in list(call_graph.edges)[::-1]:
+        count = call_graph.get_edge_data(edge[0], edge[1]).get("n", 1)
+        parent = nodes_to_routine_map[edge[0]]
+        child = nodes_to_routine_map[edge[1]]
+        if count == 1:
+            parent.children.append(child)
+        else:
+            parent.children.append(_wrap_in_repetition(child, count))
+        nodes_to_routine_map[edge[0]] = parent
+
+    return nodes_to_routine_map[list(call_graph.nodes)[0]]
