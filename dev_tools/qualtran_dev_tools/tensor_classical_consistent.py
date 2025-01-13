@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from qualtran.simulation.tensor.tensor_from_classical import tensor_from_classical_sim
+from qualtran.simulation.tensor.tensor_from_classical import bloq_to_dense_via_classical_sim
 from qualtran.symbolics import is_symbolic
 
 from .bloq_finder import get_bloq_examples
@@ -47,7 +47,7 @@ def test_classical_consistent_with_tensor(be):
     if err is not None:
         pytest.skip(f'no tensor: {err}')
 
-    tensor_classical, err = _run_fn(lambda: tensor_from_classical_sim(bloq))
+    tensor_classical, err = _run_fn(lambda: bloq_to_dense_via_classical_sim(bloq))
     if err is not None:
         pytest.skip(f'no classical action: {err}')
 

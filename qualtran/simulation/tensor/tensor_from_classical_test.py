@@ -17,12 +17,12 @@ import pytest
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import TwoBitCSwap, XGate
 
-from .tensor_from_classical import tensor_from_classical_sim
+from .tensor_from_classical import bloq_to_dense_via_classical_sim
 
 
 @pytest.mark.parametrize("bloq", [XGate(), TwoBitCSwap()], ids=str)
 def test_tensor_consistent_with_classical(bloq: Bloq):
-    from_classical = tensor_from_classical_sim(bloq)
+    from_classical = bloq_to_dense_via_classical_sim(bloq)
     from_tensor = bloq.tensor_contract()
 
     np.testing.assert_allclose(from_classical, from_tensor)

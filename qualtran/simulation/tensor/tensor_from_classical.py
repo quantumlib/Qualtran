@@ -21,6 +21,8 @@ from qualtran import Bloq, Register
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran import ConnectionT, Signature
+    import quimb.tensor as qtn
 
 
 def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
@@ -29,7 +31,7 @@ def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
-def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
+def _bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
     left_qubit_counts = tuple(reg.total_bits() for reg in bloq.signature.lefts())
     left_qubit_splits = np.cumsum(left_qubit_counts)
 
@@ -60,6 +62,15 @@ def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
 
         matrix[tuple([*np.atleast_1d(output_t), *np.atleast_1d(input_t)])] = 1
 
+    return matrix
+
+
+def bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
+    n_qubits_left = sum(reg.total_bits() for reg in bloq.signature.lefts())
+    n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
+
+    matrix = _bloq_to_dense_via_classical_sim(bloq)
+
     shape: tuple[int, ...]
     if n_qubits_left == 0 and n_qubits_right == 0:
         shape = ()
@@ -69,3 +80,22 @@ def tensor_from_classical_sim(bloq: Bloq) -> NDArray:
         shape = (2**n_qubits_right, 2**n_qubits_left)
 
     return matrix.reshape(shape)
+
+
+def my_tensors_from_classical_sim(
+    bloq: Bloq, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+) -> list['qtn.Tensor']:
+    import quimb.tensor as qtn
+
+    def _signature_to_inds(registers: Iterable['Register'], cxns: dict[str, 'ConnectionT']):
+        for reg in registers:
+            for cxn in np.asarray(cxns[reg.name]).flat:
+                for j in range(reg.dtype.num_qubits):
+                    yield cxn, i
+
+    data = _bloq_to_dense_via_classical_sim(bloq)
+    incoming_inds = _signature_to_inds(bloq.signature.lefts(), incoming)
+    outgoing_inds = _signature_to_inds(bloq.signature.rights(), outgoing)
+    inds = [*outgoing_inds, *incoming_inds]
+
+    return [qtn.Tensor(data=data, inds=inds)]
