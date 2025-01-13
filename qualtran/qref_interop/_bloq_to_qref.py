@@ -129,7 +129,7 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
 
 
 def bloq_to_qref(
-    obj: Bloq | CompositeBloq | BloqInstance, from_callgraph: bool = False
+    obj: Union[Bloq, CompositeBloq, BloqInstance], from_callgraph: bool = False
 ) -> SchemaV1:
     """Converts Bloq to QREF SchemaV1 object.
 
@@ -391,13 +391,13 @@ def _call_graph_to_routine_map(call_graph: nx.DiGraph) -> dict[Bloq, RoutineV1]:
     return nodes_to_routine_map
 
 
-def bloq_to_routine_from_callgraph(bloq: Bloq | CompositeBloq) -> RoutineV1:
+def bloq_to_routine_from_callgraph(bloq: Union[Bloq, CompositeBloq]) -> RoutineV1:
     """Creates a QREF routine based on the information coming from a bloq's call graph."""
     call_graph = bloq.call_graph()[0]
     nodes_to_routine_map = _call_graph_to_routine_map(call_graph)
 
     for routine in nodes_to_routine_map.values():
-        routine.ports = []
+        routine.ports = []  # type: ignore
         routine.connections = []
 
     for edge in list(call_graph.edges)[::-1]:

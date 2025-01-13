@@ -64,8 +64,7 @@ def _assert_corresponding_subroutine(bloq, count, routines):
                 return True
         except AssertionError:
             pass
-    else:
-        assert False
+    assert False
 
 
 def _compare_routine_resources_recursively(bloq, routine):
