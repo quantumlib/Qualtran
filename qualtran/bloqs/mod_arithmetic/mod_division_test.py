@@ -74,10 +74,8 @@ def test_kaliski_mod_bloq_counts(bitsize, mod):
 def test_kaliski_symbolic_cost():
     n, p = sympy.symbols('n p')
     b = KaliskiModInverse(n, p)
-    cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
-    # We have some T gates since we use CSwapApprox instead of n CSWAPs.
-    total_toff = (cost['n_t'] / 4 + cost['n_ccz']) * sympy.Integer(1)
-    total_toff = total_toff.expand()
+    total_toff = get_cost_value(b, QECGatesCost()).total_toffoli_only()
+    total_toff = sympy.expand(total_toff)
 
     # The toffoli cost from Litinski https://arxiv.org/abs/2306.08585 is 26n^2 + 2n.
     # The cost of Kaliski is 2*n*(cost of an iteration) + (cost of computing $p - x$)
