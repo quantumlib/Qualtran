@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
-from typing import TYPE_CHECKING, Iterable
+from typing import Iterable, TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,9 +20,10 @@ from numpy.typing import NDArray
 from qualtran import Bloq, Register
 
 if TYPE_CHECKING:
-    from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran import ConnectionT, Signature
     import quimb.tensor as qtn
+
+    from qualtran import ConnectionT, Signature
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
@@ -35,10 +36,10 @@ def _bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
     """Internal method to compute the tensor of a bloq using its classical action.
 
     Args:
-        bloq:
+        bloq: the Bloq
 
     Returns:
-
+        an NDArray of shape (2, 2, ...) indexed by the output bits followed by input bits.
     """
     left_qubit_counts = tuple(reg.total_bits() for reg in bloq.signature.lefts())
     left_qubit_splits = np.cumsum(left_qubit_counts)
@@ -82,13 +83,13 @@ def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
     Raises:
         ValueError: if the bloq does not have a classical action.
     """
-    n_qubits_left = sum(reg.total_bits() for reg in bloq.signature.lefts())
-    n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
-
     try:
         matrix = _bloq_to_dense_via_classical_action(bloq)
     except ValueError as e:
         raise ValueError(f"cannot compute tensor: {bloq} is not classical") from e
+
+    n_qubits_left = sum(reg.total_bits() for reg in bloq.signature.lefts())
+    n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
 
     shape: tuple[int, ...]
     if n_qubits_left == 0 and n_qubits_right == 0:
@@ -104,6 +105,23 @@ def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
 def my_tensors_from_classical_action(
     bloq: Bloq, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
 ) -> list['qtn.Tensor']:
+    """Returns the quimb tensors for the bloq.
+
+    It has the same signature as `bloq.my_tensors`, and can be used as a replacement
+    for it the bloq has a known classical action.
+
+    Examples:
+        ```
+        class ClassicalBloq(Bloq):
+            ...
+
+            def on_classical_vals(...):
+                ...
+
+            def my_tensors(self, incoming, outgoing):
+                return my_tensors_from_classical_action(self, incoming, outgoing)
+        ```
+    """
     import quimb.tensor as qtn
 
     def _signature_to_inds(registers: Iterable['Register'], cxns: dict[str, 'ConnectionT']):
