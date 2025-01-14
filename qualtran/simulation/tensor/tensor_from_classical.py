@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -31,7 +31,15 @@ def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
-def _bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
+def _bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
+    """Internal method to compute the tensor of a bloq using its classical action.
+
+    Args:
+        bloq:
+
+    Returns:
+
+    """
     left_qubit_counts = tuple(reg.total_bits() for reg in bloq.signature.lefts())
     left_qubit_splits = np.cumsum(left_qubit_counts)
 
@@ -65,11 +73,22 @@ def _bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
     return matrix
 
 
-def bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
+def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
+    """Return a contracted, dense ndarray representing the bloq, using its classical action.
+
+    Args:
+        bloq: The bloq
+
+    Raises:
+        ValueError: if the bloq does not have a classical action.
+    """
     n_qubits_left = sum(reg.total_bits() for reg in bloq.signature.lefts())
     n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
 
-    matrix = _bloq_to_dense_via_classical_sim(bloq)
+    try:
+        matrix = _bloq_to_dense_via_classical_action(bloq)
+    except ValueError as e:
+        raise ValueError(f"cannot compute tensor: {bloq} is not classical") from e
 
     shape: tuple[int, ...]
     if n_qubits_left == 0 and n_qubits_right == 0:
@@ -82,7 +101,7 @@ def bloq_to_dense_via_classical_sim(bloq: Bloq) -> NDArray:
     return matrix.reshape(shape)
 
 
-def my_tensors_from_classical_sim(
+def my_tensors_from_classical_action(
     bloq: Bloq, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
 ) -> list['qtn.Tensor']:
     import quimb.tensor as qtn
@@ -91,9 +110,9 @@ def my_tensors_from_classical_sim(
         for reg in registers:
             for cxn in np.asarray(cxns[reg.name]).flat:
                 for j in range(reg.dtype.num_qubits):
-                    yield cxn, i
+                    yield cxn, j
 
-    data = _bloq_to_dense_via_classical_sim(bloq)
+    data = _bloq_to_dense_via_classical_action(bloq)
     incoming_inds = _signature_to_inds(bloq.signature.lefts(), incoming)
     outgoing_inds = _signature_to_inds(bloq.signature.rights(), outgoing)
     inds = [*outgoing_inds, *incoming_inds]
