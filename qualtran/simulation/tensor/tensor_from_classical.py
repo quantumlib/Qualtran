@@ -17,22 +17,20 @@ from typing import Iterable, TYPE_CHECKING
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Register
-
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import ConnectionT, Signature
+    from qualtran import Bloq, ConnectionT, Register
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _bits_to_classical_reg_data(reg: Register, bits) -> 'ClassicalValT':
+def _bits_to_classical_reg_data(reg: 'Register', bits) -> 'ClassicalValT':
     if reg.shape == ():
         return reg.dtype.from_bits(bits)
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
-def _bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
+def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
     """Internal method to compute the tensor of a bloq using its classical action.
 
     Args:
@@ -74,7 +72,7 @@ def _bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
     return matrix
 
 
-def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
+def bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
     """Return a contracted, dense ndarray representing the bloq, using its classical action.
 
     Args:
@@ -103,12 +101,12 @@ def bloq_to_dense_via_classical_action(bloq: Bloq) -> NDArray:
 
 
 def my_tensors_from_classical_action(
-    bloq: Bloq, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    bloq: 'Bloq', incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
 ) -> list['qtn.Tensor']:
     """Returns the quimb tensors for the bloq.
 
     It has the same signature as `bloq.my_tensors`, and can be used as a replacement
-    for it the bloq has a known classical action.
+    for it when the bloq has a known classical action.
 
     Examples:
         ```
