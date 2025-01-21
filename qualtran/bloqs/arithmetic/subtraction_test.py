@@ -160,3 +160,12 @@ def test_subtract_from_bloq_decomposition():
         want[(a << 4) | c][a_b] = 1
     got = gate.tensor_contract()
     np.testing.assert_allclose(got, want)
+
+
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_subtractfrom_classical_action(bitsize):
+    dtype = QInt(bitsize)
+    blq = SubtractFrom(dtype)
+    qlt_testing.assert_consistent_classical_action(
+        blq, a=tuple(dtype.get_classical_domain()), b=tuple(dtype.get_classical_domain())
+    )
