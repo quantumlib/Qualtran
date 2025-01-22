@@ -139,6 +139,12 @@ Bloqs Library
 
 .. toctree::
     :maxdepth: 2
+    :caption: Optimization:
+
+    optimization/k_xor_sat/kikuchi_guiding_state.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
