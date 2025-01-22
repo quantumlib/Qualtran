@@ -348,7 +348,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_addition.CModAddK": qualtran.bloqs.mod_arithmetic.mod_addition.CModAddK,
     "qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd": qualtran.bloqs.mod_arithmetic.CtrlScaleModAdd,
     "qualtran.bloqs.mod_arithmetic.ModAdd": qualtran.bloqs.mod_arithmetic.ModAdd,
-    "qualtran.bloqs.mod_arithmetic.ModSub": qualtran.bloqs.mod_arithmetic.ModSub,
+    "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModSub": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModSub,
     "qualtran.bloqs.mod_arithmetic.CModSub": qualtran.bloqs.mod_arithmetic.CModSub,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg,
     "qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg": qualtran.bloqs.mod_arithmetic.mod_subtraction.CModNeg,
