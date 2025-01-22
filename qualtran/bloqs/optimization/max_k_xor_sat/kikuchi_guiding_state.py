@@ -129,7 +129,7 @@ class SimpleGuidingState(PrepareOracle):
 
 @bloq_example
 def _simple_guiding_state() -> SimpleGuidingState:
-    from qualtran.bloqs.max_k_xor_sat import Constraint, KXorInstance
+    from qualtran.bloqs.optimization.max_k_xor_sat import Constraint, KXorInstance
 
     inst = KXorInstance(
         n=4,
@@ -148,7 +148,7 @@ def _simple_guiding_state() -> SimpleGuidingState:
 def _simple_guiding_state_symb() -> SimpleGuidingState:
     import sympy
 
-    from qualtran.bloqs.max_k_xor_sat import KXorInstance
+    from qualtran.bloqs.optimization.max_k_xor_sat import KXorInstance
 
     n, m, k = sympy.symbols("n m k", positive=True, integer=True)
     inst = KXorInstance.symbolic(n=n, m=m, k=k)
@@ -399,7 +399,7 @@ class GuidingState(PrepareOracle):
 
 @bloq_example
 def _guiding_state() -> GuidingState:
-    from qualtran.bloqs.max_k_xor_sat import Constraint, KXorInstance
+    from qualtran.bloqs.optimization.max_k_xor_sat import Constraint, KXorInstance
 
     inst = KXorInstance(
         n=4,
@@ -418,7 +418,7 @@ def _guiding_state() -> GuidingState:
 def _guiding_state_symb() -> GuidingState:
     import sympy
 
-    from qualtran.bloqs.max_k_xor_sat import KXorInstance
+    from qualtran.bloqs.optimization.max_k_xor_sat import KXorInstance
 
     n, m, k = sympy.symbols("n m k", positive=True, integer=True)
     inst = KXorInstance.symbolic(n=n, m=m, k=k)
@@ -431,7 +431,7 @@ def _guiding_state_symb() -> GuidingState:
 def _guiding_state_symb_c() -> GuidingState:
     import sympy
 
-    from qualtran.bloqs.max_k_xor_sat import KXorInstance
+    from qualtran.bloqs.optimization.max_k_xor_sat import KXorInstance
 
     n, m, c = sympy.symbols("n m c", positive=True, integer=True)
     k = sympy.symbols("k", positive=True, integer=True, even=True)

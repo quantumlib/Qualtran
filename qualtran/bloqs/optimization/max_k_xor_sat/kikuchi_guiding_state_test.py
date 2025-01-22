@@ -17,7 +17,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.max_k_xor_sat.guiding_state import (
+from qualtran.bloqs.optimization.max_k_xor_sat.kikuchi_guiding_state import (
     _guiding_state,
     _guiding_state_symb,
     _guiding_state_symb_c,
@@ -124,9 +124,9 @@ def test_t_cost_symb_c(bloq_ex):
 
 @pytest.mark.notebook
 def test_notebook():
-    qlt_testing.execute_notebook('guiding_state')
+    qlt_testing.execute_notebook('kikuchi_guiding_state')
 
 
 @pytest.mark.notebook
 def test_tutorial():
-    qlt_testing.execute_notebook('guiding_state_tutorial')
+    qlt_testing.execute_notebook('kikuchi_guiding_state_tutorial')
