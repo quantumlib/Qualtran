@@ -17,7 +17,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.optimization.max_k_xor_sat.kikuchi_guiding_state import (
+from qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state import (
     _guiding_state,
     _guiding_state_symb,
     _guiding_state_symb_c,
