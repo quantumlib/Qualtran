@@ -208,3 +208,15 @@ def test_cmod_add_complexity_vs_ref():
 def test_mod_add_classical_action(bitsize, prime):
     b = ModAdd(bitsize, prime)
     assert_consistent_classical_action(b, x=range(prime), y=range(prime))
+
+
+def test_cmodadd_tensor():
+    blq = CModAddK(bitsize=4, mod=7, k=1)
+    want = np.zeros((7, 7))
+    for i in range(7):
+        j = (i + 1) % 7
+        want[j, i] = 1
+
+    tn = blq.tensor_contract()
+    np.testing.assert_allclose(tn[:7, :7], np.eye(7))  # ctrl = 0
+    np.testing.assert_allclose(tn[16 : 16 + 7, 16 : 16 + 7], want)  # ctrl = 1
