@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Sequence, Union, Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -60,6 +60,8 @@ from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
+if TYPE_CHECKING:
+    import galois
 
 class QDType(metaclass=abc.ABCMeta):
     """This defines the abstract interface for quantum data types."""
@@ -888,6 +890,8 @@ class QGF(QDType):
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
+        galois_field: Optional galois.GF instance that defines the field arithmetic.
+            If `None` we fallback to the default `galois.GF(characteristic, degree)`
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -899,6 +903,7 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
+    galois_field: Optional['galois.GF'] = None
 
     @cached_property
     def order(self) -> SymbolicInt:
@@ -925,8 +930,10 @@ class QGF(QDType):
 
     @cached_property
     def gf_type(self):
+        if self.galois_field is not None:
+            return self.galois_field
+    
         from galois import GF
-
         return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
 
     def to_bits(self, x) -> List[int]:
