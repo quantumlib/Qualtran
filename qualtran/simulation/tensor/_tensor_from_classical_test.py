@@ -19,7 +19,7 @@ from qualtran import Bloq, ConnectionT, QAny, QUInt, Signature
 from qualtran.bloqs.arithmetic import Add, Xor
 from qualtran.bloqs.basic_gates import Toffoli, TwoBitCSwap, XGate
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.simulation.tensor.tensor_from_classical import (
+from qualtran.simulation.tensor._tensor_from_classical import (
     bloq_to_dense_via_classical_action,
     my_tensors_from_classical_action,
 )
