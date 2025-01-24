@@ -36,6 +36,7 @@ Bloqs Library
     basic_gates/states_and_effects.ipynb
     basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
+    swap_network/one_hot_encoding.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
     bookkeeping/bookkeeping.ipynb
