@@ -37,6 +37,7 @@ import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -103,6 +104,7 @@ import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
 import qualtran.bloqs.phase_estimation.text_book_qpe
@@ -492,6 +494,15 @@ ARITHMETIC = [
         module=qualtran.bloqs.arithmetic.trigonometric,
         bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
     ),
+    NotebookSpecV2(
+        title='List Functions',
+        module=qualtran.bloqs.arithmetic.lists,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.lists.sort_in_place._SORT_IN_PLACE_DOC,
+            qualtran.bloqs.arithmetic.lists.symmetric_difference._SYMMETRIC_DIFFERENCE_DOC,
+            qualtran.bloqs.arithmetic.lists.has_duplicates._HAS_DUPLICATES_DOC,
+        ],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -790,6 +801,20 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
 ]
 
 # --------------------------------------------------------------------------
+# -----   Optimization   ---------------------------------------------------
+# --------------------------------------------------------------------------
+OPTIMIZATION: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Planted Noisy kXOR - Kikuchi Guiding State',
+        module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._SIMPLE_GUIDING_STATE_DOC,
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._GUIDING_STATE_DOC,
+        ],
+    )
+]
+
+# --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
 OTHER: List[NotebookSpecV2] = [
@@ -905,5 +930,6 @@ NB_BY_SECTION = [
     ('GF Arithmetic', GF_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
+    ('Optimization', OPTIMIZATION),
     ('Other', OTHER),
 ]
