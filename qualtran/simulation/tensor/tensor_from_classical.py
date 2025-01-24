@@ -110,18 +110,18 @@ def my_tensors_from_classical_action(
 
     This function has the same signature as `bloq.my_tensors`, and can be used as a
     replacement for it when the bloq has a known classical action.
+    For example:
 
-    Examples:
-        ```
-        class ClassicalBloq(Bloq):
+    ```py
+    class ClassicalBloq(Bloq):
+        ...
+
+        def on_classical_vals(...):
             ...
 
-            def on_classical_vals(...):
-                ...
-
-            def my_tensors(self, incoming, outgoing):
-                return my_tensors_from_classical_action(self, incoming, outgoing)
-        ```
+        def my_tensors(self, incoming, outgoing):
+            return my_tensors_from_classical_action(self, incoming, outgoing)
+    ```
     """
     import quimb.tensor as qtn
 
