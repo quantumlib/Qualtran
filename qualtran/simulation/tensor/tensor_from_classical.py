@@ -24,9 +24,9 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _bits_to_classical_reg_data(reg: 'Register', bits) -> 'ClassicalValT':
+def _bits_to_classical_reg_data(reg: 'Register', bits: NDArray[np.uint8]) -> 'ClassicalValT':
     if reg.shape == ():
-        return reg.dtype.from_bits(bits)
+        return reg.dtype.from_bits([*bits.flat])
     return reg.dtype.from_bits_array(np.reshape(bits, reg.shape + (reg.dtype.num_qubits,)))
 
 
@@ -44,6 +44,9 @@ def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
 
     n_qubits_left = sum(left_qubit_counts)
     n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
+
+    if n_qubits_left + n_qubits_right > 40:
+        raise ValueError(f"tensor is too large: {n_qubits_left + n_qubits_right} total qubits")
 
     matrix = np.zeros((2,) * (n_qubits_right + n_qubits_left))
 
@@ -84,7 +87,7 @@ def bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
     try:
         matrix = _bloq_to_dense_via_classical_action(bloq)
     except ValueError as e:
-        raise ValueError(f"cannot compute tensor: {bloq} is not classical") from e
+        raise ValueError(f"cannot compute tensor for {bloq}: {str(e)}") from e
 
     n_qubits_left = sum(reg.total_bits() for reg in bloq.signature.lefts())
     n_qubits_right = sum(reg.total_bits() for reg in bloq.signature.rights())
@@ -103,10 +106,10 @@ def bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
 def my_tensors_from_classical_action(
     bloq: 'Bloq', incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
 ) -> list['qtn.Tensor']:
-    """Returns the quimb tensors for the bloq.
+    """Returns the quimb tensors for the bloq derived from its `on_classical_vals` method.
 
-    It has the same signature as `bloq.my_tensors`, and can be used as a replacement
-    for it when the bloq has a known classical action.
+    This function has the same signature as `bloq.my_tensors`, and can be used as a
+    replacement for it when the bloq has a known classical action.
 
     Examples:
         ```
