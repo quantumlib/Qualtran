@@ -75,6 +75,7 @@ Bloqs Library
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
     arithmetic/trigonometric/trigonometric.ipynb
+    arithmetic/lists/lists.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -135,6 +136,12 @@ Bloqs Library
     block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Optimization:
+
+    optimization/k_xor_sat/kikuchi_guiding_state.ipynb
 
 .. toctree::
     :maxdepth: 2
