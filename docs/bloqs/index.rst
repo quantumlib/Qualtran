@@ -75,6 +75,7 @@ Bloqs Library
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
     arithmetic/trigonometric/trigonometric.ipynb
+    arithmetic/lists/lists.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -108,6 +109,8 @@ Bloqs Library
     rotations/phasing_via_cost_function.ipynb
     rotations/phase_gradient.ipynb
     rotations/hamming_weight_phasing.ipynb
+    rotations/zpow_via_phase_gradient.ipynb
+    rotations/rz_via_phase_gradient.ipynb
     rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
@@ -133,6 +136,12 @@ Bloqs Library
     block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Optimization:
+
+    optimization/k_xor_sat/kikuchi_guiding_state.ipynb
 
 .. toctree::
     :maxdepth: 2

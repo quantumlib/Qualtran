@@ -100,7 +100,9 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
-        control = quregs[self.control_regs[0].name] if total_bits(self.control_registers) else []
+        control: Sequence['cirq.Qid'] = (
+            quregs[self.control_regs[0].name].tolist() if total_bits(self.control_registers) else []
+        )
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
         yield super(SelectedMajoranaFermion, self).decompose_from_registers(
             context=context, **quregs

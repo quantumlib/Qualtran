@@ -38,16 +38,13 @@ from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, XorK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthHalfGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.bloqs.basic_gates import CNOT, TwoBitCSwap, XGate
+from qualtran.bloqs.basic_gates import CNOT, CSwap, TwoBitCSwap, XGate
 from qualtran.bloqs.mcmt import And, MultiAnd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
-from qualtran.bloqs.swap_network import CSwapApprox
-from qualtran.resource_counting import BloqCountDictT
-from qualtran.resource_counting._call_graph import SympySymbolAllocator
 from qualtran.symbolics import HasLength, is_symbolic
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -136,6 +133,9 @@ class _KaliskiIterationStep2(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         u_arr = bb.split(u)
         v_arr = bb.split(v)
 
@@ -257,14 +257,12 @@ class _KaliskiIterationStep4(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, a: Soquet
     ) -> Dict[str, 'SoquetT']:
-        # CSwapApprox is a CSWAP with a phase flip.
-        # Since we are doing two SWAPs the overal phase is correct.
-        a, u, v = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=u, y=v)
-        a, r, s = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=r, y=s)
+        a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
+        a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
         return {'u': u, 'v': v, 'r': r, 's': s, 'a': a}
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
-        return {CSwapApprox(self.bitsize): 2}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {CSwap(self.bitsize): 2}
 
 
 @frozen
@@ -376,8 +374,8 @@ class _KaliskiIterationStep6(Bloq):
 
         r = bb.add(ModDbl(QMontgomeryUInt(self.bitsize), self.mod), x=r)
 
-        a, u, v = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=u, y=v)
-        a, r, s = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=r, y=s)
+        a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
+        a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
 
         s_arr = bb.split(s)
         s_arr[-1] = bb.add(XGate(), q=s_arr[-1])
@@ -392,7 +390,7 @@ class _KaliskiIterationStep6(Bloq):
             CNOT(): 3,
             XGate(): 2,
             ModDbl(QMontgomeryUInt(self.bitsize), self.mod): 1,
-            CSwapApprox(self.bitsize): 2,
+            CSwap(self.bitsize): 2,
             TwoBitCSwap(): self.bitsize - 1,
         }
 
@@ -542,6 +540,9 @@ class _KaliskiModInverseImpl(Bloq):
         f: Soquet,
         terminal_condition: Soquet,
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         f = bb.add(XGate(), q=f)
         u = bb.add(XorK(QMontgomeryUInt(self.bitsize), self.mod), x=u)
         s = bb.add(XorK(QMontgomeryUInt(self.bitsize), 1), x=s)
@@ -664,6 +665,9 @@ class KaliskiModInverse(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, junk: Optional[Soquet] = None
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         u = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
         r = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
         s = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))

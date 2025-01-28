@@ -35,7 +35,8 @@ from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.block_encoding.lcu_block_encoding import _black_box_lcu_block, _lcu_block
 from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
-from qualtran.bloqs.data_loading.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import _qrom_symb, QROM
+from qualtran.bloqs.factoring.rsa.rsa_phase_estimate import _rsa_pe
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.qref_interop import bloq_to_qref
 
@@ -46,15 +47,61 @@ def get_bloq_examples():
     return [_add_oop_large, _black_box_lcu_block, _lcu_block, _df_one_body, _df_block_encoding]
 
 
+def _assert_corresponding_subroutine(bloq, count, routines):
+    bloq_name = bloq.__class__.__name__
+    for routine in routines:
+        try:
+            result = False
+            if bloq_name in routine.name:
+                if count != 1:
+                    if routine.repetition is None:
+                        continue
+                    assert str(routine.repetition.count) == str(count)
+                    result = _compare_routine_resources_recursively(bloq, routine.children[0])
+                else:
+                    result = _compare_routine_resources_recursively(bloq, routine)
+            if result:
+                return True
+        except AssertionError:
+            pass
+    assert False
+
+
+def _compare_routine_resources_recursively(bloq, routine):
+    reference_routine = bloq_to_qref(bloq).program
+    assert reference_routine.name in routine.name
+    bloq_counts = bloq.bloq_counts()
+    assert len(bloq_counts) == len(routine.children)
+    assert reference_routine.resources == routine.resources
+    for child_bloq in bloq_counts:
+        count = bloq_counts[child_bloq]
+        _assert_corresponding_subroutine(child_bloq, count, routine.children)
+    return True
+
+
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
-def test_bloq_examples_can_be_converted_to_qualtran(bloq_example):
+def test_bloq_examples_can_be_converted_to_qref(bloq_example):
     bloq = bloq_example.make()
     qref_routine = bloq_to_qref(bloq)
     assert verify_topology(qref_routine)
 
 
 @pytest.mark.parametrize("bloq_example", get_bloq_examples())
-def test_bloq_examples_can_be_converted_to_qualtran_when_decomposed(bloq_example):
+def test_bloq_examples_from_callgraphs_give_correct_counts_for_numeric(bloq_example):
+    bloq = bloq_example.make()
+    qref_routine_form_callgraph = bloq_to_qref(bloq, from_callgraph=True)
+    _compare_routine_resources_recursively(bloq, qref_routine_form_callgraph.program)
+
+
+@pytest.mark.parametrize("bloq_example", [_qrom_symb, _rsa_pe])
+def test_bloq_examples_from_callgraphs_give_correct_counts_for_symbolic(bloq_example):
+    bloq = bloq_example.make()
+    qref_routine_form_callgraph = bloq_to_qref(bloq, from_callgraph=True)
+    _compare_routine_resources_recursively(bloq, qref_routine_form_callgraph.program)
+
+
+@pytest.mark.parametrize("bloq_example", get_bloq_examples())
+def test_bloq_examples_can_be_converted_to_qref_when_decomposed(bloq_example):
     bloq = bloq_example.make().decompose_bloq()
     qref_routine = bloq_to_qref(bloq)
     assert verify_topology(qref_routine)

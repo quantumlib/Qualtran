@@ -23,6 +23,7 @@ import qualtran.bloqs.arithmetic.conversions.contiguous_index
 import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
 import qualtran.bloqs.arithmetic.conversions.sign_extension
 import qualtran.bloqs.arithmetic.hamming_weight
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -147,6 +148,7 @@ import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -190,6 +192,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend": qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend,
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate": qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
+    "qualtran.bloqs.arithmetic.lists.has_duplicates.HasDuplicates": qualtran.bloqs.arithmetic.lists.has_duplicates.HasDuplicates,
+    "qualtran.bloqs.arithmetic.lists.sort_in_place.SortInPlace": qualtran.bloqs.arithmetic.lists.sort_in_place.SortInPlace,
+    "qualtran.bloqs.arithmetic.lists.symmetric_difference.SymmetricDifference": qualtran.bloqs.arithmetic.lists.symmetric_difference.SymmetricDifference,
     "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber": qualtran.bloqs.arithmetic.multiplication.InvertRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,
     "qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct": qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct,
@@ -427,6 +432,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
     "qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient": qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient,
+    "qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient": qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
     "qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare": qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare,
     "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,

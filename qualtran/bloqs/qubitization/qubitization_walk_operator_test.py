@@ -16,10 +16,9 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Adjoint
-from qualtran.bloqs.basic_gates import Power, XGate
+from qualtran import Adjoint, Controlled
+from qualtran.bloqs.basic_gates import Power, XGate, ZGate
 from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
-from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization.qubitization_walk_operator import (
     _thc_walk_op,
@@ -174,10 +173,12 @@ target3: ──────B[H]─────────
 
     # 4. Diagram for $Ctrl-W = Ctrl-SELECT.Ctrl-R_{L}$ in terms of $Ctrl-SELECT$ and $PREPARE$.
     def pred(binst):
-        bloqs_to_keep = (SelectPauliLCU, StatePreparationAliasSampling, MultiControlPauli, XGate)
+        bloqs_to_keep = (SelectPauliLCU, StatePreparationAliasSampling)
         keep = binst.bloq_is(bloqs_to_keep)
         if binst.bloq_is(Adjoint):
             keep |= isinstance(binst.bloq.subbloq, bloqs_to_keep)
+        if binst.bloq_is(Controlled) and isinstance(binst.bloq.subbloq, (XGate, ZGate)):
+            keep = True
         return not keep
 
     greedy_mm = cirq.GreedyQubitManager(prefix="ancilla", maximize_reuse=True)
@@ -186,51 +187,51 @@ target3: ──────B[H]─────────
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-                                                                       ┌──────────────────────────────┐
-ancilla_0: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
-                                │                                        │
-ancilla_1: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
-                                │                                        │
-ancilla_2: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
-                                │                                        │
-ancilla_3: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
-                                │                                        │
-ancilla_4: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
-                                │                                        │
-ancilla_5: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
-                                │                                        │
-ancilla_6: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
-                                │                                        │
-ancilla_7: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
-                                │                                        │
-ancilla_8: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
-                                │                                        │
-ancilla_9: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
-                                │                                        │
-ancilla_10: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
-                                │                                        │
-ancilla_11: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
-                                │                                        │
-ancilla_12: ────────────────────keep─────────────────────────────────────keep─────────────────────────────
-                                │                                        │
-ancilla_13: ────────────────────less_than_equal──────────────────────────less_than_equal──────────────────
-                                │                                        │
-ctrl: ─────────@────────────────┼───────────────────────────────Z───────Z┼────────────────────────────────
-               │                │                               │        │
-selection0: ───In───────────────StatePreparationAliasSampling───@(0)─────StatePreparationAliasSampling────
-               │                │                               │        │
-selection1: ───In───────────────selection───────────────────────@(0)─────selection────────────────────────
-               │                │                               │        │
-selection2: ───In───────────────selection^-1────────────────────@(0)─────selection────────────────────────
+                                                                      ┌──────────────────────────────┐
+ancilla_0: ─────────────────────sigma_mu────────────────────────────────sigma_mu─────────────────────────
+                                │                                       │
+ancilla_1: ─────────────────────sigma_mu────────────────────────────────sigma_mu─────────────────────────
+                                │                                       │
+ancilla_2: ─────────────────────sigma_mu────────────────────────────────sigma_mu─────────────────────────
+                                │                                       │
+ancilla_3: ─────────────────────sigma_mu────────────────────────────────sigma_mu─────────────────────────
+                                │                                       │
+ancilla_4: ─────────────────────sigma_mu────────────────────────────────sigma_mu─────────────────────────
+                                │                                       │
+ancilla_5: ─────────────────────alt─────────────────────────────────────alt──────────────────────────────
+                                │                                       │
+ancilla_6: ─────────────────────alt─────────────────────────────────────alt──────────────────────────────
+                                │                                       │
+ancilla_7: ─────────────────────alt─────────────────────────────────────alt──────────────────────────────
+                                │                                       │
+ancilla_8: ─────────────────────keep────────────────────────────────────keep─────────────────────────────
+                                │                                       │
+ancilla_9: ─────────────────────keep────────────────────────────────────keep─────────────────────────────
+                                │                                       │
+ancilla_10: ────────────────────keep────────────────────────────────────keep─────────────────────────────
+                                │                                       │
+ancilla_11: ────────────────────keep────────────────────────────────────keep─────────────────────────────
+                                │                                       │
+ancilla_12: ────────────────────keep────────────────────────────────────keep─────────────────────────────
+                                │                                       │
+ancilla_13: ────────────────────less_than_equal─────────────────────────less_than_equal──────────────────
+                                │                                       │
+ctrl: ─────────@────────────────┼───────────────────────────────Z──────Z┼────────────────────────────────
+               │                │                               │       │
+selection0: ───In───────────────StatePreparationAliasSampling───(0)─────StatePreparationAliasSampling────
+               │                │                               │       │
+selection1: ───In───────────────selection───────────────────────(0)─────selection────────────────────────
+               │                │                               │       │
+selection2: ───In───────────────selection^-1────────────────────(0)─────selection────────────────────────
                │
-target0: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
+target0: ──────SelectPauliLCU────────────────────────────────────────────────────────────────────────────
                │
-target1: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
+target1: ──────SelectPauliLCU────────────────────────────────────────────────────────────────────────────
                │
-target2: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
+target2: ──────SelectPauliLCU────────────────────────────────────────────────────────────────────────────
                │
-target3: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
-                                                                       └──────────────────────────────┘    
+target3: ──────SelectPauliLCU────────────────────────────────────────────────────────────────────────────
+                                                                      └──────────────────────────────┘    
 ''',
     )
     # pylint: enable=line-too-long
