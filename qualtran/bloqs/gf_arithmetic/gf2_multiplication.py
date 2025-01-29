@@ -251,7 +251,7 @@ _GF2_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class MultiplyByConstantMod(Bloq):
+class GF2MultiplyByConstantMod(Bloq):
     r"""Multiply by constant $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
 
     Args:
@@ -285,13 +285,13 @@ class MultiplyByConstantMod(Bloq):
         f_x: Union[Poly, Sequence[int]],
         m_x: Union[Poly, Sequence[int]],
         field_representation: str = 'poly',
-    ) -> 'MultiplyByConstantMod':
+    ) -> 'GF2MultiplyByConstantMod':
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
             f_x = Poly.Degrees(f_x)
         gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)
-        return MultiplyByConstantMod(
+        return GF2MultiplyByConstantMod(
             galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
         )
 
@@ -363,25 +363,25 @@ class MultiplyByConstantMod(Bloq):
 
 
 @bloq_example
-def _gf2_multiply_by_constant_modulu() -> MultiplyByConstantMod:
+def _gf2_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
     import galois
 
     mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
     gf = galois.GF(2, 3, irreducible_poly=mx)
     const = gf(5)  # x^2 + 1
-    gf2_multiply_by_constant_modulu = MultiplyByConstantMod(const, gf)
+    gf2_multiply_by_constant_modulu = GF2MultiplyByConstantMod(const, gf)
     return gf2_multiply_by_constant_modulu
 
 
 @bloq_example
-def _gf2_poly_multiply_by_constant_modulu() -> MultiplyByConstantMod:
+def _gf2_poly_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
     fx = [2, 0]  # x^2 + 1
     mx = [0, 1, 3]  # x^3 + x + 1
-    gf2_poly_multiply_by_constant_modulu = MultiplyByConstantMod.from_polynomials(fx, mx)
+    gf2_poly_multiply_by_constant_modulu = GF2MultiplyByConstantMod.from_polynomials(fx, mx)
     return gf2_poly_multiply_by_constant_modulu
 
 
 _MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
-    bloq_cls=MultiplyByConstantMod,
+    bloq_cls=GF2MultiplyByConstantMod,
     examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
 )

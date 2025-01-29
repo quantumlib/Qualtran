@@ -22,7 +22,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
     _gf16_multiplication,
     GF2Multiplication,
-    MultiplyByConstantMod,
+    GF2MultiplyByConstantMod,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
@@ -102,7 +102,7 @@ def test_multiply_by_constant_mod_classical_action(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyByConstantMod.from_polynomials(f_x, m_x)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
         cblq = blq.decompose_bloq()
         for g in gf.elements[1:]:
             assert blq.call_classically(g=g) == cblq.call_classically(g=g)
@@ -118,7 +118,7 @@ def test_multiply_by_constant_mod_classical_action(m_x):
     ],
 )
 def test_multiply_by_constant_mod_cost(m_x, f_x, cnot_count):
-    blq = MultiplyByConstantMod.from_polynomials(f_x, m_x)
+    blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
     cost = get_cost_value(blq, QECGatesCost())
     assert cost.total_t_count() == 0
     assert cost.clifford == cnot_count
@@ -131,7 +131,7 @@ def test_multiply_by_constant_mod_decomposition(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyByConstantMod.from_polynomials(f_x, m_x)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
         qlt_testing.assert_valid_bloq_decomposition(blq)
 
 
@@ -142,13 +142,13 @@ def test_multiply_by_constant_mod_counts(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyByConstantMod.from_polynomials(f_x, m_x)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
         qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
 
 
-def test_invalid_multiplybyconstantmod_args_raises():
+def test_invalid_GF2MultiplyByConstantMod_args_raises():
     with pytest.raises(TypeError):
-        _ = MultiplyByConstantMod([0, 1], [0, 1, 3])
+        _ = GF2MultiplyByConstantMod([0, 1], [0, 1, 3])
 
 
 @pytest.mark.notebook
