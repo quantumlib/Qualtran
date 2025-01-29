@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, Union, Optional, TYPE_CHECKING
+from typing import Any, Iterable, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -62,6 +62,7 @@ from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import galois
+
 
 class QDType(metaclass=abc.ABCMeta):
     """This defines the abstract interface for quantum data types."""
@@ -932,8 +933,9 @@ class QGF(QDType):
     def gf_type(self):
         if self.galois_field is not None:
             return self.galois_field
-    
+
         from galois import GF
+
         return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
 
     def to_bits(self, x) -> List[int]:

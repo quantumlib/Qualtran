@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union, Sequence
+from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
-import numpy as np
 import galois
+import numpy as np
 from galois import GF, Poly
 
 from qualtran import (
@@ -281,15 +281,20 @@ class MultiplyByConstantMod(Bloq):
         return QGF(2, self.n, self.galois_field)
 
     @staticmethod
-    def from_polynomials(f_x: Union[Poly, Sequence[int]], m_x: Union[Poly, Sequence[int]], field_representation: str = 'int') -> 'MultiplyByConstantMod':
+    def from_polynomials(
+        f_x: Union[Poly, Sequence[int]],
+        m_x: Union[Poly, Sequence[int]],
+        field_representation: str = 'poly',
+    ) -> 'MultiplyByConstantMod':
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
             f_x = Poly.Degrees(f_x)
         gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)
-        return MultiplyByConstantMod(galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees)))
+        return MultiplyByConstantMod(
+            galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
+        )
 
-    
     @cached_property
     def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Returns the LUP decomposition of the matrix representing the operation.
@@ -302,8 +307,8 @@ class MultiplyByConstantMod(Bloq):
         matrix = np.zeros((n, n), dtype=int)
         for i in range(n):
             p = self.const * self.galois_field(2**i)
-            for j in self.qgf.to_bits(p):
-                matrix[j, i] = 1
+            for j, v in enumerate(reversed(self.qgf.to_bits(p))):
+                matrix[j, i] = v
         P, L, U = GF(2)(matrix).plu_decompose()
         return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
 
@@ -314,9 +319,7 @@ class MultiplyByConstantMod(Bloq):
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
         assert isinstance(g, self.galois_field)
         r = g * self.const
-        return {
-            'g': g * self.const,
-        }
+        return {'g': g * self.const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'SoquetT') -> Dict[str, 'SoquetT']:
         L, U, P = self.lup
@@ -324,6 +327,7 @@ class MultiplyByConstantMod(Bloq):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
 
         g_arr = bb.split(g)
+        g_arr = g_arr[::-1]
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if U[i, j]:
@@ -340,6 +344,7 @@ class MultiplyByConstantMod(Bloq):
                 if P[i, column[j]]:
                     g_arr[i], g_arr[j] = g_arr[j], g_arr[i]
                     column[i], column[j] = column[j], column[i]
+        g_arr = g_arr[::-1]
         g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
 
@@ -356,9 +361,11 @@ class MultiplyByConstantMod(Bloq):
     def __hash__(self):
         return hash((self.const.additive_order, self.galois_field.irreducible_poly))
 
+
 @bloq_example
 def _gf2_multiply_by_constant_modulu() -> MultiplyByConstantMod:
     import galois
+
     mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
     gf = galois.GF(2, 3, irreducible_poly=mx)
     const = gf(5)  # x^2 + 1
@@ -373,6 +380,8 @@ def _gf2_poly_multiply_by_constant_modulu() -> MultiplyByConstantMod:
     gf2_poly_multiply_by_constant_modulu = MultiplyByConstantMod.from_polynomials(fx, mx)
     return gf2_poly_multiply_by_constant_modulu
 
+
 _MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
-    bloq_cls=MultiplyByConstantMod, examples=(_gf2_multiply_by_constant_modulu,_gf2_poly_multiply_by_constant_modulu)
+    bloq_cls=MultiplyByConstantMod,
+    examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
 )
