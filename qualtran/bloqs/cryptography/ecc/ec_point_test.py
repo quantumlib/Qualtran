@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.factoring.ecc import ECPoint
+from qualtran.bloqs.cryptography.ecc import ECPoint
 
 
 def test_ec_point_overrides():

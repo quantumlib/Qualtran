@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc.ec_phase_estimate_r import _ec_pe, _ec_pe_small
+from qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r import _ec_pe, _ec_pe_small
 
 
 def test_ec_pe(bloq_autotester):
