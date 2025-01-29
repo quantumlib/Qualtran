@@ -290,7 +290,7 @@ class GF2MultiplyByConstantMod(Bloq):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
             f_x = Poly.Degrees(f_x)
-        gf = GF(2**m_x.degree, irreducible_poly=m_x, repr=field_representation)
+        gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)  # type: ignore[call-overload]
         return GF2MultiplyByConstantMod(
             galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
         )
