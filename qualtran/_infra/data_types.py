@@ -904,7 +904,7 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    galois_field: Optional['galois.GF'] = None
+    galois_field: Optional['galois.FieldArrayMeta'] = None
 
     @cached_property
     def order(self) -> SymbolicInt:

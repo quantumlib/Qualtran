@@ -290,7 +290,7 @@ class GF2MultiplyByConstantMod(Bloq):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
             f_x = Poly.Degrees(f_x)
-        gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)
+        gf = GF(2**m_x.degree, irreducible_poly=m_x, repr=field_representation)
         return GF2MultiplyByConstantMod(
             galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
         )
@@ -321,7 +321,7 @@ class GF2MultiplyByConstantMod(Bloq):
         r = g * self.const
         return {'g': g * self.const}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")

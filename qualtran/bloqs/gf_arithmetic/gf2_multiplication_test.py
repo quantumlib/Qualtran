@@ -147,8 +147,10 @@ def test_multiply_by_constant_mod_counts(m_x):
 
 
 def test_invalid_GF2MultiplyByConstantMod_args_raises():
-    with pytest.raises(TypeError):
-        _ = GF2MultiplyByConstantMod([0, 1], [0, 1, 3])
+    gf = GF(2, 3)
+    x = GF(2, 4)(1)
+    with pytest.raises(AssertionError):
+        _ = GF2MultiplyByConstantMod(x, gf)
 
 
 @pytest.mark.notebook
