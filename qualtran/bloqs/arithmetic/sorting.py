@@ -85,7 +85,7 @@ class Comparator(Bloq):
 
 @bloq_example
 def _comparator() -> Comparator:
-    comparator = Comparator(7)
+    comparator = Comparator(3)
     return comparator
 
 
