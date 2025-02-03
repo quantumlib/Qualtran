@@ -82,11 +82,11 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.cryptography.ecc
+import qualtran.bloqs.cryptography.rsa
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.ecc
-import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.gf_arithmetic.gf2_add_k
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
@@ -543,25 +543,25 @@ MOD_ARITHMETIC = [
     ),
     NotebookSpecV2(
         title='Factoring RSA',
-        module=qualtran.bloqs.factoring.rsa,
+        module=qualtran.bloqs.cryptography.rsa,
         bloq_specs=[
-            qualtran.bloqs.factoring.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
         ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
-        module=qualtran.bloqs.factoring.ecc.ec_add,
-        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
+        module=qualtran.bloqs.cryptography.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.cryptography.ecc.ec_add._EC_ADD_DOC],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
-        module=qualtran.bloqs.factoring.ecc,
+        module=qualtran.bloqs.cryptography.ecc,
         bloq_specs=[
-            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
 ]
