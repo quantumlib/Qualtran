@@ -51,7 +51,7 @@ represents a qubit or register of qubits.
 
 ## Type Aliases
 
-[`NDArray`](../../qualtran/drawing/musical_score/NDArray.md)
+[`NDArray`](../../qualtran/testing/NDArray.md)
 
 
 

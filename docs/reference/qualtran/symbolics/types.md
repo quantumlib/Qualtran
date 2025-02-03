@@ -19,6 +19,10 @@
 
 [`is_symbolic(...)`](../../qualtran/symbolics/is_symbolic.md): Returns whether the inputs contain any symbolic object.
 
+[`shape(...)`](../../qualtran/symbolics/shape.md)
+
+[`slen(...)`](../../qualtran/symbolics/slen.md)
+
 ## Type Aliases
 
 [`SymbolicComplex`](../../qualtran/symbolics/SymbolicComplex.md)

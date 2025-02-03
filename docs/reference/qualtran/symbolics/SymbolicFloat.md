@@ -2,7 +2,7 @@
 
 This symbol is a **type alias**.
 
-A floating point value or a sympy expression.
+
 
 #### Source:
 

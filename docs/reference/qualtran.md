@@ -1,31 +1,36 @@
 # Module: qualtran
 
 
-qualtran
+The top-level Qualtran module.
 
 
 
+Many fundamental objects for expressing quantum programs can be imported from this
+top-level namespace like <a href="./qualtran/Bloq.html"><code>qualtran.Bloq</code></a>, <a href="./qualtran/Register.html"><code>qualtran.Register</code></a>, and the various quantum
+data types (<a href="./qualtran/QBit.html"><code>qualtran.QBit</code></a>, <a href="./qualtran/QUInt.html"><code>qualtran.QUInt</code></a>, ...).
 
-isort:skip_file
+The standard library of quantum algorithms must be imported from the `qualtran.bloqs` submodule.
+A variety of analysis protocols are available in submodules as well like
+<a href="./qualtran/resource_counting.html"><code>qualtran.resource_counting</code></a>, <a href="./qualtran/drawing.html"><code>qualtran.drawing</code></a>, <a href="./qualtran/simulation.html"><code>qualtran.simulation</code></a>, and others.
 ## Modules
 
-[`cirq_interop`](./qualtran/cirq_interop.md): Bi-directional interop between Qualtran & Cirq using Cirq-FT.
+[`cirq_interop`](./qualtran/cirq_interop.md): Bi-directional interop between Qualtran & Cirq.
 
-[`drawing`](./qualtran/drawing.md): Draw and visualize bloqs
+[`drawing`](./qualtran/drawing.md): Draw and visualize bloqs.
 
-[`linalg`](./qualtran/linalg.md) module
+[`linalg`](./qualtran/linalg.md): Linear algebra routines for building bloqs.
 
-[`resource_counting`](./qualtran/resource_counting.md): Counting resource usage (bloqs, qubits)
+[`resource_counting`](./qualtran/resource_counting.md): Analysis routines for computing costs and resource counts.
 
-[`serialization`](./qualtran/serialization.md) module
+[`serialization`](./qualtran/serialization.md): Functions for protobuf serialization of bloqs.
 
-[`simulation`](./qualtran/simulation.md) module
+[`simulation`](./qualtran/simulation.md): Simulators for quantum programs.
 
-[`surface_code`](./qualtran/surface_code.md) module
+[`surface_code`](./qualtran/surface_code.md): Physical cost models for surface code architectures.
 
-[`symbolics`](./qualtran/symbolics.md) module
+[`symbolics`](./qualtran/symbolics.md): Utilities for simultaneous support for Sympy symbolic objects and concrete values.
 
-[`testing`](./qualtran/testing.md) module
+[`testing`](./qualtran/testing.md): Functions for testing bloqs.
 
 ## Classes
 
@@ -49,7 +54,7 @@ isort:skip_file
 
 [`class QBit`](./qualtran/QBit.md): A single qubit. The smallest addressable unit of quantum data.
 
-[`class QAny`](./qualtran/QAny.md): Opaque bag-of-qbits type.
+[`class QAny`](./qualtran/QAny.md): Opaque bag-of-qubits type.
 
 [`class QFxp`](./qualtran/QFxp.md): Fixed point type to represent real numbers.
 
@@ -60,6 +65,8 @@ isort:skip_file
 [`class BQUInt`](./qualtran/BQUInt.md): Unsigned integer whose values are bounded within a range.
 
 [`class QMontgomeryUInt`](./qualtran/QMontgomeryUInt.md): Montgomery form of an unsigned integer of a given width bitsize which wraps around upon overflow.
+
+[`class QGF`](./qualtran/QGF.md): Galois Field type to represent elements of a finite field.
 
 [`class Register`](./qualtran/Register.md): A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
@@ -102,9 +109,9 @@ isort:skip_file
 <h2 class="add-link">Other Members</h2>
 
 LeftDangle<a id="LeftDangle"></a>
-: Instance of <a href="./qualtran/DanglingT.md"><code>qualtran.DanglingT</code></a>
+: Instance of <a href="./qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
 
 RightDangle<a id="RightDangle"></a>
-: Instance of <a href="./qualtran/DanglingT.md"><code>qualtran.DanglingT</code></a>
+: Instance of <a href="./qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
 
 

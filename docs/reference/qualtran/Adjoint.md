@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L88-L205">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L89-L186">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -98,7 +98,7 @@ protocols, use a specialized adjoint bloq or attribute instead of this class.
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L141-L143">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L142-L144">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -109,7 +109,7 @@ The decomposition is the adjoint of `subbloq`'s decomposition.
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L154-L156">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L157-L159">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Bloq'
@@ -120,7 +120,7 @@ The 'double adjoint' brings you back to the original bloq.
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L158-L168">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L161-L171">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -131,20 +131,9 @@ The 'double adjoint' brings you back to the original bloq.
 The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph.
 
 
-<h3 id="pretty_name"><code>pretty_name</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L170-L172">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>pretty_name() -> str
-</code></pre>
-
-The subbloq's pretty_name with a dagger.
-
-
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L178-L187">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/adjoint.py#L177-L186">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(

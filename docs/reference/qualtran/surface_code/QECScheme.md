@@ -146,7 +146,7 @@ References
 <code>make_beverland_et_al()
 </code></pre>
 
-The qec scheme parameters considered in Beverland et. al. reference.
+The qec scheme parameters considered in Beverland et al. reference.
 
 
 References

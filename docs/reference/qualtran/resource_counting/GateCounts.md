@@ -143,7 +143,7 @@ The default value for `ts_per_rotation` assumes the rotation is approximated usi
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>total_t_and_ccz_count(
     ts_per_rotation: int = 11
-) -> Dict[str, <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>]
+) -> Dict[str, SymbolicInt]
 </code></pre>
 
 
@@ -189,10 +189,10 @@ adds on clifford counts for the X-gates used to invert the And control lines.
 <a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_bloq_counts.py#L254-L277">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>total_beverland_count() -> Dict[str, <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>]
+<code>total_beverland_count() -> Dict[str, SymbolicInt]
 </code></pre>
 
-Counts used by Beverland. et. al. using notation from the reference.
+Counts used by Beverland et al. using notation from the reference.
 
  - $M_\mathrm{meas}$ is the number of measurements.
  - $M_R$ is the number of rotations.

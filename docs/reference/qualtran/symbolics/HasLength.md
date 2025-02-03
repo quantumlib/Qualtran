@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L50-L64">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L57-L80">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -33,6 +33,15 @@ Symbolic value for an object that has a length.
 
 <!-- Placeholder for "Used in" -->
 
+This is used as a "symbolic" tuple. The length can either be a positive integer
+or a sympy expression. For example, if a bloq attribute is a tuple of ints,
+we can use the type:
+
+```py
+values: Union[tuple, HasLength]
+```
+
+For the symbolic variant of a NDArray, see `Shaped`.
 
 Note that we cannot override __len__ and return a sympy symbol because Python has
 special treatment for __len__ and expects you to return a non-negative integers.
@@ -53,7 +62,7 @@ See https://docs.python.org/3/reference/datamodel.html#object.__len__ for more d
 
 <h3 id="is_symbolic"><code>is_symbolic</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L63-L64">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L79-L80">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_symbolic()

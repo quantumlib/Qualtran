@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L749-L810">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L760-L863">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -65,7 +65,7 @@ Pseudocode for REDC(u) can be found in the resource below.
 
 <h3 id="is_symbolic"><code>is_symbolic</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L783-L784">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L799-L800">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_symbolic() -> bool
@@ -76,7 +76,7 @@ Returns True if this qdtype is parameterized with symbolic objects.
 
 <h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L786-L787">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L802-L803">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_classical_domain() -> Iterable[Any]
@@ -87,7 +87,7 @@ Yields all possible classical (computational basis state) values representable b
 
 <h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L789-L791">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L805-L807">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_bits(
@@ -100,7 +100,7 @@ Yields individual bits corresponding to binary representation of x
 
 <h3 id="from_bits"><code>from_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L793-L794">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L809-L810">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits(
@@ -113,7 +113,7 @@ Combine individual bits to form x
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L796-L802">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L812-L818">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(
@@ -137,7 +137,7 @@ Args
 
 <h3 id="assert_valid_classical_val_array"><code>assert_valid_classical_val_array</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L804-L810">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L820-L826">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val_array(
@@ -158,6 +158,105 @@ Args
 
 `debug_str`
 : Optional debugging information to use in exception messages.
+
+
+
+
+<h3 id="montgomery_inverse"><code>montgomery_inverse</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L828-L835">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>montgomery_inverse(
+    xm: int, p: int
+) -> int
+</code></pre>
+
+Returns the modular inverse of an integer in montgomery form.
+
+
+Args
+
+`xm`
+: An integer in montgomery form.
+
+`p`
+: The modulus of the finite field.
+
+
+
+
+<h3 id="montgomery_product"><code>montgomery_product</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L837-L845">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>montgomery_product(
+    xm: int, ym: int, p: int
+) -> int
+</code></pre>
+
+Returns the modular product of two integers in montgomery form.
+
+
+Args
+
+`xm`
+: The first montgomery form integer for the product.
+
+`ym`
+: The second montgomery form integer for the product.
+
+`p`
+: The modulus of the finite field.
+
+
+
+
+<h3 id="montgomery_to_uint"><code>montgomery_to_uint</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L847-L854">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>montgomery_to_uint(
+    xm: int, p: int
+) -> int
+</code></pre>
+
+Converts an integer in montgomery form to a normal form integer.
+
+
+Args
+
+`xm`
+: An integer in montgomery form.
+
+`p`
+: The modulus of the finite field.
+
+
+
+
+<h3 id="uint_to_montgomery"><code>uint_to_montgomery</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L856-L863">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>uint_to_montgomery(
+    x: int, p: int
+) -> int
+</code></pre>
+
+Converts an integer into montgomery form.
+
+
+Args
+
+`x`
+: An integer.
+
+`p`
+: The modulus of the finite field.
 
 
 

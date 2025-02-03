@@ -27,6 +27,7 @@
    qualtran/QBit.md
    qualtran/QDType.md
    qualtran/QFxp.md
+   qualtran/QGF.md
    qualtran/QInt.md
    qualtran/QIntOnesComp.md
    qualtran/QMontgomeryUInt.md
@@ -52,6 +53,7 @@
 
    qualtran/testing/BloqCheckException.md
    qualtran/testing/BloqCheckResult.md
+   qualtran/testing/NDArray.md
    qualtran/testing/assert_bloq_example_decompose.md
    qualtran/testing/assert_bloq_example_make.md
    qualtran/testing/assert_bloq_example_qtyping.md
@@ -83,7 +85,6 @@
    qualtran/drawing/ClassicalSimGraphDrawer.md
    qualtran/drawing/GraphDrawer.md
    qualtran/drawing/GraphvizCallGraph.md
-   qualtran/drawing/GraphvizCounts.md
    qualtran/drawing/HLine.md
    qualtran/drawing/LarrowTextBox.md
    qualtran/drawing/LineManager.md
@@ -241,7 +242,6 @@
    :caption: musical_score
 
    qualtran/drawing/musical_score/MusicalScoreEncoder.md
-   qualtran/drawing/musical_score/NDArray.md
    qualtran/drawing/musical_score/SoqData.md
    qualtran/drawing/musical_score/frozen.md
 
@@ -301,7 +301,6 @@
    :hidden:
    :caption: t_complexity_protocol
 
-   qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
    qualtran/cirq_interop/t_complexity_protocol/t_complexity_compat.md
@@ -329,11 +328,13 @@
    qualtran/simulation/tensor/active_space_for_ctrl_spec.md
    qualtran/simulation/tensor/bloq_has_custom_tensors.md
    qualtran/simulation/tensor/bloq_to_dense.md
+   qualtran/simulation/tensor/bloq_to_dense_via_classical_action.md
    qualtran/simulation/tensor/cbloq_to_quimb.md
    qualtran/simulation/tensor/eye_tensor_for_signature.md
    qualtran/simulation/tensor/flatten_for_tensor_contraction.md
    qualtran/simulation/tensor/get_right_and_left_inds.md
    qualtran/simulation/tensor/initialize_from_zero.md
+   qualtran/simulation/tensor/my_tensors_from_classical_action.md
    qualtran/simulation/tensor/quimb_to_dense.md
    qualtran/simulation/tensor/tensor_data_from_unitary_and_signature.md
    qualtran/simulation/tensor/tensor_out_inp_shape_from_signature.md

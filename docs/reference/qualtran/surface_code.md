@@ -1,7 +1,7 @@
 # Module: surface_code
 
 
-
+Physical cost models for surface code architectures.
 
 
 

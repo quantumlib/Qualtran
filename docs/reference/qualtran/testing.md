@@ -1,7 +1,7 @@
 # Module: testing
 
 
-
+Functions for testing bloqs.
 
 
 
@@ -60,6 +60,8 @@
 ## Type Aliases
 
 [`GeneralizerT`](../qualtran/resource_counting/GeneralizerT.md)
+
+[`NDArray`](../qualtran/testing/NDArray.md)
 
 
 

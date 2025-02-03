@@ -62,7 +62,7 @@ The physical properties of a quantum computer.
 )
 </code></pre>
 
-The physical parameters considered in the Beverland et. al. reference.
+The physical parameters considered in the Beverland et al. reference.
 
 
 Args

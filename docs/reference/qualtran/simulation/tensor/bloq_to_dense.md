@@ -19,7 +19,7 @@ Return a contracted, dense ndarray representing the composite bloq.
 <code>qualtran.simulation.tensor.bloq_to_dense(
     bloq: <a href="../../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
     full_flatten: bool = True
-) -> <a href="../../../qualtran/drawing/musical_score/NDArray.html"><code>qualtran.drawing.musical_score.NDArray</code></a>
+) -> <a href="../../../qualtran/testing/NDArray.html"><code>qualtran.testing.NDArray</code></a>
 </code></pre>
 
 

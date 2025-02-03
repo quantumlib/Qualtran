@@ -9,7 +9,7 @@ This symbol is a **type alias**.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>BloqCountDictT = Mapping[
     <a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
-    <a href="../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>
+    Union[int, sympy.core.expr.Expr]
 ]
 </code></pre>
 

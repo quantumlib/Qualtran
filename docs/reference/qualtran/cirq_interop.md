@@ -1,11 +1,10 @@
 # Module: cirq_interop
 
 
-Bi-directional interop between Qualtran & Cirq using Cirq-FT.
+Bi-directional interop between Qualtran & Cirq.
 
 
 
-isort:skip_file
 ## Modules
 
 [`decompose_protocol`](../qualtran/cirq_interop/decompose_protocol.md) module

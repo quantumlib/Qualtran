@@ -33,10 +33,6 @@
 
 [`sexp(...)`](../../qualtran/symbolics/sexp.md)
 
-[`shape(...)`](../../qualtran/symbolics/shape.md)
-
-[`slen(...)`](../../qualtran/symbolics/slen.md)
-
 [`smax(...)`](../../qualtran/symbolics/smax.md): Returns the maximum of the given arguments, which may be symbolic.
 
 [`smin(...)`](../../qualtran/symbolics/smin.md): Returns the minimum of the given arguments, which may be symbolic.

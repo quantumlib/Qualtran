@@ -1,11 +1,10 @@
 # Module: resource_counting
 
 
-Counting resource usage (bloqs, qubits)
+Analysis routines for computing costs and resource counts.
 
 
 
-isort:skip_file
 ## Modules
 
 [`classify_bloqs`](../qualtran/resource_counting/classify_bloqs.md) module

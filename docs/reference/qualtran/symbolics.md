@@ -1,7 +1,7 @@
 # Module: symbolics
 
 
-
+Utilities for simultaneous support for Sympy symbolic objects and concrete values.
 
 
 

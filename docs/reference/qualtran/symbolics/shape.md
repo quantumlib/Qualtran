@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L314-L315">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/types.py#L107-L108">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -19,7 +19,7 @@
   <h4 class="showalways">View aliases</h4>
   <p>
 <b>Main aliases</b>
-<p>`qualtran.symbolics.math_funcs.shape`</p>
+<p>`qualtran.symbolics.types.shape`</p>
 </p>
 </section>
 

@@ -20,7 +20,7 @@ Classify (bin) the T count of a bloq's call graph by type of operation.
     bloq: <a href="../../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
     bloq_classification: Optional[Dict[str, str]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None
-) -> Dict[str, Union[int, <a href="../../../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>]]
+) -> Dict[str, Union[int, sympy.Expr]]
 </code></pre>
 
 

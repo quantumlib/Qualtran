@@ -19,7 +19,7 @@ Contract a quimb tensor network `tn` to a dense matrix consistent with `signatur
 <code>qualtran.simulation.tensor.quimb_to_dense(
     tn: 'qtn.TensorNetwork',
     signature: <a href="../../../qualtran/Signature.html"><code>qualtran.Signature</code></a>
-) -> <a href="../../../qualtran/drawing/musical_score/NDArray.html"><code>qualtran.drawing.musical_score.NDArray</code></a>
+) -> <a href="../../../qualtran/testing/NDArray.html"><code>qualtran.testing.NDArray</code></a>
 </code></pre>
 
 

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L201-L528">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L203-L533">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -88,7 +88,7 @@ y1: ─────y──────────────────
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L251-L291">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L253-L293">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -137,7 +137,7 @@ Raises
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L293-L309">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L295-L311">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -166,7 +166,7 @@ Returns
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L311-L318">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L313-L320">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
@@ -191,12 +191,12 @@ attribute.
 
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L325-L328">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L327-L330">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
-    *, context: cirq.DecompositionContext, **quregs
-) -> cirq.OP_TREE
+    *, context: 'cirq.DecompositionContext', **quregs
+) -> 'cirq.OP_TREE'
 </code></pre>
 
 
@@ -204,7 +204,7 @@ attribute.
 
 <h3 id="on"><code>on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L353-L357">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L355-L359">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on(
@@ -234,12 +234,12 @@ See Also
 
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L359-L362">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L361-L364">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
     **qubit_regs
-) -> cirq.Operation
+) -> 'cirq.Operation'
 </code></pre>
 
 A `cirq.Operation` of this bloq operating on the given qubit registers.
@@ -263,7 +263,7 @@ See Also
 
 <h3 id="__pow__"><code>__pow__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L364-L372">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L366-L374">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__pow__(
@@ -276,12 +276,12 @@ See Also
 
 <h3 id="controlled"><code>controlled</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L452-L503">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L455-L506">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>controlled(
     num_controls: Union[Optional[int], 'CtrlSpec'] = None,
-    control_values: Optional[Union[cirq.ops.AbstractControlValues, Sequence[Union[int,
+    control_values: Optional[Union['cirq.ops.AbstractControlValues', Sequence[Union[int,
         Collection[int]]]]] = None,
     control_qid_shape: Optional[Tuple[int, ...]] = None,
     *,
@@ -341,7 +341,7 @@ Returns
 
 <h3 id="my_tensors"><code>my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L508-L516">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L511-L519">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>my_tensors(

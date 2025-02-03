@@ -1,12 +1,10 @@
 # Module: drawing
 
 
-Draw and visualize bloqs
+Draw and visualize bloqs.
 
 
 
-
-isort:skip_file
 ## Modules
 
 [`bloq_counts_graph`](../qualtran/drawing/bloq_counts_graph.md): Classes for drawing bloq counts graphs with Graphviz.
@@ -52,8 +50,6 @@ isort:skip_file
 [`class MusicalScoreData`](../qualtran/drawing/MusicalScoreData.md): All the data required to draw a musical score.
 
 [`class ClassicalSimGraphDrawer`](../qualtran/drawing/ClassicalSimGraphDrawer.md): A graph drawer that labels each edge with a classical value.
-
-[`class GraphvizCounts`](../qualtran/drawing/GraphvizCounts.md): Draw a bloq call graphs using Graphviz.
 
 [`class GraphvizCallGraph`](../qualtran/drawing/GraphvizCallGraph.md): Draw a bloq call graph using Graphviz with additional data.
 
