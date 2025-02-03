@@ -48,9 +48,8 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
@@ -280,10 +279,10 @@ class DoubleFactorizationOneBody(BlockEncoding):
             in_prep_dag: 1,  # in_prep_l^dag
             rot: 1,  # rotate into system basis  listing 4 pg 54
             # apply CCZ first then CCCZ, the cost is 1 + 2 Toffolis (step 4e, and 7)
-            Toffoli(): 1,
+            ApplyControlledZs(cvs=(1, 1), bitsize=5): 1,
             rot_dag: 1,  # Undo rotations
             CSwap(self.num_spin_orb // 2): 2,  # Swaps for spins
-            ArbitraryClifford(n=1): 1,  # 2 Hadamards for spin superposition
+            Hadamard(): 2,  # 2 Hadamards for spin superposition
         }
 
     def __str__(self) -> str:

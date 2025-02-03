@@ -20,7 +20,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
+from qualtran import Bloq, BloqBuilder, CtrlSpec, QInt, QUInt
 from qualtran.bloqs.arithmetic.addition import (
     _add_diff_size_regs,
     _add_k,
@@ -36,6 +36,7 @@ from qualtran.bloqs.arithmetic.addition import (
     AddK,
     OutOfPlaceAdder,
 )
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
@@ -315,16 +316,19 @@ def test_out_of_place_adder():
 
 def test_controlled_add_k():
     n, k = sympy.symbols('n k')
-    addk = AddK(n, k)
-    assert addk.controlled() == AddK(n, k, cvs=(1,))
-    assert addk.controlled(CtrlSpec(cvs=0)) == AddK(n, k, cvs=(0,))
+    addk = AddK(QUInt(n), k)
+    assert addk.controlled() == AddK(QUInt(n), k, is_controlled=True)
+    _, sigma = addk.controlled(CtrlSpec(cvs=0)).call_graph(max_depth=1)
+    assert sigma == {addk.controlled(): 1, XGate(): 2}
 
 
 @pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [5, 8])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_add_k_decomp_unsigned(bitsize, k, cvs):
-    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+    bloq: Bloq = AddK(QUInt(bitsize), k=k)
+    if cvs:
+        bloq = bloq.controlled(CtrlSpec(cvs=cvs))
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
@@ -332,7 +336,9 @@ def test_add_k_decomp_unsigned(bitsize, k, cvs):
 @pytest.mark.parametrize('k', [-5, 8])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_add_k_decomp_signed(bitsize, k, cvs):
-    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+    bloq: Bloq = AddK(QInt(bitsize), k=k)
+    if cvs:
+        bloq = bloq.controlled(CtrlSpec(cvs=cvs))
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
@@ -340,16 +346,18 @@ def test_add_k_decomp_signed(bitsize, k, cvs):
     'bitsize,k,x,cvs,ctrls,result',
     [
         (5, 1, 2, (), (), 3),
-        (5, 3, 2, (1,), (1,), 5),
+        (5, 3, 2, (1,), 1, 5),
         (5, 2, 0, (1, 0), (1, 0), 2),
         (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
     ],
 )
 def test_classical_add_k_unsigned(bitsize, k, x, cvs, ctrls, result):
-    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+    bloq: Bloq = AddK(QUInt(bitsize), k=k)
+    if cvs:
+        bloq = bloq.controlled(CtrlSpec(cvs=cvs))
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
-    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+    bloq_classical = bloq.call_classically(ctrl=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrl=ctrls, x=x)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):
@@ -369,10 +377,12 @@ def test_classical_add_signed_overflow(bitsize):
     'bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2), (6, -3, 2, (), (), -1)]
 )
 def test_classical_add_k_signed(bitsize, k, x, cvs, ctrls, result):
-    bloq = AddK(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+    bloq: Bloq = AddK(QInt(bitsize), k=k)
+    if cvs:
+        bloq = bloq.controlled(CtrlSpec(cvs=cvs))
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
-    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+    bloq_classical = bloq.call_classically(ctrl=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrl=ctrls, x=x)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):

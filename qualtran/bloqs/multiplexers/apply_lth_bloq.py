@@ -17,12 +17,21 @@ from typing import cast, Iterable, Optional, Sequence, Set, Tuple, Union
 
 import cirq
 import numpy as np
-from attrs import field, frozen
+from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, BQUInt, QBit, Register, Side
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QBit,
+    Register,
+    Side,
+)
 from qualtran._infra.gate_with_registers import merge_qubits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.resource_counting import BloqCountT
@@ -30,7 +39,7 @@ from qualtran.symbolics import ceil, log2
 
 
 @frozen
-class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
+class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
     r"""A SELECT operation that executes one of a list of bloqs $U_l$ based on a quantum index:
 
     $$
@@ -51,8 +60,8 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
         [user_spec]: The output registers of the bloqs in `ops`.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](
-        https://arxiv.org/abs/1805.03662). Babbush et. al. (2018). Section III.A. and Figure 7.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
     # type ignore needed here for Bloq as NDArray parameter
@@ -89,7 +98,7 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(self.ops.flat[0].signature)
+        return tuple(self.ops.flat[0].signature)  # type: ignore
 
     def nth_operation_callgraph(self, **kwargs: int) -> Set[BloqCountT]:
         return {(self.ops[tuple(kwargs.values())].controlled(), 1)}
@@ -107,6 +116,16 @@ class ApplyLthBloq(UnaryIterationGate, SpecializedSingleQubitControlledExtension
         bloq = self.ops[tuple(selection_indices)]
         target_qubits = merge_qubits(bloq.signature, **targets)
         return bloq.controlled().on(control, *target_qubits)
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
+        )
 
 
 @bloq_example

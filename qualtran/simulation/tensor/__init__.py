@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Functionality for the `Bloq.tensor_contract()` protocol."""
 
 from ._dense import bloq_to_dense, get_right_and_left_inds, quimb_to_dense
 from ._flattening import bloq_has_custom_tensors, flatten_for_tensor_contraction
@@ -22,4 +23,8 @@ from ._tensor_data_manipulation import (
     tensor_data_from_unitary_and_signature,
     tensor_out_inp_shape_from_signature,
     tensor_shape_from_signature,
+)
+from ._tensor_from_classical import (
+    bloq_to_dense_via_classical_action,
+    my_tensors_from_classical_action,
 )

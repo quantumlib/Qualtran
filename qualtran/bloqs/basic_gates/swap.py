@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
-import cirq
 import numpy as np
 import sympy
 from attrs import frozen
@@ -36,14 +35,15 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop import CirqQuregT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
+    import cirq
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, CompositeBloq
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -82,10 +82,9 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
+        import cirq
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
+        return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -106,19 +105,15 @@ class TwoBitSwap(Bloq):
         return self
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec != CtrlSpec():
-            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
-        cswap = TwoBitCSwap()
-
-        def adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (ctrl,) = ctrl_soqs
-            ctrl, x, y = bb.add(cswap, ctrl=ctrl, x=in_soqs['x'], y=in_soqs['y'])
-            return [ctrl], [x, y]
-
-        return cswap, adder
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec,
+            current_ctrl_bit=None,
+            bloq_with_ctrl=TwoBitCSwap(),
+            ctrl_reg_name='ctrl',
+        )
 
 
 @bloq_example
@@ -143,7 +138,7 @@ class TwoBitCSwap(Bloq):
 
     References:
         [An algorithm for the T-count](https://arxiv.org/abs/1308.4134).
-        Gosset et. al. 2013. Figure 5.2.
+        Gosset et al. 2013. Figure 5.2.
     """
 
     @cached_property
@@ -154,6 +149,8 @@ class TwoBitCSwap(Bloq):
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def to_clifford_t_circuit(self) -> 'cirq.FrozenCircuit':
+        import cirq
+
         ctrl = cirq.NamedQubit('ctrl')
         x = cirq.NamedQubit('x')
         y = cirq.NamedQubit('y')
@@ -199,6 +196,13 @@ class TwoBitCSwap(Bloq):
             return Circle(filled=True)
         else:
             return TextBox('×')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
+        )
 
 
 @bloq_example
@@ -295,7 +299,7 @@ def _swap_small() -> Swap:
     return swap_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swap_large() -> Swap:
     swap_large = Swap(bitsize=64)
     return swap_large
@@ -354,12 +358,16 @@ class CSwap(GateWithRegisters):
 
     @classmethod
     def make_on(
-        cls, **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
-    ) -> cirq.Operation:
+        cls, **quregs: Union[Sequence['cirq.Qid'], NDArray['cirq.Qid']]  # type: ignore[type-var]
+    ) -> 'cirq.Operation':
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(bitsize=len(quregs['x'])).on_registers(**quregs)
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
         if not args.use_unicode_characters:
             return cirq.CircuitDiagramInfo(
                 ("@",) + ("swap_x",) * self.bitsize + ("swap_y",) * self.bitsize

@@ -33,7 +33,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import prod, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, CostKey, SympySymbolAllocator
 
 
 def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
@@ -75,10 +75,10 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-            Babbush et. al. (2018). Figure 1.
+        Babbush et al. 2018. Figure 1.
 
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
-            Babbush et. al. (2020). Figure 3.
+        Babbush et al. 2020. Figure 3.
     """
 
     @classmethod
@@ -183,6 +183,17 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
+
+    def my_static_costs(self, cost_key: "CostKey"):
+        from qualtran.resource_counting import QubitCount
+
+        if isinstance(cost_key, QubitCount):
+            return self.signature.n_qubits() + sum(self.selection_bitsizes) - 1 + self.num_controls
+
+        return NotImplemented
+
+    def __str__(self):
+        return f'QROM({self.data_shape}, {self.target_shapes}, {self.target_bitsizes})'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

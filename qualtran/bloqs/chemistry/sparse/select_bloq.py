@@ -16,11 +16,23 @@
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
+import attrs
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BQUInt, QAny, QBit, Register, SoquetT
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import SGate
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
@@ -30,7 +42,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class SelectSparse(SpecializedSingleQubitControlledExtension, SelectOracle):  # type: ignore[misc]
+class SelectSparse(SelectOracle):
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
@@ -156,6 +168,19 @@ class SelectSparse(SpecializedSingleQubitControlledExtension, SelectOracle):  # 
         c_maj_x = SelectedMajoranaFermion(sel_pa, target_gate=cirq.X)
         c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
         return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                attrs.evolve(self, control_val=cv),
+                'control',
+            ),
+        )
 
 
 @bloq_example

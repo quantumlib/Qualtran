@@ -12,9 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import sympy
 from attrs import frozen
 
-from qualtran.symbolics import SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicInt
+
+ec_times_x = sympy.Function("ec_times_x")
+ec_times_y = sympy.Function("ec_times_y")
+"""Support purely-symbolic ECPoint operations.
+https://docs.sympy.org/latest/guides/custom-functions.html#easy-cases-fully-symbolic-or-fully-evaluated
+"""
 
 
 @frozen
@@ -63,15 +70,26 @@ class ECPoint:
             lam_num = (other.y - self.y) % self.mod
             lam_denom = (other.x - self.x) % self.mod
 
-        lam = (lam_num * pow(lam_denom, -1, mod=self.mod)) % self.mod
+        lam = (lam_num * pow(int(lam_denom), -1, mod=int(self.mod))) % self.mod
         xr = (lam**2 - other.x - self.x) % self.mod
         yr = (lam * (self.x - xr) - self.y) % self.mod
         return ECPoint(xr, yr, mod=self.mod, curve_a=self.curve_a)
 
-    def __mul__(self, other):
-        assert other > 0, other
+    def __mul__(self, times):
+        if times == 0:
+            return ECPoint.inf(mod=self.mod, curve_a=self.curve_a)
+        if is_symbolic(self.x, self.y):
+            # Symbolic case: use sympy.Function to opaquely represent the
+            # multiplication operation
+            return ECPoint(
+                ec_times_x(self.x, times),
+                ec_times_y(self.y, times),
+                mod=self.mod,
+                curve_a=self.curve_a,
+            )
+        # Otherwise, multiplication by an integer is repeated addition
         x = self
-        for _ in range(other - 1):
+        for _ in range(times - 1):
             x = x + self
 
         return x

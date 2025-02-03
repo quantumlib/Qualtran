@@ -88,8 +88,19 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'qubitization_qpe_chem_thc',  # too slow
         'walk_op_chem_sparse',
         'qubitization_qpe_sparse_chem',  # too slow
+        'qubitization_qpe_ising',
         'trott_unitary',
         'symbolic_hamsim_by_gqsp',
+        'gf16_addition',  # cannot serialize QGF
+        'gf2_addition_symbolic',  # cannot serialize QGF
+        'gf16_add_k',  # cannot serialize QGF
+        'gf2_add_k_symbolic',  # cannot serialize QGF
+        'gf16_multiplication',  # cannot serialize QGF
+        'gf2_multiplication_symbolic',  # cannot serialize QGF
+        'gf16_square',  # cannot serialize QGF
+        'gf2_square_symbolic',  # cannot serialize QGF
+        'gf16_inverse',  # cannot serialize QGF
+        'gf2_inverse_symbolic',  # cannot serialize QGF
         'gqsp_1d_ising',
         'auto_partition',
         'unitary_block_encoding',
@@ -106,6 +117,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'state_prep_alias_symb',  # cannot serialize Shaped
         'sparse_matrix_block_encoding',
         'sparse_matrix_symb_block_encoding',
+        'sparse_matrix_hermitian_block_encoding',
+        'sparse_matrix_symb_hermitian_block_encoding',
         'sparse_state_prep_alias_symb',  # cannot serialize Shaped
         'sparse_permutation',  # contains nested tuple of inhomogeneous shape
         'permutation_cycle_symb',  # cannot serialize Shaped
@@ -116,6 +129,7 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'state_prep_via_rotation_symb',  # cannot serialize HasLength
         'state_prep_via_rotation_symb_phasegrad',  # cannot serialize Shaped
         'sparse_state_prep_via_rotations',  # cannot serialize Permutation
+        'sparse_state_prep_via_rotations_with_large_target_bitsize',  # setting an array element with a sequence.
         'explicit_matrix_block_encoding',  # cannot serialize AutoPartition
         'symmetric_banded_matrix_block_encoding',  # cannot serialize AutoPartition
         'chebyshev_poly_even',
@@ -124,6 +138,12 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'black_box_select',  # cannot serialize AutoPartition
         'black_box_prepare',  # cannot serialize AutoPartition
         'kaiser_window_state_symbolic',  # Split cannot have a symbolic data type.
+        'ctrl_on_symbolic_cv',  # cannot serialize Shaped
+        'ctrl_on_symbolic_cv_multi',  # cannot serialize Shaped
+        'ctrl_on_symbolic_n_ctrls',  # cannot serialize Shaped
+        'has_duplicates_symb_len',  # cannot serialize HasLength
+        'symm_diff_symb',  # round trip fail: sympy assumptions not serialized
+        'symm_diff_equal_size_symb',  # round trip fail: sympy assumptions not serialized
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 

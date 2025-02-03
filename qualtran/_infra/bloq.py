@@ -110,9 +110,6 @@ class Bloq(metaclass=abc.ABCMeta):
         about this bloq.
         """
 
-    def pretty_name(self) -> str:
-        return str(self)
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
@@ -397,7 +394,12 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled
+        from qualtran import Controlled, CtrlSpec
+        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+        if ctrl_spec != CtrlSpec():
+            # reduce controls to a single qubit
+            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
         return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
@@ -434,9 +436,6 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 
         return t_complexity(self)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return NotImplemented
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
@@ -537,7 +536,7 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.drawing import directional_text_box, Text
 
         if reg is None:
-            name = self.pretty_name()
+            name = str(self)
             if len(name) <= 10:
                 return Text(name)
             return Text(name[:8] + '..')

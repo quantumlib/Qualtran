@@ -49,10 +49,8 @@ def _pretty_name(bloq: Bloq) -> str:
 
     from qualtran.serialization.bloq import _iter_fields
 
-    ret = bloq.pretty_name()
-    if bloq.pretty_name.__qualname__.startswith('Bloq.') and bloq.__str__.__qualname__.startswith(
-        'Bloq.'
-    ):
+    ret = str(bloq)
+    if bloq.__str__.__qualname__.startswith('Bloq.'):
         for field in _iter_fields(bloq):
             ret += f'[{_pretty_arg(getattr(bloq, field.name))}]'
     return ret

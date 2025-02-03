@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, Signature
+from qualtran import Bloq, bloq_example, Register, Signature
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
@@ -25,6 +25,7 @@ from qualtran.bloqs.chemistry.black_boxes import QROAM, QROAMTwoRegs
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -69,8 +70,10 @@ class InnerPrepareSingleFactorization(Bloq):
     kp1: int = 1
     kp2: int = 1
 
-    def pretty_name(self) -> str:
-        return "In-Prep"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("In-Prep")
+        return super().wire_symbol(reg, idx)
 
     @cached_property
     def signature(self) -> Signature:
@@ -133,8 +136,10 @@ class OuterPrepareSingleFactorization(Bloq):
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
 
-    def pretty_name(self) -> str:
-        return "OuterPrep"
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("OuterPrep")
+        return super().wire_symbol(reg, idx)
 
     @cached_property
     def signature(self) -> Signature:

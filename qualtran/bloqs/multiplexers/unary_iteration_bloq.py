@@ -404,7 +404,7 @@ class UnaryIterationGate(GateWithRegisters):
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
-        Babbush et. al. (2018). Section III.A.
+        Babbush et al. (2018). Section III.A.
     """
 
     @cached_property

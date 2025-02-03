@@ -17,11 +17,16 @@ from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, Xor, XorK
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     CLinearDepthGreaterThan,
+    Equals,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthHalfGreaterThan,
+    LinearDepthHalfGreaterThanEqual,
+    LinearDepthHalfLessThan,
+    LinearDepthHalfLessThanEqual,
     SingleQubitCompare,
 )
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd

@@ -21,7 +21,7 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.bookkeeping import Join, Split
-from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
+from qualtran.bloqs.factoring.rsa.rsa_mod_exp import _modexp, _modexp_small, _modexp_symb, ModExp
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
@@ -40,17 +40,13 @@ def test_mod_exp_consistent_classical():
 
         # Choose an exponent in a range. Set exp_bitsize=ne bit enough to fit.
         exponent = rs.randint(1, 2**n)
-        ne = 2 * n
 
-        # Choose a base smaller than mod.
-        base = rs.randint(1, mod)
-        while np.gcd(base, mod) != 1:
-            base = rs.randint(1, mod)
-
-        bloq = ModExp(base=base, exp_bitsize=ne, x_bitsize=n, mod=mod)
+        bloq = ModExp.make_for_shor(big_n=mod, rs=rs)
         ret1 = bloq.call_classically(exponent=exponent)
         ret2 = bloq.decompose_bloq().call_classically(exponent=exponent)
-        assert ret1 == ret2
+        assert len(ret1) == len(ret2)
+        for i in range(len(ret1)):
+            np.testing.assert_array_equal(ret1[i], ret2[i])
 
 
 def test_modexp_symb_manual():
@@ -58,7 +54,7 @@ def test_modexp_symb_manual():
     modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     assert cast(Text, modexp.wire_symbol(reg=None)).text == 'g^e % N'
     counts = modexp.bloq_counts()
-    counts_by_bloq = {bloq.pretty_name(): n for bloq, n in counts.items()}
+    counts_by_bloq = {str(bloq): n for bloq, n in counts.items()}
     assert counts_by_bloq['|1>'] == 1
     assert counts_by_bloq['CModMulK'] == n_e
 
@@ -93,19 +89,11 @@ def test_mod_exp_t_complexity():
     assert tcomp.t > 0
 
 
-def test_modexp(bloq_autotester):
-    bloq_autotester(_modexp)
-
-
-def test_modexp_symb(bloq_autotester):
-    bloq_autotester(_modexp_symb)
+@pytest.mark.parametrize('bloq', [_modexp, _modexp_symb, _modexp_small])
+def test_modexp(bloq_autotester, bloq):
+    bloq_autotester(bloq)
 
 
 @pytest.mark.notebook
 def test_intro_notebook():
     execute_notebook('factoring-via-modexp')
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('mod_exp')

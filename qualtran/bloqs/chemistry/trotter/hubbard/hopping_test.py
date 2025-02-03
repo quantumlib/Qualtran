@@ -11,15 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import Bloq
-from qualtran.bloqs.basic_gates import Rz, TGate, ZPowGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
     _hopping_tile,
     _hopping_tile_hwp,
     _plaquette,
 )
-from qualtran.resource_counting.generalizers import PHI
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
 def test_hopping_tile(bloq_autotester):
@@ -30,29 +27,18 @@ def test_hopping_plaquette(bloq_autotester):
     bloq_autotester(_plaquette)
 
 
-def catch_rotations(bloq) -> Bloq:
-    if isinstance(bloq, (Rz, ZPowGate)):
-        if isinstance(bloq, ZPowGate):
-            return Rz(angle=PHI)
-        elif abs(float(bloq.angle)) < 1e-12:
-            return ArbitraryClifford(1)
-        else:
-            return Rz(angle=PHI)
-    return bloq
-
-
 def test_hopping_tile_t_counts():
     bloq = _hopping_tile()
-    _, counts = bloq.call_graph(generalizer=catch_rotations)
-    assert counts[TGate()] == 8 * bloq.length**2 // 2
-    assert counts[Rz(PHI)] == 2 * bloq.length**2 // 2
+    costs = get_cost_value(bloq, QECGatesCost())
+    assert costs.t == 8 * bloq.length**2 // 2
+    assert costs.rotation == 2 * bloq.length**2 // 2
 
 
 def test_hopping_tile_hwp_t_counts():
     bloq = _hopping_tile_hwp()
-    _, counts = bloq.call_graph(generalizer=catch_rotations)
+    costs = get_cost_value(bloq, QECGatesCost())
     n_rot_par = bloq.length**2 // 2
-    assert counts[Rz(PHI)] == 2 * n_rot_par.bit_length()
-    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (
+    assert costs.rotation == 2 * n_rot_par.bit_length()
+    assert costs.total_t_count(ts_per_rotation=0) == 8 * bloq.length**2 // 2 + 2 * 4 * (
         n_rot_par - n_rot_par.bit_count()
     )

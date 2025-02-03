@@ -18,7 +18,6 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QUInt, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import Text, TextBox
 
@@ -69,10 +68,6 @@ class ToContiguousIndex(Bloq):
         self, mu: 'ClassicalValT', nu: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return TComplexity(t=4 * num_toffoli)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:

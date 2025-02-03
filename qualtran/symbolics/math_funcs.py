@@ -11,19 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Iterable, overload, Sized, Tuple, TypeVar, Union
+from typing import cast, Iterable, overload, TypeVar
 
 import numpy as np
 import sympy
 
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    Shaped,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics.types import is_symbolic, SymbolicComplex, SymbolicFloat, SymbolicInt
 
 
 def pi(*args) -> SymbolicFloat:
@@ -31,13 +24,11 @@ def pi(*args) -> SymbolicFloat:
 
 
 @overload
-def log2(x: float) -> float:
-    ...
+def log2(x: float) -> float: ...
 
 
 @overload
-def log2(x: sympy.Expr) -> sympy.Expr:
-    ...
+def log2(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def log2(x: SymbolicFloat) -> SymbolicFloat:
@@ -49,13 +40,11 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
-def ln(x: float) -> float:
-    ...
+def ln(x: float) -> float: ...
 
 
 @overload
-def ln(x: sympy.Expr) -> sympy.Expr:
-    ...
+def ln(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def ln(x: SymbolicFloat) -> SymbolicFloat:
@@ -67,13 +56,11 @@ def ln(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
-def sexp(x: complex) -> complex:
-    ...
+def sexp(x: complex) -> complex: ...
 
 
 @overload
-def sexp(x: sympy.Expr) -> sympy.Expr:
-    ...
+def sexp(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def sexp(x: SymbolicComplex) -> SymbolicComplex:
@@ -83,13 +70,11 @@ def sexp(x: SymbolicComplex) -> SymbolicComplex:
 
 
 @overload
-def sarg(x: complex) -> float:
-    ...
+def sarg(x: complex) -> float: ...
 
 
 @overload
-def sarg(x: sympy.Expr) -> sympy.Expr:
-    ...
+def sarg(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def sarg(x: SymbolicComplex) -> SymbolicFloat:
@@ -100,13 +85,11 @@ def sarg(x: SymbolicComplex) -> SymbolicFloat:
 
 
 @overload
-def sabs(x: float) -> float:
-    ...
+def sabs(x: float) -> float: ...
 
 
 @overload
-def sabs(x: sympy.Expr) -> sympy.Expr:
-    ...
+def sabs(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def sabs(x: SymbolicFloat) -> SymbolicFloat:
@@ -114,13 +97,11 @@ def sabs(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
-def ssqrt(x: float) -> float:
-    ...
+def ssqrt(x: float) -> float: ...
 
 
 @overload
-def ssqrt(x: sympy.Expr) -> sympy.Expr:
-    ...
+def ssqrt(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
@@ -130,13 +111,11 @@ def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
-def ceil(x: float) -> int:
-    ...
+def ceil(x: float) -> int: ...
 
 
 @overload
-def ceil(x: sympy.Expr) -> sympy.Expr:
-    ...
+def ceil(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def ceil(x: SymbolicFloat) -> SymbolicInt:
@@ -146,13 +125,11 @@ def ceil(x: SymbolicFloat) -> SymbolicInt:
 
 
 @overload
-def floor(x: float) -> int:
-    ...
+def floor(x: float) -> int: ...
 
 
 @overload
-def floor(x: sympy.Expr) -> sympy.Expr:
-    ...
+def floor(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def floor(x: SymbolicFloat) -> SymbolicInt:
@@ -162,13 +139,11 @@ def floor(x: SymbolicFloat) -> SymbolicInt:
 
 
 @overload
-def bit_length(x: float) -> int:
-    ...
+def bit_length(x: float) -> int: ...
 
 
 @overload
-def bit_length(x: sympy.Expr) -> sympy.Expr:
-    ...
+def bit_length(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def bit_length(x: SymbolicFloat) -> SymbolicInt:
@@ -253,13 +228,11 @@ def ssum(args: Iterable[SymbolicT]) -> SymbolicT:
 
 
 @overload
-def acos(x: float) -> float:
-    ...
+def acos(x: float) -> float: ...
 
 
 @overload
-def acos(x: sympy.Expr) -> sympy.Expr:
-    ...
+def acos(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def acos(x: SymbolicFloat) -> SymbolicFloat:
@@ -269,50 +242,16 @@ def acos(x: SymbolicFloat) -> SymbolicFloat:
 
 
 @overload
-def sconj(x: complex) -> complex:
-    ...
+def sconj(x: complex) -> complex: ...
 
 
 @overload
-def sconj(x: sympy.Expr) -> sympy.Expr:
-    ...
+def sconj(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def sconj(x: SymbolicComplex) -> SymbolicComplex:
     """Compute the complex conjugate."""
     return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
-
-
-@overload
-def slen(x: Sized) -> int:
-    ...
-
-
-@overload
-def slen(x: Union[Shaped, HasLength]) -> sympy.Expr:
-    ...
-
-
-def slen(x: Union[Sized, Shaped, HasLength]) -> SymbolicInt:
-    if isinstance(x, Shaped):
-        return x.shape[0]
-    if isinstance(x, HasLength):
-        return x.n
-    return len(x)
-
-
-@overload
-def shape(x: np.ndarray) -> Tuple[int, ...]:
-    ...
-
-
-@overload
-def shape(x: Shaped) -> Tuple[SymbolicInt, ...]:
-    ...
-
-
-def shape(x: Union[np.ndarray, Shaped]):
-    return x.shape
 
 
 def is_zero(x: SymbolicInt) -> bool:

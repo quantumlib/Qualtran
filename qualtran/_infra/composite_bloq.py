@@ -880,12 +880,10 @@ class BloqBuilder:
         return None
 
     @overload
-    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]:
-        ...
+    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: int) -> SoquetT:
-        ...
+    def add_register(self, reg: str, bitsize: int) -> SoquetT: ...
 
     def add_register(
         self, reg: Union[str, Register], bitsize: Optional[int] = None
@@ -1236,12 +1234,13 @@ class BloqBuilder:
 
         return self.add(Split(dtype=soq.reg.dtype), reg=soq)
 
-    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:  # type: ignore[type-var]
+    def join(self, soqs: SoquetInT, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.bookkeeping import Join
 
         try:
+            soqs = np.asarray(soqs)
             (n,) = soqs.shape
-        except AttributeError:
+        except (AttributeError, ValueError):
             raise ValueError("`join` expects a 1-d array of input soquets to join.") from None
 
         if not all(soq.reg.bitsize == 1 for soq in soqs):

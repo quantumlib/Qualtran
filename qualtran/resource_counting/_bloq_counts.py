@@ -252,7 +252,7 @@ class GateCounts:
         )
 
     def total_beverland_count(self) -> Dict[str, SymbolicInt]:
-        r"""Counts used by Beverland. et. al. using notation from the reference.
+        r"""Counts used by Beverland et al. using notation from the reference.
 
          - $M_\mathrm{meas}$ is the number of measurements.
          - $M_R$ is the number of rotations.
@@ -297,7 +297,10 @@ class QECGatesCost(CostKey[GateCounts]):
         from qualtran.bloqs.mcmt import And, MultiTargetCNOT
 
         if self.legacy_shims:
-            legacy_val = bloq._t_complexity_()
+            if hasattr(bloq, '_t_complexity_'):
+                legacy_val = bloq._t_complexity_()
+            else:
+                legacy_val = NotImplemented
             if legacy_val is not NotImplemented:
                 warnings.warn(
                     "Please migrate explicit cost annotations to the general "

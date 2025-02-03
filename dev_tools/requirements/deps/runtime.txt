@@ -1,11 +1,12 @@
 # core dependencies
-attrs
+attrs>=23.2.0
 cachetools>=5.3
 networkx
 numpy
 sympy
 cirq-core==1.4
 fxpmath
+galois
 
 # qualtran/testing.py
 nbconvert
@@ -30,8 +31,8 @@ qsharp
 qsharp-widgets
 
 # qref bartiq interop
-qref>=0.7.0
-bartiq>=0.5.1
+qref==0.9.0
+bartiq==0.9.0
 
 # serialization
 protobuf

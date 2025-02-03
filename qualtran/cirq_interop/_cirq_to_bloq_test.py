@@ -17,6 +17,7 @@ import attr
 import cirq
 import numpy as np
 import pytest
+import sympy
 from attrs import frozen
 
 import qualtran
@@ -34,11 +35,12 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
+from qualtran.bloqs.basic_gates import CNOT, CZPowGate, GlobalPhase, OneState, YPowGate
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
 
 @frozen
@@ -98,7 +100,7 @@ def test_bloq_decompose():
     ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestCNOT'
+    assert str(tb) == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
     circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)
@@ -228,3 +230,16 @@ def test_cirq_gate_as_bloq_decompose_raises():
 
 def test_cirq_gate_as_bloq_diagram_info():
     assert cirq.circuit_diagram_info(GlobalPhase(exponent=0.5)) is None
+
+
+def test_cirq_gate_cost_via_decomp():
+    theta = sympy.Symbol("theta", real=True)
+    cirq_swappow = cirq.SwapPowGate(exponent=theta)
+
+    swappow_bloq = CirqGateAsBloq(cirq_swappow)
+
+    _, sigma = swappow_bloq.call_graph()
+    assert sigma == {CNOT(): 2, YPowGate(0.5): 1, YPowGate(-0.5): 1, CZPowGate(theta): 1}
+
+    gc_swappow = get_cost_value(swappow_bloq, QECGatesCost())
+    assert gc_swappow == GateCounts(clifford=4, rotation=1)

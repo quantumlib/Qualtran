@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 from functools import cached_property
-from typing import Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -21,6 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QFxp, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
+from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -164,8 +165,10 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y = x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y=x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # y * ((2 + b^2 + delta) + y^2 x)
@@ -197,8 +200,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         out: Output register to store polynomial approximation to inverse square root.
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/pdf/2308.12352.pdf)
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352).
     """
 
     x_sq_bitsize: int
@@ -215,8 +217,10 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
-        return 'y ~ x^{-1/2}'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("y~x^{-1/2}")
+        return super().wire_symbol(reg, idx)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # This should probably be scale int by float rather than 3 real

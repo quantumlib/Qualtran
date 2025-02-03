@@ -75,6 +75,7 @@ Bloqs Library
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
     arithmetic/trigonometric/trigonometric.ipynb
+    arithmetic/lists/lists.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -83,9 +84,20 @@ Bloqs Library
     mod_arithmetic/mod_addition.ipynb
     mod_arithmetic/mod_subtraction.ipynb
     mod_arithmetic/mod_multiplication.ipynb
-    factoring/mod_exp.ipynb
+    mod_arithmetic/mod_division.ipynb
+    factoring/rsa/rsa.ipynb
     factoring/ecc/ec_add.ipynb
     factoring/ecc/ecc.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: GF Arithmetic:
+
+    gf_arithmetic/gf2_multiplication.ipynb
+    gf_arithmetic/gf2_addition.ipynb
+    gf_arithmetic/gf2_add_k.ipynb
+    gf_arithmetic/gf2_square.ipynb
+    gf_arithmetic/gf2_inverse.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -97,6 +109,8 @@ Bloqs Library
     rotations/phasing_via_cost_function.ipynb
     rotations/phase_gradient.ipynb
     rotations/hamming_weight_phasing.ipynb
+    rotations/zpow_via_phase_gradient.ipynb
+    rotations/rz_via_phase_gradient.ipynb
     rotations/programmable_rotation_gate_array.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
@@ -119,8 +133,15 @@ Bloqs Library
     block_encoding/phase.ipynb
     block_encoding/linear_combination.ipynb
     block_encoding/sparse_matrix.ipynb
+    block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Optimization:
+
+    optimization/k_xor_sat/kikuchi_guiding_state.ipynb
 
 .. toctree::
     :maxdepth: 2

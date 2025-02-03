@@ -122,7 +122,7 @@ def test_against_classical_values(dtype):
     else:
         R1 = range(8)
         R2 = range(32)
-    for (a, b) in itertools.product(R1, R2):
+    for a, b in itertools.product(R1, R2):
         ref = subtract.call_classically(a=a, b=b)
         comp = cbloq.call_classically(a=a, b=b)
         assert ref == comp
@@ -160,3 +160,12 @@ def test_subtract_from_bloq_decomposition():
         want[(a << 4) | c][a_b] = 1
     got = gate.tensor_contract()
     np.testing.assert_allclose(got, want)
+
+
+@pytest.mark.parametrize('bitsize', range(2, 5))
+def test_subtractfrom_classical_action(bitsize):
+    dtype = QInt(bitsize)
+    blq = SubtractFrom(dtype)
+    qlt_testing.assert_consistent_classical_action(
+        blq, a=tuple(dtype.get_classical_domain()), b=tuple(dtype.get_classical_domain())
+    )

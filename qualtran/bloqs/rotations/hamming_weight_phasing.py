@@ -85,8 +85,7 @@ class HammingWeightPhasing(GateWithRegisters):
         out = bb.split(out)
         for i in range(len(out)):
             out[-(i + 1)] = bb.add(
-                ZPowGate(exponent=(2**i) * self.exponent, eps=self.eps / len(out)),
-                q=out[-(i + 1)],
+                ZPowGate(exponent=(2**i) * self.exponent, eps=self.eps / len(out)), q=out[-(i + 1)]
             )
         out = bb.join(out, dtype=QUInt(self.bitsize.bit_length()))
         soqs['x'] = bb.add(
@@ -155,8 +154,8 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
             apply the phasing via addition.
 
     References:
-        1. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix A: Addition for controlled rotations
     """
 
     bitsize: int

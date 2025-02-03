@@ -42,7 +42,7 @@ class CSwapApprox(GateWithRegisters):
     r"""Approximately implements a multi-target controlled swap unitary using only $4n$ T-gates.
 
     Implements $\mathrm{CSWAP}_n = |0 \rangle\langle 0| I + |1 \rangle\langle 1| \mathrm{SWAP}_n$
-    such that the output state is correct up to a global phase factor of +1 / -1.
+    such that the output state is correct up to a relative phase factor of +1/-1 in the standard basis.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm
     and thus ignored. See the reference for more details.
@@ -57,7 +57,7 @@ class CSwapApprox(GateWithRegisters):
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
-        Low et. al. 2018. See Appendix B.2.c.
+        Low et al. 2018. See Appendix B.2.c.
     """
 
     bitsize: SymbolicInt

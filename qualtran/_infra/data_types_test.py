@@ -15,13 +15,12 @@ import math
 import random
 from typing import Any, Sequence, Union
 
-import cirq
 import numpy as np
 import pytest
 import sympy
 from numpy.typing import NDArray
 
-from qualtran.symbolics import is_symbolic
+from qualtran.symbolics import ceil, is_symbolic, log2
 
 from .data_types import (
     BQUInt,
@@ -31,6 +30,7 @@ from .data_types import (
     QBit,
     QDType,
     QFxp,
+    QGF,
     QInt,
     QIntOnesComp,
     QMontgomeryUInt,
@@ -135,13 +135,49 @@ def test_qmontgomeryuint():
     assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
 
 
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_operations(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    # Convert value to montgomery form and get the modular inverse.
+    val_m = qmontgomeryuint_8.uint_to_montgomery(val, p)
+    mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m, p)
+
+    # Calculate the product in montgomery form and convert back to normal form for assertion.
+    assert (
+        qmontgomeryuint_8.montgomery_to_uint(
+            qmontgomeryuint_8.montgomery_product(val_m, mod_inv, p), p
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_conversions(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    assert val == qmontgomeryuint_8.montgomery_to_uint(
+        qmontgomeryuint_8.uint_to_montgomery(val, p), p
+    )
+
+
+def test_qgf():
+    qgf_256 = QGF(characteristic=2, degree=8)
+    assert str(qgf_256) == 'QGF(2**8)'
+    assert qgf_256.num_qubits == 8
+    p, m = sympy.symbols('p, m', integer=True, positive=True)
+    qgf_pm = QGF(characteristic=p, degree=m)
+    assert qgf_pm.num_qubits == ceil(log2(p**m))
+    assert is_symbolic(qgf_pm)
+
+
 @pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation(qdtype: QDType):
     for v in qdtype.get_classical_domain():
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5), QGF(2, 8)])
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -171,6 +207,9 @@ def test_validation_errs():
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(-1)
+
+    with pytest.raises(ValueError):
+        QGF(2, 8).assert_valid_classical_val(2**8)
 
 
 def test_validate_arrays():
@@ -233,10 +272,11 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QAny(1), QBit())
     assert check_dtypes_consistent(BQUInt(1), QBit())
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
+    assert check_dtypes_consistent(QGF(characteristic=2, degree=1), QBit())
 
 
 def assert_to_and_from_bits_array_consistent(qdtype: QDType, values: Union[Sequence[Any], NDArray]):
-    values = np.asarray(values)
+    values = np.asanyarray(values)
     bits_array = qdtype.to_bits_array(values)
 
     # individual values
@@ -255,6 +295,9 @@ def test_qint_to_and_from_bits():
         assert qint4.from_bits(qint4.to_bits(x)) == x
     assert list(qint4.to_bits(-2)) == [1, 1, 1, 0]
     assert list(QInt(4).to_bits(2)) == [0, 0, 1, 0]
+    # MSB at lowest index -- big-endian
+    assert qint4.from_bits([0, 0, 0, 1]) == 1
+    assert qint4.from_bits([0, 0, 0, 1]) < qint4.from_bits([0, 1, 0, 0])
     assert qint4.from_bits(qint4.to_bits(-2)) == -2
     assert qint4.from_bits(qint4.to_bits(2)) == 2
     with pytest.raises(ValueError):
@@ -263,11 +306,32 @@ def test_qint_to_and_from_bits():
     assert_to_and_from_bits_array_consistent(qint4, range(-8, 8))
 
 
+def test_qgf_to_and_from_bits():
+    from galois import GF
+
+    qgf_256 = QGF(2, 8)
+    gf256 = GF(2**8)
+    assert [*qgf_256.get_classical_domain()] == [*range(256)]
+    a, b = qgf_256.to_bits(gf256(21)), qgf_256.to_bits(gf256(22))
+    c = qgf_256.from_bits(list(np.bitwise_xor(a, b)))
+    assert c == gf256(21) + gf256(22)
+    for x in gf256.elements:
+        assert x == gf256.Vector(qgf_256.to_bits(x))
+
+    with pytest.raises(ValueError):
+        qgf_256.to_bits(21)
+    assert_to_and_from_bits_array_consistent(qgf_256, gf256([*range(256)]))
+
+
 def test_quint_to_and_from_bits():
     quint4 = QUInt(4)
     assert [*quint4.get_classical_domain()] == [*range(0, 16)]
     assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
     assert quint4.from_bits(quint4.to_bits(10)) == 10
+    # MSB at lowest index -- big-endian
+    assert quint4.from_bits([0, 0, 0, 1]) == 1
+    assert quint4.from_bits([0, 0, 0, 1]) < quint4.from_bits([1, 0, 0, 0])
+
     for x in range(16):
         assert quint4.from_bits(quint4.to_bits(x)) == x
     with pytest.raises(ValueError):
@@ -280,6 +344,7 @@ def test_quint_to_and_from_bits():
 
 
 def test_bits_to_int():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     bitstrings = rs.choice([0, 1], size=(100, 23))
 
@@ -296,6 +361,7 @@ def test_bits_to_int():
 
 
 def test_int_to_bits():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
     bitstrings = QUInt(23).to_bits_array(nums)

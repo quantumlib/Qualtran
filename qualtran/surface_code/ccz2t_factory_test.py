@@ -19,9 +19,7 @@ def test_ccz_2t_factory():
     factory = CCZ2TFactory()
     worse_factory = CCZ2TFactory(distillation_l1_d=7, distillation_l2_d=15)
 
-    alg = AlgorithmSummary(
-        n_logical_gates=GateCounts(t=10**8, toffoli=10**8), n_algo_qubits=100
-    )
+    alg = AlgorithmSummary(n_logical_gates=GateCounts(t=10**8, toffoli=10**8), n_algo_qubits=100)
     lem = LogicalErrorModel(qec_scheme=QECScheme.make_gidney_fowler(), physical_error=1e-3)
 
     err1 = factory.factory_error(n_logical_gates=alg.n_logical_gates, logical_error_model=lem)

@@ -145,7 +145,7 @@ class Partition(_BookkeepingBloq):
     def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
         out_vals: list[NDArray[np.uint8]] = []
         for reg in self.regs:
-            reg_val = np.asarray(vals[reg.name])
+            reg_val = np.asanyarray(vals[reg.name])
             bitstrings = reg.dtype.to_bits_array(reg_val.ravel())
             out_vals.append(bitstrings.ravel())
         return np.concatenate(out_vals)

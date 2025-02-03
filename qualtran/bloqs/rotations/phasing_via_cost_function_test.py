@@ -180,10 +180,7 @@ def test_square_phasing_via_phase_gradient(
     initial_state = np.array([1 / np.sqrt(2**n)] * 2**n)
     normalization_factor = 1 if normalize_cost_function else 4**n
     phases = np.array(
-        [
-            np.exp(1j * 2 * np.pi * gamma * x**2 * normalization_factor / 4**n)
-            for x in range(2**n)
-        ]
+        [np.exp(1j * 2 * np.pi * gamma * x**2 * normalization_factor / 4**n) for x in range(2**n)]
     )
     expected_final_state = np.multiply(initial_state, phases)
     test_bloq_one = TestSquarePhasing(
