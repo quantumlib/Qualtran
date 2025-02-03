@@ -21,7 +21,7 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.bookkeeping import Join, Split
-from qualtran.bloqs.factoring.rsa.rsa_mod_exp import _modexp, _modexp_small, _modexp_symb, ModExp
+from qualtran.bloqs.cryptography.rsa.rsa_mod_exp import _modexp, _modexp_small, _modexp_symb, ModExp
 from qualtran.bloqs.mod_arithmetic import CModMulK
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator
