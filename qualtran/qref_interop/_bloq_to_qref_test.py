@@ -35,8 +35,8 @@ from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.block_encoding.lcu_block_encoding import _black_box_lcu_block, _lcu_block
 from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
+from qualtran.bloqs.cryptography.rsa.rsa_phase_estimate import _rsa_pe
 from qualtran.bloqs.data_loading.qrom import _qrom_symb, QROM
-from qualtran.bloqs.factoring.rsa.rsa_phase_estimate import _rsa_pe
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.qref_interop import bloq_to_qref
 
