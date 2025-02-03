@@ -37,7 +37,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs.factoring.ecc import ECPoint
+from qualtran.bloqs.cryptography.ecc import ECPoint
 from qualtran.protos import bloq_pb2
 from qualtran.serialization import (
     annotations,

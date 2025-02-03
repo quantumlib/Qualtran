@@ -15,7 +15,7 @@
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.factoring.rsa.rsa_phase_estimate import _rsa_pe, _rsa_pe_small
+from qualtran.bloqs.cryptography.rsa.rsa_phase_estimate import _rsa_pe, _rsa_pe_small
 
 
 @pytest.mark.parametrize('bloq', [_rsa_pe_small, _rsa_pe])

@@ -17,7 +17,7 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs.factoring.ecc.ec_add import (
+from qualtran.bloqs.cryptography.ecc.ec_add import (
     _ec_add,
     _ec_add_small,
     _ECAddStepFive,

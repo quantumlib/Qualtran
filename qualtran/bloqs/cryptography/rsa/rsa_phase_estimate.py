@@ -33,7 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import IntState, PlusState
 from qualtran.bloqs.bookkeeping import Free
-from qualtran.bloqs.factoring._factoring_shims import MeasureQFT
+from qualtran.bloqs.cryptography._factoring_shims import MeasureQFT
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import CModMulK
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, SymbolicInt
