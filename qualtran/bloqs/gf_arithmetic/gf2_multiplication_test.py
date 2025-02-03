@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
 import numpy as np
 import pytest
 from galois import GF, Poly
@@ -24,6 +25,8 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     GF2Multiplication,
     GF2MultiplyByConstantMod,
     SynthesizeLRCircuit,
+    MultiplyPolyByOnePlusXk,
+    BinaryPolynomialMultiplication,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -156,3 +159,52 @@ def test_invalid_GF2MultiplyByConstantMod_args_raises():
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('gf2_multiplication')
+
+
+@pytest.mark.parametrize(['n', 'k'], 
+    [(n, k) for n in range(1, 6) for k in range(1, n + 1)]
+)
+def test_multiply_by_xk_decomposition(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+@pytest.mark.parametrize(['n', 'k'], 
+    [(n, k) for n in range(1, 6) for k in range(1, n + 1)]
+)
+def test_multiply_by_xk_bloq_counts(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq)
+
+
+@pytest.mark.parametrize(['n', 'k'], 
+    [(n, k) for n in range(1, 6) for k in range(1, n + 1)]
+)
+def test_multiply_by_xk_classical_action(n, k):
+    if (n + 1)//2 != k: return
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+    # h_polys = tuple(itertools.product(range(2), repeat=blq.signature[-1].shape[0]))
+    h_polys = [[1]*blq.signature[-1].shape[0]]
+
+    qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
+
+
+@pytest.mark.parametrize('n', range(1, 6))
+def test_binary_mult_decomposition(n):
+    blq = BinaryPolynomialMultiplication(n)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+@pytest.mark.parametrize('n', range(1, 6))
+def test_binary_mult_bloq_counts(n):
+    blq = BinaryPolynomialMultiplication(n)
+    qlt_testing.assert_equivalent_bloq_counts(blq)
+
+
+# @pytest.mark.parametrize('n', range(1, 6))
+# def test_multiply_by_xk_classical_action(n, k):
+#     blq = MultiplyPolyByOnePlusXk(n, k)
+#     fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+#     # h_polys = tuple(itertools.product(range(2), repeat=blq.signature[-1].shape[0]))
+#     h_polys = [[0]*blq.signature[-1].shape[0]]
+
+#     qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)

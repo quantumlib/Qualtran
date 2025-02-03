@@ -14,6 +14,7 @@
 from functools import cached_property
 from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
+import sympy
 import attrs
 import galois
 import numpy as np
@@ -32,6 +33,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli
 from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -384,4 +386,271 @@ def _gf2_poly_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
 _MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
     bloq_cls=GF2MultiplyByConstantMod,
     examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
+)
+
+def _mul(A, B):
+    C = set()
+    for a in A:
+        for b in B:
+            c = a + b
+            if c in C:
+                C.remove(c)
+            else:
+                C.add(c)
+    return C
+
+def _add(A, B):
+    A = set(A)
+    for b in B:
+        if b in A:
+            A.remove(b)
+        else:
+            A.add(b)
+    return A
+
+@attrs.frozen
+class MultiplyPolyByOnePlusXk(Bloq):
+    r"""Out of place multiplication of $(1 + x^k) fg$
+
+    Applies the transformation
+    $$
+    \ket{f}\ket{g}\ket{h} \rightarrow \ket{f}{\ket{g}}\ket{h \oplus (1+x^k)fg}
+    $$
+
+    Args:
+        n: The degree of the polynomial ($2^n$ is the size of the galois field).
+        k: An integer specifing the shift $1 + x^k$ (or $1 + 2^k$ for galois fields.)
+
+    Registers:
+        f: The first polynomial.
+        g: The second polyonmial.
+        h: The target polynomial.
+
+    References:
+        [Space-efficient quantum multiplication of polynomials for binary finite fields with
+            sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 2
+    """
+    n: SymbolicInt
+    k: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if is_symbolic(self.k): return
+        assert self.k > 0
+        if not is_symbolic(self.n):
+            assert self.k <= self.n
+
+    @cached_property
+    def l(self):
+        return max(0, 2*self.n - self.k - 1)
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('f', dtype=QBit(), shape=(self.n,)),
+                Register('g', dtype=QBit(), shape=(self.n,)),
+                Register('h', dtype=QBit(), shape=(2*self.k + self.l,)),
+            ]
+        )
+    
+
+    def on_classical_vals(self, f: Sequence[int], g: Sequence[int], h: Sequence[int]) -> Dict[str, 'ClassicalValT']:
+        # f_p = Poly(f[::-1])
+        # g_p = Poly(g[::-1])
+        # h_p = Poly(h[::-1])
+        # if self.k == 0:
+        #     h_p += f_p * g_p
+        # else:
+        #     h_p += f_p * g_p * Poly.Degrees([0, self.k])
+        # res = h_p.coefficients().tolist()
+        # res = [0 for _ in range(len(h) - len(res))] + res
+        # res = res[::-1]
+        fs = set([i for i, v in enumerate(f) if v])
+        gs = set([i for i, v in enumerate(g) if v])
+        hs = set([i for i, v in enumerate(h) if v])
+        fg = _mul(fs, gs)
+        fgs = _mul(fg, [0, self.k])
+        res = [0]*len(h)
+        for x in _add(hs, fgs):
+            res[x] = 1
+        return {'f': f, 'g': g, 'h': res}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'SoquetT', g: 'SoquetT', h: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.n, self.k, self.l):
+            raise DecomposeTypeError(f"symbolic decomposition is not supported for {self}")
+        
+        original = len(h)
+        if self.n > 1:
+            w = self.k
+            for i in range(w):
+                h[2*self.k+i], h[self.k+i] = bb.add(CNOT(), ctrl=h[2*self.k+i], target=h[self.k+i])
+            for i in range(self.k):
+                h[self.k+i], h[i] = bb.add(CNOT(), ctrl=h[self.k+i], target=h[i])
+            
+            f, g, h[self.k:2*self.k+self.l] = bb.add(BinaryPolynomialMultiplication(self.n), f=f, g=g, h=h[self.k:2*self.k+self.l])
+
+            for i in range(self.k):
+                h[self.k+i], h[i] = bb.add(CNOT(), ctrl=h[self.k+i], target=h[i])
+            for i in range(w):
+                h[2*self.k+i], h[self.k+i] = bb.add(CNOT(), ctrl=h[2*self.k+i], target=h[self.k+i])
+
+        else:
+            h[self.k], h[0] = bb.add(CNOT(), ctrl=h[self.k], target=h[0])
+            (f[0], g[0]), h[self.k] = bb.add(Toffoli(), ctrl=[f[0], g[0]], target=h[self.k])
+            h[self.k], h[0] = bb.add(CNOT(), ctrl=h[self.k], target=h[0])
+
+        assert len(h) == original, f'{original=} {len(h)}'
+        return {
+            'f': f,
+            'g': g,
+            'h': h,
+        }
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if not is_symbolic(self.n) and self.n == 1:
+            return {
+                CNOT(): 2,
+                Toffoli(): 1,
+            }
+        return {
+            CNOT(): 2*(self.l + self.k),
+            BinaryPolynomialMultiplication(self.n):1,
+        }
+
+@bloq_example
+def _multiplypolybyoneplusxk() -> MultiplyPolyByOnePlusXk:
+    n = 5
+    k = 3
+    multiplypolybyoneplusxk = MultiplyPolyByOnePlusXk(n, k)
+    return multiplypolybyoneplusxk
+
+
+_MULTIPLY_POLY_BY_ONE_PLUS_XK_DOC = BloqDocSpec(
+    bloq_cls=MultiplyPolyByOnePlusXk,
+    examples=(_multiplypolybyoneplusxk,),
+)
+
+@attrs.frozen
+class BinaryPolynomialMultiplication(Bloq):
+    r"""Out of place multiplication of binary polynomial multiplication.
+
+    Applies the transformation
+    $$
+    \ket{f}\ket{g}\ket{h} \rightarrow \ket{f}{\ket{g}}\ket{h \oplus fg}
+    $$
+
+    Args:
+        n: The degree of the polynomial ($2^n$ is the size of the galois field).
+
+    Registers:
+        f: The first polynomial.
+        g: The second polyonmial.
+        h: The target polynomial.
+
+    References:
+        [Space-efficient quantum multiplication of polynomials for binary finite fields with
+            sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 3
+    """
+    n: SymbolicInt
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('f', dtype=QBit(), shape=(self.n,)),
+                Register('g', dtype=QBit(), shape=(self.n,)),
+                Register('h', dtype=QBit(), shape=(2*self.n-1,)),
+            ]
+        )
+    
+
+    def on_classical_vals(self, f, g, h) -> Dict[str, 'ClassicalValT']:
+        # fx = Poly(f[::-1])
+        # gx = Poly(g[::-1])
+        # hx = Poly(h[::-1])
+        # hx += fx * gx
+        # res = hx.coefficients().tolist()
+        # res = [0 for _ in range(len(h) - len(res))] + res
+        # res = res[::-1]
+        fs = set([i for i, v in enumerate(f) if v])
+        gs = set([i for i, v in enumerate(g) if v])
+        hs = set([i for i, v in enumerate(h) if v])
+        res = [0]*len(h)
+        for x in _add(hs, _mul(fs, gs)):
+            res[x] = 1
+        print(f, g, h, res)
+        return {'f': f, 'g': g, 'h': res}
+
+
+    @property
+    def k(self) -> 'SymbolicInt':
+        if isinstance(self.n, int):
+            return (self.n + 1) >> 1
+        return sympy.ceiling(self.n/2)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'Soquet', g: 'Soquet', h: 'Soquet') -> Dict[str, 'Soquet']:
+        if is_symbolic(self.n, self.k):
+            raise DecomposeTypeError(f"symbolic decomposition is not supported for {self}")
+
+        if self.n == 1:
+            (f[0], g[0]), h[0] = bb.add(Toffoli(), ctrl=(f[0], g[0]), target=h[0])
+            return {
+                'f': f,
+                'g': g,
+                'h': h,
+            }
+
+        f[:self.k], g[:self.k], h[:3*self.k-1] = bb.add(MultiplyPolyByOnePlusXk(self.k, self.k), f=f[:self.k], g=g[:self.k], h=h[:3*self.k-1])
+        f[self.k:self.n], g[self.k:self.n], h[self.k:2*self.n-1] = bb.add(MultiplyPolyByOnePlusXk(self.n-self.k, self.k), f=f[self.k:self.n], g=g[self.k:self.n], h=h[self.k:2*self.n-1])
+        for i in range(self.n - self.k):
+            f[self.k + i], f[i] = bb.add(CNOT(), ctrl=f[self.k+i], target=f[i])
+        for i in range(self.n - self.k):
+            g[self.k + i], g[i] = bb.add(CNOT(), ctrl=g[self.k+i], target=g[i])
+
+        f[:self.k], g[:self.k], h[self.k:3*self.k-1] = bb.add(BinaryPolynomialMultiplication(self.k), f=f[:self.k], g=g[:self.k], h=h[self.k:3*self.k-1])
+
+        for i in range(self.n - self.k):
+            g[self.k + i], g[i] = bb.add(CNOT(), ctrl=g[self.k+i], target=g[i])
+
+        for i in range(self.n - self.k):
+            f[self.k + i], f[i] = bb.add(CNOT(), ctrl=f[self.k+i], target=f[i])
+
+        return {
+            'f': f,
+            'g': g,
+            'h': h,
+        }
+        
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if not is_symbolic(self.n) and self.n == 1:
+            return {
+                Toffoli(): 1,
+            }
+        if not is_symbolic(self.n) and 2*self.k == self.n:
+            return {
+                CNOT(): 4*(self.n-self.k),
+                BinaryPolynomialMultiplication(self.k):1,
+                MultiplyPolyByOnePlusXk(self.k, self.k): 2,
+            }
+        return {
+            CNOT(): 4*(self.n-self.k),
+            BinaryPolynomialMultiplication(self.k):1,
+            MultiplyPolyByOnePlusXk(self.k, self.k): 1,
+            MultiplyPolyByOnePlusXk(self.n - self.k, self.k): 1,
+        }
+
+@bloq_example
+def _binarypolynomialmultiplication() -> BinaryPolynomialMultiplication:
+    n = 5
+    binarypolynomialmultiplication = BinaryPolynomialMultiplication(n)
+    return binarypolynomialmultiplication
+
+
+_BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
+    bloq_cls=BinaryPolynomialMultiplication,
+    examples=(_binarypolynomialmultiplication,),
 )
