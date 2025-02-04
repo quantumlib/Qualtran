@@ -23,6 +23,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
     GateWithRegisters,
