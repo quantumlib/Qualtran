@@ -17,7 +17,7 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran import QMontgomeryUInt, QUInt
-from qualtran.bloqs.factoring.ecc.ec_add_r import (
+from qualtran.bloqs.cryptography.ecc.ec_add_r import (
     _ec_add_r,
     _ec_add_r_small,
     _ec_window_add_r_small,

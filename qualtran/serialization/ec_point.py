@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc import ECPoint
+from qualtran.bloqs.cryptography.ecc import ECPoint
 from qualtran.protos import ec_point_pb2
 from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
