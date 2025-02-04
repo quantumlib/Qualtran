@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
+import galois
 import numpy as np
 from galois import GF, Poly
 
@@ -33,7 +34,7 @@ from qualtran.bloqs.basic_gates import CNOT, Toffoli
 from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, Soquet
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -246,4 +247,145 @@ def _gf2_multiplication_symbolic() -> GF2Multiplication:
 
 _GF2_MULTIPLICATION_DOC = BloqDocSpec(
     bloq_cls=GF2Multiplication, examples=(_gf16_multiplication, _gf2_multiplication_symbolic)
+)
+
+
+@attrs.frozen
+class GF2MultiplyByConstantMod(Bloq):
+    r"""Multiply by constant $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
+
+    Args:
+        const: The multiplication constant which is an element of the given field.
+        galois_field: The galois field that defines the arithmetics.
+
+    Registers:
+        g: The polynomial coefficients (in GF(2)).
+
+    References:
+        [Space-efficient quantum multiplication of polynomials for binary finite fields with
+            sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 1
+    """
+
+    const: 'galois.FieldArray'
+    galois_field: 'galois.FieldArrayMeta'
+
+    def __attrs_post_init__(self):
+        assert isinstance(self.const, self.galois_field)
+
+    @cached_property
+    def n(self) -> int:
+        return int(self.galois_field.irreducible_poly.degree)
+
+    @cached_property
+    def qgf(self) -> QGF:
+        return QGF(
+            2,
+            self.n,
+            self.galois_field.irreducible_poly,
+            element_repr=self.galois_field.element_repr,
+        )
+
+    @staticmethod
+    def from_polynomials(
+        f_x: Union[Poly, Sequence[int]],
+        m_x: Union[Poly, Sequence[int]],
+        field_representation: str = 'poly',
+    ) -> 'GF2MultiplyByConstantMod':
+        if not isinstance(m_x, Poly):
+            m_x = Poly.Degrees(m_x)
+        if not isinstance(f_x, Poly):
+            f_x = Poly.Degrees(f_x)
+        gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)  # type: ignore[call-overload]
+        return GF2MultiplyByConstantMod(
+            galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
+        )
+
+    @cached_property
+    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Returns the LUP decomposition of the matrix representing the operation.
+
+        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
+        by a full rank matrix that can be decomposed into PLU where L and U are lower
+        and upper traingular matricies and P is a permutation matrix.
+        """
+        n = self.n
+        matrix = np.zeros((n, n), dtype=int)
+        for i in range(n):
+            p = self.const * self.galois_field(2**i)
+            for j, v in enumerate(reversed(self.qgf.to_bits(p))):
+                matrix[j, i] = v
+        P, L, U = GF(2)(matrix).plu_decompose()
+        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('g', self.qgf)])
+
+    def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
+        assert isinstance(g, self.galois_field)
+        return {'g': g * self.const}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
+        L, U, P = self.lup
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+
+        g_arr = bb.split(g)
+        g_arr = g_arr[::-1]
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if U[i, j]:
+                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
+
+        for i in reversed(range(self.n)):
+            for j in reversed(range(i)):
+                if L[i, j]:
+                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
+
+        column = [*range(self.n)]
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if P[i, column[j]]:
+                    g_arr[i], g_arr[j] = g_arr[j], g_arr[i]
+                    column[i], column[j] = column[j], column[i]
+        g_arr = g_arr[::-1]
+        g = bb.join(g_arr, dtype=self.qgf)
+        return {'g': g}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        L, U, _ = self.lup
+        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
+        cnots = np.sum(L) + np.sum(U) - 2 * self.n
+        if cnots:
+            return {CNOT(): cnots}
+        return {}
+
+    def __hash__(self):
+        return hash((self.const.additive_order, self.galois_field.irreducible_poly))
+
+
+@bloq_example
+def _gf2_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+    import galois
+
+    mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
+    gf = galois.GF(2, 3, irreducible_poly=mx)
+    const = gf(5)  # x^2 + 1
+    gf2_multiply_by_constant_modulu = GF2MultiplyByConstantMod(const, gf)
+    return gf2_multiply_by_constant_modulu
+
+
+@bloq_example
+def _gf2_poly_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+    fx = [2, 0]  # x^2 + 1
+    mx = [0, 1, 3]  # x^3 + x + 1
+    gf2_poly_multiply_by_constant_modulu = GF2MultiplyByConstantMod.from_polynomials(fx, mx)
+    return gf2_poly_multiply_by_constant_modulu
+
+
+_MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
+    bloq_cls=GF2MultiplyByConstantMod,
+    examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
 )

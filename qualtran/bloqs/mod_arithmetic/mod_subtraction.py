@@ -190,8 +190,7 @@ class CModNeg(Bloq):
         else:
             cvs = HasLength(self.dtype.bitsize)
         return {
-            MultiControlX(cvs): 1,
-            MultiControlX(cvs).adjoint(): 1,
+            MultiControlX(cvs): 2,
             And(self.cv, 1): 1,
             And(self.cv, 1).adjoint(): 1,
             MultiTargetCNOT(self.dtype.bitsize): 1,

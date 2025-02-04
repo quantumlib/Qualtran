@@ -16,7 +16,7 @@
 We often wish to write algorithms which operate on quantum data. One can think
 of quantum data types, similar to classical data types, where a collection of
 qubits can be used to represent a specific quantum data type (eg: a quantum
-integer of width 32 would comprise of 32 qubits, similar to a classical uint32
+integer of width 32 would comprise 32 qubits, similar to a classical uint32
 type). More generally, many current primitives and algorithms in qualtran
 implicitly expect registers which represent signed or unsigned integers,
 fixed-point (fp) numbers , or “classical registers” which store some classical
@@ -40,7 +40,7 @@ bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other
 type assuming the bitsizes match. QInt(32) == QAny(32), QInt(32) !=
 QFxp(32, 16). QInt(32) != QUInt(32).
 5. We assume a big endian convention for addressing QBits in registers
-throughout qualtran. Recall that in a big endian convention the most signficant
+throughout qualtran. Recall that in a big endian convention the most significant
 bit is at index 0. If you iterate through the bits in a register they will be
 yielded from most significant to least significant.
 6. Ones' complement integers are used extensively in quantum algorithms. We have
@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -59,6 +59,9 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
+
+if TYPE_CHECKING:
+    import galois
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -181,7 +184,7 @@ class QBit(QDType):
 
 @attrs.frozen
 class QAny(QDType):
-    """Opaque bag-of-qbits type."""
+    """Opaque bag-of-qubits type."""
 
     bitsize: SymbolicInt
 
@@ -214,7 +217,10 @@ class QAny(QDType):
 class QInt(QDType):
     """Signed Integer of a given width bitsize.
 
-    A two's complement representation is assumed for negative integers.
+    A two's complement representation is used for negative integers.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
@@ -275,7 +281,11 @@ class QInt(QDType):
 class QIntOnesComp(QDType):
     """Signed Integer of a given width bitsize.
 
-    A ones' complement representation is assumed for negative integers.
+    In contrast to `QInt`, this data type uses the ones' complement representation for negative
+    integers.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
@@ -323,8 +333,11 @@ class QIntOnesComp(QDType):
 class QUInt(QDType):
     """Unsigned integer of a given width bitsize which wraps around upon overflow.
 
-    Similar to unsigned integer types in C. Any intended wrap around effect is
-    expected to be handled by the developer.
+    Any intended wrap around effect is expected to be handled by the developer, similar
+    to an unsigned integer type in C.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
@@ -878,6 +891,10 @@ class QGF(QDType):
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
+        irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
+        element_repr: The string representation of the galois elements.
+            This parameter is passed to `galois.GF(..., repr=field_repr)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -889,6 +906,8 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly'] = None
+    element_repr: str = 'int'
 
     @cached_property
     def order(self) -> SymbolicInt:
@@ -917,7 +936,13 @@ class QGF(QDType):
     def gf_type(self):
         from galois import GF
 
-        return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic),
+            int(self.degree),
+            irreducible_poly=self.irreducible_poly,
+            repr=self.element_repr,
+            compile='python-calculate',
+        )
 
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""

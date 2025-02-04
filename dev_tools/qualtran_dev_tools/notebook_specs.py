@@ -37,6 +37,7 @@ import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.controlled_add_or_subtract
 import qualtran.bloqs.arithmetic.controlled_addition
 import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -66,6 +67,7 @@ import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.hubbard_model.qubitization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
@@ -80,11 +82,11 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.cryptography.ecc
+import qualtran.bloqs.cryptography.rsa
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.ecc
-import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.gf_arithmetic.gf2_add_k
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
@@ -102,6 +104,7 @@ import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
 import qualtran.bloqs.phase_estimation.text_book_qpe
@@ -119,6 +122,8 @@ import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -309,6 +314,7 @@ CHEMISTRY: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv._PREPARE_UV,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_t._SELECT_T,
             qualtran.bloqs.chemistry.pbc.first_quantization.select_uv._SELECT_UV,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta._PREPARE_ZETA,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
     ),
@@ -488,6 +494,15 @@ ARITHMETIC = [
         module=qualtran.bloqs.arithmetic.trigonometric,
         bloq_specs=[qualtran.bloqs.arithmetic.trigonometric.arcsin._ARCSIN_DOC],
     ),
+    NotebookSpecV2(
+        title='List Functions',
+        module=qualtran.bloqs.arithmetic.lists,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.lists.sort_in_place._SORT_IN_PLACE_DOC,
+            qualtran.bloqs.arithmetic.lists.symmetric_difference._SYMMETRIC_DIFFERENCE_DOC,
+            qualtran.bloqs.arithmetic.lists.has_duplicates._HAS_DUPLICATES_DOC,
+        ],
+    ),
 ]
 
 MOD_ARITHMETIC = [
@@ -528,25 +543,25 @@ MOD_ARITHMETIC = [
     ),
     NotebookSpecV2(
         title='Factoring RSA',
-        module=qualtran.bloqs.factoring.rsa,
+        module=qualtran.bloqs.cryptography.rsa,
         bloq_specs=[
-            qualtran.bloqs.factoring.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
         ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
-        module=qualtran.bloqs.factoring.ecc.ec_add,
-        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
+        module=qualtran.bloqs.cryptography.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.cryptography.ecc.ec_add._EC_ADD_DOC],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
-        module=qualtran.bloqs.factoring.ecc,
+        module=qualtran.bloqs.cryptography.ecc,
         bloq_specs=[
-            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
 ]
@@ -558,7 +573,10 @@ GF_ARITHMETIC = [
     NotebookSpecV2(
         title='GF($2^m$) Multiplication',
         module=qualtran.bloqs.gf_arithmetic.gf2_multiplication,
-        bloq_specs=[qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC],
+        bloq_specs=[
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_BY_CONSTANT_MOD_DOC,
+        ],
     ),
     NotebookSpecV2(
         title='GF($2^m$) Addition',
@@ -633,6 +651,18 @@ ROT_QFT_PE = [
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_DOC,
             qualtran.bloqs.rotations.hamming_weight_phasing._HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='ZPow Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.zpow_via_phase_gradient,
+        bloq_specs=[
+            qualtran.bloqs.rotations.zpow_via_phase_gradient._ZPOW_CONST_VIA_PHASE_GRADIENT_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Rz Rotation via Phase Gradient',
+        module=qualtran.bloqs.rotations.rz_via_phase_gradient,
+        bloq_specs=[qualtran.bloqs.rotations.rz_via_phase_gradient._RZ_VIA_PHASE_GRADIENT_DOC],
     ),
     NotebookSpecV2(
         title='Programmable Rotation Gate Array',
@@ -771,6 +801,20 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
 ]
 
 # --------------------------------------------------------------------------
+# -----   Optimization   ---------------------------------------------------
+# --------------------------------------------------------------------------
+OPTIMIZATION: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Planted Noisy kXOR - Kikuchi Guiding State',
+        module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._SIMPLE_GUIDING_STATE_DOC,
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._GUIDING_STATE_DOC,
+        ],
+    )
+]
+
+# --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
 OTHER: List[NotebookSpecV2] = [
@@ -886,5 +930,6 @@ NB_BY_SECTION = [
     ('GF Arithmetic', GF_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
+    ('Optimization', OPTIMIZATION),
     ('Other', OTHER),
 ]

@@ -90,9 +90,7 @@ def test_permutation_cycle_unitary_and_call_graph():
     )
 
     cv = sympy.Symbol('cv')
-    _, sigma = bloq.call_graph(
-        generalizer=[ignore_split_join, generalize_cvs], keep=lambda b: isinstance(b, And)
-    )
+    _, sigma = bloq.call_graph(generalizer=[ignore_split_join, generalize_cvs])
     assert sigma == {
         CNOT(): 8,
         And(cv1=cv, cv2=cv): 4,
@@ -106,7 +104,7 @@ def test_permutation_cycle_symbolic_call_graph():
     bloq = _permutation_cycle_symb()
     logN, L = ceil(log2(bloq.N)), slen(bloq.cycle)
 
-    _, sigma = bloq.call_graph(keep=lambda b: isinstance(b, And))
+    _, sigma = bloq.call_graph()
     assert sigma == {
         And(): (L + 1) * (logN - 1),
         And().adjoint(): (L + 1) * (logN - 1),
@@ -133,7 +131,7 @@ def test_permutation_unitary_and_call_graph():
         ),
     )
 
-    _, sigma = bloq.call_graph(generalizer=ignore_split_join, keep=lambda b: isinstance(b, And))
+    _, sigma = bloq.call_graph(generalizer=ignore_split_join)
     assert sigma == {
         CNOT(): 17,
         And(): 56 // 4,
@@ -160,7 +158,7 @@ def test_permutation_symbolic_call_graph():
     logN = ceil(log2(N))
     bloq = _permutation_symb()
 
-    _, sigma = bloq.call_graph(keep=lambda b: isinstance(b, And))
+    _, sigma = bloq.call_graph()
     assert sigma == {
         And().adjoint(): (N + 1) * (logN - 1),
         And(): (N + 1) * (logN - 1),
