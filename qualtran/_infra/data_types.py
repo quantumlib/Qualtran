@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Iterable, List, Literal, Optional, Sequence, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -906,8 +906,19 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = None
-    element_repr: str = 'int'
+    irreducible_poly: Optional['galois.Poly'] = attrs.field()
+    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+
+    @irreducible_poly.default
+    def _irreducible_poly_default(self):
+        if is_symbolic(self.characteristic, self.degree):
+            return None
+
+        from galois import GF
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic), int(self.degree), compile='python-calculate'
+        ).irreducible_poly
 
     @cached_property
     def order(self) -> SymbolicInt:
