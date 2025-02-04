@@ -12,10 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
+from numpy.typing import NDArray
 from attrs import evolve, frozen
 
 from qualtran import (
@@ -31,9 +32,12 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran.cirq_interop import decompose_from_cirq_style_method
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.arithmetic.subtraction import Subtract
 from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli, XGate
 from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.drawing import Text, WireSymbol
 from qualtran.symbolics import ceil, HasLength, is_symbolic, log2, smax, SymbolicInt
 
@@ -331,6 +335,9 @@ class Product(Bloq):
                 Register("result", QUInt(2 * max(self.a_bitsize, self.b_bitsize)), side=Side.RIGHT),
             ]
         )
+    
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
@@ -343,6 +350,51 @@ class Product(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return {Toffoli(): num_toff}
+    
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
+        
+        # We use the implementation described as in: https://arxiv.org/pdf/2007.07391, page 69
+        # Recall that registers are assumed to be Big Endian
+        if self.a_bitsize >= self.b_bitsize:
+            big_reg = 'a'
+            big_size = self.a_bitsize
+            small_reg = 'b'
+            small_size = self.b_bitsize
+        else:
+            big_reg = 'b'
+            big_size = self.b_bitsize
+            small_reg = 'a'
+            small_size = self.a_bitsize
+        
+        out_size = 2 * max(self.a_bitsize, self.b_bitsize)
+        
+        le_small = quregs[small_reg][::-1]
+        le_big = quregs[big_reg][::-1]
+        le_result = quregs['result'][::-1]
+        
+        # first, perform a B-controlled addition to the out register
+        for data_idx in range(big_size):
+            yield And().on(le_small[0], le_big[data_idx], le_result[data_idx])
+        
+        # second, we perform the B-controlled addition of 2^\ell * A as described in the paper
+        anc_copy = context.qubit_manager.qalloc(big_size)
+        le_anc_copy = anc_copy[::-1]
+        
+        for ell in range(1, small_size):
+            # copy over the data
+            for data_idx in range(big_size):
+                yield And().on(le_small[ell], le_big[data_idx], le_anc_copy[data_idx])
+            
+            # perform addition
+            yield Add(QUInt(big_size), QUInt(1 + big_size)).on(*anc_copy, *quregs['result'][out_size - ell - big_size - 1:out_size - ell])
+        
+            # uncompute
+            for data_idx in range(big_size):
+                yield And().adjoint().on(le_small[ell], le_big[data_idx], le_anc_copy[data_idx])
+        
+        context.qubit_manager.qfree(anc_copy)
 
 
 @bloq_example
