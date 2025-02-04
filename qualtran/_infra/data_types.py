@@ -891,8 +891,10 @@ class QGF(QDType):
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
-        galois_field: Optional galois.GF instance that defines the field arithmetic.
-            If `None` we fallback to the default `galois.GF(characteristic, degree)`
+        irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
+        element_repr: The string representation of the galois elements.
+            This parameter is passed to `galois.GF(..., repr=field_repr)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -904,7 +906,8 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    galois_field: Optional['galois.FieldArrayMeta'] = None
+    irreducible_poly: Optional['galois.Poly'] = None
+    element_repr: str = 'int'
 
     @cached_property
     def order(self) -> SymbolicInt:
@@ -931,12 +934,15 @@ class QGF(QDType):
 
     @cached_property
     def gf_type(self):
-        if self.galois_field is not None:
-            return self.galois_field
-
         from galois import GF
 
-        return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic),
+            int(self.degree),
+            irreducible_poly=self.irreducible_poly,
+            repr=self.element_repr,
+            compile='python-calculate',
+        )
 
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
