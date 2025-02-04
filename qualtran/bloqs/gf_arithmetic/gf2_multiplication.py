@@ -323,7 +323,6 @@ class GF2MultiplyByConstantMod(Bloq):
 
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
         assert isinstance(g, self.galois_field)
-        r = g * self.const
         return {'g': g * self.const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
@@ -364,13 +363,7 @@ class GF2MultiplyByConstantMod(Bloq):
         return {}
 
     def __hash__(self):
-        return hash(
-            (
-                self.const.additive_order,
-                self.galois_field.irreducible_poly,
-                self.galois_field.element_repr,
-            )
-        )
+        return hash((self.const.additive_order, self.galois_field.irreducible_poly))
 
 
 @bloq_example
