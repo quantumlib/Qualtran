@@ -947,10 +947,12 @@ class QGF(QDType):
     def gf_type(self):
         from galois import GF
 
+        poly = self.irreducible_poly if self.degree > 1 else None
+
         return GF(  # type: ignore[call-overload]
             int(self.characteristic),
             int(self.degree),
-            irreducible_poly=self.irreducible_poly,
+            irreducible_poly=poly,
             repr=self.element_repr,
             compile='python-calculate',
         )
