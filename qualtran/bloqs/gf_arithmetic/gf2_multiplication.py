@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
+import galois
 import numpy as np
 from galois import GF, Poly
 
@@ -250,14 +251,12 @@ _GF2_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class MultiplyPolyByConstantMod(Bloq):
-    r"""Multiply a polynomial by $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
+class GF2MultiplyByConstantMod(Bloq):
+    r"""Multiply by constant $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
 
     Args:
-        f_x: The polynomial to mulitply with, given either a galois.Poly or as
-            a sequence degrees.
-        m_x: The modulus polynomial, given either a galois.Poly or as
-            a sequence degrees.
+        const: The multiplication constant which is an element of the given field.
+        galois_field: The galois field that defines the arithmetics.
 
     Registers:
         g: The polynomial coefficients (in GF(2)).
@@ -267,16 +266,39 @@ class MultiplyPolyByConstantMod(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 1
     """
 
-    f_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
-    m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+    const: 'galois.FieldArray'
+    galois_field: 'galois.FieldArrayMeta'
 
     def __attrs_post_init__(self):
-        assert self.m_x.is_irreducible()
-        assert self.f_x.degrees.max() < self.m_x.degrees.max()
+        assert isinstance(self.const, self.galois_field)
 
     @cached_property
-    def n(self):
-        return self.m_x.degrees.max()
+    def n(self) -> int:
+        return int(self.galois_field.irreducible_poly.degree)
+
+    @cached_property
+    def qgf(self) -> QGF:
+        return QGF(
+            2,
+            self.n,
+            self.galois_field.irreducible_poly,
+            element_repr=self.galois_field.element_repr,
+        )
+
+    @staticmethod
+    def from_polynomials(
+        f_x: Union[Poly, Sequence[int]],
+        m_x: Union[Poly, Sequence[int]],
+        field_representation: str = 'poly',
+    ) -> 'GF2MultiplyByConstantMod':
+        if not isinstance(m_x, Poly):
+            m_x = Poly.Degrees(m_x)
+        if not isinstance(f_x, Poly):
+            f_x = Poly.Degrees(f_x)
+        gf = GF(2, m_x.degree, irreducible_poly=m_x, repr=field_representation)  # type: ignore[call-overload]
+        return GF2MultiplyByConstantMod(
+            galois_field=gf, const=gf(sum(2**i for i in f_x.nonzero_degrees))
+        )
 
     @cached_property
     def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -289,44 +311,45 @@ class MultiplyPolyByConstantMod(Bloq):
         n = self.n
         matrix = np.zeros((n, n), dtype=int)
         for i in range(n):
-            p = (self.f_x * Poly.Degrees([i])) % self.m_x
-            for j in p.nonzero_degrees:
-                matrix[j, i] = 1
+            p = self.const * self.galois_field(2**i)
+            for j, v in enumerate(reversed(self.qgf.to_bits(p))):
+                matrix[j, i] = v
         P, L, U = GF(2)(matrix).plu_decompose()
         return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('g', QBit(), shape=(self.n,))])
+        return Signature([Register('g', self.qgf)])
 
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
-        p = (Poly(g[::-1], GF(2)) * self.f_x) % self.m_x
-        res = p.coefficients().tolist()
-        res = [0 for _ in range(self.n - len(res))] + res
-        res = res[::-1]
-        return {'g': res}
+        assert isinstance(g, self.galois_field)
+        return {'g': g * self.const}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
         L, U, P = self.lup
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
-        assert isinstance(g, np.ndarray)
+
+        g_arr = bb.split(g)
+        g_arr = g_arr[::-1]
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if U[i, j]:
-                    g[j], g[i] = bb.add(CNOT(), ctrl=g[j], target=g[i])
+                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
 
         for i in reversed(range(self.n)):
             for j in reversed(range(i)):
                 if L[i, j]:
-                    g[j], g[i] = bb.add(CNOT(), ctrl=g[j], target=g[i])
+                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
 
         column = [*range(self.n)]
         for i in range(self.n):
             for j in range(i + 1, self.n):
                 if P[i, column[j]]:
-                    g[i], g[j] = g[j], g[i]
+                    g_arr[i], g_arr[j] = g_arr[j], g_arr[i]
                     column[i], column[j] = column[j], column[i]
+        g_arr = g_arr[::-1]
+        g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
 
     def build_call_graph(
@@ -339,15 +362,30 @@ class MultiplyPolyByConstantMod(Bloq):
             return {CNOT(): cnots}
         return {}
 
+    def __hash__(self):
+        return hash((self.const.additive_order, self.galois_field.irreducible_poly))
+
 
 @bloq_example
-def _gf2_multiply_by_constant_modulu() -> MultiplyPolyByConstantMod:
-    fx = [2, 0]  # x^2 + 1
-    mx = [0, 1, 3]  # x^3 + x + 1
-    gf2_multiply_by_constant_modulu = MultiplyPolyByConstantMod(fx, mx)
+def _gf2_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+    import galois
+
+    mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
+    gf = galois.GF(2, 3, irreducible_poly=mx)
+    const = gf(5)  # x^2 + 1
+    gf2_multiply_by_constant_modulu = GF2MultiplyByConstantMod(const, gf)
     return gf2_multiply_by_constant_modulu
 
 
+@bloq_example
+def _gf2_poly_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+    fx = [2, 0]  # x^2 + 1
+    mx = [0, 1, 3]  # x^3 + x + 1
+    gf2_poly_multiply_by_constant_modulu = GF2MultiplyByConstantMod.from_polynomials(fx, mx)
+    return gf2_poly_multiply_by_constant_modulu
+
+
 _MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
-    bloq_cls=MultiplyPolyByConstantMod, examples=(_gf2_multiply_by_constant_modulu,)
+    bloq_cls=GF2MultiplyByConstantMod,
+    examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
 )
