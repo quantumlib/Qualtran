@@ -805,7 +805,7 @@ class QMontgomeryUInt(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         if self.modulus is None or is_symbolic(self.modulus):
             return range(2**self.bitsize)
-        return range(int(self.modulus))
+        return range(1, int(self.modulus))
 
     def to_bits(self, x: int) -> List[int]:
         self.assert_valid_classical_val(x)
