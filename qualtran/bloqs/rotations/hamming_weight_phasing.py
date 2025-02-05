@@ -272,22 +272,16 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         num_iters = self.bitsize // (self.ancillasize + 1)
         remainder = self.bitsize - (self.ancillasize + 1) * num_iters
-        # TODO: Surely there is a better way of doing this
-        if remainder > 1:
 
-            return {
-                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
-                HammingWeightPhasing(remainder, self.exponent, self.eps): bool(remainder),
-            }
+        counts = Counter[Bloq]()
+        counts[HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps)] += num_iters
+        
+        if remainder > 1:
+            counts[HammingWeightPhasing(remainder, self.exponent, self.eps)]: += 1
         elif remainder:
-            return {
-                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
-                ZPowGate(exponent=self.exponent, eps=self.eps): 1
-            }
-        else:
-            return {
-                HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps): num_iters,
-            }
+            counts[ZPowGate(exponent=self.exponent, eps=self.eps)] += 1
+
+        return counts
 
 
 @bloq_example
