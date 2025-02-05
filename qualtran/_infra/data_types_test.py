@@ -536,3 +536,11 @@ def test_montgomery_bit_conversion(bitsize):
     dtype = QMontgomeryUInt(bitsize)
     for v in range(1 << bitsize):
         assert v == dtype.from_bits(dtype.to_bits(v))
+
+
+def test_qgf_with_default_poly_is_compatible():
+    qgf_one = QGF(2, 4)
+
+    qgf_two = QGF(2, 4, irreducible_poly=qgf_one.gf_type.irreducible_poly)
+
+    assert qgf_one == qgf_two
