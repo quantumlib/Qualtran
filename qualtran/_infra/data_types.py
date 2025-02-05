@@ -835,9 +835,11 @@ class QMontgomeryUInt(QDType):
 
         Args:
             xm: An integer in montgomery form.
-            p: The modulus of the finite field.
         """
-        return ((pow(xm, -1, self.modulus)) * pow(2, 2 * self.bitsize, self.modulus)) % self.modulus
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (
+            (pow(xm, -1, self.modulus)) * pow(2, 2 * self.bitsize, int(self.modulus))
+        ) % self.modulus
 
     def montgomery_product(self, xm: int, ym: int) -> int:
         """Returns the modular product of two integers in montgomery form.
@@ -845,27 +847,27 @@ class QMontgomeryUInt(QDType):
         Args:
             xm: The first montgomery form integer for the product.
             ym: The second montgomery form integer for the product.
-            p: The modulus of the finite field.
         """
-        return (xm * ym * pow(2, -self.bitsize, self.modulus)) % self.modulus
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (xm * ym * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
 
     def montgomery_to_uint(self, xm: int) -> int:
         """Converts an integer in montgomery form to a normal form integer.
 
         Args:
             xm: An integer in montgomery form.
-            p: The modulus of the finite field.
         """
-        return (xm * pow(2, -self.bitsize, self.modulus)) % self.modulus
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (xm * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
 
     def uint_to_montgomery(self, x: int) -> int:
         """Converts an integer into montgomery form.
 
         Args:
             x: An integer.
-            p: The modulus of the finite field.
         """
-        return (x * pow(2, int(self.bitsize), self.modulus)) % self.modulus
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (x * pow(2, int(self.bitsize), int(self.modulus))) % self.modulus
 
 
 @attrs.frozen
