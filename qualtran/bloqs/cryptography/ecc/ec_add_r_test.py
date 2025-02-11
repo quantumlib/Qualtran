@@ -60,8 +60,8 @@ def test_ec_window_add_r_bloq_counts(n, window_size, a, b):
 def test_ec_window_add_r_classical(n, m, ctrl, x, y, a, b):
     p = 17
     R = ECPoint(a, b, mod=p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
+    x = QMontgomeryUInt(n, p).uint_to_montgomery(x)
+    y = QMontgomeryUInt(n, p).uint_to_montgomery(y)
     ctrl = np.array(QUInt(m).to_bits(ctrl % (2**m)))
     bloq = ECWindowAddR(n=n, R=R, add_window_size=m, mul_window_size=m)
     ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
@@ -80,8 +80,8 @@ def test_ec_window_add_r_classical(n, m, ctrl, x, y, a, b):
 def test_ec_window_add_r_classical_slow(n, m, ctrl, x, y, a, b):
     p = 17
     R = ECPoint(a, b, mod=p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
+    x = QMontgomeryUInt(n, p).uint_to_montgomery(x)
+    y = QMontgomeryUInt(n, p).uint_to_montgomery(y)
     ctrl = np.array(QUInt(m).to_bits(ctrl % (2**m)))
     bloq = ECWindowAddR(n=n, R=R, add_window_size=m, mul_window_size=m)
     ret1 = bloq.call_classically(ctrl=ctrl, x=x, y=y)
