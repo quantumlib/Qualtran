@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Literal, Optional, Sequence, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -59,6 +59,9 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
+
+if TYPE_CHECKING:
+    import galois
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -888,6 +891,10 @@ class QGF(QDType):
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
+        irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
+        element_repr: The string representation of the galois elements.
+            This parameter is passed to `galois.GF(..., repr=field_repr)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -899,6 +906,19 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly'] = attrs.field()
+    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+
+    @irreducible_poly.default
+    def _irreducible_poly_default(self):
+        if is_symbolic(self.characteristic, self.degree):
+            return None
+
+        from galois import GF
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic), int(self.degree), compile='python-calculate'
+        ).irreducible_poly
 
     @cached_property
     def order(self) -> SymbolicInt:
@@ -927,7 +947,15 @@ class QGF(QDType):
     def gf_type(self):
         from galois import GF
 
-        return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
+        poly = self.irreducible_poly if self.degree > 1 else None
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic),
+            int(self.degree),
+            irreducible_poly=poly,
+            repr=self.element_repr,
+            compile='python-calculate',
+        )
 
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""

@@ -22,10 +22,11 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
     _gf16_multiplication,
     GF2Multiplication,
-    MultiplyPolyByConstantMod,
+    GF2MultiplyByConstantMod,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -101,27 +102,26 @@ def test_multiply_by_constant_mod_classical_action(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
         cblq = blq.decompose_bloq()
-        for g_x in elements:
-            g = np.zeros(n, dtype=int)
-            g[-len(g_x.coeffs) :] = [int(x) for x in g_x.coeffs]
-            np.testing.assert_allclose(blq.call_classically(g=g)[0], cblq.call_classically(g=g)[0])
+        for g in gf.elements[1:]:
+            assert blq.call_classically(g=g) == cblq.call_classically(g=g)
 
 
 @pytest.mark.parametrize(
-    ['m_x', 'cnot_count'], [[Poly.Degrees([2, 1, 0]), 0], [Poly.Degrees([3, 1, 0]), 0]]
+    ['m_x', 'f_x', 'cnot_count'],
+    [
+        [Poly.Degrees([3, 1, 0]), Poly.Degrees([2, 0]), 2],
+        [Poly.Degrees([3, 1, 0]), Poly.Degrees([2, 1, 0]), 5],
+        [Poly.Degrees([2, 1, 0]), Poly.Degrees([1]), 1],
+        [Poly.Degrees([2, 1, 0]), Poly.Degrees([0]), 0],
+    ],
 )
-def test_multiply_by_constant_mod_cost(m_x, cnot_count):
-    n = len(m_x.coeffs) - 1
-    gf = GF(2, n, irreducible_poly=m_x)
-    QGFM = QGF(2, n)
-    elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
-    for f_x in elements:
-        blq = MultiplyPolyByConstantMod(f_x, m_x)
-        cost = get_cost_value(blq, QECGatesCost())
-        assert cost.total_t_count() == 0
-        assert cost.clifford < n**2
+def test_multiply_by_constant_mod_cost(m_x, f_x, cnot_count):
+    blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
+    cost = get_cost_value(blq, QECGatesCost())
+    assert cost.total_t_count() == 0
+    assert cost.clifford == cnot_count
 
 
 @pytest.mark.parametrize('m_x', [Poly.Degrees([2, 1, 0]), Poly.Degrees([3, 1, 0])])
@@ -131,7 +131,7 @@ def test_multiply_by_constant_mod_decomposition(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyPolyByConstantMod(f_x, m_x)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
         qlt_testing.assert_valid_bloq_decomposition(blq)
 
 
@@ -142,8 +142,15 @@ def test_multiply_by_constant_mod_counts(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = MultiplyPolyByConstantMod(f_x, m_x)
-        qlt_testing.assert_equivalent_bloq_counts(blq)
+        blq = GF2MultiplyByConstantMod.from_polynomials(f_x, m_x)
+        qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
+
+
+def test_invalid_GF2MultiplyByConstantMod_args_raises():
+    gf = GF(2, 3)
+    x = GF(2, 4)(1)
+    with pytest.raises(AssertionError):
+        _ = GF2MultiplyByConstantMod(x, gf)
 
 
 @pytest.mark.notebook
