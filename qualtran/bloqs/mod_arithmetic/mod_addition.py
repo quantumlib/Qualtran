@@ -79,8 +79,8 @@ class ModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
-                Register('y', QMontgomeryUInt(self.bitsize)),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('y', QMontgomeryUInt(self.bitsize, self.mod)),
             ]
         )
 

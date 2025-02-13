@@ -30,18 +30,18 @@ from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_sp
 def test_kaliski_mod_inverse_classical_action(bitsize, mod):
     blq = KaliskiModInverse(bitsize, mod)
     cblq = blq.decompose_bloq()
-    dtype = QMontgomeryUInt(bitsize)
+    dtype = QMontgomeryUInt(bitsize, mod)
     R = pow(2, bitsize, mod)
     for x in range(1, mod):
         if math.gcd(x, mod) != 1:
             continue
-        x_montgomery = dtype.uint_to_montgomery(x, mod)
+        x_montgomery = dtype.uint_to_montgomery(x)
         res = blq.call_classically(x=x_montgomery)
 
         assert res == cblq.call_classically(x=x_montgomery)
         assert len(res) == 2
-        assert res[0] == dtype.montgomery_inverse(x_montgomery, mod)
-        assert dtype.montgomery_product(int(res[0]), x_montgomery, mod) == R
+        assert res[0] == dtype.montgomery_inverse(x_montgomery)
+        assert dtype.montgomery_product(int(res[0]), x_montgomery) == R
         assert blq.adjoint().call_classically(x=res[0], junk=res[1]) == (x_montgomery,)
 
 
