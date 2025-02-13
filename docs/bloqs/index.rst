@@ -147,7 +147,11 @@ Bloqs Library
     :maxdepth: 2
     :caption: Optimization:
 
+    optimization/k_xor_sat/load_kxor_instance.ipynb
     optimization/k_xor_sat/kikuchi_guiding_state.ipynb
+    optimization/k_xor_sat/kikuchi_adjacency_list.ipynb
+    optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb
+    optimization/k_xor_sat/kikuchi_block_encoding.ipynb
 
 .. toctree::
     :maxdepth: 2
