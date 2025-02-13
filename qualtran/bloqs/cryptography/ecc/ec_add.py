@@ -251,10 +251,8 @@ class _ECAddStepTwo(Bloq):
                 lam = lam_r
                 f1 = 0
             else:
-                lam = QMontgomeryUInt(self.n).montgomery_product(
-                    int(y),
-                    QMontgomeryUInt(self.n).montgomery_inverse(int(x), int(self.mod)),
-                    int(self.mod),
+                lam = QMontgomeryUInt(self.n, self.mod).montgomery_product(
+                    int(y), QMontgomeryUInt(self.n, self.mod).montgomery_inverse(int(x))
                 )
         else:
             lam = 0
@@ -555,10 +553,10 @@ class _ECAddStepFour(Bloq):
         self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         x = (
-            x - QMontgomeryUInt(self.n).montgomery_product(int(lam), int(lam), int(self.mod))
+            x - QMontgomeryUInt(self.n, self.mod).montgomery_product(int(lam), int(lam))
         ) % self.mod
         if lam > 0:
-            y = QMontgomeryUInt(self.n).montgomery_product(int(x), int(lam), int(self.mod))
+            y = QMontgomeryUInt(self.n, self.mod).montgomery_product(int(x), int(lam))
         return {'x': x, 'y': y, 'lam': lam}
 
     def build_composite_bloq(
@@ -1137,30 +1135,23 @@ class ECAdd(Bloq):
         return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
     def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+        dtype = QMontgomeryUInt(self.n, self.mod)
         curve_a = (
-            QMontgomeryUInt(self.n).montgomery_to_uint(lam_r, int(self.mod))
-            * 2
-            * QMontgomeryUInt(self.n).montgomery_to_uint(b, int(self.mod))
-            - (3 * QMontgomeryUInt(self.n).montgomery_to_uint(a, int(self.mod)) ** 2)
+            dtype.montgomery_to_uint(lam_r) * 2 * dtype.montgomery_to_uint(b)
+            - (3 * dtype.montgomery_to_uint(a) ** 2)
         ) % self.mod
         p1 = ECPoint(
-            QMontgomeryUInt(self.n).montgomery_to_uint(a, int(self.mod)),
-            QMontgomeryUInt(self.n).montgomery_to_uint(b, int(self.mod)),
-            mod=self.mod,
-            curve_a=curve_a,
+            dtype.montgomery_to_uint(a), dtype.montgomery_to_uint(b), mod=self.mod, curve_a=curve_a
         )
         p2 = ECPoint(
-            QMontgomeryUInt(self.n).montgomery_to_uint(x, int(self.mod)),
-            QMontgomeryUInt(self.n).montgomery_to_uint(y, int(self.mod)),
-            mod=self.mod,
-            curve_a=curve_a,
+            dtype.montgomery_to_uint(x), dtype.montgomery_to_uint(y), mod=self.mod, curve_a=curve_a
         )
         result = p1 + p2
         return {
             'a': a,
             'b': b,
-            'x': QMontgomeryUInt(self.n).uint_to_montgomery(result.x, int(self.mod)),
-            'y': QMontgomeryUInt(self.n).uint_to_montgomery(result.y, int(self.mod)),
+            'x': dtype.uint_to_montgomery(result.x),
+            'y': dtype.uint_to_montgomery(result.y),
             'lam_r': lam_r,
         }
 
