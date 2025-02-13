@@ -34,7 +34,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import Equals
-from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
+from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate, ZeroState
 from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic import (
@@ -912,19 +912,9 @@ class _ECAddStepSix(Bloq):
         f4 = f_ctrls[2]
 
         # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
-        aby_arr = np.concatenate([bb.split(a), bb.split(b), bb.split(y)])
-        aby_arr, f2 = bb.add(MultiControlX(cvs=[0] * 3 * self.n), controls=aby_arr, target=f2)
-        aby_arr = np.split(aby_arr, 3)
-        a = bb.join(aby_arr[0], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(aby_arr[1], dtype=QMontgomeryUInt(self.n))
-        y = bb.join(aby_arr[2], dtype=QMontgomeryUInt(self.n))
-
-        xyb_arr = np.concatenate([bb.split(x), bb.split(y), bb.split(b)])
-        xyb_arr, f2 = bb.add(MultiControlX(cvs=[0] * 3 * self.n), controls=xyb_arr, target=f2)
-        xyb_arr = np.split(xyb_arr, 3)
-        x = bb.join(xyb_arr[0], dtype=QMontgomeryUInt(self.n))
-        y = bb.join(xyb_arr[1], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(xyb_arr[2], dtype=QMontgomeryUInt(self.n))
+        mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
+        [a, b, y], f2 = bb.add(mcx, ctrl=[a, b, y], q=f2)
+        [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
 
         # Set (x, y) to (a, b) if f4 is set.
         a_split = bb.split(a)
