@@ -949,9 +949,6 @@ class QGF(QDType):
 
     @cached_property
     def gf_type(self):
-        if self.galois_field is not None:
-            return self.galois_field
-
         from galois import GF
 
         poly = self.irreducible_poly if self.degree > 1 else None

@@ -367,7 +367,6 @@ class GF2MultiplyByConstantMod(Bloq):
         return hash((self.const.additive_order, self.galois_field.irreducible_poly))
 
 
-
 @bloq_example
 def _gf2_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
     import galois
