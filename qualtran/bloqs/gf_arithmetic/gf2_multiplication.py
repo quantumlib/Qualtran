@@ -402,9 +402,9 @@ class MultiplyPolyByOnePlusXk(Bloq):
     $$
 
     Note: While this construction follows Algorithm2 of https://arxiv.org/abs/1910.02849v2,
-    it has a slight modification. Namely that the construction doesn't work in
+    it has a slight modification. Namely that the original construction doesn't work in
     some cases where $k < n$. However reversing the order of the first set of CNOTs (line 2)
-    makes the construction work for all $k$.
+    makes the construction work for all $k \leq n+1$.
 
     Args:
         n: The degree of the polynomial ($2^n$ is the size of the galois field).
@@ -474,7 +474,7 @@ class MultiplyPolyByOnePlusXk(Bloq):
         original = len(h)
         if n > 1:
             # Note: This is the reverse order of what https://arxiv.org/abs/1910.02849v2 has.
-            # The is because the order to make the construction work for k < n.
+            # The is because the reverse order to makes the construction work for k <= n+1.
             for i in reversed(range(l)):
                 h[2 * k + i], h[k + i] = bb.add(CNOT(), ctrl=h[2 * k + i], target=h[k + i])
             for i in range(k):
