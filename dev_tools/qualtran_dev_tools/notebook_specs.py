@@ -105,7 +105,6 @@ import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.optimization.k_xor_sat
-import qualtran.bloqs.optimization.k_xor_sat.guided_hamiltonian
 import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
