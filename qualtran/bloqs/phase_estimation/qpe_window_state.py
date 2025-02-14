@@ -17,7 +17,7 @@ from typing import Dict, TYPE_CHECKING
 
 import attrs
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.symbolics import ceil, log2, pi, SymbolicFloat, SymbolicInt
 
@@ -31,7 +31,7 @@ class QPEWindowStateBase(Bloq, metaclass=abc.ABCMeta):
 
     @cached_property
     def m_register(self) -> 'Register':
-        return Register('qpe_reg', QFxp(self.m_bits, self.m_bits), side=Side.RIGHT)
+        return Register('qpe_reg', QFxp(self.m_bits, self.m_bits))
 
     @property
     @abc.abstractmethod
@@ -95,8 +95,7 @@ class RectangularWindowState(QPEWindowStateBase):
         """
         return cls(ceil(2 * log2(pi(eps) / eps)))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
-        qpe_reg = bb.allocate(dtype=self.m_register.dtype)
+    def build_composite_bloq(self, bb: 'BloqBuilder', qpe_reg) -> Dict[str, 'SoquetT']:
         qpe_reg = bb.add(OnEach(self.m_bits, Hadamard()), q=qpe_reg)
         return {'qpe_reg': qpe_reg}
 
