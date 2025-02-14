@@ -138,16 +138,14 @@ def test_qmontgomeryuint():
 @pytest.mark.parametrize('p', [13, 17, 29])
 @pytest.mark.parametrize('val', [1, 5, 7, 9])
 def test_qmontgomeryuint_operations(val, p):
-    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    qmontgomeryuint_8 = QMontgomeryUInt(8, p)
     # Convert value to montgomery form and get the modular inverse.
-    val_m = qmontgomeryuint_8.uint_to_montgomery(val, p)
-    mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m, p)
+    val_m = qmontgomeryuint_8.uint_to_montgomery(val)
+    mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m)
 
     # Calculate the product in montgomery form and convert back to normal form for assertion.
     assert (
-        qmontgomeryuint_8.montgomery_to_uint(
-            qmontgomeryuint_8.montgomery_product(val_m, mod_inv, p), p
-        )
+        qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.montgomery_product(val_m, mod_inv))
         == 1
     )
 
@@ -155,10 +153,8 @@ def test_qmontgomeryuint_operations(val, p):
 @pytest.mark.parametrize('p', [13, 17, 29])
 @pytest.mark.parametrize('val', [1, 5, 7, 9])
 def test_qmontgomeryuint_conversions(val, p):
-    qmontgomeryuint_8 = QMontgomeryUInt(8)
-    assert val == qmontgomeryuint_8.montgomery_to_uint(
-        qmontgomeryuint_8.uint_to_montgomery(val, p), p
-    )
+    qmontgomeryuint_8 = QMontgomeryUInt(8, p)
+    assert val == qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.uint_to_montgomery(val))
 
 
 def test_qgf():
@@ -540,3 +536,11 @@ def test_montgomery_bit_conversion(bitsize):
     dtype = QMontgomeryUInt(bitsize)
     for v in range(1 << bitsize):
         assert v == dtype.from_bits(dtype.to_bits(v))
+
+
+def test_qgf_with_default_poly_is_compatible():
+    qgf_one = QGF(2, 4)
+
+    qgf_two = QGF(2, 4, irreducible_poly=qgf_one.gf_type.irreducible_poly)
+
+    assert qgf_one == qgf_two

@@ -279,7 +279,12 @@ class GF2MultiplyByConstantMod(Bloq):
 
     @cached_property
     def qgf(self) -> QGF:
-        return QGF(2, self.n, self.galois_field)
+        return QGF(
+            2,
+            self.n,
+            self.galois_field.irreducible_poly,
+            element_repr=self.galois_field.element_repr,
+        )
 
     @staticmethod
     def from_polynomials(
@@ -319,7 +324,6 @@ class GF2MultiplyByConstantMod(Bloq):
 
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
         assert isinstance(g, self.galois_field)
-        r = g * self.const
         return {'g': g * self.const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
@@ -361,6 +365,7 @@ class GF2MultiplyByConstantMod(Bloq):
 
     def __hash__(self):
         return hash((self.const.additive_order, self.galois_field.irreducible_poly))
+
 
 
 @bloq_example

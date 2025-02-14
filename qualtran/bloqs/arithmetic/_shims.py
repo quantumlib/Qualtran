@@ -14,7 +14,7 @@
 """This module has a selection of minimally-implemented modular arithmetic primitives.
 
 These bloqs serve as the callees in the call graphs of the algorithms found
-in `qualtran.bloqs.factoring` and `qualtran.bloqs.mod_arithmetic`. They are place-holders,
+in `qualtran.bloqs.cryptography` and `qualtran.bloqs.mod_arithmetic`. They are place-holders,
 so we don't have undefined symbols and can still merge the high-level algorithms. These shims
 will be fleshed out and moved to their final organizational location soon (written: 2024-05-06).
 """

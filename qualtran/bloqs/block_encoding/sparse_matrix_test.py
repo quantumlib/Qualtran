@@ -244,23 +244,25 @@ def test_counts():
     )
 
 
-@pytest.mark.slow
-def test_matrix_stress():
-    rs = np.random.RandomState(1234)
+def random_banded_matrix(n: int, bandsize: int, *, rs: np.random.RandomState):
     f = lambda: rs.randint(0, 10) / 10
-    data = [
-        [f(), f(), f(), 0.0, 0.0, 0.0, 0.0, 0.0],
-        [f(), f(), f(), f(), 0.0, 0.0, 0.0, 0.0],
-        [f(), f(), f(), f(), f(), 0.0, 0.0, 0.0],
-        [0.0, f(), f(), f(), f(), f(), 0.0, 0.0],
-        [0.0, 0.0, f(), f(), f(), f(), f(), 0.0],
-        [0.0, 0.0, 0.0, f(), f(), f(), f(), f()],
-        [0.0, 0.0, 0.0, 0.0, f(), f(), f(), f()],
-        [0.0, 0.0, 0.0, 0.0, 0.0, f(), f(), f()],
-    ]
-    n = 3
-    row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=2)
-    col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=2)
+    data = np.zeros((2**n, 2**n))
+    for i in range(2**n):
+        for d in range(-bandsize, bandsize + 1):
+            j = i + d
+            if 0 <= j < 2**n:
+                data[i, j] = f()
+    return data
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(("n", "bandsize"), [(2, 1), (3, 1)])
+def test_matrix_stress(n: int, bandsize: int):
+    rs = np.random.RandomState(1234)
+    data = random_banded_matrix(n, bandsize, rs=rs)
+
+    row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=bandsize)
+    col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=bandsize)
     entry_oracle = ExplicitEntryOracle(system_bitsize=n, data=np.array(data), entry_bitsize=7)
     bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     alpha = bloq.alpha

@@ -19,8 +19,14 @@ Bloqs Library
     chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
-    factoring/factoring-via-modexp.ipynb
+    cryptography/rsa/factoring-via-modexp.ipynb
     state_preparation/state_preparation_via_rotation_tutorial.ipynb
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Root Bloqs:
+
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -85,9 +91,9 @@ Bloqs Library
     mod_arithmetic/mod_subtraction.ipynb
     mod_arithmetic/mod_multiplication.ipynb
     mod_arithmetic/mod_division.ipynb
-    factoring/rsa/rsa.ipynb
-    factoring/ecc/ec_add.ipynb
-    factoring/ecc/ecc.ipynb
+    cryptography/rsa/rsa.ipynb
+    cryptography/ecc/ec_add.ipynb
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
