@@ -653,3 +653,108 @@ def _binarypolynomialmultiplication() -> BinaryPolynomialMultiplication:
 _BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
     bloq_cls=BinaryPolynomialMultiplication, examples=(_binarypolynomialmultiplication,)
 )
+
+@attrs.frozen
+class ShiftRight:
+    pass
+
+@attrs.frozen
+class GF2MulMod(Bloq):
+    """Multiply two polynomials modulu m(x)."""
+
+    m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+
+    @cached_property
+    def n(self):
+        return int(self.m_x.degrees.max())
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        # C is directional
+        return Signature(
+            [
+                Register('f', dtype=QBit(), shape=(self.n,)),
+                Register('g', dtype=QBit(), shape=(self.n,)),
+                Register('h', dtype=QBit(), shape=(self.n,)),
+            ]
+        )
+    
+
+    @cached_property
+    def k(self):
+        if isinstance(self.n, int):
+            return (self.n + 1)//2
+        else:
+            return sympy.ceiling(self.n / 2)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'Soquet', g: 'Soquet', h:'Soquet') -> Dict[str, 'Soquet']:
+        if is_symbolic(self.k, self.n):
+            raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")
+
+        for i in range(self.n - self.k):
+            f[self.k + i], f[i] = bb.add(CNOT(), ctrl=f[self.k+i], target=f[i])
+        for i in range(self.n - self.k):
+            g[self.k + i], g[i] = bb.add(CNOT(), ctrl=g[self.k+i], target=g[i])
+
+        # print(h)
+        f[:self.k], g[:self.k], h[:self.n] = bb.add(BinaryPolynomialMultiplication(self.k), f=f[:self.k], g=g[:self.k], h=h[:self.n])
+        # print(h)
+
+        for i in range(self.n - self.k):
+            g[self.k + i], g[i] = bb.add(CNOT(), ctrl=g[self.k+i], target=g[i])
+        for i in range(self.n - self.k):
+            f[self.k + i], f[i] = bb.add(CNOT(), ctrl=f[self.k+i], target=f[i])
+
+        # print(h)
+
+        h[:self.n] = bb.add(GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x).adjoint(), g=h[:self.n])
+        # print(h)
+        f[self.k:self.n], g[self.k:self.n], h[:2*(self.n-self.k)-1] = bb.add(BinaryPolynomialMultiplication(self.n-self.k), f=f[self.k:self.n], g=g[self.k:self.n], h=h[:2*(self.n-self.k)-1])
+        # print(h)
+        
+        # print('here')
+        for _ in range(self.k):
+            h = bb.add(ShiftRight(self.m_x), f=h)
+        
+        # f[:self.k], g[:self.k], h[:2*(self.n-self.k)-1] = bb.add(GF2Mul(self.k), f=f[:self.k], g=g[:self.k], h=h[:2*(self.n-self.k)-1])
+        f[:self.k], g[:self.k], h = bb.add(BinaryPolynomialMultiplication(self.k), f=f[:self.k], g=g[:self.k], h=h)
+        h[:self.n] = bb.add(GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x), g=h[:self.n])
+        return {
+            'f': f,
+            'g': g,
+            'h': h,
+        }
+
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if self.n == 1:
+            return {
+                Toffoli(): 1, 
+            }
+        if not is_symbolic(self.n) and 2*self.k == self.n:
+            return {
+                CNOT(): 4*(self.n-self.k),
+                BinaryPolynomialMultiplication(self.k):3,
+                GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x): 1,
+                GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x).adjoint(): 1,
+                ShiftRight(self.m_x): self.k,
+            }
+        return {
+            CNOT(): 4*(self.n-self.k),
+            BinaryPolynomialMultiplication(self.k):2,
+            BinaryPolynomialMultiplication(self.n-self.k):1,
+            GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x): 1,
+            GF2MultiplyByConstantMod(Poly.Degrees([0, self.k]), self.m_x).adjoint(): 1,
+            ShiftRight(self.m_x): self.k,
+        }
+
+    def on_classical_vals(self, f, g, h) -> Dict[str, 'ClassicalValT']:
+        fx = Poly(f[::-1])
+        gx = Poly(g[::-1])
+        hx = (fx * gx)%self.m_x
+        res = hx.coefficients().tolist()
+        res = [0 for _ in range(len(h) - len(res))] + res
+        res = res[::-1]
+        return {'f': f, 'g': g, 'h': res}
