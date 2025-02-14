@@ -20,11 +20,8 @@ from qualtran.resource_counting import get_cost_value, QECGatesCost
 from .kikuchi_block_encoding import _kikuchi_matrix, _kikuchi_matrix_symb
 
 
-@pytest.mark.parametrize("bloq_ex", [_kikuchi_matrix, _kikuchi_matrix_symb])
+@pytest.mark.parametrize("bloq_ex", [_kikuchi_matrix, _kikuchi_matrix_symb], ids=lambda be: be.name)
 def test_examples(bloq_autotester, bloq_ex):
-    if bloq_autotester.check_name == 'serialize':
-        pytest.skip()
-
     bloq_autotester(bloq_ex)
 
 

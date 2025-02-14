@@ -15,17 +15,14 @@ from unittest.mock import ANY
 
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq
+from qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance import _load_scopes, _load_scopes_symb
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
-from .load_kxor_instance import _load_scopes, _load_scopes_symb
 
-
-@pytest.mark.parametrize("bloq", [_load_scopes, _load_scopes_symb])
+@pytest.mark.parametrize("bloq", [_load_scopes, _load_scopes_symb], ids=lambda be: be.name)
 def test_examples(bloq_autotester, bloq: Bloq):
-    if bloq_autotester.check_name == 'serialize':
-        pytest.skip()
-
     bloq_autotester(bloq)
 
 
@@ -47,3 +44,8 @@ def test_load_instance_cost_symb():
     logn = bloq.inst.index_bitsize
     gc = get_cost_value(bloq, QECGatesCost())
     assert gc == GateCounts(and_bloq=m - 2, clifford=k * m * logn + m - 2, measurement=m - 2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('load_kxor_instance')

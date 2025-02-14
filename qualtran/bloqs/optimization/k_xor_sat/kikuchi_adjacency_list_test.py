@@ -34,9 +34,6 @@ from .kikuchi_adjacency_list import (
     ids=lambda bloq_ex: bloq_ex.name,
 )
 def test_examples(bloq_autotester, bloq_ex):
-    if bloq_autotester.check_name == 'serialize':
-        pytest.skip()
-
     bloq_autotester(bloq_ex)
 
 
