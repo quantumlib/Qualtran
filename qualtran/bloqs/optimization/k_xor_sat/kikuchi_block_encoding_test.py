@@ -15,9 +15,11 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.basic_gates import Swap
+from qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding import (
+    _kikuchi_matrix,
+    _kikuchi_matrix_symb,
+)
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-
-from .kikuchi_block_encoding import _kikuchi_matrix, _kikuchi_matrix_symb
 
 
 @pytest.mark.parametrize("bloq_ex", [_kikuchi_matrix, _kikuchi_matrix_symb], ids=lambda be: be.name)

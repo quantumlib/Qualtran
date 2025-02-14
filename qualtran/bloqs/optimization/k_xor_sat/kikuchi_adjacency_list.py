@@ -45,10 +45,9 @@ from qualtran.bloqs.arithmetic import AddK, Equals, Xor
 from qualtran.bloqs.arithmetic.lists import SymmetricDifference
 from qualtran.bloqs.basic_gates import CNOT, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt import And
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
-
-from .kxor_instance import KXorInstance
 
 
 @frozen

@@ -59,11 +59,10 @@ from qualtran.bloqs.arithmetic import EqualsAConstant, LessThanConstant
 from qualtran.bloqs.basic_gates import Hadamard, SGate
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.data_loading import QROM
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, HasLength, is_symbolic, is_zero, log2, SymbolicInt
-
-from .kxor_instance import KXorInstance
 
 
 @frozen

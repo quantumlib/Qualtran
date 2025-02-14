@@ -17,15 +17,14 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran.resource_counting import big_O, GateCounts, get_cost_value, QECGatesCost
-from qualtran.symbolics import ceil, log2
-
-from .kikuchi_adjacency_list import (
+from qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list import (
     _col_kth_nz,
     _col_kth_nz_symb,
     _kikuchi_nonzero_index,
     _kikuchi_nonzero_index_symb,
 )
+from qualtran.resource_counting import big_O, GateCounts, get_cost_value, QECGatesCost
+from qualtran.symbolics import ceil, log2
 
 
 @pytest.mark.parametrize(

@@ -43,13 +43,12 @@ from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import (
     SparseMatrixHermitian,
     SqrtEntryOracle,
 )
+from qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list import KikuchiNonZeroIndex
+from qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix import KikuchiMatrixEntry
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
-
-from .kikuchi_adjacency_list import KikuchiNonZeroIndex
-from .kikuchi_adjacency_matrix import KikuchiMatrixEntry
-from .kxor_instance import KXorInstance
 
 
 @frozen

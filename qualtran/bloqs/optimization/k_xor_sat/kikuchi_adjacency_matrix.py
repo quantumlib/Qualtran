@@ -43,11 +43,13 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.arithmetic.lists import SymmetricDifference
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
+from qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance import (
+    LoadUniqueScopeIndex,
+    PRGAUniqueConstraintRHS,
+)
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import SymbolicInt
-
-from .kxor_instance import KXorInstance
-from .load_kxor_instance import LoadUniqueScopeIndex, PRGAUniqueConstraintRHS
 
 
 @frozen
