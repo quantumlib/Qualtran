@@ -911,7 +911,7 @@ class QGF(QDType):
     characteristic: SymbolicInt
     degree: SymbolicInt
     irreducible_poly: Optional['galois.Poly'] = attrs.field()
-    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int', eq=False)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
