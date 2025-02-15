@@ -578,6 +578,8 @@ GF_ARITHMETIC = [
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_BY_CONSTANT_MOD_DOC,
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_POLY_BY_ONE_PLUS_XK_DOC,
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._BINARY_POLYNOMIAL_MULTIPLICATION_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_SHIFT_RIGHT_MOD_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MUL_DOC,
         ],
     ),
     NotebookSpecV2(
