@@ -179,17 +179,17 @@ class ECWindowAddR(Bloq):
 
         cR = self.R
         data_a, data_b, data_lam = [0], [0], [0]
-        mon_int = QMontgomeryUInt(self.n)
+        mon_int = QMontgomeryUInt(self.n, self.R.mod)
         for _ in range(1, 2**self.add_window_size):
-            data_a.append(mon_int.uint_to_montgomery(int(cR.x), int(self.R.mod)))
-            data_b.append(mon_int.uint_to_montgomery(int(cR.y), int(self.R.mod)))
+            data_a.append(mon_int.uint_to_montgomery(int(cR.x)))
+            data_b.append(mon_int.uint_to_montgomery(int(cR.y)))
             lam_num = (3 * cR.x**2 + cR.curve_a) % cR.mod
             lam_denom = (2 * cR.y) % cR.mod
             if lam_denom != 0:
                 lam = (lam_num * pow(lam_denom, -1, mod=cR.mod)) % cR.mod
             else:
                 lam = 0
-            data_lam.append(mon_int.uint_to_montgomery(int(lam), int(self.R.mod)))
+            data_lam.append(mon_int.uint_to_montgomery(int(lam)))
             cR = cR + self.R
 
         return QROAMClean(
@@ -244,9 +244,10 @@ class ECWindowAddR(Bloq):
 
     def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         # TODO(https://github.com/quantumlib/Qualtran/issues/1476): make ECAdd accept SymbolicInt.
+        dtype = QMontgomeryUInt(self.n, self.R.mod)
         A = ECPoint(
-            QMontgomeryUInt(self.n).montgomery_to_uint(int(x), int(self.R.mod)),
-            QMontgomeryUInt(self.n).montgomery_to_uint(int(y), int(self.R.mod)),
+            dtype.montgomery_to_uint(int(x)),
+            dtype.montgomery_to_uint(int(y)),
             mod=self.R.mod,
             curve_a=self.R.curve_a,
         )
@@ -254,8 +255,8 @@ class ECWindowAddR(Bloq):
         result: ECPoint = A + (ctrls * self.R)
         return {
             'ctrl': ctrl,
-            'x': QMontgomeryUInt(self.n).uint_to_montgomery(int(result.x), int(self.R.mod)),
-            'y': QMontgomeryUInt(self.n).uint_to_montgomery(int(result.y), int(self.R.mod)),
+            'x': dtype.uint_to_montgomery(int(result.x)),
+            'y': dtype.uint_to_montgomery(int(result.y)),
         }
 
     def wire_symbol(
