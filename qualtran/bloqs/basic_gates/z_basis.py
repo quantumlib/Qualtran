@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.pyzx_interop.bloq_to_pyzx_circuit import ZXAncillaManager
+    from qualtran.pyzx_interop import ZXAncillaManager
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 _ZERO = np.array([1, 0], dtype=np.complex128)

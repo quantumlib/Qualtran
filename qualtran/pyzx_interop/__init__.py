@@ -11,4 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .bloq_to_pyzx_circuit import bloq_to_pyzx_circuit
+from .bloq_to_pyzx_circuit import bloq_to_pyzx_circuit, ZXAncillaManager

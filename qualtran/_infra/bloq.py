@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.pyzx_interop.bloq_to_pyzx_circuit import ZXAncillaManager
+    from qualtran.pyzx_interop import ZXAncillaManager
     from qualtran.resource_counting import (
         BloqCountDictT,
         BloqCountT,

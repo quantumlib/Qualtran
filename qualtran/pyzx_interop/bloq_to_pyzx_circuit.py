@@ -28,7 +28,7 @@ ZXQubitMap = dict[str, NDArray[np.integer]]
 class ZXAncillaManager:
     """A simple ancilla qubit manager for generating pyzx Circuits.
 
-    Args:
+    Attributes:
         n: number of existing qubits in the starting circuit.
     """
 
@@ -49,7 +49,6 @@ class ZXAncillaManager:
 
         Discard an ancilla qubit. For now, this operation does nothing.
         """
-        pass
 
 
 def _empty_qubit_map_from_registers(registers: Iterable[Register]) -> ZXQubitMap:
@@ -131,9 +130,9 @@ def _add_cbloq_to_pyzx_circuit(
     """
     # initialize the soquets corresponding to the `cbloq` inputs
     soq_map: dict[Soquet, NDArray[np.integer]] = {
-        Soquet(binst=LeftDangle, reg=reg, idx=idx): in_qubits[reg.name][idx]
-        for reg in cbloq.signature.lefts()
-        for idx in reg.all_idxs()
+        soq: in_qubits[soq.reg.name][soq.idx]
+        for soq in cbloq.all_soquets
+        if soq.binst is LeftDangle
     }
 
     for binst, pred_cxns, succ_cxns in cbloq.iter_bloqnections():
