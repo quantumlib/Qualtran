@@ -37,6 +37,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
+    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT

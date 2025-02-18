@@ -36,6 +36,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -96,6 +97,11 @@ class YGate(Bloq):
 
         (q,) = q
         return cirq.Y(q), {'q': np.asarray([q])}
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.PauliY(wires=wires)
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -161,6 +167,11 @@ class CYGate(Bloq):
             'ctrl': np.array([ctrl]),
             'target': np.array([target]),
         }
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.CY(wires=wires)
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
