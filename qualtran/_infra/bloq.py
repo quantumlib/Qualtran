@@ -21,6 +21,8 @@ from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CH
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
+    import numpy as np
+    import pyzx as zx
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
@@ -39,6 +41,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
+    from qualtran.pyzx_interop import ZXAncillaManager
     from qualtran.resource_counting import (
         BloqCountDictT,
         BloqCountT,
@@ -551,3 +554,8 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+    def as_zx_gates(
+        self, ancilla_manager: 'ZXAncillaManager', /, **qubits: 'NDArray[np.integer]'
+    ) -> tuple[list['zx.circuit.Gate'], dict[str, 'NDArray[np.integer]']]:
+        raise NotImplementedError(f"{self} does not declare a conversion to ZX gates.")
