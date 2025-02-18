@@ -966,7 +966,7 @@ class QGF(QDType):
         self.assert_valid_classical_val(x)
         ret = []
         v = int(x)
-        for _ in range(self.degree):
+        for _ in range(int(self.degree)):
             ret.append(v & 1)
             v >>= 1
         ret.reverse()
