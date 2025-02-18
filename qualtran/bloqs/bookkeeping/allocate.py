@@ -36,6 +36,7 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -99,6 +100,11 @@ class Allocate(_BookkeepingBloq):
             else qubit_manager.qalloc(self.signature.n_qubits())
         )
         return (None, {'reg': np.array(qubits).reshape(shape)})
+    
+    def as_pl_op(
+        self, wires: 'pennylane.Wires'
+    ) -> 'pennylane.Operation':
+        return None
 
 
 @bloq_example

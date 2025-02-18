@@ -33,6 +33,7 @@ from qualtran import (
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
 if TYPE_CHECKING:
+    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -100,6 +101,10 @@ class Cast(_BookkeepingBloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
 
+    def as_pl_op(
+        self, wires: 'pennylane.Wires'
+    ) -> 'pennylane.Operation':
+        return None
 
 @bloq_example
 def _cast() -> Cast:
