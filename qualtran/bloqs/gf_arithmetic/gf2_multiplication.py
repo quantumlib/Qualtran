@@ -303,7 +303,7 @@ class GF2MultiplyByConstantMod(Bloq):
             f_x = Poly.Degrees(f_x)
         gf = GF(2, m_x.degree, irreducible_poly=m_x if m_x.degree > 2 else None, repr=field_representation)  # type: ignore[call-overload]
         return GF2MultiplyByConstantMod(
-            const=gf(sum(2**i for i in f_x.nonzero_degrees)),
+            const=gf(sum(2 ** int(i) for i in f_x.nonzero_degrees)),
             m_x=m_x,
             element_repr=field_representation,
         )
