@@ -24,8 +24,10 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
     _gf16_multiplication,
     BinaryPolynomialMultiplication,
+    GF2Mul,
     GF2Multiplication,
     GF2MultiplyByConstantMod,
+    GF2ShiftRightMod,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
 )
@@ -153,7 +155,7 @@ def test_multiply_by_constant_mod_counts(m_x):
 def test_invalid_GF2MultiplyByConstantMod_args_raises():
     gf = GF(2, 3)
     x = GF(2, 4)(1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError):
         _ = GF2MultiplyByConstantMod(x, gf)
 
 
@@ -237,3 +239,99 @@ def test_binary_mult_toffoli_cost(log_n):
     counts = cost.total_t_and_ccz_count()
     assert counts['n_t'] == 0
     assert counts['n_ccz'] == 3**log_n
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_gf2shiftrightmod_decomposition(m_x, k):
+    blq = GF2ShiftRightMod(m_x, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_gf2shiftrightmod_bloq_counts(m_x, k):
+    blq = GF2ShiftRightMod(m_x, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_gf2shiftrightmod_complexity(m_x, k):
+    blq = GF2ShiftRightMod(m_x, k)
+    cost = get_cost_value(blq, QECGatesCost())
+    clifford = k * (len(m_x) - 2) if len(m_x) > 2 else 0
+    assert cost.clifford == clifford
+    assert cost.total_t_count() == 0
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_gf2shiftrightmod_classical_action(m_x, k):
+    blq = GF2ShiftRightMod(m_x, k)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])
+def test_gf2mulmod_decomposition(m_x):
+    blq = GF2Mul(m_x)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])
+def test_gf2mulmod_bloq_counts(m_x):
+    blq = GF2Mul(m_x)
+    qlt_testing.assert_equivalent_bloq_counts(
+        blq, generalizer=(ignore_split_join, ignore_alloc_free)
+    )
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [8, 4, 3, 1, 0]])
+def test_gf2mulmod_complexity(m_x):
+    blq = GF2Mul(m_x)
+    cost = get_cost_value(blq, QECGatesCost())
+    # The toffoli cost is n^log2(3) .. when n = 2^k we get toffoli cost = 3^k
+    n = max(m_x)
+    k = n.bit_length() - 1
+    assert cost.total_toffoli_only() == 3**k
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
+def test_gf2mulmod_classical_action(m_x):
+    blq = GF2Mul(m_x)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements, g=blq.gf.elements)
+
+
+@pytest.mark.slow
+def test_gf2mulmod_classical_action_slow():
+    m_x = [8, 4, 3, 1, 0]
+    blq = GF2Mul(m_x)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements, g=blq.gf.elements)
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
+def test_gf2mulmod_classical_action_adjoint(m_x):
+    blq = GF2Mul(m_x)
+    adjoint = blq.adjoint()
+    for i, j in np.random.random_integers(0, len(blq.gf.elements) - 1, (10, 2)):
+        f = blq.gf.elements[i]
+        g = blq.gf.elements[j]
+        a, b, c = blq.call_classically(f=f, g=g)
+        a, b = adjoint.call_classically(f=a, g=b, h=c)
+        assert a == f and b == g
+
+
+@pytest.mark.parametrize('m_x', [[2, 1, 0], [8, 4, 3, 1, 0], [16, 5, 3, 1, 0]])
+def test_gf2mulmod_classical_complexity(m_x):
+    blq = GF2Mul(m_x)
+    cost = get_cost_value(blq, QECGatesCost()).total_t_and_ccz_count()
+    assert cost['n_t'] == 0
+    # The toffoli cost is n^log2(3) ... for n = 2^k we get toffli count = 3^k
+    n = max(m_x)
+    k = n.bit_length() - 1
+    assert cost['n_ccz'] == 3**k
+
+
+def test_gf2mul_invalid_input_raises():
+    with pytest.raises(ValueError):
+        _ = GF2Mul([0, 1])
