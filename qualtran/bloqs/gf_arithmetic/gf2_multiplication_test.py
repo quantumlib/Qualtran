@@ -42,8 +42,8 @@ def test_gf2_multiplication_symbolic(bloq_autotester):
     bloq_autotester(_gf2_multiplication_symbolic)
 
 
-def test_synthesize_lr_circuit():
-    m = 2
+@pytest.mark.parametrize('m', [2, 4, 6, 8])
+def test_synthesize_lr_circuit(m: int):
     matrix = GF2Multiplication(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
     bloq_adj = bloq.adjoint()
