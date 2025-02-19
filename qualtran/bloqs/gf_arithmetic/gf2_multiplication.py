@@ -72,11 +72,14 @@ class SynthesizeLRCircuit(Bloq):
         return Signature([Register('q', QBit(), shape=(n,))])
 
     def on_classical_vals(self, *, q: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        if is_symbolic(self.matrix):
+            raise ValueError(f"Cannot do classical simulation on symbolic {self}")
         matrix = GF(2)(self.matrix.astype(int))
+        assert isinstance(q, np.ndarray)
         q = GF(2)(q)
         assert isinstance(matrix, np.ndarray)
         if self.is_adjoint:
-            matrix = np.linalg.inv(matrix)
+            matrix = GF(2)(np.linalg.inv(matrix))
         _, m = matrix.shape
         assert isinstance(q, np.ndarray)
         return {'q': np.array(matrix @ q)}
