@@ -896,9 +896,7 @@ class QGF(QDType):
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
         irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
-            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
-        element_repr: The string representation of the galois elements.
-            This parameter is passed to `galois.GF(..., repr=field_repr)`.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly, verify=False)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -911,7 +909,6 @@ class QGF(QDType):
     characteristic: SymbolicInt
     degree: SymbolicInt
     irreducible_poly: Optional['galois.Poly'] = attrs.field()
-    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int', eq=False)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
@@ -957,7 +954,8 @@ class QGF(QDType):
             int(self.characteristic),
             int(self.degree),
             irreducible_poly=poly,
-            repr=self.element_repr,
+            verify=False,
+            repr='poly',
             compile='python-calculate',
         )
 

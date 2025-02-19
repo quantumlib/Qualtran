@@ -252,7 +252,7 @@ _GF2_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class GF2MultiplyByConstantMod(Bloq):
+class GF2MultiplyByConstant(Bloq):
     r"""Multiply by constant $f(x)$ modulu $m(x)$. Both $f(x)$ and $m(x)$ are constants.
 
     Args:
@@ -267,20 +267,19 @@ class GF2MultiplyByConstantMod(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 1
     """
 
-    const: 'galois.FieldArray'
+    const: 'SymbolicInt'
     m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
-    element_repr: Literal['int', 'poly', 'power'] = attrs.field(default='int', eq=False)
 
     @cached_property
     def galois_field(self):
         return GF(  # type: ignore[call-overload]
-            2, self.n, irreducible_poly=self.m_x if self.n > 2 else None, repr=self.element_repr
+            2, self.n, irreducible_poly=self.m_x if self.n > 2 else None, repr='poly'
         )
 
     def __attrs_post_init__(self):
-        assert isinstance(self.const, self.galois_field), f'{self.galois_field=} {self.const=}'
+        assert is_symbolic(self.const) or isinstance(self.const, int)
 
-    def adjoint(self) -> 'GF2MultiplyByConstantMod':
+    def adjoint(self) -> 'GF2MultiplyByConstant':
         return attrs.evolve(self, const=self.galois_field(1) / self.const)
 
     @cached_property
@@ -289,23 +288,21 @@ class GF2MultiplyByConstantMod(Bloq):
 
     @cached_property
     def qgf(self) -> QGF:
-        return QGF(2, self.n, self.m_x, element_repr=self.element_repr)
+        return QGF(2, self.n, self.m_x)
 
     @staticmethod
     def from_polynomials(
         f_x: Union[Poly, Sequence[int]],
         m_x: Union[Poly, Sequence[int]],
-        field_representation: Literal['int', 'poly', 'power'] = 'poly',
-    ) -> 'GF2MultiplyByConstantMod':
+    ) -> 'GF2MultiplyByConstant':
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
         if not isinstance(f_x, Poly):
             f_x = Poly.Degrees(f_x)
-        gf = GF(2, m_x.degree, irreducible_poly=m_x if m_x.degree > 2 else None, repr=field_representation)  # type: ignore[call-overload]
-        return GF2MultiplyByConstantMod(
-            const=gf(sum(2 ** int(i) for i in f_x.nonzero_degrees)),
+        # gf = GF(2, m_x.degree, irreducible_poly=m_x if m_x.degree > 2 else None, repr='poly')  # type: ignore[call-overload]
+        return GF2MultiplyByConstant(
+            const=sum(2 ** int(i) for i in f_x.nonzero_degrees),
             m_x=m_x,
-            element_repr=field_representation,
         )
 
     @cached_property
@@ -329,9 +326,12 @@ class GF2MultiplyByConstantMod(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('g', self.qgf)])
 
+    @cached_property
+    def _const(self) -> galois.FieldArray:
+        return self.galois_field(self.const)
+
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:
-        assert isinstance(g, self.galois_field)
-        return {'g': g * self.const}
+        return {'g': g * self._const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
         L, U, P = self.lup
@@ -370,32 +370,28 @@ class GF2MultiplyByConstantMod(Bloq):
             return {CNOT(): cnots}
         return {}
 
-    def __hash__(self):
-        return hash((self.const.tobytes(), self.m_x))
-
-
 @bloq_example
-def _gf2_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+def _gf2_multiply_by_constant() -> GF2MultiplyByConstant:
     import galois
 
     mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
     gf = galois.GF(2, 3, irreducible_poly=mx)
     const = gf(5)  # x^2 + 1
-    gf2_multiply_by_constant_modulu = GF2MultiplyByConstantMod(const, mx)
-    return gf2_multiply_by_constant_modulu
+    gf2_multiply_by_constant = GF2MultiplyByConstant(const, mx)
+    return gf2_multiply_by_constant
 
 
 @bloq_example
-def _gf2_poly_multiply_by_constant_modulu() -> GF2MultiplyByConstantMod:
+def _gf2_poly_multiply_by_constant() -> GF2MultiplyByConstant:
     fx = [2, 0]  # x^2 + 1
     mx = [0, 1, 3]  # x^3 + x + 1
-    gf2_poly_multiply_by_constant_modulu = GF2MultiplyByConstantMod.from_polynomials(fx, mx)
-    return gf2_poly_multiply_by_constant_modulu
+    gf2_poly_multiply_by_constant = GF2MultiplyByConstant.from_polynomials(fx, mx)
+    return gf2_poly_multiply_by_constant
 
 
 _MULTIPLY_BY_CONSTANT_MOD_DOC = BloqDocSpec(
-    bloq_cls=GF2MultiplyByConstantMod,
-    examples=(_gf2_multiply_by_constant_modulu, _gf2_poly_multiply_by_constant_modulu),
+    bloq_cls=GF2MultiplyByConstant,
+    examples=(_gf2_multiply_by_constant, _gf2_poly_multiply_by_constant),
 )
 
 
@@ -663,8 +659,8 @@ _BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class GF2ShiftRightMod(Bloq):
-    r"""Multiplies by $2^k$ (or $x^k$ for polynomials) modulu.
+class GF2ShiftRight(Bloq):
+    r"""Multiplies by $2^k$ (or $x^k$ for polynomials) modulo the given irreducible polynomial.
 
     Applies the transformation
     $$
@@ -685,20 +681,13 @@ class GF2ShiftRightMod(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Section 3.1
     """
 
-    m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+    qgf: QGF
     k: SymbolicInt = 1
 
     @cached_property
     def n(self):
-        return self.m_x.degree
+        return self.qgf.degree
 
-    @cached_property
-    def qgf(self):
-        return QGF(2, self.n, irreducible_poly=self.m_x)
-
-    @cached_property
-    def gf(self):
-        return GF(2, self.n, irreducible_poly=self.m_x if self.n > 2 else None)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -706,7 +695,7 @@ class GF2ShiftRightMod(Bloq):
 
     @cached_property
     def degrees(self):
-        return tuple(sorted(self.m_x.nonzero_degrees))
+        return tuple(sorted(self.qgf.irreducible_poly.nonzero_degrees))
 
     def on_classical_vals(self, f: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         k = self.k
@@ -739,28 +728,24 @@ class GF2ShiftRightMod(Bloq):
 
 
 @bloq_example
-def _gf2shiftrightmod() -> GF2ShiftRightMod:
+def _GF2ShiftRight() -> GF2ShiftRight:
     m_x = [5, 2, 0]  # x^5 + x^2 + 1
-    gf2shiftrightmod = GF2ShiftRightMod(m_x=m_x, k=3)  # shift by 3
-    return gf2shiftrightmod
+    GF2ShiftRight = GF2ShiftRight(m_x=m_x, k=3)  # shift by 3
+    return GF2ShiftRight
 
 
-_GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRightMod, examples=(_gf2shiftrightmod,))
+_GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_GF2ShiftRight,))
 
 
 @attrs.frozen
-class _GF2MulImpl(Bloq):
+class _GF2MulViaKaratsubaImpl(Bloq):
     """Multiply two GF2 numbers (or binary polynomials) modulu m(x)."""
 
-    m_x: Poly = attrs.field(converter=lambda x: x if isinstance(x, Poly) else Poly.Degrees(x))
+    qgf: QGF
 
     @cached_property
     def n(self):
-        return int(self.m_x.degrees.max())
-
-    @cached_property
-    def gf(self):
-        return GF(2, self.n, irreducible_poly=self.m_x if self.n > 2 else None)
+        return int(self.qgf.degree)
 
     @cached_property
     def qgf(self):
@@ -814,7 +799,7 @@ class _GF2MulImpl(Bloq):
 
         h = bb.join(h_arr[: self.n][::-1], self.qgf)
         h = bb.add(
-            GF2MultiplyByConstantMod.from_polynomials(
+            GF2MultiplyByConstant.from_polynomials(
                 [0, self.k], self.m_x, field_representation='int'
             ).adjoint(),
             g=h,
@@ -828,7 +813,7 @@ class _GF2MulImpl(Bloq):
         )
 
         h = bb.join(h_arr[: self.n][::-1], self.qgf)
-        h = bb.add(GF2ShiftRightMod(self.m_x, self.k), f=h)
+        h = bb.add(GF2ShiftRight(self.m_x, self.k), f=h)
         h_arr[: self.n] = bb.split(h)[::-1]
 
         f_arr[: self.k], g_arr[: self.k], h_arr[: 2 * self.k - 1] = bb.add(
@@ -839,7 +824,7 @@ class _GF2MulImpl(Bloq):
         )
         h = bb.join(h_arr[: self.n][::-1], self.qgf)
         h = bb.add(
-            GF2MultiplyByConstantMod.from_polynomials(
+            GF2MultiplyByConstant.from_polynomials(
                 [0, self.k], self.m_x, field_representation='int'
             ),
             g=h,
@@ -856,8 +841,8 @@ class _GF2MulImpl(Bloq):
 
 
 @attrs.frozen
-class GF2Mul(Bloq):
-    r"""Multiplies two GF($2^n$) numbers (or binary polynomials) modulu.
+class GF2MulViaKaratsuba(Bloq):
+    r"""Multiplies two GF($2^n$) numbers (or binary polynomials) modulo $m(x)$.
 
     Applies the transformation
     $$
@@ -886,7 +871,7 @@ class GF2Mul(Bloq):
 
     def __attrs_post_init__(self):
         if self.m_x.degree < 2:
-            raise ValueError(f'GF2Mul is not supported for {self.m_x}')
+            raise ValueError(f'GF2MulViaKaratsuba is not supported for {self.m_x}')
 
     @cached_property
     def n(self):
@@ -900,7 +885,7 @@ class GF2Mul(Bloq):
     def qgf(self):
         return QGF(2, self.n, irreducible_poly=self.m_x)
 
-    def adjoint(self) -> 'GF2Mul':
+    def adjoint(self) -> 'GF2MulViaKaratsuba':
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @cached_property
@@ -923,8 +908,8 @@ class GF2Mul(Bloq):
             return sympy.ceiling(self.n / 2)
 
     @cached_property
-    def _gf2mulmod_impl(self) -> Bloq:
-        impl = _GF2MulImpl(self.m_x)
+    def _GF2MulViaKaratsubamod_impl(self) -> Bloq:
+        impl = _GF2MulViaKaratsubaImpl(self.m_x)
         if self.uncompute:
             return impl.adjoint()
         return impl
@@ -940,7 +925,7 @@ class GF2Mul(Bloq):
 
         assert h is not None
         f, g, h = cast(
-            Tuple['Soquet', 'Soquet', 'Soquet'], bb.add_from(self._gf2mulmod_impl, f=f, g=g, h=h)
+            Tuple['Soquet', 'Soquet', 'Soquet'], bb.add_from(self._GF2MulViaKaratsubamod_impl, f=f, g=g, h=h)
         )
 
         if self.uncompute:
@@ -958,17 +943,17 @@ class GF2Mul(Bloq):
             return {
                 CNOT(): 4 * (self.n - self.k),
                 BinaryPolynomialMultiplication(self.k): 3,
-                GF2MultiplyByConstantMod.from_polynomials([0, self.k], self.m_x): 1,
-                GF2MultiplyByConstantMod.from_polynomials([0, self.k], self.m_x).adjoint(): 1,
-                GF2ShiftRightMod(self.m_x, self.k): 1,
+                GF2MultiplyByConstant.from_polynomials([0, self.k], self.m_x): 1,
+                GF2MultiplyByConstant.from_polynomials([0, self.k], self.m_x).adjoint(): 1,
+                GF2ShiftRight(self.m_x, self.k): 1,
             }
         return {
             CNOT(): 4 * (self.n - self.k),
             BinaryPolynomialMultiplication(self.k): 2,
             BinaryPolynomialMultiplication(self.n - self.k): 1,
-            GF2MultiplyByConstantMod.from_polynomials([0, self.k], self.m_x): 1,
-            GF2MultiplyByConstantMod.from_polynomials([0, self.k], self.m_x).adjoint(): 1,
-            GF2ShiftRightMod(self.m_x, self.k): 1,
+            GF2MultiplyByConstant.from_polynomials([0, self.k], self.m_x): 1,
+            GF2MultiplyByConstant.from_polynomials([0, self.k], self.m_x).adjoint(): 1,
+            GF2ShiftRight(self.m_x, self.k): 1,
         }
 
     def on_classical_vals(
@@ -983,10 +968,10 @@ class GF2Mul(Bloq):
 
 
 @bloq_example
-def _gf2mul() -> GF2Mul:
+def _GF2MulViaKaratsuba() -> GF2MulViaKaratsuba:
     m_x = [5, 2, 0]  # x^5 + x^2 + 1
-    gf2mul = GF2Mul(m_x=m_x)
-    return gf2mul
+    GF2MulViaKaratsuba = GF2MulViaKaratsuba(m_x=m_x)
+    return GF2MulViaKaratsuba
 
 
-_GF2_MUL_DOC = BloqDocSpec(bloq_cls=GF2Mul, examples=(_gf2mul,))
+_GF2_MUL_DOC = BloqDocSpec(bloq_cls=GF2MulViaKaratsuba, examples=(_GF2MulViaKaratsuba,))
