@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import math
 from typing import cast, Iterable, overload, TypeVar
 
 import numpy as np
@@ -35,7 +36,7 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
     if not is_symbolic(x):
-        return np.log2(x)
+        return math.log2(x)
     return log2(x)
 
 
@@ -51,7 +52,7 @@ def ln(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log
 
     if not is_symbolic(x):
-        return np.log(x)
+        return math.log(x)
     return log(x)
 
 
@@ -107,7 +108,7 @@ def ssqrt(x: sympy.Expr) -> sympy.Expr: ...
 def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
     if is_symbolic(x):
         return sympy.sqrt(x)
-    return np.sqrt(x)
+    return math.sqrt(x)
 
 
 @overload
