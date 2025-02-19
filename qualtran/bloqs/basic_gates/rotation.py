@@ -18,6 +18,7 @@ import attrs
 import cirq
 import numpy as np
 import sympy
+import pennylane
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
@@ -306,6 +307,11 @@ class Rz(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.RZ(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Rz':
         return attrs.evolve(self, angle=-self.angle)
@@ -330,6 +336,11 @@ class Rx(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.RX(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
@@ -354,6 +365,11 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.RY(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)
