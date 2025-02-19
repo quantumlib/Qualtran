@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
+
 import numpy as np
 import pytest
 from galois import GF, Poly
@@ -21,12 +23,14 @@ from qualtran import QGF
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
     _gf16_multiplication,
+    BinaryPolynomialMultiplication,
     GF2Multiplication,
     GF2MultiplyByConstantMod,
+    MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -156,3 +160,80 @@ def test_invalid_GF2MultiplyByConstantMod_args_raises():
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('gf2_multiplication')
+
+
+@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(1, 6) for k in range(1, n + 2)])
+def test_multiply_by_xk_decomposition(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(1, 6) for k in range(1, n + 2)])
+def test_multiply_by_xk_bloq_counts(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq)
+
+
+@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(1, 4) for k in range(1, n + 2)])
+def test_multiply_by_xk_classical_action(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+    h_polys = [*itertools.product(range(2), repeat=blq.signature[-1].shape[0])]
+
+    qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(4, 6) for k in range(1, 2 * n + 1)])
+def test_multiply_by_xk_classical_action_slow(n, k):
+    blq = MultiplyPolyByOnePlusXk(n, k)
+    fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+    h_polys = [*itertools.product(range(2), repeat=blq.signature[-1].shape[0])]
+
+    qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
+
+
+@pytest.mark.parametrize('n', range(1, 10))
+def test_binary_mult_decomposition(n):
+    blq = BinaryPolynomialMultiplication(n)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('n', range(1, 10))
+def test_binary_mult_bloq_counts(n):
+    blq = BinaryPolynomialMultiplication(n)
+    qlt_testing.assert_equivalent_bloq_counts(
+        blq, generalizer=(ignore_split_join, ignore_alloc_free)
+    )
+
+
+@pytest.mark.parametrize('n', range(1, 4))
+def test_binary_mult_classical_action(n):
+    blq = BinaryPolynomialMultiplication(n)
+    fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+    h_polys = [[0] * blq.signature[-1].shape[0]]
+
+    qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
+
+
+# @pytest.mark.slow
+@pytest.mark.parametrize('n', range(4, 7))
+def test_binary_mult_classical_action_slow(n):
+    blq = BinaryPolynomialMultiplication(n)
+    fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
+    h_polys = [[0] * blq.signature[-1].shape[0]]
+
+    qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
+
+
+@pytest.mark.parametrize('log_n', [*range(10 + 1)])
+def test_binary_mult_toffoli_cost(log_n):
+    # Toffoli cost is n^log2(3), when n = 2^k we get (2^k)^log2(3) = 3^k
+    # CNOT count is is upper bounded by (10 + 1/3) n^log2(3)
+    n = 2**log_n
+    blq = BinaryPolynomialMultiplication(n)
+    cost = get_cost_value(blq, QECGatesCost())
+    assert cost.clifford < (10 + 1 / 3) * 3**log_n
+    counts = cost.total_t_and_ccz_count()
+    assert counts['n_t'] == 0
+    assert counts['n_ccz'] == 3**log_n
