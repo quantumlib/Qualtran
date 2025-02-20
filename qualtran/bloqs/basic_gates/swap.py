@@ -194,6 +194,11 @@ class TwoBitCSwap(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.CSWAP(wires=wires)
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:

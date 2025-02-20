@@ -35,6 +35,7 @@ from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.symbolics import pi, sarg, sexp, SymbolicComplex, SymbolicFloat
 
 if TYPE_CHECKING:
+    import pennylane
     import quimb.tensor as qtn
 
 
@@ -71,6 +72,11 @@ class GlobalPhase(CirqGateAsBloqBase):
     @property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.GlobalPhaseGate(self.coefficient)
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.GlobalPhase(phi=self.coefficient, wires=wires)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
