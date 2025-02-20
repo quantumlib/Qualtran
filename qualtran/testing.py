@@ -696,7 +696,8 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
 
 
 def assert_consistent_classical_action(
-    bloq: Bloq, **parameter_ranges: Union[NDArray, Sequence[int]]
+    bloq: Bloq,
+    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
 ):
     """Check that the bloq has a classical action consistent with its decomposition.
 

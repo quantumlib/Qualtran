@@ -44,11 +44,12 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
     lam_denom = (2 * b) % p
     lam_r = 0 if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
 
-    a = QMontgomeryUInt(n).uint_to_montgomery(a, p)
-    b = QMontgomeryUInt(n).uint_to_montgomery(b, p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
-    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, p) if lam_r != 0 else p
+    dtype = QMontgomeryUInt(n, p)
+    a = dtype.uint_to_montgomery(a)
+    b = dtype.uint_to_montgomery(b)
+    x = dtype.uint_to_montgomery(x)
+    y = dtype.uint_to_montgomery(y)
+    lam_r = dtype.uint_to_montgomery(lam_r) if lam_r != 0 else p
 
     bloq = _ECAddStepOne(n=n, mod=p)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y)
@@ -184,11 +185,12 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
     lam_denom = (2 * b) % p
     lam_r = 0 if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
 
-    a = QMontgomeryUInt(n).uint_to_montgomery(a, p)
-    b = QMontgomeryUInt(n).uint_to_montgomery(b, p)
-    x = QMontgomeryUInt(n).uint_to_montgomery(x, p)
-    y = QMontgomeryUInt(n).uint_to_montgomery(y, p)
-    lam_r = QMontgomeryUInt(n).uint_to_montgomery(lam_r, p) if lam_r != 0 else p
+    dtype = QMontgomeryUInt(n, p)
+    a = dtype.uint_to_montgomery(a)
+    b = dtype.uint_to_montgomery(b)
+    x = dtype.uint_to_montgomery(x)
+    y = dtype.uint_to_montgomery(y)
+    lam_r = dtype.uint_to_montgomery(lam_r) if lam_r != 0 else p
 
     bloq = _ECAddStepOne(n=n, mod=p)
     ret1 = bloq.call_classically(a=a, b=b, x=x, y=y)
@@ -307,19 +309,20 @@ def test_ec_add_classical_fast(n, m, a, b, x, y):
     lam_num = (3 * a**2) % p
     lam_denom = (2 * b) % p
     lam_r = p if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
+    dtype = QMontgomeryUInt(n, p)
     ret1 = bloq.call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
+        a=dtype.uint_to_montgomery(a),
+        b=dtype.uint_to_montgomery(b),
+        x=dtype.uint_to_montgomery(x),
+        y=dtype.uint_to_montgomery(y),
+        lam_r=dtype.uint_to_montgomery(lam_r),
     )
     ret2 = bloq.decompose_bloq().call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
+        a=dtype.uint_to_montgomery(a),
+        b=dtype.uint_to_montgomery(b),
+        x=dtype.uint_to_montgomery(x),
+        y=dtype.uint_to_montgomery(y),
+        lam_r=dtype.uint_to_montgomery(lam_r),
     )
     assert ret1 == ret2
 
@@ -352,19 +355,20 @@ def test_ec_add_classical(n, m, a, b, x, y):
     lam_num = (3 * a**2) % p
     lam_denom = (2 * b) % p
     lam_r = p if b == 0 else (lam_num * pow(lam_denom, -1, mod=p)) % p
+    dtype = QMontgomeryUInt(n, p)
     ret1 = bloq.call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
+        a=dtype.uint_to_montgomery(a),
+        b=dtype.uint_to_montgomery(b),
+        x=dtype.uint_to_montgomery(x),
+        y=dtype.uint_to_montgomery(y),
+        lam_r=dtype.uint_to_montgomery(lam_r),
     )
     ret2 = bloq.decompose_bloq().call_classically(
-        a=QMontgomeryUInt(n).uint_to_montgomery(a, p),
-        b=QMontgomeryUInt(n).uint_to_montgomery(b, p),
-        x=QMontgomeryUInt(n).uint_to_montgomery(x, p),
-        y=QMontgomeryUInt(n).uint_to_montgomery(y, p),
-        lam_r=QMontgomeryUInt(n).uint_to_montgomery(lam_r, p),
+        a=dtype.uint_to_montgomery(a),
+        b=dtype.uint_to_montgomery(b),
+        x=dtype.uint_to_montgomery(x),
+        y=dtype.uint_to_montgomery(y),
+        lam_r=dtype.uint_to_montgomery(lam_r),
     )
     assert ret1 == ret2
 

@@ -51,7 +51,7 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, Iterable, List, Literal, Optional, Sequence, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -59,6 +59,9 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
+
+if TYPE_CHECKING:
+    import galois
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -789,8 +792,8 @@ class QMontgomeryUInt(QDType):
         We follow Montgomery form as described in the above paper; namely, r = 2^bitsize.
     """
 
-    # TODO(https://github.com/quantumlib/Qualtran/issues/1471): Add modulus p as a class member.
     bitsize: SymbolicInt
+    modulus: Optional[SymbolicInt] = None
 
     @property
     def num_qubits(self):
@@ -800,7 +803,9 @@ class QMontgomeryUInt(QDType):
         return is_symbolic(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2**self.bitsize)
+        if self.modulus is None or is_symbolic(self.modulus):
+            return range(2**self.bitsize)
+        return range(1, int(self.modulus))
 
     def to_bits(self, x: int) -> List[int]:
         self.assert_valid_classical_val(x)
@@ -825,42 +830,44 @@ class QMontgomeryUInt(QDType):
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
-    def montgomery_inverse(self, xm: int, p: int) -> int:
+    def montgomery_inverse(self, xm: int) -> int:
         """Returns the modular inverse of an integer in montgomery form.
 
         Args:
             xm: An integer in montgomery form.
-            p: The modulus of the finite field.
         """
-        return ((pow(xm, -1, p)) * pow(2, 2 * self.bitsize, p)) % p
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (
+            (pow(xm, -1, self.modulus)) * pow(2, 2 * self.bitsize, int(self.modulus))
+        ) % self.modulus
 
-    def montgomery_product(self, xm: int, ym: int, p: int) -> int:
+    def montgomery_product(self, xm: int, ym: int) -> int:
         """Returns the modular product of two integers in montgomery form.
 
         Args:
             xm: The first montgomery form integer for the product.
             ym: The second montgomery form integer for the product.
-            p: The modulus of the finite field.
         """
-        return (xm * ym * pow(2, -self.bitsize, p)) % p
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (xm * ym * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
 
-    def montgomery_to_uint(self, xm: int, p: int) -> int:
+    def montgomery_to_uint(self, xm: int) -> int:
         """Converts an integer in montgomery form to a normal form integer.
 
         Args:
             xm: An integer in montgomery form.
-            p: The modulus of the finite field.
         """
-        return (xm * pow(2, -self.bitsize, p)) % p
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (xm * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
 
-    def uint_to_montgomery(self, x: int, p: int) -> int:
+    def uint_to_montgomery(self, x: int) -> int:
         """Converts an integer into montgomery form.
 
         Args:
             x: An integer.
-            p: The modulus of the finite field.
         """
-        return (x * pow(2, int(self.bitsize), p)) % p
+        assert self.modulus is not None and not is_symbolic(self.modulus)
+        return (x * pow(2, int(self.bitsize), int(self.modulus))) % self.modulus
 
 
 @attrs.frozen
@@ -888,6 +895,10 @@ class QGF(QDType):
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
+        irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
+        element_repr: The string representation of the galois elements.
+            This parameter is passed to `galois.GF(..., repr=field_repr)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -899,6 +910,19 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly'] = attrs.field()
+    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+
+    @irreducible_poly.default
+    def _irreducible_poly_default(self):
+        if is_symbolic(self.characteristic, self.degree):
+            return None
+
+        from galois import GF
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic), int(self.degree), compile='python-calculate'
+        ).irreducible_poly
 
     @cached_property
     def order(self) -> SymbolicInt:
@@ -927,7 +951,15 @@ class QGF(QDType):
     def gf_type(self):
         from galois import GF
 
-        return GF(int(self.characteristic), int(self.degree), compile='python-calculate')
+        poly = self.irreducible_poly if self.degree > 1 else None
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic),
+            int(self.degree),
+            irreducible_poly=poly,
+            repr=self.element_repr,
+            compile='python-calculate',
+        )
 
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
