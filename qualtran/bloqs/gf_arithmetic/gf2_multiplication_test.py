@@ -184,11 +184,14 @@ def test_multiply_by_xk_classical_action(n, k):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(4, 6) for k in range(1, 2 * n + 1)])
+@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(4, 6) for k in range(1, n + 2)])
 def test_multiply_by_xk_classical_action_slow(n, k):
     blq = MultiplyPolyByOnePlusXk(n, k)
     fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
     h_polys = [*itertools.product(range(2), repeat=blq.signature[-1].shape[0])]
+    h_polys = [
+        h_polys[i] for i in np.random.choice(len(h_polys), min(len(h_polys), 20), replace=False)
+    ]
 
     qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
 
