@@ -468,10 +468,10 @@ class Bloq(metaclass=abc.ABCMeta):
         )
 
     def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
-        """Override this method to support conversion to a Cirq operation.
+        """Override this method to support conversion to a PennyLane operation.
 
         If this method is not overriden, the default implementation will wrap this bloq
-        in a `BloqAsCirqGate` shim.
+        in a `FromBloq` shim.
 
         Args:
             wires: the wires that the op acts on
@@ -479,8 +479,8 @@ class Bloq(metaclass=abc.ABCMeta):
         Returns:
             ~pennylane.Operation: A PennyLane operation corresponding to this bloq acting on the 
                 provided wires or None. This method should return None if and only if the bloq 
-                instance truly should not be included in the Cirq circuit (e.g. for reshaping 
-                bloqs). A bloq with no cirq equivalent should raise an exception instead.
+                instance truly should not be included in the PennyLane circuit (e.g. for reshaping 
+                bloqs). A bloq with no PennyLane equivalent should raise an exception instead.
         """
         from pennylane.io import FromBloq
 
