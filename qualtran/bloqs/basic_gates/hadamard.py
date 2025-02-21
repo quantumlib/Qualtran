@@ -36,6 +36,7 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -104,6 +105,11 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
+    
+    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+        import pennylane as qml
+
+        return qml.Hadamard(wires=wires)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
