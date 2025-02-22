@@ -14,6 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
+import re
 from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
 import attrs
@@ -196,7 +197,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
-        if name == 'selection':
+        if name.startswith('selection'):
             return TextBox('In').adjoint()
         elif 'target' in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
@@ -283,10 +284,11 @@ class QROAMCleanAdjointWrapper(Bloq):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
-        name = reg.name
-        if name == 'selection':
+        # Find the last instance '_' in the register name to split at.
+        name = reg.name         
+        if name.startswith('selection'):
             return TextBox('In')
-        elif 'target' in name:
+        elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)
@@ -528,7 +530,7 @@ class QROAMClean(SelectSwapQROM):
         if reg is None:
             return Text('QROAM')
         name = reg.name
-        if name == 'selection':
+        if name.startswith('selection'):
             return TextBox('In')
         elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
