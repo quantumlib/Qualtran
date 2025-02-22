@@ -104,6 +104,8 @@ import qualtran.bloqs.multiplexers.apply_lth_bloq
 import qualtran.bloqs.multiplexers.black_box_select
 import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
+import qualtran.bloqs.optimization.k_xor_sat
+import qualtran.bloqs.optimization.k_xor_sat.guided_hamiltonian
 import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qubitization_qpe
@@ -806,6 +808,21 @@ BLOCK_ENCODING: List[NotebookSpecV2] = [
 # -----   Optimization   ---------------------------------------------------
 # --------------------------------------------------------------------------
 OPTIMIZATION: List[NotebookSpecV2] = [
+    # -----   Preliminaries  ------------------------------------------
+    NotebookSpecV2(
+        title='Guided (sparse) Hamiltonian Problem',
+        module=qualtran.bloqs.optimization.k_xor_sat.guided_hamiltonian.guided_hamiltonian,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.guided_hamiltonian.guided_hamiltonian._GUIDED_HAMILTONIAN_DOC,
+            qualtran.bloqs.optimization.k_xor_sat.guided_hamiltonian.guided_hamiltonian._GUIDED_HAMILTONIAN_PHASE_ESTIMATION_DOC,
+        ],
+    ),
+    # -----   Algorithm  ------------------------------------------
+    NotebookSpecV2(
+        title='kXOR: Instance load Oracles',
+        module=qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance,
+        bloq_specs=[qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance._LOAD_INSTANCE_DOC],
+    ),
     NotebookSpecV2(
         title='Planted Noisy kXOR - Kikuchi Guiding State',
         module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state,
@@ -813,7 +830,35 @@ OPTIMIZATION: List[NotebookSpecV2] = [
             qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._SIMPLE_GUIDING_STATE_DOC,
             qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state._GUIDING_STATE_DOC,
         ],
-    )
+    ),
+    NotebookSpecV2(
+        title='Planted Noisy kXOR: Kikuchi Adjacency List',
+        module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list._KIKUCHI_NONZERO_INDEX_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Planted Noisy kXOR: Kikuchi Adjacency Matrix',
+        module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix._KIKUCHI_MATRIX_ENTRY_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Planted Noisy kXOR: Block-encoding the Kikuchi Matrix',
+        module=qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding._KIKUCHI_HAMILTONIAN_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Algorithm: Planted Noisy kXOR',
+        module=qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor,
+        bloq_specs=[
+            qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor._PLANTED_NOISY_KXOR_DOC
+        ],
+    ),
 ]
 
 # --------------------------------------------------------------------------
