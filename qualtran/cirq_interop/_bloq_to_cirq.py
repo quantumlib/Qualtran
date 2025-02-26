@@ -177,10 +177,7 @@ class BloqAsCirqGate(cirq.Gate):
 
         bloq = self.bloq if power > 0 else self.bloq.adjoint()
 
-        try:
-            return BloqAsCirqGate(Power(bloq, abs(power)))
-        except ValueError as e:
-            raise ValueError(f"Bad power {power}") from e
+        return Power(bloq, abs(power))
 
     def __eq__(self, other):
         if not isinstance(other, BloqAsCirqGate):
