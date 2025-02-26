@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.factoring.ecc.find_ecc_private_key import _ecc
+from qualtran.bloqs.cryptography.ecc.find_ecc_private_key import _ecc
 
 
 def test_ecc(bloq_autotester):

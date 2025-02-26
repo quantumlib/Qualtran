@@ -38,16 +38,13 @@ from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot, XorK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthHalfGreaterThan
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-from qualtran.bloqs.basic_gates import CNOT, TwoBitCSwap, XGate
+from qualtran.bloqs.basic_gates import CNOT, CSwap, TwoBitCSwap, XGate
 from qualtran.bloqs.mcmt import And, MultiAnd
 from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
-from qualtran.bloqs.swap_network import CSwapApprox
-from qualtran.resource_counting import BloqCountDictT
-from qualtran.resource_counting._call_graph import SympySymbolAllocator
 from qualtran.symbolics import HasLength, is_symbolic
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
@@ -260,14 +257,12 @@ class _KaliskiIterationStep4(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, a: Soquet
     ) -> Dict[str, 'SoquetT']:
-        # CSwapApprox is a CSWAP with a phase flip.
-        # Since we are doing two SWAPs the overal phase is correct.
-        a, u, v = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=u, y=v)
-        a, r, s = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=r, y=s)
+        a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
+        a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
         return {'u': u, 'v': v, 'r': r, 's': s, 'a': a}
 
-    def build_call_graph(self, ssa: SympySymbolAllocator) -> 'BloqCountDictT':
-        return {CSwapApprox(self.bitsize): 2}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {CSwap(self.bitsize): 2}
 
 
 @frozen
@@ -328,10 +323,10 @@ class _KaliskiIterationStep6(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('b', QBit()),
                 Register('a', QBit()),
                 Register('m', QBit()),
@@ -379,8 +374,8 @@ class _KaliskiIterationStep6(Bloq):
 
         r = bb.add(ModDbl(QMontgomeryUInt(self.bitsize), self.mod), x=r)
 
-        a, u, v = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=u, y=v)
-        a, r, s = bb.add(CSwapApprox(self.bitsize), ctrl=a, x=r, y=s)
+        a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
+        a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
 
         s_arr = bb.split(s)
         s_arr[-1] = bb.add(XGate(), q=s_arr[-1])
@@ -395,7 +390,7 @@ class _KaliskiIterationStep6(Bloq):
             CNOT(): 3,
             XGate(): 2,
             ModDbl(QMontgomeryUInt(self.bitsize), self.mod): 1,
-            CSwapApprox(self.bitsize): 2,
+            CSwap(self.bitsize): 2,
             TwoBitCSwap(): self.bitsize - 1,
         }
 
@@ -411,10 +406,10 @@ class _KaliskiIteration(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('m', QBit()),
                 Register('f', QBit()),
                 Register('is_terminal', QBit()),
@@ -520,10 +515,10 @@ class _KaliskiModInverseImpl(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('m', QAny(2 * self.bitsize)),
                 Register('f', QBit()),
                 Register('terminal_condition', QAny(2 * self.bitsize)),
@@ -662,7 +657,7 @@ class KaliskiModInverse(Bloq):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('junk', QAny(4 * self.bitsize), side=side),
             ]
         )

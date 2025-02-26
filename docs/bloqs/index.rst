@@ -19,8 +19,14 @@ Bloqs Library
     chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
-    factoring/factoring-via-modexp.ipynb
+    cryptography/rsa/factoring-via-modexp.ipynb
     state_preparation/state_preparation_via_rotation_tutorial.ipynb
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Root Bloqs:
+
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -76,6 +82,7 @@ Bloqs Library
     arithmetic/permutation.ipynb
     arithmetic/bitwise.ipynb
     arithmetic/trigonometric/trigonometric.ipynb
+    arithmetic/lists/lists.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -85,9 +92,9 @@ Bloqs Library
     mod_arithmetic/mod_subtraction.ipynb
     mod_arithmetic/mod_multiplication.ipynb
     mod_arithmetic/mod_division.ipynb
-    factoring/rsa/rsa.ipynb
-    factoring/ecc/ec_add.ipynb
-    factoring/ecc/ecc.ipynb
+    cryptography/rsa/rsa.ipynb
+    cryptography/ecc/ec_add.ipynb
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -136,6 +143,12 @@ Bloqs Library
     block_encoding/sparse_matrix_hermitian.ipynb
     block_encoding/chebyshev_polynomial.ipynb
     block_encoding/lcu_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Optimization:
+
+    optimization/k_xor_sat/kikuchi_guiding_state.ipynb
 
 .. toctree::
     :maxdepth: 2

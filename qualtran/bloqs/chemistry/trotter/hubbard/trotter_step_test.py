@@ -13,36 +13,23 @@
 #  limitations under the License.
 import pytest
 
-from qualtran import Bloq
-from qualtran.bloqs.basic_gates import Rz
-from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.bloqs.chemistry.trotter.hubbard.trotter_step import (
     build_plaq_unitary_second_order_suzuki,
 )
-from qualtran.resource_counting.generalizers import PHI
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import execute_notebook
-
-
-def catch_rotations(bloq) -> Bloq:
-    if isinstance(bloq, Rz):
-        if isinstance(bloq.angle, float) and abs(bloq.angle) < 1e-12:
-            return ArbitraryClifford(1)
-        else:
-            return Rz(angle=PHI)
-    return bloq
 
 
 def test_second_order_suzuki_costs():
     length = 8
     u = 4
-    dt = 0.1
+    dt = 0.1234
     unitary = build_plaq_unitary_second_order_suzuki(length, u, dt)
-    _, sigma = unitary.call_graph(generalizer=catch_rotations)
+    costs = get_cost_value(unitary, QECGatesCost())
     # there are 3 hopping unitaries contributing 8 Ts from from the F gate
-    assert sigma[TGate()] == (3 * length**2 // 2) * 8
+    assert costs.total_t_count(ts_per_rotation=0) == (3 * length**2 // 2) * 8
     # 3 hopping unitaries and 2 interaction unitaries
-    assert sigma[Rz(PHI)] == (3 * length**2 + 2 * length**2)
+    assert costs.rotation == (3 * length**2 + 2 * length**2)
 
 
 @pytest.mark.notebook
