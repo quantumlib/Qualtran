@@ -14,7 +14,6 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-import re
 from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, Union
 
 import attrs
@@ -284,7 +283,6 @@ class QROAMCleanAdjointWrapper(Bloq):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
-        # Find the last instance '_' in the register name to split at.
         name = reg.name         
         if name.startswith('selection'):
             return TextBox('In')
