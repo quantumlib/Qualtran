@@ -16,15 +16,31 @@ from typing import cast
 import numpy as np
 import pytest
 import sympy
+from sympy.codegen.cfunctions import log
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.symbolics import bit_length, ceil, is_zero, log2, sarg, sexp, smax, smin
+from qualtran.symbolics import bit_length, ceil, is_zero, ln, log2, sarg, sexp, smax, smin, ssqrt
 
 
 def test_log2():
     assert log2(sympy.Symbol('x')) == sympy_log2(sympy.Symbol('x'))
     assert log2(sympy.Number(10)) == sympy_log2(sympy.Number(10))
     assert log2(10) == np.log2(10)
+    assert log2(2**10000) == 10000
+
+
+def test_ln():
+    assert ln(sympy.Symbol('x')) == log(sympy.Symbol('x'))
+    assert ln(sympy.Number(10)) == log(sympy.Number(10))
+    assert ln(10) == np.log(10)
+    assert np.isclose(ln(2**1000) / ln(2), 1000)
+
+
+def test_ssqrt():
+    assert ssqrt(sympy.Symbol('x')) == sympy.sqrt(sympy.Symbol('x'))
+    assert ssqrt(sympy.Number(10)) == sympy.sqrt(sympy.Number(10))
+    assert ssqrt(10) == np.sqrt(10)
+    assert ssqrt(2**1000) == 2**500
 
 
 def test_sexp():
