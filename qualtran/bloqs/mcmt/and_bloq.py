@@ -45,32 +45,16 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
-from qualtran.resource_counting import (
-    big_O,
-    BloqCountDictT,
-    MutableBloqCountDictT,
-    SympySymbolAllocator,
-)
-from qualtran.resource_counting.generalizers import (
-    cirq_to_bloqs,
-    generalize_cvs,
-    generalize_rotation_angle,
-    ignore_alloc_free,
-    ignore_cliffords,
-)
+from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import generalize_cvs, ignore_cliffords
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
-
-# TODO: https://github.com/quantumlib/Qualtran/issues/1346
-FLAG_AND_AS_LEAF = False
 
 
 @frozen
@@ -109,35 +93,7 @@ class And(GateWithRegisters):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        if FLAG_AND_AS_LEAF:
-            raise DecomposeTypeError(f"{self} is atomic.")
-        return decompose_from_cirq_style_method(self)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        if FLAG_AND_AS_LEAF:
-            raise DecomposeTypeError(f"{self} is atomic.")
-
-        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords: Union[sympy.Order, int] = big_O(1)
-        else:
-            pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.uncompute:
-            return {ArbitraryClifford(n=2): 4 + 2 * pre_post_cliffords}
-
-        return {ArbitraryClifford(n=2): 9 + 2 * pre_post_cliffords, TGate(): 4}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        if not FLAG_AND_AS_LEAF:
-            return NotImplemented
-
-        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords: Union[sympy.Order, int] = 0
-        else:
-            pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.uncompute:
-            return TComplexity(clifford=4 + 2 * pre_post_cliffords)
-
-        return TComplexity(t=4, clifford=9 + 2 * pre_post_cliffords)
+        raise DecomposeTypeError(f"{self} is atomic.")
 
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
@@ -257,13 +213,6 @@ class And(GateWithRegisters):
         circuit += pre_post_ops
         return circuit.freeze()
 
-    def __pow__(self, power: int) -> 'And':
-        if power == 1:
-            return self
-        if power == -1:
-            return self.adjoint()
-        return NotImplemented  # pragma: no cover
-
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.uncompute else "And"
@@ -277,9 +226,7 @@ class And(GateWithRegisters):
         return not self.uncompute
 
 
-@bloq_example(
-    generalizer=[cirq_to_bloqs, ignore_cliffords, ignore_alloc_free, generalize_rotation_angle]
-)
+@bloq_example()
 def _and_bloq() -> And:
     and_bloq = And()
     return and_bloq

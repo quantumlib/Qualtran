@@ -14,6 +14,8 @@
 
 # isort:skip_file
 
+"""Physical cost models for surface code architectures."""
+
 from .algorithm_summary import AlgorithmSummary
 from .physical_cost_summary import PhysicalCostsSummary
 from .physical_parameters import PhysicalParameters

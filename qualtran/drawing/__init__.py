@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Draw and visualize bloqs
+# isort:skip_file
 
-isort:skip_file
-"""
+"""Draw and visualize bloqs."""
 
 from .graphviz import GraphDrawer, PrettyGraphDrawer
 from .musical_score import (

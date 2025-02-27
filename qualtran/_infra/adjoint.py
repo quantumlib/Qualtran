@@ -16,7 +16,6 @@ from collections import Counter
 from functools import cached_property
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
-import cirq
 from attrs import frozen
 
 from .composite_bloq import _binst_to_cxns, _cxns_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
@@ -25,6 +24,8 @@ from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -144,7 +145,9 @@ class Adjoint(GateWithRegisters):
 
     def _circuit_diagram_info_(
         self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> cirq.CircuitDiagramInfo:
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
         sub_info = cirq.circuit_diagram_info(self.subbloq, args, default=NotImplemented)
         if sub_info is NotImplemented:
             return NotImplemented
@@ -181,21 +184,3 @@ class Adjoint(GateWithRegisters):
             return self.subbloq.wire_symbol(reg=None).adjoint()
 
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
-
-    def _t_complexity_(self):
-        """The cirq-style `_t_complexity_` delegates to the subbloq's method with a special shim.
-
-        The cirq-style t complexity protocol does not leverage the heirarchical decomposition
-        of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
-        """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/735
-        if not hasattr(self.subbloq, '_t_complexity_'):
-            return NotImplemented
-
-        try:
-            return self.subbloq._t_complexity_(adjoint=True)  # type: ignore[call-arg]
-        except TypeError as e:
-            if 'adjoint' in str(e):
-                return self.subbloq._t_complexity_()
-            else:
-                raise e

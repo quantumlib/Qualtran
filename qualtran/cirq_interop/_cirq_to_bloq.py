@@ -47,7 +47,7 @@ from qualtran._infra.gate_with_registers import (
     split_qubits,
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
-from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq, TComplexity
+from qualtran.cirq_interop.t_complexity_protocol import _from_directly_countable_cirq
 from qualtran.resource_counting import CostKey, GateCounts, QECGatesCost
 
 if TYPE_CHECKING:
@@ -147,18 +147,14 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return self.gate
 
-    def _t_complexity_(self) -> 'TComplexity':
-        t_count = _from_directly_countable_cirq(self.cirq_gate)
-        if t_count is None:
-            raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-        return t_count
-
     def my_static_costs(self, cost_key: 'CostKey'):
         if isinstance(cost_key, QECGatesCost):
             t_count = _from_directly_countable_cirq(self.cirq_gate)
-            if t_count is None:
-                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
+            if t_count is not None:
+                return GateCounts(
+                    t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford
+                )
+        return NotImplemented
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
@@ -486,11 +482,11 @@ def cirq_optree_to_cbloq(
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
     in_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in in_quregs.items()
     }
     out_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
         for k, v in out_quregs.items()
     }
 
@@ -521,7 +517,7 @@ def cirq_optree_to_cbloq(
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore[arg-type]
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 

@@ -68,11 +68,15 @@ def active_space_for_ctrl_spec(
     Returns a tuple of indices/slices that can be used to address into the ndarray, representing
     tensor data of shape `tensor_shape_from_signature(signature)`, and access the active subspace.
     """
+    if ctrl_spec.is_symbolic():
+        raise ValueError(f"cannot compute active space for symbolic {ctrl_spec=}")
+
     out_ind, inp_ind = tensor_out_inp_shape_from_signature(signature)
     data_shape = out_ind + inp_ind
     active_idx: List[Union[int, slice]] = [slice(x) for x in data_shape]
     ctrl_idx = 0
     for cv in ctrl_spec.cvs:
+        assert isinstance(cv, np.ndarray)
         for idx in itertools.product(*[range(sh) for sh in cv.shape]):
             active_idx[ctrl_idx] = int(cv[idx])
             active_idx[ctrl_idx + len(out_ind)] = int(cv[idx])

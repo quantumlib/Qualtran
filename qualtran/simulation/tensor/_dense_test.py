@@ -15,8 +15,8 @@
 from functools import cached_property
 from typing import Dict, List
 
-import cirq
 import numpy as np
+import pytest
 import quimb.tensor as qtn
 from attrs import frozen
 
@@ -121,6 +121,7 @@ class XDoubleNest(Bloq):
 
 
 def test_nest():
+    cirq = pytest.importorskip('cirq')
     x = XNest()
     should_be = cirq.unitary(cirq.X)
     np.testing.assert_allclose(should_be, x.tensor_contract())
@@ -128,6 +129,7 @@ def test_nest():
 
 
 def test_double_nest():
+    cirq = pytest.importorskip('cirq')
     xx = XDoubleNest()
     should_be = cirq.unitary(cirq.X)
     np.testing.assert_allclose(should_be, xx.tensor_contract())
@@ -150,6 +152,7 @@ class BloqWithNonTrivialInds(Bloq):
 
 
 def test_bloq_with_non_trivial_inds():
+    cirq = pytest.importorskip('cirq')
     bloq = BloqWithNonTrivialInds()
     assert_valid_bloq_decomposition(bloq)
     cirq_qubits = cirq.LineQubit.range(2)

@@ -18,10 +18,21 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.mod_arithmetic import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
-from qualtran.bloqs.mod_arithmetic.mod_addition import _cmodadd_example
+from qualtran.bloqs.mod_arithmetic.mod_addition import (
+    _cmod_add_k,
+    _cmod_add_k_small,
+    _cmodadd_example,
+    _ctrl_scale_mod_add,
+    _ctrl_scale_mod_add_small,
+    _mod_add,
+    _mod_add_k,
+    _mod_add_k_large,
+    _mod_add_k_small,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
@@ -31,6 +42,29 @@ from qualtran.testing import (
     assert_valid_bloq_decomposition,
     execute_notebook,
 )
+
+
+@pytest.mark.parametrize(
+    "bloq",
+    [
+        _mod_add,
+        _mod_add_k,
+        _mod_add_k_small,
+        _mod_add_k_large,
+        _cmod_add_k,
+        _cmod_add_k_small,
+        _ctrl_scale_mod_add,
+        _ctrl_scale_mod_add_small,
+        _cmodadd_example,
+    ],
+)
+def test_examples(bloq_autotester, bloq):
+    bloq_autotester(bloq)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('mod_addition')
 
 
 def identity_map(n: int):
@@ -59,22 +93,6 @@ def add_constant_mod_n_ref_t_complexity_(b: ModAddK) -> TComplexity:
 def test_add_mod_n_gate_counts(bitsize):
     bloq = ModAddK(bitsize, mod=8, add_val=2, cvs=[0, 1])
     assert bloq.t_complexity() == add_constant_mod_n_ref_t_complexity_(bloq)
-
-
-def test_ctrl_scale_mod_add():
-    bloq = CtrlScaleModAdd(k=123, mod=13 * 17, bitsize=8)
-
-    counts = bloq.bloq_counts()
-    ((bloq, n),) = counts.items()
-    assert n == 8
-
-
-def test_ctrl_mod_add_k():
-    bloq = CModAddK(k=123, mod=13 * 17, bitsize=8)
-
-    counts = bloq.bloq_counts()
-    ((bloq, n),) = counts.items()
-    assert n == 5
 
 
 @pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
@@ -113,9 +131,8 @@ def test_classical_action_mod_add(prime, bitsize):
 def test_classical_action_cmodadd(control, prime, dtype, bitsize):
     b = CModAdd(dtype(bitsize), mod=prime, cv=control)
     cb = b.decompose_bloq()
-    valid_range = range(prime)
     for c in range(2):
-        for x, y in itertools.product(valid_range, repeat=2):
+        for x, y in itertools.product(range(prime + 1), range(prime)):
             assert b.call_classically(ctrl=c, x=x, y=y) == cb.call_classically(ctrl=c, x=x, y=y)
 
 
@@ -129,6 +146,26 @@ def test_classical_action_cmodadd_fast(control, bitsize):
     for c in range(2):
         for x, y in rng.choice(prime, (10, 2)):
             assert b.call_classically(ctrl=c, x=x, y=y) == cb.call_classically(ctrl=c, x=x, y=y)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ['prime', 'bitsize', 'k'],
+    [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 8) for k in range(1, p)],
+)
+def test_cscalemodadd_classical_action(bitsize, prime, k):
+    b = CtrlScaleModAdd(bitsize=bitsize, mod=prime, k=k)
+    qlt_testing.assert_consistent_classical_action(b, ctrl=(0, 1), x=range(prime), y=range(prime))
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ['prime', 'bitsize', 'k'],
+    [(p, n, k) for p in (13, 17, 23) for n in range(p.bit_length(), 8) for k in range(1, p)],
+)
+def test_cmodaddk_classical_action(bitsize, prime, k):
+    b = CModAddK(bitsize=bitsize, mod=prime, k=k)
+    qlt_testing.assert_consistent_classical_action(b, ctrl=(0, 1), x=range(prime))
 
 
 @pytest.mark.parametrize('control', range(2))
@@ -154,15 +191,6 @@ def test_cmodadd_cost(control, dtype):
     assert cost.total_t_count() == 4 * n_toffolis
 
 
-def test_cmodadd_example(bloq_autotester):
-    bloq_autotester(_cmodadd_example)
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('mod_addition')
-
-
 def test_cmod_add_complexity_vs_ref():
     n, k = sympy.symbols('n k', integer=True, positive=True)
     bloq = CModAdd(QUInt(n), mod=k)
@@ -178,4 +206,16 @@ def test_cmod_add_complexity_vs_ref():
 @pytest.mark.parametrize(['prime', 'bitsize'], [(p, bitsize) for p in [5, 7] for bitsize in (5, 6)])
 def test_mod_add_classical_action(bitsize, prime):
     b = ModAdd(bitsize, prime)
-    assert_consistent_classical_action(b, x=range(prime), y=range(prime))
+    assert_consistent_classical_action(b, x=range(prime + 1), y=range(prime))
+
+
+def test_cmodadd_tensor():
+    blq = CModAddK(bitsize=4, mod=7, k=1)
+    want = np.zeros((7, 7))
+    for i in range(7):
+        j = (i + 1) % 7
+        want[j, i] = 1
+
+    tn = blq.tensor_contract()
+    np.testing.assert_allclose(tn[:7, :7], np.eye(7))  # ctrl = 0
+    np.testing.assert_allclose(tn[16 : 16 + 7, 16 : 16 + 7], want)  # ctrl = 1

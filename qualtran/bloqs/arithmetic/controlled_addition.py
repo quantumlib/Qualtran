@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     QBit,
     QInt,
     QUInt,
@@ -37,6 +38,7 @@ from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
+from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -134,6 +136,9 @@ class CAdd(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
+
         a_arr = bb.split(a)
         ctrl_q = bb.split(ctrl)[0]
         ancilla_arr = []

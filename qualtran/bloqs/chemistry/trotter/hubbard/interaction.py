@@ -91,9 +91,9 @@ class InteractionHWP(Bloq):
         system: The system register of size 2 `length`.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) Eq. page 13 paragraph 1, and page
-            14 paragraph 3 right column. The apply 2 batches of $L^2/2$ rotations.
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238).
+        Eq. page 13 paragraph 1, and page 14 paragraph 3 right column.
+        They apply 2 batches of $L^2/2$ rotations.
     """
 
     length: SymbolicInt
@@ -130,7 +130,7 @@ _INTERACTION_DOC = BloqDocSpec(
 @bloq_example
 def _interaction_hwp() -> InteractionHWP:
     length = 8
-    angle = 0.5
+    angle = 0.52728
     hubb_u = 4.0
     interaction_hwp = InteractionHWP(length, angle, hubb_u)
     return interaction_hwp

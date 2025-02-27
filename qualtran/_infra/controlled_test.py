@@ -13,12 +13,26 @@
 #  limitations under the License.
 from typing import List, TYPE_CHECKING
 
-import cirq
+import attrs
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    CompositeBloq,
+    Controlled,
+    CtrlSpec,
+    DecomposeTypeError,
+    QBit,
+    QInt,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
@@ -34,9 +48,12 @@ from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCo
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
-    pass
+    import cirq
+
+    from qualtran import SoquetT
 
 
 def test_ctrl_spec():
@@ -53,8 +70,10 @@ def test_ctrl_spec():
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
     assert cspec3.qdtypes[0].num_qubits == 64
-    assert cspec3.cvs[0] == 234234
-    assert cspec3.cvs[0][tuple()] == 234234
+    (cvs,) = cspec3.cvs
+    assert isinstance(cvs, np.ndarray)
+    assert cvs == 234234
+    assert cvs[tuple()] == 234234
 
 
 def test_ctrl_spec_shape():
@@ -65,6 +84,7 @@ def test_ctrl_spec_shape():
 
 
 def test_ctrl_spec_to_cirq_cv_roundtrip():
+    cirq = pytest.importorskip('cirq')
     cirq_cv = cirq.ProductOfSums([0, 1, 0, 1])
     assert CtrlSpec.from_cirq_cv(cirq_cv) == CtrlSpec(cvs=[0, 1, 0, 1])
 
@@ -76,19 +96,71 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
 
     for ctrl_spec in ctrl_specs:
         assert ctrl_spec.to_cirq_cv() == cirq_cv.expand()
-        assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
+        assert CtrlSpec.from_cirq_cv(
+            cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.concrete_shapes
+        )
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=[1]), CtrlSpec(cvs=np.atleast_2d([1]))]
+)
+def test_ctrl_spec_single_bit_one(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 1
+
+
+@pytest.mark.parametrize(
+    "ctrl_spec", [CtrlSpec(cvs=0), CtrlSpec(cvs=[0]), CtrlSpec(cvs=np.atleast_2d([0]))]
+)
+def test_ctrl_spec_single_bit_zero(ctrl_spec: CtrlSpec):
+    assert ctrl_spec.get_single_ctrl_bit() == 0
+
+
+@pytest.mark.parametrize("ctrl_spec", [CtrlSpec(cvs=[1, 1]), CtrlSpec(qdtypes=QUInt(2), cvs=0)])
+def test_ctrl_spec_single_bit_raises(ctrl_spec: CtrlSpec):
+    with pytest.raises(ValueError):
+        ctrl_spec.get_single_ctrl_bit()
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_cvs(shape: tuple[int, ...]):
+    ctrl_spec = CtrlSpec(cvs=Shaped(shape))
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+@pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
+def test_ctrl_spec_symbolic_dtype(shape: tuple[int, ...]):
+    n = sympy.Symbol("n")
+    dtype = QUInt(n)
+
+    ctrl_spec = CtrlSpec(qdtypes=dtype, cvs=Shaped(shape))
+
+    assert ctrl_spec.is_symbolic()
+    assert ctrl_spec.num_qubits == n * np.prod(shape)
+    assert ctrl_spec.shapes == (shape,)
+
+
+def test_ctrl_spec_symbolic_wire_symbol():
+    ctrl_spec = CtrlSpec(cvs=Shaped((10,)))
+    reg = Register('q', QBit())
+    assert ctrl_spec.wire_symbol(0, reg) == TextBox('ctrl')
+
+
+def _test_cirq_equivalence(bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
+    left_quregs = get_named_qubits(bloq.signature.lefts())
+    circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
+    circuit2 = cirq.Circuit(
+        gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
 
 
 def test_ctrl_bloq_as_cirq_op():
+    cirq = pytest.importorskip('cirq')
     subbloq = XGate()
-
-    def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
-        left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
-        circuit2 = cirq.Circuit(
-            gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
-        )
-        cirq.testing.assert_same_circuits(circuit1, circuit2)
 
     # Simple ctrl spec
     _test_cirq_equivalence(subbloq, cirq.X)
@@ -321,7 +393,9 @@ def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
 
 
-def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
+    import cirq
+
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
@@ -338,6 +412,7 @@ interesting_ctrl_specs = [
 
 @pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
 def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
+    cirq = pytest.importorskip('cirq')
     # Test one qubit unitaries
     _verify_ctrl_tensor_for_unitary(ctrl_spec, XGate(), cirq.X)
     _verify_ctrl_tensor_for_unitary(ctrl_spec, YGate(), cirq.Y)
@@ -347,6 +422,7 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
 
 
 def test_controlled_tensor_without_decompose():
+    cirq = pytest.importorskip('cirq')
     ctrl_spec = CtrlSpec()
     bloq = TwoBitCSwap()
     ctrl_bloq = Controlled(bloq, ctrl_spec)
@@ -367,6 +443,7 @@ def test_controlled_global_phase_tensor():
 
 
 def test_controlled_diagrams():
+    cirq = pytest.importorskip('cirq')
     ctrl_gate = XPowGate(0.25).controlled()
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_gate.on_registers(**get_named_qubits(ctrl_gate.signature))),

@@ -14,6 +14,8 @@
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
+import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import (
@@ -90,7 +92,7 @@ class CtrlSpecAnd(Bloq):
         return Signature(
             [
                 *self.control_registers,
-                *self.junk_registers(),
+                *self.junk_registers,
                 Register('target', QBit(), side=Side.RIGHT),
             ]
         )
@@ -102,6 +104,7 @@ class CtrlSpecAnd(Bloq):
             for i, (dtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
 
+    @cached_property
     def junk_registers(self) -> tuple[Register, ...]:
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits == 2:
             return ()
@@ -123,6 +126,7 @@ class CtrlSpecAnd(Bloq):
 
         flat_cvs: list[int] = []
         for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
+            assert isinstance(cv, np.ndarray)
             flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
         return tuple(flat_cvs)
 
@@ -138,8 +142,10 @@ class CtrlSpecAnd(Bloq):
 
         # Compute the single control qubit `target`
         if self.n_ctrl_qubits == 2:
-            assert isinstance(self._flat_cvs, tuple)
-            cv1, cv2 = self._flat_cvs
+            if isinstance(self._flat_cvs, tuple):
+                cv1, cv2 = self._flat_cvs
+            else:
+                cv1, cv2 = sympy.symbols("cv1, cv2")
             ctrl_qubits, target = bb.add(And(cv1, cv2), ctrl=ctrl_qubits)
             junk = None
         else:
@@ -175,8 +181,10 @@ class CtrlSpecAnd(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if not is_symbolic(self.n_ctrl_qubits) and self.n_ctrl_qubits == 2:
-            assert isinstance(self._flat_cvs, tuple)
-            cv1, cv2 = self._flat_cvs
+            if isinstance(self._flat_cvs, tuple):
+                cv1, cv2 = self._flat_cvs
+            else:
+                cv1, cv2 = sympy.symbols("cv1, cv2")
             return {And(cv1, cv2): 1}
 
         return {MultiAnd(self._flat_cvs): 1}
@@ -218,7 +226,42 @@ def _ctrl_on_multiple_values() -> CtrlSpecAnd:
     return ctrl_on_multiple_values
 
 
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_symbolic_cv() -> CtrlSpecAnd:
+    from qualtran import CtrlSpec
+    from qualtran.symbolics import Shaped
+
+    ctrl_on_symbolic_cv = CtrlSpecAnd(CtrlSpec(cvs=Shaped((2,))))
+    return ctrl_on_symbolic_cv
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_symbolic_cv_multi() -> CtrlSpecAnd:
+    from qualtran import CtrlSpec
+    from qualtran.symbolics import Shaped
+
+    ctrl_on_symbolic_cv_multi = CtrlSpecAnd(CtrlSpec(cvs=Shaped((3,))))
+    return ctrl_on_symbolic_cv_multi
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _ctrl_on_symbolic_n_ctrls() -> CtrlSpecAnd:
+    from qualtran import CtrlSpec
+    from qualtran.symbolics import Shaped
+
+    n = sympy.Symbol("n")
+    ctrl_on_symbolic_cv_multi = CtrlSpecAnd(CtrlSpec(cvs=Shaped((n,))))
+    return ctrl_on_symbolic_cv_multi
+
+
 _CTRLSPEC_AND_DOC = BloqDocSpec(
     bloq_cls=CtrlSpecAnd,
-    examples=(_ctrl_on_int, _ctrl_on_bits, _ctrl_on_nd_bits, _ctrl_on_multiple_values),
+    examples=(
+        _ctrl_on_int,
+        _ctrl_on_bits,
+        _ctrl_on_nd_bits,
+        _ctrl_on_multiple_values,
+        _ctrl_on_symbolic_cv,
+        _ctrl_on_symbolic_cv_multi,
+    ),
 )

@@ -15,7 +15,6 @@ import math
 import random
 from typing import Any, Sequence, Union
 
-import cirq
 import numpy as np
 import pytest
 import sympy
@@ -134,6 +133,28 @@ def test_qmontgomeryuint():
     qmontgomeryuint_8 = QMontgomeryUInt(n)
     assert qmontgomeryuint_8.num_qubits == n
     assert is_symbolic(QMontgomeryUInt(sympy.Symbol('x')))
+
+
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_operations(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8, p)
+    # Convert value to montgomery form and get the modular inverse.
+    val_m = qmontgomeryuint_8.uint_to_montgomery(val)
+    mod_inv = qmontgomeryuint_8.montgomery_inverse(val_m)
+
+    # Calculate the product in montgomery form and convert back to normal form for assertion.
+    assert (
+        qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.montgomery_product(val_m, mod_inv))
+        == 1
+    )
+
+
+@pytest.mark.parametrize('p', [13, 17, 29])
+@pytest.mark.parametrize('val', [1, 5, 7, 9])
+def test_qmontgomeryuint_conversions(val, p):
+    qmontgomeryuint_8 = QMontgomeryUInt(8, p)
+    assert val == qmontgomeryuint_8.montgomery_to_uint(qmontgomeryuint_8.uint_to_montgomery(val))
 
 
 def test_qgf():
@@ -270,6 +291,9 @@ def test_qint_to_and_from_bits():
         assert qint4.from_bits(qint4.to_bits(x)) == x
     assert list(qint4.to_bits(-2)) == [1, 1, 1, 0]
     assert list(QInt(4).to_bits(2)) == [0, 0, 1, 0]
+    # MSB at lowest index -- big-endian
+    assert qint4.from_bits([0, 0, 0, 1]) == 1
+    assert qint4.from_bits([0, 0, 0, 1]) < qint4.from_bits([0, 1, 0, 0])
     assert qint4.from_bits(qint4.to_bits(-2)) == -2
     assert qint4.from_bits(qint4.to_bits(2)) == 2
     with pytest.raises(ValueError):
@@ -300,6 +324,10 @@ def test_quint_to_and_from_bits():
     assert [*quint4.get_classical_domain()] == [*range(0, 16)]
     assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
     assert quint4.from_bits(quint4.to_bits(10)) == 10
+    # MSB at lowest index -- big-endian
+    assert quint4.from_bits([0, 0, 0, 1]) == 1
+    assert quint4.from_bits([0, 0, 0, 1]) < quint4.from_bits([1, 0, 0, 0])
+
     for x in range(16):
         assert quint4.from_bits(quint4.to_bits(x)) == x
     with pytest.raises(ValueError):
@@ -312,6 +340,7 @@ def test_quint_to_and_from_bits():
 
 
 def test_bits_to_int():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     bitstrings = rs.choice([0, 1], size=(100, 23))
 
@@ -328,6 +357,7 @@ def test_bits_to_int():
 
 
 def test_int_to_bits():
+    cirq = pytest.importorskip('cirq')
     rs = np.random.RandomState(52)
     nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
     bitstrings = QUInt(23).to_bits_array(nums)
@@ -506,3 +536,11 @@ def test_montgomery_bit_conversion(bitsize):
     dtype = QMontgomeryUInt(bitsize)
     for v in range(1 << bitsize):
         assert v == dtype.from_bits(dtype.to_bits(v))
+
+
+def test_qgf_with_default_poly_is_compatible():
+    qgf_one = QGF(2, 4)
+
+    qgf_two = QGF(2, 4, irreducible_poly=qgf_one.gf_type.irreducible_poly)
+
+    assert qgf_one == qgf_two

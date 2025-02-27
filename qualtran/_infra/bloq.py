@@ -394,7 +394,12 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled
+        from qualtran import Controlled, CtrlSpec
+        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+        if ctrl_spec != CtrlSpec():
+            # reduce controls to a single qubit
+            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
         return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
 
@@ -431,9 +436,6 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 
         return t_complexity(self)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return NotImplemented
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

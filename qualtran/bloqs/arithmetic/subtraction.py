@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import math
 from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
@@ -40,6 +39,7 @@ from qualtran.bloqs.basic_gates import OnEach, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Cast, Free
 from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 from qualtran.drawing import Text
+from qualtran.simulation.classical_sim import add_ints
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -68,7 +68,8 @@ class Subtract(Bloq):
         b: A b_dtype.bitsize-sized input/output register (register b above).
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization, page 9](https://arxiv.org/pdf/2007.07391)
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Page 9.
     """
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
@@ -269,10 +270,15 @@ class SubtractFrom(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
-        bitsize = self.dtype.bitsize
-        N = 2**bitsize if unsigned else 2 ** (bitsize - 1)
-        return {'a': a, 'b': int(math.fmod(b - a, N))}
+        return {
+            'a': a,
+            'b': add_ints(
+                int(b),
+                -int(a),
+                num_bits=int(self.dtype.bitsize),
+                is_signed=isinstance(self.dtype, QInt),
+            ),
+        }
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

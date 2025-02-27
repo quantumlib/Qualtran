@@ -11,19 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Iterable, overload, Sized, Tuple, TypeVar, Union
+import math
+from typing import cast, Iterable, overload, TypeVar
 
 import numpy as np
 import sympy
 
-from qualtran.symbolics.types import (
-    HasLength,
-    is_symbolic,
-    Shaped,
-    SymbolicComplex,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics.types import is_symbolic, SymbolicComplex, SymbolicFloat, SymbolicInt
 
 
 def pi(*args) -> SymbolicFloat:
@@ -42,7 +36,7 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
     if not is_symbolic(x):
-        return np.log2(x)
+        return math.log2(x)
     return log2(x)
 
 
@@ -58,7 +52,7 @@ def ln(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log
 
     if not is_symbolic(x):
-        return np.log(x)
+        return math.log(x)
     return log(x)
 
 
@@ -114,7 +108,7 @@ def ssqrt(x: sympy.Expr) -> sympy.Expr: ...
 def ssqrt(x: SymbolicFloat) -> SymbolicFloat:
     if is_symbolic(x):
         return sympy.sqrt(x)
-    return np.sqrt(x)
+    return math.sqrt(x)
 
 
 @overload
@@ -259,34 +253,6 @@ def sconj(x: sympy.Expr) -> sympy.Expr: ...
 def sconj(x: SymbolicComplex) -> SymbolicComplex:
     """Compute the complex conjugate."""
     return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
-
-
-@overload
-def slen(x: Sized) -> int: ...
-
-
-@overload
-def slen(x: Union[Shaped, HasLength]) -> sympy.Expr: ...
-
-
-def slen(x: Union[Sized, Shaped, HasLength]) -> SymbolicInt:
-    if isinstance(x, Shaped):
-        return x.shape[0]
-    if isinstance(x, HasLength):
-        return x.n
-    return len(x)
-
-
-@overload
-def shape(x: np.ndarray) -> Tuple[int, ...]: ...
-
-
-@overload
-def shape(x: Shaped) -> Tuple[SymbolicInt, ...]: ...
-
-
-def shape(x: Union[np.ndarray, Shaped]):
-    return x.shape
 
 
 def is_zero(x: SymbolicInt) -> bool:

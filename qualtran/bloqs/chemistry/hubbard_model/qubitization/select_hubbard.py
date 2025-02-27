@@ -20,9 +20,19 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BQUInt, QAny, QBit, Register, Signature
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BQUInt,
+    CtrlSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran._infra.single_qubit_controlled import SpecializedSingleQubitControlledExtension
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
@@ -30,7 +40,7 @@ from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajora
 
 
 @attrs.frozen
-class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  # type: ignore[misc]
+class SelectHubbard(SelectOracle):
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to SELECT for an arbitrary chemistry Hamiltonian, we:
@@ -80,6 +90,10 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
     def __attrs_post_init__(self):
         if self.x_dim != self.y_dim:
             raise NotImplementedError("Currently only supports the case where x_dim=y_dim.")
+        if self.control_val == 0:
+            raise NotImplementedError(
+                "control_val=0 not supported, use `SelectHubbard(x, y).controlled(CtrlSpec(cvs=0))` instead"
+            )
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -179,6 +193,25 @@ class SelectHubbard(SelectOracle, SpecializedSingleQubitControlledExtension):  #
         if self.control_val is not None:
             return f'C{s}'
         return s
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            bloq_with_ctrl=attrs.evolve(self, control_val=1),
+            ctrl_reg_name='control',
+        )
+
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, specialize_on_ctrl=SpecializeOnCtrlBit.ONE)
 
 
 @bloq_example

@@ -22,7 +22,6 @@ from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
 from qualtran.cirq_interop import CirqGateAsBloqBase
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
@@ -109,7 +108,7 @@ _Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
-    exponent: float = 1.0
+    exponent: SymbolicFloat = 1.0
     global_shift: float = 0.0
     eps: SymbolicFloat = 1e-11
 
@@ -119,11 +118,6 @@ class CZPowGate(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        if cirq.has_stabilizer_effect(self.cirq_gate):
-            return TComplexity(clifford=1)
-        return TComplexity(rotations=1)
 
     def __pow__(self, power):
         g = self.cirq_gate**power
