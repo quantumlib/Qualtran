@@ -137,6 +137,15 @@ def test_swap():
     assert swap_decomp_circuit == should_be
 
 
+def test_cirq_pow():
+    circ = cirq.Circuit()
+    q0, q1 = cirq.LineQubit.range(2)
+    with pytest.raises(ValueError, match=r'.*positive integer.*'):
+        circ += (BloqAsCirqGate(SwapTwoBitsTest()) ** 0.5).on(q0, q1)
+
+    circ += (BloqAsCirqGate(SwapTwoBitsTest()) ** 2).on(q0, q1)
+
+
 def test_multi_and_allocates():
     multi_and = MultiAnd(cvs=(1, 1, 1, 1))
     cirq_quregs = get_named_qubits(multi_and.signature.lefts())
