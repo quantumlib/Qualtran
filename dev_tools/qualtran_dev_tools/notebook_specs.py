@@ -611,9 +611,12 @@ ROT_QFT_PE = [
         title='Basic Rotation Gates',
         module=qualtran.bloqs.basic_gates.rotation,
         bloq_specs=[
+            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._CZ_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._RZ_DOC,
+            qualtran.bloqs.basic_gates.rotation._CRZ_DOC,
             qualtran.bloqs.basic_gates.rotation._X_POW_DOC,
             qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
-            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
         ],
     ),
     NotebookSpecV2(
