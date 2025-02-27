@@ -35,7 +35,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, CZPowGate, GlobalPhase, OneState, YPowGate
+from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState, YPowGate, ZPowGate
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
@@ -235,11 +235,17 @@ def test_cirq_gate_as_bloq_diagram_info():
 def test_cirq_gate_cost_via_decomp():
     theta = sympy.Symbol("theta", real=True)
     cirq_swappow = cirq.SwapPowGate(exponent=theta)
-
     swappow_bloq = CirqGateAsBloq(cirq_swappow)
 
     _, sigma = swappow_bloq.call_graph()
-    assert sigma == {CNOT(): 2, YPowGate(0.5): 1, YPowGate(-0.5): 1, CZPowGate(theta): 1}
+    assert sigma == {
+        CNOT(): 2,
+        YPowGate(0.5): 1,
+        YPowGate(-0.5): 1,
+        And(): 1,
+        And(uncompute=True): 1,
+        ZPowGate(theta): 1,
+    }
 
     gc_swappow = get_cost_value(swappow_bloq, QECGatesCost())
-    assert gc_swappow == GateCounts(clifford=4, rotation=1)
+    assert gc_swappow == GateCounts(clifford=5, rotation=1, and_bloq=1, measurement=1)
