@@ -17,13 +17,7 @@ import sympy
 
 from qualtran._infra.data_types import QAny
 from qualtran._infra.registers import Register
-from qualtran.drawing.musical_score import (
-    Text,
-    TextBox,
-    RarrowTextBox,
-    LarrowTextBox,
-    Circle
-)
+from qualtran.drawing.musical_score import Text, TextBox, RarrowTextBox, LarrowTextBox, Circle
 from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_data,
     _qroam_clean_multi_dim,
@@ -39,6 +33,7 @@ from qualtran.symbolics import ceil, log2
 def test_bloq_examples(bloq_autotester):
     bloq_autotester(_qroam_clean_multi_data)
     bloq_autotester(_qroam_clean_multi_dim)
+
 
 @pytest.mark.parametrize(
     "reg, reg_type",
@@ -72,6 +67,7 @@ def test_adjoint_wire_symbol(reg, reg_type):
     data2 = (np.arange(25, dtype=int) + 1).reshape((5, 5))
     adjoint_bloq = QROAMCleanAdjoint.build_from_data(data1, data2, log_block_sizes=(1, 1))
     assert isinstance(adjoint_bloq.wire_symbol(reg, ()), reg_type)
+
 
 def test_qroam_clean_qubit_counts():
     bloq = _qroam_clean_multi_data.make()
