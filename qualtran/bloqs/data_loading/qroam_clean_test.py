@@ -17,7 +17,6 @@ import sympy
 
 from qualtran._infra.data_types import QAny
 from qualtran._infra.registers import Register
-from qualtran.drawing.musical_score import Text, TextBox, RarrowTextBox, LarrowTextBox, Circle
 from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_data,
     _qroam_clean_multi_dim,
@@ -26,6 +25,7 @@ from qualtran.bloqs.data_loading.qroam_clean import (
     QROAMCleanAdjoint,
     QROAMCleanAdjointWrapper,
 )
+from qualtran.drawing.musical_score import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox
 from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.symbolics import ceil, log2
 
