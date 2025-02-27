@@ -13,26 +13,12 @@
 #  limitations under the License.
 from typing import List, TYPE_CHECKING
 
-import attrs
 import numpy as np
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import (
-    Bloq,
-    BloqBuilder,
-    CompositeBloq,
-    Controlled,
-    CtrlSpec,
-    DecomposeTypeError,
-    QBit,
-    QInt,
-    QUInt,
-    Register,
-    Side,
-    Signature,
-)
+from qualtran import Bloq, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
@@ -52,8 +38,6 @@ from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
     import cirq
-
-    from qualtran import SoquetT
 
 
 def test_ctrl_spec():
