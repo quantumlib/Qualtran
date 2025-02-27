@@ -1,8 +1,8 @@
-{ // Summary: markdownlint config file for Cirq                    -*- jsonc -*-
+{ // Summary: markdownlint config file for Qualtran                -*- jsonc -*-
   //
   // Note: there are multiple programs programs named "markdownlint". For
-  // Cirq, we use https://github.com/igorshubovych/markdownlint-cli/, which is
-  // the one you get with "brew install markdownlint" on MacOS.
+  // Qualtran, we use https://github.com/igorshubovych/markdownlint-cli/, which
+  // is the one you get with "brew install markdownlint" on MacOS.
   //
   // These settings try to stay close to the Google Markdown Style as
   // described at https://google.github.io/styleguide/docguide/style.html
