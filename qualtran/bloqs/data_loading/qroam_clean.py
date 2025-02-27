@@ -283,7 +283,7 @@ class QROAMCleanAdjointWrapper(Bloq):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
-        name = reg.name         
+        name = reg.name
         if name.startswith('selection'):
             return TextBox('In')
         elif 'target' in name and 'junk' not in name:
