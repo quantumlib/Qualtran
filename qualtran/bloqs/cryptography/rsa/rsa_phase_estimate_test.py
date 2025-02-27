@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc.ec_phase_estimate_r import _ec_pe, _ec_pe_small
+import pytest
+
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.cryptography.rsa.rsa_phase_estimate import _rsa_pe, _rsa_pe_small
 
 
-def test_ec_pe(bloq_autotester):
-    bloq_autotester(_ec_pe)
+@pytest.mark.parametrize('bloq', [_rsa_pe_small, _rsa_pe])
+def test_rsa_pe(bloq_autotester, bloq):
+    bloq_autotester(bloq)
 
 
-def test_ec_pe_small(bloq_autotester):
-    bloq_autotester(_ec_pe_small)
+def test_notebook():
+    qlt_testing.execute_notebook('rsa')

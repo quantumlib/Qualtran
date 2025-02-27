@@ -299,7 +299,7 @@ def _swap_small() -> Swap:
     return swap_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swap_large() -> Swap:
     swap_large = Swap(bitsize=64)
     return swap_large

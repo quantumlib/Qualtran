@@ -162,18 +162,21 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_small() -> ModExp:
+    """A small-exponent modular exponentiation demo."""
     modexp_small = ModExp(base=4, mod=15, exp_bitsize=3, x_bitsize=2048)
     return modexp_small
 
 
 @bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp() -> ModExp:
+    """An example modular exponentiation to factor 13 * 17."""
     modexp = ModExp.make_for_shor(big_n=13 * 17, g=9)
     return modexp
 
 
 @bloq_example
 def _modexp_symb() -> ModExp:
+    """Modular exponentiation with symbolic attributes."""
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb

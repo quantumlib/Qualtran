@@ -1,3 +1,5 @@
+#  Copyright 2023 Google LLC
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at
@@ -10,25 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-name: Nightly tests
+from qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r import _ec_pe, _ec_pe_small
 
-on:
-  schedule:
-    - cron: "0 11 * * 1-5"  # Mon-Fri at 11:00 AM UTC
 
-jobs:
-  pytest:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ts-graphviz/setup-graphviz@v1
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r dev_tools/requirements/envs/pytest.env.txt
-          pip install --no-deps -e .
-      - run: |
-          check/pytest
+def test_ec_pe(bloq_autotester):
+    bloq_autotester(_ec_pe)
+
+
+def test_ec_pe_small(bloq_autotester):
+    bloq_autotester(_ec_pe_small)
