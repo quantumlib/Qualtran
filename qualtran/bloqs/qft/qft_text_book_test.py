@@ -41,8 +41,8 @@ def test_qft_text_book(n: int, without_reverse: bool):
     qft_bloq = QFTTextBook(n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
 
-    assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
-    assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
+    assert np.allclose(qft_bloq.tensor_contract(), cirq.unitary(qft_cirq))
+    assert np.allclose(qft_bloq.adjoint().tensor_contract(), cirq.unitary(qft_cirq**-1))
 
     qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
