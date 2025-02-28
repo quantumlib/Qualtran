@@ -34,13 +34,14 @@ from qualtran import (
 
 if TYPE_CHECKING:
     import cirq
-    import pennylane
     import quimb.tensor as qtn
 
     from qualtran import AddControlledT, BloqBuilder, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.simulation.classical_sim import ClassicalValT
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 
 @frozen
@@ -118,7 +119,7 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.Toffoli(wires=wires)

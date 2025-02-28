@@ -35,8 +35,10 @@ from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.symbolics import pi, sarg, sexp, SymbolicComplex, SymbolicFloat
 
 if TYPE_CHECKING:
-    import pennylane
     import quimb.tensor as qtn
+
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 
 @frozen
@@ -73,7 +75,7 @@ class GlobalPhase(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.GlobalPhaseGate(self.coefficient)
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.GlobalPhase(phi=self.coefficient, wires=wires)

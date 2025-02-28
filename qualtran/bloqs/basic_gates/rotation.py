@@ -12,19 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import attrs
 import cirq
 import numpy as np
 import sympy
-import pennylane
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError, Register
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
+
+if TYPE_CHECKING:
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 
 @frozen
@@ -308,7 +311,7 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.RZ(phi=self.angle, wires=wires)
@@ -337,7 +340,7 @@ class Rx(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.RX(phi=self.angle, wires=wires)
@@ -366,7 +369,7 @@ class Ry(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.RY(phi=self.angle, wires=wires)

@@ -21,7 +21,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CH
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
-    import pennylane
+    import pennylane as qml
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
@@ -48,7 +48,8 @@ if TYPE_CHECKING:
         SympySymbolAllocator,
     )
     from qualtran.simulation.classical_sim import ClassicalValT
-
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
@@ -467,7 +468,7 @@ class Bloq(metaclass=abc.ABCMeta):
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
 
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         """Override this method to support conversion to a PennyLane operation.
 
         If this method is not overriden, the default implementation will wrap this bloq
@@ -477,7 +478,7 @@ class Bloq(metaclass=abc.ABCMeta):
             wires: the wires that the op acts on
 
         Returns:
-            ~pennylane.Operation: A PennyLane operation corresponding to this bloq acting on the 
+            ~.Operation: A PennyLane operation corresponding to this bloq acting on the 
                 provided wires or None. This method should return None if and only if the bloq 
                 instance truly should not be included in the PennyLane circuit (e.g. for reshaping 
                 bloqs). A bloq with no PennyLane equivalent should raise an exception instead.

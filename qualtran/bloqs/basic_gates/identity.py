@@ -37,11 +37,12 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
-    import pennylane
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 
 @frozen
@@ -89,7 +90,7 @@ class Identity(Bloq):
 
         return cirq.IdentityGate(self.bitsize).on(*q), {'q': q}
     
-    def as_pl_op(self, wires: 'pennylane.Wires') -> 'pennylane.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
         return qml.Identity(wires=wires)
