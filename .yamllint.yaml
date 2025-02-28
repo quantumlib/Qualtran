@@ -1,4 +1,4 @@
-# Summary: yamllint configuration for Cirq.
+# Summary: yamllint configuration.
 # See https://yamllint.readthedocs.io/ for info about configuration options.
 
 rules:
