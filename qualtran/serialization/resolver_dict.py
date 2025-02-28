@@ -231,6 +231,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.rotation.Rx": qualtran.bloqs.basic_gates.rotation.Rx,
     "qualtran.bloqs.basic_gates.rotation.Ry": qualtran.bloqs.basic_gates.rotation.Ry,
     "qualtran.bloqs.basic_gates.rotation.Rz": qualtran.bloqs.basic_gates.rotation.Rz,
+    "qualtran.bloqs.basic_gates.rotation.CRz": qualtran.bloqs.basic_gates.rotation.CRz,
     "qualtran.bloqs.basic_gates.rotation.XPowGate": qualtran.bloqs.basic_gates.rotation.XPowGate,
     "qualtran.bloqs.basic_gates.rotation.YPowGate": qualtran.bloqs.basic_gates.rotation.YPowGate,
     "qualtran.bloqs.basic_gates.rotation.ZPowGate": qualtran.bloqs.basic_gates.rotation.ZPowGate,
