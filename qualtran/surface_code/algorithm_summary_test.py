@@ -36,7 +36,7 @@ from qualtran.surface_code import AlgorithmSummary
         ],
         [mcmt.And(), AlgorithmSummary(n_algo_qubits=3, n_logical_gates=GateCounts(and_bloq=1))],
         [
-            basic_gates.ZPowGate(exponent=0.1, global_shift=0.0, eps=1e-11),
+            basic_gates.ZPowGate(exponent=0.1, eps=1e-11),
             AlgorithmSummary(n_algo_qubits=1, n_logical_gates=GateCounts(rotation=1)),
         ],
         [
