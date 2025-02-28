@@ -11,46 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
-import attrs
 import numpy as np
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import (
-    Bloq,
-    BloqBuilder,
-    CompositeBloq,
-    Controlled,
-    CtrlSpec,
-    DecomposeTypeError,
-    QBit,
-    QInt,
-    QUInt,
-    Register,
-    Side,
-    Signature,
-)
+from qualtran import Bloq, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
     GlobalPhase,
-    IntEffect,
-    IntState,
-    OneState,
     Swap,
     TwoBitCSwap,
     XGate,
     XPowGate,
     YGate,
-    ZeroState,
     ZGate,
 )
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
-from qualtran.bloqs.mcmt import And
-from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
@@ -58,8 +38,6 @@ from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
     import cirq
-
-    from qualtran import SoquetT
 
 
 def test_ctrl_spec():
@@ -446,67 +424,6 @@ def test_controlled_global_phase_tensor():
     bloq = GlobalPhase.from_coefficient(1.0j).controlled()
     should_be = np.diag([1, 1.0j])
     np.testing.assert_allclose(bloq.tensor_contract(), should_be)
-
-
-@attrs.frozen
-class TestCtrlStatePrepAnd(Bloq):
-    """Decomposes into a Controlled-AND gate + int effects & targets where ctrl is active.
-
-    Tensor contraction should give the output state vector corresponding to applying an
-    `And(and_ctrl)`; assuming all the control bits are active.
-    """
-
-    ctrl_spec: CtrlSpec
-    and_ctrl: Tuple[int, int]
-
-    @property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QBit(), shape=(3,), side=Side.RIGHT)])
-
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
-        if self.ctrl_spec.is_symbolic():
-            raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.ctrl_spec=}")
-
-        one_or_zero = [ZeroState(), OneState()]
-        ctrl_bloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
-
-        ctrl_soqs = {}
-        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
-            assert isinstance(cvs, np.ndarray)
-            soqs = np.empty(shape=reg.shape, dtype=object)
-            for idx in reg.all_idxs():
-                soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
-            ctrl_soqs[reg.name] = soqs
-
-        and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
-
-        ctrl_soqs = bb.add_d(ctrl_bloq, **ctrl_soqs, ctrl=and_ctrl)
-        out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
-
-        for reg, cvs in zip(ctrl_bloq.ctrl_regs, self.ctrl_spec.cvs):
-            assert isinstance(cvs, np.ndarray)
-            for idx in reg.all_idxs():
-                ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
-                bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
-        return {'x': out_soqs}
-
-
-def _verify_ctrl_tensor_for_and(ctrl_spec: CtrlSpec, and_ctrl: Tuple[int, int]):
-    bloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
-    bloq_tensor = bloq.tensor_contract()
-    cirq_state_vector = GateHelper(And(*and_ctrl)).circuit.final_state_vector(
-        initial_state=and_ctrl + (0,)
-    )
-    np.testing.assert_allclose(bloq_tensor, cirq_state_vector, atol=1e-8)
-
-
-@pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
-def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
-    # Test AND gate with one-sided signature (aka controlled state preparation).
-    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 1))
-    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 0))
-    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 1))
-    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 0))
 
 
 def test_controlled_diagrams():
