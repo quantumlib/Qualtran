@@ -16,13 +16,25 @@ on:
   schedule:
     - cron: "0 11 * * 1-5"  # Mon-Fri at 11:00 AM UTC
 
+  # Allow manual invocation – useful for debugging.
+  workflow_dispatch:
+
+concurrency:
+  # Cancel any previously-started but still active runs on the same branch.
+  cancel-in-progress: true
+  group: ${{github.workflow}}-${{github.event.pull_request.number||github.ref}}
+
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   pytest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
-      - uses: ts-graphviz/setup-graphviz@v1
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
           python-version: "3.10"
       - name: Install dependencies
