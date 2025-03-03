@@ -33,11 +33,12 @@ from qualtran import (
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 
 if TYPE_CHECKING:
-    import pennylane as qml
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
 
 @frozen
@@ -102,8 +103,8 @@ class Cast(_BookkeepingBloq):
         return None, {'reg': reg}
 
     def as_pl_op(
-        self, wires: 'qml.Wires'
-    ) -> 'qml.Operation':
+        self, wires: 'Wires'
+    ) -> 'Operation':
         return None
 
 @bloq_example
