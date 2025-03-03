@@ -35,11 +35,12 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 if TYPE_CHECKING:
-    import pennylane as qml
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
 
 @frozen
@@ -102,8 +103,8 @@ class Partition(_BookkeepingBloq):
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
         
     def as_pl_op(
-        self, wires: 'qml.Wires'
-    ) -> 'qml.Operation':
+        self, wires: 'Wires'
+    ) -> 'Operation':
         return None
 
     def my_tensors(

@@ -48,6 +48,8 @@ if TYPE_CHECKING:
         SympySymbolAllocator,
     )
     from qualtran.simulation.classical_sim import ClassicalValT
+    from pennylane.wires import Wires
+    from pennylane.operation import Operation
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
@@ -466,7 +468,7 @@ class Bloq(metaclass=abc.ABCMeta):
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
 
-    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         """Override this method to support conversion to a PennyLane operation.
 
         If this method is not overriden, the default implementation will wrap this bloq
