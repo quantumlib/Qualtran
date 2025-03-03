@@ -576,6 +576,8 @@ GF_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC,
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_BY_CONSTANT_MOD_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_POLY_BY_ONE_PLUS_XK_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._BINARY_POLYNOMIAL_MULTIPLICATION_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -609,9 +611,12 @@ ROT_QFT_PE = [
         title='Basic Rotation Gates',
         module=qualtran.bloqs.basic_gates.rotation,
         bloq_specs=[
+            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._CZ_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._RZ_DOC,
+            qualtran.bloqs.basic_gates.rotation._CRZ_DOC,
             qualtran.bloqs.basic_gates.rotation._X_POW_DOC,
             qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
-            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
         ],
     ),
     NotebookSpecV2(

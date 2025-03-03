@@ -82,11 +82,12 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         if isinstance(self.cirq_gate, Bloq):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
-        return (
-            Signature([Register('q', QBit(), shape=nqubits)])
-            if nqubits > 1
-            else Signature.build(q=nqubits)
-        )
+        if nqubits == 1:
+            return Signature([Register('q', QBit())])
+        elif nqubits == 0:
+            return Signature([])
+        # else
+        return Signature([Register('q', QBit(), shape=nqubits)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
@@ -409,10 +410,11 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     if isinstance(gate, (cirq.Rx, cirq.Ry, cirq.Rz)):
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](angle=gate._rads)
 
-    if isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)):
-        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
-            exponent=gate.exponent, global_shift=gate.global_shift
-        )
+    if (
+        isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate))
+        and gate.global_shift == 0
+    ):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](exponent=gate.exponent)
 
     if isinstance(gate, cirq.GlobalPhaseGate):
         if isinstance(gate.coefficient, numbers.Complex):

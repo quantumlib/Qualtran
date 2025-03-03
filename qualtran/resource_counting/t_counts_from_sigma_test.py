@@ -14,23 +14,13 @@
 
 import sympy
 
-from qualtran.bloqs.basic_gates import (
-    CZPowGate,
-    Rx,
-    Ry,
-    Rz,
-    TGate,
-    Toffoli,
-    XPowGate,
-    YPowGate,
-    ZPowGate,
-)
+from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate, Toffoli, XPowGate, YPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
 def test_t_counts_from_sigma():
-    z_eps1, z_eps2, x_eps, y_eps, cz_eps = sympy.symbols('z_eps1, z_eps2, x_eps, y_eps, cz_eps')
+    z_eps1, z_eps2, x_eps, y_eps = sympy.symbols('z_eps1, z_eps2, x_eps, y_eps')
     sigma = {
         ZPowGate(eps=z_eps1): 1,
         ZPowGate(eps=z_eps2): 2,
@@ -43,8 +33,6 @@ def test_t_counts_from_sigma():
         Ry(0.01, eps=y_eps): 6,
         YPowGate(eps=y_eps): 7,
         YPowGate(0.01, eps=y_eps): 7,
-        CZPowGate(eps=cz_eps): 20,
-        CZPowGate(0.01, eps=cz_eps): 20,
         TGate(): 100,
         Toffoli(): 200,
     }
@@ -55,6 +43,5 @@ def test_t_counts_from_sigma():
         + 5 * TComplexity.rotation_cost(z_eps2)
         + 9 * TComplexity.rotation_cost(x_eps)
         + 13 * TComplexity.rotation_cost(y_eps)
-        + 20 * TComplexity.rotation_cost(cz_eps)
     )
     assert t_counts_from_sigma(sigma) == expected_t_count

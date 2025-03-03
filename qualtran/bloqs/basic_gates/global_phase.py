@@ -16,7 +16,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
-from attrs import field, frozen
+from attrs import frozen
 
 from qualtran import (
     AddControlledT,
@@ -30,7 +30,6 @@ from qualtran import (
     DecomposeTypeError,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.symbolics import pi, sarg, sexp, SymbolicComplex, SymbolicFloat
 
@@ -38,23 +37,30 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
 
-@frozen
+@frozen(kw_only=True)
 class GlobalPhase(CirqGateAsBloqBase):
     r"""Applies a global phase to the circuit as a whole.
 
-    The unitary effect is to multiply the state vector by the complex scalar
-    $e^{i pi t}$ for `exponent` $t$.
+    For an exponent $t$, the unitary effect is to multiply the state vector by the complex scalar
+    $$
+    (-1)^t = e^{i \pi t}
+    $$
 
     The global phase of a state or circuit does not affect any observable quantity, but
-    keeping track of it can be a useful bookkeeping mechanism for testing circuit identities.
-    The global phase becomes important if the gate becomes controlled.
+    keeping track of it can be a useful bookkeeping mechanism for testing circuit identities, and
+    the global phase becomes important when controlling an operation.
+
+    This is fundamentally an atomic operation and this bloq has no decomposition in Qualtran.
+
+    The single-qubit controlled version of `GlobalPhase` is `ZPowGate`.
 
     Args:
-        exponent: the exponent $t$ of the global phase $e^{i pi t}$ to apply.
-        eps: precision
+        exponent: the exponent t of the global phase (-1)^t to apply.
+        eps: The precision of the rotation. This parameter is for bookkeeping and does
+            not affect e.g. the tensor representation of this gate.
     """
 
-    exponent: SymbolicFloat = field(kw_only=True)
+    exponent: SymbolicFloat
     eps: SymbolicFloat = 1e-11
 
     @cached_property
@@ -87,14 +93,12 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         # Delegate to superclass logic for more than one control.
-        if not (ctrl_spec == CtrlSpec() or ctrl_spec == CtrlSpec(cvs=0)):
+        if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        # Otherwise, it's a ZPowGate
-        if ctrl_spec == CtrlSpec(cvs=0):
-            bloq = ZPowGate(exponent=-self.exponent, global_shift=-1, eps=self.eps)
-        else:
-            bloq = ZPowGate(exponent=self.exponent, eps=self.eps)
+        from qualtran.bloqs.basic_gates import ZPowGate
+
+        bloq = ZPowGate(exponent=self.exponent, eps=self.eps)
 
         def _add_ctrled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
@@ -115,4 +119,6 @@ def _global_phase() -> GlobalPhase:
     return global_phase
 
 
-_GLOBAL_PHASE_DOC = BloqDocSpec(bloq_cls=GlobalPhase, examples=[_global_phase])
+_GLOBAL_PHASE_DOC = BloqDocSpec(
+    bloq_cls=GlobalPhase, examples=[_global_phase], call_graph_example=None
+)
