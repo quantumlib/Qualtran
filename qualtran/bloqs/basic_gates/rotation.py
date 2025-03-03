@@ -73,8 +73,7 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
+    import pennylane as qml
 
 
 @frozen
@@ -445,7 +444,7 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.RZ(phi=self.angle, wires=wires)
@@ -565,7 +564,7 @@ class Rx(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.RX(phi=self.angle, wires=wires)
@@ -594,7 +593,7 @@ class Ry(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.RY(phi=self.angle, wires=wires)

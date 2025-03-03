@@ -37,12 +37,11 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    import pennylane as qml
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
-
+    
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
 _PAULIX = np.array([[0, 1], [1, 0]], dtype=np.complex128)
@@ -258,7 +257,7 @@ class XGate(Bloq):
         (q,) = q
         return cirq.X(q), {'q': np.asarray([q])}
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.PauliX(wires=wires)

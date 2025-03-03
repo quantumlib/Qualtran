@@ -36,7 +36,7 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
-    import pennylane
+    import pennylane as qml
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -106,8 +106,8 @@ class Free(_BookkeepingBloq):
         return (None, {})
     
     def as_pl_op(
-        self, wires: 'pennylane.Wires'
-    ) -> 'pennylane.Operation':
+        self, wires: 'qml.Wires'
+    ) -> 'qml.Operation':
         return None
 
 

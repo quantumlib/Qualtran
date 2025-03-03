@@ -35,7 +35,7 @@ from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
-    import pennylane
+    import pennylane as qml
     import quimb.tensor as qtn
     from numpy.typing import NDArray
 
@@ -82,8 +82,8 @@ class Join(_BookkeepingBloq):
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
     def as_pl_op(
-        self, wires: 'pennylane.Wires'
-    ) -> 'pennylane.Operation':
+        self, wires: 'qml.Wires'
+    ) -> 'qml.Operation':
         return None
 
     def my_tensors(

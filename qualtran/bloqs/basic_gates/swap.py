@@ -41,13 +41,12 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    import pennylane as qml
 
     from qualtran import AddControlledT, CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
 
 
 def _swap_matrix() -> NDArray[np.complex128]:
@@ -88,7 +87,7 @@ class TwoBitSwap(Bloq):
 
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.SWAP(wires=wires)
@@ -196,7 +195,7 @@ class TwoBitCSwap(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
     
-    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+    def as_pl_op(self, wires: 'qml.Wires') -> 'qml.Operation':
         import pennylane as qml
 
         return qml.CSWAP(wires=wires)
