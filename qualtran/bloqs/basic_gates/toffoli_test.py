@@ -55,6 +55,13 @@ _c(2): ───X───X───""",
         Toffoli(), [Circle(filled=True), Circle(filled=True), ModPlus()]
     )
 
+def test_pl_interop():
+    import pennylane as qml
+    bloq = Toffoli()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0, 1, 2])
+    pl_op = qml.Toffoli(wires=[0, 1, 2])
+    assert pl_op_from_bloq == pl_op
+
 
 def test_classical_sim():
     tof = Toffoli()

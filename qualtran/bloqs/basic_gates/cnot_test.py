@@ -15,6 +15,7 @@
 import cirq
 import numpy as np
 import pytest
+import pennylane as qml
 
 from qualtran import BloqBuilder, Signature
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
@@ -29,6 +30,18 @@ from qualtran.simulation.classical_sim import (
 def test_cnot_tensor():
     bloq = CNOT()
     matrix = bloq.tensor_contract()
+    # fmt: off
+    should_be = np.array([
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 1, 0]])
+    # fmt: on
+    np.testing.assert_allclose(should_be, matrix)
+
+def test_cnot_vs_pl():
+    bloq = CNOT()
+    matrix = qml.FromBloq(bloq, wires=[0, 1]).matrix()
     # fmt: off
     should_be = np.array([
         [1, 0, 0, 0],

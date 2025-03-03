@@ -83,8 +83,9 @@ class GlobalPhase(CirqGateAsBloqBase):
     
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
+        import numpy as np
 
-        return qml.GlobalPhase(phi=self.coefficient, wires=wires)
+        return qml.GlobalPhase(phi=self.exponent * np.pi, wires=wires)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

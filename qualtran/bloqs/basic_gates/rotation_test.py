@@ -224,6 +224,27 @@ def test_as_cirq_op():
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.ZPowGate(exponent=1 / 5).on(cirq.NamedQubit("q")))
 
+def test_pl_interop():
+    import pennylane as qml
+    bloq = Rx(angle=0.4)
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.RX(phi=0.4, wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+    bloq = Ry(angle=0.4)
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.RY(phi=0.4, wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+    bloq = Rz(angle=0.4)
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.RZ(phi=0.4, wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+    bloq = Rx(angle=0.4)
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.RX(phi=0.4, wires=[0])
+    assert pl_op_from_bloq == pl_op
 
 def test_str():
     assert str(ZPowGate()) == "Z**1.0"
