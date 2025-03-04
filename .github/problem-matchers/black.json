@@ -5,9 +5,9 @@
       "severity": "error",
       "pattern": [
         {
-          "regexp": "^([^:]+): (Unformatted file\\. .+)$",
-          "file": 1,
-          "message": 2
+          "regexp": "^(would reformat) (.+)$",
+          "file": 2,
+          "message": 1
         }
       ]
     }
