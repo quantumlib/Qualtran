@@ -92,7 +92,6 @@ class TestNaiveControlledAddOrSubtract(Bloq):
         return {'ctrl': ctrl, 'a': a, 'b': b}
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize("dtype", [QUInt(3), QUInt(4)])
 def test_tensor(dtype):
     bloq = ControlledAddOrSubtract(dtype, dtype)
