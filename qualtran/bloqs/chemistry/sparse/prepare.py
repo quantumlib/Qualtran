@@ -291,7 +291,8 @@ class PrepareSparse(PrepareOracle):
             np.abs(integrals), sub_bit_precision=num_bits_state_prep
         )
         theta = (1 - np.sign(integrals)) // 2
-        num_lt = num_spin_orb // 2 * (num_spin_orb // 2 + 1)
+        num_spatial = num_spin_orb // 2
+        num_lt = num_spatial * (num_spatial + 1) // 2
         one_body = np.array([0] * num_lt + [1] * len(integrals[num_lt:]))
         alt_pqrs = indicies[alt]
         alt_theta = theta[alt]
