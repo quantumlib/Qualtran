@@ -94,7 +94,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev_tools/requirements/envs/format.env.txt
           pip install --no-deps -e .
-      - name: Set up Black output problem matcher
+      - name: Set up problem matcher for Black output
         run: echo '::add-matcher::.github/problem-matchers/black.json'
       - run: |
           check/format-incremental
@@ -114,7 +114,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev_tools/requirements/envs/pylint.env.txt
           pip install --no-deps -e .
-      - name: Set up Pylint output problem matcher
+      - name: Set up problem matcher for Pylint output
         run: echo '::add-matcher::.github/problem-matchers/pylint.json'
       - run: |
           check/pylint
@@ -134,7 +134,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev_tools/requirements/envs/dev.env.txt
           pip install --no-deps -e .
-      - name: Set up Mypy output problem matcher
+      - name: Set up problem matcher for Mypy output
         run: echo '::add-matcher::.github/problem-matchers/mypy.json'
       - run: |
           check/mypy
