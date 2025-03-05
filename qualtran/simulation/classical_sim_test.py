@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import Dict
+from typing import Dict, Union
 
 import networkx as nx
 import numpy as np
@@ -98,6 +98,11 @@ class ApplyClassicalTest(Bloq):
         const = np.array([1, 0, 1, 0, 1], dtype=np.uint8)
         z = np.logical_xor(x, const).astype(np.uint8)
         return {'x': x, 'z': z}
+
+
+class ApplyPhasedClassicalTest(Bloq):
+    def basis_state_phase(self, x: NDArray[np.uint8]) -> complex:
+        return np.exp(x * 1.0j / np.pi)
 
 
 def test_apply_classical():

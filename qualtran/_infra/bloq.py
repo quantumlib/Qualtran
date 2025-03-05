@@ -187,7 +187,7 @@ class Bloq(metaclass=abc.ABCMeta):
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `call_clasically(**vals)` which will do input validation before
         calling this function.
 
@@ -213,6 +213,20 @@ class Bloq(metaclass=abc.ABCMeta):
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
     def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """How this bloq phases classical basis states.
+
+        Override this method if your bloq represents classical logic with basis-state
+        dependent phase factors. This corresponds to bloqs whose matrix representation
+        (in the standard basis) is a generalized permutation matrix: a permutation matrix
+        where each entry can be +1, -1 or any complex number with unit absolute value.
+        Alternatively, this corresponds to bloqs composed from classical operations
+        (X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+        Bloq authors should override this method. If you are using an instantiated bloq object,
+        call TODO and not this method directly.
+
+        If this method is implemented, `on_classical_vals` must also be implemented.
+        """
         return None
 
     def call_classically(
