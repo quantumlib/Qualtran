@@ -403,7 +403,7 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
+        from qualtran import make_ctrl_system_with_correct_metabloq
 
         return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
