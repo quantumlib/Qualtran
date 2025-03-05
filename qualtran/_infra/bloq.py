@@ -170,7 +170,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -182,11 +182,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         Args:
             **vals: The input classical values for each left (or thru) register. The data
-                types are guaranteed to match `self.registers`. Values for registers
-                with bitsize `n` will be integers of that bitsize. Values for registers with
-                `shape` will be an ndarray of integers of the given bitsize. Note: integers
-                can be either Numpy or Python integers. If they are Python integers, they
-                are unsigned.
+                types are guaranteed to match `self.signature`. Values for registers
+                with a particular dtype will be the corresponding classical data type. Values for
+                registers with `shape` will be an ndarray of values of the expected type.
 
         Returns:
             A dictionary mapping right (or thru) register name to output classical values.
