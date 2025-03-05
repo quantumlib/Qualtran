@@ -57,7 +57,7 @@ if TYPE_CHECKING:
         GeneralizerT,
         SympySymbolAllocator,
     )
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
@@ -181,7 +181,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Mapping[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValRetT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -211,6 +211,9 @@ class Bloq(metaclass=abc.ABCMeta):
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        return None
 
     def call_classically(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']

@@ -15,6 +15,7 @@
 import itertools
 from typing import Dict
 
+import networkx as nx
 import numpy as np
 import pytest
 from attrs import frozen
@@ -39,7 +40,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
-    _update_assign_from_vals,
+    _ClassicalSimState,
     add_ints,
     call_cbloq_classically,
     ClassicalValT,
@@ -51,6 +52,7 @@ def test_dtype_validation():
     # set up mocks for `_update_assign_from_vals`
     soq_assign: Dict[Soquet, ClassicalValT] = {}  # gets assigned to; we discard in this test.
     binst = 'MyBinst'  # binst is only used for error messages, so we can mock with a string
+    sim = _ClassicalSimState(Signature([]), nx.DiGraph(), {})
 
     # set up different register dtypes
     regs = [
@@ -67,21 +69,21 @@ def test_dtype_validation():
         'bit_arr': np.array([1, 0, 1, 0, 1], dtype=np.uint8),
         'int_arr': np.arange(5),
     }
-    _update_assign_from_vals(regs, binst, vals, soq_assign)  # type: ignore[arg-type]
+    sim._update_assign_from_vals(regs, binst, vals)  # type: ignore[arg-type]
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
     with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
-        _update_assign_from_vals(regs, binst, vals2, soq_assign)  # type: ignore[arg-type]
+        sim._update_assign_from_vals(regs, binst, vals2)  # type: ignore[arg-type]
 
     # int is a numpy int
     vals3 = {**vals, 'int': np.arange(5, dtype=np.uint8)[4]}
-    _update_assign_from_vals(regs, binst, vals3, soq_assign)  # type: ignore[arg-type]
+    sim._update_assign_from_vals(regs, binst, vals3)  # type: ignore[arg-type]
 
     # wrong shape
     vals4 = {**vals, 'int_arr': np.arange(6)}
     with pytest.raises(ValueError, match=r'Incorrect shape.*Want \(5,\)\.'):
-        _update_assign_from_vals(regs, binst, vals4, soq_assign)  # type: ignore[arg-type]
+        sim._update_assign_from_vals(regs, binst, vals4)  # type: ignore[arg-type]
 
 
 @frozen

@@ -232,3 +232,6 @@ def test_cz_manual():
 
     assert ZGate().controlled() == CZ()
     assert t_complexity(cz) == TComplexity(clifford=1)
+
+    with pytest.raises(ValueError, match='.*phase.*'):
+        cz.call_classically(q1=1, q2=1)
