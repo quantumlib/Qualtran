@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import abc
 from collections import Counter
 from functools import cached_property
 from typing import (
@@ -18,6 +19,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Mapping,
     Optional,
     Protocol,
     Sequence,
@@ -33,7 +35,7 @@ from numpy.typing import NDArray
 
 from ..symbolics import is_symbolic, prod, Shaped, SymbolicInt
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from .data_types import QBit, QDType
+from .data_types import CDType, QBit, QCDType, QDType
 from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
@@ -116,8 +118,8 @@ class CtrlSpec:
             of the ctrl register is implied to be `cv.shape`).
     """
 
-    qdtypes: Tuple[QDType, ...] = attrs.field(
-        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
+    qdtypes: Tuple[QCDType, ...] = attrs.field(
+        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QCDType) else tuple(qt)
     )
     cvs: Tuple[Union[NDArray[np.integer], Shaped], ...] = attrs.field(
         default=1, converter=_cvs_convert
@@ -144,16 +146,26 @@ class CtrlSpec:
         return shapes  # type: ignore
 
     @cached_property
+    def num_bits(self) -> SymbolicInt:
+        """Total number of bits required for control registers represented by this CtrlSpec."""
+        return sum(dtype.num_bits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes))
+
+    @cached_property
     def num_qubits(self) -> SymbolicInt:
         """Total number of qubits required for control registers represented by this CtrlSpec."""
         return sum(
             dtype.num_qubits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes)
         )
 
+    @cached_property
+    def num_cbits(self) -> SymbolicInt:
+        """Total number of classical bits required for control registers represented by this CtrlSpec."""
+        return sum(dtype.num_cbits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes))
+
     def is_symbolic(self):
         return is_symbolic(*self.qdtypes) or is_symbolic(*self.cvs)
 
-    def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[SymbolicInt, ...]]]:
+    def activation_function_dtypes(self) -> Sequence[Tuple[QCDType, Tuple[SymbolicInt, ...]]]:
         """The data types that serve as input to the 'activation function'.
 
         The activation function takes in (quantum) inputs of these types and shapes and determines
@@ -242,13 +254,17 @@ class CtrlSpec:
         import cirq
 
         if self.is_symbolic():
-            raise ValueError(f"Cannot convert symbolic {self} to cirq control values.")
+            raise ValueError(f"Cannot convert symbolic {self} to Cirq control values.")
+        if self.num_cbits > 0:
+            raise ValueError(
+                f"Cannot convert classical control spec {self} to Cirq control values."
+            )
 
         cirq_cv = []
-        for qdtype, cv in zip(self.qdtypes, self.cvs):
+        for dtype, cv in zip(self.qdtypes, self.cvs):
             assert isinstance(cv, np.ndarray)
-            for idx in Register('', qdtype, cv.shape).all_idxs():
-                cirq_cv += [*qdtype.to_bits(cv[idx])]
+            for idx in Register('', dtype, cv.shape).all_idxs():
+                cirq_cv += [*dtype.to_bits(cv[idx])]
         return cirq.SumOfProducts([tuple(cirq_cv)])
 
     @classmethod
@@ -256,7 +272,7 @@ class CtrlSpec:
         cls,
         cirq_cv: 'cirq.ops.AbstractControlValues',
         *,
-        qdtypes: Optional[Sequence[QDType]] = None,
+        qdtypes: Optional[Sequence[QCDType]] = None,
         shapes: Optional[Sequence[Tuple[int, ...]]] = None,
     ) -> 'CtrlSpec':
         """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
@@ -273,33 +289,31 @@ class CtrlSpec:
 
         # Verify that the given values for qdtypes and shapes are compatible with cv.
         if sum(dt.num_qubits * np.prod(sh) for dt, sh in zip(qdtypes, shapes)) != len(cv):
-            raise ValueError(
-                f"Sum of qubits across {qdtypes=} and {shapes=} should match {len(cv)=}"
-            )
+            raise ValueError(f"Sum of bits across {qdtypes=} and {shapes=} should match {len(cv)=}")
 
         # Convert the AND clause to a CtrlSpec.
         idx = 0
         bloq_cvs = []
 
-        for qdtype, shape in zip(qdtypes, shapes):
-            full_shape = shape + (qdtype.num_qubits,)
+        for dtype, shape in zip(qdtypes, shapes):
+            full_shape = shape + (dtype.num_bits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore
+            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
-    def get_single_ctrl_bit(self) -> ControlBit:
+    def get_single_ctrl_val(self) -> ControlBit:
         """If controlled by a single qubit, return the control bit, otherwise raise"""
         if self.is_symbolic():
             raise ValueError(f"cannot get ctrl bit for symbolic {self}")
-        if self.num_qubits != 1:
+        if self.num_bits != 1:
             raise ValueError(f"expected a single qubit control, got {self.num_qubits}")
 
-        (qdtype,) = self.qdtypes
+        (dtype,) = self.qdtypes
         (cv,) = self.cvs
         assert isinstance(cv, np.ndarray)
-        (idx,) = Register('', qdtype, cv.shape).all_idxs()
-        (control_bit,) = qdtype.to_bits(cv[idx])
+        (idx,) = Register('', dtype, cv.shape).all_idxs()
+        (control_bit,) = dtype.to_bits(cv[idx])
 
         return int(control_bit)
 
