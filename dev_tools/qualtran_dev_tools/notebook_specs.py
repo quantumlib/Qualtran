@@ -138,6 +138,9 @@ from .jupyter_autogen import NotebookSpecV2
 GIT_ROOT = get_git_root()
 SOURCE_DIR = GIT_ROOT / 'qualtran/'
 
+# --------------------------------------------------------------------------
+# -----   Root Bloqs   -----------------------------------------------------
+# --------------------------------------------------------------------------
 
 ROOT_BLOQS: List[NotebookSpecV2] = [
     NotebookSpecV2(
