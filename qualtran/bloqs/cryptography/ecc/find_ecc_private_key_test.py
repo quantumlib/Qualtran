@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.cryptography.ecc.find_ecc_private_key import _ecc
@@ -20,5 +21,6 @@ def test_ecc(bloq_autotester):
     bloq_autotester(_ecc)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('ecc')
