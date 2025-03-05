@@ -102,8 +102,10 @@ class HLine:
     seq_x_end: Optional[int] = None
     flavor: HLineFlavor = HLineFlavor.QUANTUM
 
-    def json_dict(self):
-        return attrs.asdict(self)
+    def json_dict(self) -> Dict[str, Any]:
+        d = attrs.asdict(self)
+        d['flavor'] = str(d['flavor'])
+        return d
 
 
 class LineManager:
