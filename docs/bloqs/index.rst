@@ -23,10 +23,10 @@ Bloqs Library
     state_preparation/state_preparation_via_rotation_tutorial.ipynb
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Root Bloqs:
 
-    cryptography/ecc/ecc.ipynb
+    cryptography/ecc/ecc_root.ipynb
 
 .. toctree::
     :maxdepth: 2

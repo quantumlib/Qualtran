@@ -68,12 +68,6 @@ CONCEPTS = [
 ]
 
 
-# --------------------------------------------------------------------------
-# -----   Root Bloqs   -----------------------------------------------------
-# --------------------------------------------------------------------------
-ROOT_BLOQS = ['cryptography/ecc/ecc.ipynb']
-
-
 def _all_nbspecs() -> Iterable[NotebookSpecV2]:
     for _, nbspecs in NB_BY_SECTION:
         yield from nbspecs
@@ -108,7 +102,6 @@ def write_toc():
     ]
 
     toc_lines = header + _get_toc_section_lines('Concepts', CONCEPTS, maxdepth=1)
-    toc_lines += _get_toc_section_lines('Root Bloqs', ROOT_BLOQS, maxdepth=1)
     bloqs_dir = SOURCE_DIR / 'bloqs'
     for section, nbspecs in NB_BY_SECTION:
         entries = [str(nbspec.path.relative_to(bloqs_dir)) for nbspec in nbspecs]
