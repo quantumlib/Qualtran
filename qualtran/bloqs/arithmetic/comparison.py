@@ -406,7 +406,7 @@ def _equality_with_zero(
 
 @frozen
 class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    r"""Applies $U\ket{x}\ket{y}\ket{z} \rightarrow \ket{x} \ket{y} \ket{z \oplus (x <= y)}$
+    r"""Applies $U\ket{x}\ket{y}\ket{z} \rightarrow \ket{x} \ket{y} \ket{z \oplus (x \leq y)}$
 
     Decomposes the gate in a T-complexity optimal way.
 
