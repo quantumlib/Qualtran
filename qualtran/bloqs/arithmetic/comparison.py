@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 
 @frozen
 class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
+    """Applies U_a|x>|z> = |x> |z \oplus (x < a)>"""
 
     bitsize: SymbolicInt
     less_than_val: SymbolicInt
@@ -406,7 +406,7 @@ def _equality_with_zero(
 
 @frozen
 class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
-    """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>
+    """Applies U|x>|y>|z> = |x>|y> |z \oplus (x <= y)>
 
     Decomposes the gate in a T-complexity optimal way.
 
