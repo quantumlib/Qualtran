@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
-import abc
 import itertools
 from typing import (
     Any,
@@ -29,7 +28,6 @@ from typing import (
     Union,
 )
 
-import attrs
 import networkx as nx
 import numpy as np
 import sympy
@@ -49,7 +47,7 @@ from qualtran import (
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
 if TYPE_CHECKING:
-    from qualtran import CompositeBloq, QCDType
+    from qualtran import QCDType
 
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
