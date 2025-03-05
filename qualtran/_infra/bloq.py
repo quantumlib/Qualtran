@@ -16,7 +16,18 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     import cirq
