@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Adjoint, _ControlledBase
+from qualtran import _ControlledBase, Adjoint
 from qualtran.bloqs.basic_gates import Power, XGate, ZGate
 from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
