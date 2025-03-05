@@ -111,7 +111,7 @@ def test_custom_controlled(ctrl_specs: Sequence[CtrlSpec], ctrl_reg_name: str):
     bloq: Bloq = AtomWithSpecializedControl(ctrl_reg_name=ctrl_reg_name)
     for ctrl_spec in ctrl_specs:
         bloq = bloq.controlled(ctrl_spec)
-    n_ctrls = sum(ctrl_spec.num_qubits for ctrl_spec in ctrl_specs)
+    n_ctrls = sum(ctrl_spec.num_bits for ctrl_spec in ctrl_specs)
 
     gc = get_cost_value(bloq, QECGatesCost())
     assert gc == GateCounts(
