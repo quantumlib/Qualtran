@@ -394,14 +394,9 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+        from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
 
-        if ctrl_spec != CtrlSpec():
-            # reduce controls to a single qubit
-            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
-
-        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+        return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
     def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
         """Return a controlled version of this bloq.
