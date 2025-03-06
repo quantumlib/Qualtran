@@ -23,6 +23,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QMontgomeryUInt,
@@ -32,8 +33,8 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.comparison import Equals
-from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, ZeroState
+from qualtran.bloqs.arithmetic import Equals, Xor
+from qualtran.bloqs.basic_gates import CNOT, IntState, Toffoli, XGate, ZeroState
 from qualtran.bloqs.bookkeeping import Free
 from qualtran.bloqs.mcmt import MultiAnd, MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mod_arithmetic import (
@@ -192,6 +193,12 @@ class _ECAddStepOne(Bloq):
 class _ECAddStepTwo(Bloq):
     r"""Performs step two of the ECAdd bloq.
 
+    Includes a bugfix for the scenario where the calculated λ ( = (y - b) / (x - a)) is equivalent
+    to λ_r ( = 3 * a ^ 2 + c_1 / (2 * b)) and f_1 is wrongfully cleared. We accomplish this by
+    introducing a new ancilla qubit set by an equals operation on the computed λ and the classical,
+    pre-computed λ_r. We then control the equals bloq on this ancilla qubit which will only clear
+    the f_1 flag in the correct situation. Finally, we clear and free the ancilla afterwards.
+
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
@@ -253,10 +260,6 @@ class _ECAddStepTwo(Bloq):
                 lam = QMontgomeryUInt(self.n, self.mod).montgomery_product(
                     int(y), QMontgomeryUInt(self.n, self.mod).montgomery_inverse(int(x))
                 )
-                # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bug in circuit
-                # which flips f1 when lam and lam_r are equal.
-                if lam == lam_r:
-                    f1 = (f1 + 1) % 2
         else:
             lam = 0
         return {'f1': f1, 'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam': lam, 'lam_r': lam_r}
@@ -296,6 +299,12 @@ class _ECAddStepTwo(Bloq):
             y=y,
         )
 
+        # Allocate an ancilla qubit that acts as a flag for the rare condition that the
+        # pre-computed lambda_r is equal to the calculated lambda. This ancilla is used to properly
+        # clear the f1 qubit when lambda is set to lambda_r.
+        ancilla = bb.allocate()
+        z4, lam_r, ancilla = bb.add(Equals(QMontgomeryUInt(self.n)), x=z4, y=lam_r, target=ancilla)
+
         # If ctrl = 1 and x != a: lam = (y - b) / (x - a) % p.
         z4_split = bb.split(z4)
         lam_split = bb.split(lam)
@@ -323,7 +332,18 @@ class _ECAddStepTwo(Bloq):
         lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
 
         # If lam = lam_r: return f1 = 0. (If not we will flip f1 to 0 at the end iff x_r = y_r = 0).
-        lam, lam_r, f1 = bb.add(Equals(QMontgomeryUInt(self.n)), x=lam, y=lam_r, target=f1)
+        # Only flip when lam is set to lam_r.
+        ancilla, lam, lam_r, f1 = bb.add(
+            Equals(QMontgomeryUInt(self.n)).controlled(ctrl_spec=CtrlSpec(cvs=0)),
+            ctrl=ancilla,
+            x=lam,
+            y=lam_r,
+            target=f1,
+        )
+
+        # Clear the ancilla bit and free it.
+        z4, lam_r, ancilla = bb.add(Equals(QMontgomeryUInt(self.n)), x=z4, y=lam_r, target=ancilla)
+        bb.free(ancilla)
 
         # Uncompute the modular multiplication then the modular inversion.
         x, y = bb.add(
@@ -343,7 +363,8 @@ class _ECAddStepTwo(Bloq):
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {
-            Equals(QMontgomeryUInt(self.n)): 1,
+            Equals(QMontgomeryUInt(self.n)): 2,
+            Equals(QMontgomeryUInt(self.n)).controlled(ctrl_spec=CtrlSpec(cvs=0)): 1,
             ModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             KaliskiModInverse(bitsize=self.n, mod=self.mod): 1,
@@ -639,6 +660,13 @@ class _ECAddStepFour(Bloq):
 class _ECAddStepFive(Bloq):
     r"""Performs step five of the ECAdd bloq.
 
+    Includes a bugfix for the scenario where (a, b) = (x, y) and a - x_r = 0. In this situation,
+    f_1 is set and f_2 - f_4 is cleared (which means that the ctrl qubit is set). Because a - x_r
+    is 0, the computed λ is undefined (and with this construction the computed λ will be set to 0),
+    however the λ is non-zero and should be cleared with λ_r. We accomplish this with a controled
+    Xor bloq controlled on the ctrl qubit and the condition that the x register (a - x_r) = 0. In
+    this ase we clear the λ register with λ_r.
+
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
         mod: The modulus of the field in which we do the addition.
@@ -652,6 +680,7 @@ class _ECAddStepFive(Bloq):
            will contain the x component of the resultant curve point.
         y: The y component of the second input elliptic curve point of bitsize `n` in montgomery form, which
            will contain the y component of the resultant curve point.
+        lam_r: The precomputed lambda slope used in the addition operation if (a, b) = (x, y) in montgomery form.
         lam: The lambda slope used in the addition operation.
 
     References:
@@ -672,6 +701,7 @@ class _ECAddStepFive(Bloq):
                 Register('b', QMontgomeryUInt(self.n)),
                 Register('x', QMontgomeryUInt(self.n)),
                 Register('y', QMontgomeryUInt(self.n)),
+                Register('lam_r', QMontgomeryUInt(self.n)),
                 Register('lam', QMontgomeryUInt(self.n), side=Side.LEFT),
             ]
         )
@@ -683,6 +713,7 @@ class _ECAddStepFive(Bloq):
         b: 'ClassicalValT',
         x: 'ClassicalValT',
         y: 'ClassicalValT',
+        lam_r: 'ClassicalValT',
         lam: 'ClassicalValT',
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 1:
@@ -690,7 +721,7 @@ class _ECAddStepFive(Bloq):
             y = (y - b) % self.mod
         else:
             x = (x + a) % self.mod
-        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
     def build_composite_bloq(
         self,
@@ -700,6 +731,7 @@ class _ECAddStepFive(Bloq):
         b: Soquet,
         x: Soquet,
         y: Soquet,
+        lam_r: Soquet,
         lam: Soquet,
     ) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.n):
@@ -729,9 +761,15 @@ class _ECAddStepFive(Bloq):
             z4_split[i] = ctrls[1]
         z4 = bb.join(z4_split, dtype=QMontgomeryUInt(self.n))
         lam = bb.join(lam_split, dtype=QMontgomeryUInt(self.n))
-        # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bug in circuit where lambda
-        # is not set to 0 before being freed.
-        bb.add(Free(QMontgomeryUInt(self.n), dirty=True), reg=lam)
+
+        # If the denominator of lambda is 0, lam = lam_r so we clear lam with lam_r.
+        clear_lam = (
+            Xor(QMontgomeryUInt(self.n))
+            .controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=0))
+            .controlled()
+        )
+        ctrl, x, lam_r, lam = bb.add(clear_lam, ctrl1=ctrl, ctrl2=x, x=lam_r, y=lam)
+        bb.add(Free(QMontgomeryUInt(self.n)), reg=lam)
 
         # Uncompute multiplication and inverse.
         x, y = bb.add(
@@ -756,9 +794,14 @@ class _ECAddStepFive(Bloq):
         ctrl, b, y = bb.add(CModSub(QMontgomeryUInt(self.n), mod=self.mod), ctrl=ctrl, x=b, y=y)
 
         # Return the output registers.
-        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y}
+        return {'ctrl': ctrl, 'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
+        clear_lam = (
+            Xor(QMontgomeryUInt(self.n))
+            .controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=0))
+            .controlled()
+        )
         return {
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             KaliskiModInverse(bitsize=self.n, mod=self.mod): 1,
@@ -771,6 +814,7 @@ class _ECAddStepFive(Bloq):
             KaliskiModInverse(bitsize=self.n, mod=self.mod).adjoint(): 1,
             ModAdd(self.n, mod=self.mod): 1,
             MultiControlX(cvs=[1, 1]): self.n,
+            clear_lam: 1,
             CModNeg(QMontgomeryUInt(self.n), mod=self.mod): 1,
         }
 
@@ -778,6 +822,16 @@ class _ECAddStepFive(Bloq):
 @frozen
 class _ECAddStepSix(Bloq):
     r"""Performs step six of the ECAdd bloq.
+
+    Include bugfixes for the following scenarios:
+        1. f_2 is improperly cleared when ((x, y) = (0, 0) AND b = 0) OR ((a, b) = (0, 0) AND
+            y = 0).
+        2. f_4 is improperly cleared when P_1 = P_2 AND f_4 is set.
+
+    The bugs are fixed respectively by:
+        1. Clearing f_2 when x = y = b = 0 OR a = b = y = 0 using an XGate controlled on those
+            registers.
+        2. Moving the CModSub and CModAdd bloqs before the Equals bloq.
 
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
@@ -863,6 +917,11 @@ class _ECAddStepSix(Bloq):
         f3 = f_ctrls[1]
         f4 = f_ctrls[2]
 
+        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
+        mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
+        [a, b, y], f2 = bb.add(mcx, ctrl=[a, b, y], q=f2)
+        [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
+
         # Set (x, y) to (a, b) if f4 is set.
         a_split = bb.split(a)
         x_split = bb.split(x)
@@ -882,24 +941,6 @@ class _ECAddStepSix(Bloq):
             b_split[i] = toff_ctrl[1]
         b = bb.join(b_split, QMontgomeryUInt(self.n))
         y = bb.join(y_split, QMontgomeryUInt(self.n))
-
-        # Unset f4 if (x, y) = (a, b).
-        ab = bb.join(np.concatenate([bb.split(a), bb.split(b)]), dtype=QMontgomeryUInt(2 * self.n))
-        xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
-        ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
-        ab_split = bb.split(ab)
-        a = bb.join(ab_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(ab_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
-        xy_split = bb.split(xy)
-        x = bb.join(xy_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
-        y = bb.join(xy_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
-
-        # Unset f3 if (a, b) = (0, 0).
-        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
-        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
-        ab_arr = np.split(ab_arr, 2)
-        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
-        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # If f1 and f2 are set, subtract a from x and add b to y.
         ancilla = bb.add(ZeroState())
@@ -923,6 +964,24 @@ class _ECAddStepSix(Bloq):
         f2 = toff_ctrl[1]
         bb.add(Free(QBit()), reg=ancilla)
 
+        # Unset f4 if (x, y) = (a, b).
+        ab = bb.join(np.concatenate([bb.split(a), bb.split(b)]), dtype=QMontgomeryUInt(2 * self.n))
+        xy = bb.join(np.concatenate([bb.split(x), bb.split(y)]), dtype=QMontgomeryUInt(2 * self.n))
+        ab, xy, f4 = bb.add(Equals(QMontgomeryUInt(2 * self.n)), x=ab, y=xy, target=f4)
+        ab_split = bb.split(ab)
+        a = bb.join(ab_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
+        xy_split = bb.split(xy)
+        x = bb.join(xy_split[: int(self.n)], dtype=QMontgomeryUInt(self.n))
+        y = bb.join(xy_split[int(self.n) :], dtype=QMontgomeryUInt(self.n))
+
+        # Unset f3 if (a, b) = (0, 0).
+        ab_arr = np.concatenate([bb.split(a), bb.split(b)])
+        ab_arr, f3 = bb.add(MultiControlX(cvs=[0] * 2 * self.n), controls=ab_arr, target=f3)
+        ab_arr = np.split(ab_arr, 2)
+        a = bb.join(ab_arr[0], dtype=QMontgomeryUInt(self.n))
+        b = bb.join(ab_arr[1], dtype=QMontgomeryUInt(self.n))
+
         # Unset f1 and f2 if (x, y) = (0, 0).
         xy_arr = np.concatenate([bb.split(x), bb.split(y)])
         xy_arr, junk, out = bb.add(MultiAnd(cvs=[0] * 2 * self.n), ctrl=xy_arr)
@@ -939,33 +998,32 @@ class _ECAddStepSix(Bloq):
         y = bb.join(xy_arr[1], dtype=QMontgomeryUInt(self.n))
 
         # Free all ancilla qubits in the zero state.
-        # TODO(https://github.com/quantumlib/Qualtran/issues/1461): Fix bugs in circuit where f1,
-        # f2, and f4 are freed before being set to 0.
-        bb.add(Free(QBit(), dirty=True), reg=f1)
-        bb.add(Free(QBit(), dirty=True), reg=f2)
+        bb.add(Free(QBit()), reg=f1)
+        bb.add(Free(QBit()), reg=f2)
         bb.add(Free(QBit()), reg=f3)
-        bb.add(Free(QBit(), dirty=True), reg=f4)
+        bb.add(Free(QBit()), reg=f4)
         bb.add(Free(QBit()), reg=ctrl)
 
         # Return the output registers.
         return {'a': a, 'b': b, 'x': x, 'y': y}
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
-        cvs: Union[list[int], HasLength]
+        cvs2: Union[list[int], HasLength]
         if isinstance(self.n, int):
-            cvs = [0] * 2 * self.n
+            cvs2 = [0] * 2 * self.n
         else:
-            cvs = HasLength(2 * self.n)
+            cvs2 = HasLength(2 * self.n)
         return {
-            MultiControlX(cvs=cvs): 1,
+            MultiControlX(cvs=cvs2): 1,
+            XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0])): 2,
             MultiControlX(cvs=[0] * 3): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
             Toffoli(): 2 * self.n + 4,
             Equals(QMontgomeryUInt(2 * self.n)): 1,
-            MultiAnd(cvs=cvs): 1,
+            MultiAnd(cvs=cvs2): 1,
             MultiTargetCNOT(2): 1,
-            MultiAnd(cvs=cvs).adjoint(): 1,
+            MultiAnd(cvs=cvs2).adjoint(): 1,
         }
 
 
@@ -1044,13 +1102,14 @@ class ECAdd(Bloq):
         x, y, lam = bb.add(
             _ECAddStepFour(n=self.n, mod=self.mod, window_size=self.window_size), x=x, y=y, lam=lam
         )
-        ctrl, a, b, x, y = bb.add(
+        ctrl, a, b, x, y, lam_r = bb.add(
             _ECAddStepFive(n=self.n, mod=self.mod, window_size=self.window_size),
             ctrl=ctrl,
             a=a,
             b=b,
             x=x,
             y=y,
+            lam_r=lam_r,
             lam=lam,
         )
         a, b, x, y = bb.add(
