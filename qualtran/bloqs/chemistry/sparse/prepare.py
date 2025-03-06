@@ -230,6 +230,8 @@ class PrepareSparse(PrepareOracle):
     @cached_property
     def qroam_extra_target_registers(self) -> Tuple[Register, ...]:
         """Extra registers required for QROAMClean."""
+        if self.log_block_size == 0:
+            return ()
         return tuple(
             Register(
                 name=f'jnk_{reg.name}',
@@ -276,12 +278,12 @@ class PrepareSparse(PrepareOracle):
         Returns:
             Constructed PrepareSparse object.
 
-        Refererences:
-            [Even More Efficient Quantum Computations of Chemistry Through Tensor hypercontraction](https://arxiv.org/abs/2011.03494)
-            Eq. A11.
+        References:
+            [Even More Efficient Quantum Computations of Chemistry Through Tensor hypercontraction](https://arxiv.org/abs/2011.03494).
+            Lee et al. 2020. Eq. A11.
 
-            [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://quantum-journal.org/papers/q-2019-12-02-208/)
-            Sec 5 page 15
+            [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
+            Berry et al. 2019. Sec 5, page 15
         """
         indicies, integrals = get_sparse_inputs_from_integrals(
             tpq_prime, eris, drop_element_thresh=drop_element_thresh
@@ -300,7 +302,7 @@ class PrepareSparse(PrepareOracle):
             n_n = (num_spin_orb // 2 - 1).bit_length()
             target_bitsizes = (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (num_bits_state_prep,)
             log_block_size = get_optimal_log_block_size_clean_ancilla(
-                num_non_zero, sum(target_bitsizes)
+                data_size=num_non_zero, bitsize=sum(target_bitsizes)
             )
         return PrepareSparse(
             num_spin_orb,
@@ -428,6 +430,8 @@ class PrepareSparse(PrepareOracle):
             self.build_qrom_bloq(): 1,
             OnEach(self.num_bits_state_prep, Hadamard()): 1,
             Hadamard(): 3,
+            ZGate().controlled(CtrlSpec(cvs=0)): 1,
+            ZGate().controlled(CtrlSpec(cvs=1)): 1,
             CSwap(1): 1,
             CSwap(self.num_bits_spat_orb): 4 + 4,
             LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep): 1,
@@ -441,7 +445,7 @@ def _prep_sparse() -> PrepareSparse:
     num_spin_orb = 6
     tpq, eris = build_random_test_integrals(num_spin_orb // 2)
     prep_sparse = PrepareSparse.from_hamiltonian_coeffs(
-        num_spin_orb, tpq, eris, num_bits_state_prep=4, log_block_size=1
+        num_spin_orb, tpq, eris, num_bits_state_prep=4
     )
     return prep_sparse
 

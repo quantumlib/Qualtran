@@ -17,8 +17,8 @@ from typing import Optional
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse.prepare import _prep_sparse, get_sparse_inputs_from_integrals
 
 
@@ -64,9 +64,7 @@ def reconstruct_eris(eris, indx, nb):
 
 def test_decompose_bloq_counts():
     prep = _prep_sparse()
-    cost_decomp = prep.decompose_bloq().call_graph()[1][TGate()]
-    cost_call = prep.call_graph()[1][TGate()]
-    assert cost_decomp == cost_call
+    qlt_testing.assert_equivalent_bloq_counts(prep)
 
 
 def build_random_test_integrals(nb: int, seed: Optional[int] = 7):

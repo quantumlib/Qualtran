@@ -39,7 +39,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
         pytest.param(
             data,
             block_size,
-            id=f"{block_size}-data{didx}",
+            id=f"data{didx}-{block_size}",
             marks=pytest.mark.slow if block_size == 1 and didx == 1 else (),
         )
         for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]], [[1], [2], [3]]])
