@@ -69,8 +69,10 @@ def test_cirq_interop():
     assert op.gate is not None
     assert cirq_gate_to_bloq(op.gate) == CHadamard()
 
+
 def test_pl_interop():
     import pennylane as qml
+
     bloq = Hadamard()
     pl_op_from_bloq = bloq.as_pl_op(wires=[0])
     pl_op = qml.Hadamard(wires=[0])

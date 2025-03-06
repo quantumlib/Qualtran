@@ -44,8 +44,7 @@ with different costs.
 
 
 from functools import cached_property
-
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -73,8 +72,8 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
 
 if TYPE_CHECKING:
-    from pennylane.wires import Wires
     from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
 
 @frozen
@@ -444,7 +443,7 @@ class Rz(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
@@ -564,7 +563,7 @@ class Rx(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
@@ -593,7 +592,7 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 

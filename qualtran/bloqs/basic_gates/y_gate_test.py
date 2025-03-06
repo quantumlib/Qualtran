@@ -50,8 +50,10 @@ def test_to_cirq():
     vec2 = cirq.final_state_vector(circuit)
     np.testing.assert_allclose(vec1, vec2)
 
+
 def test_pl_interop():
     import pennylane as qml
+
     bloq = YGate()
     pl_op_from_bloq = bloq.as_pl_op(wires=[0])
     pl_op = qml.Y(wires=[0])

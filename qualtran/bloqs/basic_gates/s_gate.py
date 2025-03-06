@@ -25,10 +25,10 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
 
 
 _SMATRIX = np.array([[1, 0], [0, 1j]], dtype=np.complex128)
@@ -76,7 +76,7 @@ class SGate(Bloq):
         (q,) = q
         p = -1 if self.is_adjoint else 1
         return cirq.S(q) ** p, {'q': np.array([q])}
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 

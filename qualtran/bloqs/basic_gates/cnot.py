@@ -38,12 +38,12 @@ from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
-    
+
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
 
@@ -123,7 +123,7 @@ class CNOT(Bloq):
         (ctrl,) = ctrl
         (target,) = target
         return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 

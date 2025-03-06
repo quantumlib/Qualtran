@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran import (
         AddControlledT,
@@ -48,8 +50,7 @@ if TYPE_CHECKING:
         SympySymbolAllocator,
     )
     from qualtran.simulation.classical_sim import ClassicalValT
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
+
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
@@ -478,9 +479,9 @@ class Bloq(metaclass=abc.ABCMeta):
             wires: the wires that the op acts on
 
         Returns:
-            ~.Operation: A PennyLane operation corresponding to this bloq acting on the 
-                provided wires or None. This method should return None if and only if the bloq 
-                instance truly should not be included in the PennyLane circuit (e.g. for reshaping 
+            ~.Operation: A PennyLane operation corresponding to this bloq acting on the
+                provided wires or None. This method should return None if and only if the bloq
+                instance truly should not be included in the PennyLane circuit (e.g. for reshaping
                 bloqs). A bloq with no PennyLane equivalent should raise an exception instead.
         """
         from pennylane.io import FromBloq

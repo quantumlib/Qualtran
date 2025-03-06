@@ -38,11 +38,11 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-    from pennylane.operation import Operation
-    from pennylane.wires import Wires
 
 
 @frozen
@@ -88,9 +88,7 @@ class Split(_BookkeepingBloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
-    def as_pl_op(
-        self, wires: 'Wires'
-    ) -> 'Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:

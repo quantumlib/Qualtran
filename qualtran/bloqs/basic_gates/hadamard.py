@@ -37,11 +37,11 @@ from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import CostKey
-    from pennylane.wires import Wires
-    from pennylane.operation import Operation
 
 _HADAMARD = np.array([[1, 1], [1, -1]], dtype=np.complex128) / np.sqrt(2)
 
@@ -106,7 +106,7 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
-    
+
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 

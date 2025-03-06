@@ -37,10 +37,10 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 if TYPE_CHECKING:
     import quimb.tensor as qtn
     from numpy.typing import NDArray
-
-    from qualtran.cirq_interop import CirqQuregT
     from pennylane.operation import Operation
     from pennylane.wires import Wires
+
+    from qualtran.cirq_interop import CirqQuregT
 
 
 @frozen
@@ -82,9 +82,7 @@ class Join(_BookkeepingBloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
-    def as_pl_op(
-        self, wires: 'Wires'
-    ) -> 'Operation':
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
 
     def my_tensors(
