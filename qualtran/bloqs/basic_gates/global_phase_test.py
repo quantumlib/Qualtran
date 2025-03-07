@@ -14,6 +14,7 @@
 
 import cirq
 import numpy as np
+import pennylane as qml
 import pytest
 
 from qualtran import CtrlSpec
@@ -52,6 +53,13 @@ def test_cirq_interop():
     assert cirq.approx_eq(circuit, cirq.Circuit(gate.on()), atol=1e-16)
 
     assert cirq_gate_to_bloq(gate) == bloq
+
+
+def test_pl_interop():
+    bloq = GlobalPhase(exponent=0.5)
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.GlobalPhase(phi=0.5 * np.pi, wires=[0])
+    assert pl_op_from_bloq == pl_op
 
 
 def test_t_complexity():

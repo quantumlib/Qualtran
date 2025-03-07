@@ -41,6 +41,8 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran import AddControlledT, CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
@@ -85,6 +87,11 @@ class TwoBitSwap(Bloq):
         import cirq
 
         return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.SWAP(wires=wires)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -188,6 +195,11 @@ class TwoBitCSwap(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.CSWAP(wires=wires)
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:

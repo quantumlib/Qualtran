@@ -44,7 +44,7 @@ with different costs.
 
 
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Union
+from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -70,6 +70,10 @@ from qualtran import (
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
 
 @frozen
@@ -440,6 +444,11 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RZ(phi=self.angle, wires=wires)
+
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
@@ -555,6 +564,11 @@ class Rx(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RX(phi=self.angle, wires=wires)
+
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
 
@@ -578,6 +592,11 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RY(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)

@@ -70,6 +70,15 @@ def test_cirq_interop():
     assert cirq_gate_to_bloq(op.gate) == CHadamard()
 
 
+def test_pl_interop():
+    import pennylane as qml
+
+    bloq = Hadamard()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.Hadamard(wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+
 def test_active_chadamard_is_hadamard():
     bb = BloqBuilder()
     q = bb.add_register('q', 1)
