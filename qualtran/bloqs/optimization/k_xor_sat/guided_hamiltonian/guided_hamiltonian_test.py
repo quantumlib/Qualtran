@@ -11,9 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .kikuchi_adjacency_list import KikuchiNonZeroIndex
-from .kikuchi_adjacency_matrix import KikuchiMatrixEntry
-from .kikuchi_block_encoding import KikuchiHamiltonian, KikuchiMatrixEntry, KikuchiNonZeroIndex
-from .kikuchi_guiding_state import GuidingState, SimpleGuidingState
-from .kxor_instance import Constraint, KXorInstance
-from .planted_noisy_kxor import AliceTheorem, PlantedNoisyKXOR
+import pytest
+
+from .guided_hamiltonian import _guided_hamiltonian, _guided_phase_estimate_symb
+
+
+@pytest.mark.parametrize("bloq_ex", [_guided_hamiltonian, _guided_phase_estimate_symb])
+def test_examples(bloq_autotester, bloq_ex):
+    if bloq_autotester.check_name == 'serialize':
+        pytest.skip()
+
+    bloq_autotester(bloq_ex)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    from qualtran.testing import execute_notebook
+
+    execute_notebook('guided_hamiltonian')
