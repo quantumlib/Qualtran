@@ -17,8 +17,10 @@ from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     BinaryPolynomialMultiplication,
+    GF2Mul,
     GF2Multiplication,
     GF2MultiplyByConstantMod,
+    GF2ShiftRightMod,
     MultiplyPolyByOnePlusXk,
 )
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
