@@ -440,5 +440,6 @@ def test_ec_add_small(bloq_autotester):
     bloq_autotester(_ec_add_small)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('ec_add')
