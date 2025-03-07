@@ -69,11 +69,8 @@ def cbloq_to_quimb(cbloq: CompositeBloq) -> qtn.TensorNetwork:
             # the tensor network. Add an identity tensor acting on this register to make sure the
             # tensor network has variables corresponding to all input / output registers.
 
-            n = cxn.left.reg.bitsize
             for j in range(cxn.left.reg.bitsize):
-
                 placeholder = Soquet(None, Register('simulation_placeholder', QBit()))  # type: ignore
-                Connection(cxn.left, placeholder)
                 tn.add(
                     qtn.Tensor(
                         data=np.eye(2),

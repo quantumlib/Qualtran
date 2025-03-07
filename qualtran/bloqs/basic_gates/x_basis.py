@@ -17,6 +17,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKIN
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     AddControlledT,
@@ -36,6 +37,7 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import pyzx as zx
     import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
@@ -263,3 +265,11 @@ class XGate(Bloq):
             return Text('X')
 
         return ModPlus()
+
+    def as_zx_gates(
+        self, ancilla_manager, /, q: NDArray[np.integer]
+    ) -> tuple[list['zx.circuit.Gate'], dict[str, NDArray[np.integer]]]:
+        import pyzx as zx
+
+        (qubit,) = q
+        return [zx.circuit.NOT(qubit)], {'q': q}
