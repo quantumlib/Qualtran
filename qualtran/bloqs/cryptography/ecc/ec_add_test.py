@@ -111,6 +111,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     ret2 = bloq.decompose_bloq().call_classically(
@@ -119,6 +120,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     assert ret1 == ret2
@@ -129,6 +131,7 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     bloq = _ECAddStepSix(n=n, mod=p)
@@ -252,6 +255,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     ret2 = bloq.decompose_bloq().call_classically(
@@ -260,6 +264,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     assert ret1 == ret2
@@ -270,6 +275,7 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
         b=step_3['b'],
         x=step_4['x'],
         y=step_4['y'],
+        lam_r=step_2['lam_r'],
         lam=step_4['lam'],
     )
     bloq = _ECAddStepSix(n=n, mod=p)
@@ -417,12 +423,13 @@ def test_ec_add_symbolic_cost():
 
     # Litinski 2023 https://arxiv.org/abs/2306.08585
     # Based on the counts from Figures 3, 5, and 8 the toffoli count for ECAdd is 126.5n^2 + 189n.
-    # The following formula is 126.5n^2 + 195.5n - 31. We account for the discrepancy in the
+    # The following formula is 126.5n^2 + 215.5n - 34. We account for the discrepancy in the
     # coefficient of n by a reduction in the toffoli cost of Montgomery ModMult, an increase in the
     # toffoli cost for Kaliski Mod Inverse, n extra toffolis in ModNeg, 2n extra toffolis to do n
-    # 3-controlled toffolis in step 2. The expression is written with rationals because sympy
-    # comparison fails with floats.
-    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(407, 2) * n - 31
+    # 3-controlled toffolis in step 2, and a few extra gates added to fix bugs found in the circuit
+    # (see class docstrings). The expression is written with rationals because sympy comparison
+    # fails with floats.
+    assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(431, 2) * n - 34
 
 
 def test_ec_add(bloq_autotester):
@@ -433,5 +440,6 @@ def test_ec_add_small(bloq_autotester):
     bloq_autotester(_ec_add_small)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('ec_add')
