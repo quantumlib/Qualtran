@@ -106,5 +106,6 @@ def test_t_states(test: Test):
     assert got == pytest.approx(test.t_states, rel=0.1)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('beverland_et_al_model')
