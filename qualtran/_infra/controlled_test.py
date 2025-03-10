@@ -18,7 +18,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt, Register
+from qualtran import Bloq, CBit, CompositeBloq, Controlled, CtrlSpec, QBit, QInt, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
@@ -60,6 +60,20 @@ def test_ctrl_spec():
     assert cvs[tuple()] == 234234
 
 
+def test_ctrl_spec_classical():
+    cspec = CtrlSpec(CBit())
+    assert cspec.num_cbits == 1
+    assert cspec.num_bits == 1
+    assert cspec.num_qubits == 0
+    assert cspec.is_active(1)
+
+    cspec = CtrlSpec(CBit(), cvs=0)
+    assert cspec.num_cbits == 1
+    assert cspec.num_bits == 1
+    assert cspec.num_qubits == 0
+    assert not cspec.is_active(1)
+
+
 def test_ctrl_spec_shape():
     c1 = CtrlSpec(QBit(), cvs=1)
     c2 = CtrlSpec(QBit(), cvs=(1,))
@@ -84,25 +98,28 @@ def test_ctrl_spec_to_cirq_cv_roundtrip():
             cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.concrete_shapes
         )
 
+    with pytest.raises(ValueError):
+        CtrlSpec(CBit(), cvs=[0, 1, 0, 1]).to_cirq_cv()
+
 
 @pytest.mark.parametrize(
     "ctrl_spec", [CtrlSpec(), CtrlSpec(cvs=[1]), CtrlSpec(cvs=np.atleast_2d([1]))]
 )
 def test_ctrl_spec_single_bit_one(ctrl_spec: CtrlSpec):
-    assert ctrl_spec.get_single_ctrl_bit() == 1
+    assert ctrl_spec.get_single_ctrl_val() == 1
 
 
 @pytest.mark.parametrize(
     "ctrl_spec", [CtrlSpec(cvs=0), CtrlSpec(cvs=[0]), CtrlSpec(cvs=np.atleast_2d([0]))]
 )
 def test_ctrl_spec_single_bit_zero(ctrl_spec: CtrlSpec):
-    assert ctrl_spec.get_single_ctrl_bit() == 0
+    assert ctrl_spec.get_single_ctrl_val() == 0
 
 
 @pytest.mark.parametrize("ctrl_spec", [CtrlSpec(cvs=[1, 1]), CtrlSpec(qdtypes=QUInt(2), cvs=0)])
 def test_ctrl_spec_single_bit_raises(ctrl_spec: CtrlSpec):
     with pytest.raises(ValueError):
-        ctrl_spec.get_single_ctrl_bit()
+        ctrl_spec.get_single_ctrl_val()
 
 
 @pytest.mark.parametrize("shape", [(1,), (10,), (10, 10)])
@@ -110,6 +127,7 @@ def test_ctrl_spec_symbolic_cvs(shape: tuple[int, ...]):
     ctrl_spec = CtrlSpec(cvs=Shaped(shape))
     assert ctrl_spec.is_symbolic()
     assert ctrl_spec.num_qubits == np.prod(shape)
+    assert ctrl_spec.num_bits == np.prod(shape)
     assert ctrl_spec.shapes == (shape,)
 
 
@@ -122,6 +140,7 @@ def test_ctrl_spec_symbolic_dtype(shape: tuple[int, ...]):
 
     assert ctrl_spec.is_symbolic()
     assert ctrl_spec.num_qubits == n * np.prod(shape)
+    assert ctrl_spec.num_bits == n * np.prod(shape)
     assert ctrl_spec.shapes == (shape,)
 
 
