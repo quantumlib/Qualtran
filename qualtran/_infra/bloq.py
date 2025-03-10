@@ -226,6 +226,8 @@ class Bloq(metaclass=abc.ABCMeta):
         call TODO and not this method directly.
 
         If this method is implemented, `on_classical_vals` must also be implemented.
+        If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+        that the bloq does not alter the phase.
         """
         return None
 
