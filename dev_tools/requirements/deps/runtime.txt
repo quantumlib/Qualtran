@@ -41,7 +41,7 @@ pyzx
 # TODO: https://github.com/quantumlib/Qualtran/issues/1589
 #       Reset to the released version when qualtran functionality
 #       is included
-git+https://github.com/PennyLaneAI/pennylane.git@qualtran_pl
+pennylane@git+https://github.com/PennyLaneAI/pennylane.git@qualtran_pl
 
 # serialization
 protobuf
