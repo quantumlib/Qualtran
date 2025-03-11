@@ -39,7 +39,7 @@ def test_as_pl_op():
 
     tb = TestTwoBitOp()
 
-    assert tb.as_pl_op() == qml.FromBloq(TestTwoBitOp())
+    assert tb.as_pl_op(wires=[0, 1]) == qml.FromBloq(TestTwoBitOp(), wires=[0, 1])
 
 
 def test_as_composite_bloq():
