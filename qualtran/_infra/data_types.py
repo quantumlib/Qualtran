@@ -911,7 +911,7 @@ class QGF(QDType):
     characteristic: SymbolicInt
     degree: SymbolicInt
     irreducible_poly: Optional['galois.Poly'] = attrs.field()
-    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int', eq=False)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
@@ -962,9 +962,15 @@ class QGF(QDType):
         )
 
     def to_bits(self, x) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
+        """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        return self._quint_equivalent.to_bits(int(x))
+        ret = []
+        v = int(x)
+        for _ in range(int(self.degree)):
+            ret.append(v & 1)
+            v >>= 1
+        ret.reverse()
+        return ret
 
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
