@@ -18,6 +18,7 @@ from typing import Dict, Optional, Tuple, Union
 import attrs
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
@@ -282,6 +283,17 @@ class LCUBlockEncoding(BlockEncoding):
             return Circle(filled=bool(self.control_val))
         else:
             return TextBox('B[H]')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec,
+            current_ctrl_bit=self.control_val,
+            bloq_with_ctrl=attrs.evolve(self, control_val=1),
+            ctrl_reg_name='ctrl',
+        )
 
     def adjoint(self) -> 'Bloq':
         from qualtran.bloqs.mcmt.specialized_ctrl import (
