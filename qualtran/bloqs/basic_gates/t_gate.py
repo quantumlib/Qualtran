@@ -101,10 +101,7 @@ class TGate(Bloq):
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         import pennylane as qml
 
-        if self.is_adjoint:
-            return qml.T(wires=wires).adjoint()
-
-        return qml.T(wires=wires)
+        return qml.adjoint(qml.T(wires=wires)) if self.is_adjoint else qml.T(wires=wires)
 
     def __str__(self):
         maybe_dag = '†' if self.is_adjoint else ''
