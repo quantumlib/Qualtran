@@ -285,14 +285,13 @@ class LCUBlockEncoding(BlockEncoding):
             return TextBox('B[H]')
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
-        return get_ctrl_system_1bit_cv_from_bloqs(
+        return get_ctrl_system_1bit_cv(
             self,
             ctrl_spec,
             current_ctrl_bit=self.control_val,
-            bloq_with_ctrl=attrs.evolve(self, control_val=1),
-            ctrl_reg_name='ctrl',
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (attrs.evolve(self, control_val=cv), 'ctrl'),
         )
 
     def adjoint(self) -> 'Bloq':
