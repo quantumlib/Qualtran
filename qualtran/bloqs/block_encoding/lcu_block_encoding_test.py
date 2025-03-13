@@ -15,6 +15,7 @@
 import attrs
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import CtrlSpec
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
@@ -23,7 +24,6 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _select_block,
 )
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
-from qualtran.testing import execute_notebook
 
 
 def test_lcu_block_encoding(bloq_autotester):
@@ -54,4 +54,4 @@ def test_ctrl_lcu_be_cost():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('lcu_block_encoding')
+    qlt_testing.execute_notebook('lcu_block_encoding')
