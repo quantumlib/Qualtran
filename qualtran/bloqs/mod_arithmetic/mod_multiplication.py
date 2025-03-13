@@ -175,7 +175,7 @@ _MOD_DBL_DOC = BloqDocSpec(bloq_cls=ModDbl, examples=[_moddbl_small, _moddbl_lar
 class CModMulK(Bloq):
     r"""Perform controlled modular multiplication by a constant.
 
-    Applies $\ket{c}\ket{c} \rightarrow \ket{c} \ket{x*k^c \mod p}$.
+    Applies $\ket{c}\ket{x} \rightarrow \ket{c} \ket{x*k^c \mod p}$.
 
     Args:
         dtype: Dtype of the register.
