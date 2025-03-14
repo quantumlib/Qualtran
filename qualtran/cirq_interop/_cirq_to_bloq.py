@@ -219,7 +219,7 @@ def _my_tensors_from_gate(
     unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
     inds = _order_incoming_outgoing_indices(signature, incoming=incoming, outgoing=outgoing)
     unitary = unitary.reshape((2,) * len(inds))
-    return [qtn.Tensor(data=unitary, inds=inds, tags=[str(gate)])]
+    return [qtn.Tensor(data=unitary, inds=inds, tags=[gate.__class__.__name__])]
 
 
 @frozen(eq=False)
