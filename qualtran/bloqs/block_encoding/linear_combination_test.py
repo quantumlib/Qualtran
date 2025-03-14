@@ -39,6 +39,7 @@ from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
 from qualtran.bloqs.block_encoding.unitary import Unitary
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import execute_notebook
 
 
@@ -101,6 +102,11 @@ def test_linear_combination_tensors():
     )
     from_tensors = get_tensors(bloq)
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+def test_linear_combination_cost():
+    bloq = _linear_combination_block_encoding()
+    _ = get_cost_value(bloq.controlled(), QECGatesCost())
 
 
 def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
