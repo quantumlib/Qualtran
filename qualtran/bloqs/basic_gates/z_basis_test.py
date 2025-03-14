@@ -24,7 +24,6 @@ from qualtran.bloqs.basic_gates import (
     IntState,
     MeasZ,
     MinusState,
-    OnEach,
     OneEffect,
     OneState,
     PlusState,

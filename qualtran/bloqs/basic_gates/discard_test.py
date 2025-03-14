@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder, QBit
+from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import (
     CNOT,
     Discard,
