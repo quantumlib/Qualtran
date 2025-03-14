@@ -370,7 +370,7 @@ class CompositeBloq(Bloq):
             in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
             if pred(binst):
                 try:
-                    new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
+                    new_out_soqs = bb.add_from(binst.bloq, **in_soqs)
                     did_work = True
                 except (DecomposeTypeError, DecomposeNotImplementedError):
                     new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
