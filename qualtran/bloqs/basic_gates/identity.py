@@ -107,6 +107,9 @@ class Identity(Bloq):
         return 'I'
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec.num_cbits > 0:
+            return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
         ctrl_I = Identity(ctrl_spec.num_qubits + self.bitsize)
 
         def ctrl_adder(

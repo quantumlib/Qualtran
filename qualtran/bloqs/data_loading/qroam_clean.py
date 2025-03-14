@@ -21,7 +21,16 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QAny,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox, WireSymbol
@@ -489,10 +498,10 @@ class QROAMClean(SelectSwapQROM):
         qrom_targets = []
         for reg in self.target_registers:
             qrom_target = _alloc_anc_for_reg_except_first(
-                bb, reg.dtype, block_sizes, self.use_dirty_ancilla
+                bb, QAny(reg.dtype.num_qubits), block_sizes, self.use_dirty_ancilla
             )
             qrom_target[np.unravel_index(0, block_sizes)] = _alloc_anc_for_reg(  # type: ignore[index]
-                bb, reg.dtype, reg.shape, dirty=False
+                bb, QAny(reg.dtype.num_qubits), reg.shape, dirty=False
             )
             qrom_targets.append(qrom_target)
         # Assert that all registers have been used by now.
