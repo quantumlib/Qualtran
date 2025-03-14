@@ -78,6 +78,10 @@ def test_pl_interop():
     pl_op = qml.Hadamard(wires=[0])
     assert pl_op_from_bloq == pl_op
 
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
 
 def test_active_chadamard_is_hadamard():
     bb = BloqBuilder()

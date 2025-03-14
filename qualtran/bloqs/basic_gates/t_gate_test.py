@@ -51,6 +51,10 @@ def test_pl_interop():
     pl_op = qml.T(wires=[0])
     assert pl_op_from_bloq == pl_op
 
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
 
 def test_tensors():
     from_cirq = cirq.unitary(cirq.Circuit(cirq.T(cirq.LineQubit(0))))

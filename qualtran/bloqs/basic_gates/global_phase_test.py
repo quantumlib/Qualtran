@@ -61,6 +61,15 @@ def test_pl_interop():
     pl_op = qml.GlobalPhase(phi=0.5 * np.pi, wires=[0])
     assert pl_op_from_bloq == pl_op
 
+    matrix = pl_op_from_bloq.matrix()
+    # fmt: off
+    should_be = np.array([
+        [6.123234e-17-1.j, 0.000000e+00+0.j],
+        [0.000000e+00+0.j, 6.123234e-17-1.j]
+    ])
+    # fmt: on
+    np.testing.assert_allclose(should_be, matrix)
+
 
 def test_t_complexity():
     assert GlobalPhase(exponent=0.5).t_complexity() == TComplexity()

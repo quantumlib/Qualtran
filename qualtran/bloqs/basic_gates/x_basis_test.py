@@ -90,6 +90,10 @@ def test_pl_interop():
     pl_op = qml.X(wires=[0])
     assert pl_op_from_bloq == pl_op
 
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
 
 def test_x_truth_table():
     classical_truth_table = format_classical_truth_table(*get_classical_truth_table(XGate()))

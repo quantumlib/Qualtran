@@ -46,6 +46,10 @@ def test_pl_interop():
     pl_op = qml.Identity(wires=[0])
     assert pl_op_from_bloq == pl_op
 
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
 
 def test_to_cirq_n_qubit_id():
     circuit = Identity(3).as_composite_bloq().to_cirq_circuit()
