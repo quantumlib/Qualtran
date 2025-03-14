@@ -28,6 +28,7 @@ from qualtran import (
     BQUInt,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
     Register,
     Signature,
 )
@@ -283,7 +284,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
         ret[self.qrom_bloq] += 1
         ret[self.qrom_bloq.adjoint()] += 1
         for reg in self.target_registers:
-            ret[Xor(reg.dtype)] += toggle_overhead * np.prod(reg.shape, dtype=int)
+            ret[Xor(QAny(reg.dtype.num_qubits))] += toggle_overhead * np.prod(reg.shape, dtype=int)
         for swz in self.swap_with_zero_bloqs:
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
                 ret[swz] += toggle_overhead
@@ -332,7 +333,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             assert isinstance(qrom_reg, np.ndarray)  # Make mypy happy.
             idx = np.unravel_index(0, qrom_reg.shape)
             qrom_reg[idx], target[i] = bb.add(
-                Xor(self.target_registers[i].dtype), x=qrom_reg[idx], y=target[i]
+                Xor(QAny(self.target_registers[i].dtype.num_qubits)), x=qrom_reg[idx], y=target[i]
             )
         return qrom_targets, target
 
@@ -421,7 +422,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
             )
         block_sizes = cast(Tuple[int, ...], self.block_sizes)
         qrom_targets = [
-            _alloc_anc_for_reg(bb, reg.dtype, block_sizes, self.use_dirty_ancilla)
+            _alloc_anc_for_reg(bb, QAny(reg.dtype.num_qubits), block_sizes, self.use_dirty_ancilla)
             for reg in self.target_registers
         ]
         # Verify some of the assumptions are correct.
