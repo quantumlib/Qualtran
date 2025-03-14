@@ -22,6 +22,7 @@ requirements.
 """
 
 from .cnot import CNOT
+from .discard import Discard, DiscardQ
 from .global_phase import GlobalPhase
 from .hadamard import CHadamard, Hadamard
 from .identity import Identity
@@ -35,4 +36,14 @@ from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
 from .y_gate import CYGate, YGate
-from .z_basis import CZ, IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate
+from .z_basis import (
+    CZ,
+    IntEffect,
+    IntState,
+    MeasZ,
+    OneEffect,
+    OneState,
+    ZeroEffect,
+    ZeroState,
+    ZGate,
+)
