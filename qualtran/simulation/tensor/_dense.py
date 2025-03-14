@@ -14,21 +14,19 @@
 
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING, TypeAlias
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 
 from numpy.typing import NDArray
 
 from qualtran import Bloq, Connection, ConnectionT, Signature
 
 from ._flattening import flatten_for_tensor_contraction
-from ._quimb import cbloq_to_quimb, cbloq_to_superquimb
+from ._quimb import _IndT, cbloq_to_quimb, cbloq_to_superquimb
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
 logger = logging.getLogger(__name__)
-
-_IndT: TypeAlias = Any
 
 
 def _order_incoming_outgoing_indices(
@@ -69,7 +67,7 @@ def _order_incoming_outgoing_indices(
 
 def _group_outer_inds(
     tn: 'qtn.TensorNetwork', signature: Signature, superoperator: bool = False
-) -> List[List[Any]]:
+) -> List[List[_IndT]]:
     """Group outer indices of a tensor network.
 
     This is used by 'bloq_to_dense` and `quimb_to_dense` to return a 1-, 2-, or 4-dimensional

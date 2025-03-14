@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-from typing import Any, cast, Dict, Iterable, Tuple, Union
+from typing import Any, cast, Dict, Iterable, Tuple, TypeAlias, Union
 
 import attrs
 import numpy as np
@@ -33,6 +33,8 @@ from qualtran import (
 from qualtran._infra.composite_bloq import _cxns_to_cxn_dict, BloqBuilder
 
 logger = logging.getLogger(__name__)
+
+_IndT: TypeAlias = Any
 
 
 def cbloq_to_quimb(cbloq: CompositeBloq, friendly_indices: bool = False) -> qtn.TensorNetwork:
@@ -114,7 +116,7 @@ _OuterIndT = Tuple[str, Tuple[int, ...], int, str]
 
 def _get_outer_indices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> Dict[Any, Union[str, _OuterIndT]]:
+) -> Dict[_IndT, Union[str, _OuterIndT]]:
     """Provide a mapping for a tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -129,7 +131,7 @@ def _get_outer_indices(
 
     This function is called at the end of `cbloq_to_quimb` as part of a `tn.reindex(...) operation.
     """
-    ind_name_map: Dict[Any, Union[str, _OuterIndT]] = {}
+    ind_name_map: Dict[_IndT, Union[str, _OuterIndT]] = {}
 
     # Each index is a (cxn: Connection, j: int) tuple.
     cxn: Connection
@@ -269,7 +271,7 @@ _SuperOuterIndT = Tuple[str, Tuple[int, ...], int, str]
 
 def _get_outer_superindices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> Dict[Any, Union[str, _SuperOuterIndT]]:
+) -> Dict[_IndT, Union[str, _SuperOuterIndT]]:
     """Provide a mapping for a super-tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -291,7 +293,7 @@ def _get_outer_superindices(
     j: int
     forward: bool
 
-    ind_name_map: Dict[Any, Union[str, _SuperOuterIndT]] = {}
+    ind_name_map: Dict[_IndT, Union[str, _SuperOuterIndT]] = {}
     for ind in tn.outer_inds():
         cxn, j, forward = ind
         if cxn.left.binst is LeftDangle:
