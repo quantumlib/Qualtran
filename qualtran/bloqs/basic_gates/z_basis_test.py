@@ -17,13 +17,17 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder
+from qualtran import Bloq, BloqBuilder, QUInt
 from qualtran.bloqs.basic_gates import (
     CZ,
     IntEffect,
     IntState,
+    MeasZ,
+    MinusState,
+    OnEach,
     OneEffect,
     OneState,
+    PlusState,
     XGate,
     ZeroEffect,
     ZeroState,
@@ -263,3 +267,55 @@ def test_cz_phased_classical():
     assert final_vals['q1'] == 1
     assert final_vals['q2'] == 1
     assert phase == -1
+
+
+def test_meas_z_supertensor():
+    with pytest.raises(ValueError, match=r'.*superoperator.*'):
+        MeasZ().tensor_contract()
+
+    # Zero -> Zero
+    bb = BloqBuilder()
+    q = bb.add(ZeroState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.outer([1, 0], [1, 0])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # One -> One
+    bb = BloqBuilder()
+    q = bb.add(OneState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.outer([0, 1], [0, 1])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # Plus -> mixture
+    bb = BloqBuilder()
+    q = bb.add(PlusState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.diag([0.5, 0.5])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # Minus -> mixture
+    bb = BloqBuilder()
+    q = bb.add(MinusState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.diag([0.5, 0.5])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+
+def test_meas_z_classical():
+    bb = BloqBuilder()
+    q = bb.add(IntState(val=52, bitsize=8))
+    qs = bb.split(q)
+    for i in range(8):
+        qs[i] = bb.add(MeasZ(), q=qs[i])
+    cbloq = bb.finalize(outs=qs)
+    (ret,) = cbloq.call_classically()
+    assert list(ret) == QUInt(8).to_bits(52)  # type: ignore[arg-type]

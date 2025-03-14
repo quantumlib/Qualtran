@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import (
+    cast,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import numpy as np
@@ -27,6 +38,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CBit,
     CompositeBloq,
     ConnectionT,
     CtrlSpec,
@@ -50,7 +62,7 @@ if TYPE_CHECKING:
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -365,6 +377,44 @@ def _cz() -> CZ:
 
 
 _CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
+
+
+@frozen
+class MeasZ(Bloq):
+    """Measure a qubit in the Z basis.
+
+    Registers:
+        q [LEFT]: The qubit to measure.
+        c [RIGHT]: The classical measurement result.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
+        )
+
+    def on_classical_vals(self, q: int) -> Mapping[str, 'ClassicalValRetT']:
+        return {'c': q}
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor import DiscardInd
+
+        copy = np.zeros((2, 2, 2), dtype=np.complex128)
+        copy[0, 0, 0] = 1
+        copy[1, 1, 1] = 1
+        # Tie together q, c, and meas_result with the copy tensor; throw out one of the legs.
+        meas_result = qtn.rand_uuid('meas_result')
+        t = qtn.Tensor(
+            data=copy,
+            inds=[(incoming['q'], 0), (outgoing['c'], 0), (meas_result, 0)],
+            tags=[str(self)],
+        )
+        return [t, DiscardInd((meas_result, 0))]
 
 
 @frozen
