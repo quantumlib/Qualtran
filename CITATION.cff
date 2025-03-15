@@ -1,5 +1,21 @@
+# Citation information for this repository.                         -*- yaml -*-
+#
+# CITATION.cff files provide human- & machine-readable citation information for
+# software and datasets. GitHub, Zenodo, and the Zotero browser plugin all use
+# CFF files automatically if provided. https://citation-file-format.github.io/.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 cff-version: 1.2.0
-message: If you use Qualtran, please cite it using this metadata.
+message: If you use this software, please cite it using this metadata.
+
+# CITATION.cff files describe how to cite software or datasets, with the goal of
+# making software and data be citable in their own right. However, sometimes
+# projects want citations to go to a paper instead. 'Preferred-citation' serves
+# to communicate that. The distinction matters in different situations. If this
+# field is present, GitHub uses the value for the "cite this repository" button
+# and ignores the rest of this file; conversely, the Zenodo-GitHub integration
+# ignores this field when creating an entry for a new software release because
+# the Zenodo entry is specifically about the software in this repository.
 
 preferred-citation:
   type: preprint
@@ -26,11 +42,9 @@ preferred-citation:
   volume: 2409.04643
   url: https://arxiv.org/abs/2409.04643
 
+# The remaining fields define how the software in this repo should be cited.
+
 title: Qualtran
-abstract: >-
-  Qualtran (quantum algorithms translator) is a set of abstractions for
-  representing quantum programs, and a library of quantum algorithms expressed
-  in that language to support quantum algorithms research.
 authors:
   - family-names: Harrigan
     given-names: Matt P.
@@ -48,6 +62,10 @@ authors:
     given-names: Ryan
   - family-names: Rubin
     given-names: Nicholas C.
+abstract: >-
+  Qualtran (quantum algorithms translator) is a set of abstractions for
+  representing quantum programs, and a library of quantum algorithms expressed
+  in that language to support quantum algorithms research.
 version: 0.5.0
 date-released: 2024-09-10
 url: https://github.com/quantumlib/Qualtran
@@ -65,7 +83,6 @@ keywords:
   - algorithms
   - API
   - application programming interface
-  - Cirq
   - compilation
   - conversion
   - diagramming
