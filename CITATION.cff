@@ -1,0 +1,99 @@
+cff-version: 1.2.0
+message: If you use Qualtran, please cite it using this metadata.
+
+preferred-citation:
+  type: preprint
+  authors:
+    - family-names: Harrigan
+      given-names: Matthew P.
+    - family-names: Khattar
+      given-names: Tanuj
+    - family-names: Yuan
+      given-names: Charles
+    - family-names: Peduri
+      given-names: Anurudh
+    - family-names: Yosri
+      given-names: Noureldin
+    - family-names: Malone
+      given-names: Fionn D.
+    - family-names: Babbush
+      given-names: Ryan
+    - family-names: Rubin
+      given-names: Nicholas C.
+  title: Expressing and Analyzing Quantum Algorithms with Qualtran
+  date-published: 2024-01-01
+  year: 2024
+  volume: 2409.04643
+  url: https://arxiv.org/abs/2409.04643
+
+title: Qualtran
+abstract: >-
+  Qualtran (quantum algorithms translator) is a set of abstractions for
+  representing quantum programs, and a library of quantum algorithms expressed
+  in that language to support quantum algorithms research.
+authors:
+  - family-names: Harrigan
+    given-names: Matt P.
+  - family-names: Khattar
+    given-names: Tanuj
+  - family-names: Yuan
+    given-names: Charles
+  - family-names: Peduri
+    given-names: Anurudh
+  - family-names: Yosri
+    given-names: Noureldin
+  - family-names: Malone
+    given-names: Fionn D.
+  - family-names: Babbush
+    given-names: Ryan
+  - family-names: Rubin
+    given-names: Nicholas C.
+version: 0.5.0
+date-released: 2024-09-10
+url: https://github.com/quantumlib/Qualtran
+repository-code: https://github.com/quantumlib/Qualtran
+license: Apache-2.0
+type: software
+identifiers:
+  - description: The GitHub repository for Qualtran
+    value: https://quantumai.google/Qualtran
+    type: url
+  - description: PyPI project for Qualtran
+    value: https://pypi.org/project/Qualtran
+    type: url
+keywords:
+  - algorithms
+  - API
+  - application programming interface
+  - Cirq
+  - compilation
+  - conversion
+  - diagramming
+  - logical qubit
+  - open-source software
+  - physics
+  - Python
+  - QEC
+  - quantum
+  - quantum algorithms
+  - quantum circuits
+  - quantum computing
+  - quantum error correction
+  - quantum error decoder
+  - quantum gates
+  - quantum programming
+  - quantum programs
+  - quantum simulation
+  - quantum state
+  - qubit
+  - research
+  - resource estimation
+  - science
+  - SDK
+  - simulation
+  - simulator
+  - software
+  - software development toolkit
+  - stabilizer circuits
+  - translator
+  - visualization
