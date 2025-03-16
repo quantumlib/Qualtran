@@ -37,9 +37,8 @@ preferred-citation:
     - family-names: Rubin
       given-names: Nicholas C.
   title: Expressing and Analyzing Quantum Algorithms with Qualtran
-  date-published: 2024-01-01
   year: 2024
-  volume: 2409.04643
+  doi: 10.48550/arXiv.2409.04643
   url: https://arxiv.org/abs/2409.04643
 
 # The remaining metadata describes the current software release.
