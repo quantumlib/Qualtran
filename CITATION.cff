@@ -42,7 +42,7 @@ preferred-citation:
   volume: 2409.04643
   url: https://arxiv.org/abs/2409.04643
 
-# The remaining fields define how the software in this repo should be cited.
+# The remaining metadata describes the current software release.
 
 title: Qualtran
 authors:
