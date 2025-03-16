@@ -18,7 +18,7 @@ message: If you use this software, please cite it using this metadata.
 # the Zenodo entry is specifically about the software in this repository.
 
 preferred-citation:
-  type: preprint
+  type: article
   authors:
     - family-names: Harrigan
       given-names: Matthew P.
