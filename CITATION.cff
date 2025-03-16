@@ -73,7 +73,7 @@ repository-code: https://github.com/quantumlib/Qualtran
 license: Apache-2.0
 type: software
 identifiers:
-  - description: The GitHub repository for Qualtran
+  - description: The home page for Qualtran
     value: https://quantumai.google/Qualtran
     type: url
   - description: PyPI project for Qualtran
