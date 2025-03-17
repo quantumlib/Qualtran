@@ -34,7 +34,28 @@ You can also install the latest state of the main branch:
     pip install git+https://github.com/quantumlib/Qualtran
 
 ## Physical Resource Estimation GUI
+
 Qualtran provides a GUI for estimating the physical resources (qubits, magic states, runtime, ..etc) needed to run a quantum algorithm. The GUI can be run locally by running:
-    
+
     cd $QUALTRAN_HOME
     python -m qualtran.surface_code.ui
+
+## Citation
+
+When publishing articles or otherwise writing about Qualtran, please cite the
+following:
+
+```latex
+@misc{harrigan2024qualtran,
+    title={Expressing and Analyzing Quantum Algorithms with Qualtran},
+    author={Matthew P. Harrigan and Tanuj Khattar
+        and Charles Yuan and Anurudh Peduri and Noureldin Yosri
+        and Fionn D. Malone and Ryan Babbush and Nicholas C. Rubin},
+    year={2024},
+    eprint={2409.04643},
+    archivePrefix={arXiv},
+    primaryClass={quant-ph},
+    doi={10.48550/arXiv.2409.04643},
+    url={https://arxiv.org/abs/2409.04643},
+}
+```
