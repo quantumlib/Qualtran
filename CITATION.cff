@@ -3,6 +3,8 @@
 # CITATION.cff files provide human- & machine-readable citation information for
 # software and datasets. GitHub, Zenodo, and the Zotero browser plugin all use
 # CFF files automatically if provided. https://citation-file-format.github.io/.
+#
+# Tools exist to generate CITATION.cff files from other formats such as BibTeX.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cff-version: 1.2.0
@@ -14,9 +16,8 @@ message: If you use this software, please cite it using this metadata.
 # to communicate that. The distinction matters in different situations. If this
 # field is present, GitHub uses the value for the "cite this repository" button
 # and ignores the rest of this file; conversely, the Zenodo-GitHub integration
-# ignores this field when creating an entry for a new software release because
-# the Zenodo entry is specifically about the software in this repository.
-
+# ignores this field when creating an entry for a new software release (because
+# the Zenodo entry is specifically about the software in this repository).
 preferred-citation:
   type: article
   authors:
@@ -41,7 +42,7 @@ preferred-citation:
   doi: 10.48550/arXiv.2409.04643
   url: https://arxiv.org/abs/2409.04643
 
-# The remaining metadata describes the current software release.
+# The remaining metadata in this file describes the current software release.
 
 title: Qualtran
 authors:
@@ -77,6 +78,9 @@ identifiers:
     type: url
   - description: PyPI project for Qualtran
     value: https://pypi.org/project/Qualtran
+    type: url
+  - description: GitHub repository for Qualtran
+    value: https://github.com/quantumlib/Qualtran
     type: url
 keywords:
   - algorithms
