@@ -14,7 +14,7 @@
 
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 from numpy.typing import NDArray
 
