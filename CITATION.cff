@@ -19,7 +19,7 @@ message: If you use this software, please cite it using this metadata.
 # ignores this field when creating an entry for a new software release (because
 # the Zenodo entry is specifically about the software in this repository).
 preferred-citation:
-  type: article
+  type: misc
   authors:
     - family-names: Harrigan
       given-names: Matthew P.
@@ -41,6 +41,12 @@ preferred-citation:
   year: 2024
   doi: 10.48550/arXiv.2409.04643
   url: https://arxiv.org/abs/2409.04643
+  identifiers:
+    - description: arXiv identifier for the submission
+      value: 'arXiv:2409.04643'
+      type: other
+  keywords:
+    - quant-ph
 
 # The remaining metadata in this file describes the current software release.
 
@@ -81,6 +87,12 @@ identifiers:
     type: url
   - description: GitHub repository for Qualtran
     value: https://github.com/quantumlib/Qualtran
+    type: url
+  - description: DOI for the preprint
+    value: 10.48550/arXiv.2409.04643
+    type: doi
+  - description: Web page for the preprint
+    value: https://arxiv.org/abs/2409.04643
     type: url
 keywords:
   - algorithms
