@@ -53,8 +53,6 @@ following:
         and Fionn D. Malone and Ryan Babbush and Nicholas C. Rubin},
     year={2024},
     eprint={2409.04643},
-    archivePrefix={arXiv},
-    primaryClass={quant-ph},
     doi={10.48550/arXiv.2409.04643},
     url={https://arxiv.org/abs/2409.04643},
 }
