@@ -59,3 +59,16 @@ following:
     url={https://arxiv.org/abs/2409.04643},
 }
 ```
+
+## Contact
+
+For any questions or concerns not addressed here, please email
+quantum-oss-maintainers@google.com.
+
+## Disclaimer
+
+This is not an officially supported Google product. This project is not
+eligible for the [Google Open Source Software Vulnerability Rewards
+Program](https://bughunters.google.com/open-source-security).
+
+Copyright 2025 Google LLC.
