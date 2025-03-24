@@ -1,51 +1,110 @@
-# Qᴜᴀʟᴛʀᴀɴ
+<!-- H1 title omitted because our logo acts as the title. -->
+
+<div align="center">
+<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-black.svg#gh-light-mode-only">
+<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-white.svg#gh-dark-mode-only">
+<br>
+
+Python package for fault-tolerant quantum algorithms research.
+
+[![Licensed under the Apache 2.0 open-source license](https://img.shields.io/badge/License-Apache%202.0-3c60b1.svg?logo=opensourceinitiative\&logoColor=white\&style=flat-square)](https://github.com/quantumlib/qualtran/blob/main/LICENSE)
+[![Compatible with Python versions 3.10 and higher](https://img.shields.io/badge/Python-3.10+-6828b2.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![Qualtran project on PyPI](https://img.shields.io/pypi/v/qualtran.svg?logo=python&logoColor=white&label=PyPI&style=flat-square&color=9d3bb8)](https://pypi.org/project/qualtran)
+
+[Installation](#installation) &ndash;
+[Usage](#usage) &ndash;
+[Documentation](#documentation) &ndash;
+[News](#news) &ndash;
+[Citation](#citation) &ndash;
+[Contact](#contact)
+
+</div>
 
 Qᴜᴀʟᴛʀᴀɴ (quantum algorithms translator) is a set of abstractions for representing quantum
 programs and a library of quantum algorithms expressed in that language to support quantum
 algorithms research.
 
-**Note:** Qualtran is an experimental preview release. We provide no backwards compatibility
-guarantees. Some algorithms or library functionality may be incomplete or contain inaccuracies.
-Open issues or contact the authors with bug reports or feedback.
-
-Subscribe to [qualtran-announce@googlegroups.com](https://groups.google.com/g/qualtran-announce)
-to receive the latest news and updates!
-
-## Documentation
-
-Documentation is available at https://qualtran.readthedocs.io/
-
 ## Installation
 
-Qualtran is being actively developed. We recommend installing from source:
+Qualtran is being actively developed. We recommend installing from the source code.
 
-For a local editable copy:
+The following commands will clone a copy of the repository, then install the Qualtran package in
+your local Python environment as a local editable copy:
 
-    git clone https://github.com/quantumlib/Qualtran.git
-    cd Qualtran/
-    pip install -e .
+```shell
+git clone https://github.com/quantumlib/Qualtran.git
+cd Qualtran/
+pip install -e .
+```
 
 You can also install the latest tagged release using `pip`:
 
-    pip install qualtran
+```shell
+pip install qualtran
+```
 
-You can also install the latest state of the main branch:
+You can also install the latest version of the main branch on GitHub:
 
-    pip install git+https://github.com/quantumlib/Qualtran
+```shell
+pip install git+https://github.com/quantumlib/Qualtran
+```
 
-## Physical Resource Estimation GUI
+## Usage
 
-Qualtran provides a GUI for estimating the physical resources (qubits, magic states, runtime, ..etc) needed to run a quantum algorithm. The GUI can be run locally by running:
+> [!WARNING]
+> Qualtran is an experimental preview release. We provide no backwards compatibility guarantees.
+> Some algorithms or library functionality may be incomplete or contain inaccuracies. Open issues or
+> contact the authors with bug reports or feedback.
 
-    cd $QUALTRAN_HOME
-    python -m qualtran.surface_code.ui
+### Python interpreter and programs
+
+You should be able to import the `qualtran` package into your interactive Python environment as
+as well as your programs:
+
+```shell
+import qualtran
+```
+
+If this is successful, you can move on to learning how to
+[write bloqs](https://qualtran.readthedocs.io/en/latest/_infra/Bloqs-Tutorial.html) or investigate
+the [bloqs library](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
+
+### Physical Resource Estimation GUI
+
+Qualtran provides a GUI for estimating the physical resources (qubits, magic states, runtime, etc.)
+needed to run a quantum algorithm. The GUI can be run locally by running:
+
+```shell
+cd $QUALTRAN_HOME
+python -m qualtran.surface_code.ui
+```
+
+## Documentation
+
+Documentation is available at https://qualtran.readthedocs.io/.
+
+## News
+
+Stay on top of Qualtran developments using the approach that best suits your needs:
+
+*   For news and updates announcements: sign up to the low-volume mailing list
+    [`qualtran-announce`].
+*   For releases only:
+    *   *Via GitHub notifications*: configure [repository notifications] for Qualtran.
+    *   *Via RSS from GitHub*: subscribe to the GitHub [Qualtran releases feed].
+    *   *Via RSS from PyPI*: subscribe to the [PyPI releases feed] for Qualtran.
+
+[`qualtran-announce`]: https://groups.google.com/g/qualtran-announce
+[repository notifications]: https://docs.github.com/github/managing-subscriptions-and-notifications-on-github/configuring-notifications
+[Qualtran releases feed]: https://github.com/quantumlib/Qualtran/releases.atom
+[PyPI releases feed]: https://pypi.org/rss/project/qualtran/releases.xml
 
 ## Citation
 
 When publishing articles or otherwise writing about Qualtran, please cite the
 following:
 
-```latex
+```bibtex
 @misc{harrigan2024qualtran,
     title={Expressing and Analyzing Quantum Algorithms with Qualtran},
     author={Matthew P. Harrigan and Tanuj Khattar
