@@ -23,5 +23,6 @@ def test_rsa_pe(bloq_autotester, bloq):
     bloq_autotester(bloq)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('rsa')

@@ -25,6 +25,8 @@ from qualtran.drawing import Text, TextBox, WireSymbol
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
 
@@ -95,6 +97,11 @@ class TGate(Bloq):
         (q,) = q
         p = -1 if self.is_adjoint else 1
         return cirq.T(q) ** p, {'q': np.array([q])}
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.adjoint(qml.T(wires=wires)) if self.is_adjoint else qml.T(wires=wires)
 
     def __str__(self):
         maybe_dag = '†' if self.is_adjoint else ''
