@@ -968,13 +968,7 @@ class QGF(QDType):
     def to_bits(self, x) -> List[int]:
         """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        ret = []
-        v = int(x)
-        for _ in range(int(self.degree)):
-            ret.append(v & 1)
-            v >>= 1
-        ret.reverse()
-        return ret
+        return self._quint_equivalent.to_bits(int(x))
 
     def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
