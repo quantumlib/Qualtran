@@ -34,6 +34,7 @@ from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.matrix import random_hermitian_matrix
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 from qualtran.testing import assert_equivalent_bloq_example_counts, execute_notebook
 
@@ -154,6 +155,11 @@ def test_scaled_chebyshev_even_tensors():
     bloq = _scaled_chebyshev_poly_even()
     from_tensors = gate_test(bloq)
     np.testing.assert_allclose(from_gate, from_tensors, atol=0.06)
+
+
+def test_scaled_chebyshev_even_cost():
+    bloq = _scaled_chebyshev_poly_even()
+    _ = get_cost_value(bloq, QECGatesCost())
 
 
 @pytest.mark.slow

@@ -36,6 +36,8 @@ from qualtran.symbolics import is_symbolic, ssum, SymbolicInt
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -99,6 +101,9 @@ class Partition(_BookkeepingBloq):
             return None, outregs
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        return None
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

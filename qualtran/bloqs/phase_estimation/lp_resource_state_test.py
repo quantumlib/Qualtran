@@ -94,7 +94,7 @@ def test_t_complexity(n):
     qlt_testing.assert_equivalent_bloq_counts(
         bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
     )
-    lprs_interim_count = 3 * TComplexity(rotations=n + 1, clifford=2 + n)
+    lprs_interim_count = 3 * TComplexity(rotations=2 * n + 1, clifford=2 + 3 * n)
     reflection_using_prepare = TComplexity(t=4 * n + 4, clifford=17 * n + 22)
     misc_count = TComplexity(rotations=3, clifford=5)
 
@@ -103,6 +103,9 @@ def test_t_complexity(n):
 
 @pytest.mark.parametrize('bitsize', [*range(1, 14, 2)])
 def test_interim_lp2s_interim_prep_t_complexity(bitsize: int):
+    crz_rots = 2 * bitsize
+    crz_cliff = 2 * bitsize
+    h_cliff = bitsize
     assert t_complexity(LPRSInterimPrep(bitsize)) == TComplexity(
-        rotations=bitsize + 1, clifford=2 + bitsize
+        rotations=crz_rots + 1, clifford=2 + crz_cliff + h_cliff
     )
