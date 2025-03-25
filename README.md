@@ -99,7 +99,7 @@ Stay on top of Qualtran developments using the approach that best suits your nee
 [Qualtran releases feed]: https://github.com/quantumlib/Qualtran/releases.atom
 [PyPI releases feed]: https://pypi.org/rss/project/qualtran/releases.xml
 
-## Citation
+## Citation<a name="how-to-cite"></a>
 
 When publishing articles or otherwise writing about Qualtran, please cite the
 following:
