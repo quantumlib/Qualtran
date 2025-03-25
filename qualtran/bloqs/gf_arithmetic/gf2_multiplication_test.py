@@ -24,9 +24,9 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
     _gf16_multiplication,
     BinaryPolynomialMultiplication,
-    GF2MulViaKaratsuba,
+    GF2MulK,
     GF2Multiplication,
-    GF2MultiplyByConstant,
+    GF2MulViaKaratsuba,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
@@ -108,7 +108,7 @@ def test_multiply_by_constant_mod_classical_action(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = GF2MultiplyByConstant.from_polynomials(f_x, m_x)
+        blq = GF2MulK.from_polynomials(f_x, m_x)
         cblq = blq.decompose_bloq()
         for g in gf.elements[1:]:
             assert blq.call_classically(g=g) == cblq.call_classically(g=g)
@@ -124,7 +124,7 @@ def test_multiply_by_constant_mod_classical_action(m_x):
     ],
 )
 def test_multiply_by_constant_mod_cost(m_x, f_x, cnot_count):
-    blq = GF2MultiplyByConstant.from_polynomials(f_x, m_x)
+    blq = GF2MulK.from_polynomials(f_x, m_x)
     cost = get_cost_value(blq, QECGatesCost())
     assert cost.total_t_count() == 0
     assert cost.clifford == cnot_count
@@ -137,7 +137,7 @@ def test_multiply_by_constant_mod_decomposition(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = GF2MultiplyByConstant.from_polynomials(f_x, m_x)
+        blq = GF2MulK.from_polynomials(f_x, m_x)
         qlt_testing.assert_valid_bloq_decomposition(blq)
 
 
@@ -148,15 +148,15 @@ def test_multiply_by_constant_mod_counts(m_x):
     QGFM = QGF(2, n)
     elements = [Poly(tuple(QGFM.to_bits(i))) for i in gf.elements[1:]]
     for f_x in elements:
-        blq = GF2MultiplyByConstant.from_polynomials(f_x, m_x)
+        blq = GF2MulK.from_polynomials(f_x, m_x)
         qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
 
 
-def test_invalid_GF2MultiplyByConstant_args_raises():
+def test_invalid_GF2MulK_args_raises():
     gf = GF(2, 3)
     x = GF(2, 4)(1)
     with pytest.raises(TypeError):
-        _ = GF2MultiplyByConstant(x, gf)
+        _ = GF2MulK(x, gf)
 
 
 @pytest.mark.notebook

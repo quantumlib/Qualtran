@@ -17,9 +17,9 @@ from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     BinaryPolynomialMultiplication,
-    GF2MulViaKaratsuba,
+    GF2MulK,
     GF2Multiplication,
-    GF2MultiplyByConstant,
+    GF2MulViaKaratsuba,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
 )

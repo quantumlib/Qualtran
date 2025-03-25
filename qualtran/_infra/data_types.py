@@ -51,17 +51,15 @@ respectively.
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Literal, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Iterable, List, Optional, Sequence, Union
 
 import attrs
+import galois
 import numpy as np
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
-
-if TYPE_CHECKING:
-    import galois
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -870,6 +868,14 @@ class QMontgomeryUInt(QDType):
         return (x * pow(2, int(self.bitsize), int(self.modulus))) % self.modulus
 
 
+def _poly_converter(p) -> Union[galois.Poly, None]:
+    if p is None:
+        return None
+    if isinstance(p, galois.Poly):
+        return p
+    return galois.Poly.Degrees(p)
+
+
 @attrs.frozen
 class QGF(QDType):
     r"""Galois Field type to represent elements of a finite field.
@@ -908,7 +914,7 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = attrs.field()
+    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
