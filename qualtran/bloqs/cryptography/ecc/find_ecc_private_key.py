@@ -131,6 +131,7 @@ class FindECCPrivateKey(Bloq):
 @bloq_example
 def _ecc() -> FindECCPrivateKey:
     from qualtran.bloqs.cryptography.ecc import ECPoint
+
     n, p = sympy.symbols('n p')
     Px, Py, Qx, Qy = sympy.symbols('P_x P_y Q_x Q_y')
     P = ECPoint(Px, Py, mod=p)
