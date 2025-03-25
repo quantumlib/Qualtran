@@ -743,13 +743,13 @@ class GF2ShiftRight(Bloq):
 
 
 @bloq_example
-def _GF2ShiftRight() -> GF2ShiftRight:
+def _gf2shiftright() -> GF2ShiftRight:
     m_x = [5, 2, 0]  # x^5 + x^2 + 1
-    GF2ShiftRight = GF2ShiftRight(QGF(2, 5, m_x), k=3)  # shift by 3
-    return GF2ShiftRight
+    gf2shiftright = GF2ShiftRight(QGF(2, 5, m_x), k=3)  # shift by 3
+    return gf2shiftright
 
 
-_GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_GF2ShiftRight,))
+_GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_gf2shiftright,))
 
 
 @attrs.frozen
