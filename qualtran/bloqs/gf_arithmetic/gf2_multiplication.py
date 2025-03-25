@@ -657,6 +657,15 @@ _BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
 )
 
 
+def _qgf_converter(x) -> QGF:
+    if isinstance(x, QGF):
+        return x
+    if isinstance(x, Poly):
+        return QGF(2, x.degree, x)
+    p = Poly.Degrees(x)
+    return QGF(2, p.degree, p)
+
+
 @attrs.frozen
 class GF2ShiftRight(Bloq):
     r"""Multiplies by $2^k$ (or $x^k$ for polynomials) modulo the given irreducible polynomial.
@@ -680,7 +689,7 @@ class GF2ShiftRight(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Section 3.1
     """
 
-    qgf: QGF
+    qgf: QGF = attrs.field(converter=_qgf_converter)
     k: SymbolicInt = 1
 
     @cached_property
@@ -741,15 +750,6 @@ def _GF2ShiftRight() -> GF2ShiftRight:
 
 
 _GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_GF2ShiftRight,))
-
-
-def _qgf_converter(x) -> QGF:
-    if isinstance(x, QGF):
-        return x
-    if isinstance(x, Poly):
-        return QGF(2, x.degree, x)
-    p = Poly.Degrees(x)
-    return QGF(2, p.degree, p)
 
 
 @attrs.frozen
@@ -965,14 +965,14 @@ class GF2MulViaKaratsuba(Bloq):
         }
 
     def on_classical_vals(
-        self, f: 'SymbolicInt', g: 'SymbolicInt', h: Optional['SymbolicInt'] = None
+        self, x: 'SymbolicInt', y: 'SymbolicInt', result: Optional['SymbolicInt'] = None
     ) -> Dict[str, 'ClassicalValT']:
-        assert isinstance(f, self.gf)
-        assert isinstance(g, self.gf)
+        assert isinstance(x, self.gf)
+        assert isinstance(y, self.gf)
         if self.uncompute:
-            assert f * g == h
-            return {'f': f, 'g': g}
-        return {'f': f, 'g': g, 'h': f * g}
+            assert x * y == result
+            return {'x': x, 'y': y}
+        return {'x': x, 'y': y, 'result': x * y}
 
 
 @bloq_example

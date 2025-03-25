@@ -302,14 +302,14 @@ def test_gf2mulmod_complexity(m_x):
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
 def test_gf2mulmod_classical_action(m_x):
     blq = GF2MulViaKaratsuba(m_x)
-    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements, g=blq.gf.elements)
+    qlt_testing.assert_consistent_classical_action(blq, x=blq.gf.elements, y=blq.gf.elements)
 
 
 @pytest.mark.slow
 def test_gf2mulmod_classical_action_slow():
     m_x = [8, 4, 3, 1, 0]
     blq = GF2MulViaKaratsuba(m_x)
-    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements, g=blq.gf.elements)
+    qlt_testing.assert_consistent_classical_action(blq, x=blq.gf.elements, y=blq.gf.elements)
 
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
@@ -319,8 +319,8 @@ def test_gf2mulmod_classical_action_adjoint(m_x):
     for i, j in np.random.random_integers(0, len(blq.gf.elements) - 1, (10, 2)):
         f = blq.gf.elements[i]
         g = blq.gf.elements[j]
-        a, b, c = blq.call_classically(f=f, g=g)
-        a, b = adjoint.call_classically(f=a, g=b, h=c)
+        a, b, c = blq.call_classically(x=f, y=g)
+        a, b = adjoint.call_classically(x=a, y=b, result=c)
         assert a == f and b == g
 
 
