@@ -93,7 +93,7 @@ Bloqs Library
     mod_arithmetic/mod_division.ipynb
     cryptography/rsa/rsa.ipynb
     cryptography/ecc/ec_add.ipynb
-    cryptography/ecc/ecc.ipynb
+    cryptography/ecc/ecc_arithmetic.ipynb
 
 .. toctree::
     :maxdepth: 2

@@ -570,6 +570,7 @@ MOD_ARITHMETIC = [
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
         module=qualtran.bloqs.cryptography.ecc,
+        path_stem='ecc_arithmetic',
         bloq_specs=[
             qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
             qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
