@@ -155,7 +155,7 @@ def test_multiply_by_constant_mod_counts(m_x):
 def test_invalid_GF2MulK_args_raises():
     gf = GF(2, 3)
     x = GF(2, 4)(1)
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         _ = GF2MulK(x, gf)  # type: ignore[arg-type]
 
 
