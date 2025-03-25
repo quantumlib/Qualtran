@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from .coset_representation import InitCosetRepresntation
 from .mod_addition import CModAdd, CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
 from .mod_division import KaliskiModInverse
 from .mod_multiplication import CModMulK, DirtyOutOfPlaceMontgomeryModMul, ModDbl

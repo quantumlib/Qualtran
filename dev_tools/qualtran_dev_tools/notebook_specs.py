@@ -564,6 +564,13 @@ MOD_ARITHMETIC = [
             qualtran.bloqs.cryptography.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
+    NotebookSpecV2(
+        title='Coset Representation',
+        module=qualtran.bloqs.mod_arithmetic.coset_representation,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.coset_representation._INIT_COST_REPRESENTATION_DOC
+        ],
+    ),
 ]
 
 GF_ARITHMETIC = [
