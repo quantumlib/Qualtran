@@ -976,10 +976,10 @@ class GF2MulViaKaratsuba(Bloq):
 
 
 @bloq_example
-def _GF2MulViaKaratsuba() -> GF2MulViaKaratsuba:
+def _gf2mulviakaratsuba() -> GF2MulViaKaratsuba:
     m_x = [5, 2, 0]  # x^5 + x^2 + 1
-    GF2MulViaKaratsuba = GF2MulViaKaratsuba(QGF(2, 5, m_x))
-    return GF2MulViaKaratsuba
+    gf2mulviakaratsuba = GF2MulViaKaratsuba(QGF(2, 5, m_x))
+    return gf2mulviakaratsuba
 
 
-_GF2_MUL_DOC = BloqDocSpec(bloq_cls=GF2MulViaKaratsuba, examples=(_GF2MulViaKaratsuba,))
+_GF2_MUL_DOC = BloqDocSpec(bloq_cls=GF2MulViaKaratsuba, examples=(_gf2mulviakaratsuba,))
