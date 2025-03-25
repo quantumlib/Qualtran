@@ -69,7 +69,7 @@ class InitCosetRepresntation(Bloq):
             Hadamard(): self.c_pad,
             # The matrix representing the reversible operation $jN+x$ consists of 0s and 1s.
             # Thus it can be implemented using CNOTs using LUP decomposition or Gaussian elemenation
-            # using at most $n(n-1)$ CNOTs.
+            # utilizing at most $n(n-1)$ CNOTs.
             CNOT(): bitsize * (bitsize - 1),
         }
 
