@@ -743,11 +743,20 @@ def _GF2ShiftRight() -> GF2ShiftRight:
 _GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_GF2ShiftRight,))
 
 
+def _qgf_converter(x) -> QGF:
+    if isinstance(x, QGF):
+        return x
+    if isinstance(x, Poly):
+        return QGF(2, x.degree, x)
+    p = Poly.Degrees(x)
+    return QGF(2, p.degree, p)
+
+
 @attrs.frozen
 class _GF2MulViaKaratsubaImpl(Bloq):
     """Multiply two GF2 numbers (or binary polynomials) using quantum karatsuba algorithm."""
 
-    qgf: QGF
+    qgf: QGF = attrs.field(converter=_qgf_converter)
 
     @cached_property
     def n(self):
@@ -862,7 +871,7 @@ class GF2MulViaKaratsuba(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 4.
     """
 
-    dtype: QGF
+    dtype: QGF = attrs.field(converter=_qgf_converter)
     uncompute: bool = False
 
     @cached_property

@@ -156,7 +156,7 @@ def test_invalid_GF2MulK_args_raises():
     gf = GF(2, 3)
     x = GF(2, 4)(1)
     with pytest.raises(TypeError):
-        _ = GF2MulK(x, gf)
+        _ = GF2MulK(x, gf)  # type: ignore[arg-type]
 
 
 @pytest.mark.notebook
@@ -337,4 +337,4 @@ def test_gf2mulmod_classical_complexity(m_x):
 
 def test_gf2mul_invalid_input_raises():
     with pytest.raises(ValueError):
-        _ = GF2MulViaKaratsuba([0, 1])
+        _ = GF2MulViaKaratsuba([0, 1])  # type: ignore[arg-type]
