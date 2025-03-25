@@ -31,7 +31,7 @@ def test_init_cost_representation_cost():
     assert cost.total_toffoli_only() == 0
     resolver = {v: 10**4 for v in sym_vars}
     upper_bound = (c + n) * (c + n - 1) + c
-    assert cost.clifford.subs(resolver) <= upper_bound.subs(resolver)
+    assert cost.clifford.subs(resolver) <= upper_bound.subs(resolver)  # type: ignore[union-attr]
 
 
 def test_init_coset_representation(bloq_autotester):
