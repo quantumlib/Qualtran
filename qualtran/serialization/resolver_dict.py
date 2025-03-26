@@ -57,6 +57,7 @@ import qualtran.bloqs.bookkeeping.arbitrary_clifford
 import qualtran.bloqs.bookkeeping.auto_partition
 import qualtran.bloqs.bookkeeping.cast
 import qualtran.bloqs.bookkeeping.free
+import qualtran.bloqs.bookkeeping.ignoring_ctrl
 import qualtran.bloqs.bookkeeping.join
 import qualtran.bloqs.bookkeeping.partition
 import qualtran.bloqs.bookkeeping.split
@@ -270,6 +271,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
     "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
     "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
+    "qualtran.bloqs.bookkeeping.ignoring_ctrl.IgnoringCtrl": qualtran.bloqs.bookkeeping.ignoring_ctrl.IgnoringCtrl,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
     "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
     "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,
