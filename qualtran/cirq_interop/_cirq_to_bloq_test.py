@@ -36,7 +36,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState, YPowGate, ZeroState, ZPowGate
+from qualtran.bloqs.basic_gates import CNOT, OneState, YPowGate, ZeroState, ZPowGate
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT

@@ -32,7 +32,6 @@ from qualtran import (
     CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
-    GateWithRegisters,
     QAny,
     QBit,
     QDType,
