@@ -1,0 +1,131 @@
+# Citation information for this repository.                         -*- yaml -*-
+#
+# CITATION.cff files provide human- & machine-readable citation information for
+# software and datasets. GitHub, Zenodo, and the Zotero browser plugin all use
+# CFF files automatically if provided. https://citation-file-format.github.io/.
+#
+# Tools exist to generate CITATION.cff files from other formats such as BibTeX.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+cff-version: 1.2.0
+message: If you use this software, please cite it using this metadata.
+
+# CITATION.cff files describe how to cite software or datasets, with the goal of
+# making software and data be citable in their own right. However, sometimes
+# projects want citations to go to a paper instead. 'Preferred-citation' serves
+# to communicate that. The distinction matters in different situations. If this
+# field is present, GitHub uses the value for the "cite this repository" button
+# and ignores the rest of this file; conversely, the Zenodo-GitHub integration
+# ignores this field when creating an entry for a new software release (because
+# the Zenodo entry is specifically about the software in this repository).
+preferred-citation:
+  type: misc
+  authors:
+    - family-names: Harrigan
+      given-names: Matthew P.
+    - family-names: Khattar
+      given-names: Tanuj
+    - family-names: Yuan
+      given-names: Charles
+    - family-names: Peduri
+      given-names: Anurudh
+    - family-names: Yosri
+      given-names: Noureldin
+    - family-names: Malone
+      given-names: Fionn D.
+    - family-names: Babbush
+      given-names: Ryan
+    - family-names: Rubin
+      given-names: Nicholas C.
+  title: Expressing and Analyzing Quantum Algorithms with Qualtran
+  year: 2024
+  doi: 10.48550/arXiv.2409.04643
+  url: https://arxiv.org/abs/2409.04643
+  identifiers:
+    - description: arXiv identifier for the submission
+      value: 'arXiv:2409.04643'
+      type: other
+  keywords:
+    - quant-ph
+
+# The remaining metadata in this file describes the current software release.
+
+title: Qualtran
+authors:
+  - family-names: Harrigan
+    given-names: Matt P.
+  - family-names: Khattar
+    given-names: Tanuj
+  - family-names: Yuan
+    given-names: Charles
+  - family-names: Peduri
+    given-names: Anurudh
+  - family-names: Yosri
+    given-names: Noureldin
+  - family-names: Malone
+    given-names: Fionn D.
+  - family-names: Babbush
+    given-names: Ryan
+  - family-names: Rubin
+    given-names: Nicholas C.
+abstract: >-
+  Qualtran (quantum algorithms translator) is a set of abstractions for
+  representing quantum programs, and a library of quantum algorithms expressed
+  in that language to support quantum algorithms research.
+version: 0.5.0
+date-released: 2024-09-10
+url: https://github.com/quantumlib/Qualtran
+repository-code: https://github.com/quantumlib/Qualtran
+license: Apache-2.0
+type: software
+identifiers:
+  - description: The home page for Qualtran
+    value: https://quantumai.google/Qualtran
+    type: url
+  - description: PyPI project for Qualtran
+    value: https://pypi.org/project/Qualtran
+    type: url
+  - description: GitHub repository for Qualtran
+    value: https://github.com/quantumlib/Qualtran
+    type: url
+  - description: DOI for the preprint
+    value: 10.48550/arXiv.2409.04643
+    type: doi
+  - description: Web page for the preprint
+    value: https://arxiv.org/abs/2409.04643
+    type: url
+keywords:
+  - algorithms
+  - API
+  - application programming interface
+  - compilation
+  - conversion
+  - diagramming
+  - logical qubit
+  - open-source software
+  - physics
+  - Python
+  - QEC
+  - quantum
+  - quantum algorithms
+  - quantum circuits
+  - quantum computing
+  - quantum error correction
+  - quantum error decoder
+  - quantum gates
+  - quantum programming
+  - quantum programs
+  - quantum simulation
+  - quantum state
+  - qubit
+  - research
+  - resource estimation
+  - science
+  - SDK
+  - simulation
+  - simulator
+  - software
+  - software development toolkit
+  - stabilizer circuits
+  - translator
+  - visualization
