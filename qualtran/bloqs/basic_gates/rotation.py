@@ -160,7 +160,7 @@ class ZPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Z^{self.exponent}')
 
     def __str__(self):
         return f'Z**{self.exponent}'
@@ -302,7 +302,7 @@ class XPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'X^{self.exponent}')
 
     def __str__(self):
         return f'X**{self.exponent}'
@@ -376,7 +376,7 @@ class YPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Y^{self.exponent}')
 
     def __str__(self):
         return f'Y**{self.exponent}'

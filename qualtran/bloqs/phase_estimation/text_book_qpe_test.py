@@ -15,13 +15,16 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import ZPowGate
+from qualtran.bloqs.chemistry.hubbard_model.qubitization import get_walk_operator_for_hubbard_model
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
-from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
-from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
-from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
+from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
+    HamiltonianSimulationByGQSP,
+)
+from qualtran.bloqs.phase_estimation import LPResourceState, RectangularWindowState, TextbookQPE
 from qualtran.cirq_interop.testing import GateHelper
 
 
@@ -109,3 +112,13 @@ def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_s
         # 5. Verify that the estimated phase is correct.
         phase = theta * 2 * np.pi
         np.testing.assert_allclose(eig_val / qubitization_lambda, np.cos(phase), atol=eps)
+
+
+def test_qpe_of_gqsp():
+    # This triggered a bug in the cirq interop.
+    # https://github.com/quantumlib/Qualtran/issues/1570
+
+    walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
+    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
+    textbook_qpe_w_gqsp = TextbookQPE(hubbard_time_evolution_by_gqsp, RectangularWindowState(3))
+    qlt_testing.assert_valid_bloq_decomposition(textbook_qpe_w_gqsp)
