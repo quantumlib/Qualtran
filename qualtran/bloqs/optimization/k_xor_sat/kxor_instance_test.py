@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from .kxor_instance import KXorInstance
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 
 
 @pytest.mark.slow
