@@ -14,7 +14,7 @@ Python package for fault-tolerant quantum algorithms research.
 [Installation](#installation) &ndash;
 [Usage](#usage) &ndash;
 [Documentation](#documentation) &ndash;
-[News](#news) &ndash;
+[Community](#community) &ndash;
 [Citation](#citation) &ndash;
 [Contact](#contact)
 
@@ -83,12 +83,20 @@ python -m qualtran.surface_code.ui
 
 Documentation is available at https://qualtran.readthedocs.io/.
 
-## News
+## Community
 
-Stay on top of Qualtran developments using the approach that best suits your needs:
+Qualtran's community is growing rapidly, and if you'd like to join the [many open-source
+contributors] to the Qualtran project, we welcome your participation! We are dedicated to
+cultivating an open and inclusive community, and have a [code of conduct].
 
-*   For news and updates announcements: sign up to the low-volume mailing list
-    [`qualtran-announce`].
+[many open-source contributors]: https://github.com/quantumlib/Qualtran/graphs/contributors
+[code of conduct]: https://github.com/quantumlib/Qualtran/blob/main/CODE_OF_CONDUCT.md
+
+### Announcements
+
+You can stay on top of Qualtran news using the approach that best suits your needs:
+
+*   For releases and major announcements: join the low-volume mailing list [`qualtran-announce`].
 *   For releases only:
     *   *Via GitHub notifications*: configure [repository notifications] for Qualtran.
     *   *Via RSS from GitHub*: subscribe to the GitHub [Qualtran releases feed].
@@ -99,10 +107,33 @@ Stay on top of Qualtran developments using the approach that best suits your nee
 [Qualtran releases feed]: https://github.com/quantumlib/Qualtran/releases.atom
 [PyPI releases feed]: https://pypi.org/rss/project/qualtran/releases.xml
 
+### Questions and Discussions
+
+*   If you'd like to ask questions and participate in discussions, join the [`qualtran-dev`]
+    group/mailing list. By joining [`qualtran-dev`], you will also get automated invites to the
+    biweekly _Qualtran Sync_ meeting (below).
+
+*   Would you like to get more involved in Qualtran development? The biweekly _Qualtran Sync_
+    is a virtual face-to-face meeting of contributors to discuss everything from issues to
+    ongoing efforts, as well as to ask questions. Become a member of [`qualtran-dev`] to get
+    an automatic meeting invitation!
+
+[`qualtran-dev`]: https://groups.google.com/g/qualtran-dev
+
+### Issues and Pull Requests
+
+*   Do you have a feature request or want to report a bug? [Open an issue on
+    GitHub] to report it!
+*   Do you have a code contribution? Read our [contribution guidelines], then
+    open a [pull request]!
+
+[Open an issue on GitHub]: https://github.com/quantumlib/Qualtran/issues/new/choose
+[contribution guidelines]: https://github.com/quantumlib/Qualtran/blob/main/CONTRIBUTING.md
+[pull request]: https://help.github.com/articles/about-pull-requests
+
 ## Citation<a name="how-to-cite"></a>
 
-When publishing articles or otherwise writing about Qualtran, please cite the
-following:
+When publishing articles or otherwise writing about Qualtran, please cite the following:
 
 ```bibtex
 @misc{harrigan2024qualtran,
@@ -121,13 +152,12 @@ following:
 
 ## Contact
 
-For any questions or concerns not addressed here, please email
-quantum-oss-maintainers@google.com.
+For any questions or concerns not addressed here, please email quantum-oss-maintainers@google.com.
 
 ## Disclaimer
 
-This is not an officially supported Google product. This project is not
-eligible for the [Google Open Source Software Vulnerability Rewards
+This is not an officially supported Google product.
+This project is not eligible for the [Google Open Source Software Vulnerability Rewards
 Program](https://bughunters.google.com/open-source-security).
 
 Copyright 2025 Google LLC.
