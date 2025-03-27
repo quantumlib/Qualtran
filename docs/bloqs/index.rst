@@ -94,6 +94,7 @@ Bloqs Library
     cryptography/rsa/rsa.ipynb
     cryptography/ecc/ec_add.ipynb
     cryptography/ecc/ecc.ipynb
+    mod_arithmetic/coset_representation.ipynb
 
 .. toctree::
     :maxdepth: 2
