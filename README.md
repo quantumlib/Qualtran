@@ -1,7 +1,7 @@
 <!-- # Qualtran (title omitted because our logo acts as the title) -->
 
 <div align="center">
-<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-mode-sensitive.svg">
+<img alt="Qualtran logo" width="340px" src="https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/qualtran-logo-mode-sensitive.svg">
 <br>
 
 Python package for fault-tolerant quantum algorithms research.
@@ -151,6 +151,6 @@ Copyright 2025 Google LLC.
 <div align="center">
   <a href="https://quantumai.google">
     <img width="15%" alt="Google Quantum AI"
-         src="./docs/_static/quantum-ai-vertical.svg">
+         src="https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/quantum-ai-vertical.svg">
   </a>
 </div>
