@@ -282,7 +282,7 @@ class GeneralizedQSP(GateWithRegisters):
         Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
-    U: GateWithRegisters
+    U: 'Bloq'
     P: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
     Q: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
     negative_power: SymbolicInt = field(default=0, kw_only=True)
@@ -302,7 +302,7 @@ class GeneralizedQSP(GateWithRegisters):
     @classmethod
     def from_qsp_polynomial(
         cls,
-        U: GateWithRegisters,
+        U: 'Bloq',
         P: Union[NDArray[np.number], Sequence[complex], Shaped],
         *,
         negative_power: SymbolicInt = 0,
