@@ -13,6 +13,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
 
    _infra/Bloqs-Tutorial.ipynb
    Protocols.ipynb
+   DataTypes.ipynb
    simulation/classical_sim.ipynb
    simulation/tensor.ipynb
    resource_counting/call_graph.ipynb

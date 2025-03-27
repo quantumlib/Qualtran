@@ -19,7 +19,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Connection, ConnectionT, DanglingT, QAny, Signature
+from qualtran import Bloq, BloqBuilder, ConnectionT, QAny, Signature
 from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.simulation.tensor import cbloq_to_quimb
 
@@ -49,10 +49,11 @@ def test_cbloq_to_quimb():
 
     tn = cbloq_to_quimb(cbloq)
     assert len(tn.tensors) == 4
-    for outer_ind in tn.outer_inds():
-        cxn, j = outer_ind
-        assert isinstance(cxn, Connection)
-        assert isinstance(cxn.left.binst, DanglingT) or isinstance(cxn.right.binst, DanglingT)
+    assert sorted(tn.outer_inds()) == [
+        # reg_name, idx, j, side_str
+        ('x', (), 0, 'l'),
+        ('x', (), 0, 'r'),
+    ]
 
 
 def test_cbloq_to_quimb_with_no_ops_on_register():
