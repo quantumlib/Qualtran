@@ -20,7 +20,7 @@ Python package for fault-tolerant quantum algorithms research.
 
 </div>
 
-Qᴜᴀʟᴛʀᴀɴ (quantum algorithms translator) is a set of abstractions for representing quantum
+Qualtran (_quantum algorithms translator_) is a set of abstractions for representing quantum
 programs and a library of quantum algorithms expressed in that language to support quantum
 algorithms research.
 
@@ -138,4 +138,3 @@ Copyright 2025 Google LLC.
          src="./docs/_static/quantum-ai-vertical.svg">
   </a>
 </div>
-
