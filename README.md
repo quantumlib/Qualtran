@@ -1,8 +1,7 @@
 <!-- # Qualtran (title omitted because our logo acts as the title) -->
 
 <div align="center">
-<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-black.svg#gh-light-mode-only">
-<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-white.svg#gh-dark-mode-only">
+<img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-mode-sensitive.svg">
 <br>
 
 Python package for fault-tolerant quantum algorithms research.
