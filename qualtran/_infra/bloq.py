@@ -16,7 +16,18 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     import cirq
@@ -49,7 +60,7 @@ if TYPE_CHECKING:
         GeneralizerT,
         SympySymbolAllocator,
     )
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
@@ -173,23 +184,21 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValRetT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `call_clasically(**vals)` which will do input validation before
         calling this function.
 
         Args:
             **vals: The input classical values for each left (or thru) register. The data
-                types are guaranteed to match `self.registers`. Values for registers
-                with bitsize `n` will be integers of that bitsize. Values for registers with
-                `shape` will be an ndarray of integers of the given bitsize. Note: integers
-                can be either Numpy or Python integers. If they are Python integers, they
-                are unsigned.
+                types are guaranteed to match `self.signature`. Values for registers
+                with a particular dtype will be the corresponding classical data type. Values for
+                registers with `shape` will be an ndarray of values of the expected type.
 
         Returns:
             A dictionary mapping right (or thru) register name to output classical values.
@@ -205,6 +214,25 @@ class Bloq(metaclass=abc.ABCMeta):
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """How this bloq phases classical basis states.
+
+        Override this method if your bloq represents classical logic with basis-state
+        dependent phase factors. This corresponds to bloqs whose matrix representation
+        (in the standard basis) is a generalized permutation matrix: a permutation matrix
+        where each entry can be +1, -1 or any complex number with unit absolute value.
+        Alternatively, this corresponds to bloqs composed from classical operations
+        (X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+        Bloq authors should override this method. If you are using an instantiated bloq object,
+        call TODO and not this method directly.
+
+        If this method is implemented, `on_classical_vals` must also be implemented.
+        If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+        that the bloq does not alter the phase.
+        """
+        return None
 
     def call_classically(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
@@ -397,14 +425,9 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+        from qualtran import make_ctrl_system_with_correct_metabloq
 
-        if ctrl_spec != CtrlSpec():
-            # reduce controls to a single qubit
-            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
-
-        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+        return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
     def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
         """Return a controlled version of this bloq.

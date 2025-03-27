@@ -117,7 +117,7 @@ class CtrlSpecAnd(Bloq):
 
     @cached_property
     def _ctrl_partition_bloq(self) -> Partition:
-        return Partition(self.ctrl_spec.num_qubits, self.control_registers)
+        return Partition(self.n_ctrl_qubits, self.control_registers)
 
     @property
     def _flat_cvs(self) -> Union[tuple[int, ...], HasLength]:

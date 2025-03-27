@@ -22,15 +22,18 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    CDType,
     CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
+    QCDType,
     QDType,
     Register,
     Side,
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -43,30 +46,51 @@ if TYPE_CHECKING:
 
 @frozen
 class Cast(_BookkeepingBloq):
-    """Cast a register from one n-bit QDType to another QDType.
+    """Cast a register from one n-bit QCDType to another QCDType.
 
-    This re-interprets the register's data type from `inp_dtype` to `out_dtype`.
+    This simply re-interprets the register's data, and is a bookkeeping operation.
 
     Args:
-        inp_dtype: Input QDType to cast from.
-        out_dtype: Output QDType to cast to.
-        shape: shape of the register to cast.
+        inp_dtype: Input QCDType to cast from.
+        out_dtype: Output QCDType to cast to.
+        shape: Optional multidimensional shape of the register to cast.
+        allow_quantum_to_classical: Whether to allow (potentially dangerous) casting a quantum
+            value to a classical value and vice versa. If you cast a classical bit to a qubit
+            that was originally obtained by casting a qubit to a classical bit, the program
+            will model unphysical quantum coherences that can give you fundamentally incorrect
+            resource estimates. Use a measurement operation to convert a qubit to a classical
+            bit (and correctly model the decoherence that results).
 
     Registers:
-        in: input register to cast from.
-        out: input register to cast to.
+        reg: The quantum variable to cast
     """
 
-    inp_dtype: QDType
-    out_dtype: QDType
+    inp_dtype: QCDType
+    out_dtype: QCDType
     shape: Tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
+    allow_quantum_to_classical: bool = attrs.field(default=False, kw_only=True)
 
     def __attrs_post_init__(self):
-        if isinstance(self.inp_dtype.num_qubits, int):
-            if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
-                raise ValueError("Casting only permitted between same sized registers.")
+        q2q = isinstance(self.inp_dtype, QDType) and isinstance(self.out_dtype, QDType)
+        c2c = isinstance(self.inp_dtype, CDType) and isinstance(self.out_dtype, CDType)
+
+        if not self.allow_quantum_to_classical and not (q2q or c2c):
+            raise ValueError(
+                f"Casting {self.inp_dtype} to {self.out_dtype} is potentially dangerous. "
+                f"If you are sure, set `Cast(..., allow_quantum_to_classical=True)`."
+            )
+
+        if is_symbolic(self.inp_dtype.num_bits):
+            return
+
+        if self.inp_dtype.num_bits != self.out_dtype.num_bits:
+            raise ValueError(
+                f"Casting must preserve the number of bits in the data. "
+                f"Cannot cast {self.inp_dtype} to {self.out_dtype}: "
+                f"{self.inp_dtype.num_bits} != {self.out_dtype.num_bits}."
+            )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f'{self} is atomic')
@@ -92,7 +116,7 @@ class Cast(_BookkeepingBloq):
             qtn.Tensor(
                 data=np.eye(2), inds=[(outgoing['reg'], j), (incoming['reg'], j)], tags=[str(self)]
             )
-            for j in range(self.inp_dtype.num_qubits)
+            for j in range(self.out_dtype.num_bits)
         ]
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:

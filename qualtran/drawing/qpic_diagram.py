@@ -39,7 +39,7 @@ from qualtran.drawing.musical_score import (
 )
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, Connection, QDType, Signature
+    from qualtran import Bloq, Connection, QCDType, Signature
 
 
 def _wire_name_prefix_for_soq(soq: Soquet) -> str:
@@ -200,7 +200,7 @@ class QpicCircuit:
         self.soq_map.pop(soq)
 
     @classmethod
-    def _dtype_label_for_wire(cls, wire_name: str, dtype: 'QDType') -> List[str]:
+    def _dtype_label_for_wire(cls, wire_name: str, dtype: 'QCDType') -> List[str]:
         if dtype != QBit():
             dtype_str = _format_label_text(str(dtype), scale=0.5)
             return [f'{wire_name} / {dtype_str}']
