@@ -1,4 +1,4 @@
-<!-- H1 title omitted because our logo acts as the title. -->
+<!-- # Qualtran (title omitted because our logo acts as the title) -->
 
 <div align="center">
 <img alt="Qualtran logo" width="340px" src="docs/_static/qualtran-logo-black.svg#gh-light-mode-only">
