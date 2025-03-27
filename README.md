@@ -56,8 +56,6 @@ pip install git+https://github.com/quantumlib/Qualtran
 > Some algorithms or library functionality may be incomplete or contain inaccuracies. Open issues or
 > contact the authors with bug reports or feedback.
 
-### Python interpreter and programs
-
 You should be able to import the `qualtran` package into your interactive Python environment as
 as well as your programs:
 
@@ -68,16 +66,6 @@ import qualtran
 If this is successful, you can move on to learning how to
 [write bloqs](https://qualtran.readthedocs.io/en/latest/_infra/Bloqs-Tutorial.html) or investigate
 the [bloqs library](https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library).
-
-### Physical Resource Estimation GUI
-
-Qualtran provides a GUI for estimating the physical resources (qubits, magic states, runtime, etc.)
-needed to run a quantum algorithm. The GUI can be run locally by running:
-
-```shell
-cd $QUALTRAN_HOME
-python -m qualtran.surface_code.ui
-```
 
 ## Documentation
 
