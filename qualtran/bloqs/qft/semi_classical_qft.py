@@ -40,18 +40,18 @@ class SemiClassicalQFT(Bloq):
 
     Args:
         bitsize: Size of the input register to apply QFT on.
-        adjoint: Whether to apply QFT or QFT†.
+        is_adjoint: Whether to apply QFT or QFT†.
 
     References:
         [Semiclassical Fourier Transform for Quantum Computation, Griffiths & Niu](https://arxiv.org/abs/quant-ph/9511007)
-        
+
         [Implementation of the Semiclassical Quantum Fourier Transform in a Scalable System](https://www.science.org/doi/10.1126/science.1110335)
 
         [stackexchange answer, Gidney](https://quantumcomputing.stackexchange.com/a/23712)
     """
 
     bitsize: 'SymbolicInt'
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':

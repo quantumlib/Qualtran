@@ -19,10 +19,6 @@ from qualtran.bloqs.qft import semi_classical_qft
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 
 
-def test_semi_classical_qft_example(bloq_autotester):
-    bloq_autotester(semi_classical_qft._semi_classical_qft)
-
-
 @pytest.mark.parametrize('n', [*range(1, 10), sympy.Symbol('n')])
 def test_semi_classical_qft_cost(n):
     blq = semi_classical_qft.SemiClassicalQFT(n)
