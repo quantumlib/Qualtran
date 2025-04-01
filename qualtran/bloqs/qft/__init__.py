@@ -14,4 +14,5 @@
 from .approximate_qft import ApproximateQFT
 from .qft_phase_gradient import QFTPhaseGradient
 from .qft_text_book import QFTTextBook
+from .semi_classical_qft import SemiClassicalQFT
 from .two_bit_ffft import TwoBitFFFT

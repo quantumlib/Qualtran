@@ -122,6 +122,7 @@ Bloqs Library
     qft/approximate_qft.ipynb
     qft/qft_text_book.ipynb
     qft/qft_phase_gradient.ipynb
+    qft/semi_classical_qft.ipynb
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     phase_estimation/kaiser_window_state.ipynb
