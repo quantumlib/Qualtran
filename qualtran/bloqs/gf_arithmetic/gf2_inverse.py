@@ -79,10 +79,11 @@ class GF2Inverse(Bloq):
             results from intermediate multiplications.
 
     References:
-        [Efficient quantum circuits for binary elliptic curve arithmetic: reducing T -gate complexity](https://arxiv.org/abs/1209.6348).
-        Section 2.3
+        [Efficient quantum circuits for binary elliptic curve arithmetic: reducing T-gate complexity](https://arxiv.org/abs/1209.6348).
+        Amento et al. 2012. Section 2.3
 
-        [Structure of parallel multipliers for a class of fields GF(2^m)](https://doi.org/10.1016/0890-5401(89)90045-X)
+        [Structure of parallel multipliers for a class of fields GF(2^m)](https://doi.org/10.1016/0890-5401(89)90045-X).
+        Itoh and Tsujii. 1989.
     """
 
     bitsize: SymbolicInt
