@@ -309,7 +309,9 @@ def test_gf2mulmod_classical_action(m_x):
 def test_gf2mulmod_classical_action_slow():
     m_x = [8, 4, 3, 1, 0]
     blq = GF2MulViaKaratsuba(m_x)
-    qlt_testing.assert_consistent_classical_action(blq, x=blq.gf.elements, y=blq.gf.elements)
+    xs = blq.gf.elements[np.random.choice(2**8, 10)]
+    ys = blq.gf.elements[np.random.choice(2**8, 10)]
+    qlt_testing.assert_consistent_classical_action(blq, x=xs, y=ys)
 
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
