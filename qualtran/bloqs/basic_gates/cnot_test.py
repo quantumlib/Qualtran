@@ -42,6 +42,8 @@ def test_cnot_tensor():
 
 def test_cnot_vs_pl():
     bloq = CNOT()
+    if not hasattr(qml, 'FromBloq'):
+        pytest.xfail("requires pennylane>=0.41")
     matrix = qml.FromBloq(bloq, wires=[0, 1]).matrix()
     # fmt: off
     should_be = np.array([
