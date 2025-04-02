@@ -486,11 +486,11 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         try:
             from pennylane.io import FromBloq
-        except ImportError:
+        except ImportError as e:
             raise NotImplementedError(
                 f"{self} does not have a native PennyLane operation. "
                 f"pennylane>=0.41 will wrap this bloq in the `pennylane.io.FromBloq` adapter."
-            )
+            ) from e
 
         return FromBloq(bloq=self, wires=wires)
 
