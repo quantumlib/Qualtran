@@ -37,6 +37,9 @@ def test_bloq():
 def test_as_pl_op():
     import pennylane as qml
 
+    if not hasattr(qml, 'FromBloq'):
+        pytest.xfail("Requires pennylane>=0.41")
+
     tb = TestTwoBitOp()
 
     assert tb.as_pl_op(wires=[0, 1]) == qml.FromBloq(TestTwoBitOp(), wires=[0, 1])

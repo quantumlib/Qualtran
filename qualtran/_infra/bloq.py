@@ -484,7 +484,13 @@ class Bloq(metaclass=abc.ABCMeta):
                 instance truly should not be included in the PennyLane circuit (e.g. for reshaping
                 bloqs). A bloq with no PennyLane equivalent should raise an exception instead.
         """
-        from pennylane.io import FromBloq
+        try:
+            from pennylane.io import FromBloq
+        except ImportError as e:
+            raise NotImplementedError(
+                f"{self} does not have a native PennyLane operation. "
+                f"pennylane>=0.41 will wrap this bloq in the `pennylane.io.FromBloq` adapter."
+            ) from e
 
         return FromBloq(bloq=self, wires=wires)
 
