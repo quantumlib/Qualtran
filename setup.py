@@ -51,6 +51,7 @@ def main() -> None:
         author_email="mpharrigan@google.com",
         description="Software for fault-tolerant quantum algorithms research.",
         long_description=long_description,
+        long_description_content_type='text/markdown',
         install_requires=requirements,
         license="Apache 2",
         packages=find_packages(),
