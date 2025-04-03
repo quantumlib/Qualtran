@@ -236,6 +236,9 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
+    def __attrs_post_init__(self):
+        if self.ancillasize >= self.bitsize - 1:
+            raise ValueError('ancillasize should be less than bitsize - 1.')
 
     '''
     General strategy: find the max-bitsize number (n bits) we can compute the HW of using our available ancilla,
