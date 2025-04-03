@@ -21,6 +21,7 @@ represents a qubit or register of qubits.
 import abc
 import heapq
 import json
+from enum import Enum
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import attrs
@@ -33,9 +34,12 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     BloqInstance,
+    CDType,
     Connection,
     DanglingT,
     LeftDangle,
+    QCDType,
+    QDType,
     Register,
     RightDangle,
     Side,
@@ -67,6 +71,21 @@ class RegPosition:
         return attrs.asdict(self)
 
 
+class HLineFlavor(Enum):
+    QUANTUM = 1
+    CLASSICAL = 2
+
+    @classmethod
+    def from_qcdtype(cls, qcdtype: QCDType) -> 'HLineFlavor':
+        if isinstance(qcdtype, QDType):
+            return cls.QUANTUM
+        if isinstance(qcdtype, CDType):
+            return cls.CLASSICAL
+
+        # Fallback
+        return cls.QUANTUM
+
+
 @frozen(order=True)
 class HLine:
     """Dataclass representing a horizontal line segment at a given vertical position `x`.
@@ -74,14 +93,19 @@ class HLine:
     It runs from (sequential) x positions `seq_x_start` to `seq_x_end`, inclusive. If `seq_x_end`
     is `None`, that indicates we've started a line (by allocating a new qubit perhaps) but
     we don't know where it ends yet.
+
+    The horizontal line can be of a particular `flavor`, e.g. a quantum wire or a classical wire.
     """
 
     y: int
     seq_x_start: int
     seq_x_end: Optional[int] = None
+    flavor: HLineFlavor = HLineFlavor.QUANTUM
 
-    def json_dict(self):
-        return attrs.asdict(self)
+    def json_dict(self) -> Dict[str, Any]:
+        d = attrs.asdict(self)
+        d['flavor'] = str(d['flavor'])
+        return d
 
 
 class LineManager:
@@ -145,16 +169,17 @@ class LineManager:
         `seq_x` and `topo_gen` are passed through.
         """
         self.unreserve(binst, reg)
+        flavor = HLineFlavor.from_qcdtype(reg.dtype)
         if not reg.shape:
             y = self.new_y(binst, reg)
-            self.hlines.add(HLine(y=y, seq_x_start=seq_x))
+            self.hlines.add(HLine(y=y, seq_x_start=seq_x, flavor=flavor))
             self.maybe_reserve(binst, reg, idx=tuple())
             return RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
 
         arg = np.zeros(reg.shape, dtype=object)
         for idx in reg.all_idxs():
             y = self.new_y(binst, reg, idx)
-            self.hlines.add(HLine(y=y, seq_x_start=seq_x))
+            self.hlines.add(HLine(y=y, seq_x_start=seq_x, flavor=flavor))
             arg[idx] = RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
             self.maybe_reserve(binst, reg, idx)
         return arg
@@ -693,7 +718,8 @@ def draw_musical_score(
 
     for hline in msd.hlines:
         assert hline.seq_x_end is not None, hline
-        ax.hlines(-hline.y, hline.seq_x_start, hline.seq_x_end, color='k', zorder=-1)
+        color = 'b' if hline.flavor is HLineFlavor.CLASSICAL else 'k'
+        ax.hlines(-hline.y, hline.seq_x_start, hline.seq_x_end, color=color, zorder=-1)
 
     for vline in msd.vlines:
         ax.vlines(vline.x, -vline.top_y, -vline.bottom_y, color='k', zorder=-1)

@@ -13,12 +13,21 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Sequence, TYPE_CHECKING
+from typing import Iterable, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Controlled, CtrlSpec
+from qualtran import (
+    _ControlledBase,
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    CtrlSpec,
+    QCDType,
+    QDType,
+)
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
@@ -28,7 +37,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class ControlledViaAnd(Controlled):
+class ControlledViaAnd(_ControlledBase):
     """Reduces a generic controlled bloq to a singly-controlled bloq using an And ladder.
 
     Implements a generic controlled version of the subbloq, by first reducing the
@@ -45,12 +54,35 @@ class ControlledViaAnd(Controlled):
     subbloq: Bloq
     ctrl_spec: CtrlSpec
 
+    def __attrs_post_init__(self):
+        for qdtype in self.ctrl_spec.qdtypes:
+            if not isinstance(qdtype, QCDType):
+                raise ValueError(f"Invalid type found in `ctrl_spec`: {qdtype}")
+            if not isinstance(qdtype, QDType):
+                raise ValueError(
+                    f"`qualtran.Controlled` requires a purely-quantum control spec for accurate resource estimation. Found {qdtype}. Consider using TODO"
+                )
+
+    @classmethod
+    def make_ctrl_system(
+        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
+    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+        """A factory method for creating both the Controlled and the adder function.
+
+        See `Bloq.get_ctrl_system`.
+        """
+        cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
+        return cls._make_ctrl_system(cb)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return Bloq.decompose_bloq(self)
+
     def _is_single_bit_control(self) -> bool:
         return self.ctrl_spec.num_qubits == 1
 
     @cached_property
     def _single_control_value(self) -> int:
-        return self.ctrl_spec.get_single_ctrl_bit()
+        return self.ctrl_spec.get_single_ctrl_val()
 
     def adjoint(self) -> 'ControlledViaAnd':
         return ControlledViaAnd(self.subbloq.adjoint(), self.ctrl_spec)
