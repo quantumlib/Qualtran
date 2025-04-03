@@ -15,6 +15,7 @@
 import itertools
 from typing import Dict
 
+import networkx as nx
 import numpy as np
 import pytest
 from attrs import frozen
@@ -24,6 +25,7 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     BQUInt,
+    LeftDangle,
     QAny,
     QBit,
     QDType,
@@ -35,22 +37,21 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
-    _update_assign_from_vals,
     add_ints,
     call_cbloq_classically,
-    ClassicalValT,
+    ClassicalSimState,
+    do_phased_classical_simulation,
 )
 from qualtran.testing import execute_notebook
 
 
 def test_dtype_validation():
     # set up mocks for `_update_assign_from_vals`
-    soq_assign: Dict[Soquet, ClassicalValT] = {}  # gets assigned to; we discard in this test.
     binst = 'MyBinst'  # binst is only used for error messages, so we can mock with a string
+    sim = ClassicalSimState(Signature([]), nx.DiGraph(), {})
 
     # set up different register dtypes
     regs = [
@@ -67,21 +68,21 @@ def test_dtype_validation():
         'bit_arr': np.array([1, 0, 1, 0, 1], dtype=np.uint8),
         'int_arr': np.arange(5),
     }
-    _update_assign_from_vals(regs, binst, vals, soq_assign)  # type: ignore[arg-type]
+    sim._update_assign_from_vals(regs, binst, vals)  # type: ignore[arg-type]
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
     with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
-        _update_assign_from_vals(regs, binst, vals2, soq_assign)  # type: ignore[arg-type]
+        sim._update_assign_from_vals(regs, binst, vals2)  # type: ignore[arg-type]
 
     # int is a numpy int
     vals3 = {**vals, 'int': np.arange(5, dtype=np.uint8)[4]}
-    _update_assign_from_vals(regs, binst, vals3, soq_assign)  # type: ignore[arg-type]
+    sim._update_assign_from_vals(regs, binst, vals3)  # type: ignore[arg-type]
 
     # wrong shape
     vals4 = {**vals, 'int_arr': np.arange(6)}
     with pytest.raises(ValueError, match=r'Incorrect shape.*Want \(5,\)\.'):
-        _update_assign_from_vals(regs, binst, vals4, soq_assign)  # type: ignore[arg-type]
+        sim._update_assign_from_vals(regs, binst, vals4)  # type: ignore[arg-type]
 
 
 @frozen
@@ -96,6 +97,11 @@ class ApplyClassicalTest(Bloq):
         const = np.array([1, 0, 1, 0, 1], dtype=np.uint8)
         z = np.logical_xor(x, const).astype(np.uint8)
         return {'x': x, 'z': z}
+
+
+class ApplyPhasedClassicalTest(ApplyClassicalTest):
+    def basis_state_phase(self, x: NDArray[np.uint8]) -> complex:
+        return np.prod(np.exp(x * 1.0j / np.pi))
 
 
 def test_apply_classical():
@@ -115,6 +121,29 @@ def test_apply_classical():
     assert z2.dtype == np.uint8
     np.testing.assert_array_equal(x2, np.ones(5))
     np.testing.assert_array_equal(z2, [0, 1, 0, 1, 0])
+
+
+def test_apply_phased_classical():
+    bloq = ApplyPhasedClassicalTest()
+    final_vals, phase = do_phased_classical_simulation(bloq, dict(x=np.ones(5, dtype=np.uint8)))
+    np.testing.assert_array_equal(final_vals['x'], np.ones(5))
+    np.testing.assert_array_equal(final_vals['z'], [0, 1, 0, 1, 0])
+    assert np.abs(phase - np.exp(5.0j / np.pi)) < 1e-8
+
+
+def test_phased_classical_on_normal_classical():
+    final_vals, phase = do_phased_classical_simulation(
+        ApplyClassicalTest(), dict(x=np.ones(5, dtype=np.uint8))
+    )
+    np.testing.assert_array_equal(final_vals['x'], np.ones(5))
+    np.testing.assert_array_equal(final_vals['z'], [0, 1, 0, 1, 0])
+    assert phase == 1.0
+
+
+def test_normal_classical_on_phased():
+    bloq = ApplyPhasedClassicalTest()
+    with pytest.raises(ValueError, match=r'.*`do_phased_classical_simulation`.*'):
+        x, z = bloq.call_classically(x=np.zeros(5, dtype=np.uint8))
 
 
 def test_cnot_assign_dict():
@@ -142,6 +171,28 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(x, xarr)
     np.testing.assert_array_equal(y, [1, 0, 1, 0, 1])
     np.testing.assert_array_equal(z, xarr)
+
+
+def test_step():
+    bb = BloqBuilder()
+    x = bb.add_register(Register('x', QBit(), shape=(5,)))
+    assert x is not None
+    x, y = bb.add(ApplyClassicalTest(), x=x)
+    y, z = bb.add(ApplyClassicalTest(), x=y)
+    cbloq = bb.finalize(x=x, y=y, z=z)
+
+    xarr = np.zeros(5, dtype=np.intc)
+    sim = ClassicalSimState.from_cbloq(cbloq, dict(x=xarr))
+    sim.step()
+    assert sim.last_binst is not None and sim.last_binst is LeftDangle
+    sim.step()
+    assert sim.last_binst is not None and sim.last_binst.bloq_is(ApplyClassicalTest)
+    assert sim.last_binst is not None and sim.last_binst.i == 0
+
+    final_vals = sim.step().finalize()
+    np.testing.assert_array_equal(final_vals['x'], xarr)
+    np.testing.assert_array_equal(final_vals['y'], [1, 0, 1, 0, 1])
+    np.testing.assert_array_equal(final_vals['z'], xarr)
 
 
 @pytest.mark.parametrize('n_bits', range(1, 5))
