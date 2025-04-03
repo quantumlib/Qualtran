@@ -122,3 +122,8 @@ def test_symbolic_t_cost():
     tau, t, inv_eps = sympy.symbols(r"\tau t \epsilon^{-1}", positive=True)
     O_t_cost = sympy.O(t_cost, (tau, sympy.oo), (t, sympy.oo), (inv_eps, sympy.oo))
     assert O_t_cost == big_O(tau * t + sympy.log(2 * inv_eps) / sympy.log(sympy.log(2 * inv_eps)))
+
+
+def test_ctrl_ham_sim_cost():
+    bloq = _hubbard_time_evolution_by_gqsp().controlled()
+    _ = get_cost_value(bloq, QECGatesCost())
