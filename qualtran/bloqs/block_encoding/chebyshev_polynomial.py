@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+from collections import Counter
 from functools import cached_property
 from typing import Dict, Tuple, TYPE_CHECKING, Union
 
@@ -19,6 +19,7 @@ import attrs
 import numpy as np
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -36,11 +37,7 @@ from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import (
-        BloqCountDictT,
-        MutableBloqCountDictT,
-        SympySymbolAllocator,
-    )
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -144,12 +141,11 @@ class ChebyshevPolynomial(BlockEncoding):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         n = self.order
-        s: 'MutableBloqCountDictT' = {
-            self.block_encoding: n // 2 + n % 2,
-            self.block_encoding.adjoint(): n // 2,
-        }
+        s = Counter[Bloq]()
+        s[self.block_encoding] += n // 2 + n % 2
+        s[self.block_encoding.adjoint()] += n // 2
         if is_symbolic(self.ancilla_bitsize) or self.ancilla_bitsize > 0:
-            s[self.reflection_bloq] = n - n % 2
+            s[self.reflection_bloq] += n - n % 2
         return s
 
 

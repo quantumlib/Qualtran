@@ -177,10 +177,7 @@ class BloqAsCirqGate(cirq.Gate):
 
         bloq = self.bloq if power > 0 else self.bloq.adjoint()
 
-        try:
-            return BloqAsCirqGate(Power(bloq, abs(power)))
-        except ValueError as e:
-            raise ValueError(f"Bad power {power}") from e
+        return Power(bloq, abs(power))
 
     def __eq__(self, other):
         if not isinstance(other, BloqAsCirqGate):
@@ -255,7 +252,7 @@ def _cbloq_to_cirq_circuit(
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
     cirq_quregs: Dict[str, 'CirqQuregInT'] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in cirq_quregs.items()
     }
     qvar_to_qreg: Dict[Soquet, _QReg] = {

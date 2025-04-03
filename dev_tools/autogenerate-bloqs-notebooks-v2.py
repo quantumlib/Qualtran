@@ -63,9 +63,15 @@ CONCEPTS = [
     'chemistry/trotter/hubbard/qpe_cost_optimization.ipynb',
     'chemistry/resource_estimation.ipynb',
     'chemistry/writing_algorithms.ipynb',
-    'factoring/factoring-via-modexp.ipynb',
+    'cryptography/rsa/factoring-via-modexp.ipynb',
     'state_preparation/state_preparation_via_rotation_tutorial.ipynb',
 ]
+
+
+# --------------------------------------------------------------------------
+# -----   Root Bloqs   -----------------------------------------------------
+# --------------------------------------------------------------------------
+ROOT_BLOQS = ['cryptography/ecc/ecc.ipynb']
 
 
 def _all_nbspecs() -> Iterable[NotebookSpecV2]:
@@ -102,6 +108,7 @@ def write_toc():
     ]
 
     toc_lines = header + _get_toc_section_lines('Concepts', CONCEPTS, maxdepth=1)
+    toc_lines += _get_toc_section_lines('Root Bloqs', ROOT_BLOQS, maxdepth=1)
     bloqs_dir = SOURCE_DIR / 'bloqs'
     for section, nbspecs in NB_BY_SECTION:
         entries = [str(nbspec.path.relative_to(bloqs_dir)) for nbspec in nbspecs]

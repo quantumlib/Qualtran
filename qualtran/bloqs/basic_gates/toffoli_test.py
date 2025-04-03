@@ -16,10 +16,12 @@ import itertools
 import cirq
 import numpy as np
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, CtrlSpec
 from qualtran.bloqs.basic_gates import Toffoli, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
+from qualtran.bloqs.mcmt import And
 from qualtran.drawing.musical_score import Circle, ModPlus
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.testing import assert_wire_symbols_match_expected
 
 
@@ -54,6 +56,19 @@ _c(2): ───X───X───""",
     )
 
 
+def test_pl_interop():
+    import pennylane as qml
+
+    bloq = Toffoli()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0, 1, 2])
+    pl_op = qml.Toffoli(wires=[0, 1, 2])
+    assert pl_op_from_bloq == pl_op
+
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
+
 def test_classical_sim():
     tof = Toffoli()
 
@@ -85,3 +100,18 @@ def test_toffoli_tensors():
     unitary = tof.tensor_contract()
     cirq_unitary = cirq.unitary(cirq.TOFFOLI)
     np.testing.assert_allclose(cirq_unitary, unitary)
+
+
+def test_ctrl_toffoli_cost():
+    ctrl_tof = Toffoli().controlled()
+
+    _, sigma = ctrl_tof.call_graph()
+    assert sigma == {Toffoli(): 1, And(): 1, And().adjoint(): 1}
+
+    gc = get_cost_value(ctrl_tof, QECGatesCost())
+    assert gc == GateCounts(and_bloq=1, toffoli=1, clifford=1, measurement=1)
+
+    cc_tof = Toffoli().controlled(CtrlSpec(cvs=[1, 1]))
+
+    _, sigma = cc_tof.call_graph()
+    assert sigma == {Toffoli(): 1, And(): 2, And().adjoint(): 2}

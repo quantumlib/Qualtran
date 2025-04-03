@@ -30,8 +30,7 @@ def test_format_counts_sigma():
         ret
         == """\
 #### Counts totals:
- - `ArbitraryClifford(n=2)`: 45
- - `T`: 20"""
+ - `And`: 5"""
     )
 
 
@@ -43,9 +42,6 @@ def test_format_counts_graph_markdown():
         == """\
  - `MultiAnd(n=6)`
    - `And`: $\\displaystyle 5$
- - `And`
-   - `ArbitraryClifford(n=2)`: $\\displaystyle 9$
-   - `T`: $\\displaystyle 4$
 """
     )
 

@@ -15,5 +15,12 @@
 from qualtran.bloqs.gf_arithmetic.gf2_add_k import GF2AddK
 from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
-from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
+    BinaryPolynomialMultiplication,
+    GF2MulK,
+    GF2Multiplication,
+    GF2MulViaKaratsuba,
+    GF2ShiftRight,
+    MultiplyPolyByOnePlusXk,
+)
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square

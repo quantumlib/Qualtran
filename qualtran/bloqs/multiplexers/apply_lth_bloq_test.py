@@ -17,7 +17,7 @@ from typing import cast
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder, BQUInt, Controlled, CtrlSpec, QBit, Register, Signature, Soquet
+from qualtran import BloqBuilder, BQUInt, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CNOT,
@@ -34,7 +34,7 @@ from qualtran.bloqs.basic_gates import (
     ZeroState,
     ZGate,
 )
-from qualtran.bloqs.bookkeeping.arbitrary_clifford import ArbitraryClifford
+from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.multiplexers.apply_lth_bloq import _apply_lth_bloq, ApplyLthBloq
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.testing import assert_valid_bloq_decomposition
@@ -64,11 +64,11 @@ def test_call_graph():
     _, sigma = _apply_lth_bloq().call_graph(generalizer=ignore_split_join)
     assert sigma == {
         CHadamard(): 1,
-        Controlled(TGate(), CtrlSpec()): 1,
+        TGate().controlled(): 1,
         CZ(): 1,
         CNOT(): 4,
-        TGate(): 12,
-        ArbitraryClifford(2): 45,
+        And(1, 0): 3,
+        And().adjoint(): 3,
     }
 
 

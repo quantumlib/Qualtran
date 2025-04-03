@@ -21,6 +21,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     DecomposeTypeError,
     QBit,
     QFxp,
@@ -142,13 +143,23 @@ def _zpow_const_via_phase_grad() -> ZPowConstViaPhaseGradient:
 
 @bloq_example(generalizer=ignore_alloc_free)
 def _zpow_const_via_phase_grad_symb_prec() -> ZPowConstViaPhaseGradient:
-    eps = sympy.symbols(r"\epsilon")
+    eps = sympy.symbols("eps")
     zpow_const_via_phase_grad_symb_prec = ZPowConstViaPhaseGradient.from_precision(3 / 8, eps=eps)
     return zpow_const_via_phase_grad_symb_prec
 
 
 @bloq_example(generalizer=ignore_alloc_free)
 def _zpow_const_via_phase_grad_symb_angle() -> ZPowConstViaPhaseGradient:
-    t = sympy.symbols(r"t")
+    t = sympy.symbols("t")
     zpow_const_via_phase_grad_symb_angle = ZPowConstViaPhaseGradient.from_precision(t, eps=1e-11)
     return zpow_const_via_phase_grad_symb_angle
+
+
+_ZPOW_CONST_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
+    bloq_cls=ZPowConstViaPhaseGradient,
+    examples=[
+        _zpow_const_via_phase_grad,
+        _zpow_const_via_phase_grad_symb_prec,
+        _zpow_const_via_phase_grad_symb_angle,
+    ],
+)
