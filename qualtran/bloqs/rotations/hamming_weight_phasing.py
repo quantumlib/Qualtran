@@ -14,11 +14,12 @@
 
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from collections import Counter
 
 import attrs
 import numpy as np
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Register, Signature, Bloq
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
@@ -277,7 +278,7 @@ class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
         counts[HammingWeightPhasing(self.ancillasize+1, self.exponent, self.eps)] += num_iters
         
         if remainder > 1:
-            counts[HammingWeightPhasing(remainder, self.exponent, self.eps)]: += 1
+            counts[HammingWeightPhasing(remainder, self.exponent, self.eps)] += 1
         elif remainder:
             counts[ZPowGate(exponent=self.exponent, eps=self.eps)] += 1
 
