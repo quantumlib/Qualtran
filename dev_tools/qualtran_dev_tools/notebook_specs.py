@@ -139,6 +139,19 @@ GIT_ROOT = get_git_root()
 SOURCE_DIR = GIT_ROOT / 'qualtran/'
 
 # --------------------------------------------------------------------------
+# -----   Root Bloqs   -----------------------------------------------------
+# --------------------------------------------------------------------------
+
+ROOT_BLOQS: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Elliptic Curves',
+        module=qualtran.bloqs.cryptography.ecc,
+        path_stem='ecc_root',
+        bloq_specs=[qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC],
+    )
+]
+
+# --------------------------------------------------------------------------
 # -----   Basic Gates   ----------------------------------------------------
 # --------------------------------------------------------------------------
 BASIC_GATES: List[NotebookSpecV2] = [
@@ -557,6 +570,7 @@ MOD_ARITHMETIC = [
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
         module=qualtran.bloqs.cryptography.ecc,
+        path_stem='ecc_arithmetic',
         bloq_specs=[
             qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
             qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
@@ -930,6 +944,7 @@ OTHER: List[NotebookSpecV2] = [
 ]
 
 NB_BY_SECTION = [
+    ('Root Bloqs', ROOT_BLOQS),
     ('Basic Gates', BASIC_GATES),
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
