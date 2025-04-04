@@ -88,7 +88,9 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     ctrl = [bb.add(OneState()) for _ in range(2)]
     target = bb.add(ZeroState())
     q = [*ctrl, target]
-    c0, c1, target = bb.add(CirqGateAsBloq(and_gate), q=q)
+    with pytest.warns(UserWarning):
+        # It's odd to use CirqGateAsBloq to wrap a GateWithRegisters, which is already a bloq.
+        c0, c1, target = bb.add(CirqGateAsBloq(and_gate), q=q)
     cbloq = bb.finalize(ctrl=np.array([c0, c1]), target=target)
     state_vector = cbloq.tensor_contract()
     assert np.isclose(state_vector[7], 1)

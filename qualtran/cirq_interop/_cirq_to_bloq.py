@@ -16,6 +16,7 @@
 import abc
 import itertools
 import numbers
+import warnings
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
@@ -32,6 +33,7 @@ from qualtran import (
     CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
+    GateWithRegisters,
     QAny,
     QBit,
     QDType,
@@ -150,6 +152,14 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     from `CirqGateAsBloqBase`."""
 
     gate: cirq.Gate
+
+    def __attrs_post_init__(self):
+        if isinstance(self.gate, GateWithRegisters):
+            warnings.warn(
+                f"Tried to use `CirqGateAsBloq` to adapt a `qualtran.GateWithRegisters`, "
+                f"which already satisfies the Bloq API. Consider using {self.gate} "
+                f"directly (without the adapter)."
+            )
 
     @property
     def cirq_gate(self) -> cirq.Gate:
