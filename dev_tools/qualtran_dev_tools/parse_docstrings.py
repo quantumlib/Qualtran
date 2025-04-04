@@ -49,7 +49,7 @@ def parse_reference(ref_text: str) -> ReferenceT:
     # To match the title and accept as many printable ascii characters as possible
     # besides square brackets, I have modified the range approach from
     # https://stackoverflow.com/a/31740504.
-    link_match = re.match(r'^\[([ -Z^-~]+)]\((https?://[\w\d./?=#\-]+)\)\.?\s?(.*)$', ref_text)
+    link_match = re.match(r'^\[([ -Z^-~]+)]\((https?://[\w\d./?=#\-\(\)]+)\)\.?\s?(.*)$', ref_text)
     if link_match:
         title = link_match.group(1)
         url = link_match.group(2)
