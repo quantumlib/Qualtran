@@ -514,7 +514,7 @@ class CRz(Bloq):
         [Elementary gates for quantum computation](https://arxiv.org/abs/quant-ph/9503016).
         Barenco et al. 1995. Special case of Lemma 5.4.
 
-        [Is Controlled(𝑅𝑧(𝜃)) more expensive than Controlled(𝑍𝑡) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
+        [Is Controlled(Rz(theta)) more expensive than Controlled(Z^t) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
         Adam Zalcman. 2024.
     """
 

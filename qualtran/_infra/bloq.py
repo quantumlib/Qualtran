@@ -573,3 +573,14 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+    @classmethod
+    def _class_name_in_pkg_(cls) -> str:
+        """The bloq class's name with its package.
+
+        The Qualtran standard library contains a heirarchy of packages under
+        `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
+        "*.py" file) and re-exported one level up.
+        """
+        pkg = '.'.join(cls.__module__.split('.')[:-1])
+        return f'{pkg}.{cls.__name__}'
