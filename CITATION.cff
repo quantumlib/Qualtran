@@ -72,8 +72,8 @@ abstract: >-
   Qualtran (quantum algorithms translator) is a set of abstractions for
   representing quantum programs, and a library of quantum algorithms expressed
   in that language to support quantum algorithms research.
-version: 0.5.0
-date-released: 2024-09-10
+version: 0.6.0
+date-released: 2025-04-01
 url: https://github.com/quantumlib/Qualtran
 repository-code: https://github.com/quantumlib/Qualtran
 license: Apache-2.0
