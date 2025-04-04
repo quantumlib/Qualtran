@@ -413,6 +413,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qft.approximate_qft.ApproximateQFT": qualtran.bloqs.qft.approximate_qft.ApproximateQFT,
     "qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient": qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient,
     "qualtran.bloqs.qft.qft_text_book.QFTTextBook": qualtran.bloqs.qft.qft_text_book.QFTTextBook,
+    "qualtran.bloqs.qft.semi_classical_qft.SemiClassicalQFT": qualtran.bloqs.qft.semi_classical_qft.SemiClassicalQFT,
     "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT": qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT,
     "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
     "qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization.qubitization_walk_operator.QubitizationWalkOperator,
