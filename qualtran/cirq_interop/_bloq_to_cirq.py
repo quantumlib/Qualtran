@@ -14,13 +14,11 @@
 
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
-from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import cirq
 import networkx as nx
 import numpy as np
-from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -40,7 +38,6 @@ from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     merge_qubits,
     split_qubits,
-    total_bits,
 )
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
@@ -58,7 +55,9 @@ def _cirq_style_decompose_from_decompose_bloq(
     # Input qubits can get de-allocated by cbloq.to_cirq_circuit_and_quregs, thus mark them as managed.
     qm = InteropQubitManager(context.qubit_manager)
     qm.manage_qubits(merge_qubits(bloq.signature.lefts(), **in_quregs))
-    circuit, out_quregs = cbloq.to_cirq_circuit_and_quregs(qubit_manager=qm, **in_quregs)
+    circuit, out_quregs = _cbloq_to_cirq_circuit(
+        cbloq.signature, in_quregs, cbloq._binst_graph, qubit_manager=qm
+    )
     qubit_map = {q: q for q in circuit.all_qubits()}
     for reg in bloq.signature.rights():
         if reg.side == Side.RIGHT:
@@ -93,11 +92,6 @@ class BloqAsCirqGate(cirq.Gate):
         """The bloq we're wrapping."""
         return self._bloq
 
-    @cached_property
-    def signature(self) -> Signature:
-        """`GateWithRegisters` registers."""
-        return self.bloq.signature
-
     @classmethod
     def bloq_on(
         cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager  # type: ignore[type-var]
@@ -120,15 +114,16 @@ class BloqAsCirqGate(cirq.Gate):
         all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
             bloq.signature, qubit_manager, in_quregs=cirq_quregs
         )
-        return BloqAsCirqGate(bloq=bloq).on_registers(**all_quregs), out_quregs
+        cirq_op = BloqAsCirqGate(bloq=bloq).on(*merge_qubits(bloq.signature, **all_quregs))
+        return cirq_op, out_quregs
 
     def _num_qubits_(self) -> int:
-        return total_bits(self.signature)
+        return self.bloq.signature.n_qubits()
 
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        quregs = split_qubits(self.signature, qubits)
+        quregs = split_qubits(self.bloq.signature, qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
         try:
@@ -142,22 +137,23 @@ class BloqAsCirqGate(cirq.Gate):
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
 
+    def _has_unitary_(self):
+        return all(reg.side == Side.THRU for reg in self.bloq.signature)
+
     def _unitary_(self):
-        if all(reg.side == Side.THRU for reg in self.signature):
+        if all(reg.side == Side.THRU for reg in self.bloq.signature):
             try:
-                _ = self.bloq.decompose_bloq()  # check for decomposability
+                # If decomposable, return NotImplemented to let the cirq protocol
+                # try its decomposition-based strategies.
+                _ = self.bloq.decompose_bloq()
                 return NotImplemented
             except (DecomposeNotImplementedError, DecomposeTypeError):
                 tensor = self.bloq.tensor_contract()
-                if tensor.ndim != 2:
-                    return NotImplemented
+                assert tensor.ndim == 2, "All registers should have been checked to be THRU."
                 return tensor
+            except NotImplementedError:
+                return NotImplemented
         return NotImplemented
-
-    def on_registers(
-        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
-    ) -> cirq.Operation:
-        return self.on(*merge_qubits(self.signature, **qubit_regs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Draw cirq diagrams.
