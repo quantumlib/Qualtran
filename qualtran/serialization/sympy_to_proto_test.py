@@ -16,7 +16,7 @@ import pytest
 import sympy
 from sympy.codegen.cfunctions import log2
 
-from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
+from qualtran.serialization.sympy_to_proto import sympy_expr_from_proto, sympy_expr_to_proto
 
 x = sympy.Symbol('x', positive=True)
 a, b, c = sympy.symbols("a b c")
