@@ -143,9 +143,13 @@ class BloqAsCirqGate(cirq.Gate):
     def _unitary_(self):
         if all(reg.side == Side.THRU for reg in self.bloq.signature):
             try:
+                # If decomposable, return NotImplemented to let the cirq protocol
+                # try its decomposition-based strategies.
+                _ = self.bloq.decompose_bloq()
+                return NotImplemented
+            except (DecomposeNotImplementedError, DecomposeTypeError):
                 tensor = self.bloq.tensor_contract()
-                if tensor.ndim != 2:
-                    return NotImplemented
+                assert tensor.ndim == 2, "All registers should have been checked to be THRU."
                 return tensor
             except NotImplementedError:
                 return NotImplemented
