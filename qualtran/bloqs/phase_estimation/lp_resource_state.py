@@ -140,8 +140,9 @@ class LPResourceState(QPEWindowStateBase):
     def m_bits(self) -> SymbolicInt:
         return self.bitsize
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        qpe_reg = bb.allocate(dtype=self.m_register.dtype)
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', qpe_reg: 'Soquet', **soqs: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
         anc, flag = bb.allocate(dtype=QBit()), bb.allocate(dtype=QBit())
 
         flag_angle = np.arccos(1 / (1 + 2**self.bitsize))
