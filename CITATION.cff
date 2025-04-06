@@ -1,23 +1,21 @@
 # Citation information for this repository.                         -*- yaml -*-
 #
-# CITATION.cff files provide human- & machine-readable citation information for
-# software and datasets. GitHub, Zenodo, and the Zotero browser plugin all use
-# CFF files automatically if provided. https://citation-file-format.github.io/.
-#
-# Tools exist to generate CITATION.cff files from other formats such as BibTeX.
+# CITATION.cff provide human- & machine-readable citation info for software and
+# datasets. GitHub, Zenodo, and the Zotero browser plugin all use CFF files
+# automatically. Tools exist to generate CITATION.cff files from other formats
+# such as BibTeX. For more info, visit https://citation-file-format.github.io/.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cff-version: 1.2.0
 message: If you use this software, please cite it using this metadata.
 
 # CITATION.cff files describe how to cite software or datasets, with the goal of
-# making software and data be citable in their own right. However, sometimes
-# projects want citations to go to a paper instead. 'Preferred-citation' serves
-# to communicate that. The distinction matters in different situations. If this
-# field is present, GitHub uses the value for the "cite this repository" button
-# and ignores the rest of this file; conversely, the Zenodo-GitHub integration
-# ignores this field when creating an entry for a new software release (because
-# the Zenodo entry is specifically about the software in this repository).
+# making software and data be citable in their own right. However, some projects
+# prefer citations go to a paper instead. Preferred-citation communicates this.
+# It matters in different situations. If this field is present, GitHub uses the
+# value for the "cite this repository" button; conversely, the Zenodo-GitHub
+# integration ignores it when creating an entry for a new software release
+# (because the Zenodo entry is specifically about the software in this repo).
 preferred-citation:
   type: misc
   authors:
@@ -64,7 +62,7 @@ preferred-citation:
   keywords:
     - quant-ph
 
-# The remaining metadata in this file describes the current software release.
+# The remaining metadata in this file describes software in this repository.
 
 title: Qualtran
 authors:
