@@ -34,6 +34,14 @@ def test_bloq():
         tb.decompose_bloq()
 
 
+def test_as_pl_op():
+    import pennylane as qml
+
+    tb = TestTwoBitOp()
+
+    assert tb.as_pl_op(wires=[0, 1]) == qml.FromBloq(TestTwoBitOp(), wires=[0, 1])
+
+
 def test_as_composite_bloq():
     tb = TestAtom()
     with pytest.raises(DecomposeTypeError):

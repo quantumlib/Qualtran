@@ -19,7 +19,7 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, ConnectionT, Signature, Soquet, SoquetT
-from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate, YGate
 from qualtran.bloqs.cryptography.rsa import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
@@ -235,8 +235,8 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     mod_exp = ModExp.make_for_shor(4, 3)
     gate = BloqAsCirqGate(mod_exp)
     # Use Cirq's infrastructure to construct an operation and corresponding decomposition.
-    quregs = get_named_qubits(gate.signature)
-    op = gate.on_registers(**quregs)
+    quregs = get_named_qubits(mod_exp.signature)
+    op = gate.on(*merge_qubits(mod_exp.signature, **quregs))
     # cirq.decompose_once(op) delegates to underlying Bloq's decomposition specified in
     # `bloq.decompose_bloq()` and wraps resulting composite bloq in a Cirq op-tree. Note
     # how `BloqAsCirqGate.decompose_with_registers()` automatically takes care of mapping
@@ -266,7 +266,7 @@ x1: ──────────x──────────1───*=3�
     decomposed_circuit, out_regs = cbloq.to_cirq_circuit_and_quregs(exponent=quregs['exponent'])
     # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
     # specify both input and output registers.
-    circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)
+    circuit = cirq.Circuit(gate.on(*merge_qubits(cbloq.signature, **out_regs)), decomposed_circuit)
     # Notice the newly allocated qubits _C(0) and _C(1) for output register x.
     cirq.testing.assert_has_diagram(
         circuit,
