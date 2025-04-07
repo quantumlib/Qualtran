@@ -319,7 +319,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
         return _wire_symbol_from_gate(self, self.signature, reg, idx)
 
-    # Part-2: Cirq-FT style interface can be used to implemented algorithms by Bloq authors.
+    # Part-2: Cirq-FT style interface can be used to implement algorithms by Bloq authors.
 
     def _num_qubits_(self) -> int:
         return total_bits(self.signature)

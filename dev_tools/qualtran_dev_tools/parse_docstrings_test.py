@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .parse_docstrings import get_markdown_docstring_lines
+import pytest
+
+from .bloq_finder import get_bloq_classes
+from .parse_docstrings import get_markdown_docstring_lines, get_references, UnparsedReference
 
 
 class ClassWithDocstrings:
@@ -40,3 +43,16 @@ def test_get_markdown_docstring_lines():
         ' - [Google](www.google.com). Brin et. al. 1999.',
         '',
     ]
+
+
+@pytest.mark.slow
+def test_parse_all_references():
+    bloq_classes = get_bloq_classes()
+    references = {bloq_cls: get_references(bloq_cls) for bloq_cls in bloq_classes}
+    for bloq_cls, refs in references.items():
+        for ref in refs:
+            if isinstance(ref, UnparsedReference):
+                raise AssertionError(
+                    f"{bloq_cls.__module__}.{bloq_cls.__qualname__} has an incorrectly "
+                    f"formatted reference:\n{ref.text}"
+                )

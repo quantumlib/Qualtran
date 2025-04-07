@@ -79,6 +79,28 @@ def test_two_bit_swap_as_cirq_op():
     cirq.testing.assert_same_circuits(expected_circuit, cbloq_to_circuit)
 
 
+def test_pl_interop():
+    import pennylane as qml
+
+    bloq = TwoBitSwap()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0, 1])
+    pl_op = qml.SWAP(wires=[0, 1])
+    assert pl_op_from_bloq == pl_op
+
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
+    bloq = TwoBitCSwap()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0, 1, 2])
+    pl_op = qml.CSWAP(wires=[0, 1, 2])
+    assert pl_op_from_bloq == pl_op
+
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
+
 def test_two_bit_swap_call_classically():
     swap = TwoBitSwap()
     x, y = swap.call_classically(x=0, y=1)

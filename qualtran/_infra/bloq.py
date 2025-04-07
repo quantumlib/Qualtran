@@ -32,9 +32,12 @@ from typing import (
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
+    import pennylane as qml
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran import (
         AddControlledT,
@@ -470,6 +473,25 @@ class Bloq(metaclass=abc.ABCMeta):
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        """Override this method to support conversion to a PennyLane operation.
+
+        If this method is not overriden, the default implementation will wrap this bloq
+        in a `FromBloq` shim.
+
+        Args:
+            wires: the wires that the op acts on
+
+        Returns:
+            ~.Operation: A PennyLane operation corresponding to this bloq acting on the
+                provided wires or None. This method should return None if and only if the bloq
+                instance truly should not be included in the PennyLane circuit (e.g. for reshaping
+                bloqs). A bloq with no PennyLane equivalent should raise an exception instead.
+        """
+        from pennylane.io import FromBloq
+
+        return FromBloq(bloq=self, wires=wires)
+
     def on(self, *qubits: 'cirq.Qid') -> 'cirq.Operation':
         """A `cirq.Operation` of this bloq operating on the given qubits.
 
@@ -555,3 +577,14 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+    @classmethod
+    def _class_name_in_pkg_(cls) -> str:
+        """The bloq class's name with its package.
+
+        The Qualtran standard library contains a heirarchy of packages under
+        `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
+        "*.py" file) and re-exported one level up.
+        """
+        pkg = '.'.join(cls.__module__.split('.')[:-1])
+        return f'{pkg}.{cls.__name__}'

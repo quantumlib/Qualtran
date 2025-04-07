@@ -218,7 +218,7 @@ _LT_K_DOC = BloqDocSpec(
 
 @frozen
 class BiQubitsMixer(GateWithRegisters):
-    """Implements the COMPARE2 subroutine from the reference (Fig. 1)
+    """Implements the COMPARE2 subroutine from the reference.
 
     This gates mixes the values in a way that preserves the result of comparison.
     The signature being compared are 2-qubit signature where
@@ -235,7 +235,8 @@ class BiQubitsMixer(GateWithRegisters):
     https://github.com/quantumlib/Qualtran/issues/389
 
     References:
-        [Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf).
+        [Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://arxiv.org/abs/1711.10460).
+        Berry et al. 2017. Appendix B. Fig 3.
     """
 
     is_adjoint: bool = False
@@ -323,9 +324,8 @@ class SingleQubitCompare(GateWithRegisters):
     """Applies U|a>|b>|0>|0> = |a> |a=b> |(a<b)> |(a>b)>
 
     References:
-        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians.
-        Figure 3.
-        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+        [Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://arxiv.org/abs/1711.10460).
+        Berry et al. 2017. Appendix B. Fig 5.
     """
 
     is_adjoint: bool = False
@@ -433,7 +433,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
 
-        [Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf).
+        [Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://arxiv.org/abs/1711.10460).
+        Berry et al. 2017. Appendix B.
     """
 
     x_bitsize: 'SymbolicInt'
