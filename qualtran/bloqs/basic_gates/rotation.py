@@ -160,7 +160,7 @@ class ZPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Z^{self.exponent}')
 
     def __str__(self):
         return f'Z**{self.exponent}'
@@ -302,7 +302,7 @@ class XPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'X^{self.exponent}')
 
     def __str__(self):
         return f'X**{self.exponent}'
@@ -376,7 +376,7 @@ class YPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Y^{self.exponent}')
 
     def __str__(self):
         return f'Y**{self.exponent}'
@@ -514,7 +514,7 @@ class CRz(Bloq):
         [Elementary gates for quantum computation](https://arxiv.org/abs/quant-ph/9503016).
         Barenco et al. 1995. Special case of Lemma 5.4.
 
-        [Is Controlled(𝑅𝑧(𝜃)) more expensive than Controlled(𝑍𝑡) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
+        [Is Controlled(Rz(theta)) more expensive than Controlled(Z^t) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
         Adam Zalcman. 2024.
     """
 
