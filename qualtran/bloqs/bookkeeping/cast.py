@@ -37,6 +37,8 @@ from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -123,6 +125,9 @@ class Cast(_BookkeepingBloq):
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        return None
 
 
 @bloq_example

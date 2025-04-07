@@ -12,15 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import attrs
 import pytest
 
+import qualtran.testing as qlt_testing
+from qualtran import CtrlSpec
 from qualtran.bloqs.block_encoding.lcu_block_encoding import (
     _black_box_lcu_block,
     _black_box_select_block,
     _lcu_block,
     _select_block,
 )
-from qualtran.testing import execute_notebook
+from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
 
 def test_lcu_block_encoding(bloq_autotester):
@@ -39,6 +42,16 @@ def test_black_box_select_block_encoding(bloq_autotester):
     bloq_autotester(_black_box_select_block)
 
 
+def test_ctrl_lcu_be_cost():
+    bloq = _lcu_block()
+    assert bloq.controlled() == attrs.evolve(bloq, control_val=1)
+    assert bloq.controlled(CtrlSpec(cvs=0)) == attrs.evolve(bloq, control_val=0)
+
+    assert get_cost_value(bloq.controlled(), QECGatesCost()) == GateCounts(
+        cswap=28, and_bloq=77, clifford=438, rotation=16, measurement=77
+    )
+
+
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('lcu_block_encoding')
+    qlt_testing.execute_notebook('lcu_block_encoding')
