@@ -40,6 +40,7 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
+from ..symbolics import SymbolicInt
 from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import check_dtypes_consistent, QAny, QBit, QDType
@@ -883,10 +884,10 @@ class BloqBuilder:
     def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: int) -> SoquetT: ...
+    def add_register(self, reg: str, bitsize: SymbolicInt) -> SoquetT: ...
 
     def add_register(
-        self, reg: Union[str, Register], bitsize: Optional[int] = None
+        self, reg: Union[str, Register], bitsize: Optional[SymbolicInt] = None
     ) -> Union[None, SoquetT]:
         """Add a new register to the composite bloq being built.
 
