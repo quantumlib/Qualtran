@@ -1078,7 +1078,7 @@ class QGFPoly(QDType):
     def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         f_x_coeffs = self.qgf.gf_type.Zeros(self.degree + 1)
-        f_x_coeffs[self.degree - f_x.degree:] = f_x.coeffs
+        f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
         return f_x_coeffs
 
     def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
