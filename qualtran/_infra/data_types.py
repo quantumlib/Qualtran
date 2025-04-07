@@ -1025,6 +1025,100 @@ class QGF(QDType):
         return f'QGF({self.characteristic}**{self.degree})'
 
 
+@attrs.frozen
+class QGFPoly(QDType):
+    r"""Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
+
+    This data type represents a degree-$n$ univariate polynomials
+    $f(x)=\sum_{i=0}^{n} a_i x^{i}$ where the coefficients $a_{i}$ of the polynomial
+    belong to a Galois Field $GF(p^{m})$.
+
+    The data type uses the [Galois library](https://mhostetter.github.io/galois/latest/) to
+    perform arithmetic over polynomials defined over Galois Fields using the
+    [galois.Poly](https://mhostetter.github.io/galois/latest/api/galois.Poly/).
+
+    Attributes:
+        degree: The degree $n$ of the univariate polynomial $f(x)$ represented by this type.
+        qgf: An instance of `QGF` that represents the galois field over which the polynomial
+            is defined.
+
+    References
+        [Polynomials over finite fields](https://mhostetter.github.io/galois/latest/api/galois.Poly/)
+
+        [Polynomial Arithmetic](https://mhostetter.github.io/galois/latest/basic-usage/poly-arithmetic/)
+    """
+
+    degree: SymbolicInt
+    qgf: QGF
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return self.qgf.bitsize * (self.degree + 1)
+
+    @cached_property
+    def num_qubits(self) -> SymbolicInt:
+        """Number of qubits required to represent a single instance of this data type."""
+        return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+        import itertools
+
+        from galois import Poly
+
+        for it in itertools.product(self.qgf.gf_type.elements, repeat=(self.degree + 1)):
+            yield Poly(self.qgf.gf_type(it), field=self.qgf.gf_type)
+
+    @cached_property
+    def _quint_equivalent(self) -> QUInt:
+        return QUInt(self.num_qubits)
+
+    def to_bits(self, x) -> List[int]:
+        """Returns individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        assert isinstance(x, galois.Poly)
+        x_coeffs = self.qgf.gf_type.Zeros(self.degree + 1)
+        x_coeffs[self.degree - x.degree :] = x.coeffs
+        return self.qgf.to_bits_array(x_coeffs).reshape(-1).tolist()
+
+    def from_bits(self, bits: Sequence[int]):
+        """Combine individual bits to form x"""
+        reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.qgf.bitsize)))
+        return galois.Poly(self.qgf.from_bits_array(reshaped_bits))
+
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        if not isinstance(val, galois.Poly):
+            raise ValueError(f"{debug_str} should be a {galois.Poly}, not {val!r}")
+        if not val.field == self.qgf.gf_type:
+            raise ValueError(
+                f"{debug_str} should be defined over {self.qgf.gf_type}, not {val.field}"
+            )
+        if val.degree > self.degree:
+            raise ValueError(f"{debug_str} should have a degree <= {self.degree}, not {val.degree}")
+
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+        return is_symbolic(self.degree, self.qgf)
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return self.qgf.order
+
+    def __str__(self):
+        return f'QGFPoly({self.degree}, {self.qgf!s})'
+
+
 QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
 QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt, QGF)
 
