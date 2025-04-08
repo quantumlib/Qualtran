@@ -92,6 +92,8 @@ import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.gf_arithmetic.gf2_square
+import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k
+import qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -604,6 +606,24 @@ GF_ARITHMETIC = [
     ),
 ]
 
+GF_POLY_ARITHMETIC = [
+    # --------------------------------------------------------------------------
+    # -----   Polynomials defined over Galois Fields (GF) Arithmetic    --------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Polynomials over GF($p^m$) - Split and Join',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join,
+        bloq_specs=[
+            qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join._GF_POLY_SPLIT_DOC,
+            qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join._GF_POLY_JOIN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Polynomials over GF($2^m$) - Add Constant',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k,
+        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k._GF2_POLY_ADD_K_DOC],
+    ),
+]
 
 ROT_QFT_PE = [
     # --------------------------------------------------------------------------
@@ -935,6 +955,7 @@ NB_BY_SECTION = [
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
     ('GF Arithmetic', GF_ARITHMETIC),
+    ('Polynomials over Galois Fields', GF_POLY_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
     ('Optimization', OPTIMIZATION),
