@@ -99,9 +99,9 @@ authors:
     affiliation: Google LLC
     orcid: https://orcid.org/0000-0003-3963-1830
 abstract: >-
-  Qualtran (quantum algorithms translator) is a set of abstractions for
-  representing quantum programs, and a library of quantum algorithms expressed
-  in that language to support quantum algorithms research.
+  Qualtran is a set of abstractions for representing quantum programs, and a
+  library of quantum algorithms expressed in that language to support quantum
+  algorithms research.
 version: 0.6.0
 date-released: 2025-04-01
 url: https://github.com/quantumlib/Qualtran
