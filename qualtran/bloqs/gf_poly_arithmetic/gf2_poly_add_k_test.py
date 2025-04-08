@@ -18,6 +18,7 @@ from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import (
     _gf2_poly_4_8_add_k,
     _gf2_poly_add_k_symbolic,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -27,6 +28,18 @@ def test_gf2_poly_4_8_add_k(bloq_autotester):
 
 def test_gf2_poly_symbolic_add_k(bloq_autotester):
     bloq_autotester(_gf2_poly_add_k_symbolic)
+
+
+def test_gf2_poly_add_k_resource():
+    bloq = _gf2_poly_4_8_add_k.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == sum(
+        np.sum(bloq.qgf_poly.qgf.to_bits(x)) for x in bloq.g_x.coeffs
+    )
+
+    bloq = _gf2_poly_add_k_symbolic.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.qgf_poly.bitsize
 
 
 def test_gf2_poly_add_k_classical_sim():
