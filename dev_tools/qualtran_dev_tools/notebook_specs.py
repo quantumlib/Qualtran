@@ -611,7 +611,7 @@ GF_POLY_ARITHMETIC = [
     # -----   Polynomials defined over Galois Fields (GF) Arithmetic    --------
     # --------------------------------------------------------------------------
     NotebookSpecV2(
-        title='GF Polynomials Split and Join',
+        title='Polynomials over GF($p^m$) - Split and Join',
         module=qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join,
         bloq_specs=[
             qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join._GF_POLY_SPLIT_DOC,
@@ -619,9 +619,9 @@ GF_POLY_ARITHMETIC = [
         ],
     ),
     NotebookSpecV2(
-        title='GF($2^m$) Polynomials Add Constant',
+        title='Polynomials over GF($2^m$) - Add Constant',
         module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k,
-        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k._GF2_ADD_K_DOC],
+        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k._GF2_POLY_ADD_K_DOC],
     ),
 ]
 

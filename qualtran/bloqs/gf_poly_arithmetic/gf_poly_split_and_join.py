@@ -13,11 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import galois
 import numpy as np
 from attrs import field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -26,7 +27,6 @@ from qualtran import (
     CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
-    QGF,
     QGFPoly,
     Register,
     Side,
@@ -97,7 +97,9 @@ class GFPolySplit(_BookkeepingBloq):
         return GFPolyJoin(dtype=self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape((self.dtype.degree + 1, self.dtype.qgf.num_qubits))}
+        return None, {
+            'reg': reg.reshape((int(self.dtype.degree) + 1, int(self.dtype.qgf.num_qubits)))
+        }
 
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
@@ -110,17 +112,19 @@ class GFPolySplit(_BookkeepingBloq):
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
-        inp_inds = [(incoming['reg'], i) for i in range(self.dtype.num_qubits)]
+        incoming = incoming['reg']
+        outgoing = cast(NDArray, outgoing['reg'])
+        inp_inds = [(incoming, i) for i in range(int(self.dtype.num_qubits))]
         out_inds = [
-            (outgoing['reg'][i], j)
-            for i in range(self.dtype.degree + 1)
-            for j in range(self.dtype.qgf.num_qubits)
+            (outgoing[i], j)
+            for i in range(int(self.dtype.degree) + 1)
+            for j in range(int(self.dtype.qgf.num_qubits))
         ]
         assert len(inp_inds) == len(out_inds)
 
         return [
             qtn.Tensor(data=np.eye(2), inds=[out_inds[i], inp_inds[i]], tags=[str(self)])
-            for i in range(self.dtype.num_qubits)
+            for i in range(int(self.dtype.num_qubits))
         ]
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
@@ -134,6 +138,8 @@ class GFPolySplit(_BookkeepingBloq):
 
 @bloq_example
 def _gf_poly_split() -> GFPolySplit:
+    from qualtran import QGF, QGFPoly
+
     gf_poly_split = GFPolySplit(QGFPoly(4, QGF(2, 3)))
     return gf_poly_split
 
@@ -198,7 +204,7 @@ class GFPolyJoin(_BookkeepingBloq):
         return GFPolySplit(dtype=self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape(self.dtype.num_qubits)}
+        return None, {'reg': reg.reshape(int(self.dtype.num_qubits))}
 
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
@@ -208,17 +214,20 @@ class GFPolyJoin(_BookkeepingBloq):
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
+        incoming = cast(NDArray, incoming['reg'])
+        outgoing = outgoing['reg']
+
         inp_inds = [
-            (incoming['reg'][i], j)
-            for i in range(self.dtype.degree + 1)
-            for j in range(self.dtype.qgf.num_qubits)
+            (incoming[i], j)
+            for i in range(int(self.dtype.degree) + 1)
+            for j in range(int(self.dtype.qgf.num_qubits))
         ]
-        out_inds = [(outgoing['reg'], i) for i in range(self.dtype.num_qubits)]
+        out_inds = [(outgoing, i) for i in range(int(self.dtype.num_qubits))]
         assert len(inp_inds) == len(out_inds)
 
         return [
             qtn.Tensor(data=np.eye(2), inds=[out_inds[i], inp_inds[i]], tags=[str(self)])
-            for i in range(self.dtype.num_qubits)
+            for i in range(int(self.dtype.num_qubits))
         ]
 
     def on_classical_vals(self, reg: 'galois.Array') -> Dict[str, galois.Poly]:
@@ -235,6 +244,8 @@ class GFPolyJoin(_BookkeepingBloq):
 
 @bloq_example
 def _gf_poly_join() -> GFPolyJoin:
+    from qualtran import QGF, QGFPoly
+
     gf_poly_join = GFPolyJoin(QGFPoly(4, QGF(2, 3)))
     return gf_poly_join
 

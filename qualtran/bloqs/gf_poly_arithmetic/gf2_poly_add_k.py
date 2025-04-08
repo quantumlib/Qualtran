@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
 import galois
@@ -32,7 +32,7 @@ from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -92,7 +92,9 @@ class GF2PolyAddK(Bloq):
         f_x = bb.add(GFPolyJoin(self.qgf_poly), reg=f_x)
         return {'f_x': f_x}
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if self.is_symbolic():
             k = ssa.new_symbol('g_x')
             return {GF2AddK(self.qgf_poly.qgf.bitsize, k): self.qgf_poly.degree + 1}
@@ -123,10 +125,10 @@ def _gf2_poly_add_k_symbolic() -> GF2PolyAddK:
 
     n, m = sympy.symbols('n, m', positive=True, integers=True)
     qgf_poly = QGFPoly(n, QGF(2, m))
-    gf2_poly_symbolic_add_k = GF2PolyAddK(qgf_poly, Poly([0, 0, 0, 0]))
-    return gf2_poly_symbolic_add_k
+    gf2_poly_add_k_symbolic = GF2PolyAddK(qgf_poly, Poly([0, 0, 0, 0]))
+    return gf2_poly_add_k_symbolic
 
 
-_GF2_ADD_K_DOC = BloqDocSpec(
-    bloq_cls=GF2AddK, examples=(_gf2_poly_4_8_add_k, _gf2_poly_add_k_symbolic)
+_GF2_POLY_ADD_K_DOC = BloqDocSpec(
+    bloq_cls=GF2PolyAddK, examples=(_gf2_poly_4_8_add_k, _gf2_poly_add_k_symbolic)
 )
