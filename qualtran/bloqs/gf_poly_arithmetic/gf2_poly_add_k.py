@@ -79,7 +79,7 @@ class GF2PolyAddK(Bloq):
                 )
 
     def is_symbolic(self):
-        return is_symbolic(self.qgf_poly)
+        return is_symbolic(self.qgf_poly.degree)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, f_x: 'Soquet') -> Dict[str, 'Soquet']:
         if self.is_symbolic():
