@@ -16,7 +16,7 @@ message: >-
 # and uses the metadata in the rest of this file.
 preferred-citation:
   type: misc
-  authors:
+  authors: &authors
     - family-names: Harrigan
       given-names: Matthew P.
       affiliation: Google LLC
@@ -63,39 +63,7 @@ preferred-citation:
 # The remaining metadata in this file describes the current software release.
 
 title: Qualtran
-authors:
-  - family-names: Harrigan
-    given-names: Matthew P.
-    affiliation: Google LLC
-    orcid: https://orcid.org/0000-0001-9412-0553
-  - family-names: Khattar
-    given-names: Tanuj
-    affiliation: Google LLC
-    orcid: https://orcid.org/0009-0003-5545-3066
-  - family-names: Yuan
-    given-names: Charles
-    affiliation: Massachusetts Institute of Technology
-    orcid: https://orcid.org/0000-0002-4918-4467
-  - family-names: Peduri
-    given-names: Anurudh
-    affiliation: Ruhr University Bochum
-    orcid: https://orcid.org/0000-0002-6523-7098
-  - family-names: Yosri
-    given-names: Noureldin
-    affiliation: Google LLC
-    orcid: https://orcid.org/0000-0003-4169-5745
-  - family-names: Malone
-    given-names: Fionn D.
-    affiliation: Google LLC
-    orcid: https://orcid.org/0000-0001-9239-0162
-  - family-names: Babbush
-    given-names: Ryan
-    affiliation: Google LLC
-    orcid: https://orcid.org/0000-0001-6979-9533
-  - family-names: Rubin
-    given-names: Nicholas C.
-    affiliation: Google LLC
-    orcid: https://orcid.org/0000-0003-3963-1830
+authors: *authors
 abstract: >-
   Qualtran is a set of abstractions for representing quantum programs, and a
   library of quantum algorithms expressed in that language to support quantum
