@@ -15,6 +15,7 @@ import numpy as np
 from galois import Poly
 
 from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import _gf2_poly_4_8_add, _gf2_poly_add_symbolic
+from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -41,3 +42,13 @@ def test_gf2_poly_add_classical_sim():
         ]
     )
     assert_consistent_classical_action(bloq, f_x=f_x_range, g_x=f_x_range)
+
+
+def test_gf2_poly_add_resource():
+    bloq = _gf2_poly_4_8_add.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.qgf_poly.bitsize
+
+    bloq = _gf2_poly_add_symbolic.make()
+    assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
+    assert get_cost_value(bloq, QECGatesCost()).clifford == bloq.qgf_poly.bitsize
