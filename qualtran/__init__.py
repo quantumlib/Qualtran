@@ -61,6 +61,7 @@ from ._infra.data_types import (
     BQUInt,
     QMontgomeryUInt,
     QGF,
+    QGFPoly,
 )
 
 # Internal imports: none
