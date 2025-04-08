@@ -105,6 +105,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'gf_poly_join',  # cannot serialize QGF and QGFPoly
         'gf2_poly_4_8_add_k',  # cannot serialize QGF and QGFPoly
         'gf2_poly_add_k_symbolic',  # cannot serialize QGF and QGFPoly
+        'gf2_poly_4_8_add',  # cannot serialize QGF and QGFPoly
+        'gf2_poly_add_symbolic',  # cannot serialize QGF and QGFPoly
         'gqsp_1d_ising',
         'auto_partition',
         'unitary_block_encoding',
