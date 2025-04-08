@@ -7,15 +7,13 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cff-version: 1.2.0
-message: If you use this software, please cite it using this metadata.
+message: >-
+  Please cite your use of Qualtran using the reference metadata provided here.
 
-# CITATION.cff files describe how to cite software or datasets, with the goal of
-# making software and data be citable in their own right. However, some projects
-# prefer citations go to a paper instead. Preferred-citation communicates this.
-# It matters in different situations. If this field is present, GitHub uses the
-# value for the "cite this repository" button; conversely, the Zenodo-GitHub
-# integration ignores it when creating an entry for a new software release
-# (because the Zenodo entry is specifically about the software in this repo).
+# If preferred-citation is present, GitHub uses its value for the "cite this
+# repository" button and ignores the rest of this file; conversely, the Zenodo-
+# GitHub integration ignores this field when archiving a new software release
+# and uses the metadata in the rest of this file.
 preferred-citation:
   type: misc
   authors:
@@ -62,7 +60,7 @@ preferred-citation:
   keywords:
     - quant-ph
 
-# The remaining metadata in this file describes software in this repository.
+# The remaining metadata in this file describes the current software release.
 
 title: Qualtran
 authors:
