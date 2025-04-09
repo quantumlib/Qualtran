@@ -223,6 +223,32 @@ class Signature:
         right_size = ssum(reg.total_qubits() for reg in self.rights())
         return smax(left_size, right_size)
 
+    def n_cbits(self) -> int:
+        """The number of classical bits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of classical bits in the signature
+        is taken to be the greater of the number of left or right cbits. A bloq with this
+        signature uses at least this many classical bits.
+        """
+        left_size = ssum(reg.total_cbits() for reg in self.lefts())
+        right_size = ssum(reg.total_cbits() for reg in self.rights())
+        return smax(left_size, right_size)
+
+    def n_bits(self) -> int:
+        """The number of quantum + classical bits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of bits in the signature
+        is taken to be the greater of the number of left or right bits. A bloq with this
+        signature uses at least this many quantum + classical bits.
+
+        See Also:
+            Signature.n_qubits()
+            Signature.n_cbits()
+        """
+        left_size = ssum(reg.total_bits() for reg in self.lefts())
+        right_size = ssum(reg.total_bits() for reg in self.rights())
+        return smax(left_size, right_size)
+
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
 
