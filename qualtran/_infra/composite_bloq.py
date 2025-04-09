@@ -53,6 +53,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 # NDArrays must be bound to np.generic
 _SoquetType = TypeVar('_SoquetType', bound=np.generic)
@@ -883,10 +884,10 @@ class BloqBuilder:
     def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: int) -> SoquetT: ...
+    def add_register(self, reg: str, bitsize: 'SymbolicInt') -> SoquetT: ...
 
     def add_register(
-        self, reg: Union[str, Register], bitsize: Optional[int] = None
+        self, reg: Union[str, Register], bitsize: Optional['SymbolicInt'] = None
     ) -> Union[None, SoquetT]:
         """Add a new register to the composite bloq being built.
 
