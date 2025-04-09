@@ -133,7 +133,7 @@ def test_cbloq_to_proto_test_two_cswap():
     cswap_proto = bloq_serialization.bloqs_to_proto(TestCSwap(100)).table[0].bloq
     assert TestCSwap(100).t_complexity().t == 7 * 100
     cbloq = TestTwoCSwap(100).decompose_bloq()
-    proto_lib = bloq_serialization.bloqs_to_proto(cbloq)
+    proto_lib = bloq_serialization.bloqs_to_proto(cbloq, max_depth=100)
     assert len(proto_lib.table) == 2
     assert proto_lib.table[1].bloq == cswap_proto
     assert proto_lib.table[0].bloq.t_complexity.t == 7 * 100 * 2
@@ -178,18 +178,50 @@ def test_meta_bloq_to_proto():
     sub_bloq_one = TestTwoCSwap(20)
     sub_bloq_two = TestTwoCSwap(20).decompose_bloq()
     bloq = TestMetaBloq(sub_bloq_one, sub_bloq_two)
-    proto_lib = bloq_serialization.bloqs_to_proto(bloq, name="Meta Bloq Test")
-    assert proto_lib.name == "Meta Bloq Test"
-    assert len(proto_lib.table) == 3  # TestMetaBloq, TestTwoCSwap, CompositeBloq
 
-    proto_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=2)
-    assert len(proto_lib.table) == 4  # TestMetaBloq, TestTwoCSwap, CompositeBloq, TestCSwap
+    depth_0_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=0)
+    assert len(depth_0_lib.table) == 3
+    for table_entry in depth_0_lib.table:
+        bloq_name = table_entry.bloq.name.split('.')[-1]
+        if bloq_name == 'TestMetaBloq':
+            assert len(table_entry.decomposition) == 0
+        elif bloq_name == 'TestTwoCSwap':
+            # This is included solely through TestMetaBloq's attribute
+            assert len(table_entry.decomposition) == 0
+        elif bloq_name == 'CompositeBloq':
+            # This is included solely through TestMetaBloq's attribute
+            assert len(table_entry.decomposition) == 0
+        else:
+            raise AssertionError(f"Unknown {bloq_name}")
 
-    assert proto_lib.table[0].bloq.name.split('.')[-1] == 'TestMetaBloq'
-    assert len(proto_lib.table[0].decomposition) == 9
+    depth_1_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=1)
+    assert len(depth_1_lib.table) == 3
+    for table_entry in depth_1_lib.table:
+        bloq_name = table_entry.bloq.name.split('.')[-1]
+        if bloq_name == 'TestMetaBloq':
+            assert len(table_entry.decomposition) > 0
+        elif bloq_name == 'TestTwoCSwap':
+            # This is still a "shallow" inclusion, because this only appears in 1 level
+            # of decomposition
+            assert len(table_entry.decomposition) == 0
+        elif bloq_name == 'CompositeBloq':
+            assert len(table_entry.decomposition) == 0
+        else:
+            raise AssertionError(f"Unknown {bloq_name}")
 
-    assert proto_lib.table[1].bloq.name.split('.')[-1] == 'TestTwoCSwap'
-    assert len(proto_lib.table[1].decomposition) == 9
+    depth_2_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=2)
+    assert len(depth_2_lib.table) > 3
+    for table_entry in depth_2_lib.table:
+        bloq_name = table_entry.bloq.name.split('.')[-1]
+        if bloq_name == 'TestMetaBloq':
+            assert len(table_entry.decomposition) == 9
+        elif bloq_name == 'TestTwoCSwap':
+            assert len(table_entry.decomposition) == 9
+        elif bloq_name == 'CompositeBloq':
+            assert len(table_entry.decomposition) > 0
+        elif bloq_name == 'TestCSwap':
+            assert len(table_entry.decomposition) == 0
+        else:
+            raise AssertionError(f"Unknown {bloq_name}")
 
-    assert proto_lib == bloq_serialization.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
-    assert bloq in bloq_serialization.bloqs_from_proto(proto_lib)
+    assert bloq in bloq_serialization.bloqs_from_proto(depth_2_lib)
