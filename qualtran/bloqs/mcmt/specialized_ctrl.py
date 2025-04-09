@@ -82,7 +82,7 @@ class _MultiControlledFromSinglyControlled(Bloq):
         if ctrl_spec.num_qubits != 1:
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
-        ctrl_bloq = attrs.evolve(self, cvs=(ctrl_spec.get_single_ctrl_bit(),) + self.cvs)
+        ctrl_bloq = attrs.evolve(self, cvs=(ctrl_spec.get_single_ctrl_val(),) + self.cvs)
 
         def _adder(bb, ctrl_soqs, in_soqs):
             in_soqs[self.ctrl_reg_name] = np.concatenate(ctrl_soqs, in_soqs[self.ctrl_reg_name])
@@ -121,16 +121,15 @@ def _get_ctrl_system_1bit_cv(
             and returns the controlled variant of this bloq and the name of the control register.
             If the callable returns `None`, then the default fallback is used.
     """
-    from qualtran import Soquet
-    from qualtran.bloqs.mcmt import ControlledViaAnd
+    from qualtran import make_ctrl_system_with_correct_metabloq, Soquet
 
     def _get_default_fallback():
-        return ControlledViaAnd.make_ctrl_system(bloq=bloq, ctrl_spec=ctrl_spec)
+        return make_ctrl_system_with_correct_metabloq(bloq=bloq, ctrl_spec=ctrl_spec)
 
     if ctrl_spec.num_qubits != 1:
         return _get_default_fallback()
 
-    ctrl_bit = ctrl_spec.get_single_ctrl_bit()
+    ctrl_bit = ctrl_spec.get_single_ctrl_val()
 
     if current_ctrl_bit is None:
         # the easy case: use the controlled bloq
@@ -323,7 +322,7 @@ class AdjointWithSpecializedCtrl(Adjoint):
         if ctrl_spec.num_qubits != 1:
             return False
 
-        cv = ctrl_spec.get_single_ctrl_bit()
+        cv = ctrl_spec.get_single_ctrl_val()
         cv_flag = SpecializeOnCtrlBit.ONE if cv == 1 else SpecializeOnCtrlBit.ZERO
         return cv_flag in self.specialize_on_ctrl
 

@@ -21,13 +21,11 @@ import pytest
 import sympy
 from numpy.typing import NDArray
 
-from qualtran.symbolics import ceil, is_symbolic, log2
-
-from .data_types import (
+from qualtran import (
     BQUInt,
+    CBit,
     check_dtypes_consistent,
     QAny,
-    QAnyInt,
     QBit,
     QDType,
     QFxp,
@@ -38,11 +36,29 @@ from .data_types import (
     QMontgomeryUInt,
     QUInt,
 )
+from qualtran._infra.data_types import _QAnyInt
+from qualtran.symbolics import ceil, is_symbolic, log2
+
+
+def test_bit():
+    qbit = QBit()
+    assert qbit.num_qubits == 1
+    assert qbit.num_cbits == 0
+    assert qbit.num_bits == 1
+    assert str(qbit) == 'QBit()'
+
+    cbit = CBit()
+    assert cbit.num_cbits == 1
+    assert cbit.num_qubits == 0
+    assert cbit.num_bits == 1
+    assert str(CBit()) == 'CBit()'
 
 
 def test_qint():
     qint_8 = QInt(8)
     assert qint_8.num_qubits == 8
+    assert qint_8.num_cbits == 0
+    assert qint_8.num_bits == 8
     assert str(qint_8) == 'QInt(8)'
     n = sympy.symbols('x')
     qint_8 = QInt(n)
@@ -281,7 +297,7 @@ def test_type_errors_fxp():
 def test_type_errors_matrix(qdtype_a, qdtype_b):
     if qdtype_a == qdtype_b:
         assert check_dtypes_consistent(qdtype_a, qdtype_b)
-    elif isinstance(qdtype_a, QAnyInt) and isinstance(qdtype_b, QAnyInt):
+    elif isinstance(qdtype_a, _QAnyInt) and isinstance(qdtype_b, _QAnyInt):
         assert check_dtypes_consistent(qdtype_a, qdtype_b)
     else:
         assert not check_dtypes_consistent(qdtype_a, qdtype_b)
