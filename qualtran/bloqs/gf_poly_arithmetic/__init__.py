@@ -13,5 +13,6 @@
 #  limitations under the License.
 
 
+from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
 from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
 from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolyJoin, GFPolySplit

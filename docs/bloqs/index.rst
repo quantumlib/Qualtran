@@ -111,6 +111,7 @@ Bloqs Library
 
     gf_poly_arithmetic/gf_poly_split_and_join.ipynb
     gf_poly_arithmetic/gf2_poly_add_k.ipynb
+    gf_poly_arithmetic/gf2_poly_add.ipynb
 
 .. toctree::
     :maxdepth: 2

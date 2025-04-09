@@ -92,6 +92,7 @@ import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.gf_arithmetic.gf2_square
+import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add
 import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k
 import qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
@@ -622,6 +623,11 @@ GF_POLY_ARITHMETIC = [
         title='Polynomials over GF($2^m$) - Add Constant',
         module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k,
         bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k._GF2_POLY_ADD_K_DOC],
+    ),
+    NotebookSpecV2(
+        title='Polynomials over GF($2^m$) - Addition',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add,
+        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add._GF2_POLY_ADD_DOC],
     ),
 ]
 
