@@ -148,6 +148,8 @@ def test_partial_classical_signature_n_qubits():
         [Register('x', QUInt(5)), Register('y', QUInt(5), side=Side.RIGHT), Register('c', CBit())]
     )
     assert sig.n_qubits() == 10
+    assert sig.n_cbits() == 1
+    assert sig.n_bits() == 11
 
 
 def test_signature_build():
