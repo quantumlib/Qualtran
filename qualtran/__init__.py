@@ -51,17 +51,22 @@ from ._infra.composite_bloq import (
 )
 
 from ._infra.data_types import (
+    QCDType,
+    CDType,
     QDType,
-    QInt,
-    QBit,
     QAny,
-    QFxp,
+    QBit,
+    CBit,
+    QInt,
     QIntOnesComp,
     QUInt,
     BQUInt,
+    QFxp,
     QMontgomeryUInt,
     QGF,
     QGFPoly,
+    QDTypeCheckingSeverity,
+    check_dtypes_consistent,
 )
 
 # Internal imports: none
@@ -84,7 +89,13 @@ from ._infra.gate_with_registers import GateWithRegisters
 
 from ._infra.adjoint import Adjoint
 
-from ._infra.controlled import Controlled, CtrlSpec, AddControlledT
+from ._infra.controlled import (
+    Controlled,
+    CtrlSpec,
+    AddControlledT,
+    _ControlledBase,
+    make_ctrl_system_with_correct_metabloq,
+)
 
 from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
 

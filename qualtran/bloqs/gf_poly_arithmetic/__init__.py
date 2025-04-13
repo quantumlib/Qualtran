@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2025 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# ------------------------------------------------------------------------------
-# Note to intrepid developers: everything under _infra/ is re-exported in the
-#                              top-level qualtran/__init__.py
-# ------------------------------------------------------------------------------
+
+from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
+from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
+from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolyJoin, GFPolySplit

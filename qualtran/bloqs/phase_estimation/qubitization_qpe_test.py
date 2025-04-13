@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import time
+
 import cirq
 import numpy as np
 import pytest
@@ -21,6 +23,7 @@ from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qpe_window_state import RectangularWindowState
 from qualtran.bloqs.phase_estimation.qubitization_qpe import (
     _qubitization_qpe_chem_thc,
+    _qubitization_qpe_hubbard_model_large,
     _qubitization_qpe_hubbard_model_small,
     _qubitization_qpe_ising,
     _qubitization_qpe_sparse_chem,
@@ -28,6 +31,7 @@ from qualtran.bloqs.phase_estimation.qubitization_qpe import (
 )
 from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
 from qualtran.cirq_interop.testing import GateHelper
+from qualtran.serialization.bloq import bloqs_to_proto
 from qualtran.testing import execute_notebook
 
 
@@ -35,9 +39,22 @@ def test_ising_example(bloq_autotester):
     bloq_autotester(_qubitization_qpe_ising)
 
 
-@pytest.mark.slow
-def test_qubitization_qpe_bloq_autotester(bloq_autotester):
+def test_qubitization_qpe_hubbard_model_small_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_hubbard_model_small)
+
+
+def test_serialization_speed():
+    start = time.perf_counter()
+    bloqs_to_proto(_qubitization_qpe_hubbard_model_small.make())
+    end = time.perf_counter()
+    # Should take substantially less time than this
+    if (end - start) > 2.0:
+        assert False, 'Serialization should only check one level; and should be quick.'
+
+
+@pytest.mark.slow
+def test_qubitization_qpe_hubbard_model_large_autotester(bloq_autotester):
+    bloq_autotester(_qubitization_qpe_hubbard_model_large)
 
 
 @pytest.mark.slow

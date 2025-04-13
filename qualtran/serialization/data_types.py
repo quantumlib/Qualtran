@@ -11,12 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran import BQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
+from qualtran import (
+    BQUInt,
+    QAny,
+    QBit,
+    QCDType,
+    QDType,
+    QFxp,
+    QInt,
+    QIntOnesComp,
+    QMontgomeryUInt,
+    QUInt,
+)
 from qualtran.protos import data_types_pb2
 from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
 
-def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
+def data_type_to_proto(data: QCDType) -> data_types_pb2.QDataType:
     if isinstance(data, QBit):
         return data_types_pb2.QDataType(qbit=data_types_pb2.QBit())
 

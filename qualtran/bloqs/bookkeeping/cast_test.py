@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 
-from qualtran import QFxp, QInt, QUInt
+from qualtran import CBit, QBit, QFxp, QInt, QUInt
 from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.bookkeeping.cast import _cast
 from qualtran.bloqs.for_testing import TestCastToFrom
@@ -57,3 +58,14 @@ def test_cast_unsiged_signed():
 
     c = Cast(QInt(5), QUInt(5))
     assert c.call_classically(reg=-1) == (31,)
+
+
+def test_cast_classical():
+    with pytest.raises(ValueError):
+        Cast(QBit(), CBit())
+
+    c = Cast(QBit(), CBit(), allow_quantum_to_classical=True)
+    assert c.call_classically(reg=1) == (1,)
+
+    c = Cast(CBit(), QBit(), allow_quantum_to_classical=True)
+    assert c.call_classically(reg=1) == (1,)

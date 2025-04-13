@@ -195,7 +195,7 @@ class QvrZPow(QvrInterface):
             power_of_two = i - self.num_frac_rotations
             exp = (2**power_of_two) * self.gamma * 2
             out[-(i + offset)] = bb.add(ZPowGate(exponent=exp, eps=eps), q=out[-(i + offset)])
-        return {self.cost_reg.name: bb.join(out, self.cost_reg.dtype)}
+        return {self.cost_reg.name: bb.join(out, self.cost_dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         zpow = ZPowGate(

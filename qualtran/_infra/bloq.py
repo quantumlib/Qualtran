@@ -16,7 +16,18 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     import cirq
@@ -173,7 +184,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -185,11 +196,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         Args:
             **vals: The input classical values for each left (or thru) register. The data
-                types are guaranteed to match `self.registers`. Values for registers
-                with bitsize `n` will be integers of that bitsize. Values for registers with
-                `shape` will be an ndarray of integers of the given bitsize. Note: integers
-                can be either Numpy or Python integers. If they are Python integers, they
-                are unsigned.
+                types are guaranteed to match `self.signature`. Values for registers
+                with a particular dtype will be the corresponding classical data type. Values for
+                registers with `shape` will be an ndarray of values of the expected type.
 
         Returns:
             A dictionary mapping right (or thru) register name to output classical values.
@@ -397,14 +406,9 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+        from qualtran import make_ctrl_system_with_correct_metabloq
 
-        if ctrl_spec != CtrlSpec():
-            # reduce controls to a single qubit
-            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
-
-        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+        return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
     def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
         """Return a controlled version of this bloq.

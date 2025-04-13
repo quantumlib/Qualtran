@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 import logging
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Connection, ConnectionT, LeftDangle, RightDangle, Signature, Soquet
+from qualtran import Bloq, Connection, ConnectionT, LeftDangle, RightDangle, Signature
 
 from ._flattening import flatten_for_tensor_contraction
 from ._quimb import cbloq_to_quimb
@@ -48,14 +48,14 @@ def _order_incoming_outgoing_indices(
     #   j:   each qubit (sub-)index for a given data type
     for reg in signature.rights():
         for idx in reg.all_idxs():
-            for j in range(reg.dtype.num_qubits):
+            for j in range(reg.dtype.num_bits):
                 if idx:
                     inds.append((outgoing[reg.name][idx], j))  # type: ignore[index]
                 else:
                     inds.append((outgoing[reg.name], j))  # type: ignore[arg-type]
     for reg in signature.lefts():
         for idx in reg.all_idxs():
-            for j in range(reg.dtype.num_qubits):
+            for j in range(reg.dtype.num_bits):
                 if idx:
                     inds.append((incoming[reg.name][idx], j))  # type: ignore[index]
                 else:
@@ -64,7 +64,7 @@ def _order_incoming_outgoing_indices(
     return inds
 
 
-def get_right_and_left_inds(tn: 'qtn.TensorNetwork', signature: Signature) -> List[List[Soquet]]:
+def get_right_and_left_inds(tn: 'qtn.TensorNetwork', signature: Signature) -> List[List[Any]]:
     """Return right and left tensor indices.
 
     In general, this will be returned as a list of length-2 corresponding
@@ -80,8 +80,11 @@ def get_right_and_left_inds(tn: 'qtn.TensorNetwork', signature: Signature) -> Li
     """
     left_inds = {}
     right_inds = {}
+
+    # Each index is a (cxn: Connection, j: int) tuple.
     cxn: Connection
     j: int
+
     for ind in tn.outer_inds():
         cxn, j = ind
         if cxn.left.binst is LeftDangle:
@@ -99,13 +102,13 @@ def get_right_and_left_inds(tn: 'qtn.TensorNetwork', signature: Signature) -> Li
     left_ordered_inds = []
     for reg in signature.lefts():
         for idx in reg.all_idxs():
-            for j in range(reg.dtype.num_qubits):
+            for j in range(reg.dtype.num_bits):
                 left_ordered_inds.append(left_inds[reg, idx, j])
 
     right_ordered_inds = []
     for reg in signature.rights():
         for idx in reg.all_idxs():
-            for j in range(reg.dtype.num_qubits):
+            for j in range(reg.dtype.num_bits):
                 right_ordered_inds.append(right_inds[reg, idx, j])
 
     inds = []

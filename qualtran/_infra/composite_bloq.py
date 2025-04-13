@@ -42,7 +42,7 @@ from numpy.typing import NDArray
 
 from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from .data_types import check_dtypes_consistent, QAny, QBit, QDType
+from .data_types import check_dtypes_consistent, QAny, QBit, QCDType, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -832,7 +832,7 @@ class BloqBuilder:
         self.add_register_allowed = add_registers_allowed
 
     def add_register_from_dtype(
-        self, reg: Union[str, Register], dtype: Optional[QDType] = None
+        self, reg: Union[str, Register], dtype: Optional[QCDType] = None
     ) -> Union[None, SoquetT]:
         """Add a new typed register to the composite bloq being built.
 
@@ -864,9 +864,9 @@ class BloqBuilder:
         else:
             if not isinstance(reg, str):
                 raise ValueError("`reg` must be a string register name if not a Register.")
-            if not isinstance(dtype, QDType):
+            if not isinstance(dtype, QCDType):
                 raise ValueError(
-                    "`dtype` must be specified and must be an QDType if `reg` is a register name."
+                    "`dtype` must be specified and must be a QCDType if `reg` is a register name."
                 )
             reg = Register(name=reg, dtype=dtype)
 
@@ -895,7 +895,7 @@ class BloqBuilder:
         this operation is not allowed.
 
         Args:
-            reg: Either the register or a register name. If this is a register, then `bitsize`
+            reg: Either the register or a register name. If this is a register name, then `bitsize`
                 must also be provided and a default THRU register will be added.
             bitsize: If `reg` is a register name, this is the bitsize for the added register.
                 Otherwise, this must not be provided.
@@ -905,8 +905,22 @@ class BloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
-        if bitsize is not None:
-            return self.add_register_from_dtype(reg, QBit() if bitsize == 1 else QAny(bitsize))
+        from qualtran.symbolics import is_symbolic
+
+        if isinstance(reg, str):
+            if bitsize is None:
+                raise ValueError(
+                    f"When calling `add_register(reg={reg!r}, bitsize=?) bitsize must be provided."
+                )
+            if is_symbolic(bitsize) or isinstance(bitsize, int):
+                return self.add_register_from_dtype(reg, QBit() if bitsize == 1 else QAny(bitsize))
+            if isinstance(bitsize, QCDType):
+                raise ValueError(
+                    f"Invalid bitsize {bitsize!r} for `add_register({reg!r}). "
+                    f"Consider `add_register_from_dtype`"
+                )
+            raise ValueError(f"Invalid bitsize {bitsize!r} for `add_register({reg!r}).")
+
         return self.add_register_from_dtype(reg)
 
     @classmethod
@@ -1224,7 +1238,11 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(dtype=soq.reg.dtype, dirty=dirty), reg=soq)
+        qdtype = soq.reg.dtype
+        if not isinstance(qdtype, QDType):
+            raise ValueError("`free` can only free quantum registers.")
+
+        self.add(Free(dtype=qdtype, dirty=dirty), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
@@ -1233,7 +1251,11 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        return self.add(Split(dtype=soq.reg.dtype), reg=soq)
+        qdtype = soq.reg.dtype
+        if not isinstance(qdtype, QDType):
+            raise ValueError("`split` can only split quantum registers.")
+
+        return self.add(Split(dtype=qdtype), reg=soq)
 
     def join(self, soqs: SoquetInT, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.bookkeeping import Join

@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
     LeftDangle,
+    QDType,
     Register,
     RightDangle,
     Side,
@@ -225,6 +226,8 @@ def _bloq_to_cirq_op(
         soq = cxn.left
         assert soq.reg.name in out_quregs, f"{soq=} should exist in {out_quregs=}."
         if soq.reg.side == Side.RIGHT:
+            if not isinstance(soq.reg.dtype, QDType):
+                raise ValueError(f"Output classical wires are not supported in Cirq. {soq=}")
             qvar_to_qreg[soq] = _QReg(out_quregs[soq.reg.name][soq.idx], dtype=soq.reg.dtype)
     return op
 
