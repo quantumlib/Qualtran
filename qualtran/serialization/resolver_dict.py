@@ -53,6 +53,7 @@ import qualtran.bloqs.block_encoding.tensor_product
 import qualtran.bloqs.block_encoding.unitary
 import qualtran.bloqs.bookkeeping
 import qualtran.bloqs.bookkeeping.allocate
+import qualtran.bloqs.bookkeeping.always
 import qualtran.bloqs.bookkeeping.arbitrary_clifford
 import qualtran.bloqs.bookkeeping.auto_partition
 import qualtran.bloqs.bookkeeping.cast
@@ -270,6 +271,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.bookkeeping.auto_partition.AutoPartition": qualtran.bloqs.bookkeeping.auto_partition.AutoPartition,
     "qualtran.bloqs.bookkeeping.cast.Cast": qualtran.bloqs.bookkeeping.cast.Cast,
     "qualtran.bloqs.bookkeeping.free.Free": qualtran.bloqs.bookkeeping.free.Free,
+    "qualtran.bloqs.bookkeeping.always.Always": qualtran.bloqs.bookkeeping.always.Always,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
     "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
     "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,
