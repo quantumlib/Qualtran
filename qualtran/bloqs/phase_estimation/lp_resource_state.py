@@ -141,7 +141,7 @@ class LPResourceState(QPEWindowStateBase):
         return self.bitsize
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        qpe_reg = bb.allocate(dtype=self.m_register.dtype)
+        qpe_reg = bb.allocate(dtype=self.m_qdtype)
         anc, flag = bb.allocate(dtype=QBit()), bb.allocate(dtype=QBit())
 
         flag_angle = np.arccos(1 / (1 + 2**self.bitsize))

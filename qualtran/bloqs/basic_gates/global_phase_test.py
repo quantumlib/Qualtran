@@ -29,7 +29,7 @@ def test_unitary():
     for alpha in random_state.random(size=10):
         coefficient = np.exp(2j * np.pi * alpha)
         bloq = GlobalPhase(exponent=2 * alpha)
-        np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
+        np.testing.assert_allclose(bloq.tensor_contract(), coefficient)
 
 
 @pytest.mark.parametrize("cv", [0, 1])

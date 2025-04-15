@@ -24,7 +24,7 @@ from attrs import field, frozen
 
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicInt
 
-from .data_types import QAny, QBit, QDType
+from .data_types import QAny, QBit, QCDType
 
 
 class Side(enum.Flag):
@@ -62,15 +62,15 @@ class Register:
     """
 
     name: str
-    dtype: QDType
+    dtype: QCDType
     _shape: Tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
 
     def __attrs_post_init__(self):
-        if not isinstance(self.dtype, QDType):
-            raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
+        if not isinstance(self.dtype, QCDType):
+            raise ValueError(f'dtype must be a QCDType: found {type(self.dtype)}')
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.dtype, *self._shape)
@@ -87,7 +87,7 @@ class Register:
 
     @property
     def bitsize(self) -> int:
-        return self.dtype.num_qubits
+        return self.dtype.num_bits
 
     def all_idxs(self) -> Iterable[Tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
@@ -99,6 +99,22 @@ class Register:
         This is the product of bitsize and each of the dimensions in `shape`.
         """
         return self.bitsize * prod(self.shape_symbolic)
+
+    def total_qubits(self) -> int:
+        """The total number of qubits in this register.
+
+        This is the product of the register's data type's number of qubits
+        and each of the dimensions in `shape`.
+        """
+        return self.dtype.num_qubits * prod(self.shape_symbolic)
+
+    def total_cbits(self) -> int:
+        """The total number of classical bits in this register.
+
+        This is the product of the register's data type's number of classical bits
+        and each of the dimensions in `shape`.
+        """
+        return self.dtype.num_cbits * prod(self.shape_symbolic)
 
     def adjoint(self) -> 'Register':
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
@@ -154,7 +170,7 @@ class Signature:
         )
 
     @classmethod
-    def build_from_dtypes(cls, **registers: QDType) -> 'Signature':
+    def build_from_dtypes(cls, **registers: QCDType) -> 'Signature':
         """Construct a Signature comprised of simple thru registers given the register dtypes.
 
         Args:
@@ -200,6 +216,34 @@ class Signature:
         If the signature has LEFT and RIGHT registers, the number of qubits in the signature
         is taken to be the greater of the number of left or right qubits. A bloq with this
         signature uses at least this many qubits.
+
+        Classical registers are ignored.
+        """
+        left_size = ssum(reg.total_qubits() for reg in self.lefts())
+        right_size = ssum(reg.total_qubits() for reg in self.rights())
+        return smax(left_size, right_size)
+
+    def n_cbits(self) -> int:
+        """The number of classical bits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of classical bits in the signature
+        is taken to be the greater of the number of left or right cbits. A bloq with this
+        signature uses at least this many classical bits.
+        """
+        left_size = ssum(reg.total_cbits() for reg in self.lefts())
+        right_size = ssum(reg.total_cbits() for reg in self.rights())
+        return smax(left_size, right_size)
+
+    def n_bits(self) -> int:
+        """The number of quantum + classical bits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of bits in the signature
+        is taken to be the greater of the number of left or right bits. A bloq with this
+        signature uses at least this many quantum + classical bits.
+
+        See Also:
+            Signature.n_qubits()
+            Signature.n_cbits()
         """
         left_size = ssum(reg.total_bits() for reg in self.lefts())
         right_size = ssum(reg.total_bits() for reg in self.rights())

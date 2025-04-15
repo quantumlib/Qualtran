@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Adjoint, Controlled
+from qualtran import _ControlledBase, Adjoint
 from qualtran.bloqs.basic_gates import Power, XGate, ZGate
 from qualtran.bloqs.chemistry.ising.walk_operator import get_walk_operator_for_1d_ising_model
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
@@ -177,7 +177,7 @@ target3: ──────B[H]─────────
         keep = binst.bloq_is(bloqs_to_keep)
         if binst.bloq_is(Adjoint):
             keep |= isinstance(binst.bloq.subbloq, bloqs_to_keep)
-        if binst.bloq_is(Controlled) and isinstance(binst.bloq.subbloq, (XGate, ZGate)):
+        if binst.bloq_is(_ControlledBase) and isinstance(binst.bloq.subbloq, (XGate, ZGate)):
             keep = True
         return not keep
 

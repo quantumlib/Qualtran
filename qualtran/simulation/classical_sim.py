@@ -47,13 +47,14 @@ from qualtran import (
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
 if TYPE_CHECKING:
-    from qualtran import QDType
+    from qualtran import QCDType
 
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
-def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
-    from qualtran._infra.data_types import QBit, QInt, QUInt
+def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
+    # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
+    from qualtran._infra.data_types import CBit, QBit, QInt, QUInt
 
     if isinstance(dtype, QUInt):
         if dtype.bitsize <= 8:
@@ -75,7 +76,7 @@ def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
         elif dtype.bitsize <= 64:
             return np.int64
 
-    if isinstance(dtype, QBit):
+    if isinstance(dtype, (QBit, CBit)):
         return np.uint8
 
     return object
@@ -87,7 +88,7 @@ def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
     if isinstance(reg.dtype, QGF):
         return reg.dtype.gf_type.Zeros(reg.shape)
 
-    return np.empty(reg.shape, dtype=_numpy_dtype_from_qdtype(reg.dtype))
+    return np.empty(reg.shape, dtype=_numpy_dtype_from_qlt_dtype(reg.dtype))
 
 
 def _get_in_vals(

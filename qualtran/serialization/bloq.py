@@ -14,7 +14,7 @@
 
 import dataclasses
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -47,8 +47,8 @@ from qualtran.serialization import (
     ec_point,
     registers,
     resolver_dict,
+    sympy_to_proto,
 )
-from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
 
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
@@ -59,7 +59,7 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, str):
         return bloq_pb2.BloqArg(name=name, string_val=val)
     if isinstance(val, sympy.Expr):
-        return bloq_pb2.BloqArg(name=name, sympy_expr=sympy_expr_to_proto(val))
+        return bloq_pb2.BloqArg(name=name, sympy_expr=sympy_to_proto.sympy_expr_to_proto(val))
     if isinstance(val, Register):
         return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
     if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
@@ -90,7 +90,7 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("string_val"):
         return {arg.name: arg.string_val}
     if arg.HasField("sympy_expr"):
-        return {arg.name: sympy_expr_from_proto(arg.sympy_expr)}
+        return {arg.name: sympy_to_proto.sympy_expr_from_proto(arg.sympy_expr)}
     if arg.HasField("register"):
         return {arg.name: registers.register_from_proto(arg.register)}
     if arg.HasField("registers"):
@@ -185,44 +185,63 @@ def bloqs_to_proto(
 
     A `BloqLibrary` contains multiple bloqs and their hierarchical decompositions. Since
     decompositions can use bloq objects that are not explicitly listed in the `bloqs` argument to
-    this function, this routine will recursively add any bloq objects encountered in decompositions
-    to the bloq library.
+    this function, this routine will recursively (up to `max_depth`) add any bloq objects
+    encountered in decompositions to the bloq library.
+
+    For bloqs within `max_depth` decompositions of the bloqs passed explicitly to this function,
+    we perform a full serialization: each bloq is serialized with its decomposition and resource
+    costs. For bloqs encountered only through references from full decompositions, or through
+    bloqs included as compiled-time classical parameters to bloqs; we perform a "shallow"
+    serialization where only the bloq, its signature, and its attributes are included in the
+    BloqLibrary.
     """
 
     # The bloq library uses a unique integer index as a simple address for each bloq object.
     # Set up this mapping and populate it by recursively searching for subbloqs.
-    bloq_to_id: Dict[Bloq, int] = {}
+    # Each value is an (id: bool, shallow: bool) tuple, where the second entry can be set to
+    # `True` for bloqs that need to be referred to but do not need a full serialization.
+    bloq_to_id_ext: Dict[Bloq, Tuple[int, bool]] = {}
     for bloq in bloqs:
-        _assign_bloq_an_id(bloq, bloq_to_id)
-        _search_for_subbloqs(bloq, bloq_to_id, pred, max_depth)
+        _assign_bloq_an_id(bloq, bloq_to_id_ext, shallow=True)
+        _search_for_subbloqs(bloq, bloq_to_id_ext, pred, max_depth)
+
+    bloq_to_id = {bloq: bloq_id for bloq, (bloq_id, shallow) in bloq_to_id_ext.items()}
 
     # Decompose[..]Error is raised if `bloq` does not have a decomposition.
     # KeyError is raised if `bloq` has a decomposition, but we do not wish to serialize it
     # because of conditions checked by `pred` and `max_depth`.
     stop_recursing_exceptions = (DecomposeNotImplementedError, DecomposeTypeError, KeyError)
 
-    # `bloq_to_id` would now contain a list of all bloqs that should be serialized.
+    # `bloq_to_id` contains a list of all bloqs that should be serialized.
     library = bloq_pb2.BloqLibrary(name=name)
-    for bloq, bloq_id in bloq_to_id.items():
-        try:
-            cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
-            decomposition = [_connection_to_proto(cxn, bloq_to_id) for cxn in cbloq.connections]
-        except stop_recursing_exceptions:
+    for bloq, (bloq_id, shallow) in bloq_to_id_ext.items():
+        if shallow:
             decomposition = None
+        else:
+            try:
+                cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
+                decomposition = [_connection_to_proto(cxn, bloq_to_id) for cxn in cbloq.connections]
+            except stop_recursing_exceptions:
+                decomposition = None
 
-        try:
-            bloq_counts = {
-                bloq_to_id[b]: args.int_or_sympy_to_proto(c)
-                for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: type(x[0]).__name__)
-            }
-        except stop_recursing_exceptions:
+        if shallow:
             bloq_counts = None
+        else:
+            try:
+                bloq_counts = {
+                    bloq_to_id[b]: args.int_or_sympy_to_proto(c)
+                    for b, c in sorted(
+                        bloq.bloq_counts().items(), key=lambda x: type(x[0]).__name__
+                    )
+                }
+            except stop_recursing_exceptions:
+                bloq_counts = None
 
         library.table.add(
-            bloq_id=bloq_id,
+            bloq_id=bloq_to_id[bloq],
             decomposition=decomposition,
             bloq_counts=bloq_counts,
-            bloq=_bloq_to_proto(bloq, bloq_to_id=bloq_to_id),
+            bloq=_bloq_to_proto(bloq, bloq_to_id=bloq_to_id, shallow=shallow),
         )
     return library
 
@@ -273,11 +292,15 @@ def _bloq_instance_to_proto(
     return bloq_pb2.BloqInstance(instance_id=binst.i, bloq_id=bloq_to_id[binst.bloq])
 
 
-def _assign_bloq_an_id(bloq: Bloq, bloq_to_id: Dict[Bloq, int]):
+def _assign_bloq_an_id(bloq: Bloq, bloq_to_id: Dict[Bloq, Tuple[int, bool]], shallow: bool = False):
     """Assigns a new index for `bloq` and records it into the `bloq_to_id` mapping."""
-    if bloq not in bloq_to_id:
+    if bloq in bloq_to_id:
+        # Keep the same id, but if anyone requests a non-shallow serialization; do it.
+        bloq_id, existing_shallow = bloq_to_id[bloq]
+        bloq_to_id[bloq] = (bloq_id, (existing_shallow and shallow))
+    else:
         next_idx = len(bloq_to_id)
-        bloq_to_id[bloq] = next_idx
+        bloq_to_id[bloq] = next_idx, shallow
 
 
 def _cbloq_ordered_bloq_instances(cbloq: CompositeBloq) -> List[BloqInstance]:
@@ -291,7 +314,10 @@ def _cbloq_ordered_bloq_instances(cbloq: CompositeBloq) -> List[BloqInstance]:
 
 
 def _search_for_subbloqs(
-    bloq: Bloq, bloq_to_id: Dict[Bloq, int], pred: Callable[[BloqInstance], bool], max_depth: int
+    bloq: Bloq,
+    bloq_to_id: Dict[Bloq, Tuple[int, bool]],
+    pred: Callable[[BloqInstance], bool],
+    max_depth: int,
 ) -> None:
     """Recursively finds all bloqs.
 
@@ -309,14 +335,16 @@ def _search_for_subbloqs(
     `pred` is not used when querying the call graph  nor when inspecting the bloq's attributes.
     """
 
-    assert bloq in bloq_to_id
     if max_depth > 0:
+        # Ensure full serialization of this bloq
+        _assign_bloq_an_id(bloq, bloq_to_id, shallow=False)
+
         # Search the bloq's decomposition
         try:
             cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
             for binst in _cbloq_ordered_bloq_instances(cbloq):
                 subbloq = binst.bloq
-                _assign_bloq_an_id(subbloq, bloq_to_id)
+                _assign_bloq_an_id(subbloq, bloq_to_id, shallow=True)
                 if pred(binst):
                     _search_for_subbloqs(subbloq, bloq_to_id, pred, max_depth - 1)
                 else:
@@ -328,7 +356,7 @@ def _search_for_subbloqs(
         # Search the bloq's call graph
         try:
             for subbloq, _ in bloq.bloq_counts().items():
-                _assign_bloq_an_id(subbloq, bloq_to_id)
+                _assign_bloq_an_id(subbloq, bloq_to_id, shallow=True)
                 _search_for_subbloqs(subbloq, bloq_to_id, pred, 0)
         except NotImplementedError:
             # No call graph, nothing to recurse on.
@@ -339,15 +367,20 @@ def _search_for_subbloqs(
     for field in _iter_fields(bloq):
         subbloq = getattr(bloq, field.name)
         if isinstance(subbloq, Bloq):
-            _assign_bloq_an_id(subbloq, bloq_to_id)
+            _assign_bloq_an_id(subbloq, bloq_to_id, shallow=True)
             _search_for_subbloqs(subbloq, bloq_to_id, pred, 0)
 
 
-def _bloq_to_proto(bloq: Bloq, *, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.Bloq:
-    try:
-        t_complexity = annotations.t_complexity_to_proto(bloq.t_complexity())
-    except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
+def _bloq_to_proto(
+    bloq: Bloq, *, bloq_to_id: Dict[Bloq, int], shallow: bool = False
+) -> bloq_pb2.Bloq:
+    if shallow:
         t_complexity = None
+    else:
+        try:
+            t_complexity = annotations.t_complexity_to_proto(bloq.t_complexity())
+        except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
+            t_complexity = None
 
     name = bloq.__module__ + "." + bloq.__class__.__qualname__
     return bloq_pb2.Bloq(

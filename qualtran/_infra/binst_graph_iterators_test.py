@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import sympy
 from attrs import frozen
 
 from qualtran import (
@@ -26,7 +26,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
-from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.basic_gates import CNOT, IntState, Swap
 from qualtran.bloqs.bookkeeping import Allocate, Free
 
 
@@ -61,3 +61,24 @@ def test_greedy_topological_sort():
         BloqInstance(bloq=Free(dtype=QBit()), i=5),
         RightDangle,
     ]
+
+
+def test_topo_sort_with_symbolic_registers():
+    # when _priority returns a symbolic value, networkx will try to use
+    # it in a comparison and you would get
+    # TypeError: cannot determine truth value of Relational.
+
+    n = sympy.Symbol('n')
+    bb = BloqBuilder()
+
+    # This isn't usually a problem for thru-registers since sympy will
+    # simplify n-n to zero, which can be compared. Test against a sided
+    # symbolic register
+    x = bb.add(IntState(5, n))
+
+    y = bb.add_register('y', n)
+    x, y = bb.add(Swap(n), x=x, y=y)
+    x, y = bb.add(Swap(n), x=x, y=y)
+    cbloq = bb.finalize(x=x, y=y)
+    res = list(greedy_topological_sort(cbloq._binst_graph))
+    assert len(res) > 0

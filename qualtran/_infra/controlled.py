@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import abc
 from collections import Counter
 from functools import cached_property
 from typing import (
@@ -18,6 +19,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Mapping,
     Optional,
     Protocol,
     Sequence,
@@ -33,7 +35,7 @@ from numpy.typing import NDArray
 
 from ..symbolics import is_symbolic, prod, Shaped, SymbolicInt
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from .data_types import QBit, QDType
+from .data_types import CDType, QBit, QCDType, QDType
 from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
@@ -116,8 +118,8 @@ class CtrlSpec:
             of the ctrl register is implied to be `cv.shape`).
     """
 
-    qdtypes: Tuple[QDType, ...] = attrs.field(
-        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
+    qdtypes: Tuple[QCDType, ...] = attrs.field(
+        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QCDType) else tuple(qt)
     )
     cvs: Tuple[Union[NDArray[np.integer], Shaped], ...] = attrs.field(
         default=1, converter=_cvs_convert
@@ -144,16 +146,26 @@ class CtrlSpec:
         return shapes  # type: ignore
 
     @cached_property
+    def num_bits(self) -> SymbolicInt:
+        """Total number of bits required for control registers represented by this CtrlSpec."""
+        return sum(dtype.num_bits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes))
+
+    @cached_property
     def num_qubits(self) -> SymbolicInt:
         """Total number of qubits required for control registers represented by this CtrlSpec."""
         return sum(
             dtype.num_qubits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes)
         )
 
+    @cached_property
+    def num_cbits(self) -> SymbolicInt:
+        """Total number of classical bits required for control registers represented by this CtrlSpec."""
+        return sum(dtype.num_cbits * prod(shape) for dtype, shape in zip(self.qdtypes, self.shapes))
+
     def is_symbolic(self):
         return is_symbolic(*self.qdtypes) or is_symbolic(*self.cvs)
 
-    def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[SymbolicInt, ...]]]:
+    def activation_function_dtypes(self) -> Sequence[Tuple[QCDType, Tuple[SymbolicInt, ...]]]:
         """The data types that serve as input to the 'activation function'.
 
         The activation function takes in (quantum) inputs of these types and shapes and determines
@@ -242,13 +254,17 @@ class CtrlSpec:
         import cirq
 
         if self.is_symbolic():
-            raise ValueError(f"Cannot convert symbolic {self} to cirq control values.")
+            raise ValueError(f"Cannot convert symbolic {self} to Cirq control values.")
+        if self.num_cbits > 0:
+            raise ValueError(
+                f"Cannot convert classical control spec {self} to Cirq control values."
+            )
 
         cirq_cv = []
-        for qdtype, cv in zip(self.qdtypes, self.cvs):
+        for dtype, cv in zip(self.qdtypes, self.cvs):
             assert isinstance(cv, np.ndarray)
-            for idx in Register('', qdtype, cv.shape).all_idxs():
-                cirq_cv += [*qdtype.to_bits(cv[idx])]
+            for idx in Register('', dtype, cv.shape).all_idxs():
+                cirq_cv += [*dtype.to_bits(cv[idx])]
         return cirq.SumOfProducts([tuple(cirq_cv)])
 
     @classmethod
@@ -256,7 +272,7 @@ class CtrlSpec:
         cls,
         cirq_cv: 'cirq.ops.AbstractControlValues',
         *,
-        qdtypes: Optional[Sequence[QDType]] = None,
+        qdtypes: Optional[Sequence[QCDType]] = None,
         shapes: Optional[Sequence[Tuple[int, ...]]] = None,
     ) -> 'CtrlSpec':
         """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
@@ -273,33 +289,31 @@ class CtrlSpec:
 
         # Verify that the given values for qdtypes and shapes are compatible with cv.
         if sum(dt.num_qubits * np.prod(sh) for dt, sh in zip(qdtypes, shapes)) != len(cv):
-            raise ValueError(
-                f"Sum of qubits across {qdtypes=} and {shapes=} should match {len(cv)=}"
-            )
+            raise ValueError(f"Sum of bits across {qdtypes=} and {shapes=} should match {len(cv)=}")
 
         # Convert the AND clause to a CtrlSpec.
         idx = 0
         bloq_cvs = []
 
-        for qdtype, shape in zip(qdtypes, shapes):
-            full_shape = shape + (qdtype.num_qubits,)
+        for dtype, shape in zip(qdtypes, shapes):
+            full_shape = shape + (dtype.num_bits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore
+            curr_cvs = np.apply_along_axis(dtype.from_bits, -1, curr_cvs_bits)  # type: ignore
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
-    def get_single_ctrl_bit(self) -> ControlBit:
+    def get_single_ctrl_val(self) -> ControlBit:
         """If controlled by a single qubit, return the control bit, otherwise raise"""
         if self.is_symbolic():
             raise ValueError(f"cannot get ctrl bit for symbolic {self}")
-        if self.num_qubits != 1:
+        if self.num_bits != 1:
             raise ValueError(f"expected a single qubit control, got {self.num_qubits}")
 
-        (qdtype,) = self.qdtypes
+        (dtype,) = self.qdtypes
         (cv,) = self.cvs
         assert isinstance(cv, np.ndarray)
-        (idx,) = Register('', qdtype, cv.shape).all_idxs()
-        (control_bit,) = qdtype.to_bits(cv[idx])
+        (idx,) = Register('', dtype, cv.shape).all_idxs()
+        (control_bit,) = dtype.to_bits(cv[idx])
 
         return int(control_bit)
 
@@ -348,23 +362,21 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
     return tuple(names)
 
 
-@attrs.frozen
-class Controlled(GateWithRegisters):
-    """A controlled version of `subbloq`.
+class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
+    """Base class for representing the controlled version of an arbitrary bloq.
 
-    This meta-bloq is part of the 'controlled' protocol. As a default fallback,
-    we wrap any bloq without a custom controlled version in this meta-bloq.
-
-    Users should likely not use this class directly. Prefer using `bloq.controlled(ctrl_spec)`,
-    which may return a tailored Bloq that is controlled in the desired way.
-
-    Args:
-        subbloq: The bloq we are controlling.
-        ctrl_spec: The specification for how to control the bloq.
+    This meta-bloq interface is part of the 'controlled' protocol.
     """
 
-    subbloq: 'Bloq'
-    ctrl_spec: 'CtrlSpec'
+    @property
+    @abc.abstractmethod
+    def subbloq(self) -> 'Bloq':
+        """The bloq being controlled."""
+
+    @property
+    @abc.abstractmethod
+    def ctrl_spec(self) -> 'CtrlSpec':
+        """The specification of how the `subbloq` is controlled."""
 
     @cached_property
     def _thru_registers_only(self) -> bool:
@@ -373,13 +385,15 @@ class Controlled(GateWithRegisters):
                 return False
         return True
 
-    @classmethod
-    def make_ctrl_system(cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec') -> Tuple[Bloq, AddControlledT]:
-        """A factory method for creating both the Controlled and the adder function.
+    @staticmethod
+    def _make_ctrl_system(cb: '_ControlledBase') -> Tuple['_ControlledBase', 'AddControlledT']:
+        """A static method to create the adder function from an implementation of this class.
+
+        Classes implementing this interface can use this static method to create a factory
+        class method to construct both the controlled bloq and its adder function.
 
         See `Bloq.get_ctrl_system`.
         """
-        cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         ctrl_reg_names = cb.ctrl_reg_names
 
         def add_controlled(
@@ -417,6 +431,181 @@ class Controlled(GateWithRegisters):
     def signature(self) -> 'Signature':
         # Prepend register(s) corresponding to `ctrl_spec`.
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValT']:
+        """Classical action of controlled bloqs.
+
+        This involves conditionally doing the classical action of `subbloq`. All implementers
+        of `_ControlledBase` should provide a decomposition that satisfies this classical action.
+        """
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
+        ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
+        other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
+        if self.ctrl_spec.is_active(*ctrl_vals):
+            rets = {
+                **self.subbloq.on_classical_vals(**other_vals),
+                **{
+                    reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
+                },
+            }
+            return rets
+
+        return vals
+
+    def _tensor_data(self):
+        """Dense tensor encoding a controlled unitary.
+
+        This is used by Bloq.my_tensors and cirq.Gate._unitary_ to support tensor simulation.
+        """
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
+        from qualtran.simulation.tensor._tensor_data_manipulation import (
+            active_space_for_ctrl_spec,
+            eye_tensor_for_signature,
+            tensor_shape_from_signature,
+        )
+
+        # Create an identity tensor corresponding to the signature of current Bloq
+        data = eye_tensor_for_signature(self.signature)
+        # Figure out the ctrl indexes for which the ctrl is "active"
+        subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
+        subbloq_tensor = self.subbloq.tensor_contract()
+        if subbloq_shape:
+            subbloq_tensor = subbloq_tensor.reshape(subbloq_shape)
+        # Put the subbloq tensor at indices where ctrl is active.
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
+        data[active_idx] = subbloq_tensor
+        return data
+
+    def _unitary_(self):
+        """Cirq-style unitary protocol."""
+        if isinstance(self.subbloq, GateWithRegisters):
+            # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
+            import cirq
+
+            # TODO It would be ideal to use `tensor_contract` always,
+            #      but at the moment it's about 5-10x slower than `cirq.unitary`.
+            #      So we default to `cirq.unitary`, and only use `tensor_contract` if it fails.
+            #      https://github.com/quantumlib/Qualtran/issues/1336
+            # TODO `cirq.ControlledGate` fails to correctly verify `subbloq` using
+            #      a compute-uncompute `And` pair is unitary.
+            #      https://github.com/quantumlib/Qualtran/issues/1488
+            try:
+                return cirq.unitary(
+                    cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+                )
+            except ValueError:
+                pass  # use the tensor contraction instead
+        if all(reg.side == Side.THRU for reg in self.subbloq.signature):
+            # subbloq has only THRU registers, so the tensor contraction corresponds
+            # to a unitary matrix.
+            return self.tensor_contract()
+        # Unable to determine the unitary effect.
+        raise ValueError(f"Cannot handle non-thru registers in {self}.")
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+
+        inds = _order_incoming_outgoing_indices(
+            self.signature, incoming=incoming, outgoing=outgoing
+        )
+        data = self._tensor_data().reshape((2,) * len(inds))
+        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import Text
+
+        if reg is None:
+            return Text(f'C[{self.subbloq}]')
+        if reg.name not in self.ctrl_reg_names:
+            # Delegate to subbloq
+            return self.subbloq.wire_symbol(reg, idx)
+
+        # Otherwise, it's part of the control register.
+        i = self.ctrl_reg_names.index(reg.name)
+        return self.ctrl_spec.wire_symbol(i, reg, idx)
+
+    def __str__(self) -> str:
+        num_ctrls = self.ctrl_spec.num_bits
+        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
+        return f'{ctrl_string}[{self.subbloq}]'
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
+        ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
+        sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
+        assert sub_op is not None
+        return (
+            sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
+            cirq_quregs | ctrl_regs,
+        )
+
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+
+        if isinstance(self.subbloq, cirq.Gate):
+            sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
+            if sub_info is not None:
+                cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())
+
+                return cirq.CircuitDiagramInfo(
+                    wire_symbols=(*cv_info.wire_symbols, *sub_info.wire_symbols),
+                    exponent=sub_info.exponent,
+                )
+
+        return _wire_symbol_to_cirq_diagram_info(self, args)
+
+
+@attrs.frozen
+class Controlled(_ControlledBase):
+    """A controlled version of `subbloq`.
+
+    This bloq represents a "total control" strategy of controlling `subbloq`: the decomposition
+    of `Controlled(b)` uses the decomposition of `b` and controls each subbloq in that
+    decomposition.
+
+    Users should likely not use this class directly. Prefer using `bloq.controlled(ctrl_spec)`,
+    which may return a natively-controlled Bloq or a more intelligent construction for
+    complex control specs.
+
+    Args:
+        subbloq: The bloq we are controlling.
+        ctrl_spec: The specification for how to control the bloq.
+    """
+
+    subbloq: 'Bloq'
+    ctrl_spec: 'CtrlSpec'
+
+    def __attrs_post_init__(self):
+        for qdtype in self.ctrl_spec.qdtypes:
+            if not isinstance(qdtype, QCDType):
+                raise ValueError(f"Invalid type found in `ctrl_spec`: {qdtype}")
+            if not isinstance(qdtype, QDType):
+                raise ValueError(
+                    f"`qualtran.Controlled` requires a purely-quantum control spec for accurate resource estimation. Found {qdtype}. Consider using TODO"
+                )
+
+    @classmethod
+    def make_ctrl_system(
+        cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
+    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+        """A factory method for creating both the Controlled and the adder function.
+
+        See `Bloq.get_ctrl_system`.
+        """
+        cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
+        return cls._make_ctrl_system(cb)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return Bloq.decompose_bloq(self)
@@ -469,127 +658,46 @@ class Controlled(GateWithRegisters):
                 counts[bloq.controlled(self.ctrl_spec)] += n
         return counts
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        if not self._thru_registers_only:
-            raise ValueError(f"Cannot handle non-thru registers in {self}.")
-        ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
-        other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
-        if self.ctrl_spec.is_active(*ctrl_vals):
-            rets = self.subbloq.on_classical_vals(**other_vals)
-            rets |= {
-                reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
-            }
-            return rets
-
-        return vals
-
-    def _tensor_data(self):
-        if not self._thru_registers_only:
-            raise ValueError(f"Cannot handle non-thru registers in {self}.")
-        from qualtran.simulation.tensor._tensor_data_manipulation import (
-            active_space_for_ctrl_spec,
-            eye_tensor_for_signature,
-            tensor_shape_from_signature,
-        )
-
-        # Create an identity tensor corresponding to the signature of current Bloq
-        data = eye_tensor_for_signature(self.signature)
-        # Figure out the ctrl indexes for which the ctrl is "active"
-        subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
-        subbloq_tensor = self.subbloq.tensor_contract()
-        if subbloq_shape:
-            subbloq_tensor = subbloq_tensor.reshape(subbloq_shape)
-        # Put the subbloq tensor at indices where ctrl is active.
-        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
-        data[active_idx] = subbloq_tensor
-        return data
-
-    def _unitary_(self):
-        if isinstance(self.subbloq, GateWithRegisters):
-            # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
-            import cirq
-
-            # TODO It would be ideal to use `tensor_contract` always,
-            #      but at the moment it's about 5-10x slower than `cirq.unitary`.
-            #      So we default to `cirq.unitary`, and only use `tensor_contract` if it fails.
-            #      https://github.com/quantumlib/Qualtran/issues/1336
-            # TODO `cirq.ControlledGate` fails to correctly verify `subbloq` using
-            #      a compute-uncompute `And` pair is unitary.
-            #      https://github.com/quantumlib/Qualtran/issues/1488
-            try:
-                return cirq.unitary(
-                    cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
-                )
-            except ValueError:
-                pass  # use the tensor contraction instead
-        if all(reg.side == Side.THRU for reg in self.subbloq.signature):
-            # subbloq has only THRU registers, so the tensor contraction corresponds
-            # to a unitary matrix.
-            return self.tensor_contract()
-        # Unable to determine the unitary effect.
-        raise ValueError(f"Cannot handle non-thru registers in {self}.")
-
-    def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
-        import quimb.tensor as qtn
-
-        from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
-
-        inds = _order_incoming_outgoing_indices(
-            self.signature, incoming=incoming, outgoing=outgoing
-        )
-        data = self._tensor_data().reshape((2,) * len(inds))
-        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
-
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import Text
-
-        if reg is None:
-            return Text(f'C[{self.subbloq}]')
-        if reg.name not in self.ctrl_reg_names:
-            # Delegate to subbloq
-            return self.subbloq.wire_symbol(reg, idx)
-
-        # Otherwise, it's part of the control register.
-        i = self.ctrl_reg_names.index(reg.name)
-        return self.ctrl_spec.wire_symbol(i, reg, idx)
-
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
-    def __str__(self) -> str:
-        num_ctrls = self.ctrl_spec.num_qubits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
-        return f'{ctrl_string}[{self.subbloq}]'
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
-        ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
-        sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
-        assert sub_op is not None
-        return (
-            sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
-            cirq_quregs | ctrl_regs,
+def make_ctrl_system_with_correct_metabloq(
+    bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
+) -> Tuple['_ControlledBase', 'AddControlledT']:
+    """The default fallback for `Bloq.make_ctrl_system.
+
+    This intelligently selects the correct implemetation of `_ControlledBase` based
+    on the control spec.
+
+     - A 1-qubit, positive control (i.e. `CtrlSpec()`) uses `Controlled`, which uses a
+       "total control" decomposition.
+     - Complex quantum controls (i.e. `CtrlSpec(...)` with quantum data types) uses
+       `ControlledViaAnd`, which computes the activation function once and re-uses it
+       for each subbloq in the decomposition of `bloq`.
+    """
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+    if ctrl_spec == CtrlSpec():
+        return Controlled.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
+
+    qdtypes = []
+    cdtypes = []
+    for qcdtype in ctrl_spec.qdtypes:
+        if not isinstance(qcdtype, QCDType):
+            raise ValueError(f"Invalid data type encountered in the control spec: {qcdtype}")
+        if isinstance(qcdtype, QDType):
+            qdtypes.append(qcdtype)
+        if isinstance(qcdtype, CDType):
+            cdtypes.append(qcdtype)
+
+    if qdtypes and cdtypes:
+        raise NotImplementedError(
+            "At present, Qualtran does not support mixing quantum and classical controls within a single CtrlSpec. As an alternative, consider first getting a quantum controlled bloq and then classically controlling it."
         )
+    if qdtypes:
+        return ControlledViaAnd.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
+    if cdtypes:
+        raise NotImplementedError("Stay tuned...")
 
-    def _circuit_diagram_info_(
-        self, args: 'cirq.CircuitDiagramInfoArgs'
-    ) -> 'cirq.CircuitDiagramInfo':
-        import cirq
-
-        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
-
-        if isinstance(self.subbloq, cirq.Gate):
-            sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
-            if sub_info is not None:
-                cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())
-
-                return cirq.CircuitDiagramInfo(
-                    wire_symbols=(*cv_info.wire_symbols, *sub_info.wire_symbols),
-                    exponent=sub_info.exponent,
-                )
-
-        return _wire_symbol_to_cirq_diagram_info(self, args)
+    raise ValueError(f"Invalid control spec: {ctrl_spec}")
