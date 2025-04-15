@@ -19,11 +19,11 @@ from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, Signature, Soq
 
 
 @attrs.frozen
-class IgnoringCtrl(Bloq):
-    """A wrapper for bloqs to ignore any controls.
+class Always(Bloq):
+    """Apply the wrapped bloq as-is, ignoring any controls.
 
     Useful when writing decompositions which have bloqs that occur in compute-uncompute pairs.
-    Simply wrap the compute and uncompute bloq in `IgnoringCtrl`, and controlled versions of
+    Simply wrap the compute and uncompute bloq in `Always`, and controlled versions of
     the whole bloq will skip controls for the wrapped subbloqs.
 
     Caution:
@@ -56,8 +56,8 @@ class IgnoringCtrl(Bloq):
 
         return self, add_controlled
 
-    def adjoint(self) -> 'IgnoringCtrl':
-        return IgnoringCtrl(self.subbloq.adjoint())
+    def adjoint(self) -> 'Always':
+        return Always(self.subbloq.adjoint())
 
     def __str__(self) -> str:
         return str(self.subbloq)
