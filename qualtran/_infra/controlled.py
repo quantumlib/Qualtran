@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
@@ -432,7 +432,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         # Prepend register(s) corresponding to `ctrl_spec`.
         return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
         """Classical action of controlled bloqs.
 
         This involves conditionally doing the classical action of `subbloq`. All implementers
@@ -452,6 +452,18 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
             return rets
 
         return vals
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """Phasing action of controlled bloqs.
+
+        This involves conditionally doing the phasing action of `subbloq`. All implementers
+        of `_ControlledBase` should provide a decomposition that satisfies this phase funciton.
+        """
+        ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
+        other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
+        if self.ctrl_spec.is_active(*ctrl_vals):
+            return self.subbloq.basis_state_phase(**other_vals)
+        return None
 
     def _tensor_data(self):
         """Dense tensor encoding a controlled unitary.

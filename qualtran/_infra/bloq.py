@@ -60,7 +60,8 @@ if TYPE_CHECKING:
         GeneralizerT,
         SympySymbolAllocator,
     )
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
+    from qualtran.simulation.tensor import DiscardInd
 
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
@@ -68,6 +69,10 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
 
     bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+    if not isinstance(out_soqs, dict):
+        raise ValueError(
+            f'{bloq}.build_composite_bloq must return a dictionary mapping right register names to output soquets.'
+        )
     return bb.finalize(**out_soqs)
 
 
@@ -184,13 +189,13 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Mapping[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValRetT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `call_clasically(**vals)` which will do input validation before
         calling this function.
 
@@ -214,6 +219,25 @@ class Bloq(metaclass=abc.ABCMeta):
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """How this bloq phases classical basis states.
+
+        Override this method if your bloq represents classical logic with basis-state
+        dependent phase factors. This corresponds to bloqs whose matrix representation
+        (in the standard basis) is a generalized permutation matrix: a permutation matrix
+        where each entry can be +1, -1 or any complex number with unit absolute value.
+        Alternatively, this corresponds to bloqs composed from classical operations
+        (X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+        Bloq authors should override this method. If you are using an instantiated bloq object,
+        call TODO and not this method directly.
+
+        If this method is implemented, `on_classical_vals` must also be implemented.
+        If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+        that the bloq does not alter the phase.
+        """
+        return None
 
     def call_classically(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
@@ -239,21 +263,45 @@ class Bloq(metaclass=abc.ABCMeta):
         res = self.as_composite_bloq().on_classical_vals(**vals)
         return tuple(res[reg.name] for reg in self.signature.rights())
 
-    def tensor_contract(self) -> 'NDArray':
-        """Return a contracted, dense ndarray representing this bloq.
+    def tensor_contract(self, superoperator: bool = False) -> 'NDArray':
+        """Return a contracted, dense ndarray encoding of this bloq.
 
-        This constructs a tensor network and then contracts it according to our registers,
-        i.e. the dangling indices. The returned array will be 0-, 1- or 2-dimensional. If it is
-        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-        of (right, left) indices.
+        This method decomposes and flattens this bloq into a factorized CompositeBloq,
+        turns that composite bloq into a Quimb tensor network, and contracts it into a dense
+        ndarray.
+
+        The returned array will be 0-, 1-, 2-, or 4-dimensional with indices arranged according to the
+        bloq's signature and the type of simulation requested via the `superoperator` flag.
+
+        If `superoperator` is set to False (the default), a pure-state tensor network will be
+        constructed.
+         - If `bloq` has all thru-registers, the dense tensor will be 2-dimensional with shape `(n, n)`
+           where `n` is the number of bits in the signature. We follow the linear algebra convention
+           and order the indices as (right, left) so the matrix-vector product can be used to evolve
+           a state vector.
+         - If `bloq` has all left- or all right-registers, the tensor will be 1-dimensional with
+           shape `(n,)`. Note that we do not distinguish between 'row' and 'column' vectors in this
+           function.
+         - If `bloq` has no external registers, the contracted form is a 0-dimensional complex number.
+
+        If `superoperator` is set to True, an open-system tensor network will be constructed.
+         - States result in a 2-dimensional density matrix with indices (right_forward, right_backward)
+           or (left_forward, left_backward) depending on whether they're input or output states.
+         - Operations result in a 4-dimensional tensor with indices (right_forward, right_backward,
+           left_forward, left_backward).
+
+        Args:
+            superoperator: If toggled to True, do an open-system simulation. This supports
+                non-unitary operations like measurement, but is more costly and results in
+                higher-dimension resultant tensors.
         """
         from qualtran.simulation.tensor import bloq_to_dense
 
-        return bloq_to_dense(self)
+        return bloq_to_dense(self, superoperator=superoperator)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+    ) -> List[Union['qtn.Tensor', 'DiscardInd']]:
         """Override this method to support native quimb simulation of this Bloq.
 
         This method is responsible for returning tensors corresponding to the unitary, state, or
