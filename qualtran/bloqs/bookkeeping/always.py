@@ -15,12 +15,21 @@ from typing import Iterable, Optional, Sequence
 
 import attrs
 
-from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, Signature, SoquetT
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    CtrlSpec,
+    Signature,
+    SoquetT,
+)
 
 
 @attrs.frozen
 class Always(Bloq):
-    """Apply the wrapped bloq as-is, ignoring any controls.
+    """Always execute the wrapped bloq, even when a controlled version is requested
 
     Useful when writing decompositions which have bloqs that occur in compute-uncompute pairs.
     Simply wrap the compute and uncompute bloq in `Always`, and controlled versions of
@@ -61,3 +70,15 @@ class Always(Bloq):
 
     def __str__(self) -> str:
         return str(self.subbloq)
+
+
+@bloq_example
+def _always_and() -> Always:
+    from qualtran.bloqs.mcmt.and_bloq import And
+
+    always_and = Always(And())
+
+    return always_and
+
+
+_ALWAYS_DOC = BloqDocSpec(bloq_cls=Always, examples=[_always_and])

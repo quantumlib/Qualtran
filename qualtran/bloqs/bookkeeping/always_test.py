@@ -11,8 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.bookkeeping.always import Always
+from qualtran.bloqs.bookkeeping.always import Always, _always_and
 from qualtran.bloqs.for_testing import TestAtom
+
+
+def test_example(bloq_autotester):
+    bloq_autotester(_always_and)
 
 
 def test_always():
