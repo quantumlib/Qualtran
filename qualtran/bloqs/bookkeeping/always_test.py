@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.bookkeeping.always import Always, _always_and
+from qualtran.bloqs.bookkeeping.always import _always_and, Always
 from qualtran.bloqs.for_testing import TestAtom
 
 

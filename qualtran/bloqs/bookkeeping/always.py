@@ -43,15 +43,14 @@ class Always(Bloq):
 
     2. Controlled data-loading: For example, in the `AddK` bloq which adds a constant `k` to the
     register, we (controlled) load the value `k` into a quantum register, and "always" perform an
-    quantum-quantum addition using `Add`, and unload `k`. Here wrapping the middle `Add` with `Always`
-    lets it bypass controls, e.g. when using `AddK.controlled()`.
+    quantum-quantum addition using `Add`, and unload `k`. Here wrapping the middle `Add` with
+    `Always` lets it bypass controls, e.g. when using `AddK.controlled()`.
 
     This simplifies the decompositions by avoiding the need to explicitly define the decomposition
     for the controlled version of bloq.
 
-    Caution:
-        This wrapper should be used with care, _only_ when ignoring the controls
-        does not affect the overall action of the bloq.
+    **Caution:** This wrapper should be used with care, _only_ when ignoring the controls does not
+    affect the overall action of the bloq.
 
     Args:
         subbloq: The bloq to always apply, irrespective of any controls.
