@@ -189,6 +189,8 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.num_controls
+        if not is_symbolic(n_toffoli):
+            n_toffoli = max(0, n_toffoli)
         return {Toffoli(): n_toffoli}
 
     @cached_property
@@ -278,6 +280,8 @@ class QROAMCleanAdjointWrapper(Bloq):
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.qroam_clean.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.qroam_clean.num_controls
+        if not is_symbolic(n_toffoli):
+            n_toffoli = max(0, n_toffoli)
         return {Toffoli(): n_toffoli}
 
     def adjoint(self) -> 'QROAMClean':
