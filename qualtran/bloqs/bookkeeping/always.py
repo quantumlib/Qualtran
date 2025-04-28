@@ -31,16 +31,30 @@ from qualtran import (
 class Always(Bloq):
     """Always execute the wrapped bloq, even when a controlled version is requested
 
-    Useful when writing decompositions which have bloqs that occur in compute-uncompute pairs.
-    Simply wrap the compute and uncompute bloq in `Always`, and controlled versions of
-    the whole bloq will skip controls for the wrapped subbloqs.
+    A controlled version of a composite bloq in turn controls each subbloq in the decomposition.
+    Wrapping a particular subbloq with `Always` lets it bypass the controls,
+    i.e. it is "always" executed, irrespective of what the controls are.
+
+    This is useful when writing decompositions for two known patterns:
+
+    1. Compute-uncompute pairs: If a decomposition contains a compute-uncompute pair,
+    then for a controlled version, we only need to control the rest of the bloqs.
+    Wrapping both the compute and uncompute bloqs in `Always` lets them bypass the controls.
+
+    2. Controlled data-loading: For example, in the `AddK` bloq which adds a constant `k` to the
+    register, we (controlled) load the value `k` into a quantum register, and "always" perform an
+    quantum-quantum addition using `Add`, and unload `k`. Here wrapping the middle `Add` with `Always`
+    lets it bypass controls, e.g. when using `AddK.controlled()`.
+
+    This simplifies the decompositions by avoiding the need to explicitly define the decomposition
+    for the controlled version of bloq.
 
     Caution:
         This wrapper should be used with care, _only_ when ignoring the controls
-        does not affect the action of the bloq.
+        does not affect the overall action of the bloq.
 
     Args:
-        subbloq: The bloq to wrap, for which controls are ignores.
+        subbloq: The bloq to always apply, irrespective of any controls.
     """
 
     subbloq: Bloq
