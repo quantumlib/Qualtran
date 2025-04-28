@@ -455,7 +455,9 @@ class AddK(Bloq):
         k = bb.allocate(dtype=self.dtype)
         k = bb.add(self._load_k_bloq, x=k)
 
-        # quantum-quantum addition, always
+        # perform the quantum-quantum addition
+        # we always perform this addition (even when controlled), so we wrap in `Always`
+        # controlling the data loading is sufficient to control this bloq.
         k, x = bb.add(Always(Add(self.dtype, self.dtype)), a=k, b=x)
 
         # unload `k`
