@@ -49,8 +49,10 @@ class Always(Bloq):
     This simplifies the decompositions by avoiding the need to explicitly define the decomposition
     for the controlled version of bloq.
 
-    **Caution:** This wrapper should be used with care, _only_ when ignoring the controls does not
-    affect the overall action of the bloq.
+    **Caution:** This wrapper should be used with care. It is up to the bloq author to ensure that
+    the controlled version of a decomposition containing `Always` bloqs still respects the
+    controlled protocol. That is, ignoring controls on these subbloqs wrapped in `Always` should not
+    change the action of the overall bloq with respect to the reference controlled implementation.
 
     Args:
         subbloq: The bloq to always apply, irrespective of any controls.
