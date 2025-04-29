@@ -14,3 +14,9 @@ table.tfo-notebook-buttons.tfo-api {
     width: 100%;
     margin-bottom: 1.5em;
 }
+
+/* Adjust size of GitHub icon in the nav bar.
+ */
+html .pst-navbar-icon {
+  font-size: 1.5rem;
+}
