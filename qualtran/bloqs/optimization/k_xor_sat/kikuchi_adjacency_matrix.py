@@ -26,23 +26,12 @@
 from collections import Counter
 from functools import cached_property
 
-import attrs
 import sympy
 from attrs import frozen
 
-from qualtran import (
-    AddControlledT,
-    Bloq,
-    bloq_example,
-    BloqDocSpec,
-    CtrlSpec,
-    QAny,
-    QBit,
-    QFxp,
-    QUInt,
-    Signature,
-)
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.lists import SymmetricDifference
+from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance import (
     LoadUniqueScopeIndex,
@@ -97,15 +86,11 @@ class KikuchiMatrixEntry(Bloq):
     inst: KXorInstance
     ell: SymbolicInt
     entry_bitsize: SymbolicInt
-    is_controlled: bool = False
 
     @property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(
-            ctrl=QAny(1 if self.is_controlled else 0),
-            S=QAny(self.composite_index_bitsize),
-            T=QAny(self.composite_index_bitsize),
-            q=QBit(),
+            S=QAny(self.composite_index_bitsize), T=QAny(self.composite_index_bitsize), q=QBit()
         )
 
     @cached_property
@@ -125,37 +110,20 @@ class KikuchiMatrixEntry(Bloq):
         counts = Counter[Bloq]()
 
         # S \Delta T
-        symm_diff = SymmetricDifference(self.ell, self.ell, self.inst.k, self.index_dtype)
+        symm_diff = Always(SymmetricDifference(self.ell, self.ell, self.inst.k, self.index_dtype))
         counts[symm_diff] += 1
         counts[symm_diff.adjoint()] += 1
 
         # Map S to j, such that U_j = S
-        load_idx = LoadUniqueScopeIndex(self.inst)
+        load_idx = Always(LoadUniqueScopeIndex(self.inst))
         counts[load_idx] += 1
         counts[load_idx.adjoint()] += 1
 
         # apply the rotation
         rotation: Bloq = PRGAUniqueConstraintRHS(self.inst, self.entry_bitsize)
-        if self.is_controlled:
-            rotation = rotation.controlled()
         counts[rotation] += 1
 
         return counts
-
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
-
-        ctrl_bit, ctrl_bloq = (
-            (1, self) if self.is_controlled else (None, attrs.evolve(self, is_controlled=True))
-        )
-
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self,
-            ctrl_spec,
-            current_ctrl_bit=ctrl_bit,
-            bloq_with_ctrl=ctrl_bloq,
-            ctrl_reg_name='ctrl',
-        )
 
 
 @bloq_example
