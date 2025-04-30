@@ -593,7 +593,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
 
     @cached_property
     def _add_extra_qubit(self):
-        return 2*self.mod - 1 >= 2**self.bitsize
+        return self.mod - 1 >= 2**self.bitsize
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -660,7 +660,13 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         if self.uncompute:
             assert (
                 target is not None
-                and target == (x * y * pow(2, (self.bitsize + self._add_extra_qubit) * (self.mod - 2), self.mod)) % self.mod
+                and target
+                == (
+                    x
+                    * y
+                    * pow(2, (self.bitsize + self._add_extra_qubit) * (self.mod - 2), self.mod)
+                )
+                % self.mod
             )
             assert qrom_indices is not None
             assert reduced is not None
@@ -682,13 +688,17 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
             target -= self.mod
             reduced = 1
 
-        montgomery_prod = (x * y * pow(2, (self.bitsize + self._add_extra_qubit)* (self.mod - 2), self.mod)) % self.mod
+        montgomery_prod = (
+            x * y * pow(2, (self.bitsize + self._add_extra_qubit) * (self.mod - 2), self.mod)
+        ) % self.mod
         assert target == montgomery_prod
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
 
     @cached_property
     def _mod_mul_impl(self) -> Bloq:
-        b: Bloq = _DirtyOutOfPlaceMontgomeryModMulImpl(self.bitsize + self._add_extra_qubit, self.window_size, self.mod)
+        b: Bloq = _DirtyOutOfPlaceMontgomeryModMulImpl(
+            self.bitsize + self._add_extra_qubit, self.window_size, self.mod
+        )
         if self.uncompute:
             b = b.adjoint()
         return b
@@ -708,9 +718,9 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
             assert reduced is not None
 
             if self._add_extra_qubit:
-                x = bb.join([x, bb.allocate(1, QMontgomeryUInt(1))])
-                y = bb.join([x, bb.allocate(y, QMontgomeryUInt(1))])
-                target = bb.join([x, bb.allocate(target, QMontgomeryUInt(1))])
+                x = bb.join([x, bb.allocate(1, dtype=QMontgomeryUInt(1))])
+                y = bb.join([y, bb.allocate(1, dtype=QMontgomeryUInt(1))])
+                target = bb.join([target, bb.allocate(1, dtype=QMontgomeryUInt(1))])
 
             x, y, target, qrom_indices, reduced = bb.add_from(  # type: ignore
                 self._mod_mul_impl,
@@ -728,9 +738,9 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
 
         target = bb.allocate(self.bitsize, QMontgomeryUInt(self.bitsize))
         if self._add_extra_qubit:
-            x = bb.join([x, bb.allocate(1, QMontgomeryUInt(1))])
-            y = bb.join([x, bb.allocate(y, QMontgomeryUInt(1))])
-            target = bb.join([x, bb.allocate(target, QMontgomeryUInt(1))])
+            x = bb.join([x, bb.allocate(1, dtype=QMontgomeryUInt(1))])
+            y = bb.join([y, bb.allocate(1, dtype=QMontgomeryUInt(1))])
+            target = bb.join([target, bb.allocate(1, dtype=QMontgomeryUInt(1))])
         num_windows = (self.bitsize + self.window_size - 1) // self.window_size
         qrom_indices = bb.allocate(
             num_windows * self.window_size, QMontgomeryUInt(num_windows * self.window_size)
@@ -742,18 +752,17 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         )
 
         if self._add_extra_qubit:
-            x_arr = bb.split(x)
+            x_arr = bb.split(x)  # type: ignore[arg-type]
             bb.free(x_arr[0])
             x = bb.join(x_arr[1:])
-            
-            y_arr = bb.split(y)
+
+            y_arr = bb.split(y)  # type: ignore[arg-type]
             bb.free(y_arr[0])
             y = bb.join(y_arr[1:])
 
-            target_arr = bb.split(target)
+            target_arr = bb.split(target)  # type: ignore[arg-type]
             bb.free(target_arr[0])
             target = bb.join(target_arr[1:])
-
 
         return {'x': x, 'y': y, 'target': target, 'qrom_indices': qrom_indices, 'reduced': reduced}
 
