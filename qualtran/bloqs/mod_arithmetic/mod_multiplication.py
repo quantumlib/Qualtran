@@ -593,7 +593,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
 
     @cached_property
     def _add_extra_qubit(self):
-        return 2*self.mod - 2 >= 2**self.bitsize
+        return 2 * self.mod - 2 >= 2**self.bitsize
 
     @cached_property
     def signature(self) -> 'Signature':
