@@ -76,7 +76,7 @@ html_sidebars = {
 
 html_static_path = ['_static']
 html_css_files = ['fixes.css', 'qai-theme.css']
-html_logo = 'https://raw.githubusercontent.com/quantumlib/Qualtran/8fa2e8ae4fa071ece632fb7a7f615918128983e3/docs/_static/qualtran-logo-mode-sensitive.svg'
+html_logo = 'https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/qualtran-logo-mode-sensitive.svg'
 html_favicon = (
     'https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/favicon.png'
 )
