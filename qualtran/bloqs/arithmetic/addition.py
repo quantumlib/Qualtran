@@ -15,7 +15,6 @@ from collections import Counter
 from functools import cached_property
 from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
-import attrs
 import cirq
 import numpy as np
 import sympy
@@ -32,7 +31,6 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     GateWithRegisters,
-    QAny,
     QInt,
     QMontgomeryUInt,
     QUInt,
@@ -43,6 +41,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 from qualtran.cirq_interop import decompose_from_cirq_style_method
@@ -404,7 +403,6 @@ class AddK(Bloq):
     Args:
         dtype: data type of the input register `x`
         k: The classical integer value to be added to x.
-        is_controlled: if True, construct a singly-controlled bloq.
 
     Registers:
         x: register of type `self.dtype`
@@ -416,7 +414,6 @@ class AddK(Bloq):
 
     dtype: Union[QInt, QUInt, QMontgomeryUInt]
     k: 'SymbolicInt'
-    is_controlled: bool = False
 
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
@@ -426,7 +423,7 @@ class AddK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(ctrl=QAny(1 if self.is_controlled else 0), x=self.dtype)
+        return Signature.build_from_dtypes(x=self.dtype)
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
@@ -434,11 +431,10 @@ class AddK(Bloq):
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
 
-        if not self.is_controlled or vals['ctrl']:
-            is_signed = isinstance(self.dtype, QInt)
-            x = add_ints(int(x), int(self.k), num_bits=self.dtype.num_qubits, is_signed=is_signed)
+        is_signed = isinstance(self.dtype, QInt)
+        x = add_ints(int(x), int(self.k), num_bits=self.dtype.num_qubits, is_signed=is_signed)
 
-        return vals | {'x': x}
+        return {'x': x}
 
     @cached_property
     def _load_k_bloq(self) -> Bloq:
@@ -449,54 +445,35 @@ class AddK(Bloq):
             # Since this is unsigned addition, adding `-v` is equivalent to adding `2**bitsize - v`
             k %= 2**self.dtype.bitsize
 
-        xork = XorK(self.dtype, k)
-        return xork.controlled() if self.is_controlled else xork
+        return XorK(self.dtype, k)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, **soqs: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
 
-        # load `k` (conditional on ctrl if present)
+        # load `k`
         k = bb.allocate(dtype=self.dtype)
-        load_soqs = {'x': k}
-        if self.is_controlled:
-            load_soqs |= {'ctrl': soqs.pop('ctrl')}
-        load_soqs = bb.add_d(self._load_k_bloq, **load_soqs)
-        k = load_soqs.pop('x')
+        k = bb.add(self._load_k_bloq, x=k)
 
-        # quantum-quantum addition
-        k, x = bb.add(Add(self.dtype, self.dtype), a=k, b=x)
+        # perform the quantum-quantum addition
+        # we always perform this addition (even when controlled), so we wrap in `Always`
+        # controlling the data loading is sufficient to control this bloq.
+        k, x = bb.add(Always(Add(self.dtype, self.dtype)), a=k, b=x)
 
         # unload `k`
-        load_soqs['x'] = k
-        load_soqs = bb.add_d(self._load_k_bloq.adjoint(), **load_soqs)
-        k = load_soqs.pop('x')
-        assert isinstance(k, Soquet)
+        k = bb.add(self._load_k_bloq.adjoint(), x=k)
         bb.free(k)
 
-        return {'x': x} | load_soqs
+        return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         counts = Counter[Bloq]()
 
         counts[self._load_k_bloq] += 1
-        counts[Add(self.dtype, self.dtype)] += 1
+        counts[Always(Add(self.dtype, self.dtype))] += 1
         counts[self._load_k_bloq.adjoint()] += 1
 
         return counts
-
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
-
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self,
-            ctrl_spec,
-            current_ctrl_bit=1 if self.is_controlled else None,
-            bloq_with_ctrl=attrs.evolve(self, is_controlled=True),
-            ctrl_reg_name='ctrl',
-        )
 
 
 @bloq_example(generalizer=ignore_split_join)

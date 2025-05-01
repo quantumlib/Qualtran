@@ -38,10 +38,7 @@ bartiq==0.9.0
 pyzx
 
 # Pennylane interop
-# TODO: https://github.com/quantumlib/Qualtran/issues/1589
-#       Reset to the released version when qualtran functionality
-#       is included
-pennylane@git+https://github.com/PennyLaneAI/pennylane.git@qualtran_pl
+pennylane
 
 # serialization
 protobuf

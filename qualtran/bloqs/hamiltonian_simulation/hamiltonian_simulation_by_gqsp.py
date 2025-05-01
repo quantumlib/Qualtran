@@ -21,6 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, Signature, Soquet
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.polynomial.jacobi_anger_approximations import (
@@ -153,7 +154,7 @@ class HamiltonianSimulationByGQSP(Bloq):
 
         selection_registers = {reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers}
         prepare_out_soqs = bb.add_d(
-            prepare.adjoint() if adjoint else prepare,
+            Always(prepare.adjoint() if adjoint else prepare),
             **selection_registers,
             **state_prep_ancilla_soqs,
         )
@@ -186,8 +187,8 @@ class HamiltonianSimulationByGQSP(Bloq):
         counts = Counter[Bloq]()
 
         d = self.degree
-        counts[self.walk_operator.prepare] += 1
-        counts[self.walk_operator.prepare.adjoint()] += 1
+        counts[Always(self.walk_operator.prepare)] += 1
+        counts[Always(self.walk_operator.prepare.adjoint())] += 1
         counts[self.walk_operator.controlled(ctrl_spec=CtrlSpec(cvs=0))] += d
         counts[self.walk_operator.adjoint().controlled()] += d
         counts[SU2RotationGate.arbitrary(ssa)] += 2 * d + 1

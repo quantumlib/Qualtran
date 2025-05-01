@@ -317,7 +317,6 @@ def test_out_of_place_adder():
 def test_controlled_add_k():
     n, k = sympy.symbols('n k')
     addk = AddK(QUInt(n), k)
-    assert addk.controlled() == AddK(QUInt(n), k, is_controlled=True)
     _, sigma = addk.controlled(CtrlSpec(cvs=0)).call_graph(max_depth=1)
     assert sigma == {addk.controlled(): 1, XGate(): 2}
 
@@ -346,7 +345,7 @@ def test_add_k_decomp_signed(bitsize, k, cvs):
     'bitsize,k,x,cvs,ctrls,result',
     [
         (5, 1, 2, (), (), 3),
-        (5, 3, 2, (1,), 1, 5),
+        (5, 3, 2, (1,), (1,), 5),
         (5, 2, 0, (1, 0), (1, 0), 2),
         (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
     ],
