@@ -211,3 +211,19 @@ def test_qroam_clean_classical_sim_multi_dataset():
                 target1_=vals[3],
                 junk_target1_=vals[5],
             ) == (x, y)
+
+
+def test_qroam_clean_small_bloq_counts():
+    qroam_clean = QROAMClean(
+        data_or_shape=(np.array([0, 7]),),
+        selection_bitsizes=(1,),
+        target_bitsizes=(6,),
+        target_shapes=((),),
+        num_controls=0,
+        log_block_sizes=(0,),
+    )
+    assert qroam_clean.t_complexity().t == 0
+    qroam_clean_adj_wrapper = QROAMCleanAdjointWrapper(
+        qroam_clean=qroam_clean, log_block_sizes=(0,)
+    )
+    assert qroam_clean_adj_wrapper.t_complexity().t == 0

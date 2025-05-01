@@ -1,42 +1,54 @@
 # Citation information for this repository.                         -*- yaml -*-
 #
-# CITATION.cff files provide human- & machine-readable citation information for
-# software and datasets. GitHub, Zenodo, and the Zotero browser plugin all use
-# CFF files automatically if provided. https://citation-file-format.github.io/.
-#
-# Tools exist to generate CITATION.cff files from other formats such as BibTeX.
+# CITATION.cff provide human- & machine-readable citation info for software and
+# datasets. GitHub, Zenodo, and the Zotero browser plugin all use CFF files
+# automatically. Tools exist to generate CITATION.cff files from other formats
+# such as BibTeX. For more info, visit https://citation-file-format.github.io/.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cff-version: 1.2.0
-message: If you use this software, please cite it using this metadata.
+message: >-
+  Please cite your use of Qualtran using the reference metadata provided here.
 
-# CITATION.cff files describe how to cite software or datasets, with the goal of
-# making software and data be citable in their own right. However, sometimes
-# projects want citations to go to a paper instead. 'Preferred-citation' serves
-# to communicate that. The distinction matters in different situations. If this
-# field is present, GitHub uses the value for the "cite this repository" button
-# and ignores the rest of this file; conversely, the Zenodo-GitHub integration
-# ignores this field when creating an entry for a new software release (because
-# the Zenodo entry is specifically about the software in this repository).
+# If preferred-citation is present, GitHub uses its value for the "cite this
+# repository" button and ignores the rest of this file; conversely, the Zenodo-
+# GitHub integration ignores this field when archiving a new software release
+# and uses the metadata in the rest of this file.
 preferred-citation:
   type: misc
-  authors:
+  authors: &authors
     - family-names: Harrigan
       given-names: Matthew P.
+      affiliation: Google LLC
+      orcid: https://orcid.org/0000-0001-9412-0553
     - family-names: Khattar
       given-names: Tanuj
+      affiliation: Google LLC
+      orcid: https://orcid.org/0009-0003-5545-3066
     - family-names: Yuan
       given-names: Charles
+      affiliation: Massachusetts Institute of Technology
+      orcid: https://orcid.org/0000-0002-4918-4467
     - family-names: Peduri
       given-names: Anurudh
+      affiliation: Ruhr University Bochum
+      orcid: https://orcid.org/0000-0002-6523-7098
     - family-names: Yosri
       given-names: Noureldin
+      affiliation: Google LLC
+      orcid: https://orcid.org/0000-0003-4169-5745
     - family-names: Malone
       given-names: Fionn D.
+      affiliation: Google LLC
+      orcid: https://orcid.org/0000-0001-9239-0162
     - family-names: Babbush
       given-names: Ryan
+      affiliation: Google LLC
+      orcid: https://orcid.org/0000-0001-6979-9533
     - family-names: Rubin
       given-names: Nicholas C.
+      affiliation: Google LLC
+      orcid: https://orcid.org/0000-0003-3963-1830
   title: Expressing and Analyzing Quantum Algorithms with Qualtran
   year: 2024
   doi: 10.48550/arXiv.2409.04643
@@ -51,27 +63,11 @@ preferred-citation:
 # The remaining metadata in this file describes the current software release.
 
 title: Qualtran
-authors:
-  - family-names: Harrigan
-    given-names: Matt P.
-  - family-names: Khattar
-    given-names: Tanuj
-  - family-names: Yuan
-    given-names: Charles
-  - family-names: Peduri
-    given-names: Anurudh
-  - family-names: Yosri
-    given-names: Noureldin
-  - family-names: Malone
-    given-names: Fionn D.
-  - family-names: Babbush
-    given-names: Ryan
-  - family-names: Rubin
-    given-names: Nicholas C.
+authors: *authors
 abstract: >-
-  Qualtran (quantum algorithms translator) is a set of abstractions for
-  representing quantum programs, and a library of quantum algorithms expressed
-  in that language to support quantum algorithms research.
+  Qualtran is a set of abstractions for representing quantum programs, and a
+  library of quantum algorithms expressed in that language to support quantum
+  algorithms research.
 version: 0.6.0
 date-released: 2025-04-01
 url: https://github.com/quantumlib/Qualtran

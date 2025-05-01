@@ -443,3 +443,8 @@ def test_ec_add_small(bloq_autotester):
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('ec_add')
+
+
+def test_ec_add_small_gate_cost():
+    bloq = _ec_add_small.make()
+    assert get_cost_value(bloq, QECGatesCost()).toffoli == 29

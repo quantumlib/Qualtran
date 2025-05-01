@@ -251,6 +251,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
             qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
+            qualtran.bloqs.bookkeeping.always._ALWAYS_DOC,
         ],
     ),
     NotebookSpecV2(
