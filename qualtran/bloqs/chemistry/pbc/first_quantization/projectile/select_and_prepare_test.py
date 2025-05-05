@@ -53,7 +53,7 @@ def test_select_t_costs():
     cost = get_cost_value(sel_first_quant, QECGatesCost()).total_t_count()
 
     # Swaps
-    expected_cost = 7 * (12 * eta * num_bits_p + 6 * num_bits_n) + 4 * (4 * eta - 6)  #
+    expected_cost = 4 * (12 * eta * num_bits_p + 6 * num_bits_n) + 4 * (4 * eta - 6)  #
     # SELT
     expected_cost += 4 * (5 * (num_bits_n - 1) + 2 + 1)
     # SELUV
