@@ -332,48 +332,41 @@ def test_importing_qualtran_object_gives_expected_routine_object(qualtran_object
     assert bloq_to_qref(qualtran_object).program == expected_routine
 
 
-@pytest.mark.parametrize("preserve_flag", [False, True])
-def test_default_vs_true_preserve_on_less_than_equal(preserve_flag):
-    # numeric LessThanEqual has a real decomposition
+@pytest.mark.parametrize("decomposition_rules", [False, True])
+def test_default_vs_true_decomposition_on_less_than_equal(decomposition_rules):
     bloq = LessThanEqual(5, 7)
-    schema = bloq_to_qref(bloq, preserve=preserve_flag)
+    schema = bloq_to_qref(bloq, decomposition_rules=decomposition_rules)
     routine = schema.program
 
-    if preserve_flag is False:
-        # default behavior: stays atomic
+    if decomposition_rules is False:
+        # stays atomic
         assert routine.children == []
     else:
-        # preserve=True → full decompose
+        # fully decomposed
         assert len(routine.children) == len(bloq.decompose_bloq().bloq_instances)
 
 
-def test_preserve_iterable_decomposes_only_requested_types():
+def test_decomposition_rules_iterable_decomposes_only_requested_types():
     bloq = LessThanEqual(3, 4)
-    # if we only ask to preserve SU2RotationGate, LessThanEqual stays atomic
-    schema = bloq_to_qref(bloq, preserve=[SU2RotationGate])
+    # only SU2RotationGate requested → no change
+    schema = bloq_to_qref(bloq, decomposition_rules=[SU2RotationGate])
     assert schema.program.children == []
 
-    # but if we ask to preserve LessThanEqual itself, it gets inlined
-    schema = bloq_to_qref(bloq, preserve=[LessThanEqual])
+    # requesting LessThanEqual itself → inlined
+    schema = bloq_to_qref(bloq, decomposition_rules=[LessThanEqual])
     assert len(schema.program.children) == len(bloq.decompose_bloq().bloq_instances)
 
 
-@pytest.mark.parametrize("angle1,angle2", [(0.1, 0.2), (1.3, -0.7)])
-def test_su2_rotation_can_be_auto_decomposed_with_preserve(angle1, angle2):
-    bloq = SU2RotationGate(angle1, angle2, 0.0)
-    # by default SU2RotationGate is atomic
-    schema_default = bloq_to_qref(bloq)
-    assert schema_default.program.children == []
+@pytest.mark.parametrize("a,b", [(0.1, 0.2), (1.3, -0.7)])
+def test_su2_rotation_can_be_auto_decomposed_with_decomposition_rules(a, b):
+    bloq = SU2RotationGate(a, b, 0.0)
+    # default: atomic
+    assert bloq_to_qref(bloq).program.children == []
 
-    # preserve=True → should decompose into its internal rotations + phase
-    schema = bloq_to_qref(bloq, preserve=True)
-    routine = schema.program
-    # there must be at least one child (it always breaks into 3 pieces: Rz, Ry, global phase)
-    assert len(routine.children) >= 3
-    # confirm those children are themselves Routines with expected type names
-    child_types = {c.type for c in routine.children}
-    # must have global phase and at least one Z-rotation
+    # with True → decomposed into Rz + Rx/Ry + GlobalPhase
+    schema = bloq_to_qref(bloq, decomposition_rules=True)
+    child_types = {c.type for c in schema.program.children}
     assert "GlobalPhase" in child_types
     assert "Rz" in child_types
-    # middle rotation may be Rx or Ry
-    assert any(axis in child_types for axis in ("Ry", "Rx"))
+    assert any(x in child_types for x in ("Ry", "Rx"))
+    assert len(schema.program.children) >= 3

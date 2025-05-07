@@ -130,41 +130,40 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
     return f"{_bloq_type(instance.bloq)}_{instance.i}"
 
 
+@singledispatch
 def bloq_to_qref(
     obj: Union[Bloq, CompositeBloq, BloqInstance],
     *,
     from_callgraph: bool = False,
-    preserve: Union[bool, Iterable[type[Bloq]]] = False,
+    decomposition_rules: Union[bool, Iterable[type[Bloq]]] = False,
 ) -> SchemaV1:
-    """Converts Bloq to QREF SchemaV1 object.
+    """Converts a Qualtran Bloq into a QREF SchemaV1.
 
     Args:
         obj: Bloq, CompositeBloq, or BloqInstance to be converted.
-        from_callgraph: if True, conversion is driven purely by the bloq’s call-graph
-            (useful when no full decomposition is available).
-        preserve:
-            • False (default): use the standard import rules (no automatic un-flattening).
-            • True: try to decompose *every* Bloq into CompositeBloqs where possible.
-            • Iterable of Bloq classes: only attempt to decompose instances of those classes;
-              all others remain atomic.
+        from_callgraph: if True, import purely from the bloq’s call-graph.
+        decomposition_rules:
+            • False (default): no extra unfolding.
+            • True: attempt to decompose *every* Bloq via decompose_bloq().
+            • Iterable of Bloq classes: decompose only those types.
 
     Returns:
-        A SchemaV1 with a top-level RoutineV1.program corresponding to the imported bloq.
+        A SchemaV1 whose `.program` is the top-level RoutineV1.
     """
     if from_callgraph:
         if isinstance(obj, BloqInstance):
-            raise ValueError("BloqInstance object can't be used to generate a callgraph.")
+            raise ValueError("BloqInstance cannot drive a callgraph import.")
         return SchemaV1(version="v1", program=bloq_to_routine_from_callgraph(obj))
     else:
-        if preserve is False:
+        if decomposition_rules is False:
             program = bloq_to_routine(obj)
         else:
-            keep = None if preserve is True else set(preserve)
-            program = _routine_with_preserve(obj, keep)
+            keep = None if decomposition_rules is True else set(decomposition_rules)
+            program = _routine_with_decomposition(obj, keep)
         return SchemaV1(version="v1", program=program)
 
 
-def _routine_with_preserve(
+def _routine_with_decomposition(
     obj: Union[Bloq, CompositeBloq, BloqInstance],
     preserve: Optional[set[type[Bloq]]],
     *,
@@ -193,9 +192,9 @@ def _routine_with_preserve(
         A RoutineV1 representing the imported bloq hierarchy, with clusters
         for exactly the bloq types you asked to decompose.
     """
-    # 1) CompositeBloq → recurse
+    # CompositeBloq → recurse
     if isinstance(obj, CompositeBloq):
-        children = [_routine_with_preserve(i, preserve) for i in obj.bloq_instances]
+        children = [_routine_with_decomposition(i, preserve) for i in obj.bloq_instances]
         connections = [_import_connection(c) for c in obj.connections]
         return RoutineV1(
             **_extract_common_bloq_attributes(obj, name),
@@ -203,32 +202,22 @@ def _routine_with_preserve(
             connections=connections,
         )
 
-    # 2) BloqInstance → unwrap
+    # BloqInstance → unwrap
     if isinstance(obj, BloqInstance):
-        return _routine_with_preserve(obj.bloq, preserve, name=_bloq_instance_name(obj))
+        return _routine_with_decomposition(obj.bloq, preserve, name=_bloq_instance_name(obj))
 
-    # 3) Plain Bloq → decide whether to decompose
+    # Plain Bloq → decide
     bloq = obj
-    if preserve is None:
-        # None means “preserve nothing”, i.e. auto‐decompose EVERY Bloq
+    if preserve is None or type(bloq) in preserve:
         try:
             cb = bloq.decompose_bloq()
         except (DecomposeTypeError, DecomposeNotImplementedError):
             return _default_leaf(bloq, name=name)
         else:
-            return _routine_with_preserve(cb, preserve, name=name or type(bloq).__name__)
+            return _routine_with_decomposition(cb, preserve, name=name or type(bloq).__name__)
 
-    else:
-        # preserve is a set → only those classes get decomposed
-        if type(bloq) in preserve:
-            try:
-                cb = bloq.decompose_bloq()
-            except (DecomposeTypeError, DecomposeNotImplementedError):
-                return _default_leaf(bloq, name=name)
-            else:
-                return _routine_with_preserve(cb, preserve, name=name or type(bloq).__name__)
-        # otherwise leave as a leaf
-        return _default_leaf(bloq, name=name)
+    # leave leaf
+    return _default_leaf(bloq, name=name)
 
 
 @singledispatch
