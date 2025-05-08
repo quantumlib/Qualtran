@@ -48,7 +48,7 @@ def test_format_counts_graph_markdown():
 
 def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> List[str]:
     graph = drawer.get_graph()
-    node_labels = [node.get_label() for node in graph.get_node_list()]
+    node_labels = [node.get_label() for node in graph.get_node_list()]  # type: ignore[attr-defined]
     random.shuffle(node_labels)  # don't rely on order of graphviz nodes
     return node_labels
 
