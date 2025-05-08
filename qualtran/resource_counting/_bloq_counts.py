@@ -186,7 +186,7 @@ class GateCounts:
     def total_t_count(
         self,
         ts_per_toffoli: int = 4,
-        ts_per_cswap: int = 7,
+        ts_per_cswap: int = 4,
         ts_per_and_bloq: int = 4,
         ts_per_rotation: int = 11,
     ) -> int:
@@ -236,6 +236,12 @@ class GateCounts:
         add per `self.and_bloq`. To fully match the exact legacy `t_complexity` numbers, you
         must enable `QECGatesCost(legacy_shims=True)`, which will enable a shim that directly
         adds on clifford counts for the X-gates used to invert the And control lines.
+
+        **Warning:** The number of Ts per Toffoli defaults to 4, whereas the
+        number of Ts per CSwap defaults to 7. This preserves a legacy inconsistency. Really,
+        these numbers should either both be 7 or both be 4 for a proper accounting.
+        In `total_t_count`, we default to 4 T gates per CSwap or Toffoli. See
+        https://github.com/quantumlib/Qualtran/issues/1463 for more discussion.
         """
         from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
