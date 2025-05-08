@@ -43,7 +43,7 @@ jobs:
       - run: |
           check/pytest -m 'not notebook and not slow'
 
-  pytest-dev-tools:
+  dev-tools:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
