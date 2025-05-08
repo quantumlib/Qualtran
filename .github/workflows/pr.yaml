@@ -59,6 +59,7 @@ jobs:
           pip install --no-deps -e .
       - run: |
           check/pytest-dev-tools
+          check/mypy-dev-tools
 
   notebooks:
     runs-on: ubuntu-24.04
