@@ -60,7 +60,7 @@ if TYPE_CHECKING:
         GeneralizerT,
         SympySymbolAllocator,
     )
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
@@ -184,13 +184,13 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Mapping[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValRetT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `call_clasically(**vals)` which will do input validation before
         calling this function.
 
@@ -214,6 +214,25 @@ class Bloq(metaclass=abc.ABCMeta):
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """How this bloq phases classical basis states.
+
+        Override this method if your bloq represents classical logic with basis-state
+        dependent phase factors. This corresponds to bloqs whose matrix representation
+        (in the standard basis) is a generalized permutation matrix: a permutation matrix
+        where each entry can be +1, -1 or any complex number with unit absolute value.
+        Alternatively, this corresponds to bloqs composed from classical operations
+        (X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+        Bloq authors should override this method. If you are using an instantiated bloq object,
+        call TODO and not this method directly.
+
+        If this method is implemented, `on_classical_vals` must also be implemented.
+        If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+        that the bloq does not alter the phase.
+        """
+        return None
 
     def call_classically(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']

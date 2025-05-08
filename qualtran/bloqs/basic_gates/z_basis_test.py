@@ -24,6 +24,7 @@ from qualtran.bloqs.basic_gates import (
     IntState,
     OneEffect,
     OneState,
+    XGate,
     ZeroEffect,
     ZeroState,
     ZGate,
@@ -245,3 +246,33 @@ def test_cz_manual():
 
     assert ZGate().controlled() == CZ()
     assert t_complexity(cz) == TComplexity(clifford=1)
+
+    with pytest.raises(ValueError, match='.*phase.*'):
+        cz.call_classically(q1=1, q2=1)
+
+
+def test_cz_phased_classical():
+    cz = CZ()
+    from qualtran.simulation.classical_sim import do_phased_classical_simulation
+
+    final_vals, phase = do_phased_classical_simulation(cz, {'q1': 0, 'q2': 1})
+    assert final_vals['q1'] == 0
+    assert final_vals['q2'] == 1
+    assert phase == 1
+
+    final_vals, phase = do_phased_classical_simulation(cz, {'q1': 1, 'q2': 1})
+    assert final_vals['q1'] == 1
+    assert final_vals['q2'] == 1
+    assert phase == -1
+
+    bb = BloqBuilder()
+    q1 = bb.add(ZeroState())
+    q2 = bb.add(ZeroState())
+    q1 = bb.add(XGate(), q=q1)
+    q2 = bb.add(XGate(), q=q2)
+    q1, q2 = bb.add(CZ(), q1=q1, q2=q2)
+    cbloq = bb.finalize(q1=q1, q2=q2)
+    final_vals, phase = do_phased_classical_simulation(cbloq, {})
+    assert final_vals['q1'] == 1
+    assert final_vals['q2'] == 1
+    assert phase == -1
