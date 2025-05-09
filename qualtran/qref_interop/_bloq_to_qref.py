@@ -25,19 +25,18 @@
 #  limitations under the License.
 
 from functools import singledispatch
-from typing import Any, Iterable, Optional, Union, Type
+from typing import Any, Iterable, Optional, Type, Union
 
 import networkx as nx
 import sympy
 from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 
 from qualtran import Bloq, BloqInstance, CompositeBloq
-from qualtran import DecomposeTypeError, DecomposeNotImplementedError
 from qualtran import Connection as QualtranConnection
-from qualtran import Register, Side, Soquet
+from qualtran import DecomposeNotImplementedError, DecomposeTypeError, Register, Side, Soquet
+from qualtran._infra.bloq import _decompose_from_build_composite_bloq
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.symbolics import is_symbolic
-from qualtran._infra.bloq import _decompose_from_build_composite_bloq
 
 
 @singledispatch
@@ -184,8 +183,8 @@ def _routine_with_decomposition(
 
     Args:
         obj: The root Bloq, CompositeBloq, or BloqInstance to convert.
-        preserve: 
-            • None  ⇒ decompose **all** bloqs where possible.  
+        preserve:
+            • None  ⇒ decompose **all** bloqs where possible.
             • set of Bloq types ⇒ only those classes will be inlined; others remain atomic.
 
     Returns:
@@ -197,9 +196,7 @@ def _routine_with_decomposition(
         children = [_routine_with_decomposition(i, preserve) for i in obj.bloq_instances]
         connections = [_import_connection(c) for c in obj.connections]
         return RoutineV1(
-            **_extract_common_bloq_attributes(obj, name),
-            children=children,
-            connections=connections,
+            **_extract_common_bloq_attributes(obj, name), children=children, connections=connections
         )
 
     # BloqInstance → unwrap
@@ -259,8 +256,6 @@ def _bloq_to_routine(bloq: Bloq, name: Optional[str] = None) -> RoutineV1:
     See `import_from_qualtran` for moe info.
     """
     return RoutineV1(**_extract_common_bloq_attributes(bloq, name))
-
-
 
 
 @bloq_to_routine.register

@@ -32,8 +32,8 @@ from qref.verification import verify_topology
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.arithmetic.addition import _add_oop_large
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.block_encoding.lcu_block_encoding import _black_box_lcu_block, _lcu_block
 from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
 from qualtran.bloqs.cryptography.rsa.rsa_phase_estimate import _rsa_pe
