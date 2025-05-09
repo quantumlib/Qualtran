@@ -28,5 +28,6 @@ pip-compile --output-file=envs/runtime.env.txt   --resolver=backtracking --const
 pip-compile --output-file=envs/format.env.txt    --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/format.txt
 pip-compile --output-file=envs/pylint.env.txt    --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/pylint.txt
 pip-compile --output-file=envs/pytest.env.txt    --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/pytest.txt
+pip-compile --output-file=envs/mypy.env.txt      --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/mypy.txt
 pip-compile --output-file=envs/docs.env.txt      --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/docs.txt
 pip-compile --output-file=envs/pip-tools.env.txt --resolver=backtracking --constraint=envs/dev.env.txt deps/pip-tools.txt

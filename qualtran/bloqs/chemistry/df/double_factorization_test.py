@@ -80,8 +80,7 @@ def test_compare_cost_to_openfermion():
     inner_prep_qrom_diff = 8
     prog_rot_qrom_diff = 60
     missing_toffoli = 4  # need one more toffoli for second application of CZ
-    swap_cost = 4 * (7 - 4) * num_spin_orb // 2
-    qual_cost = t_counts - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli - swap_cost
+    qual_cost = t_counts - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli
     # correct the expected cost by using a different uniform superposition algorithm
     # see: https://github.com/quantumlib/Qualtran/issues/611
     eta = power_two(num_aux + 1)
