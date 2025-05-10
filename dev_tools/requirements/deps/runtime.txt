@@ -31,8 +31,8 @@ qsharp
 qsharp-widgets
 
 # qref bartiq interop
-qref==0.9.0
-bartiq==0.9.0
+qref==0.11.0
+bartiq==0.12.1
 
 # pyzx interop
 pyzx
