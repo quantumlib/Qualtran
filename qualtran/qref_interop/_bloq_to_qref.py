@@ -25,7 +25,7 @@
 #  limitations under the License.
 
 from functools import singledispatch
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Optional, Union
 
 import networkx as nx
 import sympy
@@ -34,7 +34,6 @@ from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 from qualtran import Bloq, BloqInstance, CompositeBloq
 from qualtran import Connection as QualtranConnection
 from qualtran import DecomposeNotImplementedError, DecomposeTypeError, Register, Side, Soquet
-from qualtran._infra.bloq import _decompose_from_build_composite_bloq
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.symbolics import is_symbolic
 
@@ -207,7 +206,8 @@ def _routine_with_decomposition(
     bloq = obj
     if preserve is None or type(bloq) in preserve:
         try:
-            cb = bloq.decompose_bloq()
+            #cb = bloq.decompose_bloq()
+            cb = bloq.as_composite_bloq().flatten()
         except (DecomposeTypeError, DecomposeNotImplementedError):
             return _default_leaf(bloq, name=name)
         else:
