@@ -65,6 +65,7 @@ CONCEPTS = [
     'chemistry/writing_algorithms.ipynb',
     'cryptography/rsa/factoring-via-modexp.ipynb',
     'state_preparation/state_preparation_via_rotation_tutorial.ipynb',
+    'optimization/k_xor_sat/kikuchi_guiding_state_tutorial.ipynb',
 ]
 
 
