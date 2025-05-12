@@ -51,7 +51,7 @@ def test_select_t_costs():
     )
     cost += get_cost_value(sel_first_quant, QECGatesCost()).total_t_count()
 
-    expected_cost = 7 * (12 * eta * num_bits_p) + 4 * (4 * eta - 8)
+    expected_cost = 4 * (12 * eta * num_bits_p) + 4 * (4 * eta - 8)
     expected_cost += 4 * (5 * (num_bits_p - 1) + 2)
     expected_cost += 4 * (24 * num_bits_p)
     expected_cost += 4 * (

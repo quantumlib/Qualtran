@@ -35,7 +35,7 @@ def test_select_t_complexity(dim):
     assert cost == GateCounts(
         cswap=2 * logN, and_bloq=5 * (N // 2) - 2, measurement=5 * (N // 2) - 2, clifford=ANY
     )
-    assert cost.total_t_count() == 10 * N + 14 * logN - 8
+    assert cost.total_t_count() == 10 * N + 8 * logN - 8
 
 
 def test_adjoint_controlled():
