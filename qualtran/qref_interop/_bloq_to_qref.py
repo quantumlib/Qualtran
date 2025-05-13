@@ -206,8 +206,7 @@ def _routine_with_decomposition(
     bloq = obj
     if preserve is None or type(bloq) in preserve:
         try:
-            #cb = bloq.decompose_bloq()
-            cb = bloq.as_composite_bloq().flatten()
+            cb = bloq.decompose_bloq()
         except (DecomposeTypeError, DecomposeNotImplementedError):
             return _default_leaf(bloq, name=name)
         else:
