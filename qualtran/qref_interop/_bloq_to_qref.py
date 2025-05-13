@@ -33,7 +33,7 @@ from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 
 from qualtran import Bloq, BloqInstance, CompositeBloq
 from qualtran import Connection as QualtranConnection
-from qualtran import Register, Side, Soquet
+from qualtran import DecomposeNotImplementedError, DecomposeTypeError, Register, Side, Soquet
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.symbolics import is_symbolic
 
@@ -128,23 +128,92 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
     return f"{_bloq_type(instance.bloq)}_{instance.i}"
 
 
+@singledispatch
 def bloq_to_qref(
-    obj: Union[Bloq, CompositeBloq, BloqInstance], from_callgraph: bool = False
+    obj: Union[Bloq, CompositeBloq, BloqInstance],
+    *,
+    from_callgraph: bool = False,
+    decomposition_rules: Union[bool, Iterable[type[Bloq]]] = False,
 ) -> SchemaV1:
-    """Converts Bloq to QREF SchemaV1 object.
+    """Converts a Qualtran Bloq into a QREF SchemaV1.
 
     Args:
-        obj: bloq to be converted
-        from_callgraph: a flag indicating whether conversion should be performed using only the information
-            from callgraph. It's useful when a bloq doesn't have a full decomposition, but has a callgraph.
+        obj: Bloq, CompositeBloq, or BloqInstance to be converted.
+        from_callgraph: if True, import purely from the bloq’s call-graph.
+        decomposition_rules:
+            • False (default): no extra unfolding.
+            • True: attempt to decompose *every* Bloq via decompose_bloq().
+            • Iterable of Bloq classes: decompose only those types.
 
+    Returns:
+        A SchemaV1 whose `.program` is the top-level RoutineV1.
     """
     if from_callgraph:
         if isinstance(obj, BloqInstance):
-            raise ValueError("BloqInstance object can't be used to generate a callgraph.")
+            raise ValueError("BloqInstance cannot drive a callgraph import.")
         return SchemaV1(version="v1", program=bloq_to_routine_from_callgraph(obj))
     else:
-        return SchemaV1(version="v1", program=bloq_to_routine(obj))
+        if decomposition_rules is False:
+            program = bloq_to_routine(obj)
+        else:
+            keep = None if decomposition_rules is True else set(decomposition_rules)
+            program = _routine_with_decomposition(obj, keep)
+        return SchemaV1(version="v1", program=program)
+
+
+def _routine_with_decomposition(
+    obj: Union[Bloq, CompositeBloq, BloqInstance],
+    preserve: Optional[set[type[Bloq]]],
+    *,
+    name: Optional[str] = None,
+) -> RoutineV1:
+    """Convert a Qualtran bloq into a QREF RoutineV1, selectively decomposing.
+
+    This helper will import `obj` (which may be a Bloq, CompositeBloq or BloqInstance)
+    into a nested RoutineV1, but only expand (“decompose”) those Bloq types
+    requested in `preserve`.
+
+    Behavior:
+      - If `preserve` is None, every bloq that implements `decompose_bloq()`
+        will be peeled apart into its CompositeBloq and imported recursively.
+      - If `preserve` is a set of Bloq classes, then only instances of those
+        classes will be decomposed; all other Bloqs are treated as atomic leaves
+        (using the original, default `bloq_to_routine` handler).
+
+    Args:
+        obj: The root Bloq, CompositeBloq, or BloqInstance to convert.
+        preserve:
+            • None  ⇒ decompose **all** bloqs where possible.
+            • set of Bloq types ⇒ only those classes will be inlined; others remain atomic.
+
+    Returns:
+        A RoutineV1 representing the imported bloq hierarchy, with clusters
+        for exactly the bloq types you asked to decompose.
+    """
+    # CompositeBloq → recurse
+    if isinstance(obj, CompositeBloq):
+        children = [_routine_with_decomposition(i, preserve) for i in obj.bloq_instances]
+        connections = [_import_connection(c) for c in obj.connections]
+        return RoutineV1(
+            **_extract_common_bloq_attributes(obj, name), children=children, connections=connections
+        )
+
+    # BloqInstance → unwrap
+    if isinstance(obj, BloqInstance):
+        return _routine_with_decomposition(obj.bloq, preserve, name=_bloq_instance_name(obj))
+
+    # Plain Bloq → decide
+    bloq = obj
+    if preserve is None or type(bloq) in preserve:
+        try:
+            cb = bloq.decompose_bloq()
+        except (DecomposeTypeError, DecomposeNotImplementedError):
+            return _default_leaf(bloq, name=name)
+        else:
+            return _routine_with_decomposition(cb, preserve, name=name or type(bloq).__name__)
+
+    # leave leaf
+    return _default_leaf(bloq, name=name)
 
 
 @singledispatch
@@ -411,3 +480,6 @@ def bloq_to_routine_from_callgraph(bloq: Union[Bloq, CompositeBloq]) -> RoutineV
         nodes_to_routine_map[edge[0]] = parent
 
     return nodes_to_routine_map[list(call_graph.nodes)[0]]
+
+
+_default_leaf = bloq_to_routine.registry[Bloq]

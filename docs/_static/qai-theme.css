@@ -1,0 +1,58 @@
+/* Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+:root {
+  --qai-color-blue-500: #4285f4;
+  --qai-color-blue-700: #1967d2;
+
+  --qai-color-magenta-400: #d367c4;
+  --qai-color-magenta-500: #b356cd;
+  --qai-color-magenta-700: #7c42c0;
+}
+
+html[data-theme="light"] {
+  /* The primary color is used as the unvisited link color. */
+  --pst-color-primary: var(--qai-color-blue-700);
+  --pst-color-secondary: var(--qai-color-blue-500);
+
+  /* Color inline code is for `backtick text`. */
+  --pst-color-inline-code: var(--qai-color-magenta-700);
+  --pst-color-inline-code-links: var(--qai-color-magenta-500);
+
+  /* Some code boxes have an accent color on the left border. */
+  --mystnb-source-margin-color: var(--qai-color-magenta-700);
+}
+
+a[data-theme=light]:hover {
+  color: var(--qai-color-blue-700);
+}
+
+
+html[data-theme=dark] {
+  /* The primary color is used as the unvisited link color. */
+  --pst-color-primary: var(--qai-color-blue-500);
+  --pst-color-secondary: var(--qai-color-blue-700);
+
+  /* Color inline code is for `backtick text`. */
+  --pst-color-inline-code: var(--qai-color-magenta-400);
+  --pst-color-inline-code-links: var(--qai-color-magenta-500);
+
+  /* Some code boxes have an accent color on the left border. */
+  --mystnb-source-margin-color: var(--qai-color-magenta-700);
+}
+
+a[data-theme=dark]:hover {
+  color: var(--qai-color-blue-700);
+}

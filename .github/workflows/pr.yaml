@@ -43,7 +43,7 @@ jobs:
       - run: |
           check/pytest -m 'not notebook and not slow'
 
-  pytest-dev-tools:
+  dev-tools:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -59,6 +59,7 @@ jobs:
           pip install --no-deps -e .
       - run: |
           check/pytest-dev-tools
+          check/mypy-dev-tools
 
   notebooks:
     runs-on: ubuntu-24.04
@@ -132,7 +133,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r dev_tools/requirements/envs/dev.env.txt
+          pip install -r dev_tools/requirements/envs/mypy.env.txt
           pip install --no-deps -e .
       - name: Set up problem matcher for Mypy output
         run: echo '::add-matcher::.github/problem-matchers/mypy.json'

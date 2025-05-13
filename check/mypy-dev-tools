@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ################################################################################
-# Runs mypy on the repository using a preconfigured mypy.ini file.
+# Runs mypy on the dev_tools/ folder using a preconfigured mypy.ini file.
 #
 # Usage:
-#     check/mypy [--flags]
+#     check/mypy-dev-tool [--flags]
 ################################################################################
 
 # Get the working directory to the repo root.
@@ -15,7 +15,7 @@ cd "${topdir}" || exit $?
 CONFIG_FILE='mypy.ini'
 
 echo -e -n "\033[31m"
-mypy --config-file=dev_tools/conf/$CONFIG_FILE "$@" qualtran/
+mypy --config-file=dev_tools/conf/$CONFIG_FILE "$@" dev_tools/
 result=$?
 echo -e -n "\033[0m"
 
