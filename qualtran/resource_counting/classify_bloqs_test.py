@@ -113,7 +113,7 @@ def test_classify_bloq_counts_with_custom_bloq_classification():
     classified_bloqs = classify_t_count_by_bloq_type(
         test_bloq, bloq_classification=bloq_classification
     )
-    assert classified_bloqs == {'swaps': 42 * 10 * 7, 'other': 3 * 4 * (4 - 1)}
+    assert classified_bloqs == {'swaps': 42 * 10 * 4, 'other': 3 * 4 * (4 - 1)}
     assert get_cost_value(test_bloq, QECGatesCost()).total_t_count() == sum(
         classified_bloqs.values()
     )

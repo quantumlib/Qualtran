@@ -2,6 +2,7 @@ ipywidgets
 nbconvert
 nbformat
 sphinx
+sphinx-autobuild
 pydata-sphinx-theme
 myst-nb
 tensorflow-docs~=2023.5.24
