@@ -33,6 +33,7 @@ from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.arithmetic.addition import _add_oop_large
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.block_encoding.lcu_block_encoding import _black_box_lcu_block, _lcu_block
 from qualtran.bloqs.chemistry.df.double_factorization import _df_block_encoding, _df_one_body
 from qualtran.bloqs.cryptography.rsa.rsa_phase_estimate import _rsa_pe
@@ -329,3 +330,43 @@ def _undecomposed_alias_sampling() -> tuple[Bloq, RoutineV1, str]:
 )
 def test_importing_qualtran_object_gives_expected_routine_object(qualtran_object, expected_routine):
     assert bloq_to_qref(qualtran_object).program == expected_routine
+
+
+@pytest.mark.parametrize("decomposition_rules", [False, True])
+def test_default_vs_true_decomposition_on_less_than_equal(decomposition_rules):
+    bloq = LessThanEqual(5, 7)
+    schema = bloq_to_qref(bloq, decomposition_rules=decomposition_rules)
+    routine = schema.program
+
+    if decomposition_rules is False:
+        # stays atomic
+        assert routine.children == []
+    else:
+        # fully decomposed
+        assert len(routine.children) == len(bloq.decompose_bloq().bloq_instances)
+
+
+def test_decomposition_rules_iterable_decomposes_only_requested_types():
+    bloq = LessThanEqual(3, 4)
+    # only SU2RotationGate requested → no change
+    schema = bloq_to_qref(bloq, decomposition_rules=[SU2RotationGate])
+    assert schema.program.children == []
+
+    # requesting LessThanEqual itself → inlined
+    schema = bloq_to_qref(bloq, decomposition_rules=[LessThanEqual])
+    assert len(schema.program.children) == len(bloq.decompose_bloq().bloq_instances)
+
+
+@pytest.mark.parametrize("a,b", [(0.1, 0.2), (1.3, -0.7)])
+def test_su2_rotation_can_be_auto_decomposed_with_decomposition_rules(a, b):
+    bloq = SU2RotationGate(a, b, 0.0)
+    # default: atomic
+    assert bloq_to_qref(bloq).program.children == []
+
+    # with True → decomposed into Rz + Rx/Ry + GlobalPhase
+    schema = bloq_to_qref(bloq, decomposition_rules=True)
+    child_types = {c.type for c in schema.program.children}
+    assert "GlobalPhase" in child_types
+    assert "Rz" in child_types
+    assert any(x in child_types for x in ("Ry", "Rx"))
+    assert len(schema.program.children) >= 3
