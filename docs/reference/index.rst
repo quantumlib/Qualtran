@@ -12,4 +12,4 @@ in ``qualtran``.
    qualtran.md
 
 
-.. include:: autotoc.rst
+.. include:: autotoc.rst.inc

@@ -386,7 +386,7 @@ def generate_ref_toc(reporoot: Path):
     for path in page_paths:
         grouped_paths[path.parent].append(path)
 
-    with (output_dir / 'autotoc.rst').open('w') as f:
+    with (output_dir / 'autotoc.rst.inc').open('w') as f:
         write_ref_toc(f, grouped_paths, output_dir)
 
 
