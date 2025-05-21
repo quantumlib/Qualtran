@@ -407,3 +407,18 @@ def test_outofplaceadder_classical_action(bitsize):
     cb = b.decompose_bloq()
     for x, y in itertools.product(range(2**bitsize), repeat=2):
         assert b.call_classically(a=x, b=y, c=x + y) == cb.call_classically(a=x, b=y, c=x + y)
+
+
+def test_controlled_add_from_add():
+    add = Add(QUInt(32))
+    cadd = add.controlled(CtrlSpec(cvs=0))
+
+    ctrl, a, b = cadd.call_classically(ctrl=1, a=5, b=10)
+    assert ctrl == 1
+    assert a == 5
+    assert b == 10
+
+    ctrl, a, b = cadd.call_classically(ctrl=0, a=5, b=10)
+    assert ctrl == 0
+    assert a == 5
+    assert b == 15

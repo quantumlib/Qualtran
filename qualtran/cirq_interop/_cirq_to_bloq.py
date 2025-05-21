@@ -82,11 +82,12 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         if isinstance(self.cirq_gate, Bloq):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
-        return (
-            Signature([Register('q', QBit(), shape=nqubits)])
-            if nqubits > 1
-            else Signature.build(q=nqubits)
-        )
+        if nqubits == 1:
+            return Signature([Register('q', QBit())])
+        elif nqubits == 0:
+            return Signature([])
+        # else
+        return Signature([Register('q', QBit(), shape=nqubits)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
@@ -150,9 +151,11 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
     def my_static_costs(self, cost_key: 'CostKey'):
         if isinstance(cost_key, QECGatesCost):
             t_count = _from_directly_countable_cirq(self.cirq_gate)
-            if t_count is None:
-                raise ValueError(f"Cirq gate must be directly countable, not {self.cirq_gate}")
-            return GateCounts(t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford)
+            if t_count is not None:
+                return GateCounts(
+                    t=t_count.t, rotation=t_count.rotations, clifford=t_count.clifford
+                )
+        return NotImplemented
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
@@ -407,10 +410,11 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     if isinstance(gate, (cirq.Rx, cirq.Ry, cirq.Rz)):
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](angle=gate._rads)
 
-    if isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)):
-        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
-            exponent=gate.exponent, global_shift=gate.global_shift
-        )
+    if (
+        isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate))
+        and gate.global_shift == 0
+    ):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](exponent=gate.exponent)
 
     if isinstance(gate, cirq.GlobalPhaseGate):
         if isinstance(gate.coefficient, numbers.Complex):
@@ -480,11 +484,11 @@ def cirq_optree_to_cbloq(
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
     in_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in in_quregs.items()
     }
     out_quregs: Dict[str, NDArray] = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore[arg-type]
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
         for k, v in out_quregs.items()
     }
 
@@ -515,7 +519,7 @@ def cirq_optree_to_cbloq(
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore[arg-type]
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 

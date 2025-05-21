@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -25,6 +25,7 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     Connection,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     Register,
@@ -34,7 +35,10 @@ from qualtran import (
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
+    from qualtran import AddControlledT, BloqBuilder, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -115,6 +119,11 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.Toffoli(wires=wires)
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus, Text
 
@@ -126,6 +135,29 @@ class Toffoli(Bloq):
         elif reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.basic_gates import CNOT
+        from qualtran.bloqs.mcmt import ControlledViaAnd
+
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec)
+
+        cc_cnot = ControlledViaAnd(CNOT(), CtrlSpec(cvs=[1, 1]))
+
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (new_ctrl,) = ctrl_soqs
+            ctrl0, ctrl1 = cast(NDArray, in_soqs.pop('ctrl'))
+
+            (new_ctrl, ctrl0), ctrl1, target = bb.add(
+                cc_cnot, ctrl2=np.array([new_ctrl, ctrl0]), ctrl=ctrl1, target=in_soqs.pop('target')
+            )
+
+            return [new_ctrl], [ctrl0, ctrl1, target]
+
+        return cc_cnot, add_controlled
 
 
 @bloq_example

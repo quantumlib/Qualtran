@@ -24,3 +24,7 @@ from ._tensor_data_manipulation import (
     tensor_out_inp_shape_from_signature,
     tensor_shape_from_signature,
 )
+from ._tensor_from_classical import (
+    bloq_to_dense_via_classical_action,
+    my_tensors_from_classical_action,
+)

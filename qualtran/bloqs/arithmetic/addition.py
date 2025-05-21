@@ -44,6 +44,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import directional_text_box, Text
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -129,7 +130,6 @@ class Add(Bloq):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-
         if reg is None:
             return Text("")
         if reg.name == 'a':
@@ -202,6 +202,19 @@ class Add(Bloq):
         n = self.b_dtype.bitsize
         n_cnot = (n - 2) * 6 + 3
         return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.arithmetic import CAdd
+
+        return get_ctrl_system_1bit_cv(
+            bloq=self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=None,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                CAdd(a_dtype=self.a_dtype, b_dtype=self.b_dtype, cv=cv),
+                "ctrl",
+            ),
+        )
 
 
 @bloq_example(generalizer=ignore_split_join)

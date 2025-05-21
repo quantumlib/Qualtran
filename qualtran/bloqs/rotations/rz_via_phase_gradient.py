@@ -17,6 +17,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     QBit,
     QDType,
     QUInt,
@@ -109,3 +110,8 @@ def _rz_via_phase_gradient() -> RzViaPhaseGradient:
 
     rz_via_phase_gradient = RzViaPhaseGradient(angle_dtype=QFxp(4, 4), phasegrad_dtype=QFxp(4, 4))
     return rz_via_phase_gradient
+
+
+_RZ_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
+    bloq_cls=RzViaPhaseGradient, examples=[_rz_via_phase_gradient]
+)

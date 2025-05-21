@@ -97,18 +97,17 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     original lookup).
 
     Registers:
-        - control_registers: If control is specified, a THRU register to denote the control qubits.
+        control_registers: If control is specified, a THRU register to denote the control qubits.
             Empty by default for uncontrolled version of the Bloq.
-        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+        selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
             classical datasets.
-        - target_registers: $M$ LEFT registers to load $M$ different classical datasets. Each target
+        target_registers: $M$ LEFT registers to load $M$ different classical datasets. Each target
             register is of bitsize $b$ and shape described by a tuple of length $N + S$. Here $S$ is
             a parameter that describes the shape of the output to be loaded for each selection index.
 
-
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et al. (2019). Appendix C.
+        Berry et al. (2019). Appendix C.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
@@ -196,7 +195,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
-        if name == 'selection':
+        if name.startswith('selection'):
             return TextBox('In').adjoint()
         elif 'target' in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
@@ -284,9 +283,9 @@ class QROAMCleanAdjointWrapper(Bloq):
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
-        if name == 'selection':
+        if name.startswith('selection'):
             return TextBox('In')
-        elif 'target' in name:
+        elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
             subscript = chr(ord('a') + trg_indx)
@@ -332,17 +331,17 @@ class QROAMClean(SelectSwapQROM):
     upon the target bitsize of elements to be loaded.
 
     Registers:
-        - control_registers: If control is specified, a THRU register to denote the control qubits.
+        control_registers: If control is specified, a THRU register to denote the control qubits.
             Empty by default for uncontrolled version of the Bloq.
-        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+        selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
             classical datasets.
-        - target_registers: $M$ RIGHT registers to load $M$ different classical datasets. Each target
+        target_registers: $M$ RIGHT registers to load $M$ different classical datasets. Each target
             register is of bitsize $b$ and shape described by a tuple of length $N$.
-        - junk_registers: $K - 1$ RIGHT registers, each of bitsize $b$ used to load batches of size $K$
+        junk_registers: $K - 1$ RIGHT registers, each of bitsize $b$ used to load batches of size $K$
 
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et al. (2019). Appendix A. and B.
+        Berry et al. (2019). Appendix A. and B.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
@@ -528,7 +527,7 @@ class QROAMClean(SelectSwapQROM):
         if reg is None:
             return Text('QROAM')
         name = reg.name
-        if name == 'selection':
+        if name.startswith('selection'):
             return TextBox('In')
         elif 'target' in name and 'junk' not in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))

@@ -30,18 +30,18 @@ from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_sp
 def test_kaliski_mod_inverse_classical_action(bitsize, mod):
     blq = KaliskiModInverse(bitsize, mod)
     cblq = blq.decompose_bloq()
-    dtype = QMontgomeryUInt(bitsize)
+    dtype = QMontgomeryUInt(bitsize, mod)
     R = pow(2, bitsize, mod)
     for x in range(1, mod):
         if math.gcd(x, mod) != 1:
             continue
-        x_montgomery = dtype.uint_to_montgomery(x, mod)
+        x_montgomery = dtype.uint_to_montgomery(x)
         res = blq.call_classically(x=x_montgomery)
 
         assert res == cblq.call_classically(x=x_montgomery)
         assert len(res) == 2
-        assert res[0] == dtype.montgomery_inverse(x_montgomery, mod)
-        assert dtype.montgomery_product(int(res[0]), x_montgomery, mod) == R
+        assert res[0] == dtype.montgomery_inverse(x_montgomery)
+        assert dtype.montgomery_product(int(res[0]), x_montgomery) == R
         assert blq.adjoint().call_classically(x=res[0], junk=res[1]) == (x_montgomery,)
 
 
@@ -74,10 +74,8 @@ def test_kaliski_mod_bloq_counts(bitsize, mod):
 def test_kaliski_symbolic_cost():
     n, p = sympy.symbols('n p')
     b = KaliskiModInverse(n, p)
-    cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
-    # We have some T gates since we use CSwapApprox instead of n CSWAPs.
-    total_toff = (cost['n_t'] / 4 + cost['n_ccz']) * sympy.Integer(1)
-    total_toff = total_toff.expand()
+    total_toff = get_cost_value(b, QECGatesCost()).total_toffoli_only()
+    total_toff = sympy.expand(total_toff)
 
     # The toffoli cost from Litinski https://arxiv.org/abs/2306.08585 is 26n^2 + 2n.
     # The cost of Kaliski is 2*n*(cost of an iteration) + (cost of computing $p - x$)

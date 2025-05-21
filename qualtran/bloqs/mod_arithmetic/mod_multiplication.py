@@ -175,7 +175,7 @@ _MOD_DBL_DOC = BloqDocSpec(bloq_cls=ModDbl, examples=[_moddbl_small, _moddbl_lar
 class CModMulK(Bloq):
     r"""Perform controlled modular multiplication by a constant.
 
-    Applies $\ket{c}\ket{c} \rightarrow \ket{c} \ket{x*k^c \mod p}$.
+    Applies $\ket{c}\ket{x} \rightarrow \ket{c} \ket{x*k^c \mod p}$.
 
     Args:
         dtype: Dtype of the register.
@@ -319,9 +319,9 @@ class SingleWindowModMul(Bloq):
         return Signature(
             [
                 Register('x', QBit(), shape=(self.window_size,)),
-                Register('y', QMontgomeryUInt(self.bitsize)),
+                Register('y', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('target', QBit(), shape=(self.window_size + self.bitsize,)),
-                Register('qrom_index', QMontgomeryUInt(self.window_size)),
+                Register('qrom_index', QMontgomeryUInt(self.window_size, self.mod)),
             ]
         )
 
@@ -474,10 +474,10 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         ) // self.window_size  # = ceil(self.bitsize/self.window_size)
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
-                Register('y', QMontgomeryUInt(self.bitsize)),
-                Register('target', QMontgomeryUInt(self.bitsize)),
-                Register('qrom_indices', QMontgomeryUInt(num_windows * self.window_size)),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('y', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('target', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('qrom_indices', QMontgomeryUInt(num_windows * self.window_size, self.mod)),
                 Register('reduced', QBit()),
             ]
         )
@@ -599,11 +599,13 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
-                Register('y', QMontgomeryUInt(self.bitsize)),
-                Register('target', QMontgomeryUInt(self.bitsize), side=side),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('y', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('target', QMontgomeryUInt(self.bitsize, self.mod), side=side),
                 Register(
-                    'qrom_indices', QMontgomeryUInt(num_windows * self.window_size), side=side
+                    'qrom_indices',
+                    QMontgomeryUInt(num_windows * self.window_size, self.mod),
+                    side=side,
                 ),
                 Register('reduced', QBit(), side=side),
             ]

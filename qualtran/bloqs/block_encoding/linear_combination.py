@@ -20,17 +20,20 @@ from attrs import evolve, field, frozen, validators
 from typing_extensions import Self
 
 from qualtran import (
+    AddControlledT,
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     BQUInt,
+    CtrlSpec,
+    DecomposeTypeError,
     QAny,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
-from qualtran._infra.bloq import DecomposeTypeError
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, BlackBoxSelect
 from qualtran.bloqs.block_encoding.phase import Phase
@@ -68,6 +71,7 @@ class LinearCombination(BlockEncoding):
             (state should be normalized and can have junk).
         select: If specified, oracle taking
             $|i\rangle|\psi\rangle \mapsto \text{sgn}(\lambda_i) |i\rangle U_i|\psi\rangle$.
+        is_controlled: if True, implements a controlled version. Defaults to False.
 
     Registers:
         system: The system register.
@@ -87,6 +91,8 @@ class LinearCombination(BlockEncoding):
 
     _prepare: Optional[BlackBoxPrepare] = None
     _select: Optional[BlackBoxSelect] = None
+
+    is_controlled: bool = False
 
     def __attrs_post_init__(self):
         if len(self._block_encodings) != len(self._lambd):
@@ -138,6 +144,7 @@ class LinearCombination(BlockEncoding):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(
+            ctrl=QAny(1 if self.is_controlled else 0),
             system=QAny(self.system_bitsize),
             ancilla=QAny(self.ancilla_bitsize),
             resource=QAny(self.resource_bitsize),
@@ -298,11 +305,26 @@ class LinearCombination(BlockEncoding):
         be_part = Partition(self.select.system_bitsize, tuple(be_regs))
 
         prepare_soqs = bb.add_d(self.prepare, **prepare_in_soqs)
-        select_out_soqs = bb.add_d(
-            self.select,
-            selection=prepare_soqs.pop("selection"),
-            system=cast(Soquet, bb.add(evolve(be_part, partition=False), **be_system_soqs)),
-        )
+
+        if not self.is_controlled:
+            select_out_soqs = bb.add_d(
+                self.select,
+                selection=prepare_soqs.pop("selection"),
+                system=cast(Soquet, bb.add(evolve(be_part, partition=False), **be_system_soqs)),
+            )
+        else:
+            _, add_ctrl_select = self.select.get_ctrl_system(CtrlSpec())
+            (ctrl,), select_out_soqs_t = add_ctrl_select(
+                bb,
+                [soqs.pop('ctrl')],
+                dict(
+                    selection=prepare_soqs.pop("selection"),
+                    system=cast(Soquet, bb.add(evolve(be_part, partition=False), **be_system_soqs)),
+                ),
+            )
+            select_out_soqs = dict(zip(["selection", "system"], select_out_soqs_t))
+            select_out_soqs["ctrl"] = ctrl
+
         prep_adj_soqs = bb.add_d(
             self.prepare.adjoint(), selection=select_out_soqs.pop("selection"), **prepare_soqs
         )
@@ -310,6 +332,9 @@ class LinearCombination(BlockEncoding):
         # partition system register of Select into system, ancilla, resource of block encoding
         be_soqs = bb.add_d(be_part, x=select_out_soqs.pop("system"))
         out: Dict[str, SoquetT] = {"system": be_soqs.pop("system")}
+
+        if self.is_controlled:
+            out["ctrl"] = select_out_soqs.pop("ctrl")
 
         # merge ancilla registers of block encoding and Prepare oracle
         anc_soqs = {"selection": prep_adj_soqs.pop("selection")}
@@ -330,6 +355,20 @@ class LinearCombination(BlockEncoding):
 
     def __str__(self) -> str:
         return f"B[{'+'.join(str(be)[2:-1] for be in self.signed_block_encodings)}]"
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            self,
+            ctrl_spec,
+            current_ctrl_bit=1 if self.is_controlled else None,
+            bloq_with_ctrl=evolve(self, is_controlled=True),
+            ctrl_reg_name='ctrl',
+        )
+
+    def adjoint(self) -> 'LinearCombination':
+        return self
 
 
 @bloq_example

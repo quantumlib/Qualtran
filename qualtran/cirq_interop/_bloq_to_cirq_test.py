@@ -21,7 +21,7 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, ConnectionT, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate, YGate
-from qualtran.bloqs.factoring.rsa import ModExp
+from qualtran.bloqs.cryptography.rsa import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
@@ -135,6 +135,15 @@ def test_swap():
         ]
     )
     assert swap_decomp_circuit == should_be
+
+
+def test_cirq_pow():
+    circ = cirq.Circuit()
+    q0, q1 = cirq.LineQubit.range(2)
+    with pytest.raises(ValueError, match=r'.*positive integer.*'):
+        circ += (BloqAsCirqGate(SwapTwoBitsTest()) ** 0.5).on(q0, q1)
+
+    circ += (BloqAsCirqGate(SwapTwoBitsTest()) ** 2).on(q0, q1)
 
 
 def test_multi_and_allocates():

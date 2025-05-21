@@ -23,6 +23,7 @@ import qualtran.bloqs.arithmetic.conversions.contiguous_index
 import qualtran.bloqs.arithmetic.conversions.ones_complement_to_twos_complement
 import qualtran.bloqs.arithmetic.conversions.sign_extension
 import qualtran.bloqs.arithmetic.hamming_weight
+import qualtran.bloqs.arithmetic.lists
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.arithmetic.negate
 import qualtran.bloqs.arithmetic.permutation
@@ -94,13 +95,13 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.cryptography._factoring_shims
+import qualtran.bloqs.cryptography.ecc
+import qualtran.bloqs.cryptography.ecc.ec_add
+import qualtran.bloqs.cryptography.rsa
 import qualtran.bloqs.data_loading.qroam_clean
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring._factoring_shims
-import qualtran.bloqs.factoring.ecc
-import qualtran.bloqs.factoring.ecc.ec_add
-import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
@@ -147,6 +148,7 @@ import qualtran.bloqs.rotations.programmable_ancilla_rotation
 import qualtran.bloqs.rotations.programmable_rotation_gate_array
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.rotations.rz_via_phase_gradient
+import qualtran.bloqs.rotations.zpow_via_phase_gradient
 import qualtran.bloqs.state_preparation.black_box_prepare
 import qualtran.bloqs.state_preparation.prepare_base
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -190,6 +192,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend": qualtran.bloqs.arithmetic.conversions.sign_extension.SignExtend,
     "qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate": qualtran.bloqs.arithmetic.conversions.sign_extension.SignTruncate,
     "qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute": qualtran.bloqs.arithmetic.hamming_weight.HammingWeightCompute,
+    "qualtran.bloqs.arithmetic.lists.has_duplicates.HasDuplicates": qualtran.bloqs.arithmetic.lists.has_duplicates.HasDuplicates,
+    "qualtran.bloqs.arithmetic.lists.sort_in_place.SortInPlace": qualtran.bloqs.arithmetic.lists.sort_in_place.SortInPlace,
+    "qualtran.bloqs.arithmetic.lists.symmetric_difference.SymmetricDifference": qualtran.bloqs.arithmetic.lists.symmetric_difference.SymmetricDifference,
     "qualtran.bloqs.arithmetic.multiplication.InvertRealNumber": qualtran.bloqs.arithmetic.multiplication.InvertRealNumber,
     "qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals": qualtran.bloqs.arithmetic.multiplication.MultiplyTwoReals,
     "qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct": qualtran.bloqs.arithmetic.multiplication.PlusEqualProduct,
@@ -220,6 +225,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.rotation.Rx": qualtran.bloqs.basic_gates.rotation.Rx,
     "qualtran.bloqs.basic_gates.rotation.Ry": qualtran.bloqs.basic_gates.rotation.Ry,
     "qualtran.bloqs.basic_gates.rotation.Rz": qualtran.bloqs.basic_gates.rotation.Rz,
+    "qualtran.bloqs.basic_gates.rotation.CRz": qualtran.bloqs.basic_gates.rotation.CRz,
     "qualtran.bloqs.basic_gates.rotation.XPowGate": qualtran.bloqs.basic_gates.rotation.XPowGate,
     "qualtran.bloqs.basic_gates.rotation.YPowGate": qualtran.bloqs.basic_gates.rotation.YPowGate,
     "qualtran.bloqs.basic_gates.rotation.ZPowGate": qualtran.bloqs.basic_gates.rotation.ZPowGate,
@@ -353,17 +359,17 @@ RESOLVER_DICT = {
     "qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul": qualtran.bloqs.mod_arithmetic.mod_multiplication.SingleWindowModMul,
     "qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse": qualtran.bloqs.mod_arithmetic.mod_division.KaliskiModInverse,
     "qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration": qualtran.bloqs.mod_arithmetic.mod_division._KaliskiIteration,
-    "qualtran.bloqs.factoring._factoring_shims.MeasureQFT": qualtran.bloqs.factoring._factoring_shims.MeasureQFT,
-    "qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR": qualtran.bloqs.factoring.ecc.ec_add_r.ECWindowAddR,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepOne,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepTwo,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepThree,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFour": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFour,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFive": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepFive,
-    "qualtran.bloqs.factoring.ecc.ec_add._ECAddStepSix": qualtran.bloqs.factoring.ecc.ec_add._ECAddStepSix,
-    "qualtran.bloqs.factoring.ecc.ec_add.ECAdd": qualtran.bloqs.factoring.ecc.ec_add.ECAdd,
-    "qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate": qualtran.bloqs.factoring.rsa.rsa_phase_estimate.RSAPhaseEstimate,
-    "qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp": qualtran.bloqs.factoring.rsa.rsa_mod_exp.ModExp,
+    "qualtran.bloqs.cryptography._factoring_shims.MeasureQFT": qualtran.bloqs.cryptography._factoring_shims.MeasureQFT,
+    "qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR": qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepOne": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepOne,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepTwo": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepTwo,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepThree": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepThree,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFour": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFour,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFive": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepFive,
+    "qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepSix": qualtran.bloqs.cryptography.ecc.ec_add._ECAddStepSix,
+    "qualtran.bloqs.cryptography.ecc.ec_add.ECAdd": qualtran.bloqs.cryptography.ecc.ec_add.ECAdd,
+    "qualtran.bloqs.cryptography.rsa.rsa_phase_estimate.RSAPhaseEstimate": qualtran.bloqs.cryptography.rsa.rsa_phase_estimate.RSAPhaseEstimate,
+    "qualtran.bloqs.cryptography.rsa.rsa_mod_exp.ModExp": qualtran.bloqs.cryptography.rsa.rsa_mod_exp.ModExp,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
     "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,
@@ -427,6 +433,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient": qualtran.bloqs.rotations.quantum_variable_rotation.QvrPhaseGradient,
     "qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow": qualtran.bloqs.rotations.quantum_variable_rotation.QvrZPow,
     "qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient": qualtran.bloqs.rotations.rz_via_phase_gradient.RzViaPhaseGradient,
+    "qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient": qualtran.bloqs.rotations.zpow_via_phase_gradient.ZPowConstViaPhaseGradient,
     "qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition": qualtran.bloqs.state_preparation.prepare_uniform_superposition.PrepareUniformSuperposition,
     "qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare": qualtran.bloqs.state_preparation.black_box_prepare.BlackBoxPrepare,
     "qualtran.bloqs.state_preparation.prepare_base.PrepareOracle": qualtran.bloqs.state_preparation.prepare_base.PrepareOracle,

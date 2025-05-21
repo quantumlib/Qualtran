@@ -284,7 +284,7 @@ class CtrlSpec:
         for qdtype, shape in zip(qdtypes, shapes):
             full_shape = shape + (qdtype.num_qubits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore[arg-type]
+            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
@@ -366,6 +366,13 @@ class Controlled(GateWithRegisters):
     subbloq: 'Bloq'
     ctrl_spec: 'CtrlSpec'
 
+    @cached_property
+    def _thru_registers_only(self) -> bool:
+        for reg in self.subbloq.signature:
+            if reg.side != Side.THRU:
+                return False
+        return True
+
     @classmethod
     def make_ctrl_system(cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec') -> Tuple[Bloq, AddControlledT]:
         """A factory method for creating both the Controlled and the adder function.
@@ -417,6 +424,9 @@ class Controlled(GateWithRegisters):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', **initial_soqs: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        if not self._thru_registers_only:
+            raise DecomposeTypeError(f"Cannot handle non-thru registers in {self.subbloq}")
+
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
         from qualtran import CompositeBloq
 
@@ -460,6 +470,8 @@ class Controlled(GateWithRegisters):
         return counts
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
         other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
         if self.ctrl_spec.is_active(*ctrl_vals):
@@ -472,6 +484,8 @@ class Controlled(GateWithRegisters):
         return vals
 
     def _tensor_data(self):
+        if not self._thru_registers_only:
+            raise ValueError(f"Cannot handle non-thru registers in {self}.")
         from qualtran.simulation.tensor._tensor_data_manipulation import (
             active_space_for_ctrl_spec,
             eye_tensor_for_signature,
@@ -513,7 +527,7 @@ class Controlled(GateWithRegisters):
             # to a unitary matrix.
             return self.tensor_contract()
         # Unable to determine the unitary effect.
-        return NotImplemented
+        raise ValueError(f"Cannot handle non-thru registers in {self}.")
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
