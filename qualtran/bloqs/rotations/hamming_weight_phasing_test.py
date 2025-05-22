@@ -32,6 +32,12 @@ from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_split_join,
 )
+from qualtran.resource_counting import (
+    QECGatesCost, 
+    GateCounts, 
+    get_cost_value,
+)
+
 from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
@@ -141,10 +147,14 @@ def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: i
     remainder = n % (ancillasize+1)
 
 #    assert gate.t_complexity().rotations == (-(-n // (ancillasize+1))-1) * (ancillasize+1).bit_length() + remainder.bit_length() # exact, fails for remainder = 0.
-    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
-    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1))
-    # TODO: add an assertion that number of ancilla allocated is never > ancillasize.
+#    Outdated method of doing gatecount tests. Also tests T-count rather than Toffoli count.
+#    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
+#    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1)
 
+    gc = get_cost_value(gate, QECGatesCost())
+    assert gc.rotation <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length()
+    assert gc.toffoli + gc.and_bloq + gc.cswap <= ancillasize * -(-n // (ancillasize+1))
+    
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)
     initial_state = cirq.testing.random_superposition(dim=2**n, random_state=12345)

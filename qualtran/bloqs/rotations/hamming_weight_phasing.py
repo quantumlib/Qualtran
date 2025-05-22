@@ -213,7 +213,7 @@ _HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
 
 
 @attrs.frozen
-class HammingWeightPhasingWithConfigurableAncilla(GateWithRegisters):
+class HammingWeightPhasingWithConfigurableAncilla(Bloq):
     r"""
     Args:
         bitsize: Size of input register to apply 'Z ** exponent' to.
