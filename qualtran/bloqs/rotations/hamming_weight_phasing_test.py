@@ -143,17 +143,6 @@ def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: i
     qlt_testing.assert_equivalent_bloq_counts(
         gate, [ignore_split_join, cirq_to_bloqs, generalize_rotation_angle]
     )
-
-    remainder = n % (ancillasize+1)
-
-#    assert gate.t_complexity().rotations == (-(-n // (ancillasize+1))-1) * (ancillasize+1).bit_length() + remainder.bit_length() # exact, fails for remainder = 0.
-#    Outdated method of doing gatecount tests. Also tests T-count rather than Toffoli count.
-#    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
-#    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1)
-
-    gc = get_cost_value(gate, QECGatesCost())
-    assert gc.rotation <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length()
-    assert gc.toffoli + gc.and_bloq + gc.cswap <= ancillasize * -(-n // (ancillasize+1))
     
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)
@@ -165,3 +154,19 @@ def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: i
     hw_phasing = cirq.Circuit(state_prep, HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta).on(*gh.quregs['x']))
     hw_final_state = sim.simulate(hw_phasing).final_state_vector
     assert np.allclose(expected_final_state, hw_final_state, atol=1e-7)
+
+
+@pytest.mark.parametrize('n, ancillasize', [(n, ancillasize) for n in range(3, 9) for ancillasize in range(1, n-1)])
+@pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
+def test_hamming_weight_phasing_with_configurable_ancilla_bloq_counts(n: int, ancillasize: int, theta: float):
+    gate = HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta)
+    remainder = n % (ancillasize+1)
+
+#    assert gate.t_complexity().rotations == (-(-n // (ancillasize+1))-1) * (ancillasize+1).bit_length() + remainder.bit_length() # exact, fails for remainder = 0.
+#    Outdated method of doing gatecount tests. Also tests T-count rather than Toffoli count.
+#    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
+#    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1)
+
+    gc = get_cost_value(gate, QECGatesCost())
+    assert gc.rotation <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length()
+    assert gc.toffoli + gc.and_bloq + gc.cswap <= ancillasize * -(-n // (ancillasize+1))

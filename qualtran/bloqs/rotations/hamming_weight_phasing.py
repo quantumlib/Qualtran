@@ -236,9 +236,9 @@ class HammingWeightPhasingWithConfigurableAncilla(Bloq):
         Appendix A.2: Hamming weight phasing with limited ancilla
     """
 
-    bitsize: int
-    ancillasize: int # TODO: verify that ancillasize is always < bitsize-1
-    exponent: float = 1
+    bitsize: SymbolicInt
+    ancillasize: SymbolicInt # TODO: verify that ancillasize is always < bitsize-1
+    exponent: SymbolicFloat = 1
     eps: SymbolicFloat = 1e-10
 
     @cached_property
