@@ -214,7 +214,14 @@ _HAMMING_WEIGHT_PHASING_VIA_PHASE_GRADIENT_DOC = BloqDocSpec(
 
 @attrs.frozen
 class HammingWeightPhasingWithConfigurableAncilla(Bloq):
-    r"""
+    r""""Applies $Z^{\text{exponent}}$ to every qubit of an input register of size `bitsize`.
+
+    See docstring of 'HammingWeightPhasing' for more details about how hamming weight phasing works, and the docstring of 'HammingWeightPhasingViaPhaseGradient' for more details about how the rotations are synthesized.
+
+    This is a variant of hamming weight phasing via phase gradient which uses a constant number of ancilla specified by the user. See Appendix A.2 of [1] (pages 19-21) for details. Note that this method has increased T-complexity compared to hamming weight phasing via phase gradient, since the hamming weight of the entire register cannot be calculated at once due to the limited number of ancilla available. Instead, we calculate the hamming weight in parts, performing the full rotation over the course of $\lceil n/(r+1)\rceil$ repetitions. Again, see [1] for a detailed analysis of the resource costs of this technique compared to vanilla hamming weight phasing and compard with hamming weight phasing via phase gradient. Also see the note in the 'HammingWeightPhasingViaPhaseGradient' docstring for information about when these methods are actually practical to use over vannilla hamming weight phasing.
+
+    
+    
     Args:
         bitsize: Size of input register to apply 'Z ** exponent' to.
         ancillasize: Size of the ancilla register to be used to calculate the hamming weight of 'x'.
@@ -225,6 +232,8 @@ class HammingWeightPhasingWithConfigurableAncilla(Bloq):
         x: A 'THRU' register of 'bitsize' qubits.
 
     References:
+        [Improved Fault-Tolerant Quantum Simulation of Condensed-Phase Correlated Electrons via Trotterization](https://arxiv.org/abs/1902.10673)
+        Appendix A.2: Hamming weight phasing with limited ancilla
     """
 
     bitsize: int
@@ -240,13 +249,14 @@ class HammingWeightPhasingWithConfigurableAncilla(Bloq):
         if self.ancillasize >= self.bitsize - 1:
             raise ValueError('ancillasize should be less than bitsize - 1.')
 
-    '''
-    General strategy: find the max-bitsize number (n bits) we can compute the HW of using our available ancilla,
-    greedily do this on the first n bits of x, perform the rotations, then the next n bits and perform those
-    rotations, and so on until we have computed the HW of the entire input. Can express this as repeated calls to
-    HammingWeightPhasing bloqs on subsets of the input.
-    '''
+    
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
+        '''
+        General strategy: find the max-bitsize number (n bits) we can compute the HW of using our available ancilla,
+        greedily do this on the first n bits of x, perform the rotations, then the next n bits and perform those
+        rotations, and so on until we have computed the HW of the entire input. Can express this as repeated calls to
+        HammingWeightPhasing bloqs on subsets of the input.
+        '''
         num_iters = self.bitsize // (self.ancillasize + 1)
         remainder = self.bitsize % (self.ancillasize+1)
         x = bb.split(x)
