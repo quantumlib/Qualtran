@@ -19,7 +19,6 @@ from typing import (
     cast,
     Dict,
     FrozenSet,
-    Hashable,
     Iterable,
     Iterator,
     List,
@@ -33,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from collections.abc import Hashable
 
 import attrs
 import networkx as nx
