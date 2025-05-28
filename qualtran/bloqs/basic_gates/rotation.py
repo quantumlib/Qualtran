@@ -612,7 +612,6 @@ class Rx(CirqGateAsBloqBase):
 @frozen
 class Ry(CirqGateAsBloqBase):
     r"""Rotates a qubit about the Y-axis of the Bloch sphere.
-
     The unitary matrix for this gate is:
     $$
     R_y(\theta) = \exp(-i \frac{\theta}{2} Y) =
@@ -622,11 +621,9 @@ class Ry(CirqGateAsBloqBase):
     \end{pmatrix}
     $$
     where $\theta$ is the `angle` of rotation.
-
     This gate is equivalent to `cirq.ry(angle)`.
     It differs from `YPowGate` by a global phase. Specifically,
     `Ry(angle)` is `YPowGate(exponent=angle/np.pi, global_shift=-0.5)`.
-
     Args:
         angle: The angle of rotation in radians. This can be a symbolic expression
             or a float.
@@ -634,7 +631,6 @@ class Ry(CirqGateAsBloqBase):
             bookkeeping and does not directly affect the tensor representation
             of this gate. It becomes relevant when synthesizing rotations
             from a discrete gate set, where a target precision `eps` is required.
-
     Registers:
         q: A single QBit register representing the qubit to be rotated.
     """
