@@ -554,6 +554,33 @@ _CRZ_DOC = BloqDocSpec(bloq_cls=CRz, examples=[_crz])
 
 @frozen
 class Rx(CirqGateAsBloqBase):
+    r"""Rotates a qubit about the X-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+    $$
+    R_x(\theta) = \exp(-i \frac{\theta}{2} X) =
+    \begin{pmatrix}
+        \cos{\frac{\theta}{2}} & -i\sin{\frac{\theta}{2}} \\
+        -i\sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+    \end{pmatrix}
+    $$
+    where $\theta$ is the `angle` of rotation.
+
+    This gate is equivalent to `cirq.rx(angle)`.
+    It differs from `XPowGate` by a global phase. Specifically,
+    `Rx(angle)` is `XPowGate(exponent=angle/np.pi, global_shift=-0.5)`.
+
+    Args:
+        angle: The angle of rotation in radians. This can be a symbolic expression
+            or a float.
+        eps: The precision of the rotation. This parameter is primarily for
+            bookkeeping and does not directly affect the tensor representation
+            of this gate. It becomes relevant when synthesizing rotations
+            from a discrete gate set, where a target precision `eps` is required.
+
+    Registers:
+        q: A single QBit register representing the qubit to be rotated.
+    """
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -583,6 +610,33 @@ class Rx(CirqGateAsBloqBase):
 
 @frozen
 class Ry(CirqGateAsBloqBase):
+    r"""Rotates a qubit about the Y-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+    $$
+    R_y(\theta) = \exp(-i \frac{\theta}{2} Y) =
+    \begin{pmatrix}
+        \cos{\frac{\theta}{2}} & -\sin{\frac{\theta}{2}} \\
+        \sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+    \end{pmatrix}
+    $$
+    where $\theta$ is the `angle` of rotation.
+
+    This gate is equivalent to `cirq.ry(angle)`.
+    It differs from `YPowGate` by a global phase. Specifically,
+    `Ry(angle)` is `YPowGate(exponent=angle/np.pi, global_shift=-0.5)`.
+
+    Args:
+        angle: The angle of rotation in radians. This can be a symbolic expression
+            or a float.
+        eps: The precision of the rotation. This parameter is primarily for
+            bookkeeping and does not directly affect the tensor representation
+            of this gate. It becomes relevant when synthesizing rotations
+            from a discrete gate set, where a target precision `eps` is required.
+
+    Registers:
+        q: A single QBit register representing the qubit to be rotated.
+    """
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
