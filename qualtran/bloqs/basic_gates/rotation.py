@@ -554,6 +554,45 @@ _CRZ_DOC = BloqDocSpec(bloq_cls=CRz, examples=[_crz])
 
 @frozen
 class Rx(CirqGateAsBloqBase):
+    """Single-qubit X rotation gate.
+
+    Rotates a qubit about the X-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+
+        R_x(θ) = exp(-i θ/2 X) =
+            [[cos(θ/2), -i sin(θ/2)],
+             [-i sin(θ/2), cos(θ/2)]]
+
+    This gate is equivalent to `cirq.rx(angle)`. It differs from `XPowGate` by a global phase.
+    Specifically, `Rx(angle)` is `XPowGate(exponent=angle/π, global_shift=-0.5)`.
+
+    Parameters
+    ----------
+    angle : float or sympy.Expr
+        The angle of rotation in radians.
+    eps : float, optional
+        The precision of the rotation. Used for synthesis from discrete gate sets.
+
+    Registers
+    ---------
+    q : QBit
+        The qubit to be rotated.
+
+    Examples
+    --------
+    >>> from qualtran.bloqs.basic_gates.rotation import Rx
+    >>> import numpy as np
+    >>> rx = Rx(angle=np.pi/2)
+    >>> print(rx)
+    Rx(1.5707963267948966)
+
+    References
+    ----------
+    .. [1] Quantum Computation and Quantum Information, Nielsen and Chuang, 2010.
+    .. [2] https://arxiv.org/abs/1403.2975
+    """
+
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -581,8 +620,53 @@ class Rx(CirqGateAsBloqBase):
         return f'Rx({self.angle})'
 
 
+@bloq_example
+def _rx() -> Rx:
+    rx = Rx(angle=np.pi / 4.0)
+    return rx
+
+
 @frozen
 class Ry(CirqGateAsBloqBase):
+    """Single-qubit Y rotation gate.
+
+    Rotates a qubit about the Y-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+
+        R_y(θ) = exp(-i θ/2 Y) =
+            [[cos(θ/2), -sin(θ/2)],
+             [sin(θ/2), cos(θ/2)]]
+
+    This gate is equivalent to `cirq.ry(angle)`. It differs from `YPowGate` by a global phase.
+    Specifically, `Ry(angle)` is `YPowGate(exponent=angle/π, global_shift=-0.5)`.
+
+    Parameters
+    ----------
+    angle : float or sympy.Expr
+        The angle of rotation in radians.
+    eps : float, optional
+        The precision of the rotation. Used for synthesis from discrete gate sets.
+
+    Registers
+    ---------
+    q : QBit
+        The qubit to be rotated.
+
+    Examples
+    --------
+    >>> from qualtran.bloqs.basic_gates.rotation import Ry
+    >>> import numpy as np
+    >>> ry = Ry(angle=np.pi/2)
+    >>> print(ry)
+    Ry(1.5707963267948966)
+
+    References
+    ----------
+    .. [1] Quantum Computation and Quantum Information, Nielsen and Chuang, 2010.
+    .. [2] https://arxiv.org/abs/1403.2975
+    """
+
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -608,12 +692,6 @@ class Ry(CirqGateAsBloqBase):
 
     def __str__(self):
         return f'Ry({self.angle})'
-
-
-@bloq_example
-def _rx() -> Rx:
-    rx = Rx(angle=np.pi / 4.0)
-    return rx
 
 
 @bloq_example
