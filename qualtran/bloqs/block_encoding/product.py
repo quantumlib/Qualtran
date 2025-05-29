@@ -227,6 +227,9 @@ class Product(BlockEncoding):
             # set corresponding flag if ancillas are all zero
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
                 controls = bb.split(cast(Soquet, anc_soq))
+                # flag_bits_soq will always be assigned based on the following assertion
+                assert self.ancilla_bitsize > 0
+                # pylint: disable=used-before-assignment
                 controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
                     MultiControlX(tuple([0] * u.ancilla_bitsize)),
                     controls=controls[: u.ancilla_bitsize],
