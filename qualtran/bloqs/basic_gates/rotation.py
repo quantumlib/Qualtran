@@ -634,7 +634,7 @@ class Ry(CirqGateAsBloqBase):
     Registers:
         q: A single QBit register representing the qubit to be rotated.
     """
-    
+
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
