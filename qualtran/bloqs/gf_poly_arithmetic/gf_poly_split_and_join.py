@@ -53,7 +53,7 @@ class GFPolySplit(_BookkeepingBloq):
     galois field GF($p^m$). Given an input quantum register representing a degree $n$ polynomial
     $f(x)$, this bloq splits it into $n + 1$ registers of type $QGF(p, m)$.
 
-    Give a polynomial
+    Given a polynomial
     $$
         f(x) = \sum_{i = 0}^{n} a_{i} x^{i} \\ \forall a_{i} \in GF(p^m)
     $$
@@ -66,7 +66,7 @@ class GFPolySplit(_BookkeepingBloq):
     See `GFPolyJoin` for the inverse operation.
 
     Args:
-        qgf_poly: An instance of `QGFPoly` type that represents a degree $n$ polynomial defined
+        dtype: An instance of `QGFPoly` type that represents a degree $n$ polynomial defined
             over a galois field GF($p^m$).
 
     Registers:
@@ -158,12 +158,12 @@ class GFPolyJoin(_BookkeepingBloq):
     representing coefficients of a degree $n$ polynomial $f(x)$, this bloq joins it into
     a register of type `QGFPoly`.
 
-    Give a polynomial
+    Given a polynomial
     $$
         f(x) = \sum_{i = 0}^{n} a_{i} x^{i} \\ \forall a_{i} \in GF(p^m)
     $$
 
-    the bloq joins register representing coefficients of the polynomial in big-endian representation
+    the bloq joins registers representing coefficients of the polynomial in big-endian representation
     such that
     $$
         \ket{a_{n}}\ket{a_{n - 1}} \cdots \ket{a_0} \xrightarrow{\text{join}} \ket{f(x)}
@@ -172,12 +172,12 @@ class GFPolyJoin(_BookkeepingBloq):
     See `GFPolySplit` for the inverse operation.
 
     Args:
-        qgf_poly: An instance of `QGFPoly` type that represents a degree $n$ polynomial defined
+        dtype: An instance of `QGFPoly` type that represents a degree $n$ polynomial defined
             over a galois field GF($p^m$).
 
     Registers:
         reg: The register to be joined. On its left, it is an array of `QGF`s of shape
-        `(qgf_poly.degree + 1,)`. On the right, it is of the type `qgf_poly`.
+            `(qgf_poly.degree + 1,)`. On the right, it is of the type `qgf_poly`.
 
     """
 

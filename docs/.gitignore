@@ -2,7 +2,7 @@
 _build/
 
 # Generated reference toc
-reference/autotoc.rst
+reference/autotoc.rst.inc
 
 # All the generated reference pages
 **/*.md
