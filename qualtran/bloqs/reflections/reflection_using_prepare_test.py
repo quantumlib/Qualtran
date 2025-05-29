@@ -133,8 +133,12 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
     prepared_state = result.final_state_vector.reshape(2 ** len(selection), -1).sum(axis=1)
     if np.sign(global_phase) == 1:
         signs = '-' * num_ones + '+' * (9 - num_ones)
-    else:  # np.sign(global_phase) == -1:
+    elif np.sign(global_phase) == -1:
         signs = '+' * num_ones + '-' * (9 - num_ones)
+    else:
+        raise ValueError(
+            "sign function has failed to return 1 or -1. This may be due to nan or complex input."
+        )
     assert cirq.dirac_notation(prepared_state) == get_3q_uniform_dirac_notation(signs, global_phase)
 
 
