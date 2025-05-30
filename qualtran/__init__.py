@@ -61,6 +61,8 @@ from ._infra.data_types import (
     BQUInt,
     QMontgomeryUInt,
     QGF,
+    # Deprecated
+    BoundedQUInt,
 )
 
 # Internal imports: none
