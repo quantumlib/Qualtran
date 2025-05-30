@@ -62,7 +62,8 @@ class MultiControlPauli(GateWithRegisters):
     """
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
-    target_bloq: Bloq
+    target_bloq: Bloq = None
+    _target_gate: 'Optional[cirq.Gate]' = field(kw_only=True, default=None)
 
     def __attrs_post_init__(self):
         warnings.warn(
@@ -72,6 +73,13 @@ class MultiControlPauli(GateWithRegisters):
             "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
             DeprecationWarning,
         )
+        if self.target_bloq is None:
+            if self._target_gate is None:
+                raise ValueError("Expected either `target_bloq` or `target_gate`")
+
+            from qualtran.cirq_interop import cirq_gate_to_bloq
+
+            object.__setattr__(self, 'target_bloq', cirq_gate_to_bloq(self._target_gate))
 
     @cached_property
     def signature(self) -> 'Signature':

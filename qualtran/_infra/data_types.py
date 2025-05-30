@@ -49,6 +49,7 @@ respectively.
 """
 
 import abc
+import warnings
 from enum import Enum
 from functools import cached_property
 from typing import Any, Iterable, List, Optional, Sequence, Union
@@ -525,6 +526,11 @@ class BQUInt(QDType):
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.bitsize}, {self.iteration_length})'
+
+
+def BoundedQUInt(*args, **kwargs):
+    warnings.warn("Please use `qualtran.BQUInt`", DeprecationWarning)
+    return BQUInt(*args, **kwargs)
 
 
 @attrs.frozen
