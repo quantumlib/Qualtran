@@ -154,6 +154,7 @@ def _chebyshev_poly_even() -> ChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard, XGate
     from qualtran.bloqs.block_encoding import LinearCombination, Unitary
 
+    # pylint: disable=abstract-class-instantiated
     bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (0.5, 0.5), lambd_bits=1)
     chebyshev_poly_even = ChebyshevPolynomial(bloq, order=4)
     return chebyshev_poly_even
@@ -164,6 +165,7 @@ def _chebyshev_poly_odd() -> ChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding import Unitary
 
+    # pylint: disable=abstract-class-instantiated
     bloq = Unitary(Hadamard())
     chebyshev_poly_odd = ChebyshevPolynomial(bloq, order=5)
     return chebyshev_poly_odd
@@ -276,6 +278,7 @@ def _scaled_chebyshev_poly_even() -> ScaledChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard, XGate
     from qualtran.bloqs.block_encoding import LinearCombination, Unitary
 
+    # pylint: disable=abstract-class-instantiated
     bloq = LinearCombination((Unitary(XGate()), Unitary(Hadamard())), (1.0, 1.0), lambd_bits=1)
     scaled_chebyshev_poly_even = ScaledChebyshevPolynomial(bloq, order=4)
     return scaled_chebyshev_poly_even
@@ -288,6 +291,7 @@ def _scaled_chebyshev_poly_odd() -> ScaledChebyshevPolynomial:
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding import Unitary
 
+    # pylint: disable=abstract-class-instantiated
     bloq = evolve(Unitary(Hadamard()), alpha=3.14)
     scaled_chebyshev_poly_odd = ScaledChebyshevPolynomial(bloq, order=5)
     return scaled_chebyshev_poly_odd

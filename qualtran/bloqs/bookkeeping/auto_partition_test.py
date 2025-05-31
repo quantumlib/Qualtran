@@ -82,6 +82,7 @@ def test_auto_partition_valid():
     from qualtran.bloqs.basic_gates import Swap, XGate
 
     with pytest.raises(ValueError):
+        # pylint: disable=abstract-class-instantiated
         bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
         bloq = AutoPartition(
             bloq, [(Register('a', QAny(3)), ['y']), (Register('b', QAny(3)), ['x'])]
@@ -99,6 +100,7 @@ def test_auto_partition_big():
     from qualtran import Controlled, CtrlSpec, QAny, QUInt, Register, Side
     from qualtran.bloqs.basic_gates import Swap
 
+    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
     bloq = AutoPartition(
         bloq, [(Register('a', QAny(7)), ['y', 'ctrl']), (Register('b', QAny(3)), ['x'])]
@@ -174,6 +176,7 @@ def test_auto_partition_unused():
 
 
 def test_auto_partition_unused_index():
+    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(1), CtrlSpec())
     bloq = AutoPartition(
         bloq,

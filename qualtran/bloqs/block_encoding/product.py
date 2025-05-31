@@ -227,6 +227,9 @@ class Product(BlockEncoding):
             # set corresponding flag if ancillas are all zero
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
                 controls = bb.split(cast(Soquet, anc_soq))
+                # flag_bits_soq will always be assigned based on the following assertion
+                assert self.ancilla_bitsize > 0
+                # pylint: disable=used-before-assignment
                 controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
                     MultiControlX(tuple([0] * u.ancilla_bitsize)),
                     controls=controls[: u.ancilla_bitsize],
@@ -256,6 +259,7 @@ def _product_block_encoding() -> Product:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
+    # pylint: disable=abstract-class-instantiated
     product_block_encoding = Product((Unitary(TGate()), Unitary(Hadamard())))
     return product_block_encoding
 
@@ -265,6 +269,7 @@ def _product_block_encoding_properties() -> Product:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
+    # pylint: disable=abstract-class-instantiated
     u1 = Unitary(TGate(), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = Unitary(Hadamard(), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
     product_block_encoding_properties = Product((u1, u2))
@@ -284,6 +289,7 @@ def _product_block_encoding_symb() -> Product:
     alpha2 = sympy.Symbol('alpha2')
     a2 = sympy.Symbol('a2')
     eps2 = sympy.Symbol('eps2')
+    # pylint: disable=abstract-class-instantiated
     product_block_encoding_symb = Product(
         (
             Unitary(TGate(), alpha=alpha1, ancilla_bitsize=a1, epsilon=eps1),

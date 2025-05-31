@@ -94,6 +94,7 @@ class Unitary(BlockEncoding):
 def _unitary_block_encoding() -> Unitary:
     from qualtran.bloqs.basic_gates import TGate
 
+    # pylint: disable=abstract-class-instantiated
     unitary_block_encoding = Unitary(TGate())
     return unitary_block_encoding
 
@@ -104,6 +105,7 @@ def _unitary_block_encoding_properties() -> Unitary:
 
     from qualtran.bloqs.basic_gates import TGate
 
+    # pylint: disable=abstract-class-instantiated
     unitary_block_encoding_properties = evolve(
         Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01
     )

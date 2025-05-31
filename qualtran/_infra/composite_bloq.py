@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+from collections.abc import Hashable
 from functools import cached_property
 from typing import (
     Callable,
     cast,
     Dict,
     FrozenSet,
-    Hashable,
     Iterable,
     Iterator,
     List,
@@ -1219,6 +1219,7 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
+        # pylint: disable=abstract-class-instantiated
         return CompositeBloq(
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )

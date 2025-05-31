@@ -81,6 +81,7 @@ def test_tensor_product_params():
 
 def test_tensor_product_tensors():
     from_gate = TGate().tensor_contract()
+    # pylint: disable=abstract-class-instantiated
     from_tensors = TensorProduct((Unitary(TGate()),)).tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
 
@@ -113,6 +114,7 @@ def test_tensor_product_override_tensors():
 
 def test_tensor_product_cirq():
     qubits = cirq.LineQubit.range(4)
+    # pylint: disable=abstract-class-instantiated
     op = TensorProduct(
         (TensorProduct((Unitary(XGate()), Unitary(XGate()))), Unitary(CNOT()))
     ).on_registers(system=qubits)

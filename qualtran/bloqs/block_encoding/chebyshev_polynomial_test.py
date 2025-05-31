@@ -58,8 +58,10 @@ def test_chebyshev_poly_odd_counts():
 def test_chebyshev_checks():
     from qualtran.bloqs.block_encoding.product_test import TestBlockEncoding
 
+    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = ChebyshevPolynomial(Unitary(XGate()), -1)
+    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = ChebyshevPolynomial(TestBlockEncoding(), 2)
 
@@ -118,6 +120,7 @@ def test_chebyshev_poly_odd_tensors():
 
 
 def test_chebyshev_zero_order():
+    # pylint: disable=abstract-class-instantiated
     bloq = ChebyshevPolynomial(Unitary(Hadamard()), order=0)
     bb = BloqBuilder()
     system = bb.add_register("system", 1)
@@ -130,6 +133,7 @@ def test_chebyshev_zero_order():
 
 
 def test_chebyshev_first_order():
+    # pylint: disable=abstract-class-instantiated
     bloq = ChebyshevPolynomial(Unitary(Hadamard()), order=1)
     bb = BloqBuilder()
     system = bb.add_register("system", 1)

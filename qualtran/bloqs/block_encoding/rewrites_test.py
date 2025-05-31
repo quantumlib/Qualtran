@@ -18,6 +18,7 @@ from qualtran.bloqs.block_encoding.rewrites import collect_like_terms
 
 
 def test_collect_like_terms_atomic():
+    # pylint: disable=abstract-class-instantiated
     assert collect_like_terms(Unitary(XGate())) == Unitary(XGate())
     assert collect_like_terms(
         Product((Phase(Unitary(XGate()), phi=1, eps=1), Unitary(XGate())))
@@ -25,6 +26,7 @@ def test_collect_like_terms_atomic():
 
 
 def test_collect_like_terms_nested():
+    # pylint: disable=abstract-class-instantiated
     assert collect_like_terms(
         TensorProduct(
             (

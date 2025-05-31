@@ -56,6 +56,7 @@ def test_linear_combination_signature():
 def test_linear_combination_checks():
     with pytest.raises(ValueError):
         _ = LinearCombination((), (), lambd_bits=1)
+    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = LinearCombination((Unitary(TGate()),), (), lambd_bits=1)
     with pytest.raises(ValueError):
@@ -64,11 +65,13 @@ def test_linear_combination_checks():
         _ = LinearCombination((Unitary(TGate()), Unitary(CNOT())), (1.0,), lambd_bits=1)
     with pytest.raises(ValueError):
         _ = LinearCombination((Unitary(TGate()), Unitary(Hadamard())), (0.0, 0.0), lambd_bits=1)
+    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = LinearCombination((Unitary(TGate()), TestBlockEncoding()), (1.0, 1.0), lambd_bits=1)
 
 
 def test_linear_combination_params():
+    # pylint: disable=abstract-class-instantiated
     u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = evolve(Unitary(Hadamard()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
     bloq = LinearCombination((u1, u2), (1.0, 1.0), lambd_bits=1)
@@ -110,6 +113,7 @@ def test_linear_combination_cost():
 
 
 def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
+    # pylint: disable=abstract-class-instantiated
     bloq = LinearCombination(tuple(Unitary(g) for g in gates), lambd, lambd_bits)
     from_gate = sum(l * g.tensor_contract() for l, g in zip(lambd, gates))
     from_tensors = get_tensors(bloq)
@@ -117,6 +121,7 @@ def run_gate_test(gates, lambd, lambd_bits=1, atol=1e-07):
 
 
 def test_linear_combination_alpha():
+    # pylint: disable=abstract-class-instantiated
     lambd = (2.0, 3.0)
     gates = (evolve(Unitary(TGate()), alpha=2.0), evolve(Unitary(Hadamard()), alpha=4.0))
     bloq = LinearCombination(gates, lambd, lambd_bits=1)

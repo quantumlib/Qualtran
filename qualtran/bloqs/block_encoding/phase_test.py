@@ -47,6 +47,7 @@ def test_phase_tensors():
 
 
 def test_negate():
+    # pylint: disable=abstract-class-instantiated
     bloq = Phase(Unitary(Hadamard()), phi=1, eps=0)
     from_gate = -Hadamard().tensor_contract()
     from_tensors = bloq.tensor_contract()
@@ -54,6 +55,7 @@ def test_negate():
 
 
 def test_phase_signal_state():
+    # pylint: disable=abstract-class-instantiated
     bloq = Phase(TestBlockEncoding(), phi=1, eps=0)
     assert isinstance(bloq.signal_state.prepare, TestPrepareOracle)
 
