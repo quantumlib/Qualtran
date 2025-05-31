@@ -184,6 +184,7 @@ class ControlledViaAnd(_ControlledBase):
 def _controlled_via_and_qbits() -> ControlledViaAnd:
     from qualtran.bloqs.basic_gates import Hadamard
 
+    # pylint: disable=abstract-class-instantiated
     controlled_via_and_qbits = ControlledViaAnd(Hadamard(), CtrlSpec(cvs=(np.array([0, 1, 1, 0]),)))
     return controlled_via_and_qbits
 
@@ -193,6 +194,7 @@ def _controlled_via_and_ints() -> ControlledViaAnd:
     from qualtran import CtrlSpec, QInt, QUInt
     from qualtran.bloqs.basic_gates import Hadamard
 
+    # pylint: disable=abstract-class-instantiated
     controlled_via_and_ints = ControlledViaAnd(
         Hadamard(),
         CtrlSpec(

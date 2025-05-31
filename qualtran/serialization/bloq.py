@@ -128,6 +128,7 @@ class _BloqLibDeserializer:
             return self.id_to_bloq[bloq_id]
         bloq_proto: bloq_pb2.BloqLibrary.BloqWithDecomposition = self.id_to_proto[bloq_id]
         if bloq_proto.bloq.name.endswith('.CompositeBloq'):
+            # pylint: disable=abstract-class-instantiated
             self.id_to_bloq[bloq_id] = CompositeBloq(
                 connections=tuple(
                     self._connection_from_proto(cxn) for cxn in bloq_proto.decomposition

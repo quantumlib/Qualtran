@@ -111,6 +111,7 @@ def test_assert_registers_match_parent():
 
 def test_assert_registers_match_dangling():
     cxns, _ = _manually_make_test_cbloq_cxns()
+    # pylint: disable=abstract-class-instantiated
     cbloq = CompositeBloq(cxns, signature=Signature.build(ctrl=1, target=1))
     with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
         assert_registers_match_dangling(cbloq)
@@ -119,6 +120,7 @@ def test_assert_registers_match_dangling():
 def test_assert_soquets_belong_to_registers():
     cxns, signature = _manually_make_test_cbloq_cxns()
     cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', QBit())))
+    # pylint: disable=abstract-class-instantiated
     cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
@@ -133,6 +135,7 @@ def test_assert_soquets_used_exactly_once():
     control, target = TestTwoBitOp().signature
 
     cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
+    # pylint: disable=abstract-class-instantiated
     cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
@@ -223,6 +226,7 @@ def test_check_bloq_decompose_missing():
 )
 def test_assert_connections_compatible(dtype_a, dtype_b, expect_raise):
     cxns, signature = _manually_make_test_cbloq_typed_cxns(dtype_a, dtype_b)
+    # pylint: disable=abstract-class-instantiated
     cbloq = CompositeBloq(cxns, signature=signature)
     if expect_raise:
         with pytest.raises(BloqError, match=r'.*QDTypes are incompatible.*'):

@@ -164,6 +164,7 @@ def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
     md_doc: str = '\n'.join(get_markdown_docstring_lines(bloqdoc.bloq_cls))
     py_import: str = bloqdoc.import_line
 
+    # pylint: disable=abstract-class-instantiated
     return [
         _MarkdownCell(text=md_doc, cell_id=f'{cid_prefix}.bloq_doc.md'),
         _PyCell(text=py_import, cell_id=f'{cid_prefix}.bloq_doc.py'),
@@ -172,6 +173,7 @@ def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
 
 def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix):
     """Code cell for one example instance."""
+    # pylint: disable=abstract-class-instantiated
     return _PyCell(
         text='\n'.join(_get_bloq_example_source_lines(bloq_ex)),
         cell_id=f'{cid_prefix}.{bloq_ex.name}',
@@ -184,6 +186,7 @@ def get_example_instances_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_
     if not examples:
         return []
 
+    # pylint: disable=abstract-class-instantiated
     cells: List[_Cell] = [
         _MarkdownCell('### Example Instances', cell_id=f'{cid_prefix}.example_instances.md')
     ]
@@ -201,6 +204,7 @@ def get_graphical_signature_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List
     newline = '\n' + (' ' * len('show_bloqs('))
     code = 'from qualtran.drawing import show_bloqs\n'
     code += f'show_bloqs([{comma_varnames}],{newline}[{comma_str_varnames}])'
+    # pylint: disable=abstract-class-instantiated
     return [
         _MarkdownCell(
             text='#### Graphical Signature', cell_id=f'{cid_prefix}.graphical_signature.md'
@@ -225,6 +229,7 @@ def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
         f'show_counts_sigma({sigmavar})',
     ]
 
+    # pylint: disable=abstract-class-instantiated
     return [
         _MarkdownCell(text='### Call Graph', cell_id=f'{cid_prefix}.call_graph.md'),
         _PyCell(text='\n'.join(code), cell_id=f'{cid_prefix}.call_graph.py'),
@@ -393,6 +398,7 @@ def render_notebook(nbspec: NotebookSpecV2) -> None:
     nb, nb_path = _init_notebook(path_stem=nbspec.path_stem, directory=nbspec.directory)
 
     # 2. Render all the cells we can render
+    # pylint: disable=abstract-class-instantiated
     cells = {
         'title_cell': _MarkdownCell(
             '\n'.join(_get_title_lines(nbspec.title, nbspec.module)), cell_id='title_cell'

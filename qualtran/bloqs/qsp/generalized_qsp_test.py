@@ -203,6 +203,7 @@ def test_symbolic_call_graph(degree: int, negative_power: int):
     if degree > negative_power:
         expected_sigma[U.controlled(ctrl_spec=CtrlSpec(cvs=0))] = degree - negative_power
     if negative_power > 0:
+        # pylint: disable=abstract-class-instantiated
         expected_sigma[Controlled(U.adjoint(), CtrlSpec())] = min(degree, negative_power)
     if negative_power > degree:
         expected_sigma[U.adjoint()] = negative_power - degree

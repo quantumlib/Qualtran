@@ -376,6 +376,7 @@ def _linear_combination_block_encoding() -> LinearCombination:
     from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, ZGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
+    # pylint: disable=abstract-class-instantiated
     linear_combination_block_encoding = LinearCombination(
         (Unitary(TGate()), Unitary(Hadamard()), Unitary(XGate()), Unitary(ZGate())),
         lambd=(0.25, -0.25, 0.25, -0.25),

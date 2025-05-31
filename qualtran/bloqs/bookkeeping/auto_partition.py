@@ -147,6 +147,7 @@ def _auto_partition() -> AutoPartition:
     from qualtran import Controlled, CtrlSpec
     from qualtran.bloqs.basic_gates import Swap
 
+    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(1), CtrlSpec())
     auto_partition = AutoPartition(
         bloq, [(Register('x', QAny(2)), ['ctrl', 'x']), (Register('y', QAny(1)), ['y'])]
@@ -160,6 +161,7 @@ def _auto_partition_unused() -> AutoPartition:
     from qualtran.bloqs.basic_gates import Swap
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
 
+    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(1), CtrlSpec())
     auto_partition_unused = AutoPartition(
         bloq,

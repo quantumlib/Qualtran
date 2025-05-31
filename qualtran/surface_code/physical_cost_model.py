@@ -150,6 +150,7 @@ class PhysicalCostModel:
             SimpleDataBlock,
         )
 
+        # pylint: disable=abstract-class-instantiated
         return cls(
             physical_params=PhysicalParameters.make_gidney_fowler(),
             data_block=SimpleDataBlock(data_d=data_d),
@@ -172,10 +173,13 @@ class PhysicalCostModel:
 
         data_block: DataBlock
         if data_block_name == 'fast':
+            # pylint: disable=abstract-class-instantiated
             data_block = FastDataBlock(data_d=data_d)
         elif data_block_name == 'compact':
+            # pylint: disable=abstract-class-instantiated
             data_block = CompactDataBlock(data_d=data_d)
         elif data_block_name == 'intermediate':
+            # pylint: disable=abstract-class-instantiated
             data_block = IntermediateDataBlock(data_d=data_d)
         else:
             raise ValueError(f"Unknown data block '{data_block_name}'")

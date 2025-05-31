@@ -478,6 +478,7 @@ def _symmetric_banded_matrix_block_encoding() -> SparseMatrix:
 
     row_oracle = SymmetricBandedRowColumnOracle(3, bandsize=1)
     col_oracle = SymmetricBandedRowColumnOracle(3, bandsize=1)
+    # pylint: disable=abstract-class-instantiated
     entry_oracle = UniformEntryOracle(3, entry=0.3)
     symmetric_banded_matrix_block_encoding = SparseMatrix(
         row_oracle, col_oracle, entry_oracle, eps=0

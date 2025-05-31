@@ -115,8 +115,10 @@ def test_explicit_entry_oracle():
 
     tests = [(1, [[0.0, 0.25], [1 / 3, 0.467]])] + [gen_test() for _ in range(10)]
     for n, data in tests:
+        # pylint: disable=abstract-class-instantiated
         row_oracle = TopLeftRowColumnOracle(n)
         col_oracle = TopLeftRowColumnOracle(n)
+        # pylint: disable=abstract-class-instantiated
         entry_oracle = ExplicitEntryOracle(n, data=data, entry_bitsize=10)
         bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
 
@@ -145,8 +147,10 @@ topleft_matrix = [
 
 
 def test_top_left_matrix():
+    # pylint: disable=abstract-class-instantiated
     row_oracle = TopLeftRowColumnOracle(system_bitsize=3, num_nonzero=3)
     col_oracle = TopLeftRowColumnOracle(system_bitsize=3, num_nonzero=3)
+    # pylint: disable=abstract-class-instantiated
     entry_oracle = UniformEntryOracle(system_bitsize=3, entry=0.3)
     bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     alpha = bloq.alpha
@@ -187,6 +191,7 @@ test_matrix_nonzeros = [
 
 def test_symmetric_banded_row_column_oracle_classical():
     n = 3
+    # pylint: disable=abstract-class-instantiated
     bloq = SymmetricBandedRowColumnOracle(n, bandsize=1)
 
     def test_entry(l, i):
@@ -201,6 +206,7 @@ def test_symmetric_banded_row_column_oracle_classical():
 
 def test_symmetric_banded_row_column_oracle():
     n = 3
+    # pylint: disable=abstract-class-instantiated
     bloq = SymmetricBandedRowColumnOracle(n, bandsize=1)
 
     def test_entry(l, i):
@@ -261,8 +267,10 @@ def test_matrix_stress(n: int, bandsize: int):
     rs = np.random.RandomState(1234)
     data = random_banded_matrix(n, bandsize, rs=rs)
 
+    # pylint: disable=abstract-class-instantiated
     row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=bandsize)
     col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=bandsize)
+    # pylint: disable=abstract-class-instantiated
     entry_oracle = ExplicitEntryOracle(system_bitsize=n, data=np.array(data), entry_bitsize=7)
     bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     alpha = bloq.alpha
@@ -293,8 +301,10 @@ def test_vlasov_explicit():
     k = 2
     alpha = 2 / k**2
     data = gen_vlasov_hamiltonian(n, alpha, m=(2**n - 1))
+    # pylint: disable=abstract-class-instantiated
     row_oracle = SymmetricBandedRowColumnOracle(n, bandsize=1)
     col_oracle = SymmetricBandedRowColumnOracle(n, bandsize=1)
+    # pylint: disable=abstract-class-instantiated
     entry_oracle = ExplicitEntryOracle(system_bitsize=n, data=data, entry_bitsize=7)
     bloq = SparseMatrix(row_oracle, col_oracle, entry_oracle, eps=0)
     alpha = bloq.alpha
@@ -311,6 +321,7 @@ def test_vlasov_explicit():
 
 
 def test_symmetric_banded_counts():
+    # pylint: disable=abstract-class-instantiated
     bloq = SymmetricBandedRowColumnOracle(3, bandsize=1)
     qlt_testing.assert_equivalent_bloq_counts(bloq)
 
