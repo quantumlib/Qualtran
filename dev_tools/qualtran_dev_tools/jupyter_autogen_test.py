@@ -17,13 +17,7 @@ import qualtran.bloqs.for_testing
 from qualtran import bloq_example, BloqDocSpec
 from qualtran.bloqs.for_testing.atom import TestAtom
 
-from .jupyter_autogen import (
-    _get_bloq_example_source_lines,
-    _MarkdownCell,
-    _PyCell,
-    get_cells,
-    NotebookSpecV2,
-)
+from .jupyter_autogen import _get_bloq_example_source_lines, get_cells, NotebookSpecV2
 
 
 def test_notebook_spec():
@@ -61,7 +55,7 @@ def test_get_cells():
 
     bds = BloqDocSpec(bloq_cls=TestAtom, examples=[_my_bloq_example])
     cells = get_cells(bds)
-    assert isinstance(cells[0], _MarkdownCell)
+    assert not cells[0].is_py
     assert cells[0].text == (
         '## `TestAtom`\n'
         'An atomic bloq useful for generic testing and demonstration.\n'
@@ -72,5 +66,5 @@ def test_get_cells():
         '#### Registers\n'
         ' - `q`: One bit\n'
     )
-    assert isinstance(cells[1], _PyCell)
+    assert cells[1].is_py
     assert cells[1].text == 'from qualtran.bloqs.for_testing import TestAtom'
