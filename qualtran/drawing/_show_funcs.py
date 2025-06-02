@@ -15,7 +15,9 @@
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
 import os
-from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
+import re
+import sympy
+from typing import Dict, Optional, Text, overload, Sequence, TYPE_CHECKING, Union
 
 import IPython.display
 import ipywidgets
@@ -25,12 +27,132 @@ from qualtran import Bloq
 from .bloq_counts_graph import format_counts_sigma, GraphvizCallGraph
 from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
-from .musical_score import draw_musical_score, get_musical_score_data
+from .musical_score import MusicalScoreData, TextBox, draw_musical_score, get_musical_score_data
 from .qpic_diagram import qpic_diagram_for_bloq
 
 if TYPE_CHECKING:
     import networkx as nx
-    import sympy
+
+
+def pretty_format_msd(msd: MusicalScoreData) -> MusicalScoreData:
+    """
+    Beautifies MSD to enable pretty diagrams.
+    
+    Args:
+        msd: The original MusicalScoreData that wants to be diagramised.
+
+    Returns:
+        pretty_msd: A beautified MSD
+
+    """
+
+    def symbolic_abs(n_or_s: Union[int, float, 'sympy.Symbol']) -> int:
+        """
+        Handles absolute value operations that may or may not include a symbol
+
+        Args:
+            n_or_s: The number or symbol to process.
+
+        Returns:
+            The absolute value of a numeric input or 1 (integer) if n_or_s is symbol.
+
+        """
+
+        if isinstance(n_or_s, sympy.Symbol):
+            return 1
+        return sympy.Abs(n_or_s)
+
+    sympify_locals = {
+        "expression": {    
+            "Y": sympy.Symbol("Y"),
+            "Abs": symbolic_abs,
+        },
+        "exponent": {
+            "Min": sympy.Min,
+            "ceiling": sympy.ceiling,
+            "log2": lambda x: sympy.log(x, 2),
+            "Abs": symbolic_abs,
+            "Y": sympy.Symbol("Y"),
+        }
+    }
+
+    new_soqs = []
+    for soq_data in msd.soqs:
+        if isinstance(soq_data.symb, (TextBox, Text)):
+            original_lbl = soq_data.symb.text
+            abs_pattern = r"Abs\((?P<symbol_value>[a-zA-Z])\)"
+            match = re.search(abs_pattern, original_lbl)
+
+            if match:
+                symbol_value = match.group("symbol_value")
+                removals = r"\*" + re.escape(symbol_value) + r"$"
+                modified_lbl = re.sub(removals, "", original_lbl)
+                split_text = re.split(r"\^", modified_lbl, 1)
+                gate_clean = split_text[0]
+
+                if len(split_text) > 1:
+                    lbl_raw = split_text[1].strip()
+                    lbl_clean = lbl_raw
+                    base, exponent_raw = lbl_raw.split("**")
+                    try:
+                        exponent_sympified = sympy.sympify(exponent_raw, locals=sympify_locals["exponent"], evaluate=True)
+                        exponent_clean = str(sympy.Integer(exponent_sympified.evalf(chop=True)))
+                        lbl_reconstructed = base + "**" + exponent_clean
+                        try:
+                            lbl_reconstructed_sympified = sympy.sympify(lbl_reconstructed, locals=sympify_locals["expression"], evaluate=True)
+                            lbl_to_clean = lbl_reconstructed_sympified
+                            if not lbl_reconstructed_sympified.is_number:
+                                symbols_to_substitute = lbl_reconstructed_sympified.free_symbols
+                                subs_map = {s: sympy.Integer(1) for s in symbols_to_substitute}
+                                lbl_to_clean = lbl_reconstructed_sympified.subs(subs_map)
+                            lbl_clean = str(sympy.simplify(lbl_to_clean))
+                            try:
+                                int_val = int(float(lbl_clean))
+                                if int_val == float(lbl_clean):
+                                    lbl_clean = str(int_val)
+                            except ValueError:
+                                pass
+                        except (sympy.SympifyError, NameError, TypeError, ValueError) as e:
+                            lbl_clean = lbl_reconstructed
+                    except (sympy.SympifyError, NameError, TypeError, ValueError) as e:
+                        lbl_clean = lbl_raw
+                else:
+                    lbl_clean = ""
+
+                new_lbl = (
+                    f"{gate_clean + '^' if gate_clean else ''}"
+                    f"{symbol_value + '*' if symbol_value else ''}"
+                    f"{lbl_clean if lbl_clean else ''}"
+                )
+
+                new_symb = None
+                if isinstance(soq_data.symb, TextBox):
+                    new_symb = TextBox(text=new_lbl)
+                elif isinstance(soq_data.symb, Text):
+                    new_symb = Text(text=new_lbl, fontsize=soq_data.symb.fontsize)
+
+                new_soq_data = soq_data.__class__(
+                    symb=new_symb,
+                    rpos=soq_data.rpos,
+                    ident=soq_data.ident
+                )
+                new_soqs.append(new_soq_data)
+
+            else:
+                new_soqs.append(soq_data)
+
+        else:
+            new_soqs.append(soq_data)
+
+    pretty_msd = MusicalScoreData(
+        max_x=msd.max_x,
+        max_y=msd.max_y,
+        soqs=new_soqs,
+        hlines=msd.hlines,
+        vlines=msd.vlines
+    )
+
+    return pretty_msd
 
 
 def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
@@ -49,7 +171,9 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
     elif type.lower() == 'dtype':
         IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
-        draw_musical_score(get_musical_score_data(bloq))
+        msd = get_musical_score_data(bloq)
+        pretty_msd = pretty_format_msd(msd)
+        draw_musical_score(pretty_msd)
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:
