@@ -17,7 +17,7 @@
 import os
 import re
 import sympy
-from typing import Dict, Optional, Text, overload, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Optional, Text, overload, Sequence, TYPE_CHECKING, Union, Tuple
 
 import IPython.display
 import ipywidgets
@@ -32,128 +32,7 @@ from .qpic_diagram import qpic_diagram_for_bloq
 
 if TYPE_CHECKING:
     import networkx as nx
-
-
-def pretty_format_msd(msd: MusicalScoreData) -> MusicalScoreData:
-    """
-    Beautifies MSD to enable pretty diagrams.
     
-    Args:
-        msd: The original MusicalScoreData that wants to be diagramised.
-
-    Returns:
-        pretty_msd: A beautified MSD
-
-    """
-
-    def symbolic_abs(n_or_s: Union[int, float, 'sympy.Symbol']) -> int:
-        """
-        Handles absolute value operations that may or may not include a symbol
-
-        Args:
-            n_or_s: The number or symbol to process.
-
-        Returns:
-            The absolute value of a numeric input or 1 (integer) if n_or_s is symbol.
-
-        """
-
-        if isinstance(n_or_s, sympy.Symbol):
-            return 1
-        return sympy.Abs(n_or_s)
-
-    sympify_locals = {
-        "expression": {    
-            "Y": sympy.Symbol("Y"),
-            "Abs": symbolic_abs,
-        },
-        "exponent": {
-            "Min": sympy.Min,
-            "ceiling": sympy.ceiling,
-            "log2": lambda x: sympy.log(x, 2),
-            "Abs": symbolic_abs,
-            "Y": sympy.Symbol("Y"),
-        }
-    }
-
-    new_soqs = []
-    for soq_data in msd.soqs:
-        if isinstance(soq_data.symb, (TextBox, Text)):
-            original_lbl = soq_data.symb.text
-            abs_pattern = r"Abs\((?P<symbol_value>[a-zA-Z])\)"
-            match = re.search(abs_pattern, original_lbl)
-
-            if match:
-                symbol_value = match.group("symbol_value")
-                removals = r"\*" + re.escape(symbol_value) + r"$"
-                modified_lbl = re.sub(removals, "", original_lbl)
-                split_text = re.split(r"\^", modified_lbl, 1)
-                gate_clean = split_text[0]
-
-                if len(split_text) > 1:
-                    lbl_raw = split_text[1].strip()
-                    lbl_clean = lbl_raw
-                    base, exponent_raw = lbl_raw.split("**")
-                    try:
-                        exponent_sympified = sympy.sympify(exponent_raw, locals=sympify_locals["exponent"], evaluate=True)
-                        exponent_clean = str(sympy.Integer(exponent_sympified.evalf(chop=True)))
-                        lbl_reconstructed = base + "**" + exponent_clean
-                        try:
-                            lbl_reconstructed_sympified = sympy.sympify(lbl_reconstructed, locals=sympify_locals["expression"], evaluate=True)
-                            lbl_to_clean = lbl_reconstructed_sympified
-                            if not lbl_reconstructed_sympified.is_number:
-                                symbols_to_substitute = lbl_reconstructed_sympified.free_symbols
-                                subs_map = {s: sympy.Integer(1) for s in symbols_to_substitute}
-                                lbl_to_clean = lbl_reconstructed_sympified.subs(subs_map)
-                            lbl_clean = str(sympy.simplify(lbl_to_clean))
-                            try:
-                                int_val = int(float(lbl_clean))
-                                if int_val == float(lbl_clean):
-                                    lbl_clean = str(int_val)
-                            except ValueError:
-                                pass
-                        except (sympy.SympifyError, NameError, TypeError, ValueError) as e:
-                            lbl_clean = lbl_reconstructed
-                    except (sympy.SympifyError, NameError, TypeError, ValueError) as e:
-                        lbl_clean = lbl_raw
-                else:
-                    lbl_clean = ""
-
-                new_lbl = (
-                    f"{gate_clean + '^' if gate_clean else ''}"
-                    f"{symbol_value + '*' if symbol_value else ''}"
-                    f"{lbl_clean if lbl_clean else ''}"
-                )
-
-                new_symb = None
-                if isinstance(soq_data.symb, TextBox):
-                    new_symb = TextBox(text=new_lbl)
-                elif isinstance(soq_data.symb, Text):
-                    new_symb = Text(text=new_lbl, fontsize=soq_data.symb.fontsize)
-
-                new_soq_data = soq_data.__class__(
-                    symb=new_symb,
-                    rpos=soq_data.rpos,
-                    ident=soq_data.ident
-                )
-                new_soqs.append(new_soq_data)
-
-            else:
-                new_soqs.append(soq_data)
-
-        else:
-            new_soqs.append(soq_data)
-
-    pretty_msd = MusicalScoreData(
-        max_x=msd.max_x,
-        max_y=msd.max_y,
-        soqs=new_soqs,
-        hlines=msd.hlines,
-        vlines=msd.vlines
-    )
-
-    return pretty_msd
-
 
 def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
     """Display a visual representation of the bloq in IPython.
@@ -266,3 +145,81 @@ def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
 
     IPython.display.display(Image(output_file_path, width=width, height=height))
     os.remove(output_file_path)
+
+
+def pretty_format_msd(msd: MusicalScoreData) -> MusicalScoreData:
+    """
+    Beautifies MSD to enable pretty diagrams
+
+    Args:
+        msd: A raw MSD
+
+    Returns:
+        new_msd: A pretty MSD
+
+    """
+
+    def symbols_to_identity(lbl: str) -> Tuple[str, str]:
+        """
+        Exchanges any symbols in the label for integer 1 or returns lbl if no symbols found.
+
+        Args:
+            lbl: The label to be processed.
+
+        Returns:
+            new_lbl: A label without symbols
+
+        """
+        
+        pattern = r"Abs\((?P<symbol>[a-zA-Z])\)"
+        match = re.search(pattern, lbl)
+        if match:
+            symbol = match.group("symbol")
+            new_lbl = lbl.replace(symbol, "1")
+            return new_lbl, symbol
+        return lbl, ""
+
+    simpify_locals = {
+        "Min": sympy.Min,
+        "ceiling": sympy.ceiling,
+        "log2": lambda x: sympy.log(x, 2)
+    }
+
+    mult = 1
+    pretty_soqs = []
+    for soq_item in msd.soqs:
+        if isinstance(soq_item.symb, (TextBox, Text)):
+            try:
+                lbl_raw = soq_item.symb.text
+                lbl_no_symbols, symbol = symbols_to_identity(lbl_raw)
+                gate, base, exponent = sum([p.split("**", 1) for p in lbl_no_symbols.split("^")], [])
+
+                if len(base.split("*", 1)) > 1:
+                    mult_str, base = base.rsplit("*", 1)
+                    mult = sympy.sympify(mult_str, evaluate=True)
+
+                exponent = sympy.sympify(exponent, locals=simpify_locals, evaluate=True)
+                expression = str(base) + "**" + str(exponent)
+                expression = sympy.sympify(expression, locals=simpify_locals, evaluate=True)
+                new_lbl = str(gate) + "^" + symbol + "*" + str(expression * mult)
+                
+                new_soq = soq_item.__class__(
+                    symb= TextBox(text=new_lbl) if isinstance(soq_item.symb, TextBox) else Text(text=new_lbl, fontsize=soq_item.symb.fontsize),
+                    rpos= soq_item.rpos,
+                    ident= soq_item.ident
+                )
+                pretty_soqs.append(new_soq)
+            except (ValueError, TypeError, NameError, sympy.SympifyError):
+                pretty_soqs.append(soq_item)
+        else:
+            pretty_soqs.append(soq_item)
+
+    pretty_msd = MusicalScoreData(
+        max_x=msd.max_x,
+        max_y=msd.max_y,
+        soqs=pretty_soqs,
+        hlines=msd.hlines,
+        vlines=msd.vlines
+    )
+
+    return pretty_msd
