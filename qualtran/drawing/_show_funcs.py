@@ -15,9 +15,7 @@
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
 import os
-import re
-import sympy
-from typing import Dict, Optional, Text, overload, Sequence, TYPE_CHECKING, Union, Tuple
+from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
 
 import IPython.display
 import ipywidgets
@@ -27,11 +25,12 @@ from qualtran import Bloq
 from .bloq_counts_graph import format_counts_sigma, GraphvizCallGraph
 from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
-from .musical_score import MusicalScoreData, TextBox, draw_musical_score, get_musical_score_data
+from .musical_score import draw_musical_score, get_musical_score_data
 from .qpic_diagram import qpic_diagram_for_bloq
 
 if TYPE_CHECKING:
     import networkx as nx
+    import sympy
     
 
 def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
@@ -51,8 +50,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
         msd = get_musical_score_data(bloq)
-        pretty_msd = pretty_format_msd(msd)
-        draw_musical_score(pretty_msd)
+        draw_musical_score(msd, pretty_print=True)
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:
@@ -145,81 +143,3 @@ def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
 
     IPython.display.display(Image(output_file_path, width=width, height=height))
     os.remove(output_file_path)
-
-
-def pretty_format_msd(msd: MusicalScoreData) -> MusicalScoreData:
-    """
-    Beautifies MSD to enable pretty diagrams
-
-    Args:
-        msd: A raw MSD
-
-    Returns:
-        new_msd: A pretty MSD
-
-    """
-
-    def symbols_to_identity(lbl: str) -> Tuple[str, str]:
-        """
-        Exchanges any symbols in the label for integer 1 or returns lbl if no symbols found.
-
-        Args:
-            lbl: The label to be processed.
-
-        Returns:
-            new_lbl: A label without symbols
-
-        """
-        
-        pattern = r"Abs\((?P<symbol>[a-zA-Z])\)"
-        match = re.search(pattern, lbl)
-        if match:
-            symbol = match.group("symbol")
-            new_lbl = lbl.replace(symbol, "1")
-            return new_lbl, symbol
-        return lbl, ""
-
-    simpify_locals = {
-        "Min": sympy.Min,
-        "ceiling": sympy.ceiling,
-        "log2": lambda x: sympy.log(x, 2)
-    }
-
-    mult = 1
-    pretty_soqs = []
-    for soq_item in msd.soqs:
-        if isinstance(soq_item.symb, (TextBox, Text)):
-            try:
-                lbl_raw = soq_item.symb.text
-                lbl_no_symbols, symbol = symbols_to_identity(lbl_raw)
-                gate, base, exponent = sum([p.split("**", 1) for p in lbl_no_symbols.split("^")], [])
-
-                if len(base.split("*", 1)) > 1:
-                    mult_str, base = base.rsplit("*", 1)
-                    mult = sympy.sympify(mult_str, evaluate=True)
-
-                exponent = sympy.sympify(exponent, locals=simpify_locals, evaluate=True)
-                expression = str(base) + "**" + str(exponent)
-                expression = sympy.sympify(expression, locals=simpify_locals, evaluate=True)
-                new_lbl = str(gate) + "^" + symbol + "*" + str(expression * mult)
-                
-                new_soq = soq_item.__class__(
-                    symb= TextBox(text=new_lbl) if isinstance(soq_item.symb, TextBox) else Text(text=new_lbl, fontsize=soq_item.symb.fontsize),
-                    rpos= soq_item.rpos,
-                    ident= soq_item.ident
-                )
-                pretty_soqs.append(new_soq)
-            except (ValueError, TypeError, NameError, sympy.SympifyError):
-                pretty_soqs.append(soq_item)
-        else:
-            pretty_soqs.append(soq_item)
-
-    pretty_msd = MusicalScoreData(
-        max_x=msd.max_x,
-        max_y=msd.max_y,
-        soqs=pretty_soqs,
-        hlines=msd.hlines,
-        vlines=msd.vlines
-    )
-
-    return pretty_msd
