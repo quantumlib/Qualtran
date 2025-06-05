@@ -7,7 +7,6 @@ score=no
 reports=no
 py-version=3.9
 disable=
-    abstract-class-instantiated,        # TODO: #1440 - enable and fix
     C,
     R,
     missing-raises-doc,
@@ -16,15 +15,16 @@ disable=
     unused-argument,
     fixme,
     unspecified-encoding,
-    not-an-iterable,         # buggy with attrs
-    unsubscriptable-object,  # buggy with attrs
-    not-callable,            # buggy with attrs
-    no-member,               # buggy with attrs
-    reimported,              # often relevant for 'autodoc' functionality
-    import-self,             # often relevant for 'autodoc' functionality
-    redefined-outer-name,    # tiggered by re-importing
-    abstract-method,         # cirq's @value.alternative not respected
-    protected-access,        # a lot of usages in tests
+    abstract-class-instantiated,    # buggy with attrs
+    not-an-iterable,                # buggy with attrs
+    unsubscriptable-object,         # buggy with attrs
+    not-callable,                   # buggy with attrs
+    no-member,                      # buggy with attrs
+    reimported,                     # often relevant for 'autodoc' functionality
+    import-self,                    # often relevant for 'autodoc' functionality
+    redefined-outer-name,           # triggered by re-importing
+    abstract-method,                # cirq's @value.alternative not respected
+    protected-access,               # a lot of usages in tests
     redundant-returns-doc
 enable=
     wrong-or-nonexistent-copyright-notice
