@@ -100,7 +100,6 @@ def test_czpow_tensor():
     t = rs.uniform(0, 2)
     u1 = CZPowGate(exponent=t).tensor_contract()
     u2 = cirq.unitary(cirq.ZPowGate(exponent=t).controlled())
-    # pylint: disable=abstract-class-instantiated
     u3 = Controlled(ZPowGate(exponent=t), CtrlSpec()).tensor_contract()
     np.testing.assert_allclose(u1, u2, atol=1e-8)
     np.testing.assert_allclose(u1, u3, atol=1e-8)
@@ -117,7 +116,6 @@ def test_czpow_from_controlled_z_pow():
     zpow = ZPowGate(exponent=t)
     assert zpow.controlled() == CZPowGate(exponent=t)
 
-    # pylint: disable=abstract-class-instantiated
     cbloq = Controlled(zpow.as_composite_bloq(), CtrlSpec()).decompose_bloq()
     (czpow_inst,) = list(cbloq.bloq_instances)
     assert czpow_inst.bloq == CZPowGate(exponent=t)
@@ -133,7 +131,6 @@ def test_crz_tensor():
     angle = rs.uniform(0, 2 * np.pi)
     u1 = CRz(angle=angle).tensor_contract()
     u2 = cirq.unitary(cirq.Rz(rads=angle).controlled())
-    # pylint: disable=abstract-class-instantiated
     u3 = Controlled(Rz(angle=angle), CtrlSpec()).tensor_contract()
     np.testing.assert_allclose(u1, u2, atol=1e-8)
     np.testing.assert_allclose(u1, u3, atol=1e-8)
@@ -145,7 +142,6 @@ def test_crz_from_controlled_rz():
     rz = Rz(angle=angle)
     assert rz.controlled() == CRz(angle=angle)
 
-    # pylint: disable=abstract-class-instantiated
     cbloq = Controlled(rz.as_composite_bloq(), CtrlSpec()).decompose_bloq()
     (crz_inst,) = list(cbloq.bloq_instances)
     assert crz_inst.bloq == CRz(angle=angle)

@@ -97,7 +97,6 @@ class MultiControlPauli(GateWithRegisters):
             Shaped((self.n_ctrls,)) if is_symbolic(self.n_ctrls) else np.array(self.concrete_cvs)
         )
         ctrl_spec = CtrlSpec(cvs=(cvs,))
-        # pylint: disable=abstract-class-instantiated
         return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:

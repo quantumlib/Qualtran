@@ -1219,7 +1219,6 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        # pylint: disable=abstract-class-instantiated
         return CompositeBloq(
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )

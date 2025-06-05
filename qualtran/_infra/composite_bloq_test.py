@@ -87,7 +87,6 @@ def test_create_binst_graph():
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
     # pylint: disable=protected-access
-    # pylint: disable=abstract-class-instantiated
     assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, signature)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
@@ -96,7 +95,6 @@ def test_create_binst_graph():
 
 def test_composite_bloq():
     cxns, signature = _manually_make_test_cbloq_cxns()
-    # pylint: disable=abstract-class-instantiated
     cbloq = CompositeBloq(connections=cxns, signature=signature)
 
     assert (
@@ -570,7 +568,6 @@ def test_add_and_partition():
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
 
     bb = BloqBuilder()
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(3), CtrlSpec(qdtypes=QUInt(4), cvs=0b0110))
     a = bb.add_register_from_dtype('a', QAny(7))
     b = bb.add_register_from_dtype('b', QAny(3))

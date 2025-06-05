@@ -186,7 +186,6 @@ def _tensor_product_block_encoding() -> TensorProduct:
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    # pylint: disable=abstract-class-instantiated
     tensor_product_block_encoding = TensorProduct((Unitary(TGate()), Unitary(Hadamard())))
     return tensor_product_block_encoding
 
@@ -198,7 +197,6 @@ def _tensor_product_block_encoding_properties() -> TensorProduct:
     from qualtran.bloqs.basic_gates import CNOT, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    # pylint: disable=abstract-class-instantiated
     u1 = evolve(Unitary(TGate()), alpha=0.5, ancilla_bitsize=2, resource_bitsize=1, epsilon=0.01)
     u2 = evolve(Unitary(CNOT()), alpha=0.5, ancilla_bitsize=1, resource_bitsize=1, epsilon=0.1)
     tensor_product_block_encoding_properties = TensorProduct((u1, u2))
@@ -218,7 +216,6 @@ def _tensor_product_block_encoding_symb() -> TensorProduct:
     alpha2 = sympy.Symbol('alpha2')
     a2 = sympy.Symbol('a2')
     eps2 = sympy.Symbol('eps2')
-    # pylint: disable=abstract-class-instantiated
     tensor_product_block_encoding_symb = TensorProduct(
         (
             Unitary(TGate(), alpha=alpha1, ancilla_bitsize=a1, epsilon=eps1),

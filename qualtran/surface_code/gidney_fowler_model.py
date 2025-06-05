@@ -131,7 +131,6 @@ def get_ccz2t_costs_from_error_budget(
         data_d = qec_scheme.code_distance_from_budget(
             physical_error=phys_err, budget=target_err_per_round
         )
-        # pylint: disable=abstract-class-instantiated
         data_block = SimpleDataBlock(data_d=data_d, routing_overhead=routing_overhead)
 
     return get_ccz2t_costs(
@@ -177,7 +176,6 @@ def iter_ccz2t_factories(
 
 def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
     for logical_data_qubit_distance in range(d_start, d_stop, 2):
-        # pylint: disable=abstract-class-instantiated
         yield SimpleDataBlock(data_d=logical_data_qubit_distance)
 
 

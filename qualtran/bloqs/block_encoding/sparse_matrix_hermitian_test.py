@@ -93,9 +93,7 @@ topleft_matrix = [
 
 
 def test_top_left_matrix():
-    # pylint: disable=abstract-class-instantiated
     col_oracle = TopLeftRowColumnOracle(system_bitsize=3, num_nonzero=3)
-    # pylint: disable=abstract-class-instantiated
     entry_oracle = UniformSqrtEntryOracle(system_bitsize=3, entry=0.3)
     bloq = SparseMatrixHermitian(col_oracle, entry_oracle, eps=0)
     alpha = bloq.alpha

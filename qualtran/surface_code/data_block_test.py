@@ -25,7 +25,6 @@ from qualtran.surface_code import FastDataBlock, LogicalErrorModel, QECScheme
 def test_fast_block(logical_qubits, logical_qubits_with_routing, data_error):
     assert FastDataBlock.get_n_tiles(n_algo_qubits=logical_qubits) == logical_qubits_with_routing
     err_model = LogicalErrorModel(qec_scheme=QECScheme.make_gidney_fowler(), physical_error=1e-3)
-    # pylint: disable=abstract-class-instantiated
     assert FastDataBlock(3).data_error(
         n_algo_qubits=logical_qubits, n_cycles=3, logical_error_model=err_model
     ) == pytest.approx(data_error)

@@ -143,7 +143,6 @@ class Toffoli(Bloq):
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
 
-        # pylint: disable=abstract-class-instantiated
         cc_cnot = ControlledViaAnd(CNOT(), CtrlSpec(cvs=[1, 1]))
 
         def add_controlled(

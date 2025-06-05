@@ -42,9 +42,7 @@ def test_tensor_against_naive_controlled(ctrl_spec: CtrlSpec):
     rs = np.random.RandomState(42)
     subbloq = MatrixGate.random(2, random_state=rs)
 
-    # pylint: disable=abstract-class-instantiated
     ctrl_bloq = ControlledViaAnd(subbloq, ctrl_spec)
-    # pylint: disable=abstract-class-instantiated
     naive_ctrl_bloq = Controlled(subbloq, ctrl_spec)
 
     expected_tensor = naive_ctrl_bloq.tensor_contract()
@@ -61,7 +59,6 @@ def test_nested_controls():
     rs = np.random.RandomState(42)
     bloq = MatrixGate.random(2, random_state=rs)
 
-    # pylint: disable=abstract-class-instantiated
     ctrl_bloq = ControlledViaAnd(bloq, spec1).controlled(ctrl_spec=spec2)
     assert ctrl_bloq == ControlledViaAnd(bloq, spec)
 
@@ -69,7 +66,6 @@ def test_nested_controls():
 def test_nested_controlled_x():
     bloq = XGate()
 
-    # pylint: disable=abstract-class-instantiated
     ctrl_bloq = ControlledViaAnd(bloq, CtrlSpec(cvs=[1, 1])).controlled(
         ctrl_spec=CtrlSpec(cvs=[1, 1])
     )

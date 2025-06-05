@@ -40,7 +40,6 @@ def test_unitary_signature():
         [Register("system", QAny(1)), Register("ancilla", QAny(2)), Register("resource", QAny(1))]
     )
 
-    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = Unitary(IntState(55, bitsize=8))
 

@@ -73,7 +73,6 @@ def test_gate_with_registers():
     cop3 = op1.controlled_by(ctrl)
     cop4 = op2.controlled_by(ctrl)
     assert cop1 == cop2 == cop3 == cop4
-    # pylint: disable=abstract-class-instantiated
     assert cop1.gate == cop2.gate == cop3.gate == cop4.gate == Controlled(tg, CtrlSpec())
 
     assert (
@@ -155,7 +154,6 @@ def test_non_unitary_controlled():
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 
     bloq = BloqWithDecompose()
-    # pylint: disable=abstract-class-instantiated
     assert bloq.controlled(control_values=[0]) == ControlledViaAnd(bloq, CtrlSpec(cvs=0))
 
 

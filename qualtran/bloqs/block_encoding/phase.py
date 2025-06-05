@@ -96,7 +96,6 @@ def _phase_block_encoding() -> Phase:
     from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    # pylint: disable=abstract-class-instantiated
     phase_block_encoding = Phase(Unitary(Hadamard()), phi=0.25, eps=0)
     return phase_block_encoding
 

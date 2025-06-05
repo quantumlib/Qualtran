@@ -7,6 +7,7 @@ score=no
 reports=no
 py-version=3.9
 disable=
+    abstract-class-instantiated,        # TODO: #1440 - enable and fix
     C,
     R,
     missing-raises-doc,

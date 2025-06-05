@@ -180,7 +180,6 @@ def test_ctrl_bloq_as_cirq_op():
         subbloq.controlled(CtrlSpec(qdtypes=[QBit()] * 4, cvs=[[0], [1], [0], [1]])), cirq_gate
     )
     # Also works for more complicated bloqs that can decompose into a Cirq circuit.
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
@@ -236,7 +235,6 @@ def test_ctrl_spec_activation_4():
 
 
 def test_controlled_serial():
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(subbloq=TestSerialCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert (
@@ -263,7 +261,6 @@ C[TestAtom('atom2')]<2>
 
 
 def test_controlled_parallel():
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(subbloq=TestParallelCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert (
@@ -302,7 +299,6 @@ Join<4>
 
 
 def test_doubly_controlled():
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(Controlled(TestAtom(), ctrl_spec=CtrlSpec()), ctrl_spec=CtrlSpec())
     assert (
         bloq.as_composite_bloq().debug_text()
@@ -318,7 +314,6 @@ C[C[TestAtom]]<0>
 
 
 def test_bit_vector_ctrl():
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(subbloq=TestAtom(), ctrl_spec=CtrlSpec(QBit(), cvs=(1, 0, 1)))
     msd = get_musical_score_data(bloq)
     # select SoqData for the 0th moment, sorted top to bottom
@@ -340,7 +335,6 @@ def test_bit_vector_ctrl():
 
 def test_classical_sim_simple():
     ctrl_spec = CtrlSpec()
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
     vals = bloq.call_classically(ctrl=0, q=0)
     assert vals == (0, 0)
@@ -351,7 +345,6 @@ def test_classical_sim_simple():
 
 def test_classical_sim_array():
     ctrl_spec = CtrlSpec(cvs=np.zeros((3, 3), dtype=np.intc))
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
     ones = np.ones((3, 3), dtype=np.intc)
     ctrl, q = bloq.call_classically(ctrl=ones, q=0)
@@ -366,7 +359,6 @@ def test_classical_sim_array():
 
 def test_classical_sim_int():
     ctrl_spec = CtrlSpec(QInt(32), cvs=88)
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
     vals = bloq.call_classically(ctrl=87, q=0)
     assert vals == (87, 0)
@@ -377,7 +369,6 @@ def test_classical_sim_int():
 
 def test_classical_sim_int_arr():
     ctrl_spec = CtrlSpec(QInt(64), cvs=[1234, 234234])
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
 
     vals = bloq.call_classically(ctrl=np.asarray([1234, 234234]), q=0)
@@ -391,7 +382,6 @@ def test_classical_sim_int_arr():
 
 def test_classical_sim_int_multi_reg():
     ctrl_spec = CtrlSpec([QInt(32), QInt(64)], cvs=[np.array(1234), np.array(234234)])
-    # pylint: disable=abstract-class-instantiated
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
 
     vals = bloq.call_classically(ctrl1=1234, ctrl2=234234, q=0)
@@ -409,7 +399,6 @@ def test_notebook():
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
     import cirq
 
-    # pylint: disable=abstract-class-instantiated
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
@@ -439,7 +428,6 @@ def test_controlled_tensor_without_decompose():
     cirq = pytest.importorskip('cirq')
     ctrl_spec = CtrlSpec()
     bloq = TwoBitCSwap()
-    # pylint: disable=abstract-class-instantiated
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
 

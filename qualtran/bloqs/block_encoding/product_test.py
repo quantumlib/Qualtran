@@ -99,10 +99,8 @@ class TestBlockEncoding(BlockEncoding):
 def test_product_checks():
     with pytest.raises(ValueError):
         _ = Product(())
-    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = Product((Unitary(TGate()), Unitary(CNOT())))
-    # pylint: disable=abstract-class-instantiated
     with pytest.raises(ValueError):
         _ = Product((Unitary(TGate()), TestBlockEncoding()))
 
@@ -148,7 +146,6 @@ def test_product_tensors():
 def test_product_single_tensors():
     bb = BloqBuilder()
     system = bb.add_register("system", 1)
-    # pylint: disable=abstract-class-instantiated
     system = cast(Soquet, bb.add(Product((Unitary(TGate()),)), system=system))
     bloq = bb.finalize(system=system)
 
@@ -176,7 +173,6 @@ def test_product_properties_tensors():
 
 def test_product_cirq():
     qubits = cirq.LineQubit.range(3)
-    # pylint: disable=abstract-class-instantiated
     op = Product((Product((Unitary(XGate()), Unitary(XGate()))), Unitary(XGate()))).on_registers(
         system=qubits[:1], ancilla=qubits[1:]
     )
@@ -201,7 +197,6 @@ def test_product_random():
         bitsize = random_state.randint(1, 3)
         gates = [MatrixGate.random(bitsize, random_state=random_state) for _ in range(n)]
 
-        # pylint: disable=abstract-class-instantiated
         bloq = Product(tuple(Unitary(gate) for gate in gates))
         bb = BloqBuilder()
         system = bb.add_register("system", cast(int, bloq.system_bitsize))

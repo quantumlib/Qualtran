@@ -288,7 +288,6 @@ def _sparse_matrix_hermitian_block_encoding() -> SparseMatrixHermitian:
     from qualtran.bloqs.block_encoding.sparse_matrix import TopLeftRowColumnOracle
     from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import UniformSqrtEntryOracle
 
-    # pylint: disable=abstract-class-instantiated
     col_oracle = TopLeftRowColumnOracle(system_bitsize=2)
     entry_oracle = UniformSqrtEntryOracle(system_bitsize=2, entry=0.3)
     sparse_matrix_hermitian_block_encoding = SparseMatrixHermitian(col_oracle, entry_oracle, eps=0)
@@ -301,7 +300,6 @@ def _sparse_matrix_symb_hermitian_block_encoding() -> SparseMatrixHermitian:
     from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import UniformSqrtEntryOracle
 
     n = sympy.Symbol('n', positive=True, integer=True)
-    # pylint: disable=abstract-class-instantiated
     col_oracle = TopLeftRowColumnOracle(system_bitsize=n)
     entry_oracle = UniformSqrtEntryOracle(system_bitsize=n, entry=0.3)
     sparse_matrix_symb_hermitian_block_encoding = SparseMatrixHermitian(
