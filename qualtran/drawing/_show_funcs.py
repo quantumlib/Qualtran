@@ -31,7 +31,7 @@ from .qpic_diagram import qpic_diagram_for_bloq
 if TYPE_CHECKING:
     import networkx as nx
     import sympy
-    
+
 
 def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
     """Display a visual representation of the bloq in IPython.

@@ -15,8 +15,9 @@ import pytest
 
 from qualtran.bloqs.mcmt import MultiAnd
 from qualtran.drawing import dump_musical_score, get_musical_score_data, HLine
-from qualtran.testing import execute_notebook
 from qualtran.drawing.musical_score import pretty_format_soq_text
+from qualtran.testing import execute_notebook
+
 
 def test_dump_json(tmp_path):
     hline = HLine(y=10, seq_x_start=5, seq_x_end=6)
