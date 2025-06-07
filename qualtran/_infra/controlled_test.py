@@ -33,7 +33,7 @@ from qualtran.bloqs.basic_gates import (
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
-from qualtran.simulation.tensor import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.simulation.tensor import cbloq_to_quimb, quimb_to_dense
 from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
@@ -432,10 +432,8 @@ def test_controlled_tensor_without_decompose():
     cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
 
     tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
-    # pylint: disable=unbalanced-tuple-unpacking
-    right, left = get_right_and_left_inds(tn, ctrl_bloq.signature)
-    # pylint: enable=unbalanced-tuple-unpacking
-    np.testing.assert_allclose(tn.to_dense(right, left), cirq.unitary(cgate), atol=1e-8)
+    tn_dense = quimb_to_dense(tn, ctrl_bloq.signature)
+    np.testing.assert_allclose(tn_dense, cirq.unitary(cgate), atol=1e-8)
     np.testing.assert_allclose(ctrl_bloq.tensor_contract(), cirq.unitary(cgate), atol=1e-8)
 
 
