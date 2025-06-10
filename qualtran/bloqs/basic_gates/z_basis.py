@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -358,6 +359,15 @@ class CZ(Bloq):
         return get_ctrl_system_1bit_cv_from_bloqs(
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        # Diagonal, but causes phases: see `basis_state_phase`
+        return vals
+
+    def basis_state_phase(self, q1: int, q2: int) -> Optional[complex]:
+        if q1 == 1 and q2 == 1:
+            return -1
+        return 1
 
 
 @bloq_example
