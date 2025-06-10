@@ -81,6 +81,20 @@ def test_on_cbloq():
     assert n_qubits == 3 * n
 
 
+def test_many_alloc():
+    from qualtran.bloqs.for_testing.qubit_count_many_alloc import (
+        TestManyAllocAbstracted,
+        TestManyAllocMany,
+        TestManyAllocOnce,
+    )
+
+    n = 10
+    for bloq in [TestManyAllocMany(n), TestManyAllocOnce(n), TestManyAllocAbstracted(n)]:
+        # These should all give n+1 despite their unique constructions
+        # https://github.com/quantumlib/Qualtran/issues/1636
+        assert get_cost_value(bloq, QubitCount()) == 11
+
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook("qubit_counts")
