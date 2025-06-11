@@ -512,6 +512,52 @@ def _binst_to_cxns(
     return pred_cxns, succ_cxns
 
 
+def _get_soquet(
+    binst: 'BloqInstance',
+    reg_name: str,
+    right: bool = False,
+    idx: Tuple[int, ...] = (),
+    *,
+    binst_graph: nx.DiGraph,
+) -> 'Soquet':
+    """Retrieve a soquet given an address.
+
+    We can uniquely address a Soquet by the arguments to this function.
+
+    its bloq instance `binst`;
+    the register name `reg_name`; which side we want: an input, left soquet if `right` is
+    False; otherwise the right, output soquet, and
+
+    If you want to address the soquet
+    using only plain-old-data-types or don't have the bloq instance handy, you can combine
+    this method with `get_binst`.
+
+    >>> cbloq.get_soquet(cbloq.get_binst(binst_i=23), reg_name='ctrl', right=False)
+
+    Args:
+        binst: The bloq instance associated with the desired soquet.
+        reg_name: The name of the register associated with the desired soquet.
+        right: If False, get the input, left soquet. Otherwise: the right, output soquet
+        idx: The index of the soquet within a multidimensional register, or the empty
+            tuple for basic registers.
+    """
+    preds, succs = _binst_to_cxns(binst, binst_graph=binst_graph)
+    if right:
+        for suc in succs:
+            me = suc.left
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+    else:
+        for pred in preds:
+            me = pred.right
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+
+    raise ValueError(
+        f"Could not find the requested soquet with {binst=}, {reg_name=}, {right=}, {idx=}"
+    )
+
+
 def _cxns_to_soq_dict(
     regs: Iterable[Register],
     cxns: Iterable[Connection],
