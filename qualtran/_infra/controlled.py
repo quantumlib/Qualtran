@@ -380,10 +380,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @cached_property
     def _thru_registers_only(self) -> bool:
-        for reg in self.subbloq.signature:
-            if reg.side != Side.THRU:
-                return False
-        return True
+        return self.signature.thru_registers_only
 
     @staticmethod
     def _make_ctrl_system(cb: '_ControlledBase') -> Tuple['_ControlledBase', 'AddControlledT']:
@@ -535,7 +532,15 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(f'C[{self.subbloq}]')
+            sub_title = self.subbloq.wire_symbol(None, idx)
+            if not isinstance(sub_title, Text):
+                raise ValueError(
+                    f"{self.subbloq} should return a `Text` object for reg=None wire symbol."
+                )
+            if sub_title.text == '':
+                return Text('')
+
+            return Text(f'C[{sub_title.text}]')
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
             return self.subbloq.wire_symbol(reg, idx)
@@ -691,6 +696,7 @@ def make_ctrl_system_with_correct_metabloq(
        for each subbloq in the decomposition of `bloq`.
     """
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+    from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
 
     if ctrl_spec == CtrlSpec():
         return Controlled.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
@@ -712,6 +718,6 @@ def make_ctrl_system_with_correct_metabloq(
     if qdtypes:
         return ControlledViaAnd.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
     if cdtypes:
-        raise NotImplementedError("Stay tuned...")
+        return ClassicallyControlled.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
 
     raise ValueError(f"Invalid control spec: {ctrl_spec}")
