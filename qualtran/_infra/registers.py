@@ -179,6 +179,13 @@ class Signature:
         """
         return cls(Register(name=k, dtype=v) for k, v in registers.items() if v.num_qubits)
 
+    @cached_property
+    def thru_registers_only(self) -> bool:
+        for reg in self:
+            if reg.side != Side.THRU:
+                return False
+        return True
+
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
         yield from self._lefts.values()
