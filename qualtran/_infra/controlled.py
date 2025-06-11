@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT, MeasurementPhase
 
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
@@ -453,7 +453,9 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return vals
 
-    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+    def basis_state_phase(
+        self, **vals: 'ClassicalValT'
+    ) -> Union[complex, 'MeasurementPhase', None]:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
