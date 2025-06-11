@@ -16,6 +16,7 @@
 import enum
 import itertools
 from collections import defaultdict
+from functools import cached_property
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
