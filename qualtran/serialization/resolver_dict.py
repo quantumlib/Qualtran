@@ -129,6 +129,12 @@ import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
+import qualtran.bloqs.optimization.k_xor_sat
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
+import qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance
 import qualtran.bloqs.phase_estimation.kaiser_window_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qpe_window_state
@@ -406,6 +412,19 @@ RESOLVER_DICT = {
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.ColumnOfKthNonZeroEntry": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.ColumnOfKthNonZeroEntry,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.IndexOfNonZeroColumn": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.IndexOfNonZeroColumn,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.KikuchiNonZeroIndex": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.KikuchiNonZeroIndex,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix.KikuchiMatrixEntry": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix.KikuchiMatrixEntry,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiEntryOracle": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiEntryOracle,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiRowColumnOracle": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiRowColumnOracle,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadUniqueScopeIndex": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadUniqueScopeIndex,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.PRGAUniqueConstraintRHS": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.PRGAUniqueConstraintRHS,
     "qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState": qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState,
     "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState": qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep": qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep,
