@@ -18,8 +18,16 @@ from typing import Callable, Set
 import networkx as nx
 from attrs import frozen
 
-from qualtran import Bloq, Connection, DanglingT, DecomposeNotImplementedError, DecomposeTypeError
-from qualtran._infra.composite_bloq import _binst_to_cxns, CompositeBloq
+from qualtran import (
+    Bloq,
+    CompositeBloq,
+    Connection,
+    DanglingT,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
+)
+from qualtran._infra.binst_graph_iterators import greedy_topological_sort
+from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran.symbolics import smax, SymbolicInt
 
 from ._call_graph import get_bloq_callee_counts
@@ -46,7 +54,7 @@ def _cbloq_max_width(
     in_play: Set[Connection] = set()
 
     for cc in nx.weakly_connected_components(binst_graph):
-        for binst in nx.topological_sort(binst_graph.subgraph(cc)):
+        for binst in greedy_topological_sort(binst_graph.subgraph(cc)):
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
 
             # Remove inbound connections from those that are 'in play'.

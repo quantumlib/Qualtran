@@ -148,9 +148,11 @@ class TensorProduct(BlockEncoding):
         for u in self.block_encodings:
             u_soqs = dict()
             u_soqs["system"] = sys_out_regs[sys_i]
-            if "ancilla" in u.signature._lefts:
+            # restatement of nonzero anc / res lengths prevent a
+            # "possibly-used-before-assignment" warning from pylint
+            if "ancilla" in u.signature._lefts and len(anc_regs) > 0:
                 u_soqs["ancilla"] = anc_out_regs[anc_i]
-            if "resource" in u.signature._lefts:
+            if "resource" in u.signature._lefts and len(res_regs) > 0:
                 u_soqs["resource"] = res_out_regs[res_i]
             u_soqs_out = bb.add_d(u, **u_soqs)
             sys_out_regs[sys_i] = u_soqs_out["system"]
