@@ -192,7 +192,9 @@ def _routine_with_decomposition(
     """
     # CompositeBloq → recurse
     if isinstance(obj, CompositeBloq):
-        children = [_routine_with_decomposition(i, preserve) for i in obj.bloq_instances]
+        # Since bloq_instances is a set, we sort them to get a deterministic result
+        bloq_instances = sorted(list(obj.bloq_instances), key=lambda inst: inst.i)
+        children = [_routine_with_decomposition(inst, preserve) for inst in bloq_instances]
         connections = [_import_connection(c) for c in obj.connections]
         return RoutineV1(
             **_extract_common_bloq_attributes(obj, name), children=children, connections=connections
@@ -241,9 +243,11 @@ def _composite_bloq_to_routine(bloq: CompositeBloq, name: Optional[str] = None) 
     See `import_from_qualtran` for more info.
     """
     connections = [_import_connection(c) for c in bloq.connections]
+    # Since bloq_instances is a set, we sort them to get a deterministic result
+    bloq_instances = sorted(list(bloq.bloq_instances), key=lambda obj: obj.i)
     return RoutineV1(
         **_extract_common_bloq_attributes(bloq, name),
-        children=[bloq_to_routine(instance) for instance in bloq.bloq_instances],
+        children=[bloq_to_routine(instance) for instance in bloq_instances],
         connections=connections,
     )
 
