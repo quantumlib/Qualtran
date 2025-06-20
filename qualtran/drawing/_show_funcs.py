@@ -50,7 +50,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
         msd = get_musical_score_data(bloq)
-        draw_musical_score(msd, pretty_print=True)
+        draw_musical_score(msd, pretty_print=False)
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:

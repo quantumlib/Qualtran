@@ -188,12 +188,13 @@ class QvrZPow(QvrInterface):
             else self.cost_reg.total_bits()
         )
         eps = self.eps / num_rotations
+
         if self.cost_dtype.signed:
             out[0] = bb.add(ZPowGate(exponent=1, eps=eps), q=out[0])
-        offset = 1 + self.cost_dtype.num_frac - self.num_frac_rotations
 
+        offset = 1 + self.cost_dtype.num_frac - self.num_frac_rotations
         for i in range(num_rotations):
-            power_of_two = i - self.num_frac_rotations
+            power_of_two = i - self.cost_dtype.num_frac
             exp = (2**power_of_two) * self.gamma * 2
             offset = (
                 offset if isinstance(offset, int) else 1
