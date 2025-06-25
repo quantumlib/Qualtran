@@ -933,7 +933,6 @@ class _ECAddStepSix(Bloq):
         [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
 
         # Unset f1 if ((x, y) = (0, 0) AND a = 0) OR ((a, b) = (0, 0) AND x = 0).
-        mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
         [a, x, y], f1 = bb.add(mcx, ctrl=[a, x, y], q=f1)
         [x, a, b], f1 = bb.add(mcx, ctrl=[x, a, b], q=f1)
 
