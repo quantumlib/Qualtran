@@ -927,14 +927,14 @@ class _ECAddStepSix(Bloq):
         f3 = f_ctrls[1]
         f4 = f_ctrls[2]
 
-        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
-        mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
-        [a, b, y], f2 = bb.add(mcx, ctrl=[a, b, y], q=f2)
-        [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
-
         # Unset f1 if ((x, y) = (0, 0) AND a = 0) OR ((a, b) = (0, 0) AND x = 0).
+        mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
         [a, x, y], f1 = bb.add(mcx, ctrl=[a, x, y], q=f1)
         [x, a, b], f1 = bb.add(mcx, ctrl=[x, a, b], q=f1)
+
+        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
+        [a, b, y], f2 = bb.add(mcx, ctrl=[a, b, y], q=f2)
+        [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
 
         # Set (x, y) to (a, b) if f4 is set.
         a_split = bb.split(a)
