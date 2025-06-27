@@ -94,7 +94,7 @@ def sabs(x: sympy.Expr) -> sympy.Expr: ...
 
 
 def sabs(x: SymbolicFloat) -> SymbolicFloat:
-    return cast(SymbolicFloat, abs(x))
+    return cast(SymbolicFloat, abs(sympy.pi if isinstance(x, sympy.Symbol) else x))
 
 
 @overload
