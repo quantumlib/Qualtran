@@ -667,7 +667,7 @@ class _ECAddStepFive(Bloq):
     is 0, the computed λ is undefined (and with this construction the computed λ will be set to 0),
     however the λ is non-zero and should be cleared with λ_r. We accomplish this with a controled
     Xor bloq controlled on the ctrl qubit and the condition that the x register (a - x_r) = 0. In
-    this ase we clear the λ register with λ_r.
+    this case we clear the λ register with λ_r.
 
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
