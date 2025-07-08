@@ -33,7 +33,7 @@ from qualtran.resource_counting._costing import get_cost_value
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
 
-def _test_ec_add_steps_classical_helper(n, m, a, b, x, y):
+def assert_consistent_ec_add_steps(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
     p = 17
     lam_num = (3 * a**2) % p
     lam_denom = (2 * b) % p
@@ -155,7 +155,7 @@ def _test_ec_add_steps_classical_helper(n, m, a, b, x, y):
     assert ret1 == ret2
 
 
-def _test_ec_add_classical_helper(n, m, a, b, x, y):
+def assert_consistent_ec_add(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
     p = 17
     bloq = ECAdd(n=n, mod=p, window_size=m)
     lam_num = (3 * a**2) % p
@@ -179,15 +179,16 @@ def _test_ec_add_classical_helper(n, m, a, b, x, y):
     assert ret1 == ret2
 
 
-# Uses a simple subset of points from the p1707 curve (y^2 = x^3 + 7 (mod 17)).
+# Check 4 particular points from the p1707 curve (y^2 = x^3 + 7 (mod 17)) to demonstrate classical
+# functionality of the circuit in the average case.
 # https://github.com/nakov/Practical-Cryptography-for-Developers-Book/blob/master/asymmetric-key-ciphers/elliptic-curve-cryptography-ecc.md
 @pytest.mark.parametrize(
     ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize('a,b', [(15, 13), (2, 10)])
 @pytest.mark.parametrize('x,y', [(15, 13), (0, 0)])
-def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
-    _test_ec_add_steps_classical_helper(n, m, a, b, x, y)
+def test_ec_add_steps_classical_fast(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
+    assert_consistent_ec_add_steps(n, m, a, b, x, y)
 
 
 @pytest.mark.parametrize(
@@ -195,18 +196,21 @@ def test_ec_add_steps_classical_fast(n, m, a, b, x, y):
 )
 @pytest.mark.parametrize('a,b', [(15, 13), (2, 10)])
 @pytest.mark.parametrize('x,y', [(15, 13), (0, 0)])
-def test_ec_add_classical_fast(n, m, a, b, x, y):
-    _test_ec_add_classical_helper(n, m, a, b, x, y)
+def test_ec_add_classical_fast(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
+    assert_consistent_ec_add(n, m, a, b, x, y)
 
 
-# Uses curve y^2 = x^3 + 9 (mod 17) to exhibit other edge cases.
+# Uses curve y^2 = x^3 + 9 (mod 17) to test the edge case where f_1 is improperly cleared when
+# ((x, y) = (0, 0) AND a = 0) OR ((a, b) = (0, 0) AND x = 0).
 @pytest.mark.parametrize(
     ['n', 'm'], [(n, m) for n in range(7, 8) for m in range(1, n + 1) if n % m == 0]
 )
 @pytest.mark.parametrize('a,b', [(0, 0), (0, 3)])
 @pytest.mark.parametrize('x,y', [(0, 0), (0, 14)])
-def test_ec_add_steps_classical_fast_second_curve(n, m, a, b, x, y):
-    _test_ec_add_steps_classical_helper(n, m, a, b, x, y)
+def test_ec_add_steps_classical_fast_second_curve(
+    n: int, m: int, a: int, b: int, x: int, y: int
+) -> None:
+    assert_consistent_ec_add_steps(n, m, a, b, x, y)
 
 
 @pytest.mark.parametrize(
@@ -214,12 +218,14 @@ def test_ec_add_steps_classical_fast_second_curve(n, m, a, b, x, y):
 )
 @pytest.mark.parametrize('a,b', [(0, 0), (0, 3)])
 @pytest.mark.parametrize('x,y', [(0, 0), (0, 14)])
-def test_ec_add_classical_fast_second_curve(n, m, a, b, x, y):
-    _test_ec_add_classical_helper(n, m, a, b, x, y)
+def test_ec_add_classical_fast_second_curve(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
+    assert_consistent_ec_add(n, m, a, b, x, y)
 
 
-# Uses a more exhaustive subset of points from the p1707 curve (y^2 = x^3 + 7 (mod 17)) to test
-# many addition combinations and edge cases.
+# Uses a larger subset of points from the p1707 curve (y^2 = x^3 + 7 (mod 17)) to test many
+# addition combinations and edge cases. This covers many different addition operations that fall
+# under the average case and some that fall under edge cases not previously considered by the
+# original publication. See the docstrings for Steps 2, 5, and 6 for more information.
 @pytest.mark.slow
 @pytest.mark.parametrize(
     ['n', 'm'], [(n, m) for n in range(7, 9) for m in range(1, n + 1) if n % m == 0]
@@ -242,8 +248,8 @@ def test_ec_add_classical_fast_second_curve(n, m, a, b, x, y):
     ],
 )
 @pytest.mark.parametrize('x,y', [(15, 13), (5, 8), (10, 15), (1, 12), (3, 0), (1, 5), (10, 2)])
-def test_ec_add_steps_classical(n, m, a, b, x, y):
-    _test_ec_add_steps_classical_helper(n, m, a, b, x, y)
+def test_ec_add_steps_classical(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
+    assert_consistent_ec_add_steps(n, m, a, b, x, y)
 
 
 @pytest.mark.slow
@@ -268,8 +274,8 @@ def test_ec_add_steps_classical(n, m, a, b, x, y):
     ],
 )
 @pytest.mark.parametrize('x,y', [(15, 13), (5, 8), (10, 15), (1, 12), (3, 0), (1, 5), (10, 2)])
-def test_ec_add_classical(n, m, a, b, x, y):
-    _test_ec_add_classical_helper(n, m, a, b, x, y)
+def test_ec_add_classical(n: int, m: int, a: int, b: int, x: int, y: int) -> None:
+    assert_consistent_ec_add(n, m, a, b, x, y)
 
 
 @pytest.mark.parametrize('p', (7, 9, 11))
@@ -282,7 +288,7 @@ def test_ec_add_classical(n, m, a, b, x, y):
         if n % window_size == 0
     ],
 )
-def test_ec_add_decomposition(n, window_size, p):
+def test_ec_add_decomposition(n: int, window_size: int, p: int) -> None:
     b = ECAdd(n=n, window_size=window_size, mod=p)
     qlt_testing.assert_valid_bloq_decomposition(b)
 
@@ -297,12 +303,12 @@ def test_ec_add_decomposition(n, window_size, p):
         if n % window_size == 0
     ],
 )
-def test_ec_add_bloq_counts(n, window_size, p):
+def test_ec_add_bloq_counts(n: int, window_size: int, p: int) -> None:
     b = ECAdd(n=n, window_size=window_size, mod=p)
     qlt_testing.assert_equivalent_bloq_counts(b, [ignore_alloc_free, ignore_split_join])
 
 
-def test_ec_add_symbolic_cost():
+def test_ec_add_symbolic_cost() -> None:
     n, m, p = sympy.symbols('n m p', integer=True)
 
     # In Litinski 2023 https://arxiv.org/abs/2306.08585 a window size of 4 is used.
@@ -325,19 +331,19 @@ def test_ec_add_symbolic_cost():
     assert total_toff == sympy.Rational(253, 2) * n**2 + sympy.Rational(443, 2) * n - 36
 
 
-def test_ec_add(bloq_autotester):
+def test_ec_add(bloq_autotester) -> None:
     bloq_autotester(_ec_add)
 
 
-def test_ec_add_small(bloq_autotester):
+def test_ec_add_small(bloq_autotester) -> None:
     bloq_autotester(_ec_add_small)
 
 
 @pytest.mark.notebook
-def test_notebook():
+def test_notebook() -> None:
     qlt_testing.execute_notebook('ec_add')
 
 
-def test_ec_add_small_gate_cost():
+def test_ec_add_small_gate_cost() -> None:
     bloq = _ec_add_small.make()
     assert get_cost_value(bloq, QECGatesCost()).toffoli == 29
