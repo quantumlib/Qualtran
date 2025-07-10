@@ -41,7 +41,9 @@ def test_gf2_square_resource():
     bloq = _gf2_square_symbolic.make()
     m = bloq.bitsize
     assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
-    assert sympy.simplify(get_cost_value(bloq, QECGatesCost()).clifford - ceil(m**2 / log2(m))) == 0
+    expected_expr = ceil(m**2 / log2(m))
+    assert isinstance(expected_expr, sympy.Expr)
+    assert sympy.simplify(get_cost_value(bloq, QECGatesCost()).clifford - expected_expr) == 0
 
 
 @pytest.mark.slow

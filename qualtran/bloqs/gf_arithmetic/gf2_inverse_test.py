@@ -41,6 +41,7 @@ def test_gf2_inverse_symbolic_toffoli_complexity():
     expected_expr = m**2 * (2 * ceil(log2(m)) - 1)
     assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - expected_expr == 0
     expected_expr = m * (3 * ceil(log2(m)) + 2)
+    assert isinstance(expected_expr, sympy.Expr)
     assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_expr) == 0
 
 

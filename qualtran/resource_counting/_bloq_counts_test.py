@@ -63,7 +63,7 @@ def test_gate_counts():
 
     assert GateCounts(toffoli=1, cswap=1, and_bloq=1).total_t_count() == 4 + 4 + 4
 
-    gc2 = GateCounts(t=sympy.Symbol('n'), toffoli=sympy.sympify('0'), cswap=2)
+    gc2 = GateCounts(t=sympy.Symbol('n'), toffoli=sympy.core.numbers.Zero(), cswap=2)
     assert str(gc2) == 't: n, cswap: 2'
 
 
