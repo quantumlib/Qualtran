@@ -520,19 +520,9 @@ def _get_soquet(
     *,
     binst_graph: nx.DiGraph,
 ) -> 'Soquet':
-    """Retrieve a soquet given an address.
+    """Retrieve a soquet given identifying information.
 
     We can uniquely address a Soquet by the arguments to this function.
-
-    its bloq instance `binst`;
-    the register name `reg_name`; which side we want: an input, left soquet if `right` is
-    False; otherwise the right, output soquet, and
-
-    If you want to address the soquet
-    using only plain-old-data-types or don't have the bloq instance handy, you can combine
-    this method with `get_binst`.
-
-    >>> cbloq.get_soquet(cbloq.get_binst(binst_i=23), reg_name='ctrl', right=False)
 
     Args:
         binst: The bloq instance associated with the desired soquet.
