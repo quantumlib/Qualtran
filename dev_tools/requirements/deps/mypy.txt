@@ -1,8 +1,4 @@
 # the mypy dependency file
 mypy~=1.9
 mypy-protobuf
-
-# Newer sympy versions cause many [operator] mypy errors
-# including ones seemingly unrelated to sympy
-# https://github.com/quantumlib/Qualtran/pull/1167
-sympy<1.13
+sympy
