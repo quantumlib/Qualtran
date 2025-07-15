@@ -776,8 +776,10 @@ class QFxp(QDType):
 
     def _from_bits_to_fxp(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""
+        if is_symbolic(self.num_frac):
+            raise ValueError(f"Symbolic {self.num_frac} cannot be represented using Fxp")
         bits_bin = "".join(str(x) for x in bits[:])
-        fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
+        fxp_bin = "0b" + bits_bin[: -int(self.num_frac)] + "." + bits_bin[-int(self.num_frac) :]
         return Fxp(fxp_bin, like=self.fxp_dtype_template())
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
@@ -877,7 +879,7 @@ class QMontgomeryUInt(QDType):
             ym: The second montgomery form integer for the product.
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (xm * ym * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
+        return (xm * ym * pow(2, -int(self.bitsize), int(self.modulus))) % self.modulus
 
     def montgomery_to_uint(self, xm: int) -> int:
         """Converts an integer in montgomery form to a normal form integer.
@@ -886,7 +888,7 @@ class QMontgomeryUInt(QDType):
             xm: An integer in montgomery form.
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (xm * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
+        return (xm * pow(2, -int(self.bitsize), int(self.modulus))) % self.modulus
 
     def uint_to_montgomery(self, x: int) -> int:
         """Converts an integer into montgomery form.

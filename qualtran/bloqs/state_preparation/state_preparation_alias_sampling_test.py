@@ -56,6 +56,7 @@ def test_mu_from_precision():
 def test_mu_from_symbolic_precision():
     L, qlambda, mu = sympy.symbols(r"L \lambda \mu", integer=True)
     bloq = StatePreparationAliasSampling.from_n_coeff(L, qlambda, precision=2**-mu / L * qlambda)
+    assert isinstance(bloq.mu, sympy.Expr)
     assert sympy.simplify(bloq.mu) == mu
 
 
