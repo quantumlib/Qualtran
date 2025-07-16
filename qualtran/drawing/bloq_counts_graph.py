@@ -16,7 +16,8 @@
 import abc
 import html
 import warnings
-from typing import Any, cast, Dict, Mapping, Optional, TYPE_CHECKING, Union
+from collections.abc import Mapping
+from typing import Any, cast, Optional, TYPE_CHECKING, Union
 
 import IPython.display
 import networkx as nx
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
     def __init__(self, g: nx.DiGraph):
         self.g = g
-        self._ids: Dict[Bloq, str] = {}
+        self._ids: dict[Bloq, str] = {}
         self._i = 0
 
     def get_id(self, b: Bloq) -> str:
@@ -126,7 +127,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             in each node. The keys and values must support `str()`.
     """
 
-    def __init__(self, g: nx.DiGraph, bloq_data: Optional[Dict['Bloq', Dict[Any, Any]]] = None):
+    def __init__(self, g: nx.DiGraph, bloq_data: Optional[dict['Bloq', dict[Any, Any]]] = None):
         super().__init__(g)
 
         if bloq_data is None:
@@ -135,7 +136,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         self.bloq_data = bloq_data
 
     @classmethod
-    def format_qubit_count(cls, val: SymbolicInt) -> Dict[str, str]:
+    def format_qubit_count(cls, val: SymbolicInt) -> dict[str, str]:
         """Format `QubitCount` cost values as a string.
 
         Args:
@@ -147,7 +148,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         return {'Qubits': f'{val}'}
 
     @classmethod
-    def format_qec_gates_cost(cls, val: 'GateCounts', agg: Optional[str] = None) -> Dict[str, str]:
+    def format_qec_gates_cost(cls, val: 'GateCounts', agg: Optional[str] = None) -> dict[str, str]:
         """Format `QECGatesCost` cost values as a string.
 
         Args:
@@ -191,9 +192,9 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
     @classmethod
     def format_cost_data(
         cls,
-        cost_data: Dict['Bloq', Dict['CostKey', 'CostValT']],
+        cost_data: dict['Bloq', dict['CostKey', 'CostValT']],
         agg_gate_counts: Optional[str] = None,
-    ) -> Dict['Bloq', Dict[str, str]]:
+    ) -> dict['Bloq', dict[str, str]]:
         """Format `cost_data` as human-readable strings.
 
         Args:
@@ -211,9 +212,9 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         """
         from qualtran.resource_counting import GateCounts, QECGatesCost, QubitCount
 
-        disp_data: Dict['Bloq', Dict[str, str]] = {}
+        disp_data: dict['Bloq', dict[str, str]] = {}
         for bloq in cost_data.keys():
-            bloq_disp: Dict[str, str] = {}
+            bloq_disp: dict[str, str] = {}
             for cost_key, cost_val in cost_data[bloq].items():
                 if isinstance(cost_key, QubitCount):
                     bloq_disp |= cls.format_qubit_count(cast(SymbolicInt, cost_val))
@@ -258,7 +259,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
         from qualtran.resource_counting import QECGatesCost, QubitCount, query_costs
 
         call_graph, _ = bloq.call_graph(max_depth=max_depth)
-        cost_data: Dict['Bloq', Dict[CostKey, Any]] = query_costs(
+        cost_data: dict['Bloq', dict[CostKey, Any]] = query_costs(
             bloq, [QubitCount(), QECGatesCost()]
         )
         formatted_cost_data = cls.format_cost_data(cost_data, agg_gate_counts=agg_gate_counts)
@@ -314,7 +315,7 @@ def format_counts_graph_markdown(graph: nx.DiGraph) -> str:
     return m
 
 
-def format_counts_sigma(sigma: Dict[Bloq, Union[int, sympy.Expr]]) -> str:
+def format_counts_sigma(sigma: dict[Bloq, Union[int, sympy.Expr]]) -> str:
     """Format `sigma` as markdown."""
     lines = [f' - {_format_bloq_expr_markdown(bloq, expr)}' for bloq, expr in sigma.items()]
     lines.sort()

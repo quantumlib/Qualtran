@@ -30,8 +30,9 @@ $$
 $$
 where $\Xi^{(l)} $ is the rank of second factorization.
 """
+from collections.abc import Iterable
 from functools import cached_property
-from typing import Dict, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -193,7 +194,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
         rot: SoquetT,
         rotations: SoquetT,
         sys: NDArray[Soquet],  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         # 1st half
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
@@ -438,7 +439,7 @@ class DoubleFactorizationBlockEncoding(BlockEncoding):
         rot: SoquetT,
         rotations: SoquetT,
         sys: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         succ_l, l_ne_zero, theta, succ_p = ctrl
         n_n = (self.num_spin_orb // 2 - 1).bit_length()  # C14
         outer_prep = OuterPrepareDoubleFactorization(

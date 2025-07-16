@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import itertools
+from collections.abc import Callable, Sequence
 from functools import cached_property
-from typing import Callable, Sequence, Tuple
 
 import attrs
 import cirq
@@ -40,7 +40,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     `selection`-th qubit of `target` all controlled by the `control` register.
 
     Args:
-        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
+        selection_regs: Indexing `select` signature of type tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         nth_gate: A function mapping the composite selection index to a single-qubit gate.
         control_regs: Control signature for constructing a controlled version of the gate.
@@ -50,11 +50,11 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         Babbush et al. (2018). Section III.A. and Figure 7.
     """
 
-    selection_regs: Tuple[Register, ...] = attrs.field(
+    selection_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     nth_gate: Callable[..., cirq.Gate]
-    control_regs: Tuple[Register, ...] = attrs.field(
+    control_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
         default=(Register('control', QBit()),),
     )
@@ -71,15 +71,15 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         ).on_registers(**quregs)
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         if any(
             isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
             for reg in self.selection_registers

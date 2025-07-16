@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import itertools
-from typing import Dict
 
 import networkx as nx
 import numpy as np
@@ -93,7 +92,7 @@ class ApplyClassicalTest(Bloq):
             [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> dict[str, NDArray[np.uint8]]:
         const = np.array([1, 0, 1, 0, 1], dtype=np.uint8)
         z = np.logical_xor(x, const).astype(np.uint8)
         return {'x': x, 'z': z}

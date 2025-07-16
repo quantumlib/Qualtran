@@ -14,8 +14,9 @@
 
 import math
 import numbers
+from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -86,12 +87,12 @@ class ModDbl(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', self.dtype)])
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         if x < self.mod:
             x = (x + x) % self.mod
         return {'x': x}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
         if is_symbolic(self.dtype.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
@@ -140,7 +141,7 @@ class ModDbl(Bloq):
         return {'x': x}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(f'x = 2 * x mod {self.mod}')
@@ -207,7 +208,7 @@ class CModMulK(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         k = self.k
         if isinstance(self.mod, sympy.Expr) or isinstance(k, sympy.Expr):
             neg_k_inv = sympy.Mod(sympy.Pow(k, -1), self.mod)
@@ -235,12 +236,12 @@ class CModMulK(Bloq):
         k = ssa.new_symbol('k')
         return {self._Add(k=k): 2, CSwap(self.dtype.bitsize): 1}
 
-    def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
+    def on_classical_vals(self, ctrl, x) -> dict[str, ClassicalValT]:
         if ctrl and x < self.mod:
             return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
         return {'ctrl': ctrl, 'x': x}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'x *= {self.k} % {self.mod}')
         if reg.name == 'ctrl':
@@ -494,7 +495,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         target: Soquet,
         qrom_indices: Soquet,
         reduced: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.window_size) or is_symbolic(self.bitsize) or is_symbolic(self.mod):
             raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')
         x_arr = bb.split(x)
@@ -650,7 +651,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         target: Optional['ClassicalValT'] = None,
         qrom_indices: Optional['ClassicalValT'] = None,
         reduced: Optional['ClassicalValT'] = None,
-    ) -> Dict[str, ClassicalValT]:
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.bitsize) or is_symbolic(self.window_size) or is_symbolic(self.mod):
             raise ValueError(f'classical action is not supported for {self}')
         if self.uncompute:
@@ -697,7 +698,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
         target: Optional[Soquet] = None,
         qrom_indices: Optional[Soquet] = None,
         reduced: Optional[Soquet] = None,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if self.uncompute:
             assert target is not None
             assert qrom_indices is not None
@@ -731,7 +732,7 @@ class DirtyOutOfPlaceMontgomeryModMul(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union[Set['BloqCountT'], BloqCountDictT]:
+    ) -> Union[set['BloqCountT'], BloqCountDictT]:
         return self._mod_mul_impl.build_call_graph(ssa)
 
 

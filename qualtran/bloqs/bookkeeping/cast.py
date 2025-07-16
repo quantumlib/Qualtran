@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -67,7 +67,7 @@ class Cast(_BookkeepingBloq):
 
     inp_dtype: QCDType
     out_dtype: QCDType
-    shape: Tuple[int, ...] = attrs.field(
+    shape: tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     allow_quantum_to_classical: bool = attrs.field(default=False, kw_only=True)
@@ -108,8 +108,8 @@ class Cast(_BookkeepingBloq):
         return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         return [
@@ -119,11 +119,11 @@ class Cast(_BookkeepingBloq):
             for j in range(self.out_dtype.num_bits)
         ]
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, 'ClassicalValT']:
         res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
         return {'reg': res}
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
 
     def as_pl_op(self, wires: 'Wires') -> 'Operation':

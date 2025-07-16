@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Tuple
-
 import cirq
 import numpy as np
 import pytest
@@ -119,7 +117,7 @@ def test_state_prep_via_rotation_symb():
         ],
     ],
 )
-def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
+def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: tuple[complex, ...]):
     # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
         phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
@@ -157,7 +155,7 @@ def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[c
     ],
 )
 def test_state_prep_via_rotation_adjoint(
-    phase_bitsize: int, state_coefs: Tuple[complex, ...]
+    phase_bitsize: int, state_coefs: tuple[complex, ...]
 ) -> None:
     # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
@@ -201,7 +199,7 @@ def test_state_prep_via_rotation_adjoint(
         ],
     ],
 )
-def test_approximate_state_prep_via_rotation(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
+def test_approximate_state_prep_via_rotation(phase_bitsize: int, state_coefs: tuple[complex, ...]):
     qsp = StatePreparationViaRotations(
         phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
@@ -231,7 +229,7 @@ def test_approximate_state_prep_via_rotation(phase_bitsize: int, state_coefs: Tu
     ],
 )
 def test_controlled_state_preparation_via_rotation_do_not_prepare(
-    phase_bitsize: int, state_coefs: Tuple[complex, ...]
+    phase_bitsize: int, state_coefs: tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
         phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
@@ -255,7 +253,7 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
 
 @pytest.mark.parametrize("phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]])
 def test_state_preparation_via_rotation_superposition_ctrl(
-    phase_bitsize: int, state_coefs: Tuple[complex, ...]
+    phase_bitsize: int, state_coefs: tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
         phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
@@ -282,7 +280,7 @@ def test_state_preparation_via_rotation_superposition_ctrl(
 
 @pytest.mark.parametrize("phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]])
 def test_state_preparation_via_rotation_multi_qubit_ctrl(
-    phase_bitsize: int, state_coefs: Tuple[complex, ...]
+    phase_bitsize: int, state_coefs: tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
         phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=2  # type: ignore[arg-type]

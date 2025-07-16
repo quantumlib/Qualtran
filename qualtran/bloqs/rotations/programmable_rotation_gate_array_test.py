@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple
 
 import cirq
 import numpy as np
@@ -41,7 +41,7 @@ class CustomProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
         return two_qubit_ops_factory[index % 2]
 
     @cached_property
-    def interleaved_unitary_target(self) -> Tuple[Register, ...]:
+    def interleaved_unitary_target(self) -> tuple[Register, ...]:
         return tuple(Signature.build(unrelated_target=1))
 
 

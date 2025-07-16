@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -80,7 +80,7 @@ class HammingWeightPhasing(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
         out = bb.split(out)
         for i in range(len(out)):
@@ -93,7 +93,7 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'HWP_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)
@@ -186,13 +186,13 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(self.phase_oracle, out=out, phase_grad=phase_grad)
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text(f'HWPG_{self.bitsize}(Z^{self.exponent})')
         return super().wire_symbol(reg, idx)

@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-from typing import Any, cast, Dict, Iterable, Tuple, TypeAlias, Union
+from collections.abc import Iterable
+from typing import Any, cast, TypeAlias, Union
 
 import attrs
 import numpy as np
@@ -111,12 +112,12 @@ def _get_placeholder_tensors(cxn):
         )
 
 
-_OuterIndT = Tuple[str, Tuple[int, ...], int, str]
+_OuterIndT = tuple[str, tuple[int, ...], int, str]
 
 
 def _get_outer_indices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> Dict[_IndT, Union[str, _OuterIndT]]:
+) -> dict[_IndT, Union[str, _OuterIndT]]:
     """Provide a mapping for a tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -131,7 +132,7 @@ def _get_outer_indices(
 
     This function is called at the end of `cbloq_to_quimb` as part of a `tn.reindex(...) operation.
     """
-    ind_name_map: Dict[_IndT, Union[str, _OuterIndT]] = {}
+    ind_name_map: dict[_IndT, Union[str, _OuterIndT]] = {}
 
     # Each index is a (cxn: Connection, j: int) tuple.
     cxn: Connection
@@ -179,7 +180,7 @@ class DiscardInd:
             individual bits.
     """
 
-    ind_tuple: Tuple['ConnectionT', int]
+    ind_tuple: tuple['ConnectionT', int]
 
 
 def make_forward_tensor(t: qtn.Tensor):
@@ -266,12 +267,12 @@ def cbloq_to_superquimb(cbloq: CompositeBloq, friendly_indices: bool = False) ->
     return tn.reindex(_get_outer_superindices(tn, friendly_indices=friendly_indices))
 
 
-_SuperOuterIndT = Tuple[str, Tuple[int, ...], int, str]
+_SuperOuterIndT = tuple[str, tuple[int, ...], int, str]
 
 
 def _get_outer_superindices(
     tn: 'qtn.TensorNetwork', friendly_indices: bool = False
-) -> Dict[_IndT, Union[str, _SuperOuterIndT]]:
+) -> dict[_IndT, Union[str, _SuperOuterIndT]]:
     """Provide a mapping for a super-tensor network's outer indices.
 
     Internal indices effectively use `qualtran.Connection` objects as their indices. The
@@ -293,7 +294,7 @@ def _get_outer_superindices(
     j: int
     forward: bool
 
-    ind_name_map: Dict[_IndT, Union[str, _SuperOuterIndT]] = {}
+    ind_name_map: dict[_IndT, Union[str, _SuperOuterIndT]] = {}
     for ind in tn.outer_inds():
         cxn, j, forward = ind
         if cxn.left.binst is LeftDangle:
@@ -317,12 +318,12 @@ def _get_outer_superindices(
     return ind_name_map
 
 
-def _add_classical_kets(bb: BloqBuilder, registers: Iterable[Register]) -> Dict[str, 'SoquetT']:
+def _add_classical_kets(bb: BloqBuilder, registers: Iterable[Register]) -> dict[str, 'SoquetT']:
     """Use `bb` to add `IntState(0)` for all the `vals`."""
 
     from qualtran.bloqs.basic_gates import IntState
 
-    soqs: Dict[str, 'SoquetT'] = {}
+    soqs: dict[str, 'SoquetT'] = {}
     for reg in registers:
         if reg.shape:
             reg_vals = np.zeros(reg.shape, dtype=int)

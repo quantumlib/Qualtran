@@ -15,7 +15,6 @@
 r"""Rewrite rules to optimize the construction of block encodings."""
 
 from collections import defaultdict
-from typing import Dict
 
 from qualtran.bloqs.block_encoding import (
     BlockEncoding,
@@ -57,7 +56,7 @@ def collect_like_terms(x: BlockEncoding) -> BlockEncoding:
     if isinstance(x, Product):
         return Product(tuple(collect_like_terms(y) for y in x.block_encodings))
     if isinstance(x, LinearCombination):
-        block_encodings: Dict[BlockEncoding, float] = defaultdict(float)
+        block_encodings: dict[BlockEncoding, float] = defaultdict(float)
         terms = tuple(collect_like_terms(y) for y in x._block_encodings)
         lambd_bits = x.lambd_bits
         for y, l in zip(terms, x._lambd):

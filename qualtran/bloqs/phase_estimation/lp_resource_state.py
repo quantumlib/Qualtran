@@ -15,7 +15,7 @@
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -56,14 +56,14 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('LPRS')
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, m: 'SoquetT', anc: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         m = bb.add(OnEach(self.bitsize, Hadamard()), q=m)
@@ -140,7 +140,7 @@ class LPResourceState(QPEWindowStateBase):
     def m_bits(self) -> SymbolicInt:
         return self.bitsize
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         qpe_reg = bb.allocate(dtype=self.m_qdtype)
         anc, flag = bb.allocate(dtype=QBit()), bb.allocate(dtype=QBit())
 

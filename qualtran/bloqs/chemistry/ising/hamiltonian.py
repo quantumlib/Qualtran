@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Functions for specifying the Ising model and building LCU coefficients."""
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import cirq
 import numpy as np
@@ -39,8 +39,8 @@ def get_1d_ising_pauli_terms(
         x_terms: The list of PauliStrings for the X terms.
     """
     n_sites = len(qubits)
-    zz_terms: List[cirq.PauliString] = []
-    x_terms: List[cirq.PauliString] = []
+    zz_terms: list[cirq.PauliString] = []
+    x_terms: list[cirq.PauliString] = []
     for k in range(n_sites):
         zz_terms.append(
             cirq.PauliString(

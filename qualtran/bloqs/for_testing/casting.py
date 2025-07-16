@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
 
 from attrs import frozen
 
@@ -44,7 +43,7 @@ class TestCastToFrom(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, a: 'Soquet', b: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    ) -> dict[str, 'Soquet']:
         cast = Cast(b.reg.dtype, a.reg.dtype)
         b = bb.add(cast, reg=b)
         assert isinstance(a.reg.dtype, (QInt, QUInt, QMontgomeryUInt))

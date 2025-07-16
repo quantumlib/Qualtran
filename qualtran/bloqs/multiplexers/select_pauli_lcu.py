@@ -14,8 +14,9 @@
 
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
+from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Iterable, Iterator, Optional, Sequence, Tuple
+from typing import Optional
 
 import attrs
 import cirq
@@ -71,7 +72,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
 
     selection_bitsize: int
     target_bitsize: int
-    select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
+    select_unitaries: tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
     control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
@@ -87,15 +88,15 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
             )
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt(self.selection_bitsize, len(self.select_unitaries))),)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(
@@ -126,7 +127,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

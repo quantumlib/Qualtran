@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Tuple
+from typing import Optional
 
 import cirq
 import numpy as np
@@ -39,7 +40,7 @@ class BernoulliSynthesizer(PrepareOracle):
     nqubits: int
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('q', BQUInt(self.nqubits, 2)),)
 
     def decompose_from_registers(  # type:ignore[override]
@@ -55,21 +56,21 @@ class BernoulliEncoder(SelectOracle):
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
-    y: Tuple[int, int]
+    y: tuple[int, int]
     selection_bitsize: int
     target_bitsize: int
     control_val: Optional[int] = None
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return ()
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('q', BQUInt(self.selection_bitsize, 2)),)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('t', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(  # type:ignore[override]
@@ -179,7 +180,7 @@ class GroverSynthesizer(PrepareOracle):
     n: int
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', QAny(self.n)),)
 
     def decompose_from_registers(  # type:ignore[override]
@@ -202,15 +203,15 @@ class GroverEncoder(SelectOracle):
     marked_val: int
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return ()
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', QAny(self.n)),)
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', QAny(self.marked_val.bit_length())),)
 
     def decompose_from_registers(  # type:ignore[override]

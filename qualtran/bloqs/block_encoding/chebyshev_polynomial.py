@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -123,7 +123,7 @@ class ChebyshevPolynomial(BlockEncoding):
             bitsizes=(self.ancilla_bitsize,), global_phase=-1
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if is_symbolic(self.ancilla_bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
         for _ in range(self.order // 2):
@@ -233,15 +233,15 @@ class ScaledChebyshevPolynomial(BlockEncoding):
         return self.linear_combination.epsilon
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return tuple(self.signature.rights())
 
     @property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return (self.signature.get_right("resource"),) if self.resource_bitsize > 0 else ()
 
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize > 0 else ()
 
     @property
@@ -264,7 +264,7 @@ class ScaledChebyshevPolynomial(BlockEncoding):
             self.lambd_bits,
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         return bb.add_d(self.linear_combination, **soqs)
 
     def __str__(self) -> str:

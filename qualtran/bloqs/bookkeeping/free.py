@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
@@ -78,14 +78,14 @@ class Free(_BookkeepingBloq):
 
         return Allocate(self.dtype, self.dirty)
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: int) -> dict[str, 'ClassicalValT']:
         if reg != 0 and not self.dirty:
             raise ValueError(f"Tried to free a non-zero register: {reg} with {self.dirty=}")
         return {}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         from qualtran.bloqs.basic_gates.z_basis import _ZERO
@@ -95,7 +95,7 @@ class Free(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         assert reg.name == 'reg'
@@ -103,7 +103,7 @@ class Free(_BookkeepingBloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', reg: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
         qubit_manager.qfree(reg.flatten().tolist())
         return (None, {})
 

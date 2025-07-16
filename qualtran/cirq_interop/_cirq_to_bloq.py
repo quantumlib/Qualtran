@@ -17,8 +17,9 @@ import abc
 import itertools
 import numbers
 import warnings
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
+from typing import Any, Optional, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
@@ -114,15 +115,15 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
             raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         return _my_tensors_from_gate(
             self.cirq_gate, self.signature, incoming=incoming, outgoing=outgoing
         )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
@@ -188,7 +189,7 @@ def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireS
 
 
 def _wire_symbol_from_gate(
-    gate: cirq.Gate, signature: Signature, wire_reg: Register, idx: Tuple[int, ...] = tuple()
+    gate: cirq.Gate, signature: Signature, wire_reg: Register, idx: tuple[int, ...] = tuple()
 ) -> 'WireSymbol':
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
@@ -220,9 +221,9 @@ def _my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
     *,
-    incoming: Dict[str, 'ConnectionT'],
-    outgoing: Dict[str, 'ConnectionT'],
-) -> List['qtn.Tensor']:
+    incoming: dict[str, 'ConnectionT'],
+    outgoing: dict[str, 'ConnectionT'],
+) -> list['qtn.Tensor']:
     import quimb.tensor as qtn
 
     from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
@@ -247,7 +248,7 @@ class _QReg:
     of qubits that together form a quantum register.
     """
 
-    qubits: Tuple[cirq.Qid, ...] = field(
+    qubits: tuple[cirq.Qid, ...] = field(
         converter=lambda v: (v,) if isinstance(v, cirq.Qid) else tuple(v)
     )
     dtype: QDType
@@ -268,13 +269,13 @@ class _QReg:
 
 
 def _ensure_in_reg_exists(
-    bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: Dict[_QReg, Soquet]
+    bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: dict[_QReg, Soquet]
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.bloqs.bookkeeping import Cast
 
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
-    qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
+    qubits_to_allocate: list[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
         n_alloc = len(qubits_to_allocate)
         qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))] = (
@@ -288,7 +289,7 @@ def _ensure_in_reg_exists(
     # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
     in_reg_qubits = set(in_reg.qubits)
 
-    new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
+    new_qreg_to_qvar: dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
             new_qreg_to_qvar |= {
@@ -299,7 +300,7 @@ def _ensure_in_reg_exists(
     qreg_to_qvar.clear()
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join: Dict[cirq.Qid, Soquet] = {}
+    soqs_to_join: dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
@@ -330,11 +331,11 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
-) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
-    qvars_in: Dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
+    bb: BloqBuilder, op_quregs: dict[str, NDArray[_QReg]], qreg_to_qvar: dict[_QReg, Soquet]  # type: ignore[type-var]
+) -> dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
+    qvars_in: dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
-        flat_soqs: List[Soquet] = []
+        flat_soqs: list[Soquet] = []
         for qureg in quregs.flatten():
             _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
             flat_soqs.append(qreg_to_qvar[qureg])
@@ -457,8 +458,8 @@ def cirq_optree_to_cbloq(
     optree: cirq.OP_TREE,
     *,
     signature: Optional[Signature] = None,
-    in_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
-    out_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
+    in_quregs: Optional[dict[str, 'CirqQuregT']] = None,
+    out_quregs: Optional[dict[str, 'CirqQuregT']] = None,
 ) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
@@ -500,11 +501,11 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs: Dict[str, NDArray] = {
+    in_quregs: dict[str, NDArray] = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in in_quregs.items()
     }
-    out_quregs: Dict[str, NDArray] = {
+    out_quregs: dict[str, NDArray] = {
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore
         for k, v in out_quregs.items()
     }
@@ -512,7 +513,7 @@ def cirq_optree_to_cbloq(
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
     # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
-    qreg_to_qvar: Dict[_QReg, Soquet] = {}
+    qreg_to_qvar: dict[_QReg, Soquet] = {}
     for reg in signature.lefts():
         if reg.name not in in_quregs:
             raise ValueError(f"Register {reg.name} from signature must be present in in_quregs.")
@@ -535,12 +536,12 @@ def cirq_optree_to_cbloq(
 
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
-        all_op_quregs: Dict[str, NDArray[_QReg]] = {
+        all_op_quregs: dict[str, NDArray[_QReg]] = {
             k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 
-        in_op_quregs: Dict[str, NDArray[_QReg]] = {
+        in_op_quregs: dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
         }
         # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to

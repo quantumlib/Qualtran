@@ -15,7 +15,7 @@
 """Generate the library-wide call graph from all bloq examples."""
 import logging
 import warnings
-from typing import Iterable
+from collections.abc import Iterable
 
 import networkx as nx
 

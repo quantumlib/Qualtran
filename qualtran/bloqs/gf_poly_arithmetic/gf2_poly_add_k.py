@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import galois
@@ -81,7 +81,7 @@ class GF2PolyAddK(Bloq):
     def is_symbolic(self):
         return is_symbolic(self.qgf_poly.degree)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, f_x: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, f_x: 'Soquet') -> dict[str, 'Soquet']:
         if self.is_symbolic():
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         f_x = bb.add(GFPolySplit(self.qgf_poly), reg=f_x)
@@ -94,13 +94,13 @@ class GF2PolyAddK(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         if self.is_symbolic():
             k = ssa.new_symbol('g_x')
             return {GF2AddK(self.qgf_poly.qgf.bitsize, k): self.qgf_poly.degree + 1}
         return super().build_call_graph(ssa)
 
-    def on_classical_vals(self, *, f_x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, f_x) -> dict[str, 'ClassicalValT']:
         return {'f_x': f_x + self.g_x}
 
 

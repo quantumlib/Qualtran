@@ -14,7 +14,7 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import attrs
 import sympy
@@ -70,7 +70,7 @@ class OnEach(Bloq):
         )
         return Signature([reg])
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError(f'Cannote decompose {self} with symbolic bitsize {self.n}')
         qs = bb.split(q)
@@ -81,7 +81,7 @@ class OnEach(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {self.gate: self.n}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> WireSymbol:
         one_reg = self.gate.wire_symbol(reg=reg, idx=idx)
         if isinstance(one_reg, TextBox):
             new_text = f'{one_reg.text}⨂{self.n}'

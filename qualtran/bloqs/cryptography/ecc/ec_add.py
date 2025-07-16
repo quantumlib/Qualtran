@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Union
+from typing import Union
 
 import numpy as np
 import sympy
@@ -102,7 +102,7 @@ class _ECAddStepOne(Bloq):
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         f1 = int(a == x)
         f2 = int(b == (-y % self.mod))
         f3 = int(a == b == 0)
@@ -122,7 +122,7 @@ class _ECAddStepOne(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -249,7 +249,7 @@ class _ECAddStepTwo(Bloq):
         x: 'ClassicalValT',
         y: 'ClassicalValT',
         lam_r: 'ClassicalValT',
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         x = (x - a) % self.mod
         if ctrl == 1:
             y = (y - b) % self.mod
@@ -274,7 +274,7 @@ class _ECAddStepTwo(Bloq):
         x: Soquet,
         y: Soquet,
         lam_r: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -429,7 +429,7 @@ class _ECAddStepThree(Bloq):
         x: 'ClassicalValT',
         y: 'ClassicalValT',
         lam: 'ClassicalValT',
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == 1:
             x = (x + 3 * a) % self.mod
             y = 0
@@ -444,7 +444,7 @@ class _ECAddStepThree(Bloq):
         x: Soquet,
         y: Soquet,
         lam: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -557,7 +557,7 @@ class _ECAddStepFour(Bloq):
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT', lam: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         x = (
             x - QMontgomeryUInt(self.n, self.mod).montgomery_product(int(lam), int(lam))
         ) % self.mod
@@ -567,7 +567,7 @@ class _ECAddStepFour(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, y: Soquet, lam: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -715,7 +715,7 @@ class _ECAddStepFive(Bloq):
         y: 'ClassicalValT',
         lam_r: 'ClassicalValT',
         lam: 'ClassicalValT',
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == 1:
             x = (a - x) % self.mod
             y = (y - b) % self.mod
@@ -733,7 +733,7 @@ class _ECAddStepFive(Bloq):
         y: Soquet,
         lam_r: Soquet,
         lam: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -885,7 +885,7 @@ class _ECAddStepSix(Bloq):
         b: 'ClassicalValT',
         x: 'ClassicalValT',
         y: 'ClassicalValT',
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if f4 == 1:
             x = a
             y = b
@@ -906,7 +906,7 @@ class _ECAddStepSix(Bloq):
         b: Soquet,
         x: Soquet,
         y: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
 
@@ -1076,7 +1076,7 @@ class ECAdd(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, x: Soquet, y: Soquet, lam_r: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         f1, f2, f3, f4, ctrl, a, b, x, y = bb.add(
             _ECAddStepOne(n=self.n, mod=self.mod), a=a, b=b, x=x, y=y
         )
@@ -1127,7 +1127,7 @@ class ECAdd(Bloq):
 
         return {'a': a, 'b': b, 'x': x, 'y': y, 'lam_r': lam_r}
 
-    def on_classical_vals(self, a, b, x, y, lam_r) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
+    def on_classical_vals(self, a, b, x, y, lam_r) -> dict[str, Union['ClassicalValT', sympy.Expr]]:
         dtype = QMontgomeryUInt(self.n, self.mod)
         curve_a = (
             dtype.montgomery_to_uint(lam_r) * 2 * dtype.montgomery_to_uint(b)

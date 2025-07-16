@@ -16,7 +16,7 @@
 import abc
 import numbers
 from functools import cached_property
-from typing import cast, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import cast, Optional, Type, TypeVar, Union
 
 import attrs
 import numpy as np
@@ -30,7 +30,7 @@ from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicI
 QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
-def _data_or_shape_to_tuple(data_or_shape: Tuple[Union[NDArray, Shaped], ...]) -> Tuple:
+def _data_or_shape_to_tuple(data_or_shape: tuple[Union[NDArray, Shaped], ...]) -> tuple:
     return tuple(tuple(d.flatten()) if isinstance(d, np.ndarray) else d for d in data_or_shape)
 
 
@@ -150,17 +150,17 @@ class QROMBase(metaclass=abc.ABCMeta):
         num_controls: The number of controls to instanstiate a controlled version of this bloq.
     """
 
-    data_or_shape: Tuple[Union[NDArray, Shaped], ...] = attrs.field(
+    data_or_shape: tuple[Union[NDArray, Shaped], ...] = attrs.field(
         converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x),
         eq=_data_or_shape_to_tuple,
     )
-    selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
+    selection_bitsizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
-    target_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(
+    target_bitsizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
-    target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = attrs.field(
+    target_shapes: tuple[tuple[SymbolicInt, ...], ...] = attrs.field(
         converter=lambda x: tuple(tuple(y) for y in x)
     )
     num_controls: SymbolicInt = 0
@@ -179,8 +179,8 @@ class QROMBase(metaclass=abc.ABCMeta):
         return ((),) * len(self.data_or_shape)
 
     @cached_property
-    def data_shape(self) -> Tuple[SymbolicInt, ...]:
-        ret: Tuple[SymbolicInt, ...] = ()
+    def data_shape(self) -> tuple[SymbolicInt, ...]:
+        ret: tuple[SymbolicInt, ...] = ()
         for data_or_shape, target_shape in zip(self.data_or_shape, self.target_shapes):
             data_shape = shape(data_or_shape)
             if target_shape:
@@ -195,11 +195,11 @@ class QROMBase(metaclass=abc.ABCMeta):
         return all(isinstance(d, np.ndarray) for d in self.data_or_shape)
 
     @property
-    def data(self) -> Tuple[np.ndarray, ...]:
+    def data(self) -> tuple[np.ndarray, ...]:
         if not self.has_data():
             raise ValueError(f"Data not available for symbolic QROM {self}")
         assert all(isinstance(d, np.ndarray) for d in self.data_or_shape)
-        return cast(Tuple[np.ndarray, ...], self.data_or_shape)
+        return cast(tuple[np.ndarray, ...], self.data_or_shape)
 
     def __attrs_post_init__(self):
         assert all([is_symbolic(s) or isinstance(s, int) for s in self.selection_bitsizes])
@@ -220,8 +220,8 @@ class QROMBase(metaclass=abc.ABCMeta):
     def _build_from_data(
         cls: Type[QROM_T],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
+        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> QROM_T:
         _data = [np.array(d, dtype=int) for d in data]
@@ -250,14 +250,14 @@ class QROMBase(metaclass=abc.ABCMeta):
     @classmethod
     def _build_from_bitsize(
         cls: Type[QROM_T],
-        data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
-        selection_bitsizes: Tuple[SymbolicInt, ...] = (),
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
+        selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> QROM_T:
-        data_shape: Tuple[SymbolicInt, ...] = (
+        data_shape: tuple[SymbolicInt, ...] = (
             (data_len_or_shape,)
             if isinstance(data_len_or_shape, (int, numbers.Number, sympy.Basic))
             else data_len_or_shape
@@ -279,11 +279,11 @@ class QROMBase(metaclass=abc.ABCMeta):
         )
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if not self.num_controls else (Register('control', QAny(self.num_controls)),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         types = [
             BQUInt(sb, l)
             for l, sb in zip(self.data_shape, self.selection_bitsizes)
@@ -298,7 +298,7 @@ class QROMBase(metaclass=abc.ABCMeta):
         return Side.THRU
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return tuple(
             Register(f'target{i}_', QAny(l), shape=sh, side=self._target_reg_side)
             for i, (l, sh) in enumerate(zip(self.target_bitsizes, self.target_shapes))
@@ -307,10 +307,10 @@ class QROMBase(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if not self.has_data():
             raise NotImplementedError(f'Symbolic {self} does not support classical simulation')
-        vals = cast(Dict[str, 'ClassicalValT'], vals)
+        vals = cast(dict[str, 'ClassicalValT'], vals)
         if self.num_controls > 0:
             control = vals['control']
             if control != 2**self.num_controls - 1:
@@ -321,7 +321,7 @@ class QROMBase(metaclass=abc.ABCMeta):
 
         n_dim = len(self.selection_registers)
         if n_dim == 0:
-            idx: Union[int, Tuple[int, ...]] = 0
+            idx: Union[int, tuple[int, ...]] = 0
             selections = {}
         elif n_dim == 1:
             idx = int(vals.pop('selection', 0))

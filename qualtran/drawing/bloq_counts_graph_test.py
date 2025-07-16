@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import random
-from typing import List
 
 import networkx as nx
 
@@ -46,7 +45,7 @@ def test_format_counts_graph_markdown():
     )
 
 
-def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> List[str]:
+def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> list[str]:
     graph = drawer.get_graph()
     node_labels = [node.get_label() for node in graph.get_node_list()]  # type: ignore[attr-defined]
     random.shuffle(node_labels)  # don't rely on order of graphviz nodes

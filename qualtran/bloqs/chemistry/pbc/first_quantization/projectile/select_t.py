@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for SELECT T for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -71,7 +71,7 @@ class SelectTFirstQuantizationWithProj(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("SEL T")
         return super().wire_symbol(reg, idx)

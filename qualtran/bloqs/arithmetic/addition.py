@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import Counter
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -115,7 +116,7 @@ class Add(Bloq):
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         return {
@@ -128,7 +129,7 @@ class Add(Bloq):
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("")
         if reg.name == 'a':
@@ -202,7 +203,7 @@ class Add(Bloq):
         n_cnot = (n - 2) * 6 + 3
         return {And(): n - 1, And().adjoint(): n - 1, CNOT(): n_cnot}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.arithmetic import CAdd
 
         return get_ctrl_system_1bit_cv(
@@ -294,7 +295,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return [2] * self.bitsize, [2] * self.bitsize, [2] * self.out_bitsize
 
-    def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
+    def apply(self, a: int, b: int, c: int) -> tuple[int, int, int]:
         return a, b, c + a + b
 
     def adjoint(self) -> 'OutOfPlaceAdder':
@@ -302,7 +303,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
 
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT', c: Optional['ClassicalValT'] = None
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Classical simulation is not support for symbolic bloq {self}')
         if self.is_adjoint:
@@ -324,7 +325,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         if not isinstance(self.bitsize, int):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
-        optree: List[List[cirq.Operation]] = [
+        optree: list[list[cirq.Operation]] = [
             [
                 cirq.CX(a[i], b[i]),
                 cirq.CX(a[i], c[i]),
@@ -354,7 +355,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
             return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('c=a+b')
         return super().wire_symbol(reg, idx)
@@ -427,7 +428,7 @@ class AddK(Bloq):
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise ValueError(f"Classical simulation isn't supported for symbolic block {self}")
 
@@ -447,7 +448,7 @@ class AddK(Bloq):
 
         return XorK(self.dtype, k)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
         if is_symbolic(self.k) or is_symbolic(self.dtype):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
 

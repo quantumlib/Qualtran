@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import cast, Tuple
+from typing import cast
 
 import cirq
 import numpy as np
@@ -71,11 +71,11 @@ def test_product_signature():
 @frozen
 class TestPrepareOracle(PrepareOracle):
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('z', QBit()),)
 
     @property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return (Register('a', QAny(5)),)
 
 

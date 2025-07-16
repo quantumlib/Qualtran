@@ -16,7 +16,7 @@ import multiprocessing
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import filelock
 import nbconvert
@@ -28,7 +28,7 @@ from nbformat import NotebookNode
 from .git_tools import get_git_root
 
 
-def get_nb_rel_paths(sourceroot: Path) -> List[Path]:
+def get_nb_rel_paths(sourceroot: Path) -> list[Path]:
     """List all checked-in *.ipynb files within `sourceroot`."""
     cp = subprocess.run(
         ['git', 'ls-files', '*.ipynb'],
@@ -97,7 +97,7 @@ class _NBInOutPaths:
         return self.html_needs_reexport() or self.nb_needs_reexport()
 
 
-def _make_link_replacements() -> List[Tuple[str, str]]:
+def _make_link_replacements() -> list[tuple[str, str]]:
     """Helper function to make a list of link replacements."""
     top_level = [
         'Bloq',
@@ -188,7 +188,7 @@ class _NotebookRunClosure:
         self.output_html = output_html
         self.only_out_of_date = only_out_of_date
 
-    def __call__(self, nb_rel_path: Path) -> Tuple[Path, Optional[Exception]]:
+    def __call__(self, nb_rel_path: Path) -> tuple[Path, Optional[Exception]]:
         paths = _NBInOutPaths.from_nb_rel_path(
             nb_rel_path, self.reporoot, output_html=self.output_html, output_nbs=self.output_nbs
         )

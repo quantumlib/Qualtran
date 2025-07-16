@@ -13,7 +13,8 @@
 #  limitations under the License.
 import collections.abc as abc
 from collections import defaultdict
-from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
+from collections.abc import Sequence
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import GeneralizerT
 
 
-def _get_basic_bloq_classification() -> Dict[str, str]:
+def _get_basic_bloq_classification() -> dict[str, str]:
     """High level classification of bloqs by the module name."""
     bloq_classifier = {
         'qualtran.bloqs.arithmetic': 'arithmetic',
@@ -49,7 +50,7 @@ def _get_basic_bloq_classification() -> Dict[str, str]:
     return bloq_classifier
 
 
-def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, str]) -> str:
+def classify_bloq(bloq: Bloq, bloq_classification: dict[str, str]) -> str:
     """Classify a bloq given a bloq_classification.
 
     Args:
@@ -71,9 +72,9 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, str]) -> str:
 
 def classify_t_count_by_bloq_type(
     bloq: Bloq,
-    bloq_classification: Optional[Dict[str, str]] = None,
+    bloq_classification: Optional[dict[str, str]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-) -> Dict[str, Union[int, sympy.Expr]]:
+) -> dict[str, Union[int, sympy.Expr]]:
     """Classify (bin) the T count of a bloq's call graph by type of operation.
 
     Args:
@@ -92,7 +93,7 @@ def classify_t_count_by_bloq_type(
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
-    basic_generalizer: List['GeneralizerT'] = [
+    basic_generalizer: list['GeneralizerT'] = [
         ignore_split_join,
         ignore_alloc_free,
         ignore_cliffords,
@@ -103,7 +104,7 @@ def classify_t_count_by_bloq_type(
         else:
             basic_generalizer.append(generalizer)
     _, sigma = bloq.call_graph(generalizer=basic_generalizer, keep=keeper)
-    classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
+    classified_bloqs: dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
         t_counts = get_cost_value(k, QECGatesCost()).total_t_count()

@@ -16,7 +16,7 @@
 These are for temporary convenience to lock-in the quoted literature costs.
 """
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -190,7 +190,7 @@ class ApplyControlledZs(Bloq):
         system: system register
     """
 
-    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
+    cvs: tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
     bitsize: int
 
     @cached_property
@@ -202,7 +202,7 @@ class ApplyControlledZs(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("C" * len(self.cvs) + "Z")
         if reg.name == 'system':

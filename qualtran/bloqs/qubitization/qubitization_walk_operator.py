@@ -27,7 +27,7 @@ how they can be combined in `QubitizationWalkOperator`.
 """
 
 from functools import cached_property
-from typing import Tuple, Union
+from typing import Union
 
 import attrs
 import cirq
@@ -93,7 +93,7 @@ class QubitizationWalkOperator(GateWithRegisters):
     block_encoding: Union[SelectBlockEncoding, LCUBlockEncoding]
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         regs = tuple(
             set(self.block_encoding.selection_registers + self.reflect.selection_registers)
         )
@@ -107,11 +107,11 @@ class QubitizationWalkOperator(GateWithRegisters):
         return regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return self.block_encoding.target_registers
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return self.block_encoding.junk_registers
 
     @cached_property

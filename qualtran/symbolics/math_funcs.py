@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import math
-from typing import cast, Iterable, overload, TypeVar
+from collections.abc import Iterable
+from typing import cast, overload, TypeVar
 
 import numpy as np
 import sympy

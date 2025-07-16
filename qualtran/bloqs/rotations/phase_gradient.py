@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -261,7 +262,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     sign: int = +1
     controlled_by: Optional[int] = None
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         sign = '+' if self.sign > 0 else '-'
         if reg is None:
             return Text(f'pg{sign}=x>>{self.right_shift}' if self.right_shift else f'pg{sign}=x')
@@ -302,7 +303,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
+    def apply(self, *args) -> tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
             out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
@@ -312,7 +313,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> dict[str, 'ClassicalValT']:
         x, phase_grad = kwargs['x'], kwargs['phase_grad']
         if self.controlled_by is not None:
             ctrl = kwargs['ctrl']
@@ -338,8 +339,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return attrs.evolve(self, sign=-self.sign)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 
         return _my_tensors_from_gate(self, self.signature, incoming=incoming, outgoing=outgoing)
@@ -507,13 +508,13 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     def apply(
         self, x: int, phase_grad: int
-    ) -> Tuple[
+    ) -> tuple[
         Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
     ]:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: int, phase_grad: int) -> dict[str, 'ClassicalValT']:
         phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 

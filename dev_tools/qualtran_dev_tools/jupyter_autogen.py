@@ -21,7 +21,7 @@ import re
 import textwrap
 from pathlib import Path
 from types import ModuleType
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import nbformat
 from attrs import field, frozen
@@ -66,7 +66,7 @@ class NotebookSpecV2:
 
     title: str
     module: ModuleType
-    bloq_specs: List[BloqDocSpec]
+    bloq_specs: list[BloqDocSpec]
     directory: str = field()
     _path_stem: Optional[str] = None
 
@@ -87,7 +87,7 @@ class NotebookSpecV2:
         return Path(self.directory) / f'{self.path_stem}.ipynb'
 
 
-def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> List[str]:
+def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> list[str]:
     """Parse out the source code from a factory function, so we can render it into a cell.
 
     Args:
@@ -158,7 +158,7 @@ class _PyCell(_Cell):
     cell_id: str
 
 
-def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
+def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     """Cells introducing the `bloq_cls`"""
 
     md_doc: str = '\n'.join(get_markdown_docstring_lines(bloqdoc.bloq_cls))
@@ -178,19 +178,19 @@ def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix):
     )
 
 
-def get_example_instances_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
+def get_example_instances_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     """Cells constructing example instances of the bloq class."""
     examples = bloqdoc.examples
     if not examples:
         return []
 
-    cells: List[_Cell] = [
+    cells: list[_Cell] = [
         _MarkdownCell('### Example Instances', cell_id=f'{cid_prefix}.example_instances.md')
     ]
     return cells + [_get_one_ex_instance_cell(ex, cid_prefix) for ex in examples]
 
 
-def get_graphical_signature_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
+def get_graphical_signature_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     """Cells showing a 'graphical signature' for the bloq examples."""
     if not bloqdoc.examples:
         return []
@@ -209,7 +209,7 @@ def get_graphical_signature_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List
     ]
 
 
-def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
+def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> list[_Cell]:
     """Cells showing a call graph for one of the bloq examples."""
     if bloqdoc.call_graph_example is None:
         return []
@@ -231,8 +231,8 @@ def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
     ]
 
 
-def get_cells(bloqdoc: BloqDocSpec) -> List[_Cell]:
-    cells: List[_Cell] = []
+def get_cells(bloqdoc: BloqDocSpec) -> list[_Cell]:
+    cells: list[_Cell] = []
     cid_prefix = f'{bloqdoc.bloq_cls.__name__}'
     cells += get_bloq_doc_cells(bloqdoc, cid_prefix)
     cells += get_example_instances_cells(bloqdoc, cid_prefix)
@@ -261,7 +261,7 @@ def _cell_to_nbnode(cell: _Cell) -> nbformat.NotebookNode:
         raise ValueError()
 
 
-def _get_title_lines(title: str, mod: ModuleType) -> List[str]:
+def _get_title_lines(title: str, mod: ModuleType) -> list[str]:
     """Return markdown lines for the title cell.
 
     This consists of the specified title as well as the associated module's docstring.
@@ -278,7 +278,7 @@ def _get_title_lines(title: str, mod: ModuleType) -> List[str]:
 
 def _init_notebook(
     path_stem: str, overwrite=False, directory: str = '.'
-) -> Tuple[nbformat.NotebookNode, Path]:
+) -> tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 
     If one already exists: load it in. Otherwise, create a new one.
@@ -404,7 +404,7 @@ def render_notebook(nbspec: NotebookSpecV2) -> None:
 
     # 3. Merge rendered cells into the existing notebook.
     #     -> we use the cells metadata field to match up cells.
-    cqids_to_render: List[str] = list(cells.keys())
+    cqids_to_render: list[str] = list(cells.keys())
     for i in range(len(nb.cells)):
         nb_node = nb.cells[i]
         if _K_CQ_AUTOGEN in nb_node.metadata:

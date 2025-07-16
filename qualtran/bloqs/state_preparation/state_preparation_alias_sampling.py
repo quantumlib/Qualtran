@@ -19,8 +19,9 @@ a technique for initializing a state with $L$ unique coefficients (provided by a
 database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is the
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Sequence, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> Tuple:
+def _data_or_shape_to_tuple(data_or_shape: Union[NDArray, Shaped]) -> tuple:
     return (
         tuple(data_or_shape.flatten())
         if isinstance(data_or_shape, np.ndarray)
@@ -113,7 +114,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         Babbush et al. (2018). Section III.D. and Figure 11.
     """
 
-    selection_registers: Tuple[Register, ...] = attrs.field(
+    selection_registers: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     alt: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
@@ -223,7 +224,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         return total_bits(self.selection_registers)
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return tuple(
             Signature.build(
                 sigma_mu=self.sigma_mu_bitsize,
@@ -355,7 +356,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
         Babbush et al. (2018). Section III.D. and Figure 11.
     """
 
-    selection_registers: Tuple[Register, ...] = attrs.field(
+    selection_registers: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     index: Union[Shaped, NDArray[np.int_]] = attrs.field(eq=_data_or_shape_to_tuple)
@@ -369,7 +370,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             raise ValueError(f"{self.mu=} must be at least 1")
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return tuple(
             Signature.build(
                 sigma_mu=self.mu,

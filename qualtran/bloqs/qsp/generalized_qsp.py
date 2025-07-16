@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import Counter
+from collections.abc import Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Iterable, Iterator, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -165,7 +166,7 @@ def qsp_complementary_polynomial(
 
 def qsp_phase_factors(
     P: Union[NDArray[np.number], Sequence[complex]], Q: Union[NDArray[np.number], Sequence[complex]]
-) -> Tuple[NDArray[np.floating], NDArray[np.floating], int]:
+) -> tuple[NDArray[np.floating], NDArray[np.floating], int]:
     """Computes the QSP signal rotations for a given pair of polynomials.
 
     The QSP transformation is described in Theorem 3, and the algorithm for computing
@@ -216,7 +217,7 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
-def _to_tuple(x: Union[Iterable[complex], Shaped]) -> Union[Tuple[complex, ...], Shaped]:
+def _to_tuple(x: Union[Iterable[complex], Shaped]) -> Union[tuple[complex, ...], Shaped]:
     """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
     if isinstance(x, Shaped):
         return x
@@ -283,8 +284,8 @@ class GeneralizedQSP(GateWithRegisters):
     """
 
     U: 'Bloq'
-    P: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
-    Q: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
+    P: Union[tuple[complex, ...], Shaped] = field(converter=_to_tuple)
+    Q: Union[tuple[complex, ...], Shaped] = field(converter=_to_tuple)
     negative_power: SymbolicInt = field(default=0, kw_only=True)
     precision: SymbolicFloat = field(default=1e-11, kw_only=True)
 
@@ -319,7 +320,7 @@ class GeneralizedQSP(GateWithRegisters):
         return GeneralizedQSP(U, P, Q, negative_power=negative_power, precision=precision)
 
     @cached_property
-    def _qsp_phases(self) -> Tuple[NDArray[np.floating], NDArray[np.floating], float]:
+    def _qsp_phases(self) -> tuple[NDArray[np.floating], NDArray[np.floating], float]:
         if isinstance(self.P, Shaped) or isinstance(self.Q, Shaped):
             raise ValueError(
                 'Cannot compute phases for symbolic GQSP polynomials {self.P=}, {self.Q=}'

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -89,7 +89,7 @@ class GF2Square(Bloq):
             else SynthesizeLRCircuit(self.squaring_matrix)
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x = bb.split(x)[::-1]
@@ -99,10 +99,10 @@ class GF2Square(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         return {self.synthesize_squaring_matrix: 1}
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
         return {'x': x**2}
 

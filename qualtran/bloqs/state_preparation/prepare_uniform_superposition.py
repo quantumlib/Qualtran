@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import cast, Iterator, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -64,7 +65,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     """
 
     n: SymbolicInt
-    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = attrs.field(
+    cvs: Union[HasLength, tuple[SymbolicInt, ...]] = attrs.field(
         converter=_to_tuple_or_has_length, default=()
     )
 
@@ -73,17 +74,17 @@ class PrepareUniformSuperposition(GateWithRegisters):
         return Signature.build(ctrl=slen(self.cvs), target=bit_length(self.n - 1))
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('Σ |l>')
         return super().wire_symbol(reg, idx)
 
     @property
-    def concrete_cvs(self) -> Tuple[int, ...]:
+    def concrete_cvs(self) -> tuple[int, ...]:
         if isinstance(self.cvs, HasLength):
             raise ValueError(f"{self.cvs} is symbolic")
-        return cast(Tuple[int, ...], self.cvs)
+        return cast(tuple[int, ...], self.cvs)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         control_symbols = ["@" if cv else "@(0)" for cv in self.concrete_cvs]
@@ -91,7 +92,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         target_symbols[0] = f"UNIFORM({self.n})"
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
 
-    def k_l_logL(self) -> Tuple[SymbolicInt, SymbolicInt, SymbolicInt]:
+    def k_l_logL(self) -> tuple[SymbolicInt, SymbolicInt, SymbolicInt]:
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         k, n, logL = 0, self.n, bit_length(self.n - 1)
         if is_symbolic(n):
@@ -150,7 +151,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         if not is_symbolic(self.n, self.cvs):
             # build from decomposition
             return super().build_call_graph(ssa)

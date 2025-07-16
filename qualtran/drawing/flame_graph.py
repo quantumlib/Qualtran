@@ -17,7 +17,8 @@ import functools
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, Callable, List, Optional, Union
+from collections.abc import Callable
+from typing import Any, Optional, Union
 
 import networkx as nx
 import numpy as np
@@ -71,7 +72,7 @@ def _keep_if_small(bloq: Bloq) -> bool:
     return False
 
 
-def _is_leaf_node(callees: List[Bloq]) -> bool:
+def _is_leaf_node(callees: list[Bloq]) -> bool:
     from qualtran.bloqs.basic_gates import TGate
 
     return len(callees) == 0 or (
@@ -80,8 +81,8 @@ def _is_leaf_node(callees: List[Bloq]) -> bool:
 
 
 def _populate_flame_graph_data(
-    bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: List[str]
-) -> List[str]:
+    bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: list[str]
+) -> list[str]:
     """Populates data for the flame graph.
 
     Args:
@@ -128,7 +129,7 @@ def get_flame_graph_data(
     file_path: Union[None, pathlib.Path, str] = None,
     keep: Optional[Callable[['Bloq'], bool]] = _keep_if_small,
     **kwargs,
-) -> List[str]:
+) -> list[str]:
     """Get the flame graph data for visualizing T-costs distribution of a sequence of bloqs.
 
     For each bloq in the input, this will do a DFS ordering over all edges in the DAG and

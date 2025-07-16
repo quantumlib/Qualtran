@@ -15,9 +15,10 @@
 
 
 import abc
+from collections.abc import Iterable, Sequence
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Optional, Sequence, Union
+from typing import Any, Optional, Union
 
 import attrs
 import galois
@@ -51,7 +52,7 @@ class QCDType(metaclass=abc.ABCMeta):
         by this type."""
 
     @abc.abstractmethod
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
 
     def to_bits_array(self, x_array: NDArray[Any]) -> NDArray[np.uint8]:
@@ -165,7 +166,7 @@ class _Bit(metaclass=abc.ABCMeta):
     def is_symbolic(self) -> bool:
         return False
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return [int(x)]
@@ -223,7 +224,7 @@ class QAny(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         # TODO: Raise an error once usage of `QAny` is minimized across the library
         return QUInt(self.bitsize).to_bits(x)
 
@@ -267,7 +268,7 @@ class QInt(QDType):
         max_val = 1 << (self.bitsize - 1)
         return range(-max_val, max_val)
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         if is_symbolic(self.bitsize):
             raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
@@ -333,7 +334,7 @@ class QIntOnesComp(QDType):
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize)
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return [int(x < 0)] + [y ^ int(x < 0) for y in QUInt(self.bitsize - 1).to_bits(abs(x))]
@@ -383,7 +384,7 @@ class QUInt(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         return range(2**self.bitsize)
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
@@ -536,7 +537,7 @@ class BQUInt(QDType):
         if val >= self.iteration_length:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x, debug_str='val')
         return QUInt(self.bitsize).to_bits(x)
@@ -640,7 +641,7 @@ class QFxp(QDType):
         """
         yield from self._int_qdtype.get_classical_domain()
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Use the underlying raw integer type.
 
         See class docstring section on "Classical Simulation" for more details.
@@ -750,7 +751,7 @@ class QFxp(QDType):
 
     def _fxp_to_bits(
         self, x: Union[float, Fxp], require_exact: bool = True, complement: bool = True
-    ) -> List[int]:
+    ) -> list[int]:
         """Yields individual bits corresponding to binary representation of `x`.
 
         Args:
@@ -837,7 +838,7 @@ class QMontgomeryUInt(QDType):
             return range(2**self.bitsize)
         return range(1, int(self.modulus))
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         self.assert_valid_classical_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
@@ -997,7 +998,7 @@ class QGF(QDType):
             compile='python-calculate',
         )
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return self._quint_equivalent.to_bits(int(x))
@@ -1117,7 +1118,7 @@ class QGFPoly(QDType):
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
         return galois.Poly(f_x, field=self.qgf.gf_type)
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         assert isinstance(x, galois.Poly)

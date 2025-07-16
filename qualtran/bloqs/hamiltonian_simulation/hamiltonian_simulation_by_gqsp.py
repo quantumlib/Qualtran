@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -145,11 +145,11 @@ class HamiltonianSimulationByGQSP(Bloq):
     def __add_prepare(
         self,
         bb: 'BloqBuilder',
-        gqsp_soqs: Dict[str, 'SoquetT'],
-        state_prep_ancilla_soqs: Dict[str, 'SoquetT'],
+        gqsp_soqs: dict[str, 'SoquetT'],
+        state_prep_ancilla_soqs: dict[str, 'SoquetT'],
         *,
         adjoint: bool = False,
-    ) -> Tuple[Dict[str, 'SoquetT'], Dict[str, 'SoquetT']]:
+    ) -> tuple[dict[str, 'SoquetT'], dict[str, 'SoquetT']]:
         prepare = self.walk_operator.prepare
 
         selection_registers = {reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers}
@@ -163,8 +163,8 @@ class HamiltonianSimulationByGQSP(Bloq):
         }
         return gqsp_soqs, prepare_out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        state_prep_ancilla: Dict[str, 'SoquetT'] = {
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        state_prep_ancilla: dict[str, 'SoquetT'] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
         }

@@ -13,7 +13,8 @@
 #  limitations under the License.
 import time
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Set, Type
+from collections.abc import Iterable
+from typing import Any, Optional
 
 import pandas as pd
 import pandas.io.formats.style
@@ -31,7 +32,7 @@ from qualtran.testing import (
 from .bloq_finder import get_bloq_classes, get_bloq_examples
 
 
-def _get_package(bloq_cls: Type[Bloq]) -> str:
+def _get_package(bloq_cls: type[Bloq]) -> str:
     """The package name for a bloq class"""
     return '.'.join(bloq_cls.__module__.split('.')[:-1])
 
@@ -56,8 +57,8 @@ def format_status(v: BloqCheckResult):
 
 
 def bloq_classes_with_no_examples(
-    bclasses: Iterable[Type[Bloq]], bexamples: Iterable[BloqExample]
-) -> Set[Type[Bloq]]:
+    bclasses: Iterable[type[Bloq]], bexamples: Iterable[BloqExample]
+) -> set[type[Bloq]]:
     ks = set(bclasses)
     for be in bexamples:
         try:
@@ -72,13 +73,13 @@ IDCOLS = ['package', 'bloq_cls', 'name']
 CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'qtyping']
 
 
-def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
+def record_for_class_with_no_examples(k: type[Bloq]) -> dict[str, Any]:
     return {'bloq_cls': k.__name__, 'package': _get_package(k), 'name': '-'} | {
         check_name: BloqCheckResult.MISSING for check_name in CHECKCOLS
     }
 
 
-def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
+def record_for_bloq_example(be: BloqExample) -> dict[str, Any]:
     start = time.perf_counter()
     record = {
         'bloq_cls': be.bloq_cls.__name__,
@@ -101,7 +102,7 @@ def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
 
 
 def get_bloq_report_card(
-    bclasses: Optional[Iterable[Type[Bloq]]] = None,
+    bclasses: Optional[Iterable[type[Bloq]]] = None,
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
@@ -115,7 +116,7 @@ def get_bloq_report_card(
         skips = ['qubitization_qpe_hubbard_model_small', 'qubitization_qpe_hubbard_model_large']
         bexamples = [bex for bex in bexamples if bex.name not in skips]
 
-    records: List[Dict[str, Any]] = []
+    records: list[dict[str, Any]] = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
     records.extend(record_for_bloq_example(be) for be in bexamples)

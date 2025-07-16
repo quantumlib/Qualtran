@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
 
 from attr import frozen
 
@@ -60,15 +59,15 @@ class BlackBoxSelect(Bloq):
         return 'SELECT'
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register(name='selection', dtype=QAny(self.selection_bitsize)),)
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.select.control_registers
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register(name='system', dtype=QAny(self.system_bitsize)),)
 
     @cached_property
@@ -83,7 +82,7 @@ class BlackBoxSelect(Bloq):
     def system_bitsize(self) -> SymbolicInt:
         return ssum(r.total_bits() for r in self.select.target_registers)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         partitions = (
             (self.selection_registers[0], [r.name for r in self.select.selection_registers]),
             (self.target_registers[0], [r.name for r in self.select.target_registers]),

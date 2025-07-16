@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import abc
-from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
+from collections.abc import Iterable, Sequence
+from typing import Optional, TYPE_CHECKING
 
 from qualtran import Bloq, BloqBuilder, SoquetT
 
@@ -32,10 +33,10 @@ class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    ) -> tuple['Bloq', 'AddControlledT']:
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             # ignore `ctrl_soq` and pass it through for bookkeeping operation.
             out_soqs = bb.add_t(self, **in_soqs)
             return ctrl_soqs, out_soqs

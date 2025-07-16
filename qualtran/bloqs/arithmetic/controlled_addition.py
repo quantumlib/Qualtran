@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -102,7 +102,7 @@ class CAdd(Bloq):
             [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
         )
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> dict[str, 'ClassicalValT']:
         a, b = kwargs['a'], kwargs['b']
         ctrl = kwargs['ctrl']
         if ctrl != self.cv:
@@ -135,7 +135,7 @@ class CAdd(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 

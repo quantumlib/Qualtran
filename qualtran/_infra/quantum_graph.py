@@ -14,7 +14,7 @@
 
 """Plumbing for bloq-to-bloq `Connection`s."""
 from functools import cached_property
-from typing import Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
@@ -72,7 +72,7 @@ class DanglingT:
         return False
 
 
-def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
+def _to_tuple(x: Union[int, tuple[int, ...]]) -> tuple[int, ...]:
     if isinstance(x, int):
         return (x,)
     return x
@@ -101,7 +101,7 @@ class Soquet:
 
     binst: Union[BloqInstance, DanglingT]
     reg: 'Register'
-    idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
+    idx: tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
     @idx.validator
     def _check_idx(self, attribute, value):

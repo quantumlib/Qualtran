@@ -215,7 +215,7 @@
       signature += "\n        ])"
 
       const template = `from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Optional, Union
 
 from attrs import frozen
 
@@ -238,10 +238,10 @@ class ${className}(Bloq):
     def signature(self) -> 'Signature':
         ${signature}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder'${build_sig}) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder'${build_sig}) -> dict[str, 'SoquetT']:
         raise NotImplementedError("Implement or delete.")
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> set['BloqCountT']:
         raise NotImplementedError("Implement or delete.")
 
     def short_name(self) -> str:

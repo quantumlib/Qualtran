@@ -16,9 +16,10 @@
 
 import itertools
 import traceback
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import sympy
@@ -236,7 +237,7 @@ def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, WireSymbol]]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: list[Union[str, WireSymbol]]):
     """Assert a bloq's wire symbols match the expected ones.
 
     For multi-dimensional registers (with a shape), this will iterate
@@ -376,7 +377,7 @@ def assert_bloq_example_make(bloq_ex: BloqExample) -> None:
     return
 
 
-def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_make(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample returns the desired bloq.
 
     Returns:
@@ -418,7 +419,7 @@ def assert_bloq_example_decompose(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.fail(str(e)) from e
 
 
-def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_decompose(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has a valid decomposition.
 
     This will use `assert_valid_decomposition` which has a variety of sub-checks. A failure
@@ -462,8 +463,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
-    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    manual_counts: dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    decomp_counts: dict['Bloq', Union[int, 'sympy.Expr']] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -530,7 +531,7 @@ def assert_equivalent_bloq_counts(
     )
 
 
-def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent bloq counts.
 
     Bloq counts can be annotated directly via the `Bloq.build_call_graph` override.
@@ -594,7 +595,7 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     return None
 
 
-def check_bloq_example_serializes(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_serializes(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent serialization.
 
     This function checks that the given bloq can be serialized to a proto format and the
@@ -619,7 +620,7 @@ def check_bloq_example_serializes(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
     return BloqCheckResult.PASS, ''
 
 
-def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Assert that the bloq example has valid quantum data types throughout its decomposition.
 
     If the bloq has no decomposition, this check is not applicable. Otherwise: we check the
@@ -669,7 +670,7 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
     return BloqCheckResult.PASS, ''
 
 
-def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+def check_bloq_example_qtyping(bloq_ex: BloqExample) -> tuple[BloqCheckResult, str]:
     """Check that the bloq example has valid quantum data types throughout its decomposition.
 
     If the bloq has no decomposition, this check is not applicable. Otherwise: we check the

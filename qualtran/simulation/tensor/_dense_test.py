@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -51,8 +50,8 @@ class TensorAdderTester(Bloq):
         )
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
         assert isinstance(in_qubits, np.ndarray)
@@ -104,7 +103,7 @@ class XNest(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(r=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> dict[str, 'SoquetT']:
         r = bb.add(XGate(), q=r)
         return {'r': r}
 
@@ -115,7 +114,7 @@ class XDoubleNest(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(s=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> dict[str, 'SoquetT']:
         s = bb.add(XNest(), r=s)
         return {'s': s}
 
@@ -144,7 +143,7 @@ class BloqWithNonTrivialInds(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: Soquet, q1: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         q0 = bb.add(XGate(), q=q0)
         q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
         q1 = bb.add(ZGate(), q=q1)
@@ -172,15 +171,15 @@ class BloqWithTensorsAndDecomp(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(a=1, b=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> dict[str, 'SoquetT']:
         self.called_build_composite_bloq = True
         a, b = bb.add(CNOT(), ctrl=a, target=b)
         a, b = bb.add(CNOT(), ctrl=a, target=b)
         return {'a': a, 'b': b}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         self.called_my_tensors = True
         return [
             qtn.Tensor(

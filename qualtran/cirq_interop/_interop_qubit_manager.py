@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 """Qubit Manager to use when converting Cirq gates to/from Bloqs."""
-from typing import Iterable, List, Optional, Set
+from collections.abc import Iterable
+from typing import Optional
 
 import cirq
 
@@ -25,11 +26,11 @@ class InteropQubitManager(cirq.QubitManager):
         if qm is None:
             qm = cirq.SimpleQubitManager()
         self._qm = qm
-        self._managed_qubits: Set[cirq.Qid] = set()
+        self._managed_qubits: set[cirq.Qid] = set()
 
-    def qalloc(self, n: int, dim: int = 2) -> List['cirq.Qid']:
-        ret: List['cirq.Qid'] = []
-        qubits_to_free: List['cirq.Qid'] = []
+    def qalloc(self, n: int, dim: int = 2) -> list['cirq.Qid']:
+        ret: list['cirq.Qid'] = []
+        qubits_to_free: list['cirq.Qid'] = []
         while len(ret) < n:
             new_alloc = self._qm.qalloc(n - len(ret), dim)
             for q in new_alloc:
@@ -40,9 +41,9 @@ class InteropQubitManager(cirq.QubitManager):
         self._qm.qfree(qubits_to_free)
         return ret
 
-    def qborrow(self, n: int, dim: int = 2) -> List['cirq.Qid']:
-        ret: List['cirq.Qid'] = []
-        qubits_to_free: List['cirq.Qid'] = []
+    def qborrow(self, n: int, dim: int = 2) -> list['cirq.Qid']:
+        ret: list['cirq.Qid'] = []
+        qubits_to_free: list['cirq.Qid'] = []
         while len(ret) < n:
             new_alloc = self._qm.qborrow(n - len(ret), dim)
             for q in new_alloc:
