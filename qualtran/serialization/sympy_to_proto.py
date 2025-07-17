@@ -171,7 +171,7 @@ def sympy_expr_to_proto(expr: sympy.Basic) -> sympy_pb2.Term:
 
 
 def _get_parameter(
-    serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter],
+    serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter]
 ) -> Union[sympy.core.AtomicExpr, int, float]:
     """
     Deserializes a parameter.

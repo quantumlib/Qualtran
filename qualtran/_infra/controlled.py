@@ -50,7 +50,7 @@ def _cvs_convert(
         Sequence[Union[int, np.integer]],
         Sequence[Sequence[Union[int, np.integer]]],
         Sequence[Union[NDArray[np.integer], Shaped]],
-    ],
+    ]
 ) -> tuple[Union[NDArray[np.integer], Shaped], ...]:
     if isinstance(cvs, Shaped):
         return (cvs,)

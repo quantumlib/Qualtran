@@ -237,7 +237,7 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[SymbolicInt]],
+    x: Union[HasLength, Iterable[SymbolicInt]]
 ) -> Union[HasLength, tuple[SymbolicInt, ...]]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):

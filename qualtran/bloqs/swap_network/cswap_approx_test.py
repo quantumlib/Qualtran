@@ -59,7 +59,7 @@ def test_approx_cswap_t_count(n):
 
 
 def get_t_count_and_clifford(
-    bc: dict[Bloq, Union[int, sympy.Expr]],
+    bc: dict[Bloq, Union[int, sympy.Expr]]
 ) -> tuple[Union[int, sympy.Expr], Union[int, sympy.Expr]]:
     """Get the t count and clifford cost from bloq count."""
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])

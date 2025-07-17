@@ -168,7 +168,7 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq],
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate

@@ -26,7 +26,7 @@ def _convert_callees(callees: Sequence[BloqCountT]) -> tuple[BloqCountT, ...]:
 
 
 def _convert_static_costs(
-    static_costs: Sequence[tuple[CostKey, Any]],
+    static_costs: Sequence[tuple[CostKey, Any]]
 ) -> tuple[tuple[CostKey, Any], ...]:
     # Convert to tuples in a type-checked way.
     return tuple(static_costs)

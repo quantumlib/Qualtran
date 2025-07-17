@@ -104,7 +104,7 @@ if TYPE_CHECKING:
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[complex]],
+    x: Union[HasLength, Iterable[complex]]
 ) -> Union[HasLength, tuple[complex, ...]]:
     if isinstance(x, HasLength):
         return x
