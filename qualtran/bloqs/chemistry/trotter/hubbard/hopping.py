@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -121,7 +121,7 @@ class HoppingTile(Bloq):
         if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             l = 'p' if self.pink else 'g'
             return Text(f'H_h^{l}')

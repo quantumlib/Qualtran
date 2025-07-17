@@ -22,8 +22,9 @@ where $\sum_l^L W_{pq}^{(l)} W_{rs}^{(l)} = (pq|rs)$ are the standard chemist's
 electron repulsion integrals.
 """
 
+from collections.abc import Iterable
 from functools import cached_property
-from typing import Dict, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
@@ -203,7 +204,7 @@ class SingleFactorizationOneBody(BlockEncoding):
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         iprep = InnerPrepareSingleFactorization(
             self.num_aux,
             self.num_spin_orb,
@@ -394,7 +395,7 @@ class SingleFactorizationBlockEncoding(BlockEncoding):
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         succ_l, l_ne_zero, succ_pq = ctrl
         p, q = pq
         # prepare_l

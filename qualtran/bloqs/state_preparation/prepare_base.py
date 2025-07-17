@@ -14,7 +14,6 @@
 
 import abc
 from functools import cached_property
-from typing import Tuple
 
 from qualtran import BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.symbolics import SymbolicFloat
@@ -38,10 +37,10 @@ class PrepareOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[Register, ...]: ...
+    def selection_registers(self) -> tuple[Register, ...]: ...
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return ()
 
     @cached_property

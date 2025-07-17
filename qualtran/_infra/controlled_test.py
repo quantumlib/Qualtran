@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -317,7 +317,7 @@ def test_bit_vector_ctrl():
     bloq = Controlled(subbloq=TestAtom(), ctrl_spec=CtrlSpec(QBit(), cvs=(1, 0, 1)))
     msd = get_musical_score_data(bloq)
     # select SoqData for the 0th moment, sorted top to bottom
-    soqdatas: List[SoqData] = sorted(
+    soqdatas: list[SoqData] = sorted(
         (sd for sd in msd.soqs if sd.rpos.seq_x == 0), key=lambda sd: sd.rpos.y
     )
 

@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Optional, Tuple
+from typing import Optional
 
 import attrs
 import cirq
@@ -123,15 +124,15 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
         return cls(select_bitsize, target_bitsize, dps)
 
     @property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt(bitsize=self.select_bitsize)),)
 
     @property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register('target', BQUInt(bitsize=self.target_bitsize)),)
 
     def decompose_from_registers(
@@ -149,7 +150,7 @@ class TestPauliSelectOracle(SelectOracle):  # type: ignore[misc]
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

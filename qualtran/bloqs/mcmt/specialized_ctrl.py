@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import enum
+from collections.abc import Callable, Iterable, Sequence
 from functools import cached_property
-from typing import Callable, cast, Iterable, Optional, Sequence, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np

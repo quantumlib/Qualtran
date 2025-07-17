@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for preparing the $\nu$ state for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -135,7 +135,7 @@ class PrepareNuStateWithProj(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         mu, flag_mu = bb.add(
             PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), mu=mu
         )

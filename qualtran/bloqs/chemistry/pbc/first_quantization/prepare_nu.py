@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import evolve, frozen
 
@@ -63,7 +63,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         return {Toffoli(): (self.num_bits_p - 1)}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP √(2^μ)|μ⟩')
@@ -115,7 +115,7 @@ class PrepareNuSuperPositionState(Bloq):
         return {Toffoli(): (3 * (self.num_bits_p - 1))}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'PREP (2^-μ)|μ⟩|ν⟩')
@@ -165,7 +165,7 @@ class FlagZeroAsFailure(Bloq):
             return {Toffoli(): (3 * self.num_bits_p + 2)}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'ν≠−0')
@@ -215,7 +215,7 @@ class TestNuLessThanMu(Bloq):
             return {Toffoli(): 3 * self.num_bits_p}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'ν<2^(μ−2)')
@@ -298,7 +298,7 @@ class TestNuInequality(Bloq):
             return dict([cost_1, cost_2, cost_3, cost_4])
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r'(2^(μ-2))^2 M > m ν^2')
@@ -368,7 +368,7 @@ class PrepareNuState(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         mu, flag_mu = bb.add(PrepareMuUnaryEncodedOneHot(self.num_bits_p), mu=mu)
         mu, nu = bb.add(PrepareNuSuperPositionState(self.num_bits_p), mu=mu, nu=nu)
         nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p), nu=nu)
@@ -404,7 +404,7 @@ class PrepareNuState(Bloq):
         return dict([cost_1, cost_2, cost_3, cost_4, cost_6])
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text(r"PREP 1/‖ν‖ ∣ν⟩")

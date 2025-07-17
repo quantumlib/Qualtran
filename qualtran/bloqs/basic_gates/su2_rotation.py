@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -147,8 +147,8 @@ class SU2RotationGate(GateWithRegisters):
             return cls(su2_theta, su2_phi, su2_lambd, su2_global_shift)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         return [
@@ -164,7 +164,7 @@ class SU2RotationGate(GateWithRegisters):
             return None
         return self.rotation_matrix
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> dict[str, 'SoquetT']:
         # TODO implement controlled version, and pass eps/4 to each rotation (incl. global phase)
         #      https://github.com/quantumlib/Qualtran/issues/1330
         bb.add(
@@ -209,7 +209,7 @@ class SU2RotationGate(GateWithRegisters):
             return f'SU_2({self.theta},{self.phi},{self.lambd},{self.global_shift})'
         return f'SU_2({self.theta:.2f},{self.phi:.2f},{self.lambd:.2f},{self.global_shift:.2f})'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             if self.is_symbolic():
                 return Text(f'({self.theta},{self.phi},{self.lambd},{self.global_shift})')

@@ -12,19 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import (
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -101,8 +91,8 @@ class _ZVector(Bloq):
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         side = outgoing if self.state else incoming
@@ -110,7 +100,7 @@ class _ZVector(Bloq):
             qtn.Tensor(data=_ONE if self.bit else _ZERO, inds=[(side['q'], 0)], tags=[str(self)])
         ]
 
-    def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
+    def on_classical_vals(self, *, q: Optional[int] = None) -> dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -126,7 +116,7 @@ class _ZVector(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -145,7 +135,7 @@ class _ZVector(Bloq):
         return f'|{s}>' if self.state else f'<{s}|'
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -258,8 +248,8 @@ class ZGate(Bloq):
         raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         return [
@@ -268,7 +258,7 @@ class ZGate(Bloq):
             )
         ]
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
@@ -276,8 +266,8 @@ class ZGate(Bloq):
         bloq = CZ()
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl_soq,) = ctrl_soqs
             ctrl_soq, q2 = bb.add(bloq, q1=ctrl_soq, q2=in_soqs['q'])
             return (ctrl_soq,), (q2,)
@@ -286,7 +276,7 @@ class ZGate(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
@@ -298,7 +288,7 @@ class ZGate(Bloq):
         return qml.Z(wires=wires)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -335,8 +325,8 @@ class CZ(Bloq):
         return self
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         unitary = np.diag(np.array([1, 1, 1, -1], dtype=np.complex128)).reshape((2, 2, 2, 2))
@@ -346,7 +336,7 @@ class CZ(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q1: 'CirqQuregT', q2: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         import cirq
 
         (q1,) = q1
@@ -358,21 +348,21 @@ class CZ(Bloq):
 
         return qml.CZ(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'q1' or reg.name == 'q2':
             return Circle()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         # Diagonal, but causes phases: see `basis_state_phase`
         return vals
 
@@ -410,8 +400,8 @@ class MeasZ(Bloq):
         return {'c': q}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         from qualtran.simulation.tensor import DiscardInd
@@ -469,7 +459,7 @@ class _IntVector(Bloq):
         return Signature([Register('val', self.dtype, side=side)])
 
     @staticmethod
-    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
+    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> dict[str, 'SoquetT']:
         states = [ZeroState(), OneState()]
         xs = []
         for bit in bits:
@@ -482,14 +472,14 @@ class _IntVector(Bloq):
     @staticmethod
     def _build_composite_effect(
         bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         xs = bb.split(val)
         effects = [ZeroEffect(), OneEffect()]
         for i, bit in enumerate(bits):
             bb.add(effects[bit], q=xs[i])
         return {}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError(f'Symbolic bitsize {self.bitsize} not supported')
         bits = np.asarray(self.dtype.to_bits(self.val))
@@ -499,7 +489,7 @@ class _IntVector(Bloq):
         else:
             return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -514,7 +504,7 @@ class _IntVector(Bloq):
         s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
 

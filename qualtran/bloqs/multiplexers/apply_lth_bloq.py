@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import cast, Iterable, Optional, Sequence, Set, Tuple, Union
+from typing import cast, Optional, Union
 
 import cirq
 import numpy as np
@@ -69,7 +70,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         converter=lambda x: np.array(x) if isinstance(x, Iterable) else x,
         eq=lambda d: tuple(d.flat),
     )
-    selection_regs: Optional[Tuple[Register, ...]] = None
+    selection_regs: Optional[tuple[Register, ...]] = None
     control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
@@ -81,11 +82,11 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
             raise ValueError("All ops must have only THRU registers.")
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         if self.selection_regs is None:
             return tuple(
                 Register(
@@ -97,10 +98,10 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return tuple(self.ops.flat[0].signature)  # type: ignore
 
-    def nth_operation_callgraph(self, **kwargs: int) -> Set[BloqCountT]:
+    def nth_operation_callgraph(self, **kwargs: int) -> set[BloqCountT]:
         return {(self.ops[tuple(kwargs.values())].controlled(), 1)}
 
     def nth_operation(
@@ -117,7 +118,7 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
         target_qubits = merge_qubits(bloq.signature, **targets)
         return bloq.controlled().on(control, *target_qubits)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Iterator, List, Tuple
+from collections.abc import Iterator
 
 import attr
 import cirq
@@ -50,7 +50,7 @@ class TestCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         ctrl, target = soqs['control'], soqs['target']
         assert isinstance(ctrl, Soquet)
         assert isinstance(target, Soquet)
@@ -59,7 +59,7 @@ class TestCNOT(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target), cirq_quregs
@@ -256,7 +256,7 @@ def test_gwr_for_left_only_gates():
 
     # Using InteropQubitManager enables support for LeftOnlyGate's in CirqGateAsBloq.
     cbloq = qlt_testing.assert_valid_bloq_decomposition(LeftOnlyGate())
-    bloqs_list: List[Bloq] = [binst.bloq for binst in cbloq.bloq_instances]
+    bloqs_list: list[Bloq] = [binst.bloq for binst in cbloq.bloq_instances]
     assert bloqs_list.count(Split(QAny(2))) == 1
     assert bloqs_list.count(Free(QBit())) == 2
     assert bloqs_list.count(CNOT()) == 1

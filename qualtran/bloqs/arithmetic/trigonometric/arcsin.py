@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict
-
 import numpy as np
 from attrs import frozen
 
@@ -74,7 +72,7 @@ class ArcSin(Bloq):
 
     def on_classical_vals(
         self, x: ClassicalValT, result: ClassicalValT
-    ) -> Dict[str, ClassicalValT]:
+    ) -> dict[str, ClassicalValT]:
         if is_symbolic(self.bitsize):
             raise ValueError(f"Symbolic bitsize {self.bitsize} not supported")
         x_fxp: float = _fxp(x / 2**self.bitsize, self.bitsize).astype(float)

@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -93,11 +94,11 @@ class ReflectionUsingPrepare(GateWithRegisters):
     eps: float = 1e-11
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.prepare_gate.selection_registers
 
     @cached_property
@@ -196,7 +197,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
     def adjoint(self) -> 'ReflectionUsingPrepare':
         return self
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

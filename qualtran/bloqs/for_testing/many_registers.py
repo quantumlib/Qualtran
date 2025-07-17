@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
 
 import numpy as np
 from attrs import frozen
@@ -54,7 +53,7 @@ class TestMultiRegister(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', xx: 'SoquetT', yy: NDArray['Soquet'], zz: Soquet  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
@@ -106,7 +105,7 @@ class TestMultiTypedRegister(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    ) -> dict[str, 'Soquet']:
         a, b = bb.add(TestBoundedQUInt(), xx=a, yy=d)
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
         return {'a': a, 'b': b, 'c': c, 'd': d}

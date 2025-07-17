@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, Union
+from typing import cast, Optional, Union
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
@@ -83,10 +83,10 @@ class LinearCombination(BlockEncoding):
         Dalzell et al. (2023). Ch. 10.2.
     """
 
-    _block_encodings: Tuple[BlockEncoding, ...] = field(
+    _block_encodings: tuple[BlockEncoding, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(2)
     )
-    _lambd: Tuple[float, ...] = field(converter=lambda x: x if isinstance(x, tuple) else tuple(x))
+    _lambd: tuple[float, ...] = field(converter=lambda x: x if isinstance(x, tuple) else tuple(x))
     lambd_bits: SymbolicInt
 
     _prepare: Optional[BlackBoxPrepare] = None
@@ -121,7 +121,7 @@ class LinearCombination(BlockEncoding):
             )
 
     @classmethod
-    def of_terms(cls, *terms: Tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
+    def of_terms(cls, *terms: tuple[float, BlockEncoding], lambd_bits: SymbolicInt = 1) -> Self:
         """Construct a `LinearCombination` from pairs of (coefficient, block encoding)."""
         return cls(tuple(t[1] for t in terms), tuple(t[0] for t in terms), lambd_bits)
 
@@ -232,11 +232,11 @@ class LinearCombination(BlockEncoding):
             assert not is_symbolic(be.ancilla_bitsize)
             assert not is_symbolic(be.resource_bitsize)
 
-            partitions: List[Tuple[Register, List[Union[str, Unused]]]] = [
+            partitions: list[tuple[Register, list[Union[str, Unused]]]] = [
                 (Register("system", QAny(self.system_bitsize)), ["system"])
             ]
             if self.be_ancilla_bitsize > 0:
-                regs: List[Union[str, Unused]] = []
+                regs: list[Union[str, Unused]] = []
                 if be.ancilla_bitsize > 0:
                     regs.append("ancilla")
                 if self.be_ancilla_bitsize > be.ancilla_bitsize:
@@ -259,7 +259,7 @@ class LinearCombination(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: Soquet, ancilla: Soquet, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if (
             is_symbolic(self.system_bitsize)
             or is_symbolic(self.ancilla_bitsize)
@@ -272,7 +272,7 @@ class LinearCombination(BlockEncoding):
         assert not is_symbolic(self.select.system_bitsize)
 
         # partition ancilla register
-        be_system_soqs: Dict[str, SoquetT] = {"system": system}
+        be_system_soqs: dict[str, SoquetT] = {"system": system}
         anc_regs = [Register("selection", QAny(self.prepare.selection_bitsize))]
         if self.be_ancilla_bitsize > 0:
             anc_regs.append(Register("ancilla", QAny(self.be_ancilla_bitsize)))
@@ -331,7 +331,7 @@ class LinearCombination(BlockEncoding):
 
         # partition system register of Select into system, ancilla, resource of block encoding
         be_soqs = bb.add_d(be_part, x=select_out_soqs.pop("system"))
-        out: Dict[str, SoquetT] = {"system": be_soqs.pop("system")}
+        out: dict[str, SoquetT] = {"system": be_soqs.pop("system")}
 
         if self.is_controlled:
             out["ctrl"] = select_out_soqs.pop("ctrl")

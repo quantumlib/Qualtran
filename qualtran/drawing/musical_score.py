@@ -21,8 +21,9 @@ represents a qubit or register of qubits.
 import abc
 import heapq
 import json
+from collections.abc import Callable, Iterable
 from enum import Enum
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, cast, Optional, Union
 
 import attrs
 import networkx as nx
@@ -102,7 +103,7 @@ class HLine:
     seq_x_end: Optional[int] = None
     flavor: HLineFlavor = HLineFlavor.QUANTUM
 
-    def json_dict(self) -> Dict[str, Any]:
+    def json_dict(self) -> dict[str, Any]:
         d = attrs.asdict(self)
         d['flavor'] = str(d['flavor'])
         return d
@@ -114,8 +115,8 @@ class LineManager:
     def __init__(self, max_n_lines: int = 100):
         self.available = list(range(max_n_lines))
         heapq.heapify(self.available)
-        self.hlines: Set[HLine] = set()
-        self._reserved: List[Tuple[List[int], Callable]] = []
+        self.hlines: set[HLine] = set()
+        self._reserved: list[tuple[list[int], Callable]] = []
 
     def new_y(self, binst: BloqInstance, reg: Register, idx=None):
         """Allocate a new y position (i.e. a new qubit or register)."""
@@ -145,7 +146,7 @@ class LineManager:
         self._reserved = kept
 
     def maybe_reserve(
-        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: Tuple[int, ...]
+        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: tuple[int, ...]
     ):
         """Override this method to provide custom control over line allocation.
 
@@ -218,7 +219,7 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, RegPosition]
+    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: dict[Soquet, RegPosition]
 ) -> Union[RegPosition, NDArray[RegPosition]]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -235,8 +236,8 @@ def _get_in_vals(
 def _update_assign_from_vals(
     regs: Iterable[Register],
     binst: Union[DanglingT, BloqInstance],
-    vals: Dict[str, RegPosition],
-    soq_assign: Dict[Soquet, RegPosition],
+    vals: dict[str, RegPosition],
+    soq_assign: dict[Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -274,7 +275,7 @@ def _update_assign_from_vals(
 def _binst_assign_line(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
-    soq_assign: Dict[Soquet, RegPosition],
+    soq_assign: dict[Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -324,7 +325,7 @@ def _binst_assign_line(
 
 def _cbloq_musical_score(
     signature: Signature, binst_graph: nx.DiGraph, manager: Optional[LineManager] = None
-) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
+) -> tuple[dict[str, RegPosition], dict[Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
     Args:
@@ -341,7 +342,7 @@ def _cbloq_musical_score(
 
     # Keep track of each soquet's position. Initialize by implicitly allocating new positions.
     # We introduce the convention that `LeftDangle`s are a seq_x=-1 and topo_gen=0
-    soq_assign: Dict[Soquet, RegPosition] = {}
+    soq_assign: dict[Soquet, RegPosition] = {}
     topo_gen = 0
     _update_assign_from_vals(
         signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
@@ -392,7 +393,7 @@ class WireSymbol(metaclass=abc.ABCMeta):
         """Return a symbol that is the adjoint of this."""
         return self
 
-    def json_dict(self) -> Dict[str, Any]:
+    def json_dict(self) -> dict[str, Any]:
         return {'symb_cls': self.__class__.__name__, 'symb_attributes': attrs.asdict(self)}
 
 
@@ -572,9 +573,9 @@ class MusicalScoreData:
 
     max_x: int
     max_y: int
-    soqs: List[SoqData]
-    hlines: List[HLine]
-    vlines: List[VLine]
+    soqs: list[SoqData]
+    hlines: list[HLine]
+    vlines: list[VLine]
 
     def json_dict(self):
         return attrs.asdict(self, recurse=False)

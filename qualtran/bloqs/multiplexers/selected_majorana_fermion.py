@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Iterator, Sequence, Tuple, Union
+from typing import Union
 
 import attrs
 import cirq
@@ -47,10 +48,10 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         Fig 9.
     """
 
-    selection_regs: Tuple[Register, ...] = attrs.field(
+    selection_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
-    control_regs: Tuple[Register, ...] = attrs.field(
+    control_regs: tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
         default=(Register('control', QBit()),),
     )
@@ -72,15 +73,15 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         ).on_registers(**quregs)
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         if any(
             isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
             for reg in self.selection_registers
@@ -93,7 +94,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         return (Register('target', QAny(int(total_iteration_size))),)
 
     @cached_property
-    def extra_registers(self) -> Tuple[Register, ...]:
+    def extra_registers(self) -> tuple[Register, ...]:
         return (Register('accumulator', QBit()),)
 
     def decompose_from_registers(

@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 import itertools
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -72,8 +73,8 @@ class CNOT(Bloq):
         return self
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         # This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
         # by an internal index.
         # [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
@@ -93,10 +94,10 @@ class CNOT(Bloq):
             ),
         ]
 
-    def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, ctrl: int, target: int) -> dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.basic_gates.toffoli import Toffoli
 
         if ctrl_spec != CtrlSpec():
@@ -105,8 +106,8 @@ class CNOT(Bloq):
         bloq = Toffoli()
 
         def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (new_ctrl,) = ctrl_soqs
             (new_ctrl, existing_ctrl), target = bb.add(
                 bloq, ctrl=np.array([new_ctrl, in_soqs['ctrl']]), target=in_soqs['target']
@@ -117,7 +118,7 @@ class CNOT(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (ctrl,) = ctrl
@@ -129,7 +130,7 @@ class CNOT(Bloq):
 
         return qml.CNOT(wires=wires)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

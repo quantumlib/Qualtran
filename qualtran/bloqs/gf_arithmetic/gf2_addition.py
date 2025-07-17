@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 
@@ -59,7 +59,7 @@ class GF2Addition(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'Soquet', y: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    ) -> dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y = bb.split(x), bb.split(y)
@@ -71,10 +71,10 @@ class GF2Addition(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         return {CNOT(): self.bitsize}
 
-    def on_classical_vals(self, *, x, y) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x, y) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type) and isinstance(y, self.qgf.gf_type)
         return {'x': x, 'y': x + y}
 

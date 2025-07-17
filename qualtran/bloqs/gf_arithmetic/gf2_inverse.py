@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -129,7 +129,7 @@ class GF2Inverse(Bloq):
 
         return NotImplemented
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
 
@@ -172,7 +172,7 @@ class GF2Inverse(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
             return {GF2Addition(self.bitsize): 1}
         square_count = self.bitsize + 2 ** ceil(log2(self.bitsize)) - 1
@@ -187,7 +187,7 @@ class GF2Inverse(Bloq):
             - 1,
         }
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
         junk = []
         bitsize_minus_one = int(self.bitsize - 1)

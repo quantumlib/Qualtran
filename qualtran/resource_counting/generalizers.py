@@ -19,7 +19,8 @@ multiple bloqs whose attributes differ in ways that do not affect the cost estim
 into one, more general bloq. The functions in this module can be used as generalizers
 for this argument.
 """
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import attrs
 import sympy

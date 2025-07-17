@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from attrs import frozen
 from numpy.typing import NDArray
@@ -66,12 +66,12 @@ class KineticEnergy(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("U_T(dt)")
         return super().wire_symbol(reg, idx)
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, system: NDArray[Soquet]) -> Dict[str, SoquetT]:  # type: ignore[type-var]
+    def build_composite_bloq(self, bb: BloqBuilder, *, system: NDArray[Soquet]) -> dict[str, SoquetT]:  # type: ignore[type-var]
         bitsize = (self.num_grid - 1).bit_length() + 1
         for i in range(self.num_elec):
             system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i])

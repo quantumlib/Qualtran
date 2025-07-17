@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any
 
 from attrs import field, frozen
 
@@ -19,14 +20,14 @@ from qualtran import Bloq, Signature
 from qualtran.resource_counting import BloqCountDictT, BloqCountT, CostKey, SympySymbolAllocator
 
 
-def _convert_callees(callees: Sequence[BloqCountT]) -> Tuple[BloqCountT, ...]:
+def _convert_callees(callees: Sequence[BloqCountT]) -> tuple[BloqCountT, ...]:
     # Convert to tuples in a type-checked way.
     return tuple(callees)
 
 
 def _convert_static_costs(
-    static_costs: Sequence[Tuple[CostKey, Any]]
-) -> Tuple[Tuple[CostKey, Any], ...]:
+    static_costs: Sequence[tuple[CostKey, Any]]
+) -> tuple[tuple[CostKey, Any], ...]:
     # Convert to tuples in a type-checked way.
     return tuple(static_costs)
 
@@ -38,7 +39,7 @@ class CostingBloq(Bloq):
     name: str
     num_qubits: int
     callees: Sequence[BloqCountT] = field(converter=_convert_callees, factory=tuple)
-    static_costs: Sequence[Tuple[CostKey, Any]] = field(
+    static_costs: Sequence[tuple[CostKey, Any]] = field(
         converter=_convert_static_costs, factory=tuple
     )
 

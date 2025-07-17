@@ -14,19 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import builtins
+import typing
 import google.protobuf.descriptor
 import google.protobuf.message
 import qualtran.protos.args_pb2
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
-@typing_extensions.final
+@typing.final
 class ECPoint(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -50,8 +45,8 @@ class ECPoint(google.protobuf.message.Message):
         mod: qualtran.protos.args_pb2.IntOrSympy | None = ...,
         curve_a: qualtran.protos.args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_curve_a", b"_curve_a"]) -> typing_extensions.Literal["curve_a"] | None: ...
+    def HasField(self, field_name: typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["_curve_a", b"_curve_a"]) -> typing.Literal["curve_a"] | None: ...
 
 global___ECPoint = ECPoint

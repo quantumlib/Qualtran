@@ -14,8 +14,8 @@
 
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List, Type
 
 import jinja2
 import tensorflow_docs.api_generator.parser
@@ -65,7 +65,7 @@ def filter_type_aliases_in_the_wrong_place(path, parent, children):
     return ret
 
 
-def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -> List[MemberInfo]:
+def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -> list[MemberInfo]:
     """Sort `members` according to their order in the source definition.
 
     For example: you can order class methods according to their order of definition
@@ -79,7 +79,7 @@ def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -
     return sorted(fmembs, key=lambda m: ordering[m.short_name])
 
 
-def mixin_custom_template(template_name: str) -> Type:
+def mixin_custom_template(template_name: str) -> type:
     """Return a mixin for using a custom jinja template in TemplatePageBuilder classes."""
 
     class _CustomTemplateMixin:
@@ -382,7 +382,7 @@ def generate_ref_toc(reporoot: Path):
     page_paths = output_dir.glob('qualtran/**/*.md')
 
     # Group according to module
-    grouped_paths: Dict[Path, List] = defaultdict(list)
+    grouped_paths: dict[Path, list] = defaultdict(list)
     for path in page_paths:
         grouped_paths[path.parent].append(path)
 

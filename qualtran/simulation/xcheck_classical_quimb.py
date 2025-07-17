@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Dict, Iterable, Optional, TYPE_CHECKING
+from collections.abc import Iterable
+from typing import cast, Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -23,10 +24,10 @@ if TYPE_CHECKING:
 
 
 def _add_classical_kets(
-    bb: BloqBuilder, registers: Iterable[Register], vals: Dict[str, 'ClassicalValT']
-) -> Dict[str, 'SoquetT']:
+    bb: BloqBuilder, registers: Iterable[Register], vals: dict[str, 'ClassicalValT']
+) -> dict[str, 'SoquetT']:
     """Use `bb` to add `IntState` for all the `vals`."""
-    soqs: Dict[str, 'SoquetT'] = {}
+    soqs: dict[str, 'SoquetT'] = {}
     for reg in registers:
         if reg.shape:
             reg_vals = np.asarray(vals[reg.name])
@@ -43,8 +44,8 @@ def _add_classical_kets(
 def _add_classical_bras(
     bb: BloqBuilder,
     registers: Iterable[Register],
-    vals: Dict[str, 'ClassicalValT'],
-    soqs: Dict[str, 'SoquetT'],
+    vals: dict[str, 'ClassicalValT'],
+    soqs: dict[str, 'SoquetT'],
 ) -> None:
     """Use `bb` to add `IntEffect` on `soqs` for all the `vals`."""
     for reg in registers:
@@ -63,8 +64,8 @@ def _add_classical_bras(
 
 def flank_with_classical_vectors(
     bloq: 'Bloq',
-    in_vals: Dict[str, 'ClassicalValT'],
-    out_vals: Optional[Dict[str, 'ClassicalValT']] = None,
+    in_vals: dict[str, 'ClassicalValT'],
+    out_vals: Optional[dict[str, 'ClassicalValT']] = None,
 ) -> 'CompositeBloq':
     """Surround `bloq` with computational basis vectors according to the provided values.
 

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, cast, Dict, Union
+from typing import Any, cast, Union
 
 import sympy
 import sympy.codegen.cfunctions
@@ -63,7 +63,7 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
     Sympy functions are represented as a sympy_pb2.Function enum. This method converts
     this int enum.
     """
-    enum_to_sympy: Dict[int, Any] = {
+    enum_to_sympy: dict[int, Any] = {
         sympy_pb2.Function.Mul: sympy.core.mul.Mul,
         sympy_pb2.Function.Add: sympy.core.add.Add,
         sympy_pb2.Function.Pow: sympy.core.power.Pow,
@@ -89,7 +89,7 @@ def _get_sympy_const_from_enum(enum: int) -> Any:
     Symbolic constants are serialzed as an enum of type sympy_pb2.ConstSymbol. This method converts the
     enum representation back to its original sympy representation.
     """
-    enum_to_sympy: Dict[int, Any] = {
+    enum_to_sympy: dict[int, Any] = {
         sympy_pb2.ConstSymbol.Pi: sympy.pi,
         sympy_pb2.ConstSymbol.E: sympy.E,
         sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,

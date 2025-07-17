@@ -22,8 +22,9 @@ The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bi
 to the and of its control registers. `And` will output the result into a fresh register.
 """
 import itertools
+from collections.abc import Iterable, Iterator
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -97,7 +98,7 @@ class And(GateWithRegisters):
 
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
-    ) -> Dict[str, ClassicalValT]:
+    ) -> dict[str, ClassicalValT]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
             return {'ctrl': ctrl, 'target': out}
@@ -107,8 +108,8 @@ class And(GateWithRegisters):
         return {'ctrl': ctrl}
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         # Fill in our tensor using "and" logic.
@@ -138,7 +139,7 @@ class And(GateWithRegisters):
             )
         ]
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'target':
@@ -237,7 +238,7 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 def _to_tuple_or_has_length(
     x: Union[HasLength, Iterable[SymbolicInt]]
-) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
+) -> Union[HasLength, tuple[SymbolicInt, ...]]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):
             return x
@@ -262,7 +263,7 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Union[HasLength, Tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: Union[HasLength, tuple[SymbolicInt, ...]] = field(converter=_to_tuple_or_has_length)
 
     @cvs.validator
     def _validate_cvs(self, field, val):
@@ -274,7 +275,7 @@ class MultiAnd(Bloq):
         return self.cvs.n if isinstance(self.cvs, HasLength) else len(self.cvs)
 
     @property
-    def concrete_cvs(self) -> Tuple[SymbolicInt, ...]:
+    def concrete_cvs(self) -> tuple[SymbolicInt, ...]:
         if isinstance(self.cvs, HasLength):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
@@ -289,7 +290,7 @@ class MultiAnd(Bloq):
             ]
         )
 
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> dict[str, NDArray[np.uint8]]:
         accumulate_and = np.bitwise_and.accumulate(
             np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
         )
@@ -306,7 +307,7 @@ class MultiAnd(Bloq):
     def _decompose_via_tree(
         self,
         controls: NDArray[cirq.Qid],
-        control_values: Tuple[SymbolicInt, ...],
+        control_values: tuple[SymbolicInt, ...],
         ancillas: NDArray[cirq.Qid],
         target: cirq.Qid,
     ) -> cirq.ops.op_tree.OpTree:
@@ -335,7 +336,7 @@ class MultiAnd(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.name == 'ctrl':

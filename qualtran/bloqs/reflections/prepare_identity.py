@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Sequence, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import field, frozen
 
@@ -41,7 +42,7 @@ class PrepareIdentity(PrepareOracle):
         selection_registers: The selection registers.
     """
 
-    selection_regs: Tuple[Register, ...] = field(
+    selection_regs: tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
 
@@ -55,14 +56,14 @@ class PrepareIdentity(PrepareOracle):
         return cls(tuple(Register(f'reg{i}_', QAny(b)) for i, b in enumerate(bitsizes)))
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return ()
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: Soquet) -> Dict[str, Soquet]:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: Soquet) -> dict[str, Soquet]:
         for label, soq in soqs.items():
             soqs[label] = bb.add(Identity(soq.reg.bitsize), q=soq)
         return soqs

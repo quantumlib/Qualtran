@@ -14,7 +14,8 @@
 
 import dataclasses
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from typing import Any, Optional, Union
 
 import attrs
 import cirq
@@ -82,7 +83,7 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
-def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
+def arg_from_proto(arg: bloq_pb2.BloqArg) -> dict[str, Any]:
     if arg.HasField("int_val"):
         return {arg.name: arg.int_val}
     if arg.HasField("float_val"):
@@ -112,10 +113,10 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
 
 class _BloqLibDeserializer:
     def __init__(self, lib: bloq_pb2.BloqLibrary):
-        self.id_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition] = {
+        self.id_to_proto: dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition] = {
             b.bloq_id: b for b in lib.table
         }
-        self.id_to_bloq: Dict[int, Bloq] = {}
+        self.id_to_bloq: dict[int, Bloq] = {}
         self.dangling_to_singleton = {"LeftDangle": LeftDangle, "RightDangle": RightDangle}
 
     def bloq_id_to_bloq(self, bloq_id: int):
@@ -169,7 +170,7 @@ class _BloqLibDeserializer:
         )
 
 
-def bloqs_from_proto(lib: bloq_pb2.BloqLibrary) -> List[Bloq]:
+def bloqs_from_proto(lib: bloq_pb2.BloqLibrary) -> list[Bloq]:
     """Deserializes a BloqLibrary as a list of Bloqs."""
     deserializer = _BloqLibDeserializer(lib)
     return [deserializer.bloq_id_to_bloq(bloq.bloq_id) for bloq in lib.table]
@@ -200,7 +201,7 @@ def bloqs_to_proto(
     # Set up this mapping and populate it by recursively searching for subbloqs.
     # Each value is an (id: bool, shallow: bool) tuple, where the second entry can be set to
     # `True` for bloqs that need to be referred to but do not need a full serialization.
-    bloq_to_id_ext: Dict[Bloq, Tuple[int, bool]] = {}
+    bloq_to_id_ext: dict[Bloq, tuple[int, bool]] = {}
     for bloq in bloqs:
         _assign_bloq_an_id(bloq, bloq_to_id_ext, shallow=True)
         _search_for_subbloqs(bloq, bloq_to_id_ext, pred, max_depth)
@@ -267,13 +268,13 @@ def _iter_fields(bloq: Bloq):
                 yield field
 
 
-def _connection_to_proto(cxn: Connection, bloq_to_id: Dict[Bloq, int]):
+def _connection_to_proto(cxn: Connection, bloq_to_id: dict[Bloq, int]):
     return bloq_pb2.Connection(
         left=_soquet_to_proto(cxn.left, bloq_to_id), right=_soquet_to_proto(cxn.right, bloq_to_id)
     )
 
 
-def _soquet_to_proto(soq: Soquet, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.Soquet:
+def _soquet_to_proto(soq: Soquet, bloq_to_id: dict[Bloq, int]) -> bloq_pb2.Soquet:
     if isinstance(soq.binst, DanglingT):
         return bloq_pb2.Soquet(
             dangling_t=repr(soq.binst), register=registers.register_to_proto(soq.reg), index=soq.idx
@@ -287,12 +288,12 @@ def _soquet_to_proto(soq: Soquet, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.Soque
 
 
 def _bloq_instance_to_proto(
-    binst: BloqInstance, bloq_to_id: Dict[Bloq, int]
+    binst: BloqInstance, bloq_to_id: dict[Bloq, int]
 ) -> bloq_pb2.BloqInstance:
     return bloq_pb2.BloqInstance(instance_id=binst.i, bloq_id=bloq_to_id[binst.bloq])
 
 
-def _assign_bloq_an_id(bloq: Bloq, bloq_to_id: Dict[Bloq, Tuple[int, bool]], shallow: bool = False):
+def _assign_bloq_an_id(bloq: Bloq, bloq_to_id: dict[Bloq, tuple[int, bool]], shallow: bool = False):
     """Assigns a new index for `bloq` and records it into the `bloq_to_id` mapping."""
     if bloq in bloq_to_id:
         # Keep the same id, but if anyone requests a non-shallow serialization; do it.
@@ -303,7 +304,7 @@ def _assign_bloq_an_id(bloq: Bloq, bloq_to_id: Dict[Bloq, Tuple[int, bool]], sha
         bloq_to_id[bloq] = next_idx, shallow
 
 
-def _cbloq_ordered_bloq_instances(cbloq: CompositeBloq) -> List[BloqInstance]:
+def _cbloq_ordered_bloq_instances(cbloq: CompositeBloq) -> list[BloqInstance]:
     """Equivalent to `cbloq.bloq_instances`, but preserves insertion order among bloq instances."""
     ret = {}
     for cxn in cbloq.connections:
@@ -315,7 +316,7 @@ def _cbloq_ordered_bloq_instances(cbloq: CompositeBloq) -> List[BloqInstance]:
 
 def _search_for_subbloqs(
     bloq: Bloq,
-    bloq_to_id: Dict[Bloq, Tuple[int, bool]],
+    bloq_to_id: dict[Bloq, tuple[int, bool]],
     pred: Callable[[BloqInstance], bool],
     max_depth: int,
 ) -> None:
@@ -372,7 +373,7 @@ def _search_for_subbloqs(
 
 
 def _bloq_to_proto(
-    bloq: Bloq, *, bloq_to_id: Dict[Bloq, int], shallow: bool = False
+    bloq: Bloq, *, bloq_to_id: dict[Bloq, int], shallow: bool = False
 ) -> bloq_pb2.Bloq:
     if shallow:
         t_complexity = None
@@ -392,8 +393,8 @@ def _bloq_to_proto(
 
 
 def _bloq_args_to_proto(
-    bloq: Bloq, *, bloq_to_id: Dict[Bloq, int]
-) -> Optional[List[bloq_pb2.BloqArg]]:
+    bloq: Bloq, *, bloq_to_id: dict[Bloq, int]
+) -> Optional[list[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
 
@@ -405,7 +406,7 @@ def _bloq_args_to_proto(
     return ret if ret else None
 
 
-def _bloq_arg_to_proto(name: str, val: Any, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.BloqArg:
+def _bloq_arg_to_proto(name: str, val: Any, bloq_to_id: dict[Bloq, int]) -> bloq_pb2.BloqArg:
     if isinstance(val, Bloq):
         return bloq_pb2.BloqArg(name=name, subbloq=bloq_to_id[val])
     return arg_to_proto(name=name, val=val)

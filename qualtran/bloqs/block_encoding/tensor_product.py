@@ -14,7 +14,6 @@
 
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Tuple
 
 from attrs import evolve, field, frozen, validators
 from typing_extensions import Self
@@ -61,7 +60,7 @@ class TensorProduct(BlockEncoding):
         [Quantum algorithms: A survey of applications and end-to-end complexities](https://arxiv.org/abs/2310.03011). Dalzell et al. (2023). Ch. 10.2.
     """
 
-    block_encodings: Tuple[BlockEncoding, ...] = field(
+    block_encodings: tuple[BlockEncoding, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
 
@@ -111,7 +110,7 @@ class TensorProduct(BlockEncoding):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, system: SoquetT, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         if (
             is_symbolic(self.system_bitsize)
             or is_symbolic(self.ancilla_bitsize)

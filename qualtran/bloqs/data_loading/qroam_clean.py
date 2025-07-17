@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, Union
+from typing import cast, Optional, Type, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -45,7 +45,7 @@ from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, Sel
 
 
 def _alloc_anc_for_reg_except_first(
-    bb: 'BloqBuilder', dtype: 'QDType', shape: Tuple[int, ...], dirty: bool
+    bb: 'BloqBuilder', dtype: 'QDType', shape: tuple[int, ...], dirty: bool
 ) -> 'SoquetT':
     if not shape:
         return bb.allocate(dtype=dtype, dirty=dirty)
@@ -119,7 +119,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         Berry et al. (2019). Appendix C.
     """
 
-    log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
+    log_block_sizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
 
@@ -131,10 +131,10 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def build_from_data(
         cls: Type['QROAMCleanAdjoint'],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
+        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
     ) -> 'QROAMCleanAdjoint':
         qroam: 'QROAMCleanAdjoint' = cls._build_from_data(
             *data,
@@ -147,13 +147,13 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     @classmethod
     def build_from_bitsize(
         cls: Type['QROAMCleanAdjoint'],
-        data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,
-        target_shapes: Tuple[Tuple[SymbolicInt, ...], ...] = (),
-        selection_bitsizes: Tuple[SymbolicInt, ...] = (),
+        target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
+        selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
     ) -> 'QROAMCleanAdjoint':
         qroam: 'QROAMCleanAdjoint' = cls._build_from_bitsize(
             data_len_or_shape,
@@ -165,7 +165,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         return qroam.with_log_block_sizes(log_block_sizes=log_block_sizes)
 
     @log_block_sizes.default
-    def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
+    def _default_log_block_sizes(self) -> tuple[SymbolicInt, ...]:
         target_bitsize = sum(
             bs * prod(shape) for (bs, shape) in zip(self.target_bitsizes, self.target_shapes)
         )
@@ -175,7 +175,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         )
 
     def with_log_block_sizes(
-        self, log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None
+        self, log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None
     ) -> 'QROAMCleanAdjoint':
         if log_block_sizes is None:
             return self
@@ -202,7 +202,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def adjoint(self) -> 'QROAMClean':
         return QROAMClean(**attrs.asdict(self))
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -223,7 +223,7 @@ class QROAMCleanAdjointWrapper(Bloq):
     """Wrapper bloq with signature matching Adjoint(QROAMClean). Delegates to QROAMCleanAdjoint"""
 
     qroam_clean: 'QROAMClean'
-    log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
+    log_block_sizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: (
             x if x is None else tuple(x.tolist() if isinstance(x, np.ndarray) else x)
         )
@@ -234,7 +234,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         return self.qroam_clean.signature.adjoint()
 
     @log_block_sizes.default
-    def _log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
+    def _log_block_sizes(self) -> tuple[SymbolicInt, ...]:
         # Note: Target bitsize does not matter for adjoint, so setting to 0.
         return tuple(
             get_optimal_log_block_size_clean_ancilla(ilen, 0, adjoint=True)
@@ -262,8 +262,8 @@ class QROAMCleanAdjointWrapper(Bloq):
                 num_controls=self.qroam_clean.num_controls,
             )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        block_sizes = cast(Tuple[int, ...], self.qroam_clean.block_sizes)
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
+        block_sizes = cast(tuple[int, ...], self.qroam_clean.block_sizes)
         for target, adj_target in zip(
             self.qroam_clean.target_registers, self.qroam_clean_adjoint_bloq.target_registers
         ):
@@ -288,11 +288,11 @@ class QROAMCleanAdjointWrapper(Bloq):
         return self.qroam_clean
 
     def with_log_block_sizes(
-        self, log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None
+        self, log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None
     ) -> 'QROAMCleanAdjointWrapper':
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM').adjoint()
         name = reg.name
@@ -357,7 +357,7 @@ class QROAMClean(SelectSwapQROM):
         Berry et al. (2019). Appendix A. and B.
     """
 
-    log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
+    log_block_sizes: tuple[SymbolicInt, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
     use_dirty_ancilla: bool = attrs.field(init=False, default=False, repr=False)
@@ -367,7 +367,7 @@ class QROAMClean(SelectSwapQROM):
         return Side.RIGHT
 
     @log_block_sizes.default
-    def _default_log_block_sizes(self) -> Tuple[SymbolicInt, ...]:
+    def _default_log_block_sizes(self) -> tuple[SymbolicInt, ...]:
         target_bitsize = sum(
             bs * prod(shape) for (bs, shape) in zip(self.target_bitsizes, self.target_shapes)
         )
@@ -380,9 +380,9 @@ class QROAMClean(SelectSwapQROM):
     def build_from_data(
         cls: Type['QROAMClean'],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
     ) -> 'QROAMClean':
         qroam: 'QROAMClean' = cls._build_from_data(
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
@@ -392,12 +392,12 @@ class QROAMClean(SelectSwapQROM):
     @classmethod
     def build_from_bitsize(
         cls: Type['QROAMClean'],
-        data_len_or_shape: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, Tuple[SymbolicInt, ...]],
+        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,
-        selection_bitsizes: Tuple[SymbolicInt, ...] = (),
+        selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, Tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
     ) -> 'QROAMClean':
         qroam: 'QROAMClean' = cls._build_from_bitsize(
             data_len_or_shape,
@@ -419,16 +419,16 @@ class QROAMClean(SelectSwapQROM):
         )
 
     @cached_property
-    def batched_data_permuted(self) -> List[np.ndarray]:
+    def batched_data_permuted(self) -> list[np.ndarray]:
         if is_symbolic(*self.block_sizes):
             raise ValueError(
                 f"Cannot decompose SelectSwapQROM bloq with symbolic block sizes. Found {self.block_sizes=}"
             )
-        block_sizes = cast(Tuple[int, ...], self.block_sizes)
+        block_sizes = cast(tuple[int, ...], self.block_sizes)
         ret = []
         for data, swz in zip(self.batched_data, self.swap_with_zero_bloqs):
             permuted_batched_data = np.zeros(data.shape + block_sizes, dtype=data.dtype)
-            for sel_l in np.ndindex(cast(Tuple[int, ...], self.batched_qrom_shape)):
+            for sel_l in np.ndindex(cast(tuple[int, ...], self.batched_qrom_shape)):
                 for sel_k in np.ndindex(block_sizes):
                     sel_kwargs = {reg.name: sel for reg, sel in zip(swz.selection_registers, sel_k)}
                     curr_data = swz.call_classically(**sel_kwargs, targets=np.copy(data[sel_l]))[-1]
@@ -449,7 +449,7 @@ class QROAMClean(SelectSwapQROM):
         return ret
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         # The newly allocated registers should be kept around for measurement based uncomputation.
         junk_regs = []
         block_size = prod(self.block_sizes)
@@ -460,7 +460,7 @@ class QROAMClean(SelectSwapQROM):
         return tuple(junk_regs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        ret: Dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
+        ret: dict[Bloq, SymbolicInt] = defaultdict(lambda: 0)
         ret[self.qrom_bloq] += 1
         for swz in self.swap_with_zero_bloqs:
             if any(is_symbolic(s) or s > 0 for s in swz.selection_bitsizes):
@@ -479,17 +479,17 @@ class QROAMClean(SelectSwapQROM):
     def _build_composite_bloq_with_swz_clean(
         self,
         bb: 'BloqBuilder',
-        ctrl: List['SoquetT'],
-        selection: List['SoquetT'],
-        qrom_targets: List['SoquetT'],
-    ) -> Tuple[List['SoquetT'], List['SoquetT'], List['SoquetT']]:
+        ctrl: list['SoquetT'],
+        selection: list['SoquetT'],
+        qrom_targets: list['SoquetT'],
+    ) -> tuple[list['SoquetT'], list['SoquetT'], list['SoquetT']]:
         sel_l, sel_k = self._partition_sel_register(bb, selection)
         ctrl, sel_l, qrom_targets = self._add_qrom_bloq(bb, ctrl, sel_l, qrom_targets)
         sel_k, qrom_targets = self._add_swap_with_zero_bloq(bb, sel_k, qrom_targets)
         selection = self._unpartition_sel_register(bb, sel_l, sel_k)
         return ctrl, selection, qrom_targets
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         # Get the ctrl and target register for the SelectSwapQROM.
         ctrl = [soqs.pop(reg.name) for reg in self.control_registers]
         selection = [soqs.pop(reg.name) for reg in self.selection_registers]
@@ -497,7 +497,7 @@ class QROAMClean(SelectSwapQROM):
             raise ValueError(
                 f"Cannot decompose QROAM bloq with symbolic block sizes. Found {self.block_sizes=}"
             )
-        block_sizes = cast(Tuple[int, ...], self.block_sizes)
+        block_sizes = cast(tuple[int, ...], self.block_sizes)
         # Allocate intermediate clean/dirty ancilla for the underlying QROM call.
         qrom_targets = []
         for reg in self.target_registers:
@@ -526,9 +526,9 @@ class QROAMClean(SelectSwapQROM):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         vals_without_junk = super().on_classical_vals(**vals)
-        selection = cast(Tuple[int, ...], tuple(vals[reg.name] for reg in self.selection_registers))
+        selection = cast(tuple[int, ...], tuple(vals[reg.name] for reg in self.selection_registers))
         for d, junk_reg in zip(self.batched_data_permuted, self.junk_registers):
             vals_without_junk[junk_reg.name] = d[selection].flat[1:]
         return vals_without_junk
@@ -536,7 +536,7 @@ class QROAMClean(SelectSwapQROM):
     def adjoint(self) -> 'QROAMCleanAdjointWrapper':
         return QROAMCleanAdjointWrapper(self)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('QROAM')
         name = reg.name

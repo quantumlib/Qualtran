@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -222,7 +223,7 @@ class BitwiseNot(Bloq):
 
         return TextBox("~x")
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         x = -x - 1
         if isinstance(self.dtype, (QUInt, QMontgomeryUInt)):
             x %= 2**self.dtype.bitsize

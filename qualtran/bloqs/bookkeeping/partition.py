@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen, validators
@@ -58,7 +58,7 @@ class Partition(_BookkeepingBloq):
     """
 
     n: SymbolicInt
-    regs: Tuple[Register, ...] = field(
+    regs: tuple[Register, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
     partition: bool = True
@@ -89,7 +89,7 @@ class Partition(_BookkeepingBloq):
     def adjoint(self):
         return evolve(self, partition=not self.partition)
 
-    def as_cirq_op(self, qubit_manager, **cirq_quregs) -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, **cirq_quregs) -> tuple[None, dict[str, 'CirqQuregT']]:
         if self.partition:
             outregs = {}
             start = 0
@@ -106,8 +106,8 @@ class Partition(_BookkeepingBloq):
         return None
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         if is_symbolic(self.n):
@@ -131,7 +131,7 @@ class Partition(_BookkeepingBloq):
             for j in range(self.n)
         ]
 
-    def _classical_partition(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def _classical_partition(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         out_vals = {}
         xbits = self.lumped_dtype.to_bits(x)
         start = 0
@@ -155,7 +155,7 @@ class Partition(_BookkeepingBloq):
             out_vals.append(bitstrings.ravel())
         return np.concatenate(out_vals)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         if self.partition:
             return self._classical_partition(vals['x'])
         else:
@@ -163,7 +163,7 @@ class Partition(_BookkeepingBloq):
             big_int = self.lumped_dtype.from_bits(big_int_bits.tolist())
             return {'x': big_int}
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.shape:

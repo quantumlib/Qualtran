@@ -13,7 +13,7 @@
 #  limitations under the License.
 import abc
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 
@@ -99,7 +99,7 @@ class RectangularWindowState(QPEWindowStateBase):
         """
         return cls(ceil(2 * log2(pi(eps) / eps)))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         qpe_reg = bb.allocate(dtype=self.m_qdtype)
         qpe_reg = bb.add(OnEach(self.m_bits, Hadamard()), q=qpe_reg)
         return {'qpe_reg': qpe_reg}

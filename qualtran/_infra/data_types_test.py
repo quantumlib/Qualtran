@@ -13,7 +13,8 @@
 #  limitations under the License.
 import math
 import random
-from typing import Any, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 import galois
 import numpy as np

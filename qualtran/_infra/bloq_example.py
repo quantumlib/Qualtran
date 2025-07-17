@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import typing
-from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Type, TypeVar, Union
+
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, Generic, Optional, overload, TypeVar, Union
 
 from attrs import field, frozen
 
@@ -44,7 +45,7 @@ class BloqExample(Generic[_BloqType]):
 
     _func: Callable[[], _BloqType] = field(repr=False, hash=False)
     name: str
-    bloq_cls: Type[Bloq]
+    bloq_cls: type[Bloq]
     generalizer: _GeneralizerType = field(
         converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
     )
@@ -68,7 +69,7 @@ def _name_from_func_name(func: Callable[[], _BloqType]) -> str:
     return func.__name__.lstrip('_')
 
 
-def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> Type[_BloqType]:
+def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> type[_BloqType]:
     """Use the function return type annotation as the `BloqExample.bloq_cls` with the decorator."""
     anno = func.__annotations__
     if 'return' not in anno:
@@ -79,11 +80,11 @@ def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> Type[_BloqT
     return cls
 
 
-@typing.overload
+@overload
 def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_BloqType]: ...
 
 
-@typing.overload
+@overload
 def bloq_example(
     _func: None = None, *, generalizer: _GeneralizerType = lambda x: x
 ) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]: ...
@@ -147,7 +148,7 @@ class BloqDocSpec:
             graph. Note that this example must be included in `examples`.
     """
 
-    bloq_cls: Type
+    bloq_cls: type
     examples: Sequence[BloqExample] = field(converter=_to_tuple, factory=tuple)
     import_line: str = field()
     call_graph_example: Union[BloqExample, None] = field()

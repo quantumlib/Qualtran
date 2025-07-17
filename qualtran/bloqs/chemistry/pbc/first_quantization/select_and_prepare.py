@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -74,7 +74,7 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP TUV")
         return super().wire_symbol(reg, idx)
@@ -138,7 +138,7 @@ class MultiplexedCSwap3D(Bloq):
 
     @staticmethod
     def _reshape_reg(
-        bb: BloqBuilder, in_reg: SoquetT, out_shape: Tuple[int, ...], bitsize: int
+        bb: BloqBuilder, in_reg: SoquetT, out_shape: tuple[int, ...], bitsize: int
     ) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Reshape registers allocated as a big register.
 
@@ -163,7 +163,7 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('MultiSwap')
         if reg.name == 'sel':
@@ -176,7 +176,7 @@ class MultiplexedCSwap3D(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, sel: SoquetT, targets: SoquetT, junk: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         flat_sys = self._reshape_reg(bb, targets, (self.eta,), bitsize=3 * self.num_bits_p)
         flat_p = self._reshape_reg(bb, junk, (), bitsize=3 * self.num_bits_p)
         sel, flat_sys, flat_p = bb.add(
@@ -244,7 +244,7 @@ class PrepareFirstQuantization(PrepareOracle):
     sum_of_l1_coeffs: Optional[SymbolicFloat] = None
 
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         n_nu = self.num_bits_p + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
@@ -272,7 +272,7 @@ class PrepareFirstQuantization(PrepareOracle):
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
 
     @property
@@ -283,7 +283,7 @@ class PrepareFirstQuantization(PrepareOracle):
             )
         return self.sum_of_l1_coeffs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("PREP")
         return super().wire_symbol(reg, idx)
@@ -306,7 +306,7 @@ class PrepareFirstQuantization(PrepareOracle):
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         tuv, uv = bb.add(
             PrepareTUVSuperpositions(
                 self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
@@ -412,7 +412,7 @@ class SelectFirstQuantization(SelectOracle):
     num_bits_rot_aa: int = 8
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return (
             Register("tuv", QBit()),
             Register("uv", QBit()),
@@ -421,7 +421,7 @@ class SelectFirstQuantization(SelectOracle):
         )
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         n_nu = self.num_bits_p + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
@@ -441,7 +441,7 @@ class SelectFirstQuantization(SelectOracle):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register("sys", QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),)
 
     @cached_property
@@ -450,7 +450,7 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("SELECT")
         return super().wire_symbol(reg, idx)
@@ -474,7 +474,7 @@ class SelectFirstQuantization(SelectOracle):
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         # ancilla for swaps from electronic system registers.
         # we assume these are left in a clean state after SELECT operations
         p = [bb.allocate(self.num_bits_p) for _ in range(3)]

@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple
 
 import attrs
 import networkx as nx
@@ -75,7 +74,7 @@ class TestTwoCNOT(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         q1, q2 = bb.add(CNOT(), ctrl=q1, target=q2)
         q1, q2 = bb.add(CNOT(), ctrl=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -138,7 +137,7 @@ def test_map_soqs():
     bb, _ = BloqBuilder.from_signature(cbloq.signature)
     bb._i = 100  # pylint: disable=protected-access
 
-    soq_map: List[Tuple[SoquetT, SoquetT]] = []
+    soq_map: list[tuple[SoquetT, SoquetT]] = []
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
         if binst.i == 0:
             assert in_soqs == bb.map_soqs(in_soqs, soq_map)
@@ -339,7 +338,7 @@ class TestMultiCNOT(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']  # type: ignore[type-var]
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
                 control, target[i, j] = bb.add(CNOT(), ctrl=control, target=target[i, j])

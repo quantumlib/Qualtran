@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple
 
 import attrs
 import cirq
@@ -40,11 +40,11 @@ class ComplexPhaseOracle(GateWithRegisters):
     arctan_bitsize: int = 32
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return self.encoder.control_registers
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return self.encoder.selection_registers
 
     @cached_property

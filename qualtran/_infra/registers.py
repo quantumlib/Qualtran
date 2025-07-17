@@ -16,7 +16,8 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
+from collections.abc import Iterable, Iterator
+from typing import cast, overload, Union
 
 import attrs
 import sympy
@@ -63,7 +64,7 @@ class Register:
 
     name: str
     dtype: QCDType
-    _shape: Tuple[SymbolicInt, ...] = field(
+    _shape: tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
@@ -76,20 +77,20 @@ class Register:
         return is_symbolic(self.dtype, *self._shape)
 
     @property
-    def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
+    def shape_symbolic(self) -> tuple[SymbolicInt, ...]:
         return self._shape
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         if is_symbolic(*self._shape):
             raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
-        return cast(Tuple[int, ...], self._shape)
+        return cast(tuple[int, ...], self._shape)
 
     @property
     def bitsize(self) -> int:
         return self.dtype.num_bits
 
-    def all_idxs(self) -> Iterable[Tuple[int, ...]]:
+    def all_idxs(self) -> Iterable[tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
         yield from itertools.product(*[range(sh) for sh in self.shape])
 
@@ -127,7 +128,7 @@ class Register:
         raise ValueError(f"Unknown side {self.side}")
 
 
-def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
+def _dedupe(kv_iter: Iterable[tuple[str, Register]]) -> dict[str, Register]:
     """Construct a dictionary, but check that there are no duplicate keys."""
     # throw ValueError if duplicate keys are provided.
     d = {}
@@ -195,7 +196,7 @@ class Signature:
         """Get a right register by name."""
         return self._rights[name]
 
-    def groups(self) -> Iterable[Tuple[str, List[Register]]]:
+    def groups(self) -> Iterable[tuple[str, list[Register]]]:
         """Iterate over register groups by name.
 
         Registers with shared names (but differing `side` attributes) can be implicitly grouped.
@@ -257,7 +258,7 @@ class Signature:
         pass
 
     @overload
-    def __getitem__(self, key: slice) -> Tuple[Register, ...]:
+    def __getitem__(self, key: slice) -> tuple[Register, ...]:
         pass
 
     def __getitem__(self, key):

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -79,15 +79,15 @@ class Join(_BookkeepingBloq):
 
         return Split(dtype=self.dtype)
 
-    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> tuple[None, dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         eye = np.eye(2)
@@ -98,10 +98,10 @@ class Join(_BookkeepingBloq):
             for i in range(self.dtype.num_qubits)
         ]
 
-    def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
+    def on_classical_vals(self, reg: 'NDArray[np.uint]') -> dict[str, int]:
         return {'reg': self.dtype.from_bits(reg.tolist())}
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
         if reg.shape:

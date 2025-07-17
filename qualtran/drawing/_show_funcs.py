@@ -15,7 +15,8 @@
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
 import os
-from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
+from collections.abc import Sequence
+from typing import Optional, overload, TYPE_CHECKING, Union
 
 import IPython.display
 import ipywidgets
@@ -123,7 +124,7 @@ def show_call_graph(
         IPython.display.display(GraphvizCallGraph(item).get_svg())
 
 
-def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
+def show_counts_sigma(sigma: dict['Bloq', Union[int, 'sympy.Expr']]):
     """Display nicely formatted bloq counts sums `sigma`."""
     IPython.display.display(IPython.display.Markdown(format_counts_sigma(sigma)))
 

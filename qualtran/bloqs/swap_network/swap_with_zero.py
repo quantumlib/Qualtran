@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Iterator
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, Tuple, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -42,7 +43,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> Tuple[SymbolicInt, ...]:
+def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> tuple[SymbolicInt, ...]:
     if isinstance(x, np.ndarray):
         return _to_tuple(x.tolist())
     if isinstance(x, Iterable):
@@ -51,8 +52,8 @@ def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> Tuple[SymbolicInt
 
 
 def _swap_with_zero_swap_sequence(
-    selection_bitsizes: Tuple[int, ...], target_shape: Tuple[int, ...], idx: Tuple[int, ...] = ()
-) -> Iterator[Tuple[int, int, Tuple[int, ...], Tuple[int, ...]]]:
+    selection_bitsizes: tuple[int, ...], target_shape: tuple[int, ...], idx: tuple[int, ...] = ()
+) -> Iterator[tuple[int, int, tuple[int, ...], tuple[int, ...]]]:
     """Yields tuples of indices that should be swapped in that order to realize a swap with zero.
 
     The method recursively iterates over all combinations of `S = np.prod(selection_bitsizes)`
@@ -124,16 +125,16 @@ class SwapWithZero(GateWithRegisters):
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
+    selection_bitsizes: tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
     target_bitsize: SymbolicInt
-    n_target_registers: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
+    n_target_registers: tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
     uncompute: bool = False
 
     def __attrs_post_init__(self):
         assert len(self.n_target_registers) == len(self.selection_bitsizes)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         types = [
             BQUInt(sb, l)
             for sb, l in zip(self.selection_bitsizes, self.n_target_registers)
@@ -144,7 +145,7 @@ class SwapWithZero(GateWithRegisters):
         return tuple(Register(f'selection{i}_', qdtype) for i, qdtype in enumerate(types))
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (
             Register('targets', QAny(bitsize=self.target_bitsize), shape=self.n_target_registers),
         )
@@ -158,17 +159,17 @@ class SwapWithZero(GateWithRegisters):
         return CSwapApprox(self.target_bitsize)
 
     @cached_property
-    def _swap_sequence(self) -> Tuple[Tuple[int, int, Tuple[int, ...], Tuple[int, ...]], ...]:
+    def _swap_sequence(self) -> tuple[tuple[int, int, tuple[int, ...], tuple[int, ...]], ...]:
         if is_symbolic(*self.selection_bitsizes) or is_symbolic(*self.n_target_registers):
             raise ValueError(f"Cannot produce swap sequence for symbolic {self=}")
-        selection_bitsizes = cast(Tuple[int, ...], self.selection_bitsizes)
-        n_target_registers = cast(Tuple[int, ...], self.n_target_registers)
+        selection_bitsizes = cast(tuple[int, ...], self.selection_bitsizes)
+        n_target_registers = cast(tuple[int, ...], self.n_target_registers)
         ret = [*_swap_with_zero_swap_sequence(selection_bitsizes, n_target_registers)]
         return tuple(ret[::-1] if self.uncompute else ret)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', targets: NDArray['Soquet'], **sel: 'Soquet'  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         sel_soqs = [bb.split(sel[reg.name]) for reg in self.selection_registers]
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:
             sel_idx_big = self.selection_bitsizes[i] - sel_idx_small - 1
@@ -189,7 +190,7 @@ class SwapWithZero(GateWithRegisters):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return super().wire_symbol(reg, idx)
         name = reg.name
@@ -202,7 +203,7 @@ class SwapWithZero(GateWithRegisters):
 
     def on_classical_vals(
         self, *, targets: 'ClassicalValT', **selection: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         assert isinstance(targets, np.ndarray)
         selection_idx = tuple(selection.values())
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:

@@ -19,19 +19,13 @@ limitations under the License.
 
 import builtins
 import collections.abc
+import typing
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import qualtran.protos.args_pb2
 import qualtran.protos.data_types_pb2
-import sys
-import typing
-
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
-else:
-    import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
@@ -41,7 +35,7 @@ class Register(google.protobuf.message.Message):
 
     class _Side:
         ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        V: typing.TypeAlias = ValueType
 
     class _SideEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Register._Side.ValueType], builtins.type):
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor

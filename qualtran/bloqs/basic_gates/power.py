@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -59,7 +59,7 @@ class Power(GateWithRegisters):
     def signature(self) -> Signature:
         return self.bloq.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if not isinstance(self.power, int):
             raise ValueError(f'Symbolic power {self.power} not supported')
         for _ in range(self.power):

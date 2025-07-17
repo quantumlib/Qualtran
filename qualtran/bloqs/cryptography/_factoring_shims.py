@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import sympy
@@ -46,7 +46,7 @@ class MeasureQFT(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QBit(), shape=(self.n,), side=Side.LEFT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
 
@@ -63,7 +63,7 @@ class MeasureQFT(Bloq):
         return {QFTTextBook(self.n): 1, Measure(): self.n}
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('MeasureQFT')

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import List, Optional
+from typing import Optional
 
 from . import shell_tools
 
@@ -47,11 +47,11 @@ class PreparedEnv:
 
         self.destination_directory = destination_directory
 
-    def get_changed_files(self) -> List[str]:
+    def get_changed_files(self) -> list[str]:
         """Get the files changed on one git branch vs another.
 
         Returns:
-            List[str]: File paths of changed files, relative to the git repo
+            list[str]: File paths of changed files, relative to the git repo
                 root.
         """
         optional_actual_commit_id = [] if self.actual_commit_id is None else [self.actual_commit_id]

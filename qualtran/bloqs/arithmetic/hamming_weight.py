@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -87,7 +88,7 @@ class HammingWeightCompute(GateWithRegisters):
         ]
 
     def _decompose_using_three_to_two_adders(
-        self, x: List[cirq.Qid], junk: List[cirq.Qid], out: List[cirq.Qid]
+        self, x: list[cirq.Qid], junk: list[cirq.Qid], out: list[cirq.Qid]
     ) -> Iterator[cirq.OP_TREE]:
         for out_idx in range(len(out)):
             y = []
@@ -109,9 +110,9 @@ class HammingWeightCompute(GateWithRegisters):
     ) -> Iterator[cirq.OP_TREE]:
         # Qubit order needs to be reversed because the registers store Big Endian representation
         # of integers.
-        x: List[cirq.Qid] = [*quregs['x'][::-1]]
-        junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
-        out: List[cirq.Qid] = [*quregs['out'][::-1]]
+        x: list[cirq.Qid] = [*quregs['x'][::-1]]
+        junk: list[cirq.Qid] = [*quregs['junk'][::-1]]
+        out: list[cirq.Qid] = [*quregs['out'][::-1]]
         yield self._decompose_using_three_to_two_adders(x, junk, out)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':

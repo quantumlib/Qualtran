@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 from unittest.mock import ANY
 
 import attrs
@@ -52,7 +52,7 @@ class AtomWithSpecializedControl(Bloq):
         reg_name_map = {self.ctrl_reg_name: n_ctrl, self.target_reg_name: 2}
         return Signature.build(**reg_name_map)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_1bit_cv(
             self,
             ctrl_spec,
@@ -130,7 +130,7 @@ class TestAtom(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=2)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_1bit_cv_from_bloqs(
             self,
             ctrl_spec,
@@ -151,7 +151,7 @@ class CTestAtom(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, q=2)
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         return get_ctrl_system_1bit_cv_from_bloqs(
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='ctrl'
         )

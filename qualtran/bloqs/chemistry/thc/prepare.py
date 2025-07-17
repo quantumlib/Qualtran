@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -110,7 +110,7 @@ class UniformSuperpositionTHC(Bloq):
     def __str__(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('Σ |μν>')
         return super().wire_symbol(reg, idx)
@@ -123,7 +123,7 @@ class UniformSuperpositionTHC(Bloq):
         succ: SoquetT,
         nu_eq_mp1: SoquetT,
         rot: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         # If we introduce comparators using out of place adders these will be left/right registers.
         # See: https://github.com/quantumlib/Qualtran/issues/390
         lte_mu_nu, lte_nu_mp1, gt_mu_n, junk = bb.split(bb.allocate(4))
@@ -260,11 +260,11 @@ class PrepareTHC(PrepareOracle):
 
     num_mu: int
     num_spin_orb: int
-    alt_mu: Tuple[int, ...] = field(repr=False)
-    alt_nu: Tuple[int, ...] = field(repr=False)
-    alt_theta: Tuple[int, ...] = field(repr=False)
-    theta: Tuple[int, ...] = field(repr=False)
-    keep: Tuple[int, ...] = field(repr=False)
+    alt_mu: tuple[int, ...] = field(repr=False)
+    alt_nu: tuple[int, ...] = field(repr=False)
+    alt_theta: tuple[int, ...] = field(repr=False)
+    theta: tuple[int, ...] = field(repr=False)
+    keep: tuple[int, ...] = field(repr=False)
     keep_bitsize: int
     sum_of_l1_coeffs: SymbolicFloat
     log_block_size: SymbolicInt = 0
@@ -348,7 +348,7 @@ class PrepareTHC(PrepareOracle):
         return self.sum_of_l1_coeffs
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register(
                 "mu", BQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1)
@@ -366,7 +366,7 @@ class PrepareTHC(PrepareOracle):
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         junk = (
             Register('s', QAny(bitsize=(data_size - 1).bit_length())),
@@ -376,7 +376,7 @@ class PrepareTHC(PrepareOracle):
         return junk + self.qroam_target_registers + self.qroam_extra_target_registers
 
     @cached_property
-    def qroam_target_registers(self) -> Tuple[Register, ...]:
+    def qroam_target_registers(self) -> tuple[Register, ...]:
         """Target registers for QROAMClean."""
         return (
             Register('theta', QBit(), side=Side.RIGHT),
@@ -387,7 +387,7 @@ class PrepareTHC(PrepareOracle):
         )
 
     @cached_property
-    def qroam_extra_target_registers(self) -> Tuple[Register, ...]:
+    def qroam_extra_target_registers(self) -> tuple[Register, ...]:
         """Extra registers required for QROAMClean."""
         return tuple(
             Register(
@@ -412,12 +412,12 @@ class PrepareTHC(PrepareOracle):
         )
         return qroam
 
-    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def add_qrom(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         qrom = self.build_qrom_bloq()
         # The qroam_junk_regs won't be present initially when building the
         # composite bloq as they're RIGHT registers.
         qroam_out_soqs = bb.add_d(qrom, selection=soqs['s'])
-        out_soqs: Dict[str, 'SoquetT'] = {'s': qroam_out_soqs.pop('selection')}
+        out_soqs: dict[str, 'SoquetT'] = {'s': qroam_out_soqs.pop('selection')}
         # map output soqs to Prepare junk registers names
         out_soqs |= {
             reg.name: qroam_out_soqs.pop(f'target{i}_')
@@ -429,7 +429,7 @@ class PrepareTHC(PrepareOracle):
         }
         return soqs | out_soqs
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
         soqs['mu'], soqs['nu'], soqs['succ'], soqs['nu_eq_mp1'], soqs['rot'] = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),

@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -85,7 +85,7 @@ class PrepareUVFirstQuantization(Bloq):
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
             PrepareNuState(self.num_bits_p, self.m_param), mu=mu, nu=nu, m=m, flag_nu=flag_nu
         )
@@ -101,7 +101,7 @@ class PrepareUVFirstQuantization(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('PREP UV')

@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 import abc
+from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Iterator, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -95,7 +95,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         return self._kappa
 
     @property
-    def angles(self) -> Tuple[Tuple[int, ...], ...]:
+    def angles(self) -> tuple[tuple[int, ...], ...]:
         return self._angles
 
     @cached_method
@@ -111,20 +111,20 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         pass
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt(self._selection_bitsize, len(self.angles[0]))),)
 
     @cached_property
-    def kappa_load_target(self) -> Tuple[Register, ...]:
+    def kappa_load_target(self) -> tuple[Register, ...]:
         return (Register('kappa_load_target', QAny(self.kappa)),)
 
     @cached_property
-    def rotations_target(self) -> Tuple[Register, ...]:
+    def rotations_target(self) -> tuple[Register, ...]:
         return (Register('rotations_target', QAny(self._target_bitsize)),)
 
     @property
     @abc.abstractmethod
-    def interleaved_unitary_target(self) -> Tuple[Register, ...]:
+    def interleaved_unitary_target(self) -> tuple[Register, ...]:
         pass
 
     @cached_property
@@ -212,7 +212,7 @@ class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
         return self._interleaved_unitaries[index].on(*qubit_regs['rotations_target'])
 
     @cached_property
-    def interleaved_unitary_target(self) -> Tuple[Register, ...]:
+    def interleaved_unitary_target(self) -> tuple[Register, ...]:
         return ()
 
 

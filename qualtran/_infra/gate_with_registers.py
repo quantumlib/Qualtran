@@ -13,19 +13,8 @@
 #  limitations under the License.
 
 import abc
-from typing import (
-    cast,
-    Collection,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    overload,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from collections.abc import Collection, Iterable, Sequence
+from typing import cast, Optional, overload, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -50,7 +39,7 @@ def total_bits(registers: Iterable[Register]) -> int:
 
 def split_qubits(
     registers: Iterable[Register], qubits: Sequence['cirq.Qid']
-) -> Dict[str, NDArray['cirq.Qid']]:  # type: ignore[type-var]
+) -> dict[str, NDArray['cirq.Qid']]:  # type: ignore[type-var]
     """Splits the flat list of qubits into a dictionary of appropriately shaped qubit arrays."""
 
     qubit_regs = {}
@@ -66,10 +55,10 @@ def split_qubits(
 def merge_qubits(
     registers: Iterable[Register],
     **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],
-) -> List['cirq.Qid']:
+) -> list['cirq.Qid']:
     """Merges the dictionary of appropriately shaped qubit arrays into a flat list of qubits."""
 
-    ret: List['cirq.Qid'] = []
+    ret: list['cirq.Qid'] = []
     for reg in registers:
         if reg.name not in qubit_regs:
             raise ValueError(f"All qubit registers must be present. {reg.name} not in qubit_regs")
@@ -84,7 +73,7 @@ def merge_qubits(
     return ret
 
 
-def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray['cirq.Qid']]:
+def get_named_qubits(registers: Iterable[Register]) -> dict[str, NDArray['cirq.Qid']]:
     """Returns a dictionary of appropriately shaped named qubit signature for input `signature`."""
 
     def _qubit_array(reg: Register):
@@ -115,8 +104,8 @@ def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray['cirq.Q
 def _get_all_and_output_quregs_from_input(
     registers: Iterable[Register],
     qubit_manager: 'cirq.QubitManager',
-    in_quregs: Dict[str, 'CirqQuregT'],
-) -> Tuple[Dict[str, 'CirqQuregT'], Dict[str, 'CirqQuregT']]:
+    in_quregs: dict[str, 'CirqQuregT'],
+) -> tuple[dict[str, 'CirqQuregT'], dict[str, 'CirqQuregT']]:
     """Takes care of necessary (de-/)allocations to obtain output & all qubit registers from input.
 
     For every register `reg` in `registers`, this method checks:
@@ -141,8 +130,8 @@ def _get_all_and_output_quregs_from_input(
     Returns:
         A tuple of `(all_quregs, out_quregs)`
     """
-    all_quregs: Dict[str, 'CirqQuregT'] = {}
-    out_quregs: Dict[str, 'CirqQuregT'] = {}
+    all_quregs: dict[str, 'CirqQuregT'] = {}
+    out_quregs: dict[str, 'CirqQuregT'] = {}
     for reg in registers:
         full_shape = reg.shape + (reg.bitsize,)
         if reg.side & Side.LEFT:
@@ -170,7 +159,7 @@ def _get_all_and_output_quregs_from_input(
 def _get_cirq_cv(
     num_controls: Optional[int] = None,
     control_values=None,
-    control_qid_shape: Optional[Tuple[int, ...]] = None,
+    control_qid_shape: Optional[tuple[int, ...]] = None,
 ) -> 'cirq.ops.AbstractControlValues':
     """Logic copied from `cirq.ControlledGate` to help convert cirq-style spec to `CtrlSpec`"""
     if isinstance(control_values, cirq.SumOfProducts) and len(control_values._conjunctions) == 1:
@@ -294,7 +283,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
         """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
         Args:
@@ -310,7 +299,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         )
         return self.on_registers(**all_quregs), out_quregs
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.cirq_interop._cirq_to_bloq import _wire_symbol_from_gate
         from qualtran.drawing import Text
 
@@ -378,7 +367,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         cls,
         num_controls: Union[Optional[int], 'CtrlSpec'] = None,
         control_values=None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
+        control_qid_shape: Optional[tuple[int, ...]] = None,
         *,
         ctrl_spec: Optional['CtrlSpec'] = None,
     ) -> 'CtrlSpec':
@@ -443,7 +432,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         control_values: Optional[
             Union['cirq.ops.AbstractControlValues', Sequence[Union[int, Collection[int]]]]
         ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
+        control_qid_shape: Optional[tuple[int, ...]] = None,
     ) -> 'GateWithRegisters':
         """Cirq-style API to construct a controlled gate. See `cirq.Gate.controlled()`"""
 
@@ -458,7 +447,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         control_values: Optional[
             Union['cirq.ops.AbstractControlValues', Sequence[Union[int, Collection[int]]]]
         ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
+        control_qid_shape: Optional[tuple[int, ...]] = None,
         *,
         ctrl_spec: Optional['CtrlSpec'] = None,
     ) -> 'Bloq':
@@ -509,8 +498,8 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return NotImplemented
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         if not self._unitary_.__qualname__.startswith('GateWithRegisters.'):
             from qualtran.cirq_interop._cirq_to_bloq import _my_tensors_from_gate
 

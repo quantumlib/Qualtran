@@ -55,8 +55,9 @@ References:
 """
 
 import abc
+from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Dict, Sequence, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -177,7 +178,7 @@ class QvrZPow(QvrInterface):
     def num_rotations(self) -> SymbolicInt:
         return self.cost_dtype.num_int + self.num_frac_rotations + int(self.cost_dtype.signed)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if isinstance(self.cost_dtype.bitsize, sympy.Expr):
             raise ValueError(f'Unsupported symbolic {self.cost_dtype.bitsize} bitsize')
         out = cast(Soquet, soqs[self.cost_reg.name])
@@ -470,7 +471,7 @@ class QvrPhaseGradient(QvrInterface):
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         add_scaled_val = AddScaledValIntoPhaseReg(
             self.cost_dtype, self.b_grad, self.gamma, self.gamma_dtype
         )
