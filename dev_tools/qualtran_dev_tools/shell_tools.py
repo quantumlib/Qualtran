@@ -34,7 +34,7 @@ def highlight(text: str, color_code: int, bold: bool = False) -> str:
     Returns:
         The highlighted string.
     """
-    return f"{'\\x1b[1m' if bold else ''}\x1b[{color_code}m{text}\x1b[0m"
+    return "{}\033[{}m{}\033[0m".format("\033[1m" if bold else "", color_code, text)
 
 
 def abbreviate_command_arguments_after_switches(cmd: tuple[str, ...]) -> tuple[str, ...]:
