@@ -18,7 +18,7 @@ import itertools
 import numbers
 import warnings
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
@@ -459,6 +459,7 @@ def cirq_optree_to_cbloq(
     signature: Optional[Signature] = None,
     in_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
     out_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
+    op_conversion_method: Optional[Callable[[cirq.Operation], Bloq]] = None,
 ) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
@@ -489,6 +490,8 @@ def cirq_optree_to_cbloq(
 
     Any qubit in `optree` which is not part of `in_quregs` and `out_quregs` is considered to be
     allocated & deallocated inside the CompositeBloq and does not show up in it's signature.
+    
+    Optionally, we can use a user-provided method to convert Operations into Bloqs.
     """
     circuit = cirq.Circuit(optree)
     if signature is None:
@@ -528,7 +531,11 @@ def cirq_optree_to_cbloq(
 
     # 2. Add each operation to the composite Bloq.
     for op in circuit.all_operations():
-        bloq = _extract_bloq_from_op(op)
+        if op_conversion_method:
+            bloq = op_conversion_method(op)
+        else:
+            bloq = _extract_bloq_from_op(op)
+            
         if bloq.signature == Signature([]):
             bb.add(bloq)
             continue
