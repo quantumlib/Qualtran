@@ -11,66 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Quantum data type definitions.
+"""Quantum data type definitions."""
 
-We often wish to write algorithms which operate on quantum data. One can think
-of quantum data types, similar to classical data types, where a collection of
-qubits can be used to represent a specific quantum data type (eg: a quantum
-integer of width 32 would comprise 32 qubits, similar to a classical uint32
-type). More generally, many current primitives and algorithms in qualtran
-implicitly expect registers which represent signed or unsigned integers,
-fixed-point (fp) numbers , or “classical registers” which store some classical
-value. Enforcing typing helps developers and users reason about algorithms, and
-will also allow better type checking.
-
-The basic principles we follow are:
-
-1. Typing should not be too invasive for the developer / user: We got pretty far
-without explicitly typing registers.
-2. For algorithms or bloqs which expect registers which are meant to encode
-numeric types (integers, reals, etc.) then typing should be strictly enforced.
-For example, a bloq multiplying two fixed point reals should be built with an
-explicit QFxp dtype.
-3. The smallest addressable unit is a QBit. Other types are interpretations of
-collections of QBits. A QUInt(32) is intended to represent a register
-encoding positive integers.
-4. To avoid too much overhead we have a QAny type, which is meant to represent
-an opaque bag of bits with no particular significance associated with them. A
-bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other
-type assuming the bitsizes match. QInt(32) == QAny(32), QInt(32) !=
-QFxp(32, 16). QInt(32) != QUInt(32).
-5. We assume a big endian convention for addressing QBits in registers
-throughout qualtran. Recall that in a big endian convention the most significant
-bit is at index 0. If you iterate through the bits in a register they will be
-yielded from most significant to least significant.
-6. Ones' complement integers are used extensively in quantum algorithms. We have
-two types QInt and QIntOnesComp for integers using two's and ones' complement
-respectively.
-"""
 
 import abc
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Literal, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Iterable, List, Optional, Sequence, Union
 
 import attrs
+import galois
 import numpy as np
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
-if TYPE_CHECKING:
-    import galois
 
+class QCDType(metaclass=abc.ABCMeta):
+    """The abstract interface for quantum/classical quantum computing data types."""
 
-class QDType(metaclass=abc.ABCMeta):
-    """This defines the abstract interface for quantum data types."""
+    @property
+    def num_bits(self) -> int:
+        return self.num_qubits + self.num_cbits
 
     @property
     @abc.abstractmethod
     def num_qubits(self) -> int:
         """Number of qubits required to represent a single instance of this data type."""
+
+    @property
+    @abc.abstractmethod
+    def num_cbits(self) -> int:
+        """Number of classical bits required to represent a single instance of this data type."""
 
     @abc.abstractmethod
     def get_classical_domain(self) -> Iterable[Any]:
@@ -131,7 +104,7 @@ class QDType(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def is_symbolic(self) -> bool:
-        """Returns True if this qdtype is parameterized with symbolic objects."""
+        """Returns True if this dtype is parameterized with symbolic objects."""
 
     def iteration_length_or_zero(self) -> SymbolicInt:
         """Safe version of iteration length.
@@ -144,13 +117,43 @@ class QDType(metaclass=abc.ABCMeta):
         return f'{self.__class__.__name__}({self.num_qubits})'
 
 
-@attrs.frozen
-class QBit(QDType):
-    """A single qubit. The smallest addressable unit of quantum data."""
+class QDType(QCDType, metaclass=abc.ABCMeta):
+    """The abstract interface for quantum data types."""
 
     @property
-    def num_qubits(self):
-        return 1
+    def num_cbits(self) -> int:
+        return 0
+
+    @property
+    @abc.abstractmethod
+    def num_qubits(self) -> int:
+        """Number of qubits required to represent a single instance of this data type."""
+
+    def __str__(self):
+        return f'{self.__class__.__name__}({self.num_qubits})'
+
+
+class CDType(QCDType, metaclass=abc.ABCMeta):
+    """The abstract interface for classical data types."""
+
+    @property
+    def num_qubits(self) -> int:
+        return 0
+
+    @property
+    @abc.abstractmethod
+    def num_cbits(self) -> int:
+        """Number of classical bits required to represent a single instance of this data type."""
+
+    def __str__(self):
+        return f'{self.__class__.__name__}({self.num_cbits})'
+
+
+class _Bit(metaclass=abc.ABCMeta):
+    """A single quantum or classical bit. The smallest addressable unit of data.
+
+    Use either `QBit()` or `CBit()` for quantum or classical implementations, respectively.
+    """
 
     def get_classical_domain(self) -> Iterable[int]:
         yield from (0, 1)
@@ -179,7 +182,25 @@ class QBit(QDType):
             raise ValueError(f"Bad {self} value array in {debug_str}")
 
     def __str__(self):
-        return 'QBit()'
+        return f'{self.__class__.__name__}()'
+
+
+@attrs.frozen
+class QBit(_Bit, QDType):
+    """A single qubit. The smallest addressable unit of quantum data."""
+
+    @property
+    def num_qubits(self):
+        return 1
+
+
+@attrs.frozen
+class CBit(_Bit, CDType):
+    """A single classical bit. The smallest addressable unit of classical data."""
+
+    @property
+    def num_cbits(self) -> int:
+        return 1
 
 
 @attrs.frozen
@@ -187,6 +208,13 @@ class QAny(QDType):
     """Opaque bag-of-qubits type."""
 
     bitsize: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if is_symbolic(self.bitsize):
+            return
+
+        if not isinstance(self.bitsize, int):
+            raise ValueError()
 
     @property
     def num_qubits(self):
@@ -748,8 +776,10 @@ class QFxp(QDType):
 
     def _from_bits_to_fxp(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""
+        if is_symbolic(self.num_frac):
+            raise ValueError(f"Symbolic {self.num_frac} cannot be represented using Fxp")
         bits_bin = "".join(str(x) for x in bits[:])
-        fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
+        fxp_bin = "0b" + bits_bin[: -int(self.num_frac)] + "." + bits_bin[-int(self.num_frac) :]
         return Fxp(fxp_bin, like=self.fxp_dtype_template())
 
     def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
@@ -849,7 +879,7 @@ class QMontgomeryUInt(QDType):
             ym: The second montgomery form integer for the product.
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (xm * ym * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
+        return (xm * ym * pow(2, -int(self.bitsize), int(self.modulus))) % self.modulus
 
     def montgomery_to_uint(self, xm: int) -> int:
         """Converts an integer in montgomery form to a normal form integer.
@@ -858,7 +888,7 @@ class QMontgomeryUInt(QDType):
             xm: An integer in montgomery form.
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
-        return (xm * pow(2, -self.bitsize, int(self.modulus))) % self.modulus
+        return (xm * pow(2, -int(self.bitsize), int(self.modulus))) % self.modulus
 
     def uint_to_montgomery(self, x: int) -> int:
         """Converts an integer into montgomery form.
@@ -868,6 +898,14 @@ class QMontgomeryUInt(QDType):
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
         return (x * pow(2, int(self.bitsize), int(self.modulus))) % self.modulus
+
+
+def _poly_converter(p) -> Union[galois.Poly, None]:
+    if p is None:
+        return None
+    if isinstance(p, galois.Poly):
+        return p
+    return galois.Poly.Degrees(p)
 
 
 @attrs.frozen
@@ -896,9 +934,7 @@ class QGF(QDType):
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
         irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
-            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly)`.
-        element_repr: The string representation of the galois elements.
-            This parameter is passed to `galois.GF(..., repr=field_repr)`.
+            This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly, verify=False)`.
 
     References
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
@@ -910,8 +946,7 @@ class QGF(QDType):
 
     characteristic: SymbolicInt
     degree: SymbolicInt
-    irreducible_poly: Optional['galois.Poly'] = attrs.field()
-    element_repr: Literal["int", "poly", "power"] = attrs.field(default='int')
+    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
 
     @irreducible_poly.default
     def _irreducible_poly_default(self):
@@ -957,12 +992,13 @@ class QGF(QDType):
             int(self.characteristic),
             int(self.degree),
             irreducible_poly=poly,
-            repr=self.element_repr,
+            verify=False,
+            repr='poly',
             compile='python-calculate',
         )
 
     def to_bits(self, x) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
+        """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return self._quint_equivalent.to_bits(int(x))
 
@@ -1021,8 +1057,110 @@ class QGF(QDType):
         return f'QGF({self.characteristic}**{self.degree})'
 
 
-QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
-QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt, QGF)
+@attrs.frozen
+class QGFPoly(QDType):
+    r"""Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
+
+    This data type represents a degree-$n$ univariate polynomials
+    $f(x)=\sum_{i=0}^{n} a_i x^{i}$ where the coefficients $a_{i}$ of the polynomial
+    belong to a Galois Field $GF(p^{m})$.
+
+    The data type uses the [Galois library](https://mhostetter.github.io/galois/latest/) to
+    perform arithmetic over polynomials defined over Galois Fields using the
+    [galois.Poly](https://mhostetter.github.io/galois/latest/api/galois.Poly/).
+
+    Attributes:
+        degree: The degree $n$ of the univariate polynomial $f(x)$ represented by this type.
+        qgf: An instance of `QGF` that represents the galois field $GF(p^m)$ over which the
+            univariate polynomial $f(x)$ is defined.
+
+    References
+        [Polynomials over finite fields](https://mhostetter.github.io/galois/latest/api/galois.Poly/)
+
+        [Polynomial Arithmetic](https://mhostetter.github.io/galois/latest/basic-usage/poly-arithmetic/)
+    """
+
+    degree: SymbolicInt
+    qgf: QGF
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return self.qgf.bitsize * (self.degree + 1)
+
+    @cached_property
+    def num_qubits(self) -> SymbolicInt:
+        """Number of qubits required to represent a single instance of this data type."""
+        return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+        import itertools
+
+        from galois import Poly
+
+        for it in itertools.product(self.qgf.gf_type.elements, repeat=(self.degree + 1)):
+            yield Poly(self.qgf.gf_type(it), field=self.qgf.gf_type)
+
+    @cached_property
+    def _quint_equivalent(self) -> QUInt:
+        return QUInt(self.num_qubits)
+
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
+        """Returns a big-endian array of coefficients of the polynomial f(x)."""
+        f_x_coeffs = self.qgf.gf_type.Zeros(self.degree + 1)
+        f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
+        return f_x_coeffs
+
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
+        """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
+        return galois.Poly(f_x, field=self.qgf.gf_type)
+
+    def to_bits(self, x) -> List[int]:
+        """Returns individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        assert isinstance(x, galois.Poly)
+        return self.qgf.to_bits_array(self.to_gf_coefficients(x)).reshape(-1).tolist()
+
+    def from_bits(self, bits: Sequence[int]):
+        """Combine individual bits to form x"""
+        reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.qgf.bitsize)))
+        return self.from_gf_coefficients(self.qgf.from_bits_array(reshaped_bits))
+
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        if not isinstance(val, galois.Poly):
+            raise ValueError(f"{debug_str} should be a {galois.Poly}, not {val!r}")
+        if val.field is not self.qgf.gf_type:
+            raise ValueError(
+                f"{debug_str} should be defined over {self.qgf.gf_type}, not {val.field}"
+            )
+        if val.degree > self.degree:
+            raise ValueError(f"{debug_str} should have a degree <= {self.degree}, not {val.degree}")
+
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+        return is_symbolic(self.degree, self.qgf)
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return self.qgf.order
+
+    def __str__(self):
+        return f'QGFPoly({self.degree}, {self.qgf!s})'
+
+
+_QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
+_QAnyUInt = (QUInt, BQUInt, QMontgomeryUInt, QGF)
 
 
 class QDTypeCheckingSeverity(Enum):
@@ -1046,8 +1184,8 @@ def _check_uint_fxp_consistent(a: Union[QUInt, BQUInt, QMontgomeryUInt, QGF], b:
 
 
 def check_dtypes_consistent(
-    dtype_a: QDType,
-    dtype_b: QDType,
+    dtype_a: QCDType,
+    dtype_b: QCDType,
     type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
 ) -> bool:
     """Check if two types are consistent given our current definition on consistent types.
@@ -1075,13 +1213,13 @@ def check_dtypes_consistent(
         return same_n_qubits
     if type_checking_severity == QDTypeCheckingSeverity.ANY:
         return False
-    if isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
+    if isinstance(dtype_a, _QAnyInt) and isinstance(dtype_b, _QAnyInt):
         # A subset of the integers should be freely interchangeable.
         return same_n_qubits
-    elif isinstance(dtype_a, QAnyUInt) and isinstance(dtype_b, QFxp):
-        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+    elif isinstance(dtype_a, _QAnyUInt) and isinstance(dtype_b, QFxp):
+        # unsigned Fxp which is wholly an integer or < 1 part is a uint.
         return _check_uint_fxp_consistent(dtype_a, dtype_b)
-    elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
+    elif isinstance(dtype_b, _QAnyUInt) and isinstance(dtype_a, QFxp):
         # unsigned Fxp which is wholy an integer or < 1 part is a uint.
         return _check_uint_fxp_consistent(dtype_b, dtype_a)
     else:

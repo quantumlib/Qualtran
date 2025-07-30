@@ -16,14 +16,28 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
+    import pennylane as qml
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran import (
         AddControlledT,
@@ -46,7 +60,8 @@ if TYPE_CHECKING:
         GeneralizerT,
         SympySymbolAllocator,
     )
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
+    from qualtran.simulation.tensor import DiscardInd
 
 
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
@@ -54,6 +69,10 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
 
     bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+    if not isinstance(out_soqs, dict):
+        raise ValueError(
+            f'{bloq}.build_composite_bloq must return a dictionary mapping right register names to output soquets.'
+        )
     return bb.finalize(**out_soqs)
 
 
@@ -170,23 +189,21 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def on_classical_vals(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> Mapping[str, 'ClassicalValRetT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `call_clasically(**vals)` which will do input validation before
         calling this function.
 
         Args:
             **vals: The input classical values for each left (or thru) register. The data
-                types are guaranteed to match `self.registers`. Values for registers
-                with bitsize `n` will be integers of that bitsize. Values for registers with
-                `shape` will be an ndarray of integers of the given bitsize. Note: integers
-                can be either Numpy or Python integers. If they are Python integers, they
-                are unsigned.
+                types are guaranteed to match `self.signature`. Values for registers
+                with a particular dtype will be the corresponding classical data type. Values for
+                registers with `shape` will be an ndarray of values of the expected type.
 
         Returns:
             A dictionary mapping right (or thru) register name to output classical values.
@@ -202,6 +219,25 @@ class Bloq(metaclass=abc.ABCMeta):
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+
+    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+        """How this bloq phases classical basis states.
+
+        Override this method if your bloq represents classical logic with basis-state
+        dependent phase factors. This corresponds to bloqs whose matrix representation
+        (in the standard basis) is a generalized permutation matrix: a permutation matrix
+        where each entry can be +1, -1 or any complex number with unit absolute value.
+        Alternatively, this corresponds to bloqs composed from classical operations
+        (X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+        Bloq authors should override this method. If you are using an instantiated bloq object,
+        call TODO and not this method directly.
+
+        If this method is implemented, `on_classical_vals` must also be implemented.
+        If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+        that the bloq does not alter the phase.
+        """
+        return None
 
     def call_classically(
         self, **vals: Union['sympy.Symbol', 'ClassicalValT']
@@ -227,21 +263,45 @@ class Bloq(metaclass=abc.ABCMeta):
         res = self.as_composite_bloq().on_classical_vals(**vals)
         return tuple(res[reg.name] for reg in self.signature.rights())
 
-    def tensor_contract(self) -> 'NDArray':
-        """Return a contracted, dense ndarray representing this bloq.
+    def tensor_contract(self, superoperator: bool = False) -> 'NDArray':
+        """Return a contracted, dense ndarray encoding of this bloq.
 
-        This constructs a tensor network and then contracts it according to our registers,
-        i.e. the dangling indices. The returned array will be 0-, 1- or 2-dimensional. If it is
-        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-        of (right, left) indices.
+        This method decomposes and flattens this bloq into a factorized CompositeBloq,
+        turns that composite bloq into a Quimb tensor network, and contracts it into a dense
+        ndarray.
+
+        The returned array will be 0-, 1-, 2-, or 4-dimensional with indices arranged according to the
+        bloq's signature and the type of simulation requested via the `superoperator` flag.
+
+        If `superoperator` is set to False (the default), a pure-state tensor network will be
+        constructed.
+         - If `bloq` has all thru-registers, the dense tensor will be 2-dimensional with shape `(n, n)`
+           where `n` is the number of bits in the signature. We follow the linear algebra convention
+           and order the indices as (right, left) so the matrix-vector product can be used to evolve
+           a state vector.
+         - If `bloq` has all left- or all right-registers, the tensor will be 1-dimensional with
+           shape `(n,)`. Note that we do not distinguish between 'row' and 'column' vectors in this
+           function.
+         - If `bloq` has no external registers, the contracted form is a 0-dimensional complex number.
+
+        If `superoperator` is set to True, an open-system tensor network will be constructed.
+         - States result in a 2-dimensional density matrix with indices (right_forward, right_backward)
+           or (left_forward, left_backward) depending on whether they're input or output states.
+         - Operations result in a 4-dimensional tensor with indices (right_forward, right_backward,
+           left_forward, left_backward).
+
+        Args:
+            superoperator: If toggled to True, do an open-system simulation. This supports
+                non-unitary operations like measurement, but is more costly and results in
+                higher-dimension resultant tensors.
         """
         from qualtran.simulation.tensor import bloq_to_dense
 
-        return bloq_to_dense(self)
+        return bloq_to_dense(self, superoperator=superoperator)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+    ) -> List[Union['qtn.Tensor', 'DiscardInd']]:
         """Override this method to support native quimb simulation of this Bloq.
 
         This method is responsible for returning tensors corresponding to the unitary, state, or
@@ -394,14 +454,9 @@ class Bloq(metaclass=abc.ABCMeta):
             add_controlled: A function with the signature documented above that the system
                 can use to automatically wire up the new control registers.
         """
-        from qualtran import Controlled, CtrlSpec
-        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+        from qualtran import make_ctrl_system_with_correct_metabloq
 
-        if ctrl_spec != CtrlSpec():
-            # reduce controls to a single qubit
-            return ControlledViaAnd.make_ctrl_system(self, ctrl_spec=ctrl_spec)
-
-        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+        return make_ctrl_system_with_correct_metabloq(self, ctrl_spec=ctrl_spec)
 
     def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
         """Return a controlled version of this bloq.
@@ -465,6 +520,25 @@ class Bloq(metaclass=abc.ABCMeta):
         return BloqAsCirqGate.bloq_on(
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        """Override this method to support conversion to a PennyLane operation.
+
+        If this method is not overriden, the default implementation will wrap this bloq
+        in a `FromBloq` shim.
+
+        Args:
+            wires: the wires that the op acts on
+
+        Returns:
+            ~.Operation: A PennyLane operation corresponding to this bloq acting on the
+                provided wires or None. This method should return None if and only if the bloq
+                instance truly should not be included in the PennyLane circuit (e.g. for reshaping
+                bloqs). A bloq with no PennyLane equivalent should raise an exception instead.
+        """
+        from pennylane.io import FromBloq
+
+        return FromBloq(bloq=self, wires=wires)
 
     def on(self, *qubits: 'cirq.Qid') -> 'cirq.Operation':
         """A `cirq.Operation` of this bloq operating on the given qubits.
@@ -551,3 +625,14 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def __str__(self):
         return self.__class__.__name__
+
+    @classmethod
+    def _class_name_in_pkg_(cls) -> str:
+        """The bloq class's name with its package.
+
+        The Qualtran standard library contains a heirarchy of packages under
+        `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
+        "*.py" file) and re-exported one level up.
+        """
+        pkg = '.'.join(cls.__module__.split('.')[:-1])
+        return f'{pkg}.{cls.__name__}'

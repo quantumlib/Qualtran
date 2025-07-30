@@ -16,6 +16,7 @@
 import abc
 import itertools
 import numbers
+import warnings
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
@@ -70,17 +71,28 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
-    """A Bloq wrapper around a `cirq.Gate`"""
+class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
+    """A base class to bootstrap a bloq from a `cirq.Gate`.
+
+    Bloq authors can inherit from this abstract class and override the `cirq_gate` property
+    to get a bloq adapted from the cirq gate. Authors can continue to customize the bloq
+    by overriding methods (like costs, string representations, ...).
+
+    Otherwise, this class fulfils the Bloq API by delegating to `cirq.Gate` methods.
+
+    This is the base class that provides the functionality for the `CirqGateAsBloq` adapter.
+    The adapter lets you use any `cirq.Gate` as a bloq immediately (without defining a new class
+    that inherits from `CirqGateAsBloqBase`), and is used as a fallback in the interoperability
+    functionality.
+    """
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate: ...
+    def cirq_gate(self) -> cirq.Gate:
+        """The `cirq.Gate` to use as the source of truth."""
 
     @cached_property
     def signature(self) -> 'Signature':
-        if isinstance(self.cirq_gate, Bloq):
-            return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
         if nqubits == 1:
             return Signature([Register('q', QBit())])
@@ -89,14 +101,13 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         # else
         return Signature([Register('q', QBit(), shape=nqubits)])
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
     ) -> cirq.OP_TREE:
-        op = (
-            self.cirq_gate.on_registers(**quregs)
-            if isinstance(self.cirq_gate, GateWithRegisters)
-            else self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
-        )
+        op = self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
         try:
             return cirq.decompose_once(op)
         except TypeError as e:
@@ -112,22 +123,8 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        if isinstance(self.cirq_gate, GateWithRegisters):
-            return self.cirq_gate.as_cirq_op(qubit_manager, **in_quregs)
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
-
-    # Delegate all cirq-style protocols to underlying gate
-    def _unitary_(self):
-        return cirq.unitary(self.cirq_gate, default=None)
-
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> Optional[cirq.CircuitDiagramInfo]:
-        return cirq.circuit_diagram_info(self.cirq_gate, default=None)
-
-    def __str__(self):
-        return str(self.cirq_gate)
 
     def __pow__(self, power):
         return CirqGateAsBloq(gate=cirq.pow(self.cirq_gate, power))
@@ -135,14 +132,34 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     def adjoint(self) -> 'Bloq':
         return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
 
+    def __str__(self):
+        return f'cirq.{self.cirq_gate}'
+
 
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
+    """An adapter that fulfils the Bloq API by delegating to `cirq.Gate` methods.
+
+     - The bloq's signature is one register named "q" of type QBit() with shape (n_qubits,) as
+       determined by `cirq.num_qubits`.
+     - Decomposition will go via `cirq.decompose_once`.
+     - Tensor data is derived from `cirq.unitary`.
+     - `as_cirq_op` will use the adapted cirq gate directly
+     - Adjoint and exponentiation go via `cirq.inverse` and `cirq.pow`, respectively.
+     - The string representation is "cirq.{gate}".
+
+    If you'd rather bootstrap your own bloq based on an existing `cirq.Gate`, you can inherit
+    from `CirqGateAsBloqBase`."""
+
     gate: cirq.Gate
 
-    def __str__(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
+    def __attrs_post_init__(self):
+        if isinstance(self.gate, GateWithRegisters):
+            warnings.warn(
+                f"Tried to use `CirqGateAsBloq` to adapt a `qualtran.GateWithRegisters`, "
+                f"which already satisfies the Bloq API. Consider using {self.gate} "
+                f"directly (without the adapter)."
+            )
 
     @property
     def cirq_gate(self) -> cirq.Gate:
@@ -219,7 +236,7 @@ def _my_tensors_from_gate(
     unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
     inds = _order_incoming_outgoing_indices(signature, incoming=incoming, outgoing=outgoing)
     unitary = unitary.reshape((2,) * len(inds))
-    return [qtn.Tensor(data=unitary, inds=inds, tags=[str(gate)])]
+    return [qtn.Tensor(data=unitary, inds=inds, tags=[gate.__class__.__name__])]
 
 
 @frozen(eq=False)

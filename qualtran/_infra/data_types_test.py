@@ -15,32 +15,50 @@ import math
 import random
 from typing import Any, Sequence, Union
 
+import galois
 import numpy as np
 import pytest
 import sympy
 from numpy.typing import NDArray
 
-from qualtran.symbolics import ceil, is_symbolic, log2
-
-from .data_types import (
+from qualtran import (
     BQUInt,
+    CBit,
     check_dtypes_consistent,
     QAny,
-    QAnyInt,
     QBit,
     QDType,
     QFxp,
     QGF,
+    QGFPoly,
     QInt,
     QIntOnesComp,
     QMontgomeryUInt,
     QUInt,
 )
+from qualtran._infra.data_types import _QAnyInt
+from qualtran.symbolics import ceil, is_symbolic, log2
+
+
+def test_bit():
+    qbit = QBit()
+    assert qbit.num_qubits == 1
+    assert qbit.num_cbits == 0
+    assert qbit.num_bits == 1
+    assert str(qbit) == 'QBit()'
+
+    cbit = CBit()
+    assert cbit.num_cbits == 1
+    assert cbit.num_qubits == 0
+    assert cbit.num_bits == 1
+    assert str(CBit()) == 'CBit()'
 
 
 def test_qint():
     qint_8 = QInt(8)
     assert qint_8.num_qubits == 8
+    assert qint_8.num_cbits == 0
+    assert qint_8.num_bits == 8
     assert str(qint_8) == 'QInt(8)'
     n = sympy.symbols('x')
     qint_8 = QInt(n)
@@ -167,13 +185,33 @@ def test_qgf():
     assert is_symbolic(qgf_pm)
 
 
+def test_qgf_poly():
+    qgf_poly_4_8 = QGFPoly(4, QGF(characteristic=2, degree=3))
+    assert str(qgf_poly_4_8) == 'QGFPoly(4, QGF(2**3))'
+    assert qgf_poly_4_8.num_qubits == 5 * 3
+    n, p, m = sympy.symbols('n, p, m', integer=True, positive=True)
+    qgf_poly_n_pm = QGFPoly(n, QGF(characteristic=p, degree=m))
+    assert qgf_poly_n_pm.num_qubits == (n + 1) * ceil(log2(p**m))
+    assert is_symbolic(qgf_poly_n_pm)
+
+
 @pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5)])
 def test_domain_and_validation(qdtype: QDType):
     for v in qdtype.get_classical_domain():
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BQUInt(3, 5), QGF(2, 8)])
+@pytest.mark.parametrize(
+    'qdtype',
+    [
+        QBit(),
+        QInt(4),
+        QUInt(4),
+        BQUInt(3, 5),
+        QGF(2, 8),
+        QGFPoly(4, QGF(characteristic=2, degree=2)),
+    ],
+)
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -206,6 +244,11 @@ def test_validation_errs():
 
     with pytest.raises(ValueError):
         QGF(2, 8).assert_valid_classical_val(2**8)
+
+    with pytest.raises(ValueError):
+        qgf = QGF(2, 3)
+        poly = galois.Poly(qgf.gf_type([1, 2, 3, 4, 5, 6, 7]), field=qgf.gf_type)
+        QGFPoly(4, qgf).assert_valid_classical_val(poly)
 
 
 def test_validate_arrays():
@@ -254,7 +297,7 @@ def test_type_errors_fxp():
 def test_type_errors_matrix(qdtype_a, qdtype_b):
     if qdtype_a == qdtype_b:
         assert check_dtypes_consistent(qdtype_a, qdtype_b)
-    elif isinstance(qdtype_a, QAnyInt) and isinstance(qdtype_b, QAnyInt):
+    elif isinstance(qdtype_a, _QAnyInt) and isinstance(qdtype_b, _QAnyInt):
         assert check_dtypes_consistent(qdtype_a, qdtype_b)
     else:
         assert not check_dtypes_consistent(qdtype_a, qdtype_b)
@@ -317,6 +360,12 @@ def test_qgf_to_and_from_bits():
     with pytest.raises(ValueError):
         qgf_256.to_bits(21)
     assert_to_and_from_bits_array_consistent(qgf_256, gf256([*range(256)]))
+
+
+def test_qgf_poly_to_and_from_bits():
+    qgf_4 = QGF(2, 2)
+    qgf_poly_2_4 = QGFPoly(2, qgf_4)
+    assert_to_and_from_bits_array_consistent(qgf_poly_2_4, [*qgf_poly_2_4.get_classical_domain()])
 
 
 def test_quint_to_and_from_bits():

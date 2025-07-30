@@ -44,7 +44,7 @@ with different costs.
 
 
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, Union
+from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -70,6 +70,10 @@ from qualtran import (
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicFloat
+
+if TYPE_CHECKING:
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
 
 @frozen
@@ -156,7 +160,7 @@ class ZPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Z^{self.exponent}')
 
     def __str__(self):
         return f'Z**{self.exponent}'
@@ -298,7 +302,7 @@ class XPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'X^{self.exponent}')
 
     def __str__(self):
         return f'X**{self.exponent}'
@@ -372,7 +376,7 @@ class YPowGate(CirqGateAsBloqBase):
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        return TextBox(str(self))
+        return TextBox(f'Y^{self.exponent}')
 
     def __str__(self):
         return f'Y**{self.exponent}'
@@ -440,6 +444,11 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RZ(phi=self.angle, wires=wires)
+
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec)
@@ -505,7 +514,7 @@ class CRz(Bloq):
         [Elementary gates for quantum computation](https://arxiv.org/abs/quant-ph/9503016).
         Barenco et al. 1995. Special case of Lemma 5.4.
 
-        [Is Controlled(𝑅𝑧(𝜃)) more expensive than Controlled(𝑍𝑡) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
+        [Is Controlled(Rz(theta)) more expensive than Controlled(Z^t) on the surface code?](https://quantumcomputing.stackexchange.com/a/40012).
         Adam Zalcman. 2024.
     """
 
@@ -545,6 +554,41 @@ _CRZ_DOC = BloqDocSpec(bloq_cls=CRz, examples=[_crz])
 
 @frozen
 class Rx(CirqGateAsBloqBase):
+    r"""Rotates a qubit about the X-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+    $$
+    R_x(\theta) = \exp(-i \frac{\theta}{2} X) =
+    \begin{pmatrix}
+        \cos{\frac{\theta}{2}} & -i\sin{\frac{\theta}{2}} \\
+        -i\sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+    \end{pmatrix}
+    $$
+    where $\theta$ is the `angle` of rotation.
+
+    This gate is equivalent to `cirq.rx(angle)`.
+    It differs from `XPowGate` by a global phase. Specifically,
+    `Rx(angle)` is `XPowGate(exponent=angle/np.pi, global_shift=-0.5)`.
+
+    Args:
+        angle: The angle of rotation in radians. This can be a symbolic expression
+            or a float.
+        eps: The precision of the rotation. This parameter is primarily for
+            bookkeeping and does not directly affect the tensor representation
+            of this gate. It becomes relevant when synthesizing rotations
+            from a discrete gate set, where a target precision `eps` is required.
+
+    Registers:
+        q: A single QBit register representing the qubit to be rotated.
+
+    References:
+        [Elementary gates for quantum computation](https://arxiv.org/abs/quant-ph/9503016).
+        Barenco et al. 1995. Section 4.2 discusses single-qubit rotations.
+
+        [Quantum Computation and Quantum Information](https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE).
+        Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
+    """
+
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -554,6 +598,11 @@ class Rx(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RX(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Rx':
         return attrs.evolve(self, angle=-self.angle)
@@ -569,6 +618,41 @@ class Rx(CirqGateAsBloqBase):
 
 @frozen
 class Ry(CirqGateAsBloqBase):
+    r"""Rotates a qubit about the Y-axis of the Bloch sphere.
+
+    The unitary matrix for this gate is:
+    $$
+    R_y(\theta) = \exp(-i \frac{\theta}{2} Y) =
+    \begin{pmatrix}
+        \cos{\frac{\theta}{2}} & -\sin{\frac{\theta}{2}} \\
+        \sin{\frac{\theta}{2}} & \cos{\frac{\theta}{2}}
+    \end{pmatrix}
+    $$
+    where $\theta$ is the `angle` of rotation.
+
+    This gate is equivalent to `cirq.ry(angle)`.
+    It differs from `YPowGate` by a global phase. Specifically,
+    `Ry(angle)` is `YPowGate(exponent=angle/np.pi, global_shift=-0.5)`.
+
+    Args:
+        angle: The angle of rotation in radians. This can be a symbolic expression
+            or a float.
+        eps: The precision of the rotation. This parameter is primarily for
+            bookkeeping and does not directly affect the tensor representation
+            of this gate. It becomes relevant when synthesizing rotations
+            from a discrete gate set, where a target precision `eps` is required.
+
+    Registers:
+        q: A single QBit register representing the qubit to be rotated.
+
+    References:
+        [Elementary gates for quantum computation](https://arxiv.org/abs/quant-ph/9503016).
+        Barenco et al. 1995. Section 4.2 discusses single-qubit rotations.
+
+        [Quantum Computation and Quantum Information](https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE).
+        Nielsen and Chuang. 2010. Chapter 4.2, pp. 174-177.
+    """
+
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
 
@@ -578,6 +662,11 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.RY(phi=self.angle, wires=wires)
 
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)

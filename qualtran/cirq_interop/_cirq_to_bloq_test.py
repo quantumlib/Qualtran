@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Iterator, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 import attr
 import cirq
@@ -21,6 +21,7 @@ import sympy
 from attrs import frozen
 
 import qualtran
+import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
@@ -35,7 +36,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState, YPowGate, ZPowGate
+from qualtran.bloqs.basic_gates import CNOT, OneState, YPowGate, ZeroState, ZPowGate
 from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
@@ -77,7 +78,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert toffoli.signature[0].shape == (3,)
 
     assert str(x) == 'cirq.X'
-    assert str(rx) == 'cirq.Rx'
+    assert str(rx) == 'cirq.Rx(0.123π)'
     assert str(toffoli) == 'cirq.TOFFOLI'
 
 
@@ -85,8 +86,12 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     and_gate = And()
     bb = BloqBuilder()
     ctrl = [bb.add(OneState()) for _ in range(2)]
-    ctrl, target = bb.add(CirqGateAsBloq(and_gate), ctrl=ctrl)
-    cbloq = bb.finalize(ctrl=ctrl, target=target)
+    target = bb.add(ZeroState())
+    q = [*ctrl, target]
+    with pytest.warns(UserWarning):
+        # It's odd to use CirqGateAsBloq to wrap a GateWithRegisters, which is already a bloq.
+        c0, c1, target = bb.add(CirqGateAsBloq(and_gate), q=q)
+    cbloq = bb.finalize(ctrl=np.array([c0, c1]), target=target)
     state_vector = cbloq.tensor_contract()
     assert np.isclose(state_vector[7], 1)
 
@@ -203,7 +208,43 @@ def test_cirq_optree_to_cbloq():
     assert bloqs_list.count(Free(QAny(2))) == 2
 
 
+class LeftOnlyGate(GateWithRegisters):
+    @property
+    def signature(self):
+        return Signature([Register('junk', QAny(2), side=Side.LEFT)])
+
+    def decompose_from_registers(self, *, context, junk) -> Iterator[cirq.OP_TREE]:
+        yield cirq.CNOT(*junk)
+        yield cirq.reset_each(*junk)
+
+
 def test_cirq_gate_as_bloq_for_left_only_gates():
+    # `CirqGateAsBloq` only uses the `cirq.Gate` API,
+    # so it has no concept of defining "left only" registers.
+    bloq = CirqGateAsBloq(gate=LeftOnlyGate())
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
+
+    assert (
+        cbloq.debug_text()
+        == """\
+CNOT<0>
+  LeftDangle.q[0] -> ctrl
+  LeftDangle.q[1] -> target
+  ctrl -> cirq.reset<1>.q
+  target -> cirq.reset<2>.q
+--------------------
+cirq.reset<1>
+  CNOT<0>.ctrl -> q
+  q -> RightDangle.q[0]
+cirq.reset<2>
+  CNOT<0>.target -> q
+  q -> RightDangle.q[1]"""
+    )
+
+
+def test_gwr_for_left_only_gates():
+    # This test is included in this file in contrast to `test_cirq_gate_as_bloq_for_left_only_gates`
+    # See that test for the behavior of CirqGateAsBloq.
     class LeftOnlyGate(GateWithRegisters):
         @property
         def signature(self):
@@ -214,8 +255,8 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
             yield cirq.reset_each(*junk)
 
     # Using InteropQubitManager enables support for LeftOnlyGate's in CirqGateAsBloq.
-    cbloq = CirqGateAsBloq(gate=LeftOnlyGate()).decompose_bloq()
-    bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(LeftOnlyGate())
+    bloqs_list: List[Bloq] = [binst.bloq for binst in cbloq.bloq_instances]
     assert bloqs_list.count(Split(QAny(2))) == 1
     assert bloqs_list.count(Free(QBit())) == 2
     assert bloqs_list.count(CNOT()) == 1
@@ -226,10 +267,6 @@ def test_cirq_gate_as_bloq_decompose_raises():
     bloq = CirqGateAsBloq(cirq.X)
     with pytest.raises(DecomposeNotImplementedError, match="does not declare a decomposition"):
         _ = bloq.decompose_bloq()
-
-
-def test_cirq_gate_as_bloq_diagram_info():
-    assert cirq.circuit_diagram_info(GlobalPhase(exponent=0.5)) is None
 
 
 def test_cirq_gate_cost_via_decomp():

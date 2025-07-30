@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import (
+    cast,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import numpy as np
@@ -27,6 +38,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CBit,
     CompositeBloq,
     ConnectionT,
     CtrlSpec,
@@ -47,9 +59,12 @@ from qualtran.symbolics import SymbolicInt
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from pennylane.operation import Operation
+    from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -277,6 +292,11 @@ class ZGate(Bloq):
         (q,) = q
         return cirq.Z(q), {'q': np.asarray([q])}
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.Z(wires=wires)
+
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
@@ -333,6 +353,11 @@ class CZ(Bloq):
         (q2,) = q2
         return cirq.CZ(q1, q2), {'q1': np.array([q1]), 'q2': np.array([q2])}
 
+    def as_pl_op(self, wires: 'Wires') -> 'Operation':
+        import pennylane as qml
+
+        return qml.CZ(wires=wires)
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -347,6 +372,15 @@ class CZ(Bloq):
             self, ctrl_spec, current_ctrl_bit=1, bloq_with_ctrl=self, ctrl_reg_name='q1'
         )
 
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        # Diagonal, but causes phases: see `basis_state_phase`
+        return vals
+
+    def basis_state_phase(self, q1: int, q2: int) -> Optional[complex]:
+        if q1 == 1 and q2 == 1:
+            return -1
+        return 1
+
 
 @bloq_example
 def _cz() -> CZ:
@@ -355,6 +389,44 @@ def _cz() -> CZ:
 
 
 _CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
+
+
+@frozen
+class MeasZ(Bloq):
+    """Measure a qubit in the Z basis.
+
+    Registers:
+        q [LEFT]: The qubit to measure.
+        c [RIGHT]: The classical measurement result.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
+        )
+
+    def on_classical_vals(self, q: int) -> Mapping[str, 'ClassicalValRetT']:
+        return {'c': q}
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor import DiscardInd
+
+        copy = np.zeros((2, 2, 2), dtype=np.complex128)
+        copy[0, 0, 0] = 1
+        copy[1, 1, 1] = 1
+        # Tie together q, c, and meas_result with the copy tensor; throw out one of the legs.
+        meas_result = qtn.rand_uuid('meas_result')
+        t = qtn.Tensor(
+            data=copy,
+            inds=[(incoming['q'], 0), (outgoing['c'], 0), (meas_result, 0)],
+            tags=[str(self)],
+        )
+        return [t, DiscardInd((meas_result, 0))]
 
 
 @frozen

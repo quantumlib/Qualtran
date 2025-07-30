@@ -21,7 +21,16 @@ import numpy as np
 import sympy
 from numpy.typing import ArrayLike
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QAny,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.data_loading.qrom_base import QROMBase
 from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox, WireSymbol
@@ -97,18 +106,17 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     original lookup).
 
     Registers:
-        - control_registers: If control is specified, a THRU register to denote the control qubits.
+        control_registers: If control is specified, a THRU register to denote the control qubits.
             Empty by default for uncontrolled version of the Bloq.
-        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+        selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
             classical datasets.
-        - target_registers: $M$ LEFT registers to load $M$ different classical datasets. Each target
+        target_registers: $M$ LEFT registers to load $M$ different classical datasets. Each target
             register is of bitsize $b$ and shape described by a tuple of length $N + S$. Here $S$ is
             a parameter that describes the shape of the output to be loaded for each selection index.
 
-
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et al. (2019). Appendix C.
+        Berry et al. (2019). Appendix C.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
@@ -181,6 +189,8 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.num_controls
+        if not is_symbolic(n_toffoli):
+            n_toffoli = max(0, n_toffoli)
         return {Toffoli(): n_toffoli}
 
     @cached_property
@@ -270,6 +280,8 @@ class QROAMCleanAdjointWrapper(Bloq):
         block_sizes = prod([2**k for k in self.log_block_sizes])
         data_size = prod(self.qroam_clean.data_shape)
         n_toffoli = ceil(data_size / block_sizes) + block_sizes - 4 + self.qroam_clean.num_controls
+        if not is_symbolic(n_toffoli):
+            n_toffoli = max(0, n_toffoli)
         return {Toffoli(): n_toffoli}
 
     def adjoint(self) -> 'QROAMClean':
@@ -332,17 +344,17 @@ class QROAMClean(SelectSwapQROM):
     upon the target bitsize of elements to be loaded.
 
     Registers:
-        - control_registers: If control is specified, a THRU register to denote the control qubits.
+        control_registers: If control is specified, a THRU register to denote the control qubits.
             Empty by default for uncontrolled version of the Bloq.
-        - selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
+        selection_registers: $N$ THRU registers, each with shape (), to load $N$ dimensional
             classical datasets.
-        - target_registers: $M$ RIGHT registers to load $M$ different classical datasets. Each target
+        target_registers: $M$ RIGHT registers to load $M$ different classical datasets. Each target
             register is of bitsize $b$ and shape described by a tuple of length $N$.
-        - junk_registers: $K - 1$ RIGHT registers, each of bitsize $b$ used to load batches of size $K$
+        junk_registers: $K - 1$ RIGHT registers, each of bitsize $b$ used to load batches of size $K$
 
     References:
         [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://arxiv.org/abs/1902.02134).
-            Berry et al. (2019). Appendix A. and B.
+        Berry et al. (2019). Appendix A. and B.
     """
 
     log_block_sizes: Tuple[SymbolicInt, ...] = attrs.field(
@@ -490,10 +502,10 @@ class QROAMClean(SelectSwapQROM):
         qrom_targets = []
         for reg in self.target_registers:
             qrom_target = _alloc_anc_for_reg_except_first(
-                bb, reg.dtype, block_sizes, self.use_dirty_ancilla
+                bb, QAny(reg.dtype.num_qubits), block_sizes, self.use_dirty_ancilla
             )
             qrom_target[np.unravel_index(0, block_sizes)] = _alloc_anc_for_reg(  # type: ignore[index]
-                bb, reg.dtype, reg.shape, dirty=False
+                bb, QAny(reg.dtype.num_qubits), reg.shape, dirty=False
             )
             qrom_targets.append(qrom_target)
         # Assert that all registers have been used by now.

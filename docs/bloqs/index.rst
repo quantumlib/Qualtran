@@ -21,6 +21,7 @@ Bloqs Library
     chemistry/writing_algorithms.ipynb
     cryptography/rsa/factoring-via-modexp.ipynb
     state_preparation/state_preparation_via_rotation_tutorial.ipynb
+    optimization/k_xor_sat/kikuchi_guiding_state_tutorial.ipynb
 
 .. toctree::
     :maxdepth: 1
@@ -104,6 +105,14 @@ Bloqs Library
     gf_arithmetic/gf2_add_k.ipynb
     gf_arithmetic/gf2_square.ipynb
     gf_arithmetic/gf2_inverse.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Polynomials over Galois Fields:
+
+    gf_poly_arithmetic/gf_poly_split_and_join.ipynb
+    gf_poly_arithmetic/gf2_poly_add_k.ipynb
+    gf_poly_arithmetic/gf2_poly_add.ipynb
 
 .. toctree::
     :maxdepth: 2

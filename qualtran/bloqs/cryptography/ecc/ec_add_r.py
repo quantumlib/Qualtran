@@ -70,9 +70,8 @@ class ECAddR(Bloq):
         [Quantum resource estimates for computing elliptic curve discrete logarithms](https://arxiv.org/abs/1706.06752).
         Roetteler et al. 2017. Algorithm 1 and Figure 10.
 
-        [https://github.com/microsoft/QuantumEllipticCurves/blob/dbf4836afaf7a9fab813cbc0970e65af85a6f93a/MicrosoftQuantumCrypto/EllipticCurves.qs#L456](QuantumQuantumCrypto).
-        `DistinctEllipticCurveClassicalPointAddition`.
-
+        [Microsoft Quantum Crypto (GitHub)](https://github.com/microsoft/QuantumEllipticCurves/blob/dbf4836afaf7a9fab813cbc0970e65af85a6f93a/MicrosoftQuantumCrypto/EllipticCurves.qs#L456).
+        Jaques et al. 2020. `DistinctEllipticCurveClassicalPointAddition`.
     """
 
     n: 'SymbolicInt'
