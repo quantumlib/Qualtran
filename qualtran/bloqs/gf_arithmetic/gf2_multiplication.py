@@ -95,6 +95,19 @@ class SynthesizeLRCircuit(Bloq):
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
+def _qgf_converter(x: QGF | int | Poly | sympy.Symbol) -> QGF:
+    if isinstance(x, QGF):
+        return x
+    if isinstance(x, int):
+        return QGF(2, x)
+    if is_symbolic(x):
+        return QGF(2, x)
+    if isinstance(x, Poly):
+        return QGF(2, x.degree, x)
+    p = Poly.Degrees(x)
+    return QGF(2, p.degree, p)
+
+
 @attrs.frozen
 class GF2Multiplication(Bloq):
     r"""Out of place multiplication over GF($2^m$).
@@ -138,7 +151,7 @@ class GF2Multiplication(Bloq):
         over GF(2m)](https://ieeexplore.ieee.org/abstract/document/1306989)
     """
 
-    bitsize: SymbolicInt
+    qgf: QGF = attrs.field(converter=_qgf_converter)
     plus_equal_prod: bool = False
 
     @cached_property
@@ -153,8 +166,8 @@ class GF2Multiplication(Bloq):
         )
 
     @cached_property
-    def qgf(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    def bitsize(self) -> int:
+        return self.qgf.bitsize
 
     @cached_property
     def reduction_matrix_q(self) -> np.ndarray:
@@ -655,15 +668,6 @@ def _binarypolynomialmultiplication() -> BinaryPolynomialMultiplication:
 _BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
     bloq_cls=BinaryPolynomialMultiplication, examples=(_binarypolynomialmultiplication,)
 )
-
-
-def _qgf_converter(x) -> QGF:
-    if isinstance(x, QGF):
-        return x
-    if isinstance(x, Poly):
-        return QGF(2, x.degree, x)
-    p = Poly.Degrees(x)
-    return QGF(2, p.degree, p)
 
 
 @attrs.frozen

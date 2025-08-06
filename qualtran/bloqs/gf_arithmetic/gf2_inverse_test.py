@@ -49,7 +49,7 @@ def test_gf2_inverse_classical_sim_quick():
     m = 1
     bloq = GF2Inverse(m)
     GFM = GF(2**m)
-    assert_consistent_classical_action(bloq, x=GFM.elements[1:])
+    assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
 @pytest.mark.slow
@@ -57,7 +57,7 @@ def test_gf2_inverse_classical_sim_quick():
 def test_gf2_inverse_classical_sim(m):
     bloq = GF2Inverse(m)
     GFM = GF(2**m)
-    assert_consistent_classical_action(bloq, x=GFM.elements[1:])
+    assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
 @pytest.mark.parametrize('m', [*range(1, 12)])
