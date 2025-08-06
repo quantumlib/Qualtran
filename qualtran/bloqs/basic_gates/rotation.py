@@ -159,8 +159,8 @@ class ZPowGate(CirqGateAsBloqBase):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text('')
-        return TextBox(f'Z^{self.exponent}')
+            return Text(f'Z^{self.exponent}')
+        return TextBox("Z")
 
     def __str__(self):
         return f'Z**{self.exponent}'
