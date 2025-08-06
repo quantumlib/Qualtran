@@ -95,7 +95,7 @@ class SynthesizeLRCircuit(Bloq):
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
-def _qgf_converter(x: QGF | int | Poly | sympy.Symbol) -> QGF:
+def _qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
     if isinstance(x, QGF):
         return x
     if isinstance(x, int):
@@ -166,7 +166,7 @@ class GF2Multiplication(Bloq):
         )
 
     @cached_property
-    def bitsize(self) -> int:
+    def bitsize(self) -> SymbolicInt:
         return self.qgf.bitsize
 
     @cached_property
