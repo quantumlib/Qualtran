@@ -15,7 +15,7 @@ import cirq
 import numpy as np
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import MinusState, PlusEffect, PlusState, XGate
+from qualtran.bloqs.basic_gates import MeasX, MinusState, PlusEffect, PlusState, XGate
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
@@ -119,3 +119,8 @@ def test_controlled_x():
     bloq = XGate().controlled(CtrlSpec(qdtypes=QUInt(n), cvs=1))
     _, sigma = bloq.call_graph(keep=_keep_and)
     assert sigma == {And(): n - 1, CNOT(): 1, And().adjoint(): n - 1, XGate(): 4 * (n - 1)}
+
+
+def test_meas_x_classical_sim():
+    m = MeasX()
+    m.call_classically(q=0)

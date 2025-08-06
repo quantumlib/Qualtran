@@ -297,7 +297,15 @@ class QECGatesCost(CostKey[GateCounts]):
     legacy_shims: bool = False
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
-        from qualtran.bloqs.basic_gates import GlobalPhase, Identity, Toffoli, TwoBitCSwap
+        from qualtran.bloqs.basic_gates import (
+            Discard,
+            GlobalPhase,
+            Identity,
+            MeasX,
+            MeasZ,
+            Toffoli,
+            TwoBitCSwap,
+        )
         from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt import And, MultiTargetCNOT
@@ -326,7 +334,7 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(toffoli=1)
 
         # Measurement
-        if isinstance(bloq, Measure):
+        if isinstance(bloq, (Measure, MeasZ, MeasX)):
             return GateCounts(measurement=1)
 
         # 'And' bloqs
@@ -370,9 +378,10 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts()
 
         # Bookkeeping, empty bloqs
-        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity)):
+        if isinstance(bloq, _BookkeepingBloq) or isinstance(bloq, (GlobalPhase, Identity, Discard)):
             return GateCounts()
 
+        # Rotations
         if bloq_is_rotation(bloq):
             return GateCounts(rotation=1)
 
