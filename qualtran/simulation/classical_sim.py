@@ -147,9 +147,13 @@ class _RandomClassicalValHandler(_ClassicalValHandler):
 
 
 class _FixedClassicalValHandler(_ClassicalValHandler):
-    """Returns a random classical value using a fixed value per instance.
+    """Returns a random classical value using a fixed value per bloq instance.
 
     Useful for deterministic testing.
+
+    Args:
+        binst_i_to_val: mapping from BloqInstance.i instance indices
+            to the fixed classical value.
     """
 
     def __init__(self, binst_i_to_val: Dict[int, Any]):
@@ -179,7 +183,7 @@ class MeasurementPhase:
 
     Args:
         reg_name: Name of the register
-        idx: Index of the register wite(s).
+        idx: Index of the register wire(s).
     """
 
     reg_name: str
@@ -444,7 +448,7 @@ class PhasedClassicalSimState(ClassicalSimState):
             vals: A mapping of input register name to classical value to serve as inputs to the
                 procedure.
             rng: A random number generator to use for classical random values, such a np.random.
-            fixed_random_vals: A dictionary of instance to values to perform fixed calculation
+            fixed_random_vals: A dictionary of bloq instances to values to perform fixed calculation
                 for classical values.
 
         Returns:

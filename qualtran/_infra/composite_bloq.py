@@ -521,7 +521,9 @@ def _get_soquet(
     binst_graph: nx.DiGraph,
 ) -> 'Soquet':
     """Retrieve a soquet given identifying information.
+
     We can uniquely address a Soquet by the arguments to this function.
+
     Args:
         binst: The bloq instance associated with the desired soquet.
         reg_name: The name of the register associated with the desired soquet.
