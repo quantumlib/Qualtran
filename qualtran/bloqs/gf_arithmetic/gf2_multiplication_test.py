@@ -73,7 +73,7 @@ def test_synthesize_lr_circuit_slow(m):
 
 def test_gf2_plus_equal_prod_classical_sim_quick():
     m = 2
-    bloq = GF2Multiplication(m, plus_equal_prod=True)
+    bloq = GF2Multiplication(QGF(2, m), plus_equal_prod=True)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements, result=GFM.elements)
 
@@ -318,7 +318,8 @@ def test_gf2mulmod_classical_action_slow():
 def test_gf2mulmod_classical_action_adjoint(m_x):
     blq = GF2MulViaKaratsuba(m_x)
     adjoint = blq.adjoint()
-    for i, j in np.random.random_integers(0, len(blq.gf.elements) - 1, (10, 2)):
+    rs = np.random.default_rng(42)
+    for i, j in rs.integers(0, len(blq.gf.elements) - 1, (10, 2)):
         f = blq.gf.elements[i]
         g = blq.gf.elements[j]
         a, b, c = blq.call_classically(x=f, y=g)

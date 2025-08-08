@@ -208,7 +208,7 @@ class GF2Inverse(Bloq):
             junk.extend([beta, beta_squared])
             beta = beta * beta_squared
         junk.append(beta)
-        return {'x': x, 'result': x ** (-1), 'junk': np.array(junk)}
+        return {'x': x, 'result': x ** (-1) if x else self.qgf.gf_type(0), 'junk': np.array(junk)}
 
 
 @bloq_example(generalizer=[ignore_split_join, ignore_alloc_free])
