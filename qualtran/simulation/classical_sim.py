@@ -224,9 +224,7 @@ class ClassicalSimState:
         signature: 'Signature',
         binst_graph: nx.DiGraph,
         vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
-        random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(
-            rng=np.random.default_rng()
-        ),
+        random_handler: '_ClassicalValHandler' = _BannedClassicalValHandler(),
     ):
         self._signature = signature
         self._binst_graph = binst_graph
