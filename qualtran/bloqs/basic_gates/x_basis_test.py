@@ -141,10 +141,8 @@ def test_meas_x_classical_sim() -> None:
     with pytest.raises(ValueError, match='Invalid classical value'):
         _ = bloq.on_classical_vals(q=2)
 
-    results = [
-        do_phased_classical_simulation(bloq, {'q': 0}, rng=np.random.default_rng())
-        for _ in range(100)
-    ]
+    rng = np.random.default_rng(seed=12345)
+    results = [do_phased_classical_simulation(bloq, {'q': 0}, rng=rng) for _ in range(100)]
 
     # Assert measurements are random
     assert all(c[0]['c'] in {0, 1} for c in results)
@@ -153,10 +151,8 @@ def test_meas_x_classical_sim() -> None:
     # Assert phase is 1
     assert all(c[1] == 1 for c in results)
 
-    results = [
-        do_phased_classical_simulation(bloq, {'q': 1}, rng=np.random.default_rng())
-        for _ in range(100)
-    ]
+    rng = np.random.default_rng(seed=12345)
+    results = [do_phased_classical_simulation(bloq, {'q': 1}, rng=rng) for _ in range(100)]
     # Assert measurements are random
     assert all(c[0]['c'] in {0, 1} for c in results)
     assert any(c[0]['c'] == 0 for c in results)
@@ -179,7 +175,7 @@ def test_meas_z_supertensor():
     with pytest.raises(ValueError, match=r'.*superoperator.*'):
         MeasX().tensor_contract()
 
-    # Zero -> Zero
+    # Zero -> Fully mixed state
     bb = BloqBuilder()
     q = bb.add(ZeroState())
     c = bb.add(MeasX(), q=q)
@@ -188,7 +184,7 @@ def test_meas_z_supertensor():
     should_be = np.asarray([[0.5, 0], [0, 0.5]])
     np.testing.assert_allclose(rho, should_be, atol=1e-8)
 
-    # One -> One
+    # One -> Fully mixed state
     bb = BloqBuilder()
     q = bb.add(OneState())
     c = bb.add(MeasX(), q=q)
@@ -197,7 +193,7 @@ def test_meas_z_supertensor():
     should_be = np.asarray([[0.5, 0], [0, 0.5]])
     np.testing.assert_allclose(rho, should_be, atol=1e-8)
 
-    # Plus -> mixture
+    # Plus measurement -> deterministic zero
     bb = BloqBuilder()
     q = bb.add(PlusState())
     c = bb.add(MeasX(), q=q)
