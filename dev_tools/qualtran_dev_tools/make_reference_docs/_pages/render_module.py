@@ -124,5 +124,7 @@ def render_module(out_dir: Path, page: ModulePage, render_context: RenderContext
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with WriteIfDifferent(out_path) as f:
         f2 = render_context.get_linking_writer(f)
+        assert page.obj is not None, f'Uninitialized {page}'
+        assert page.pref_path is not None, f'Uninitialized {page}'
         write_module(f2, page.obj, page.pref_path, page.members, aliases_d=render_context.aliases_d)
         f2.write_link_targets()

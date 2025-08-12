@@ -37,6 +37,7 @@ def write_toc(toc_f, pages, _page_in_section, _pages_sort_key, render_context: R
                 print(f"Skipping empty module page {mp.pref_path}")
                 continue
 
+            assert mp.pref_path is not None, f'Uninitialized {mp}'
             mp_relpath = mp.pref_path.split('.')
             mp_relpath = mp_relpath[:-1] + [f'{mp_relpath[-1]}.md']
             mp_relpath = '/'.join(mp_relpath)

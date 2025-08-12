@@ -13,7 +13,7 @@
 #  limitations under the License.
 from enum import Enum
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import attrs
 import griffe
@@ -27,11 +27,18 @@ class MajorClassPage:
     a minor class is briefly documented on its module's page.
     """
 
-    obj: griffe.Class = None
-    section: str = None
-    pref_path: str = None
+    obj: Optional[griffe.Class] = None
+    section: Optional[str] = None
+    pref_path: Optional[str] = None
+
+    @property
+    def section_not_none(self) -> str:
+        # For mypy
+        assert self.section is not None, f'Uninitialized {self}'
+        return self.section
 
     def out_path(self, out_dir: Path) -> Path:
+        assert self.pref_path is not None, f'Uninitialized {self}'
         segments = self.pref_path.split('.')
         return out_dir / '/'.join(segments[:-1]) / f'{segments[-1]}.md'
 
@@ -53,12 +60,19 @@ class ModulePageMember:
 class ModulePage:
     """A doc page for a module."""
 
-    obj: griffe.Module = None
-    section: str = None
-    pref_path: str = None
+    obj: Optional[griffe.Module] = None
+    section: Optional[str] = None
+    pref_path: Optional[str] = None
     members: list[ModulePageMember] = attrs.field(factory=list)
 
+    @property
+    def section_not_none(self) -> str:
+        # For mypy
+        assert self.section is not None, f'Uninitialized {self}'
+        return self.section
+
     def out_path(self, out_dir: Path) -> Path:
+        assert self.pref_path is not None, f'Uninitialized {self}'
         segments = self.pref_path.split('.')
         return out_dir / '/'.join(segments[:-1]) / f'{segments[-1]}.md'
 

@@ -76,7 +76,7 @@ MINIMAL = True
 DEFINED_IN_CONTAINER_EXCEPTIONS = ['qualtran.dtype', 'qualtran.exception', 'qualtran.cirq_interop']
 
 
-def _get_all_aliases(obj: griffe.Object) -> Set[str]:
+def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> Set[str]:
     """Get all the valid aliases for `obj`."""
 
     # First, try to use the aliases griffe has found
@@ -150,7 +150,7 @@ class _PackageWalker:
     link_d: Dict[str, Tuple[Page, Optional[str]]] = attrs.field(factory=dict, kw_only=True)
     """Mapping from preferred dotpath to a doc location."""
 
-    def _walk_table_of_contents(self, obj: griffe.Object):
+    def _walk_table_of_contents(self, obj: Union[griffe.Alias, griffe.Object]):
         """DFS through all the objects.
 
         First, we recurse on the objects we care about.
@@ -213,7 +213,8 @@ class _PackageWalker:
             membtyp = MemberType.MINOR
 
         parent_page = self.pages_d[pref_parent]
-        parent_page.members.append(ModulePageMember(obj, pref_path, membtyp))
+        assert isinstance(parent_page, ModulePage), f"Parent isn't a module: {parent_page}"
+        parent_page.members.append(ModulePageMember(cast(griffe.Object, obj), pref_path, membtyp))
 
         if obj.is_module:
             # Module
@@ -288,7 +289,7 @@ def walk_and_configure(
 
     # Merge user-provided and auto-found section titles.
     sections = list(top_sections) + sorted(
-        set(mp.section for mp in pages) - set(top_sections) - set(fake_sections)
+        set(mp.section_not_none for mp in pages) - set(top_sections) - set(fake_sections)
     )
 
     # Set up dictionary of "linkable" items.
@@ -381,6 +382,7 @@ def make_reference_docs(
     }
 
     def _pages_sort_key(p: Page):
+        assert p.pref_path is not None, f'Uninitialized {p}'
         path_parts = p.pref_path.split('.')
         return path_parts
 

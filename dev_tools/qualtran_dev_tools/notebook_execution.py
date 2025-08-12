@@ -167,14 +167,6 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
         with paths.nb_out.open('w') as f:
             nbformat.write(nb, f, version=4)
 
-    # Optionally save as html
-    html = False
-    if html:
-        html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
-        paths.html_out.parent.mkdir(parents=True, exist_ok=True)
-        with paths.html_out.open('w') as f:
-            f.write(html)
-
     # Optionally save as markdown
     if paths.md_out:
         md, resources = nbconvert.export(nbconvert.MarkdownExporter(), nb, resources=resources)

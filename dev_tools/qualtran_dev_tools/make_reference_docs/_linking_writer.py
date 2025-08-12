@@ -14,13 +14,13 @@
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Optional, Protocol, Set, Tuple
+from typing import Dict, MutableMapping, Optional, Protocol, Set, Tuple
 
 from mdit_py_plugins.anchors.index import slugify
 
 from ._page import Page
 
-_CACHE = defaultdict(dict)
+_CACHE: MutableMapping[str, Dict[str, Optional[str]]] = defaultdict(dict)
 
 
 class Writable(Protocol):

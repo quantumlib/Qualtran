@@ -26,7 +26,7 @@ from .._page import MajorClassPage
 from .._render_context import RenderContext
 
 if TYPE_CHECKING:
-    from .._make import Writable
+    from .._linking_writer import Writable
 
 
 def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Object):
@@ -79,15 +79,17 @@ def write_major_class(
 
     # Class members
     for name, obj2 in obj.members.items():
-        write_major_class_member(f, obj, obj2)
+        write_major_class_member(f, obj, cast(griffe.Object, obj2))
 
 
 def render_major_class(base_dir: Path, page: MajorClassPage, render_context: RenderContext):
+    assert page.pref_path is not None, f'Uninitialized {page}'
     segments = page.pref_path.split('.')
     out_path = base_dir / '/'.join(segments[:-1]) / f'{segments[-1]}.md'
     print(f"Writing {page.pref_path} to {out_path}")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with WriteIfDifferent(out_path) as f:
         f2 = render_context.get_linking_writer(f)
+        assert page.obj is not None, f'Uninitialized {page}'
         write_major_class(f2, page.obj, page.pref_path, aliases_d=render_context.aliases_d)
         f2.write_link_targets()

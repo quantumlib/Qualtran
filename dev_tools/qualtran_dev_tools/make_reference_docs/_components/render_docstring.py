@@ -29,7 +29,7 @@ from griffe import (
     DocstringYield,
 )
 
-from dev_tools.qualtran_dev_tools.parse_docstrings import parse_references
+from ...parse_docstrings import parse_references
 
 if TYPE_CHECKING:
     import griffe
@@ -47,7 +47,7 @@ def split_docstring(obj: 'griffe.Object') -> Tuple[str, List[DocstringSection]]:
 
     if obj.docstring is None:
         first_line = ""
-        rest = []
+        rest: List[DocstringSection] = []
         return first_line, rest
 
     dp0, *dparts = obj.docstring.parse(PARSER)
