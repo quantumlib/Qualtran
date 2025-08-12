@@ -1,4 +1,4 @@
 # the mypy dependency file
-mypy~=1.9
+mypy~=1.14
 mypy-protobuf
 sympy
