@@ -184,15 +184,6 @@ class GF2Multiplication(Bloq):
         M[m - 1][m - 1] = 1
         return np.transpose(M)
 
-    @cached_property
-    def synthesize_reduction_matrix_q(self) -> SynthesizeLRCircuit:
-        m = self.bitsize
-        return (
-            SynthesizeLRCircuit(Shaped((m, m - 1)))
-            if is_symbolic(m)
-            else SynthesizeLRCircuit(self.reduction_matrix_q)
-        )
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
@@ -203,7 +194,7 @@ class GF2Multiplication(Bloq):
 
         # Step-0: PlusEqualProduct special case.
         if self.plus_equal_prod:
-            result = bb.add(self.synthesize_reduction_matrix_q.adjoint(), q=result)
+            result = bb.add(GF2ShiftRight(self.qgf, m).adjoint(), f=result)
 
         # Step-1: Multiply Monomials.
         for i in range(m):
@@ -213,7 +204,7 @@ class GF2Multiplication(Bloq):
                 x[m - j + i], y[j] = ctrl[0], ctrl[1]
 
         # Step-2: Reduce polynomial
-        result = bb.add(self.synthesize_reduction_matrix_q, q=result)
+        result = bb.add(GF2ShiftRight(self.qgf, m), f=result)
 
         # Step-3: Multiply Monomials
         for i in range(m):
@@ -235,9 +226,9 @@ class GF2Multiplication(Bloq):
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         m = self.bitsize
         plus_equal_prod = (
-            {self.synthesize_reduction_matrix_q.adjoint(): 1} if self.plus_equal_prod else {}
+            {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
         )
-        return {Toffoli(): m**2, self.synthesize_reduction_matrix_q: 1} | plus_equal_prod
+        return {Toffoli(): m**2, GF2ShiftRight(self.qgf, m): 1} | plus_equal_prod
 
     def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
         assert all(isinstance(val, self.qgf.gf_type) for val in vals.values())
