@@ -24,6 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CBit,
     ConnectionT,
     CtrlSpec,
     QBit,
@@ -33,6 +34,12 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.drawing import directional_text_box, Text, WireSymbol
+from qualtran.simulation.classical_sim import (
+    ClassicalValDistribution,
+    ClassicalValRetT,
+    ClassicalValT,
+    MeasurementPhase,
+)
 
 if TYPE_CHECKING:
     import cirq
@@ -41,7 +48,6 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
@@ -270,3 +276,54 @@ class XGate(Bloq):
             return Text('X')
 
         return ModPlus()
+
+    def __str__(self):
+        return 'X'
+
+
+@frozen
+class MeasX(Bloq):
+    """Measure a qubit in the X basis.
+
+    Registers:
+        q [LEFT]: The qubit to measure.
+        c [RIGHT]: The classical measurement result.
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
+        )
+
+    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValRetT']:
+        if q not in [0, 1]:
+            raise ValueError(f"Invalid classical value encountered in {self}: {q}")
+        return {'c': ClassicalValDistribution(2)}
+
+    def basis_state_phase(self, q: int) -> Union[complex, MeasurementPhase]:
+        if q == 0:
+            return 1
+        if q == 1:
+            return MeasurementPhase(reg_name='c')
+        raise ValueError(f"Invalid classical value encountered in {self}: {q}")
+
+    def my_tensors(
+        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
+    ) -> List['qtn.Tensor']:
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor import DiscardInd
+
+        data = np.array(
+            [
+                [[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, -0.5 + 0.0j]],
+                [[0.5 + 0.0j, -0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]],
+            ]
+        )
+
+        q_trace = qtn.rand_uuid('q_trace')
+        t = qtn.Tensor(
+            data=data, inds=[(incoming['q'], 0), (q_trace, 0), (outgoing['c'], 0)], tags=[str(self)]
+        )
+        return [t, DiscardInd((q_trace, 0))]
