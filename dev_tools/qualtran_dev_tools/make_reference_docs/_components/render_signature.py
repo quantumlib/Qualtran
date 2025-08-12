@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-import warnings
 from typing import Optional
 
 from griffe import Function, Object, Parameter, ParameterKind
@@ -71,8 +70,11 @@ def write_property_method_signature(f, obj, obj2: Function):
 
 
 def write_generic_method_signature(
-        f, obj, obj2: Function, first_arg_name: Optional[str] = 'self',
-        caller_name=get_obj_instance_name
+    f,
+    obj,
+    obj2: Function,
+    first_arg_name: Optional[str] = 'self',
+    caller_name=get_obj_instance_name,
 ) -> None:
     parameters = list(obj2.parameters)
     if first_arg_name is not None:
@@ -145,14 +147,16 @@ def write_method_signature(f, obj: Object, obj2: Function) -> None:
 
         elif str(d.value) == 'staticmethod':
             return write_generic_method_signature(
-                f, obj, obj2, first_arg_name=None, caller_name=lambda obj: obj.name,
+                f, obj, obj2, first_arg_name=None, caller_name=lambda obj: obj.name
             )
 
         else:
             raise ValueError(
                 f'{obj.name}.{obj2.name} has decorator {d.value!r}. '
-                f'Please upgrade `write_method_signature` in the doc generation code to handle this.')
+                f'Please upgrade `write_method_signature` in the doc generation code to handle this.'
+            )
     else:
         raise ValueError(
             f'{obj.name}.{obj2.name} has multiple decorators. '
-            f'Please upgrade `write_method_signature` in the doc generation code to handle this.')
+            f'Please upgrade `write_method_signature` in the doc generation code to handle this.'
+        )

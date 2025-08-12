@@ -13,31 +13,8 @@
 #  limitations under the License.
 from typing import Callable, List, Sequence
 
-from .._page import MajorClassPage, MemberType, ModulePage, ModulePageMember, Page
+from .._page import ModulePage, Page
 from .._render_context import RenderContext
-
-
-def _old_write_md_toc(f):
-    print("Writing toc.md ..")
-    f.write('# Qualtran\n\n')
-
-    for section in sections:
-        f.write(f'## `{section}`\n\n')
-
-        for mp in spages:
-            f.write(f'### {mp.pref_path}\n')
-            f.write(f' - kind: {type(mp)}\n')
-            f.write(f' - link: [{mp_relpath}](/{mp_relpath})\n')
-            f.write('\n')
-
-            if isinstance(mp, ModulePage):
-                f.write('#### Members\n')
-                for memb in mp.members:
-                    if memb.mytype == MemberType.MAJOR:
-                        pass
-                    else:
-                        f.write(f' - {memb.pref_dotpath} ({memb.mytype})\n')
-        f.write('\n')
 
 
 def write_toc(toc_f, pages, _page_in_section, _pages_sort_key, render_context: RenderContext):
@@ -46,10 +23,10 @@ def write_toc(toc_f, pages, _page_in_section, _pages_sort_key, render_context: R
     for section in render_context.sections:
         if section == '':
             raise ValueError()
-        toc_f.write(f'.. toctree::\n')
+        toc_f.write('.. toctree::\n')
         # toc_f.write(f'   :hidden:\n')
         toc_f.write(f'   :caption: {section}\n')
-        toc_f.write(f'   :maxdepth: 2\n\n')
+        toc_f.write('   :maxdepth: 2\n\n')
 
         spages: List[Page] = sorted(
             (p for p in pages if _page_in_section(p, section)), key=_pages_sort_key

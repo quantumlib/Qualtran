@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
-from typing import cast, Dict, Tuple, TYPE_CHECKING
+from typing import cast, Dict, TYPE_CHECKING
 
 import griffe
 from griffe import Kind
@@ -22,7 +22,7 @@ from .._components.aliases import get_aliases_str
 from .._components.render_docstring import split_docstring, write_docstring_parts
 from .._components.render_signature import write_method_signature
 from .._linking_writer import LinkingWriter
-from .._page import MajorClassPage, Page
+from .._page import MajorClassPage
 from .._render_context import RenderContext
 
 if TYPE_CHECKING:

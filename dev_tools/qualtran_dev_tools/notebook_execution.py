@@ -215,7 +215,7 @@ def execute_and_export_notebooks(
 
     Args:
         output_nbs: Whether to save the executed notebooks as notebooks
-        output_html: Whether to save the executed notebooks as html
+        output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
     """

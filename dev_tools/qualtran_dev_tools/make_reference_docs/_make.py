@@ -12,12 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import ast
-import io
-import re
 import warnings
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, cast, Dict, List, Literal, Protocol, Sequence, Set, Tuple
+from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 # Begin monkeypatch:
 # the `Visitor` will use certain decorators to apply "labels" to the AST nodes, which
@@ -27,7 +25,7 @@ from typing import Any, cast, Dict, List, Literal, Protocol, Sequence, Set, Tupl
 import _griffe.agents.visitor
 import attrs
 import griffe
-from griffe import DocstringSection, DocstringSectionKind, DocstringSectionText, GriffeLoader, Kind
+from griffe import GriffeLoader, Kind
 
 from ._render_context import RenderContext
 
@@ -149,7 +147,7 @@ class _PackageWalker:
     aliases_d: Dict[str, str] = attrs.field(factory=dict, kw_only=True)
     """Mapping from each alias to the preferred dotpath (many-to-one)."""
 
-    link_d: Dict[str, Tuple[Page, str | None]] = attrs.field(factory=dict, kw_only=True)
+    link_d: Dict[str, Tuple[Page, Optional[str]]] = attrs.field(factory=dict, kw_only=True)
     """Mapping from preferred dotpath to a doc location."""
 
     def _walk_table_of_contents(self, obj: griffe.Object):
@@ -245,7 +243,7 @@ class _PackageWalker:
 
 def get_pages(
     root_mod: griffe.Module,
-) -> Tuple[List[Page], Dict[str, str], Dict[str, Tuple[Page, str | None]]]:
+) -> Tuple[List[Page], Dict[str, str], Dict[str, Tuple[Page, Optional[str]]]]:
     """Walk down from `root_mod`.
 
     Returns:
@@ -319,9 +317,9 @@ class AttrsExtension(griffe.Extension):
     def on_class_members(
         self,
         *,
-        node: ast.AST | griffe.ObjectNode,
+        node: Union[ast.AST, griffe.ObjectNode],
         cls: griffe.Class,
-        agent: griffe.Visitor | griffe.Inspector,
+        agent: Union[griffe.Visitor, griffe.Inspector],
         **kwargs: Any,
     ) -> None:
         if self._is_attrs_class(cls):

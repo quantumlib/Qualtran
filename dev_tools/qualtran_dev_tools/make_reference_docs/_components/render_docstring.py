@@ -13,25 +13,18 @@
 #  limitations under the License.
 import re
 import warnings
-from typing import cast, List, Literal, Tuple, TYPE_CHECKING
+from typing import List, Literal, Tuple, TYPE_CHECKING
 
 from griffe import (
     DocstringSection,
     DocstringSectionAdmonition,
     DocstringSectionAttributes,
-    DocstringSectionClasses,
-    DocstringSectionDeprecated,
     DocstringSectionExamples,
-    DocstringSectionFunctions,
     DocstringSectionKind,
-    DocstringSectionModules,
-    DocstringSectionOtherParameters,
     DocstringSectionParameters,
     DocstringSectionRaises,
-    DocstringSectionReceives,
     DocstringSectionReturns,
     DocstringSectionText,
-    DocstringSectionWarns,
     DocstringSectionYields,
     DocstringYield,
 )

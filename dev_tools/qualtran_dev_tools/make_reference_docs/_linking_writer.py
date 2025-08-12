@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-import warnings
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Protocol, Set, Tuple, Optional
+from typing import Dict, Optional, Protocol, Set, Tuple
 
 from mdit_py_plugins.anchors.index import slugify
 
@@ -45,7 +44,7 @@ class LinkingWriter:
         f: Writable,
         *,
         link_aliases: Dict[str, str],
-        link_d: Dict[str, Tuple[Page, str | None]],
+        link_d: Dict[str, Tuple[Page, Optional[str]]],
         refdoc_relpath: Path,
     ):
         self._f: Writable = f

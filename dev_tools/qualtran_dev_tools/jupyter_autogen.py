@@ -16,7 +16,6 @@
 
 import abc
 import inspect
-import io
 import re
 import textwrap
 from pathlib import Path

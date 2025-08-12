@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attrs
 
@@ -28,7 +28,7 @@ class RenderContext:
     refdoc_relpath: Path
     sections: List[str]
     aliases_d: Dict[str, str]
-    link_d: Dict[str, Tuple[Page, str | None]]
+    link_d: Dict[str, Tuple[Page, Optional[str]]]
     linkable_to_prefpath: Dict[str, str]
 
     def get_linking_writer(self, f: Writable) -> LinkingWriter:
