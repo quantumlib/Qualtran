@@ -33,6 +33,8 @@ class QCDType(metaclass=abc.ABCMeta):
 
     @property
     def num_bits(self) -> int:
+        """Number of bits (quantum and classical) required to represent a single instance of
+        this data type."""
         return self.num_qubits + self.num_cbits
 
     @property
@@ -122,12 +124,8 @@ class QDType(QCDType, metaclass=abc.ABCMeta):
 
     @property
     def num_cbits(self) -> int:
+        """QDTypes have zero qubits."""
         return 0
-
-    @property
-    @abc.abstractmethod
-    def num_qubits(self) -> int:
-        """Number of qubits required to represent a single instance of this data type."""
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_qubits})'
@@ -138,12 +136,8 @@ class CDType(QCDType, metaclass=abc.ABCMeta):
 
     @property
     def num_qubits(self) -> int:
+        """CDTypes have zero qubits."""
         return 0
-
-    @property
-    @abc.abstractmethod
-    def num_cbits(self) -> int:
-        """Number of classical bits required to represent a single instance of this data type."""
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_cbits})'
@@ -250,7 +244,7 @@ class QInt(QDType):
     Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
     bit is at index 0.
 
-    Attributes:
+    Args:
         bitsize: The number of qubits used to represent the integer.
     """
 
@@ -268,7 +262,6 @@ class QInt(QDType):
         return range(-max_val, max_val)
 
     def to_bits(self, x: int) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
         if is_symbolic(self.bitsize):
             raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
 
@@ -276,7 +269,6 @@ class QInt(QDType):
         return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        """Combine individual bits to form x"""
         sign = bits[0]
         x = (
             0
@@ -315,7 +307,7 @@ class QIntOnesComp(QDType):
     Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
     bit is at index 0.
 
-    Attributes:
+    Args:
         bitsize: The number of qubits used to represent the integer.
     """
 
@@ -334,12 +326,10 @@ class QIntOnesComp(QDType):
         return is_symbolic(self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return [int(x < 0)] + [y ^ int(x < 0) for y in QUInt(self.bitsize - 1).to_bits(abs(x))]
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        """Combine individual bits to form x"""
         x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
         return (-1) ** bits[0] * x
 
@@ -367,7 +357,7 @@ class QUInt(QDType):
     Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
     bit is at index 0.
 
-    Attributes:
+    Args:
         bitsize: The number of qubits used to represent the integer.
     """
 
@@ -384,16 +374,10 @@ class QUInt(QDType):
         return range(2**self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
     def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
-        """Returns the big-endian bitstrings specified by the given integers.
-
-        Args:
-            x_array: An integer or array of unsigned integers.
-        """
         if is_symbolic(self.bitsize):
             raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
 
@@ -412,17 +396,9 @@ class QUInt(QDType):
         return (x & mask).astype(bool).astype(np.uint8).T
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        """Combine individual bits to form x"""
         return int("".join(str(x) for x in bits), 2)
 
     def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.integer]:
-        """Returns the integer specified by the given big-endian bitstrings.
-
-        Args:
-            bits_array: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
-        Returns:
-            An array of integers; one for each bitstring.
-        """
         bitstrings = np.atleast_2d(bits_array)
         if bitstrings.shape[1] != self.bitsize:
             raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
@@ -460,8 +436,8 @@ class BQUInt(QDType):
 
     LCU methods often make use of coherent for-loops via UnaryIteration, iterating over a range
     of values stored as a superposition over the `SELECT` register. Such (nested) coherent
-    for-loops can be represented using a `Tuple[Register(dtype=BQUInt),
-    ...]` where the i'th entry stores the bitsize and iteration length of i'th
+    for-loops can be represented using a `Tuple[Register(dtype=BQUInt), ...]` where the
+    i'th entry stores the bitsize and iteration length of i'th
     nested for-loop.
 
     One useful feature when processing such nested for-loops is to flatten out a composite index,
@@ -470,8 +446,9 @@ class BQUInt(QDType):
     function is described in Eq.45 of https://arxiv.org/abs/1805.03662. A general version of this
     mapping function can be implemented using `numpy.ravel_multi_index` and `numpy.unravel_index`.
 
-    For example:
-        1) We can flatten a 2D for-loop as follows
+    Examples:
+        We can flatten a 2D for-loop as follows
+
         >>> import numpy as np
         >>> N, M = 10, 20
         >>> flat_indices = set()
@@ -483,7 +460,7 @@ class BQUInt(QDType):
         ...         flat_indices.add(flat_idx)
         >>> assert len(flat_indices) == N * M
 
-        2) Similarly, we can flatten a 3D for-loop as follows
+        Similarly, we can flatten a 3D for-loop as follows
         >>> import numpy as np
         >>> N, M, L = 10, 20, 30
         >>> flat_indices = set()
@@ -496,7 +473,7 @@ class BQUInt(QDType):
         ...             flat_indices.add(flat_idx)
         >>> assert len(flat_indices) == N * M * L
 
-    Attributes:
+    Args:
         bitsize: The number of qubits used to represent the integer.
         iteration_length: The length of the iteration range.
     """
@@ -572,8 +549,7 @@ class QFxp(QDType):
     We can specify a fixed point real number by the tuple bitsize, num_frac and
     signed, with num_int determined as `(bitsize - num_frac)`.
 
-
-    ### Classical Simulation
+    **Classical Simulation:**
 
     To hook into the classical simulator, we use fixed-width integers to represent
     values of this type. See `to_fixed_width_int` for details.
@@ -585,15 +561,15 @@ class QFxp(QDType):
     to represent classical values during simulation, and convert to and from bits
     for intermediate values.
 
-    For example, QFxp(6, 4) has 2 int bits and 4 frac bits, and the corresponding
-    int type is QUInt(6). So a true classical value of `10.0011` will have a raw
+    For example, `QFxp(6, 4)` has 2 int bits and 4 frac bits, and the corresponding
+    int type is `QUInt(6)`. So a true classical value of `10.0011` will have a raw
     integer representation of `100011`.
 
     See https://github.com/quantumlib/Qualtran/issues/1219 for discussion on alternatives
     and future upgrades.
 
 
-    Attributes:
+    Args:
         bitsize: The total number of qubits used to represent the integer and
             fractional part combined.
         num_frac: The number of qubits used to represent the fractional part of the real number.
@@ -627,38 +603,28 @@ class QFxp(QDType):
 
     @property
     def _int_qdtype(self) -> Union[QUInt, QInt]:
-        """The corresponding dtype for the raw integer representation.
-
-        See class docstring section on "Classical Simulation" for more details.
-        """
+        # The corresponding dtype for the raw integer representation.
+        # See class docstring section on "Classical Simulation" for more details.
         return QInt(self.bitsize) if self.signed else QUInt(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[int]:
-        """Use the classical domain for the underlying raw integer type.
-
-        See class docstring section on "Classical Simulation" for more details.
-        """
+        # Use the classical domain for the underlying raw integer type.
+        # See class docstring section on "Classical Simulation" for more details.
         yield from self._int_qdtype.get_classical_domain()
 
     def to_bits(self, x) -> List[int]:
-        """Use the underlying raw integer type.
-
-        See class docstring section on "Classical Simulation" for more details.
-        """
+        # Use the underlying raw integer type.
+        # See class docstring section on "Classical Simulation" for more details.
         return self._int_qdtype.to_bits(x)
 
     def from_bits(self, bits: Sequence[int]):
-        """Use the underlying raw integer type.
-
-        See class docstring section on "Classical Simulation" for more details.
-        """
+        # Use the underlying raw integer type.
+        # See class docstring section on "Classical Simulation" for more details.
         return self._int_qdtype.from_bits(bits)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
-        """Verify using the underlying raw integer type.
-
-        See class docstring section on "Classical Simulation" for more details.
-        """
+        # Verify using the underlying raw integer type.
+        # See class docstring section on "Classical Simulation" for more details.
         self._int_qdtype.assert_valid_classical_val(val, debug_str)
 
     def to_fixed_width_int(
@@ -775,7 +741,6 @@ class QFxp(QDType):
         return bits
 
     def _from_bits_to_fxp(self, bits: Sequence[int]) -> Fxp:
-        """Combine individual bits to form x"""
         if is_symbolic(self.num_frac):
             raise ValueError(f"Symbolic {self.num_frac} cannot be represented using Fxp")
         bits_bin = "".join(str(x) for x in bits[:])
@@ -792,7 +757,7 @@ class QFxp(QDType):
 
 @attrs.frozen
 class QMontgomeryUInt(QDType):
-    """Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
+    r"""Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
         overflow.
 
     Similar to unsigned integer types in C. Any intended wrap around effect is
@@ -803,15 +768,15 @@ class QMontgomeryUInt(QDType):
     In order to convert an unsigned integer from a finite field x % p into Montgomery form you
     first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
-    Conversion to Montgomery form:
-        [x] = (x * r) % p
+    Conversion to Montgomery form is given by
+    `[x] = (x * r) % p`
 
-    Conversion from Montgomery form to normal form:
-        x = REDC([x])
+    Conversion from Montgomery form to normal form is given by
+    `x = REDC([x])`
 
     Pseudocode for REDC(u) can be found in the resource below.
 
-    Attributes:
+    Args:
         bitsize: The number of qubits used to represent the integer.
 
     References:
@@ -929,14 +894,14 @@ class QGF(QDType):
     perform arithmetic over Galois Fields. By default, the Conway polynomial $C_{p, m}$ is used
     as the irreducible polynomial.
 
-    Attributes:
+    Args:
         characteristic: The characteristic $p$ of the field $GF(p^m)$.
             The characteristic must be prime.
         degree: The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
-        irreducible_poly: Optional galois.Poly instance that defines the field arithmetic.
+        irreducible_poly: Optional `galois.Poly` instance that defines the field arithmetic.
             This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly, verify=False)`.
 
-    References
+    References:
         [Finite Field](https://en.wikipedia.org/wiki/Finite_field)
 
         [Intro to Prime Fields](https://mhostetter.github.io/galois/latest/tutorials/intro-to-prime-fields/)
@@ -970,12 +935,9 @@ class QGF(QDType):
 
     @cached_property
     def num_qubits(self) -> SymbolicInt:
-        """Number of qubits required to represent a single instance of this data type."""
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        """Yields all possible classical (computational basis state) values representable
-        by this type."""
         yield from self.gf_type.elements
 
     @cached_property
@@ -998,59 +960,29 @@ class QGF(QDType):
         )
 
     def to_bits(self, x) -> List[int]:
-        """Returns individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
         return self._quint_equivalent.to_bits(int(x))
 
     def from_bits(self, bits: Sequence[int]):
-        """Combine individual bits to form x"""
         return self.gf_type(self._quint_equivalent.from_bits(bits))
 
     def from_bits_array(self, bits_array: NDArray[np.uint8]):
-        """Combine individual bits to form classical values.
-
-        Often, converting an array can be performed faster than converting each element individually.
-        This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
-        and the output array satisfies `output_shape = input_shape[:-1]`.
-        """
         return self.gf_type(self._quint_equivalent.from_bits_array(bits_array))
 
     def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
-        """Raises an exception if `val` is not a valid classical value for this type.
-
-        Args:
-            val: A classical value that should be in the domain of this QDType.
-            debug_str: Optional debugging information to use in exception messages.
-        """
         if not isinstance(val, self.gf_type):
             raise ValueError(f"{debug_str} should be a {self.gf_type}, not {val!r}")
 
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
-        """Raises an exception if `val_array` is not a valid array of classical values
-        for this type.
-
-        Often, validation on an array can be performed faster than validating each element
-        individually.
-
-        Args:
-            val_array: A numpy array of classical values. Each value should be in the domain
-                of this QDType.
-            debug_str: Optional debugging information to use in exception messages.
-        """
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= self.order):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
     def is_symbolic(self) -> bool:
-        """Returns True if this qdtype is parameterized with symbolic objects."""
         return is_symbolic(self.characteristic, self.order)
 
     def iteration_length_or_zero(self) -> SymbolicInt:
-        """Safe version of iteration length.
-
-        Returns the iteration_length if the type has it or else zero.
-        """
         return self.order
 
     def __str__(self):
@@ -1069,15 +1001,18 @@ class QGFPoly(QDType):
     perform arithmetic over polynomials defined over Galois Fields using the
     [galois.Poly](https://mhostetter.github.io/galois/latest/api/galois.Poly/).
 
-    Attributes:
+    Args:
         degree: The degree $n$ of the univariate polynomial $f(x)$ represented by this type.
         qgf: An instance of `QGF` that represents the galois field $GF(p^m)$ over which the
             univariate polynomial $f(x)$ is defined.
 
-    References
-        [Polynomials over finite fields](https://mhostetter.github.io/galois/latest/api/galois.Poly/)
+    References:
+        [Polynomials over finite fields](https://mhostetter.github.io/galois/latest/api/galois.Poly/).
+        `galois` documentation.
 
-        [Polynomial Arithmetic](https://mhostetter.github.io/galois/latest/basic-usage/poly-arithmetic/)
+
+        [Polynomial Arithmetic](https://mhostetter.github.io/galois/latest/basic-usage/poly-arithmetic/).
+        `galois` documentation.
     """
 
     degree: SymbolicInt

@@ -63,27 +63,25 @@ class _NBInOutPaths:
     """
 
     nb_in: Path
-    html_out: Optional[Path]
+    md_out: Optional[Path]
     nb_out: Optional[Path]
 
     @classmethod
-    def from_nb_rel_path(
-        cls, nb_rel_path: Path, reporoot: Path, output_html: bool, output_nbs: bool
-    ):
+    def from_nb_rel_path(cls, nb_rel_path: Path, reporoot: Path, output_md: bool, output_nbs: bool):
         sourceroot = reporoot / 'qualtran'
         nbpath = sourceroot / nb_rel_path
 
-        html_rel_path = nb_rel_path.with_name(f'{nb_rel_path.stem}.html')
-        html_outpath = reporoot / 'docs/nbrun' / html_rel_path if output_html else None
+        md_rel_path = nb_rel_path.with_name(f'{nb_rel_path.stem}.md')
+        md_outpath = reporoot / 'docs' / md_rel_path if output_md else None
         nb_outpath = reporoot / 'docs' / nb_rel_path if output_nbs else None
-        return cls(nb_in=nbpath, html_out=html_outpath, nb_out=nb_outpath)
+        return cls(nb_in=nbpath, md_out=md_outpath, nb_out=nb_outpath)
 
-    def html_needs_reexport(self) -> bool:
-        """Whether the html output needs to be re-exported"""
-        if self.html_out is None:
+    def md_needs_reexport(self) -> bool:
+        """Whether the md output needs to be re-exported"""
+        if self.md_out is None:
             return False
 
-        return is_out_of_date(self.nb_in, self.html_out)
+        return is_out_of_date(self.nb_in, self.md_out)
 
     def nb_needs_reexport(self) -> bool:
         """Whether the notebook output needs to be re-exported"""
@@ -94,7 +92,7 @@ class _NBInOutPaths:
 
     def needs_reexport(self):
         """Whether anything needs to be re-exported"""
-        return self.html_needs_reexport() or self.nb_needs_reexport()
+        return self.md_needs_reexport() or self.nb_needs_reexport()
 
 
 def _make_link_replacements() -> List[Tuple[str, str]]:
@@ -170,11 +168,19 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
             nbformat.write(nb, f, version=4)
 
     # Optionally save as html
-    if paths.html_out:
+    html = False
+    if html:
         html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
         paths.html_out.parent.mkdir(parents=True, exist_ok=True)
         with paths.html_out.open('w') as f:
             f.write(html)
+
+    # Optionally save as markdown
+    if paths.md_out:
+        md, resources = nbconvert.export(nbconvert.MarkdownExporter(), nb, resources=resources)
+        paths.md_out.parent.mkdir(parents=True, exist_ok=True)
+        with paths.md_out.open('w') as f:
+            f.write(md)
 
     return None
 
@@ -182,15 +188,15 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
 class _NotebookRunClosure:
     """Used to run notebook execution logic in subprocesses."""
 
-    def __init__(self, reporoot: Path, output_nbs: bool, output_html: bool, only_out_of_date: bool):
+    def __init__(self, reporoot: Path, output_nbs: bool, output_md: bool, only_out_of_date: bool):
         self.reporoot = reporoot
         self.output_nbs = output_nbs
-        self.output_html = output_html
+        self.output_md = output_md
         self.only_out_of_date = only_out_of_date
 
     def __call__(self, nb_rel_path: Path) -> Tuple[Path, Optional[Exception]]:
         paths = _NBInOutPaths.from_nb_rel_path(
-            nb_rel_path, self.reporoot, output_html=self.output_html, output_nbs=self.output_nbs
+            nb_rel_path, self.reporoot, output_md=self.output_md, output_nbs=self.output_nbs
         )
 
         if self.only_out_of_date and not paths.needs_reexport():
@@ -203,7 +209,7 @@ class _NotebookRunClosure:
 
 
 def execute_and_export_notebooks(
-    output_nbs: bool, output_html: bool, only_out_of_date: bool = True
+    *, output_nbs: bool, output_md: bool, only_out_of_date: bool = True
 ):
     """Find, execute, and export all checked-in ipynbs.
 
@@ -219,7 +225,7 @@ def execute_and_export_notebooks(
     func = _NotebookRunClosure(
         reporoot=reporoot,
         output_nbs=output_nbs,
-        output_html=output_html,
+        output_md=output_md,
         only_out_of_date=only_out_of_date,
     )
     with multiprocessing.Pool() as pool:

@@ -18,7 +18,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -28,19 +28,22 @@ from qualtran import (
     Bloq,
     BloqError,
     BloqExample,
+    check_dtypes_consistent,
     CompositeBloq,
     DanglingT,
     DecomposeNotImplementedError,
     DecomposeTypeError,
     LeftDangle,
+    QDTypeCheckingSeverity,
     RightDangle,
     Side,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
-from qualtran.drawing.musical_score import WireSymbol
-from qualtran.resource_counting import GeneralizerT
 from qualtran.symbolics import is_symbolic
+
+if TYPE_CHECKING:
+    from qualtran.drawing import WireSymbol
+    from qualtran.resource_counting import GeneralizerT
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -153,9 +156,9 @@ def assert_connections_consistent_qdtypes(
     """Check that a composite bloq's connections have consistent qdtypes.
 
     Args:
-         cbloq: The composite bloq.
-         type_checking_severity: How strict to be in type checking. See the documentation
-            for the QDTypeCheckingSeverity enum for details.
+        cbloq: The composite bloq.
+        type_checking_severity: How strict to be in type checking. See the documentation
+            for `qualtran.QDTypeCheckingSeverity` for details.
     """
     for cxn in cbloq.connections:
         lr = cxn.left.reg
@@ -236,11 +239,11 @@ def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, WireSymbol]]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 'WireSymbol']]):
     """Assert a bloq's wire symbols match the expected ones.
 
     For multi-dimensional registers (with a shape), this will iterate
-    through the register indices (see numpy.ndindices for iteration order).
+    through the register indices (see `numpy.ndindices` for iteration order).
 
     Args:
         bloq: the bloq whose wire symbols we want to check.
@@ -272,7 +275,6 @@ def execute_notebook(name: str):
 
     Args:
         name: The name of the notebook without extension.
-
     """
     import nbformat
     from nbconvert.preprocessors import ExecutePreprocessor
@@ -366,7 +368,7 @@ def assert_bloq_example_make(bloq_ex: BloqExample) -> None:
         None if the assertions are satisfied.
 
     Raises:
-        BloqCheckException if any assertions are violated.
+        BloqCheckException: if any assertions are violated.
     """
     bloq = bloq_ex.make()
     if not isinstance(bloq, Bloq):
@@ -404,7 +406,7 @@ def assert_bloq_example_decompose(bloq_ex: BloqExample) -> None:
         None if the assertions are satisfied.
 
     Raises:
-        BloqCheckException if any assertions are violated, not applicable, or missing.
+        BloqCheckException: if any assertions are violated, not applicable, or missing.
     """
     try:
         bloq = bloq_ex.make()
@@ -454,8 +456,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         None if the assertions are satisfied.
 
     Raises:
-        BloqCheckException if any assertions are violated or unverifiable due to partial
-        or missing information.
+        BloqCheckException: if any assertions are violated or unverifiable due to partial
+            or missing information.
     """
     bloq = bloq_ex.make()
     generalizer = bloq_ex.generalizer
@@ -514,7 +516,7 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
 
 def assert_equivalent_bloq_counts(
-    bloq: Bloq, generalizer: Union[GeneralizerT, Sequence[GeneralizerT]] = lambda x: x
+    bloq: Bloq, generalizer: Union['GeneralizerT', Sequence['GeneralizerT']] = lambda x: x
 ) -> None:
     """Assert that the BloqExample has consistent bloq counts.
 
@@ -570,7 +572,7 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
         None if the assertions are satisfied.
 
     Raises:
-        BloqCheckException if any assertions are violated.
+        BloqCheckException: if any assertions are violated.
     """
     from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
 
@@ -635,7 +637,7 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
         None if the assertions are satisfied.
 
     Raises:
-        BloqCheckException if any assertions are violated.
+        BloqCheckException: if any assertions are violated.
     """
     bloq = bloq_ex.make()
     # First check for the presence of a decomposition

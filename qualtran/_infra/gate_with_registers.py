@@ -214,39 +214,41 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     base class `GateWithRegisters` containing abstract methods `registers` and optional
     method `decompose_from_registers` that provides an overlay to the Cirq flat address API.
 
-    As an example, in the following code snippet we use the `GateWithRegisters` to
-    construct a multi-target controlled swap operation:
+    Examples:
+        As an example, in the following code snippet we use the `GateWithRegisters` to
+        construct a multi-target controlled swap operation:
 
-    >>> import attr
-    >>> import cirq
-    >>> import qualtran
-    >>>
-    >>> @attr.frozen
-    ... class MultiTargetCSwap(qualtran.GateWithRegisters):
-    ...     bitsize: int
-    ...
-    ...     @property
-    ...     def signature(self) -> qualtran.Signature:
-    ...         return qualtran.Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
-    ...
-    ...     def decompose_from_registers(self, context, ctrl, x, y) -> cirq.OP_TREE:
-    ...         yield [cirq.CSWAP(*ctrl, qx, qy) for qx, qy in zip(x, y)]
-    ...
-    >>> op = MultiTargetCSwap(2).on_registers(
-    ...     ctrl=[cirq.q('ctrl')],
-    ...     x=cirq.NamedQubit.range(2, prefix='x'),
-    ...     y=cirq.NamedQubit.range(2, prefix='y'),
-    ... )
-    >>> print(cirq.Circuit(op))
-    ctrl: ───MultiTargetCSwap───
-             │
-    x0: ─────x──────────────────
-             │
-    x1: ─────x──────────────────
-             │
-    y0: ─────y──────────────────
-             │
-    y1: ─────y──────────────────"""
+        >>> import attr
+        >>> import cirq
+        >>> import qualtran
+        >>>
+        >>> @attr.frozen
+        ... class MultiTargetCSwap(qualtran.GateWithRegisters):
+        ...     bitsize: int
+        ...
+        ...     @property
+        ...     def signature(self) -> qualtran.Signature:
+        ...         return qualtran.Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+        ...
+        ...     def decompose_from_registers(self, context, ctrl, x, y) -> cirq.OP_TREE:
+        ...         yield [cirq.CSWAP(*ctrl, qx, qy) for qx, qy in zip(x, y)]
+        ...
+        >>> op = MultiTargetCSwap(2).on_registers(
+        ...     ctrl=[cirq.q('ctrl')],
+        ...     x=cirq.NamedQubit.range(2, prefix='x'),
+        ...     y=cirq.NamedQubit.range(2, prefix='y'),
+        ... )
+        >>> print(cirq.Circuit(op))
+        ctrl: ───MultiTargetCSwap───
+                 │
+        x0: ─────x──────────────────
+                 │
+        x1: ─────x──────────────────
+                 │
+        y0: ─────y──────────────────
+                 │
+        y1: ─────y──────────────────
+    """
 
     # Part-1: Bloq interface is automatically available for users, via default convertors.
 

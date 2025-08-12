@@ -221,18 +221,18 @@ class BiQubitsMixer(GateWithRegisters):
     """Implements the COMPARE2 subroutine from the reference.
 
     This gates mixes the values in a way that preserves the result of comparison.
-    The signature being compared are 2-qubit signature where
+    The registers being compared are 2-qubit registers where
 
         x = 2*x_msb + x_lsb
         y = 2*y_msb + y_lsb
 
-    The Gate mixes the 4 qubits so that sign(x - y) = sign(x_lsb' - y_lsb') where x_lsb' and y_lsb'
-    are the final values of x_lsb' and y_lsb'.
+    The gate mixes the 4 qubits so that `sign(x - y) = sign(x_lsb' - y_lsb')` where
+    `x_lsb'` and `y_lsb'` are the final values of `x_lsb'` and `y_lsb'`.
 
-    Note that the ancilla qubits are used to reduce the T-count and the user
+    Note that the ancilla qubits are used to reduce the T-count, and the user
     should clean the qubits at a later point in time with the adjoint gate.
     See: https://github.com/quantumlib/Cirq/pull/6313 and
-    https://github.com/quantumlib/Qualtran/issues/389
+    https://github.com/quantumlib/Qualtran/issues/389.
 
     References:
         [Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians](https://arxiv.org/abs/1711.10460).

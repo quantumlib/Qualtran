@@ -89,7 +89,7 @@ class CtrlSpec:
         CtrlSpec()
         CtrlSpec(qdtypes=QBit(), cvs=1)
 
-    This class supports additional control specifications:
+    This class supports additional control specifications.
      1. 'negative' controls where the bloq is active if the input is |0>.
      2. integer-equality controls where a QInt input must match an integer control value.
      3. ndarrays of control values, where the bloq is active if **all** inputs are active.
@@ -677,9 +677,9 @@ class Controlled(_ControlledBase):
 def make_ctrl_system_with_correct_metabloq(
     bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
 ) -> Tuple['_ControlledBase', 'AddControlledT']:
-    """The default fallback for `Bloq.make_ctrl_system.
+    """The default fallback for `Bloq.make_ctrl_system`.
 
-    This intelligently selects the correct implemetation of `_ControlledBase` based
+    This intelligently selects the correct implementation of `_ControlledBase` based
     on the control spec.
 
      - A 1-qubit, positive control (i.e. `CtrlSpec()`) uses `Controlled`, which uses a

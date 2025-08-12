@@ -166,10 +166,11 @@ class Partition(_BookkeepingBloq):
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
-        if reg.shape:
-            text = f'[{",".join(str(i) for i in idx)}]'
-            return directional_text_box(text, side=reg.side)
-        return directional_text_box(' ', side=reg.side)
+
+        label = reg.name
+        if len(idx) > 0:
+            label = f'{label}[{", ".join(str(i) for i in idx)}]'
+        return directional_text_box(label, side=reg.side)
 
 
 @bloq_example

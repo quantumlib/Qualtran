@@ -26,6 +26,7 @@
 
 import pytest
 
+import qualtran
 import qualtran.testing as qlt_testing
 from qualtran import BloqExample
 
@@ -194,3 +195,9 @@ def bloq_autotester(request):
     name, func = request.param
     func.check_name = name
     return func
+
+
+@pytest.fixture(autouse=True)
+def add_qlt(doctest_namespace):
+    # Make qualtran available (without explicit import) in doctests
+    doctest_namespace['qualtran'] = qualtran
