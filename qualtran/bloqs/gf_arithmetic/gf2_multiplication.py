@@ -189,13 +189,14 @@ class GF2Multiplication(Bloq):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
         x, y = soqs['x'], soqs['y']
         result = soqs['result'] if self.plus_equal_prod else bb.allocate(dtype=self.qgf)
-        x, y, result = bb.split(x)[::-1], bb.split(y)[::-1], bb.split(result)[::-1]
+        x, y = bb.split(x)[::-1], bb.split(y)[::-1]
         m = int(self.bitsize)
 
         # Step-0: PlusEqualProduct special case.
         if self.plus_equal_prod:
             result = bb.add(GF2ShiftRight(self.qgf, m).adjoint(), f=result)
 
+        result = bb.split(result)[::-1]
         # Step-1: Multiply Monomials.
         for i in range(m):
             for j in range(i + 1, m):
@@ -203,9 +204,11 @@ class GF2Multiplication(Bloq):
                 ctrl, result[i] = bb.add(Toffoli(), ctrl=ctrl, target=result[i])
                 x[m - j + i], y[j] = ctrl[0], ctrl[1]
 
+        result = bb.join(result[::-1], self.qgf)
         # Step-2: Reduce polynomial
         result = bb.add(GF2ShiftRight(self.qgf, m), f=result)
 
+        result = bb.split(result)[::-1]
         # Step-3: Multiply Monomials
         for i in range(m):
             for j in range(i + 1):
@@ -225,9 +228,7 @@ class GF2Multiplication(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         m = self.bitsize
-        plus_equal_prod = (
-            {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
-        )
+        plus_equal_prod = {GF2ShiftRight(self.qgf, m).adjoint(): 1} if self.plus_equal_prod else {}
         return {Toffoli(): m**2, GF2ShiftRight(self.qgf, m): 1} | plus_equal_prod
 
     def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
@@ -662,6 +663,91 @@ _BINARY_POLYNOMIAL_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
+class GF2ShiftLeft(Bloq):
+    r"""Divides by $2^k$ (or $x^k$ for polynomials) modulo the given irreducible polynomial.
+
+    Applies the transformation
+    $$
+        \ket{f} \rightarrow \ket{x^{-k} f \mod m(x)}
+    $$
+
+    Where the modulus $m(x)$ is the irreducible polynomial defining the galois field arithmetic.
+
+    Args:
+        m_x: The irreducible polynomial that defines the galois field.
+        k: The number of shifts (i.e. the exponent of $2$ or $x$).
+
+    Registers:
+        f: The number (polynomial) to shift.
+    """
+
+    qgf: QGF = attrs.field(converter=_qgf_converter)
+    k: SymbolicInt = 1
+
+    @cached_property
+    def n(self):
+        return self.qgf.degree
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('f', dtype=self.qgf)])
+
+    @cached_property
+    def degrees(self):
+        return tuple(sorted(self.qgf.gf_type.irreducible_poly.nonzero_degrees))
+
+    @cached_property
+    def gf(self):
+        return self.qgf.gf_type
+
+    @cached_property
+    def _power_2(self):
+        return self.gf(2) ** (-self.k)
+
+    def on_classical_vals(self, f: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        k = self.k
+        if is_symbolic(k):
+            raise TypeError(f'classical action is not supported for {self}')
+        assert isinstance(f, self.gf)
+        if k == 0 or self.n == 1:
+            return {'f': f}
+        return {'f': f * self._power_2}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', f: 'Soquet') -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.k):
+            raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
+        f_arr = bb.split(f)[::-1]
+        if self.n > 1:
+            for _ in range(self.k):
+                for i in reversed(self.degrees[1:-1]):
+                    f_arr[0], f_arr[i] = bb.add(CNOT(), ctrl=f_arr[0], target=f_arr[i])
+                f_arr = np.roll(f_arr, -1)
+            f_arr = f_arr[::-1]
+        f = bb.join(f_arr)
+        return {'f': f}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if self.k == 0 or self.n == 1:
+            return {}
+        return {CNOT(): max(len(self.degrees) - 2, 0) * self.k}
+
+    def adjoint(self) -> 'GF2ShiftRight':
+        return GF2ShiftRight(self.qgf, self.k)
+
+
+@bloq_example
+def _gf2shiftleft() -> GF2ShiftLeft:
+    m_x = [5, 2, 0]  # x^5 + x^2 + 1
+    gf2shiftleft = GF2ShiftLeft(QGF(2, 5, m_x), k=3)  # shift by 3
+    return gf2shiftleft
+
+
+_GF2_SHIFT_LEFT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftLeft, examples=(_gf2shiftleft,))
+
+
+@attrs.frozen
 class GF2ShiftRight(Bloq):
     r"""Multiplies by $2^k$ (or $x^k$ for polynomials) modulo the given irreducible polynomial.
 
@@ -735,6 +821,9 @@ class GF2ShiftRight(Bloq):
         if self.k == 0 or self.n == 1:
             return {}
         return {CNOT(): max(len(self.degrees) - 2, 0) * self.k}
+
+    def adjoint(self) -> GF2ShiftLeft:
+        return GF2ShiftLeft(self.qgf, self.k)
 
 
 @bloq_example
