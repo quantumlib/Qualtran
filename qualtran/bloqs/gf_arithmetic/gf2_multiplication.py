@@ -729,8 +729,12 @@ class GF2ShiftLeft(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if is_symbolic(self.n):
+            w = 5  # Assume a pentanomial is used.
+            return {CNOT(): (w - 2) * self.k}
         if self.k == 0 or self.n == 1:
             return {}
+
         return {CNOT(): max(len(self.degrees) - 2, 0) * self.k}
 
     def adjoint(self) -> 'GF2ShiftRight':
@@ -818,6 +822,9 @@ class GF2ShiftRight(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if is_symbolic(self.n):
+            w = 5  # Assume a pentanomial is used.
+            return {CNOT(): (w - 2) * self.k}
         if self.k == 0 or self.n == 1:
             return {}
         return {CNOT(): max(len(self.degrees) - 2, 0) * self.k}
