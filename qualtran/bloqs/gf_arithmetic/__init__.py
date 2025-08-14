@@ -20,6 +20,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     GF2MulK,
     GF2Multiplication,
     GF2MulViaKaratsuba,
+    GF2ShiftLeft,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
 )
