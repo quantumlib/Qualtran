@@ -47,12 +47,12 @@ The two generation scripts are `execute-notebooks.py` and `build-reference-docs.
 We use the `docs` branch to commit the latest stage-2 outputs. This branch
 has a different `docs/.gitignore` file so we can commit the stage-2 outputs.
 
-    git switch docs 
+    git switch docs
     git fetch origin && git merge origin/main
     cat docs/.gitignore  # verify that outputs are un-ignored
     cd dev_tools/
     python clean-stage-2-doc-outputs.py  # delete all generated outputs
-    python execute-notebooks.py --no-only-out-of-date
+    PYTHONWARNINGS=ignore python execute-notebooks.py --no-only-out-of-date
     python build-reference-docs.py
     cd ../docs
     git add .
