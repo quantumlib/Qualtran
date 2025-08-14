@@ -208,7 +208,7 @@ For DangleT nodes, there aren't any Soquets so the second element is omitted.
 <a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L343-L359">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>get_graph() -> pydot.Dot
+<code>get_graph() -> pydot.Graph
 </code></pre>
 
 Get the graphviz graph representing the Bloq.

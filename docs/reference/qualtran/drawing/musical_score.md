@@ -11,6 +11,8 @@ represents a qubit or register of qubits.
 
 [`class RegPosition`](../../qualtran/drawing/RegPosition.md): Coordinates for a register when visualizing on a musical score.
 
+[`class HLineFlavor`](../../qualtran/drawing/musical_score/HLineFlavor.md): Create a collection of name/value pairs.
+
 [`class HLine`](../../qualtran/drawing/HLine.md): Dataclass representing a horizontal line segment at a given vertical position `x`.
 
 [`class LineManager`](../../qualtran/drawing/LineManager.md): Methods to manage allocation and de-allocation of lines representing a register of qubits.

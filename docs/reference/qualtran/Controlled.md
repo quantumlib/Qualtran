@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L351-L581">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L582-L674">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -27,11 +27,13 @@ Inherits From: [`GateWithRegisters`](../qualtran/GateWithRegisters.md), [`Bloq`]
 
 <!-- Placeholder for "Used in" -->
 
-This meta-bloq is part of the 'controlled' protocol. As a default fallback,
-we wrap any bloq without a custom controlled version in this meta-bloq.
+This bloq represents a "total control" strategy of controlling `subbloq`: the decomposition
+of `Controlled(b)` uses the decomposition of `b` and controls each subbloq in that
+decomposition.
 
 Users should likely not use this class directly. Prefer using `bloq.controlled(ctrl_spec)`,
-which may return a tailored Bloq that is controlled in the desired way.
+which may return a natively-controlled Bloq or a more intelligent construction for
+complex control specs.
 
 <h2 class="add-link">Args</h2>
 
@@ -49,27 +51,22 @@ which may return a tailored Bloq that is controlled in the desired way.
 <h2 class="add-link">Attributes</h2>
 
 `ctrl_reg_names`<a id="ctrl_reg_names"></a>
-: &nbsp;
+: The name of the control registers.
+  
+  This is generated on-the-fly to avoid conflicts with existing register
+  names. Users should not rely on the absolute value of this property staying constant.
 
 `ctrl_regs`<a id="ctrl_regs"></a>
 : &nbsp;
 
 `ctrl_spec`<a id="ctrl_spec"></a>
-: &nbsp;
+: The specification of how the `subbloq` is controlled.
 
 `signature`<a id="signature"></a>
-: The input and output names and types for this bloq.
-  
-  This property can be thought of as analogous to the function signature in ordinary
-  programming. For example, it is analogous to function declarations in a
-  C header (`*.h`) file.
-  
-  This is the only mandatory method (property) you must implement to inherit from
-  `Bloq`. You can optionally implement additional methods to encode more information
-  about this bloq.
+: &nbsp;
 
 `subbloq`<a id="subbloq"></a>
-: &nbsp;
+: The bloq being controlled.
 
 
 
@@ -78,13 +75,13 @@ which may return a tailored Bloq that is controlled in the desired way.
 
 <h3 id="make_ctrl_system"><code>make_ctrl_system</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L369-L389">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L611-L620">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
 <code>make_ctrl_system(
     bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-) -> Tuple[<a href="../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>, <a href="../qualtran/AddControlledT.html"><code>qualtran.AddControlledT</code></a>]
+) -> Tuple['_ControlledBase', 'AddControlledT']
 </code></pre>
 
 A factory method for creating both the Controlled and the adder function.
@@ -93,7 +90,7 @@ See <a href="../qualtran/Bloq.html#get_ctrl_system"><code>Bloq.get_ctrl_system</
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L414-L415">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L622-L623">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -142,7 +139,7 @@ Raises
 
 <h3 id="build_composite_bloq"><code>build_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L417-L441">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L625-L652">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_composite_bloq(
@@ -174,7 +171,7 @@ Returns
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L443-L460">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L654-L671">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -196,117 +193,9 @@ know symbolic expressions for the counts, or 3) you need to "generalize" the sub
 by overwriting bloq attributes that do not affect its cost with generic sympy symbols using
 the provided `SympySymbolAllocator`.
 
-<h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L462-L472">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>on_classical_vals(
-    **vals
-) -> Dict[str, 'ClassicalValT']
-</code></pre>
-
-How this bloq operates on classical data.
-
-Override this method if your bloq represents classical, reversible logic. For example:
-quantum circuits composed of X and C^nNOT gates are classically simulable.
-
-Bloq definers should override this method. If you already have an instance of a `Bloq`,
-consider calling `call_clasically(**vals)` which will do input validation before
-calling this function.
-
-Args
-
-`**vals`
-: The input classical values for each left (or thru) register. The data
-  types are guaranteed to match `self.registers`. Values for registers
-  with bitsize `n` will be integers of that bitsize. Values for registers with
-  `shape` will be an ndarray of integers of the given bitsize. Note: integers
-  can be either Numpy or Python integers. If they are Python integers, they
-  are unsigned.
-
-
-
-
-Returns
-
-
-
-
-<h3 id="my_tensors"><code>my_tensors</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L518-L529">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>my_tensors(
-    incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-) -> List['qtn.Tensor']
-</code></pre>
-
-Override this method to support native quimb simulation of this Bloq.
-
-This method is responsible for returning tensors corresponding to the unitary, state, or
-effect of the bloq. Often, this method will return one tensor for a given Bloq, but
-some bloqs can be represented in a factorized form using more than one tensor.
-
-By default, calls to <a href="../qualtran/Bloq.html#tensor_contract"><code>Bloq.tensor_contract()</code></a> will first decompose and flatten the bloq
-before initiating the conversion to a tensor network. This has two consequences:
- 1) Overriding this method is only necessary if this bloq does not define a decomposition
-    or if the fully-decomposed form contains a bloq that does not define its tensors.
- 2) Even if you override this method to provide custom tensors, they may not be used
-    (by default) because we prefer the flat-decomposed version. This is usually desirable
-    for contraction performance; but for finer-grained control see
-    <a href="../qualtran/simulation/tensor/cbloq_to_quimb.html"><code>qualtran.simulation.tensor.cbloq_to_quimb</code></a>.
-
-Quimb defines a connection between two tensors by a shared index. The returned tensors
-from this method must use the Qualtran-Quimb index convention:
- - Each tensor index is a tuple `(cxn, j)`
- - The `cxn: qualtran.Connection` entry identifies the connection between bloq instances.
- - The second integer `j` is the bit index within high-bitsize registers,
-   which is necessary due to technical restrictions.
-
-Args
-
-`incoming`
-: A mapping from register name to Connection (or an array thereof) to use as
-  left indices for the tensor network. The shape of the array matches the register's
-  shape.
-
-`outgoing`
-: A mapping from register name to Connection (or an array thereof) to use as
-  right indices for the tensor network.
-
-
-
-
-<h3 id="wire_symbol"><code>wire_symbol</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L531-L542">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>wire_symbol(
-    reg: Optional[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>],
-    idx: Tuple[int, ...] = tuple()
-) -> 'WireSymbol'
-</code></pre>
-
-On a musical score visualization, use this `WireSymbol` to represent `soq`.
-
-By default, we use a "directional text box", which is a text box that is either
-rectangular for thru-registers or facing to the left or right for non-thru-registers.
-
-If reg is specified as `None`, this should return a Text label for the title of
-the gate. If no title is needed (as the wire_symbols are self-explanatory),
-this should return `Text('')`.
-
-Override this method to provide a more relevant `WireSymbol` for the provided soquet.
-This method can access bloq attributes. For example: you may want to draw either
-a filled or empty circle for a control register depending on a control value bloq
-attribute.
-
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L544-L545">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L673-L674">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Bloq'
@@ -320,35 +209,6 @@ fallback wraps this bloq in `Adjoint`.
 Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
 details.
 
-<h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L552-L562">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>as_cirq_op(
-    qubit_manager: 'cirq.QubitManager', **cirq_quregs
-) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]
-</code></pre>
-
-Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
-
-
-Args
-
-`qubit_manager`
-: For allocating/deallocating qubits for RIGHT/LEFT only registers.
-
-`in_quregs`
-: Mapping from LEFT register names to corresponding cirq qubits.
-
-
-
-
-Returns
-
-
-
-
 <h3 id="num_qubits"><code>num_qubits</code></h3>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
@@ -358,21 +218,21 @@ Returns
 The number of qubits this gate acts on.
 
 
-<h3 id="__eq__"><code>__eq__</code></h3>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__eq__(
-    other
-)
-</code></pre>
-
-Method generated by attrs for class Controlled.
-
-
 <h3 id="__ne__"><code>__ne__</code></h3>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__ne__(
+    other
+)
+</code></pre>
+
+Check equality and either forward a NotImplemented or return the result negated.
+
+
+<h3 id="__eq__"><code>__eq__</code></h3>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>__eq__(
     other
 )
 </code></pre>

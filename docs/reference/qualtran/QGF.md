@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L866-L989">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L911-L1057">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -15,11 +15,11 @@
 
 Galois Field type to represent elements of a finite field.
 
-Inherits From: [`QDType`](../qualtran/QDType.md)
+Inherits From: [`QDType`](../qualtran/QDType.md), [`QCDType`](../qualtran/QCDType.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.QGF(
-    characteristic, degree
+    characteristic, degree, irreducible_poly=NOTHING
 )
 </code></pre>
 
@@ -61,11 +61,21 @@ References
 `degree`<a id="degree"></a>
 : The degree $m$ of the field $GF(p^{m})$. The degree must be a positive integer.
 
+`irreducible_poly`<a id="irreducible_poly"></a>
+: Optional galois.Poly instance that defines the field arithmetic.
+  This parameter is passed to `galois.GF(..., irreducible_poly=irreducible_poly, verify=False)`.
+
 `bitsize`<a id="bitsize"></a>
 : &nbsp;
 
 `gf_type`<a id="gf_type"></a>
 : &nbsp;
+
+`num_bits`<a id="num_bits"></a>
+: &nbsp;
+
+`num_cbits`<a id="num_cbits"></a>
+: Number of classical bits required to represent a single instance of this data type.
 
 `num_qubits`<a id="num_qubits"></a>
 : Number of qubits required to represent a single instance of this data type.
@@ -80,7 +90,7 @@ References
 
 <h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L917-L920">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L976-L979">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_classical_domain() -> Iterable[Any]
@@ -91,7 +101,7 @@ Yields all possible classical (computational basis state) values representable b
 
 <h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L932-L935">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1000-L1003">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_bits(
@@ -99,12 +109,12 @@ Yields all possible classical (computational basis state) values representable b
 ) -> List[int]
 </code></pre>
 
-Yields individual bits corresponding to binary representation of x
+Returns individual bits corresponding to binary representation of x
 
 
 <h3 id="from_bits"><code>from_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L937-L939">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1005-L1007">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits(
@@ -117,7 +127,7 @@ Combine individual bits to form x
 
 <h3 id="from_bits_array"><code>from_bits_array</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L941-L948">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1009-L1016">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits_array(
@@ -133,7 +143,7 @@ and the output array satisfies `output_shape = input_shape[:-1]`.
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L950-L958">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1018-L1026">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(
@@ -157,7 +167,7 @@ Args
 
 <h3 id="assert_valid_classical_val_array"><code>assert_valid_classical_val_array</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L960-L975">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1028-L1043">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val_array(
@@ -184,7 +194,7 @@ Args
 
 <h3 id="is_symbolic"><code>is_symbolic</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L977-L979">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1045-L1047">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_symbolic() -> bool
@@ -195,7 +205,7 @@ Returns True if this qdtype is parameterized with symbolic objects.
 
 <h3 id="iteration_length_or_zero"><code>iteration_length_or_zero</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L981-L986">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L1049-L1054">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>iteration_length_or_zero() -> <a href="../qualtran/symbolics/SymbolicInt.html"><code>qualtran.symbolics.SymbolicInt</code></a>
@@ -205,21 +215,21 @@ Safe version of iteration length.
 
 Returns the iteration_length if the type has it or else zero.
 
-<h3 id="__eq__"><code>__eq__</code></h3>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__eq__(
-    other
-)
-</code></pre>
-
-Method generated by attrs for class QGF.
-
-
 <h3 id="__ne__"><code>__ne__</code></h3>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__ne__(
+    other
+)
+</code></pre>
+
+Check equality and either forward a NotImplemented or return the result negated.
+
+
+<h3 id="__eq__"><code>__eq__</code></h3>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>__eq__(
     other
 )
 </code></pre>

@@ -13,6 +13,8 @@
    qualtran/BloqError.md
    qualtran/BloqExample.md
    qualtran/BloqInstance.md
+   qualtran/CBit.md
+   qualtran/CDType.md
    qualtran/CompositeBloq.md
    qualtran/Connection.md
    qualtran/ConnectionT.md
@@ -25,9 +27,12 @@
    qualtran/GateWithRegisters.md
    qualtran/QAny.md
    qualtran/QBit.md
+   qualtran/QCDType.md
    qualtran/QDType.md
+   qualtran/QDTypeCheckingSeverity.md
    qualtran/QFxp.md
    qualtran/QGF.md
+   qualtran/QGFPoly.md
    qualtran/QInt.md
    qualtran/QIntOnesComp.md
    qualtran/QMontgomeryUInt.md
@@ -37,9 +42,11 @@
    qualtran/Signature.md
    qualtran/Soquet.md
    qualtran/bloq_example.md
+   qualtran/check_dtypes_consistent.md
    qualtran/cirq_interop.md
    qualtran/drawing.md
    qualtran/linalg.md
+   qualtran/make_ctrl_system_with_correct_metabloq.md
    qualtran/resource_counting.md
    qualtran/serialization.md
    qualtran/simulation.md
@@ -241,6 +248,7 @@
    :hidden:
    :caption: musical_score
 
+   qualtran/drawing/musical_score/HLineFlavor.md
    qualtran/drawing/musical_score/MusicalScoreEncoder.md
    qualtran/drawing/musical_score/SoqData.md
    qualtran/drawing/musical_score/frozen.md
@@ -315,9 +323,15 @@
    :hidden:
    :caption: classical_sim
 
+   qualtran/simulation/classical_sim/ClassicalSimState.md
+   qualtran/simulation/classical_sim/ClassicalValDistribution.md
+   qualtran/simulation/classical_sim/ClassicalValRetT.md
    qualtran/simulation/classical_sim/ClassicalValT.md
+   qualtran/simulation/classical_sim/MeasurementPhase.md
+   qualtran/simulation/classical_sim/PhasedClassicalSimState.md
    qualtran/simulation/classical_sim/add_ints.md
    qualtran/simulation/classical_sim/call_cbloq_classically.md
+   qualtran/simulation/classical_sim/do_phased_classical_simulation.md
    qualtran/simulation/classical_sim/format_classical_truth_table.md
    qualtran/simulation/classical_sim/get_classical_truth_table.md
 
@@ -325,14 +339,15 @@
    :hidden:
    :caption: tensor
 
+   qualtran/simulation/tensor/DiscardInd.md
    qualtran/simulation/tensor/active_space_for_ctrl_spec.md
    qualtran/simulation/tensor/bloq_has_custom_tensors.md
    qualtran/simulation/tensor/bloq_to_dense.md
    qualtran/simulation/tensor/bloq_to_dense_via_classical_action.md
    qualtran/simulation/tensor/cbloq_to_quimb.md
+   qualtran/simulation/tensor/cbloq_to_superquimb.md
    qualtran/simulation/tensor/eye_tensor_for_signature.md
    qualtran/simulation/tensor/flatten_for_tensor_contraction.md
-   qualtran/simulation/tensor/get_right_and_left_inds.md
    qualtran/simulation/tensor/initialize_from_zero.md
    qualtran/simulation/tensor/my_tensors_from_classical_action.md
    qualtran/simulation/tensor/quimb_to_dense.md

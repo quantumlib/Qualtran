@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L796-L1251">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L833-L1310">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -52,12 +52,12 @@ used when adding more bloqs. Adding a THRU or RIGHT register can enable more che
 
 <h3 id="add_register_from_dtype"><code>add_register_from_dtype</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L833-L880">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L870-L917">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_register_from_dtype(
     reg: Union[str, <a href="../qualtran/Register.html"><code>qualtran.Register</code></a>],
-    dtype: Optional[<a href="../qualtran/QDType.html"><code>qualtran.QDType</code></a>] = None
+    dtype: Optional[<a href="../qualtran/QCDType.html"><code>qualtran.QCDType</code></a>] = None
 ) -> Union[None, <a href="../qualtran/Soquet.html"><code>qualtran.Soquet</code></a>]
 </code></pre>
 
@@ -86,12 +86,12 @@ Returns
 
 <h3 id="add_register"><code>add_register</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L888-L909">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L925-L960">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_register(
     reg: Union[str, <a href="../qualtran/Register.html"><code>qualtran.Register</code></a>],
-    bitsize: Optional[int] = None
+    bitsize: Optional['SymbolicInt'] = None
 ) -> Union[None, <a href="../qualtran/Soquet.html"><code>qualtran.Soquet</code></a>]
 </code></pre>
 
@@ -103,7 +103,7 @@ this operation is not allowed.
 Args
 
 `reg`
-: Either the register or a register name. If this is a register, then `bitsize`
+: Either the register or a register name. If this is a register name, then `bitsize`
   must also be provided and a default THRU register will be added.
 
 `bitsize`
@@ -120,7 +120,7 @@ Returns
 
 <h3 id="from_signature"><code>from_signature</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L911-L935">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L962-L986">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -137,7 +137,7 @@ to match. This constructor is used by <a href="../qualtran/Bloq.html#decompose_b
 
 <h3 id="map_soqs"><code>map_soqs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L937-L955">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L988-L1006">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@staticmethod</code>
@@ -171,7 +171,7 @@ Returns
 
 <h3 id="add_t"><code>add_t</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L984-L1004">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1035-L1055">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_t(
@@ -206,7 +206,7 @@ Returns
 
 <h3 id="add_d"><code>add_d</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1006-L1023">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1057-L1074">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_d(
@@ -241,7 +241,7 @@ Returns
 
 <h3 id="add_and_partition"><code>add_and_partition</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1025-L1053">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1076-L1104">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_and_partition(
@@ -285,7 +285,7 @@ Returns
 
 <h3 id="add"><code>add</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1055-L1087">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1106-L1138">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add(
@@ -326,7 +326,7 @@ Returns
 
 <h3 id="add_from"><code>add_from</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1113-L1145">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1164-L1196">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_from(
@@ -357,7 +357,7 @@ Returns
 
 <h3 id="finalize"><code>finalize</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1147-L1184">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1198-L1235">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>finalize(
@@ -387,7 +387,7 @@ Args
 
 <h3 id="allocate"><code>allocate</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1211-L1218">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1262-L1269">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>allocate(
@@ -402,7 +402,7 @@ Args
 
 <h3 id="free"><code>free</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1220-L1226">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1271-L1281">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>free(
@@ -416,7 +416,7 @@ Args
 
 <h3 id="split"><code>split</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1228-L1235">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1283-L1294">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>split(
@@ -429,7 +429,7 @@ Add a Split bloq to split up a register.
 
 <h3 id="join"><code>join</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1237-L1251">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/composite_bloq.py#L1296-L1310">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>join(

@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/classical_sim.py#L183-L226">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/classical_sim.py#L504-L532">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -19,7 +19,8 @@ Propagate `on_classical_vals` calls through a composite bloq's contents.
 <code>qualtran.simulation.classical_sim.call_cbloq_classically(
     signature: <a href="../../../qualtran/Signature.html"><code>qualtran.Signature</code></a>,
     vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
-    binst_graph: nx.DiGraph
+    binst_graph: nx.DiGraph,
+    random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(rng=np.random.default_rng())
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]
 </code></pre>
 
@@ -40,6 +41,10 @@ While we're handling the plumbing, we also do error checking on the arguments; s
 
 `binst_graph`<a id="binst_graph"></a>
 : The cbloq's binst graph.
+
+`random_handler`<a id="random_handler"></a>
+: The classical random number handler to use for use in
+  measurement-based outcomes (e.g. MBUC).
 
 
 

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L125-L235">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L141-L279">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -44,7 +44,7 @@ register must have a unique name.
 
 <h3 id="build"><code>build</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L144-L154">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L160-L170">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -67,7 +67,7 @@ Args
 
 <h3 id="build_from_dtypes"><code>build_from_dtypes</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L156-L164">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L172-L180">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -90,7 +90,7 @@ Args
 
 <h3 id="lefts"><code>lefts</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L166-L168">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L182-L184">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>lefts() -> Iterable[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -101,7 +101,7 @@ Iterable over all registers that appear on the LEFT as input.
 
 <h3 id="rights"><code>rights</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L170-L172">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L186-L188">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>rights() -> Iterable[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -112,7 +112,7 @@ Iterable over all registers that appear on the RIGHT as output.
 
 <h3 id="get_left"><code>get_left</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L174-L176">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L190-L192">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_left(
@@ -125,7 +125,7 @@ Get a left register by name.
 
 <h3 id="get_right"><code>get_right</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L178-L180">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L194-L196">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_right(
@@ -138,7 +138,7 @@ Get a right register by name.
 
 <h3 id="groups"><code>groups</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L182-L191">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L198-L207">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>groups() -> Iterable[Tuple[str, List[Register]]]
@@ -150,7 +150,7 @@ Registers with shared names (but differing `side` attributes) can be implicitly 
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L193-L195">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L209-L211">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Signature'
@@ -161,7 +161,7 @@ Swap all RIGHT and LEFT registers in this collection.
 
 <h3 id="n_qubits"><code>n_qubits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L197-L206">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L213-L224">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>n_qubits() -> int
@@ -173,9 +173,44 @@ If the signature has LEFT and RIGHT registers, the number of qubits in the signa
 is taken to be the greater of the number of left or right qubits. A bloq with this
 signature uses at least this many qubits.
 
+Classical registers are ignored.
+
+<h3 id="n_cbits"><code>n_cbits</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L226-L235">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>n_cbits() -> int
+</code></pre>
+
+The number of classical bits in the signature.
+
+If the signature has LEFT and RIGHT registers, the number of classical bits in the signature
+is taken to be the greater of the number of left or right cbits. A bloq with this
+signature uses at least this many classical bits.
+
+<h3 id="n_bits"><code>n_bits</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L237-L250">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>n_bits() -> int
+</code></pre>
+
+The number of quantum + classical bits in the signature.
+
+If the signature has LEFT and RIGHT registers, the number of bits in the signature
+is taken to be the greater of the number of left or right bits. A bloq with this
+signature uses at least this many quantum + classical bits.
+
+See Also
+
+
+
+
 <h3 id="__getitem__"><code>__getitem__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L219-L220">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L263-L264">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__getitem__(
@@ -188,7 +223,7 @@ signature uses at least this many qubits.
 
 <h3 id="__contains__"><code>__contains__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L222-L223">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L266-L267">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__contains__(
@@ -201,7 +236,7 @@ signature uses at least this many qubits.
 
 <h3 id="__iter__"><code>__iter__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L225-L226">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L269-L270">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__iter__() -> Iterator[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -212,7 +247,7 @@ signature uses at least this many qubits.
 
 <h3 id="__len__"><code>__len__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L228-L229">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L272-L273">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__len__() -> int
@@ -223,7 +258,7 @@ signature uses at least this many qubits.
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L234-L235">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L278-L279">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(

@@ -30,7 +30,7 @@ If the bloq has no decomposition, this check is not applicable. Otherwise: we ch
 First, we check loose type checking (allowing conversions between numeric types). A
 failure here is returned as a FAIL.
 
-Then `QDTypeCheckingSeverity.ANY` checking (allowing just conversions to and from QAny) and
+Then <a href="../../qualtran/QDTypeCheckingSeverity.html#ANY"><code>QDTypeCheckingSeverity.ANY</code></a> checking (allowing just conversions to and from QAny) and
 finally strict checking are performed. Currently, these are coded as an UNVERIFIED bloq
 check result.
 

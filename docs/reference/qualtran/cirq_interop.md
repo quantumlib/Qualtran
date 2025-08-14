@@ -13,9 +13,9 @@ Bi-directional interop between Qualtran & Cirq.
 
 ## Classes
 
-[`class CirqGateAsBloq`](../qualtran/cirq_interop/CirqGateAsBloq.md): A Bloq wrapper around a `cirq.Gate`
+[`class CirqGateAsBloq`](../qualtran/cirq_interop/CirqGateAsBloq.md): An adapter that fulfils the Bloq API by delegating to `cirq.Gate` methods.
 
-[`class CirqGateAsBloqBase`](../qualtran/cirq_interop/CirqGateAsBloqBase.md): A Bloq wrapper around a `cirq.Gate`
+[`class CirqGateAsBloqBase`](../qualtran/cirq_interop/CirqGateAsBloqBase.md): A base class to bootstrap a bloq from a `cirq.Gate`.
 
 [`class BloqAsCirqGate`](../qualtran/cirq_interop/BloqAsCirqGate.md): A shim for using bloqs in a Cirq circuit.
 

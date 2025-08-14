@@ -5,6 +5,10 @@ Functionality for the <a href="../../qualtran/Bloq.html#tensor_contract"><code>B
 
 
 
+## Classes
+
+[`class DiscardInd`](../../qualtran/simulation/tensor/DiscardInd.md): Return `DiscardInd` in <a href="../../qualtran/Bloq.html#my_tensors"><code>Bloq.my_tensors()</code></a> to indicate an index should be discarded.
+
 ## Functions
 
 [`active_space_for_ctrl_spec(...)`](../../qualtran/simulation/tensor/active_space_for_ctrl_spec.md): Returns the "active" subspace corresponding to `signature` and `ctrl_spec`.
@@ -17,11 +21,11 @@ Functionality for the <a href="../../qualtran/Bloq.html#tensor_contract"><code>B
 
 [`cbloq_to_quimb(...)`](../../qualtran/simulation/tensor/cbloq_to_quimb.md): Convert a composite bloq into a tensor network.
 
+[`cbloq_to_superquimb(...)`](../../qualtran/simulation/tensor/cbloq_to_superquimb.md): Convert a composite bloq into a superoperator tensor network.
+
 [`eye_tensor_for_signature(...)`](../../qualtran/simulation/tensor/eye_tensor_for_signature.md): Returns an identity tensor with shape `tensor_shape_from_signature(signature)`
 
 [`flatten_for_tensor_contraction(...)`](../../qualtran/simulation/tensor/flatten_for_tensor_contraction.md): Flatten a (composite) bloq as much as possible to enable efficient tensor contraction.
-
-[`get_right_and_left_inds(...)`](../../qualtran/simulation/tensor/get_right_and_left_inds.md): Return right and left tensor indices.
 
 [`initialize_from_zero(...)`](../../qualtran/simulation/tensor/initialize_from_zero.md): Take `bloq` and compose it with initial zero states for each left register.
 

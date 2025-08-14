@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L78-L553">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L97-L638">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -58,7 +58,7 @@ encode more information about the bloq.
 
 <h3 id="build_composite_bloq"><code>build_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L113-L128">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L132-L147">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_composite_bloq(
@@ -90,7 +90,7 @@ Returns
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L130-L144">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L149-L163">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -118,7 +118,7 @@ Raises
 
 <h3 id="as_composite_bloq"><code>as_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L146-L155">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L165-L174">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_composite_bloq() -> 'CompositeBloq'
@@ -131,7 +131,7 @@ be returned.
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L157-L169">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L176-L188">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Bloq'
@@ -147,12 +147,12 @@ details.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L171-L204">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L190-L221">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
     **vals
-) -> Dict[str, 'ClassicalValT']
+) -> Mapping[str, 'ClassicalValRetT']
 </code></pre>
 
 How this bloq operates on classical data.
@@ -160,7 +160,7 @@ How this bloq operates on classical data.
 Override this method if your bloq represents classical, reversible logic. For example:
 quantum circuits composed of X and C^nNOT gates are classically simulable.
 
-Bloq definers should override this method. If you already have an instance of a `Bloq`,
+Bloq authors should override this method. If you already have an instance of a `Bloq`,
 consider calling `call_clasically(**vals)` which will do input validation before
 calling this function.
 
@@ -168,11 +168,9 @@ Args
 
 `**vals`
 : The input classical values for each left (or thru) register. The data
-  types are guaranteed to match `self.registers`. Values for registers
-  with bitsize `n` will be integers of that bitsize. Values for registers with
-  `shape` will be an ndarray of integers of the given bitsize. Note: integers
-  can be either Numpy or Python integers. If they are Python integers, they
-  are unsigned.
+  types are guaranteed to match `self.signature`. Values for registers
+  with a particular dtype will be the corresponding classical data type. Values for
+  registers with `shape` will be an ndarray of values of the expected type.
 
 
 
@@ -182,9 +180,35 @@ Returns
 
 
 
+<h3 id="basis_state_phase"><code>basis_state_phase</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L223-L240">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>basis_state_phase(
+    **vals
+) -> Union[complex, None]
+</code></pre>
+
+How this bloq phases classical basis states.
+
+Override this method if your bloq represents classical logic with basis-state
+dependent phase factors. This corresponds to bloqs whose matrix representation
+(in the standard basis) is a generalized permutation matrix: a permutation matrix
+where each entry can be +1, -1 or any complex number with unit absolute value.
+Alternatively, this corresponds to bloqs composed from classical operations
+(X, CNOT, Toffoli, ...) and diagonal operations (T, CZ, CCZ, ...).
+
+Bloq authors should override this method. If you are using an instantiated bloq object,
+call
+
+If this method is implemented, `on_classical_vals` must also be implemented.
+If `on_classical_vals` is implemented but this method is not implemented, it is assumed
+that the bloq does not alter the phase.
+
 <h3 id="call_classically"><code>call_classically</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L206-L228">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L242-L264">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_classically(
@@ -218,27 +242,58 @@ Returns
 
 <h3 id="tensor_contract"><code>tensor_contract</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L230-L240">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L266-L300">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>tensor_contract() -> 'NDArray'
+<code>tensor_contract(
+    superoperator: bool = False
+) -> 'NDArray'
 </code></pre>
 
-Return a contracted, dense ndarray representing this bloq.
+Return a contracted, dense ndarray encoding of this bloq.
 
-This constructs a tensor network and then contracts it according to our registers,
-i.e. the dangling indices. The returned array will be 0-, 1- or 2-dimensional. If it is
-a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-of (right, left) indices.
+This method decomposes and flattens this bloq into a factorized CompositeBloq,
+turns that composite bloq into a Quimb tensor network, and contracts it into a dense
+ndarray.
+
+The returned array will be 0-, 1-, 2-, or 4-dimensional with indices arranged according to the
+bloq's signature and the type of simulation requested via the `superoperator` flag.
+
+If `superoperator` is set to False (the default), a pure-state tensor network will be
+constructed.
+ - If `bloq` has all thru-registers, the dense tensor will be 2-dimensional with shape `(n, n)`
+   where `n` is the number of bits in the signature. We follow the linear algebra convention
+   and order the indices as (right, left) so the matrix-vector product can be used to evolve
+   a state vector.
+ - If `bloq` has all left- or all right-registers, the tensor will be 1-dimensional with
+   shape `(n,)`. Note that we do not distinguish between 'row' and 'column' vectors in this
+   function.
+ - If `bloq` has no external registers, the contracted form is a 0-dimensional complex number.
+
+If `superoperator` is set to True, an open-system tensor network will be constructed.
+ - States result in a 2-dimensional density matrix with indices (right_forward, right_backward)
+   or (left_forward, left_backward) depending on whether they're input or output states.
+ - Operations result in a 4-dimensional tensor with indices (right_forward, right_backward,
+   left_forward, left_backward).
+
+Args
+
+`superoperator`
+: If toggled to True, do an open-system simulation. This supports
+  non-unitary operations like measurement, but is more costly and results in
+  higher-dimension resultant tensors.
+
+
+
 
 <h3 id="my_tensors"><code>my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L242-L274">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L302-L334">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>my_tensors(
     incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-) -> List['qtn.Tensor']
+) -> List[Union['qtn.Tensor', 'DiscardInd']]
 </code></pre>
 
 Override this method to support native quimb simulation of this Bloq.
@@ -279,7 +334,7 @@ Args
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L276-L293">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L336-L353">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -303,7 +358,7 @@ the provided `SympySymbolAllocator`.
 
 <h3 id="my_static_costs"><code>my_static_costs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L295-L307">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L355-L367">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>my_static_costs(
@@ -324,7 +379,7 @@ CostKey.
 
 <h3 id="call_graph"><code>call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L309-L339">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L369-L399">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_graph(
@@ -374,7 +429,7 @@ Returns
 
 <h3 id="bloq_counts"><code>bloq_counts</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L341-L361">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L401-L421">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>bloq_counts(
@@ -406,7 +461,7 @@ Returns
 
 <h3 id="get_ctrl_system"><code>get_ctrl_system</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L363-L404">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L423-L459">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_ctrl_system(
@@ -456,7 +511,7 @@ Returns
 
 <h3 id="controlled"><code>controlled</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L406-L428">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L461-L483">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>controlled(
@@ -488,7 +543,7 @@ Returns
 
 <h3 id="t_complexity"><code>t_complexity</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L430-L438">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L485-L493">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_complexity() -> 'TComplexity'
@@ -501,7 +556,7 @@ method can be overriden with a known value.
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L440-L467">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L495-L522">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -543,9 +598,37 @@ Returns
 
 
 
+<h3 id="as_pl_op"><code>as_pl_op</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L524-L541">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>as_pl_op(
+    wires: 'Wires'
+) -> 'Operation'
+</code></pre>
+
+Override this method to support conversion to a PennyLane operation.
+
+If this method is not overriden, the default implementation will wrap this bloq
+in a `FromBloq` shim.
+
+Args
+
+`wires`
+: the wires that the op acts on
+
+
+
+
+Returns
+
+
+
+
 <h3 id="on"><code>on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L469-L495">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L543-L569">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on(
@@ -575,7 +658,7 @@ See Also
 
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L497-L517">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L571-L591">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
@@ -604,7 +687,7 @@ See Also
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L519-L550">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq.py#L593-L624">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(

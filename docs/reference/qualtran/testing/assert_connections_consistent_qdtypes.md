@@ -18,7 +18,7 @@ Check that a composite bloq's connections have consistent qdtypes.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.testing.assert_connections_consistent_qdtypes(
     cbloq: <a href="../../qualtran/CompositeBloq.html"><code>qualtran.CompositeBloq</code></a>,
-    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE
+    type_checking_severity: <a href="../../qualtran/QDTypeCheckingSeverity.html"><code>qualtran.QDTypeCheckingSeverity</code></a> = <a href="../../qualtran/QDTypeCheckingSeverity.html#LOOSE"><code>qualtran.QDTypeCheckingSeverity.LOOSE</code></a>
 )
 </code></pre>
 

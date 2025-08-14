@@ -48,15 +48,19 @@ A variety of analysis protocols are available in submodules as well like
 
 [`class DidNotFlattenAnythingError`](./qualtran/DidNotFlattenAnythingError.md): An exception raised if `flatten_once()` did not find anything to flatten.
 
-[`class QDType`](./qualtran/QDType.md): This defines the abstract interface for quantum data types.
+[`class QCDType`](./qualtran/QCDType.md): The abstract interface for quantum/classical quantum computing data types.
 
-[`class QInt`](./qualtran/QInt.md): Signed Integer of a given width bitsize.
+[`class CDType`](./qualtran/CDType.md): The abstract interface for classical data types.
 
-[`class QBit`](./qualtran/QBit.md): A single qubit. The smallest addressable unit of quantum data.
+[`class QDType`](./qualtran/QDType.md): The abstract interface for quantum data types.
 
 [`class QAny`](./qualtran/QAny.md): Opaque bag-of-qubits type.
 
-[`class QFxp`](./qualtran/QFxp.md): Fixed point type to represent real numbers.
+[`class QBit`](./qualtran/QBit.md): A single qubit. The smallest addressable unit of quantum data.
+
+[`class CBit`](./qualtran/CBit.md): A single classical bit. The smallest addressable unit of classical data.
+
+[`class QInt`](./qualtran/QInt.md): Signed Integer of a given width bitsize.
 
 [`class QIntOnesComp`](./qualtran/QIntOnesComp.md): Signed Integer of a given width bitsize.
 
@@ -64,9 +68,15 @@ A variety of analysis protocols are available in submodules as well like
 
 [`class BQUInt`](./qualtran/BQUInt.md): Unsigned integer whose values are bounded within a range.
 
+[`class QFxp`](./qualtran/QFxp.md): Fixed point type to represent real numbers.
+
 [`class QMontgomeryUInt`](./qualtran/QMontgomeryUInt.md): Montgomery form of an unsigned integer of a given width bitsize which wraps around upon overflow.
 
 [`class QGF`](./qualtran/QGF.md): Galois Field type to represent elements of a finite field.
+
+[`class QGFPoly`](./qualtran/QGFPoly.md): Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
+
+[`class QDTypeCheckingSeverity`](./qualtran/QDTypeCheckingSeverity.md): The level of type checking to enforce
 
 [`class Register`](./qualtran/Register.md): A register serves as the input/output quantum data specifications in a bloq's `Signature`.
 
@@ -99,6 +109,10 @@ A variety of analysis protocols are available in submodules as well like
 ## Functions
 
 [`bloq_example(...)`](./qualtran/bloq_example.md): Decorator to turn a function into a `BloqExample`.
+
+[`check_dtypes_consistent(...)`](./qualtran/check_dtypes_consistent.md): Check if two types are consistent given our current definition on consistent types.
+
+[`make_ctrl_system_with_correct_metabloq(...)`](./qualtran/make_ctrl_system_with_correct_metabloq.md): The default fallback for `Bloq.make_ctrl_system.
 
 ## Type Aliases
 

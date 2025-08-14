@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L529-L757">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L560-L790">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -15,7 +15,7 @@
 
 Fixed point type to represent real numbers.
 
-Inherits From: [`QDType`](../qualtran/QDType.md)
+Inherits From: [`QDType`](../qualtran/QDType.md), [`QCDType`](../qualtran/QCDType.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.QFxp(
@@ -73,6 +73,12 @@ and future upgrades.
 `signed`<a id="signed"></a>
 : Whether the number is signed or not.
 
+`num_bits`<a id="num_bits"></a>
+: &nbsp;
+
+`num_cbits`<a id="num_cbits"></a>
+: Number of classical bits required to represent a single instance of this data type.
+
 `num_int`<a id="num_int"></a>
 : Number of bits for the integral part.
 
@@ -86,18 +92,18 @@ and future upgrades.
 
 <h3 id="is_symbolic"><code>is_symbolic</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L594-L595">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L625-L626">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_symbolic() -> bool
 </code></pre>
 
-Returns True if this qdtype is parameterized with symbolic objects.
+Returns True if this dtype is parameterized with symbolic objects.
 
 
 <h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L605-L610">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L636-L641">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_classical_domain() -> Iterable[int]
@@ -109,7 +115,7 @@ See class docstring section on "Classical Simulation" for more details.
 
 <h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L612-L617">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L643-L648">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_bits(
@@ -123,7 +129,7 @@ See class docstring section on "Classical Simulation" for more details.
 
 <h3 id="from_bits"><code>from_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L619-L624">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L650-L655">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits(
@@ -137,7 +143,7 @@ See class docstring section on "Classical Simulation" for more details.
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L626-L631">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L657-L662">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(
@@ -151,7 +157,7 @@ See class docstring section on "Classical Simulation" for more details.
 
 <h3 id="to_fixed_width_int"><code>to_fixed_width_int</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L633-L659">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L664-L690">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_fixed_width_int(
@@ -195,7 +201,7 @@ Args
 
 <h3 id="float_from_fixed_width_int"><code>float_from_fixed_width_int</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L661-L670">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L692-L701">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>float_from_fixed_width_int(
@@ -213,7 +219,7 @@ the choice of this representation.
 
 <h3 id="fxp_dtype_template"><code>fxp_dtype_template</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L678-L714">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L709-L745">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>fxp_dtype_template() -> Fxp
@@ -240,21 +246,21 @@ simulator protocol. Once the library choice for fixed-point classical real
 values is finalized, the code will be updated to use the new functionality
 instead of delegating to raw integer values (see above).
 
-<h3 id="__eq__"><code>__eq__</code></h3>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__eq__(
-    other
-)
-</code></pre>
-
-Method generated by attrs for class QFxp.
-
-
 <h3 id="__ne__"><code>__ne__</code></h3>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__ne__(
+    other
+)
+</code></pre>
+
+Check equality and either forward a NotImplemented or return the result negated.
+
+
+<h3 id="__eq__"><code>__eq__</code></h3>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>__eq__(
     other
 )
 </code></pre>

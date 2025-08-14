@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L74-L197">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L74-L191">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -41,9 +41,6 @@ A shim for using bloqs in a Cirq circuit.
 `bloq`<a id="bloq"></a>
 : The bloq we're wrapping.
 
-`signature`<a id="signature"></a>
-: `GateWithRegisters` registers.
-
 
 
 
@@ -51,7 +48,7 @@ A shim for using bloqs in a Cirq circuit.
 
 <h3 id="bloq_on"><code>bloq_on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L101-L123">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L96-L119">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -93,22 +90,9 @@ Returns
 
 
 
-<h3 id="on_registers"><code>on_registers</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L157-L160">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>on_registers(
-    **qubit_regs
-) -> cirq.Operation
-</code></pre>
-
-
-
-
 <h3 id="__pow__"><code>__pow__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L170-L183">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L167-L177">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__pow__(
@@ -121,7 +105,7 @@ Returns
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L185-L188">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L179-L182">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(

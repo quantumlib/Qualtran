@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L257-L271">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/symbolics/math_funcs.py#L258-L272">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>

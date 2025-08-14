@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L76-L304">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L78-L318">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -83,6 +83,12 @@ function, open a GitHub issue.
 `cvs`<a id="cvs"></a>
 : &nbsp;
 
+`num_bits`<a id="num_bits"></a>
+: &nbsp;
+
+`num_cbits`<a id="num_cbits"></a>
+: &nbsp;
+
 `num_ctrl_reg`<a id="num_ctrl_reg"></a>
 : &nbsp;
 
@@ -102,7 +108,7 @@ function, open a GitHub issue.
 
 <h3 id="is_symbolic"><code>is_symbolic</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L153-L154">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L165-L166">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_symbolic()
@@ -113,10 +119,10 @@ function, open a GitHub issue.
 
 <h3 id="activation_function_dtypes"><code>activation_function_dtypes</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L156-L166">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L168-L178">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>activation_function_dtypes() -> Sequence[Tuple[QDType, Tuple[SymbolicInt, ...]]]
+<code>activation_function_dtypes() -> Sequence[Tuple[QCDType, Tuple[SymbolicInt, ...]]]
 </code></pre>
 
 The data types that serve as input to the 'activation function'.
@@ -132,7 +138,7 @@ Returns
 
 <h3 id="is_active"><code>is_active</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L168-L198">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L180-L210">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>is_active(
@@ -164,7 +170,7 @@ Returns
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L200-L214">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L212-L226">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
@@ -179,7 +185,7 @@ Returns
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L227-L235">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L239-L247">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(
@@ -192,7 +198,7 @@ Return self==value.
 
 <h3 id="to_cirq_cv"><code>to_cirq_cv</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L240-L252">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L252-L268">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_cirq_cv() -> 'cirq.SumOfProducts'
@@ -203,14 +209,14 @@ Convert CtrlSpec to cirq.SumOfProducts representation of control values.
 
 <h3 id="from_cirq_cv"><code>from_cirq_cv</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L254-L289">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L270-L303">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
 <code>from_cirq_cv(
     cirq_cv: 'cirq.ops.AbstractControlValues',
     *,
-    qdtypes: Optional[Sequence[QDType]] = None,
+    qdtypes: Optional[Sequence[QCDType]] = None,
     shapes: Optional[Sequence[Tuple[int, ...]]] = None
 ) -> 'CtrlSpec'
 </code></pre>
@@ -218,12 +224,12 @@ Convert CtrlSpec to cirq.SumOfProducts representation of control values.
 Construct a CtrlSpec from cirq.SumOfProducts representation of control values.
 
 
-<h3 id="get_single_ctrl_bit"><code>get_single_ctrl_bit</code></h3>
+<h3 id="get_single_ctrl_val"><code>get_single_ctrl_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L291-L304">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L305-L318">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>get_single_ctrl_bit() -> ControlBit
+<code>get_single_ctrl_val() -> ControlBit
 </code></pre>
 
 If controlled by a single qubit, return the control bit, otherwise raise

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L73-L135">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L74-L136">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -13,19 +13,29 @@
 
 
 
-A Bloq wrapper around a `cirq.Gate`
+A base class to bootstrap a bloq from a `cirq.Gate`.
 
-Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Bloq`](../../qualtran/Bloq.md)
+Inherits From: [`Bloq`](../../qualtran/Bloq.md)
 
 <!-- Placeholder for "Used in" -->
 
+Bloq authors can inherit from this abstract class and override the `cirq_gate` property
+to get a bloq adapted from the cirq gate. Authors can continue to customize the bloq
+by overriding methods (like costs, string representations, ...).
+
+Otherwise, this class fulfils the Bloq API by delegating to `cirq.Gate` methods.
+
+This is the base class that provides the functionality for the `CirqGateAsBloq` adapter.
+The adapter lets you use any `cirq.Gate` as a bloq immediately (without defining a new class
+that inherits from `CirqGateAsBloqBase`), and is used as a fallback in the interoperability
+functionality.
 
 
 
 <h2 class="add-link">Attributes</h2>
 
 `cirq_gate`<a id="cirq_gate"></a>
-: &nbsp;
+: The `cirq.Gate` to use as the source of truth.
 
 `signature`<a id="signature"></a>
 : &nbsp;
@@ -35,9 +45,37 @@ Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Blo
 
 ## Methods
 
+<h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L104-L105">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>decompose_bloq() -> 'CompositeBloq'
+</code></pre>
+
+Decompose this Bloq into its constituent parts contained in a CompositeBloq.
+
+Bloq users can call this function to delve into the definition of a Bloq. If you're
+trying to define a bloq's decomposition, consider overriding `build_composite_bloq`
+which provides helpful arguments for implementers.
+
+Returns
+
+
+
+
+Raises
+
+`NotImplementedError`
+: If there is no decomposition defined; namely: if
+  `build_composite_bloq` returns `NotImplemented`.
+
+
+
+
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L91-L102">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L107-L114">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
@@ -50,7 +88,7 @@ Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Blo
 
 <h3 id="my_tensors"><code>my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L104-L109">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L116-L121">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>my_tensors(
@@ -96,7 +134,7 @@ Args
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L111-L117">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L123-L127">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -104,28 +142,43 @@ Args
 ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]
 </code></pre>
 
-Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
+Override this method to support conversion to a Cirq operation.
 
+If this method is not overriden, the default implementation will wrap this bloq
+in a `BloqAsCirqGate` shim.
 
 Args
 
 `qubit_manager`
-: For allocating/deallocating qubits for RIGHT/LEFT only registers.
+: A `cirq.QubitManager` for allocating `cirq.Qid`s.
 
-`in_quregs`
-: Mapping from LEFT register names to corresponding cirq qubits.
+`**cirq_quregs`
+: kwargs mapping from this bloq's left register names to an ndarray of
+  `cirq.Qid`. The final dimension of this array corresponds to the registers
+  `bitsize` size. Any additional dimensions come first and correspond to the
+  register `shape` sizes.
 
 
 
 
 Returns
 
+`op`
+: A cirq operation corresponding to this bloq acting on the provided cirq qubits or
+  None. This method should return None if and only if the bloq instance truly should
+  not be included in the Cirq circuit (e.g. for reshaping bloqs). A bloq with no cirq
+  equivalent should raise an exception instead.
+
+`cirq_quregs`
+: A mapping from this bloq's right register of the same format as the
+  `cirq_quregs` argument. The returned dictionary corresponds to the output qubits.
+
 
 
 
 <h3 id="__pow__"><code>__pow__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L131-L132">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L129-L130">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__pow__(
@@ -138,7 +191,7 @@ Returns
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L134-L135">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L132-L133">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Bloq'
@@ -151,15 +204,6 @@ fallback wraps this bloq in `Adjoint`.
 
 Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
 details.
-
-<h3 id="num_qubits"><code>num_qubits</code></h3>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>num_qubits() -> int
-</code></pre>
-
-The number of qubits this gate acts on.
-
 
 
 
