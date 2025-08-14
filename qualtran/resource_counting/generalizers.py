@@ -12,9 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Bloq counting generalizers.
+"""Functions for 'generalizing' bloq objects.
 
-`Bloq.get_bloq_counts_graph(...)` takes a `generalizer` argument which can combine
+`Bloq.call_graph(...)` takes a `generalizer` argument which can combine
 multiple bloqs whose attributes differ in ways that do not affect the cost estimates
 into one, more general bloq. The functions in this module can be used as generalizers
 for this argument.

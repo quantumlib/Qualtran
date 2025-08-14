@@ -39,8 +39,13 @@ class Side(enum.Flag):
     """
 
     LEFT = enum.auto()
+    """The register is *only* an input."""
+
     RIGHT = enum.auto()
+    """The register is *only* an output."""
+
     THRU = LEFT | RIGHT
+    """The register is input/output."""
 
 
 @frozen
@@ -50,7 +55,7 @@ class Register:
     Each register has a name and a quantum data type. A collection of `Register` objects are used
     to define a bloq's signature, see the `Signature` class.
 
-    Attributes:
+    Args:
         name: The string name of the register. This name is used to 'wire up' quantum inputs
             by name, analogous to Python's keyword-arguments.
         dtype: The quantum data type of the register, for example `QBit()`, `QUInt(n)`, `QAny(n)`,
@@ -139,14 +144,32 @@ def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
 
 
 class Signature:
-    """An ordered sequence of `Register`s that follow the rules for a bloq signature.
+    """A specification of input/output names and types that constitutes the signature of a bloq.
 
-    `Bloq.signature` is a property of all bloqs, and should be an object of this type.
-    It is analogous to a function signature in traditional computing where we specify the
-    names and types of the expected inputs and outputs.
+    Each bloq is required to declare its *signature*: the names and types of its runtime inputs
+    and outputs. Specifically, the `Bloq.signature` property method must return a
+    `Signature` object.
+
+    `Signature` is a sequence of `qualtran.Register`s. Each register defines one input/output.
+    Registers can be output-only, like allocations (RIGHT registers); input-only, like
+    de-allocations (LEFT registers); or input/output, like arguments to unitary operations (THRU
+    registers).
 
     Each LEFT (including thru) register must have a unique name. Each RIGHT (including thru)
     register must have a unique name.
+
+    Iterating over and indexing into this object behaves analogously to a tuple of `Register`s.
+
+    Examples:
+        An in-place 32-bit quantum adder may have a signature like:
+
+        >>> from qualtran.dtype import QUInt
+        >>> Signature([
+        ...  Register('a', QUInt(32)),
+        ...  Register('b', QUInt(32)),
+        ... ])
+        Signature(...)
+
 
     Args:
         registers: The registers comprising the signature.
@@ -159,11 +182,24 @@ class Signature:
 
     @classmethod
     def build(cls, **registers: Union[int, sympy.Expr]) -> 'Signature':
-        """Construct a Signature comprised of simple thru registers given the register bitsizes.
+        """Construct a Signature comprised of untyped thru registers of the given bitsizes.
+
+        For rapid prorotyping or simple gates, this syntactic sugar can be used.
+
+        Examples:
+            The following constructors are equivalent
+
+            >>> sig1 = Signature.build(a=32, b=1)
+            >>> sig2 = Signature([
+            ...     Register('a', QAny(32)),
+            ...     Register('b', QBit()),
+            ... ])
+            >>> sig1 == sig2
+            True
 
         Args:
-            registers: keyword arguments mapping register name to bitsize. All registers
-                will be 0-dimensional and THRU.
+            **registers: Keyword arguments mapping register names to bitsizes. All registers
+                will be 0-dimensional, THRU, and of type QAny/QBit.
         """
         return cls(
             Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items() if v
@@ -171,10 +207,25 @@ class Signature:
 
     @classmethod
     def build_from_dtypes(cls, **registers: QCDType) -> 'Signature':
-        """Construct a Signature comprised of simple thru registers given the register dtypes.
+        """Construct a Signature comprised of thru registers of the given dtypes.
+
+        Examples:
+        The following call
+
+        >>> from qualtran import QUInt, QBit
+        >>> Signature.build_from_dtypes(a=QUInt(32), b=QBit())
+        Signature(...)
+
+        is equivalent to
+
+        >>> Signature([
+        ...  Register('a', QUInt(32)),
+        ...  Register('b', QBit()),
+        ... ])
+        Signature(...)
 
         Args:
-            registers: keyword arguments mapping register name to QDType. All registers
+            registers: Keyword arguments mapping registers name to `QCDType`s. All registers
                 will be 0-dimensional and THRU.
         """
         return cls(Register(name=k, dtype=v) for k, v in registers.items() if v.num_qubits)
@@ -242,8 +293,8 @@ class Signature:
         signature uses at least this many quantum + classical bits.
 
         See Also:
-            Signature.n_qubits()
-            Signature.n_cbits()
+            - `Signature.n_qubits()`
+            - `Signature.n_cbits()`
         """
         left_size = ssum(reg.total_bits() for reg in self.lefts())
         right_size = ssum(reg.total_bits() for reg in self.rights())

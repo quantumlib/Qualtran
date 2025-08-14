@@ -95,24 +95,46 @@ class DecomposeTypeError(TypeError):
 
 
 class Bloq(metaclass=abc.ABCMeta):
-    """Bloq is the primary abstract base class for all operations.
+    """The abstract base class of all quantum operations.
 
     Bloqs let you represent high-level quantum programs and subroutines as a hierarchical
-    collection of Python objects. The main interface is this abstract base class.
+    composition of Python objects. They are the building blocks of your quantum program.
+    The interface is specified by this abstract base class.
 
-    There are two important flavors of implementations of the `Bloq` interface. The first flavor
-    consists of bloqs implemented by you, the user-developer to express quantum operations of
-    interest. For example:
+    Bloq classes are defined by quantum programmers ('bloq authors'), and typically correspond to
+    families of gates, operations, algorithms, or subroutines.
 
-    >>> class ShorsAlgorithm(Bloq):
-    >>>     ...
+    ```python
+    class ShorsAlgorithm(Bloq):
+        ...
 
-    The other important `Bloq` subclass is `CompositeBloq`, which is a container type for a
-    collection of sub-bloqs.
+    class CNOT(Bloq):
+        ...
+    ```
 
-    There is only one mandatory method you must implement to have a well-formed `Bloq`,
-    namely `Bloq.registers`. There are many other methods you can optionally implement to
-    encode more information about the bloq.
+    Bloq objects are created by instantiating bloq classes and providing any necessary
+    compile-time classical parameters. These objects correspond to specific gates, operations,
+    algorithms, or subroutines. The classical parameters are classical values provided as Python
+    `__init__` args and accessible as Python attributes.
+
+    ```python
+    @attrs.frozen
+    class ShorsAlgorithm(Bloq):
+        bitsite: int
+
+        ...
+
+    shor2048 = ShorsAlgorithm(bitsize=2048)
+    ```
+
+     - Qualtran functionality for authoring bloqs is accessed by implementing (overriding)
+       `Bloq` methods.
+     - Qualtran functionality for analyzing bloqs is accessed by calling `Bloq` methods.
+
+    All bloqs *must* implement the abstract `signature` property method.
+    Other bloq classes can optionally override a variety of methods to unlock additional
+    functionality. Please refer to the documentation on individual methods for guidance on how
+    to implement or call particular methods.
     """
 
     @property
@@ -127,38 +149,60 @@ class Bloq(metaclass=abc.ABCMeta):
         This is the only mandatory method (property) you must implement to inherit from
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
+
+        Examples:
+            >>> from qualtran.dtype import QBit
+            >>> class CNOT(Bloq):
+            ...     @property
+            ...     def signature(self) -> 'Signature':
+            ...         return Signature([
+            ...             Register('ctrl', dtype=QBit()),
+            ...             Register('target', dtype=QBit())
+            ...         ])
+
+        See Also:
+            `qualtran.Signature` for details on how to construct a signature.
         """
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        """Override this method to define a Bloq in terms of its constituent parts.
+        """Override this method to define a bloq as a composition of sub-bloqs.
 
-        Bloq authors should override this method. If you already have an instance of a `Bloq`,
-        consider calling `decompose_bloq()` which will set up the correct context for
-        calling this function.
+        Bloq authors should override this method. If you already have an instantiated bloq object,
+        please call `decompose_bloq()` and not this method.
 
         Args:
-            bb: A `BloqBuilder` to append sub-Bloq to.
-            **soqs: The initial soquets corresponding to the inputs to the Bloq.
+            bb: A `BloqBuilder` which implementers can use to "call" quantum subroutines.
+            **soqs: The initial soquets (according to this bloq's signature) that serve
+                as the input quantum variables for the subroutine.
 
         Returns:
-            The soquets corresponding to the outputs of the Bloq (keyed by name) or
-            `NotImplemented` if there is no decomposition.
+            Implementations must return the final soquets (according to this bloq's signature)
+                as a dictionary mapping RIGHT register names to the output quantum variables.
         """
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        """Decompose this Bloq into its constituent parts contained in a CompositeBloq.
+        """Call this method to decompose this bloq into its parts.
 
-        Bloq users can call this function to delve into the definition of a Bloq. If you're
-        trying to define a bloq's decomposition, consider overriding `build_composite_bloq`
-        which provides helpful arguments for implementers.
+        The returned composition encodes a directed acyclic graph of the flow of
+        quantum data among sub-bloqs. This composition can be iterated over directly, or
+        used for further analysis. See `qualtran.CompositeBloq` for more information.
+
+        Qualtran users can call this function to access the decomposition of a bloq. If you're
+        trying to define a bloq's decomposition, override `build_composite_bloq` instead of
+        this method.
 
         Returns:
-            A CompositeBloq containing the decomposition of this Bloq.
+            cbloq: A collection of sub-bloqs and their quantum data flow connectivity that
+                explicitly encodes the decomposition of this bloq object as a
+                `qualtran.CompositeBloq` object.
 
         Raises:
-            NotImplementedError: If there is no decomposition defined; namely: if
-                `build_composite_bloq` returns `NotImplemented`.
+            qualtran.DecomposeNotImplementedError: If there is no decomposition defined; namely:
+                if `build_composite_bloq` is not overriden with a decomposition.
+            qualtran.DecomposeTypeError: If the bloq should not be decomposed, either because
+                it is considered 'atomic' (like `XGate` or similar basic gates), or because
+                the specific choice of parameters preclude decomposition.
         """
         return _decompose_from_build_composite_bloq(self)
 
@@ -179,7 +223,29 @@ class Bloq(metaclass=abc.ABCMeta):
         Bloq authors can override this method in certain circumstances. Otherwise, the default
         fallback wraps this bloq in `Adjoint`.
 
-        Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
+        Examples:
+            Basic usage:
+
+            >>> from qualtran.bloqs.basic_gates import TGate
+            >>> str(TGate())
+            'T'
+            >>> str(TGate().adjoint())
+            'T†'
+
+            Some bloqs are self-adjoint:
+
+            >>> class XGate(Bloq):
+            ...     def adjoint(self) -> 'Bloq':
+            ...         return self
+
+            The default fallback returns an `Adjoint` metabloq
+
+            >>> from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+            >>> spas = StatePreparationAliasSampling.from_n_coeff(10, 1.5)
+            >>> isinstance(spas.adjoint(), qualtran.Adjoint)
+            True
+
+        Please see the documentation for `qualtran.Adjoint` and the `Adjoint.ipynb` notebook for full
         details.
         """
 
@@ -257,8 +323,8 @@ class Bloq(metaclass=abc.ABCMeta):
                 and unsigned.
 
         Returns:
-            A tuple of output classical values ordered according to this bloqs right (or thru)
-            registers.
+            A tuple of output classical values ordered according to this bloq's right (or thru)
+                registers.
         """
         res = self.as_composite_bloq().on_classical_vals(**vals)
         return tuple(res[reg.name] for reg in self.signature.rights())
@@ -556,11 +622,17 @@ class Bloq(metaclass=abc.ABCMeta):
         using `cirq.Gate.on(...)`, `Bloq.on(...)`, `GateWithRegisters.on_registers(...)`, or
         `Bloq.on_registers(...)`.
 
+        Args:
+            qubits: The `cirq.Qid` qubits to use for the operation.
+
+        Returns:
+            op: A `cirq.Operation` of this bloq operating on `qubits`.
+
         See Also:
-            `Bloq.on_registers`: Provides the same functionality, but with named registers
-                instead of a flat list of qubits.
-            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
-                decomposition.
+            - `Bloq.on_registers`: Provides the same functionality, but with named registers
+              instead of a flat list of qubits.
+            - `decompose_from_cirq_style_method`: More details on how to write a cirq-style
+              decomposition.
         """
         import cirq
 
@@ -581,10 +653,10 @@ class Bloq(metaclass=abc.ABCMeta):
             **qubit_regs: A mapping of register name to the qubits comprising that register.
 
         See Also:
-            `Bloq.on`: Provides the same functionality, but with a flat list of qubits.
-                instead of named registers.
-            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
-                decomposition.
+            - `Bloq.on`: Provides the same functionality, but with a flat list of qubits.
+              instead of named registers.
+            - `decompose_from_cirq_style_method`: More details on how to write a cirq-style
+              decomposition.
         """
         from qualtran._infra.gate_with_registers import merge_qubits
 
@@ -593,14 +665,18 @@ class Bloq(metaclass=abc.ABCMeta):
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
-        """On a musical score visualization, use this `WireSymbol` to represent `soq`.
+        """On a musical score visualization, use this `WireSymbol` to represent the register.
 
-        By default, we use a "directional text box", which is a text box that is either
-        rectangular for thru-registers or facing to the left or right for non-thru-registers.
+        By default, we use a textbox containing the register name (and optionally the index for
+        multi-dimensional registers). In particular, we use a "directional text box": a text box
+        that is rectangular for thru-registers; but facing to the left or right for
+        non-thru-registers.
 
-        If reg is specified as `None`, this should return a Text label for the title of
-        the gate. If no title is needed (as the wire_symbols are self-explanatory),
-        this should return `Text('')`.
+        `reg` will be passed in by the Qualtran framework, and will correspond to any of the
+        registers in this bloq's signature. If `None` is passed to the `reg` argument, this
+        method can optionally provide a "gate title" by returning a `Text` symbol with the
+        gate's title or `Text('')` if no title is needed (as the wire symbols sufficiently
+        disambiguate the bloq).
 
         Override this method to provide a more relevant `WireSymbol` for the provided soquet.
         This method can access bloq attributes. For example: you may want to draw either

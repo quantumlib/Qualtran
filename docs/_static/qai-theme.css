@@ -56,3 +56,7 @@ html[data-theme=dark] {
 a[data-theme=dark]:hover {
   color: var(--qai-color-blue-700);
 }
+
+code.literal {
+  border: none;
+}

@@ -31,10 +31,13 @@ class AlgorithmSummary:
     """Logical costs of a quantum algorithm that impact modeling of its physical cost.
 
 
-    n_rotation_layers: In Qualtran, we don't actually push all the cliffords out and count
-        the number of rotation layers, so this is just the number of rotations $M_R$ by default.
-        If you are trying to reproduce numbers exactly, you can provide an explicit
-        number of rotation layers.
+    Attributes:
+        n_algo_qubits: The number of algorithm qubits in the algorithm.
+        n_logical_gates: The number of logical gates in the algorithm.
+        n_rotation_layers: In Qualtran, we don't actually push all the cliffords out and count
+            the number of rotation layers, so this is just the number of rotations $M_R$ by default.
+            If you are trying to reproduce numbers exactly, you can provide an explicit
+            number of rotation layers.
     """
 
     n_algo_qubits: int

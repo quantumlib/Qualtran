@@ -147,9 +147,9 @@ def get_flame_graph_data(
         **kwargs: Additional arguments to be passed to `bloq.call_graph`, like generalizers etc.
 
     Returns:
-        A list of strings, one for each path from root node to the leaf node in the call graph x
-        the weight of the path, that can be passed to the `third_party/flame_graph/flame_graph.pl`
-        script.
+        data: A list of strings, one for each path from root node to the leaf node in the call graph x
+            the weight of the path, that can be passed to the `third_party/flame_graph/flame_graph.pl`
+            script.
     """
     from qualtran.resource_counting.generalizers import cirq_to_bloqs
 

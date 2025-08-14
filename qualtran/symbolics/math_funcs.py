@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+"""Mathematical functions that support either symbolic or concrete values."""
 import math
-from typing import cast, Iterable, overload, TypeVar
+from typing import Any, cast, Iterable, overload, TypeVar
 
 import numpy as np
 import sympy
@@ -154,7 +156,7 @@ def bit_length(x: SymbolicFloat) -> SymbolicInt:
     return ceil(log2(floor(x) + 1))
 
 
-def smax(*args):
+def smax(*args: Any) -> Any:
     """Returns the maximum of the given arguments, which may be symbolic.
 
     Args:
@@ -180,7 +182,7 @@ def smax(*args):
     return max(*args)
 
 
-def smin(*args):
+def smin(*args: Any) -> Any:
     """Returns the minimum of the given arguments, which may be symbolic.
 
     Args:

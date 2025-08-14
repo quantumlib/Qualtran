@@ -49,7 +49,8 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
     elif type.lower() == 'dtype':
         IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
-        draw_musical_score(get_musical_score_data(bloq))
+        fig, ax = draw_musical_score(get_musical_score_data(bloq))
+        fig.show()
     elif type.lower() == 'latex':
         show_bloq_via_qpic(bloq)
     else:

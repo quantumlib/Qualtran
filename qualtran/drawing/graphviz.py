@@ -130,10 +130,11 @@ class GraphDrawer:
     Users should call `GraphDrawer.get_graph()` as the primary entry point. Other methods
     can be overridden to customize the look of the resulting graph.
 
-    To display a graph in a jupyter notebook consider using the SVG utilities:
+    Examples:
+        To display a graph in a jupyter notebook consider using the SVG utilities
 
-    >>> dr = GraphDrawer(cbloq)
-    >>> dr.get_svg()
+        >>> dr = GraphDrawer(cbloq)
+        >>> dr.get_svg()
 
     Args:
         bloq: The bloq or composite bloq to draw.
@@ -404,6 +405,8 @@ class PrettyGraphDrawer(GraphDrawer):
 
 
 class TypedGraphDrawer(PrettyGraphDrawer):
+    """A graph drawer where edges are annotated by data type."""
+
     @staticmethod
     def _fmt_dtype(dtype: QCDType):
         return str(dtype)

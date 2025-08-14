@@ -364,7 +364,7 @@ class ClassicalSimState:
                 composite bloq.
 
         Raises:
-            KeyError if `.step()` has not been called for each bloq instance.
+            KeyError: if `.step()` has not been called for each bloq instance.
         """
 
         # Track bloq-to-dangle name changes
@@ -395,7 +395,7 @@ class PhasedClassicalSimState(ClassicalSimState):
     The convenience function `do_phased_classical_simulation` will simulate a bloq. Use this
     class directly for more fine-grained control.
 
-    This simulation scheme supports a class of circuits containing only:
+    This simulation scheme supports a class of circuits containing only
      - classical operations corresponding to permutation matrices in the computational basis
      - phase-like operations corresponding to diagonal matrices in the computational basis.
 
@@ -542,7 +542,7 @@ def do_phased_classical_simulation(
     vals: Mapping[str, 'ClassicalValT'],
     rng: Optional['np.random.Generator'] = None,
     fixed_random_vals: Optional[Dict[int, Any]] = None,
-):
+) -> Tuple[Dict[str, 'ClassicalValT'], complex]:
     """Do a phased classical simulation of the bloq.
 
     This provides a simple interface to `PhasedClassicalSimState`. Advanced users
@@ -624,24 +624,20 @@ def format_classical_truth_table(
 
 
 def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
-    r"""Performs addition modulo $2^\mathrm{num\_bits}$ of (un)signed in a reversible way.
+    r"""Classically performs addition modulo $2^n$ of two integers in a reversible way.
 
-    Addition of signed integers can result in an overflow. In most classical programming languages (e.g. C++)
-    what happens when an overflow happens is left as an implementation detail for compiler designers. However,
-    for quantum subtraction, the operation should be unitary and that means that the unitary of the bloq should
-    be a permutation matrix.
-
-    If we hold `a` constant then the valid range of values of $b \in [-2^{\mathrm{num\_bits}-1}, 2^{\mathrm{num\_bits}-1})$
-    gets shifted forward or backward by `a`. To keep the operation unitary overflowing values wrap around. This is the same
-    as moving the range $2^\mathrm{num\_bits}$ by the same amount modulo $2^\mathrm{num\_bits}$. That is add
-    $2^{\mathrm{num\_bits}-1})$ before addition modulo and then remove it.
+    Addition of integers can result in an overflow. In C/C++, overflow behavior is left as an
+    implementation detail for compiler designers. However, for quantum programs, the operation
+    must be unitary (i.e. reversible). To keep the operation unitary, overflowing values wrap
+    around.
 
     Args:
         a: left operand of addition.
         b: right operand of addition.
-        num_bits: optional num_bits. When specified addition is done in the interval [0, 2**num_bits) or
-            [-2**(num_bits-1), 2**(num_bits-1)) based on the value of `is_signed`.
-        is_signed: boolean whether the numbers are unsigned or signed ints. This value is only used when
+        num_bits: When specified, addition is done in the interval `[0, 2**num_bits)` or
+            `[-2**(num_bits-1), 2**(num_bits-1))` based on the value of `is_signed`. Otherwise,
+            arbitrary-precision Python integer addition is performed.
+        is_signed: Whether the numbers are unsigned or signed ints. This value is only used when
             `num_bits` is provided.
     """
     c = a + b

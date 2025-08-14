@@ -72,6 +72,8 @@ class RegPosition:
 
 
 class HLineFlavor(Enum):
+    """Horizonal lines can represent quantum or classical data."""
+
     QUANTUM = 1
     CLASSICAL = 2
 

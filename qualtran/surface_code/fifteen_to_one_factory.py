@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 class FifteenToOne(MagicStateFactory):
     """15-to-1 Magic T state factory.
 
-    reference:
+    References:
         [Magic State Distillation: Not as Costly as You Think](https://arxiv.org/abs/1905.06903).
 
     Attributes:

@@ -45,8 +45,8 @@ class PrepareUniformSuperposition(GateWithRegisters):
     r"""Prepares a uniform superposition over first $n$ basis states using $O(log(n))$ T-gates.
 
     Performs a single round of amplitude amplification and prepares a uniform superposition over
-    the first $n$ basis states $|0>, |1>, ..., |n - 1>$. The expected T-complexity should be
-    $10 * log(L) + 2 * K$ T-gates and $2$ single qubit rotation gates, where $n = L * 2^K$.
+    the first $n$ basis states $|0>, |1>, ..., |n - 1>$. The gate complexity is
+    $10 * log(L) + 2 * K$ T gates and $2$ single qubit rotation gates, where $n = L * 2^K$.
 
     However, the current T-complexity is $12 * log(L)$ T-gates and $2 + 2 * (K + log(L))$ rotations
     because of two open issues:

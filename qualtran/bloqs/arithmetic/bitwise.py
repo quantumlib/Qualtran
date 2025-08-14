@@ -111,6 +111,9 @@ class XorK(Bloq):
 
         return TextBox(f"⊕{self.k}")
 
+    def __str__(self):
+        return f"XorK({self.k})"
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _xork() -> XorK:

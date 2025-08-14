@@ -263,13 +263,13 @@ class GateCounts:
          - $M_\mathrm{meas}$ is the number of measurements.
          - $M_R$ is the number of rotations.
          - $M_T$ is the number of T operations.
-         - $3*M_mathrm{Tof}$ is the number of Toffoli operations.
+         - $3*M_\mathrm{Tof}$ is the number of Toffoli operations.
          - $D_R$ is the number of layers containing at least one rotation. This can be smaller than
            the total number of non-Clifford layers since it excludes layers consisting only of T or
            Toffoli gates. Since we don't compile the 'layers' explicitly, we set this to be the
            number of rotations.
 
-        Reference:
+        References:
             https://arxiv.org/abs/2211.07629.
             Equation D3.
         """
