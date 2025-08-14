@@ -21,12 +21,14 @@ represents a qubit or register of qubits.
 import abc
 import heapq
 import json
+import re
 from enum import Enum
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import attrs
 import networkx as nx
 import numpy as np
+import sympy
 from attrs import frozen, mutable
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
@@ -688,7 +690,9 @@ def draw_musical_score(
     unit_to_inches: float = 0.8,
     max_width: float = 10.0,
     max_height: float = 8.0,
+    pretty_print: bool = False,
 ):
+
     # First, set up data coordinate limits and figure size.
     # X coordinates go from -1 to max_x
     #    with 1 unit of padding it goes from -2 to max_x+1
@@ -727,7 +731,18 @@ def draw_musical_score(
             vline.label.draw(ax, vline.x, vline.bottom_y - 0.5)
 
     for soq in msd.soqs:
-        symb = soq.symb
+        new_soq = soq
+        if pretty_print and isinstance(soq.symb, TextBox):
+            # Beautify text items if pretty_print is enabled and is TextBox
+            try:
+                pretty_text = pretty_format_soq_text(soq.symb.text)
+            except (ValueError, NameError, TypeError, sympy.SympifyError) as e:
+                pretty_text = soq.symb.text
+
+            # Build new soq
+            new_soq = soq.__class__(symb=TextBox(text=pretty_text), rpos=soq.rpos, ident=soq.ident)
+
+        symb = new_soq.symb
         symb.draw(ax, soq.rpos.seq_x, soq.rpos.y)
 
     ax.set_xlim(xlim)
@@ -750,3 +765,74 @@ class MusicalScoreEncoder(json.JSONEncoder):
 def dump_musical_score(msd: MusicalScoreData, name: str):
     with open(f'{name}.json', 'w') as f:
         json.dump(msd, f, indent=2, cls=MusicalScoreEncoder)
+
+
+def pretty_format_soq_text(soq_text: str) -> str:
+    """
+    Evaluates a single soq.symb.text item returning prettiest expression possible or original text if beautification fails.
+
+    Args:
+        soq_text: A raw soq text (soq.symb.text)
+
+    Returns:
+        pretty_soq_text: A pretty soq text
+
+    """
+
+    def symbols_in_soq(raw_text: str) -> str:
+        """
+        Identifies the symbols in the soq text based on existence of an substring "(Y)".
+        Limitations:
+            Currently identifies single-character symbols A-Z and a-z.
+
+        Args:
+            raw_text: A raw soq string.
+
+        Returns:
+            symbol: A string containing only the symbol as a string or an empty string if no symbol is found
+
+        """
+
+        # The pattern searches for "(Y)" (with any character), targeting Abs() section of expressions
+        pattern = r"\(([a-zA-Z])\)"
+        match = re.search(pattern, raw_text)
+
+        # If no such section is found, the function returns empty string that is used elsewhere as safety check
+        symbol = match.group(1) if match else ""
+
+        return symbol
+
+    # Identify any symbols in soq text.
+    symbol = symbols_in_soq(soq_text)
+
+    # If no symbol found: return original soq_text.
+    # Note. Careful if removing.
+    #   Block is also a security check.
+    #   User can change symbol that reaches this function.
+    #   Simpify is vulnerable to string injection, so only valid symbols should be allowed through.
+    if symbol == "":
+        return soq_text
+
+    # Simpify locals. They enhance sympify's own ability to evaluate match strings.
+    # Note. Abs(Y) expressions evaluated as Abs(np.pi) to enable full evaluation of string.
+    #   It appears only very small angles in that part of the expression would make a difference.
+    simpify_locals = {
+        "Min": sympy.Min,
+        "ceiling": sympy.ceiling,
+        "log2": lambda y: sympy.log(y, 2),
+        "Abs": lambda y: sympy.Abs(np.pi),
+        "Y": sympy.Symbol("Y"),
+    }
+
+    # Evaluation
+    # Eval 1. Get the gate out of the way
+    gate, expression = soq_text.split("^", 1)
+
+    # Eval 2. Evaluate mathematical expression using sympify (enhanced with locals) or default to original soq_text
+    try:
+        expression_sympified = sympy.sympify(expression, locals=simpify_locals, evaluate=True)
+        pretty_text = str(gate) + "^" + str(expression_sympified)
+    except (sympy.SympifyError, ValueError, NameError, TypeError) as e:
+        pretty_text = soq_text
+
+    return pretty_text
