@@ -27,6 +27,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     GF2MulK,
     GF2Multiplication,
     GF2MulViaKaratsuba,
+    GF2ShiftLeft,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
@@ -272,6 +273,37 @@ def test_GF2ShiftRight_complexity(m_x, k):
 @pytest.mark.parametrize('k', range(1, 5))
 def test_GF2ShiftRight_classical_action(m_x, k):
     blq = GF2ShiftRight(m_x, k)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_decomposition(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_bloq_counts(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_complexity(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    cost = get_cost_value(blq, QECGatesCost())
+    clifford = k * (len(m_x) - 2) if len(m_x) > 2 else 0
+    assert cost.clifford == clifford
+    assert cost.total_t_count() == 0
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_classical_action(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
     qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
 
 
