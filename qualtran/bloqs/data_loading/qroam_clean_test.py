@@ -15,13 +15,17 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran._infra.data_types import QAny
+from qualtran._infra.registers import Register
 from qualtran.bloqs.data_loading.qroam_clean import (
     _qroam_clean_multi_data,
     _qroam_clean_multi_dim,
     get_optimal_log_block_size_clean_ancilla,
     QROAMClean,
+    QROAMCleanAdjoint,
     QROAMCleanAdjointWrapper,
 )
+from qualtran.drawing.musical_score import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox
 from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.symbolics import ceil, log2
 
@@ -29,6 +33,40 @@ from qualtran.symbolics import ceil, log2
 def test_bloq_examples(bloq_autotester):
     bloq_autotester(_qroam_clean_multi_data)
     bloq_autotester(_qroam_clean_multi_dim)
+
+
+@pytest.mark.parametrize(
+    "reg, reg_type",
+    [
+        (None, Text),
+        (Register("selection", QAny(5)), TextBox),
+        (Register("selection0", QAny(5)), TextBox),
+        (Register("target0_", QAny(5)), RarrowTextBox),
+        (Register("junk_target0_", QAny(5)), RarrowTextBox),
+        (Register("control", QAny(5)), Circle),
+    ],
+)
+def test_wire_symbol(reg, reg_type):
+    bloq = _qroam_clean_multi_dim.make()
+    assert isinstance(bloq.wire_symbol(reg, ()), reg_type)
+    assert isinstance(bloq.adjoint().wire_symbol(reg, ()), reg_type)
+
+
+@pytest.mark.parametrize(
+    "reg, reg_type",
+    [
+        (None, Text),
+        (Register("selection", QAny(5)), TextBox),
+        (Register("selection0", QAny(5)), TextBox),
+        (Register("target0_", QAny(5)), LarrowTextBox),
+        (Register("control", QAny(5)), Circle),
+    ],
+)
+def test_adjoint_wire_symbol(reg, reg_type):
+    data1 = np.arange(25, dtype=int).reshape((5, 5))
+    data2 = (np.arange(25, dtype=int) + 1).reshape((5, 5))
+    adjoint_bloq = QROAMCleanAdjoint.build_from_data(data1, data2, log_block_sizes=(1, 1))
+    assert isinstance(adjoint_bloq.wire_symbol(reg, ()), reg_type)
 
 
 def test_qroam_clean_qubit_counts():
@@ -173,3 +211,19 @@ def test_qroam_clean_classical_sim_multi_dataset():
                 target1_=vals[3],
                 junk_target1_=vals[5],
             ) == (x, y)
+
+
+def test_qroam_clean_small_bloq_counts():
+    qroam_clean = QROAMClean(
+        data_or_shape=(np.array([0, 7]),),
+        selection_bitsizes=(1,),
+        target_bitsizes=(6,),
+        target_shapes=((),),
+        num_controls=0,
+        log_block_sizes=(0,),
+    )
+    assert qroam_clean.t_complexity().t == 0
+    qroam_clean_adj_wrapper = QROAMCleanAdjointWrapper(
+        qroam_clean=qroam_clean, log_block_sizes=(0,)
+    )
+    assert qroam_clean_adj_wrapper.t_complexity().t == 0

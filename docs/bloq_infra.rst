@@ -13,6 +13,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
 
    _infra/Bloqs-Tutorial.ipynb
    Protocols.ipynb
+   DataTypes.ipynb
    simulation/classical_sim.ipynb
    simulation/tensor.ipynb
    resource_counting/call_graph.ipynb
@@ -38,6 +39,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
    cirq_interop/t_complexity.ipynb
    qref_interop/bartiq_demo.ipynb
    _infra/gate_with_registers.ipynb
+   bloqs/mcmt/specialized_ctrl.ipynb
    drawing/graphviz.ipynb
    drawing/musical_score.ipynb
    drawing/drawing_call_graph.ipynb

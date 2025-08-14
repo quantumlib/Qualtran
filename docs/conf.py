@@ -47,10 +47,36 @@ suppress_warnings = [
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'pydata_sphinx_theme'
+html_theme_options = {
+    "navbar_start": ["navbar-logo"],
+    "navbar_center": ["navbar-nav"],
+    "navbar_end": ["navbar-icon-links", "theme-switcher"],
+    "icon_links": [
+        {
+            "name": "GitHub repository",
+            "url": "https://github.com/quantumlib/Qualtran",
+            "icon": "fab fa-github-square",
+            "type": "fontawesome",
+        }
+    ],
+    "footer_center": ["qai_logo"],
+}
+
+# qualtran-sidebar.html replaces the default sidebar title 'Section navigation'
+# with the appropriate section title.
+html_sidebars = {
+    "bloq_infra": ["qualtran-sidebar"],
+    "bloqs/index": ["qualtran-sidebar"],
+    "reference/index": ["qualtran-sidebar"],
+}
+
 html_static_path = ['_static']
-html_css_files = ['fixes.css']
+html_css_files = ['fixes.css', 'qai-theme.css']
+html_logo = 'https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/qualtran-logo-mode-sensitive.svg'
+html_favicon = (
+    'https://raw.githubusercontent.com/quantumlib/Qualtran/refs/heads/main/docs/_static/favicon.png'
+)

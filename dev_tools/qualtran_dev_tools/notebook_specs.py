@@ -82,16 +82,19 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.cryptography.ecc
+import qualtran.bloqs.cryptography.rsa
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.qrom_base
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.ecc
-import qualtran.bloqs.factoring.rsa
 import qualtran.bloqs.gf_arithmetic.gf2_add_k
 import qualtran.bloqs.gf_arithmetic.gf2_addition
 import qualtran.bloqs.gf_arithmetic.gf2_inverse
 import qualtran.bloqs.gf_arithmetic.gf2_multiplication
 import qualtran.bloqs.gf_arithmetic.gf2_square
+import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add
+import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k
+import qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -248,6 +251,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
             qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
             qualtran.bloqs.bookkeeping.cast._CAST_DOC,
+            qualtran.bloqs.bookkeeping.always._ALWAYS_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -543,25 +547,25 @@ MOD_ARITHMETIC = [
     ),
     NotebookSpecV2(
         title='Factoring RSA',
-        module=qualtran.bloqs.factoring.rsa,
+        module=qualtran.bloqs.cryptography.rsa,
         bloq_specs=[
-            qualtran.bloqs.factoring.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_phase_estimate._RSA_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.rsa.rsa_mod_exp._RSA_MODEXP_DOC,
         ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
-        module=qualtran.bloqs.factoring.ecc.ec_add,
-        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
+        module=qualtran.bloqs.cryptography.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.cryptography.ecc.ec_add._EC_ADD_DOC],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Cryptography',
-        module=qualtran.bloqs.factoring.ecc,
+        module=qualtran.bloqs.cryptography.ecc,
         bloq_specs=[
-            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.cryptography.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
 ]
@@ -576,6 +580,11 @@ GF_ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MULTIPLICATION_DOC,
             qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_BY_CONSTANT_MOD_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._MULTIPLY_POLY_BY_ONE_PLUS_XK_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._BINARY_POLYNOMIAL_MULTIPLICATION_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_SHIFT_RIGHT_MOD_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_SHIFT_LEFT_MOD_DOC,
+            qualtran.bloqs.gf_arithmetic.gf2_multiplication._GF2_MUL_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -600,6 +609,29 @@ GF_ARITHMETIC = [
     ),
 ]
 
+GF_POLY_ARITHMETIC = [
+    # --------------------------------------------------------------------------
+    # -----   Polynomials defined over Galois Fields (GF) Arithmetic    --------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Polynomials over GF($p^m$) - Split and Join',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join,
+        bloq_specs=[
+            qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join._GF_POLY_SPLIT_DOC,
+            qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join._GF_POLY_JOIN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Polynomials over GF($2^m$) - Add Constant',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k,
+        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k._GF2_POLY_ADD_K_DOC],
+    ),
+    NotebookSpecV2(
+        title='Polynomials over GF($2^m$) - Addition',
+        module=qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add,
+        bloq_specs=[qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add._GF2_POLY_ADD_DOC],
+    ),
+]
 
 ROT_QFT_PE = [
     # --------------------------------------------------------------------------
@@ -609,9 +641,12 @@ ROT_QFT_PE = [
         title='Basic Rotation Gates',
         module=qualtran.bloqs.basic_gates.rotation,
         bloq_specs=[
+            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._CZ_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._RZ_DOC,
+            qualtran.bloqs.basic_gates.rotation._CRZ_DOC,
             qualtran.bloqs.basic_gates.rotation._X_POW_DOC,
             qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
-            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -928,6 +963,7 @@ NB_BY_SECTION = [
     ('Arithmetic', ARITHMETIC),
     ('Modular Arithmetic', MOD_ARITHMETIC),
     ('GF Arithmetic', GF_ARITHMETIC),
+    ('Polynomials over Galois Fields', GF_POLY_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
     ('Optimization', OPTIMIZATION),

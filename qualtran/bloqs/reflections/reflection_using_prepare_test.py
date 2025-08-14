@@ -13,17 +13,16 @@
 #  limitations under the License.
 
 import itertools
-from typing import Optional
 
 import cirq
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from qualtran import Adjoint, Bloq
+import qualtran.testing as qlt_testing
+from qualtran import Adjoint
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import LessThanConstant, LessThanEqual
-from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.mcmt import MultiControlX, MultiTargetCNOT
 from qualtran.bloqs.mcmt.and_bloq import And
@@ -41,7 +40,6 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 gateset_to_keep = cirq.Gateset(
     And,
@@ -121,7 +119,7 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
     prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
 
     gate = ReflectionUsingPrepare(prepare_gate, global_phase=global_phase)
-    assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
 
     g, qubit_order, decomposed_circuit = construct_gate_helper_and_qubit_order(gate)
 
@@ -137,6 +135,10 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
         signs = '-' * num_ones + '+' * (9 - num_ones)
     elif np.sign(global_phase) == -1:
         signs = '+' * num_ones + '-' * (9 - num_ones)
+    else:
+        raise ValueError(
+            "sign function has failed to return 1 or -1. This may be due to nan or complex input."
+        )
     assert cirq.dirac_notation(prepared_state) == get_3q_uniform_dirac_notation(signs, global_phase)
 
 
@@ -277,30 +279,14 @@ def test_call_graph_matches_decomp(global_phase, control_val):
     eps = 1e-11
     prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=0.01)
 
-    def catch_zpow_bloq_s_gate_inv(bloq) -> Optional[Bloq]:
-        # Hack to catch the fact that cirq special cases some ZPowGates
-        if isinstance(bloq, ZPowGate) and np.any(np.isclose(float(bloq.exponent), [0.5, -0.5])):
-            # we're already ignoring cliffords
-            return None
-        return bloq
-
     gate = ReflectionUsingPrepare(
         prepare_gate, global_phase=global_phase, eps=eps, control_val=control_val
     )
-    _, cost_decomp = gate.decompose_bloq().call_graph(
-        generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
+    qlt_testing.assert_equivalent_bloq_counts(
+        gate, generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords]
     )
-    _, cost_call = gate.call_graph(
-        generalizer=[
-            ignore_split_join,
-            ignore_alloc_free,
-            ignore_cliffords,
-            catch_zpow_bloq_s_gate_inv,
-        ]
-    )
-    assert cost_decomp == cost_call
 
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('reflections')
+    qlt_testing.execute_notebook('reflections')

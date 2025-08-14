@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+from collections.abc import Hashable
 from functools import cached_property
 from typing import (
     Callable,
     cast,
     Dict,
     FrozenSet,
-    Hashable,
     Iterable,
     Iterator,
     List,
@@ -42,7 +42,7 @@ from numpy.typing import NDArray
 
 from .binst_graph_iterators import greedy_topological_sort
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
-from .data_types import check_dtypes_consistent, QAny, QBit, QDType
+from .data_types import check_dtypes_consistent, QAny, QBit, QCDType, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -53,6 +53,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 # NDArrays must be bound to np.generic
 _SoquetType = TypeVar('_SoquetType', bound=np.generic)
@@ -370,7 +371,7 @@ class CompositeBloq(Bloq):
             in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
             if pred(binst):
                 try:
-                    new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
+                    new_out_soqs = bb.add_from(binst.bloq, **in_soqs)
                     did_work = True
                 except (DecomposeTypeError, DecomposeNotImplementedError):
                     new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
@@ -509,6 +510,42 @@ def _binst_to_cxns(
         succ_cxns.extend(binst_graph.edges[binst, succ]['cxns'])
 
     return pred_cxns, succ_cxns
+
+
+def _get_soquet(
+    binst: 'BloqInstance',
+    reg_name: str,
+    right: bool = False,
+    idx: Tuple[int, ...] = (),
+    *,
+    binst_graph: nx.DiGraph,
+) -> 'Soquet':
+    """Retrieve a soquet given identifying information.
+
+    We can uniquely address a Soquet by the arguments to this function.
+
+    Args:
+        binst: The bloq instance associated with the desired soquet.
+        reg_name: The name of the register associated with the desired soquet.
+        right: If False, get the input, left soquet. Otherwise: the right, output soquet
+        idx: The index of the soquet within a multidimensional register, or the empty
+            tuple for basic registers.
+    """
+    preds, succs = _binst_to_cxns(binst, binst_graph=binst_graph)
+    if right:
+        for suc in succs:
+            me = suc.left
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+    else:
+        for pred in preds:
+            me = pred.right
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+
+    raise ValueError(
+        f"Could not find the requested soquet with {binst=}, {reg_name=}, {right=}, {idx=}"
+    )
 
 
 def _cxns_to_soq_dict(
@@ -831,7 +868,7 @@ class BloqBuilder:
         self.add_register_allowed = add_registers_allowed
 
     def add_register_from_dtype(
-        self, reg: Union[str, Register], dtype: Optional[QDType] = None
+        self, reg: Union[str, Register], dtype: Optional[QCDType] = None
     ) -> Union[None, SoquetT]:
         """Add a new typed register to the composite bloq being built.
 
@@ -863,9 +900,9 @@ class BloqBuilder:
         else:
             if not isinstance(reg, str):
                 raise ValueError("`reg` must be a string register name if not a Register.")
-            if not isinstance(dtype, QDType):
+            if not isinstance(dtype, QCDType):
                 raise ValueError(
-                    "`dtype` must be specified and must be an QDType if `reg` is a register name."
+                    "`dtype` must be specified and must be a QCDType if `reg` is a register name."
                 )
             reg = Register(name=reg, dtype=dtype)
 
@@ -883,10 +920,10 @@ class BloqBuilder:
     def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]: ...
 
     @overload
-    def add_register(self, reg: str, bitsize: int) -> SoquetT: ...
+    def add_register(self, reg: str, bitsize: 'SymbolicInt') -> SoquetT: ...
 
     def add_register(
-        self, reg: Union[str, Register], bitsize: Optional[int] = None
+        self, reg: Union[str, Register], bitsize: Optional['SymbolicInt'] = None
     ) -> Union[None, SoquetT]:
         """Add a new register to the composite bloq being built.
 
@@ -894,7 +931,7 @@ class BloqBuilder:
         this operation is not allowed.
 
         Args:
-            reg: Either the register or a register name. If this is a register, then `bitsize`
+            reg: Either the register or a register name. If this is a register name, then `bitsize`
                 must also be provided and a default THRU register will be added.
             bitsize: If `reg` is a register name, this is the bitsize for the added register.
                 Otherwise, this must not be provided.
@@ -904,8 +941,22 @@ class BloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
-        if bitsize is not None:
-            return self.add_register_from_dtype(reg, QBit() if bitsize == 1 else QAny(bitsize))
+        from qualtran.symbolics import is_symbolic
+
+        if isinstance(reg, str):
+            if bitsize is None:
+                raise ValueError(
+                    f"When calling `add_register(reg={reg!r}, bitsize=?) bitsize must be provided."
+                )
+            if is_symbolic(bitsize) or isinstance(bitsize, int):
+                return self.add_register_from_dtype(reg, QBit() if bitsize == 1 else QAny(bitsize))
+            if isinstance(bitsize, QCDType):
+                raise ValueError(
+                    f"Invalid bitsize {bitsize!r} for `add_register({reg!r}). "
+                    f"Consider `add_register_from_dtype`"
+                )
+            raise ValueError(f"Invalid bitsize {bitsize!r} for `add_register({reg!r}).")
+
         return self.add_register_from_dtype(reg)
 
     @classmethod
@@ -1223,7 +1274,11 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(dtype=soq.reg.dtype, dirty=dirty), reg=soq)
+        qdtype = soq.reg.dtype
+        if not isinstance(qdtype, QDType):
+            raise ValueError("`free` can only free quantum registers.")
+
+        self.add(Free(dtype=qdtype, dirty=dirty), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
@@ -1232,7 +1287,11 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        return self.add(Split(dtype=soq.reg.dtype), reg=soq)
+        qdtype = soq.reg.dtype
+        if not isinstance(qdtype, QDType):
+            raise ValueError("`split` can only split quantum registers.")
+
+        return self.add(Split(dtype=qdtype), reg=soq)
 
     def join(self, soqs: SoquetInT, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.bookkeeping import Join

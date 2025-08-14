@@ -17,13 +17,17 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder
+from qualtran import Bloq, BloqBuilder, QUInt
 from qualtran.bloqs.basic_gates import (
     CZ,
     IntEffect,
     IntState,
+    MeasZ,
+    MinusState,
     OneEffect,
     OneState,
+    PlusState,
+    XGate,
     ZeroEffect,
     ZeroState,
     ZGate,
@@ -210,6 +214,19 @@ def test_to_cirq():
     np.testing.assert_allclose(vec1, vec2)
 
 
+def test_pl_interop():
+    import pennylane as qml
+
+    bloq = ZGate()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.Z(wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
+
 def test_zgate_manual():
     z = ZGate()
 
@@ -232,3 +249,85 @@ def test_cz_manual():
 
     assert ZGate().controlled() == CZ()
     assert t_complexity(cz) == TComplexity(clifford=1)
+
+    with pytest.raises(ValueError, match='.*phase.*'):
+        cz.call_classically(q1=1, q2=1)
+
+
+def test_cz_phased_classical():
+    cz = CZ()
+    from qualtran.simulation.classical_sim import do_phased_classical_simulation
+
+    final_vals, phase = do_phased_classical_simulation(cz, {'q1': 0, 'q2': 1})
+    assert final_vals['q1'] == 0
+    assert final_vals['q2'] == 1
+    assert phase == 1
+
+    final_vals, phase = do_phased_classical_simulation(cz, {'q1': 1, 'q2': 1})
+    assert final_vals['q1'] == 1
+    assert final_vals['q2'] == 1
+    assert phase == -1
+
+    bb = BloqBuilder()
+    q1 = bb.add(ZeroState())
+    q2 = bb.add(ZeroState())
+    q1 = bb.add(XGate(), q=q1)
+    q2 = bb.add(XGate(), q=q2)
+    q1, q2 = bb.add(CZ(), q1=q1, q2=q2)
+    cbloq = bb.finalize(q1=q1, q2=q2)
+    final_vals, phase = do_phased_classical_simulation(cbloq, {})
+    assert final_vals['q1'] == 1
+    assert final_vals['q2'] == 1
+    assert phase == -1
+
+
+def test_meas_z_supertensor():
+    with pytest.raises(ValueError, match=r'.*superoperator.*'):
+        MeasZ().tensor_contract()
+
+    # Zero -> Zero
+    bb = BloqBuilder()
+    q = bb.add(ZeroState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.outer([1, 0], [1, 0])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # One -> One
+    bb = BloqBuilder()
+    q = bb.add(OneState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.outer([0, 1], [0, 1])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # Plus -> mixture
+    bb = BloqBuilder()
+    q = bb.add(PlusState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.diag([0.5, 0.5])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # Minus -> mixture
+    bb = BloqBuilder()
+    q = bb.add(MinusState())
+    c = bb.add(MeasZ(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.diag([0.5, 0.5])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+
+def test_meas_z_classical():
+    bb = BloqBuilder()
+    q = bb.add(IntState(val=52, bitsize=8))
+    qs = bb.split(q)
+    for i in range(8):
+        qs[i] = bb.add(MeasZ(), q=qs[i])
+    cbloq = bb.finalize(outs=qs)
+    (ret,) = cbloq.call_classically()
+    assert list(ret) == QUInt(8).to_bits(52)  # type: ignore[arg-type]

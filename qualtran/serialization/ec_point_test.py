@@ -14,7 +14,7 @@
 
 import pytest
 
-from qualtran.bloqs.factoring.ecc import ECPoint
+from qualtran.bloqs.cryptography.ecc import ECPoint
 from qualtran.serialization.ec_point import ec_point_from_proto, ec_point_to_proto
 
 

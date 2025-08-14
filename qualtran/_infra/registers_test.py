@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import BQUInt, QAny, QBit, QInt, Register, Side, Signature
+from qualtran import BQUInt, CBit, QAny, QBit, QInt, QUInt, Register, Side, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.symbolics import is_symbolic
 
@@ -30,6 +30,14 @@ def test_register():
     assert r.total_bits() == 5
 
     assert r == r.adjoint()
+
+
+def test_classical_register():
+    r = Register('c', CBit())
+    assert r.bitsize == 1
+    assert r.total_qubits() == 0
+    assert r.total_cbits() == 1
+    assert r.total_bits() == 1
 
 
 def test_multidim_register():
@@ -133,6 +141,15 @@ def test_signature_symbolic():
     signature = Signature.build(x=n_x, y=n_y)
     assert signature.n_qubits() == n_x + n_y
     assert str(signature.n_qubits()) == 'n_x + n_y'
+
+
+def test_partial_classical_signature_n_qubits():
+    sig = Signature(
+        [Register('x', QUInt(5)), Register('y', QUInt(5), side=Side.RIGHT), Register('c', CBit())]
+    )
+    assert sig.n_qubits() == 10
+    assert sig.n_cbits() == 1
+    assert sig.n_bits() == 11
 
 
 def test_signature_build():

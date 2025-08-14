@@ -79,21 +79,23 @@ class ModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
-                Register('y', QMontgomeryUInt(self.bitsize)),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('y', QMontgomeryUInt(self.bitsize, self.mod)),
             ]
         )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if not (0 <= x < self.mod):
+        # The construction still works when at most one of inputs equals `mod`.
+        special_case = (x == self.mod) ^ (y == self.mod)
+        if not (0 <= x < self.mod or special_case):
             raise ValueError(
-                f'{x=} is outside the valid interval for modular addition [0, {self.mod})'
+                f'{x=} is outside the valid interval for modular addition [0, {self.mod}]'
             )
-        if not (0 <= y < self.mod):
+        if not (0 <= y < self.mod or special_case):
             raise ValueError(
-                f'{y=} is outside the valid interval for modular addition [0, {self.mod})'
+                f'{y=} is outside the valid interval for modular addition [0, {self.mod}]'
             )
 
         y = (x + y) % self.mod
@@ -320,7 +322,7 @@ class CModAddK(Bloq):
 
         if not (0 <= x < self.mod):
             raise ValueError(
-                f'{x=} is outside the valid interval for modular addition [0, {self.mod})'
+                f'{x=} is outside the valid interval for modular addition [0, {self.mod}]'
             )
 
         x = (x + self.k) % self.mod
@@ -508,13 +510,15 @@ class CModAdd(Bloq):
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
-        if not (0 <= x < self.mod):
+        # The construction still works when at most one of inputs equals `mod`.
+        special_case = (x == self.mod) ^ (y == self.mod)
+        if not (0 <= x < self.mod or special_case):
             raise ValueError(
-                f'{x=} is outside the valid interval for modular addition [0, {self.mod})'
+                f'{x=} is outside the valid interval for modular addition [0, {self.mod}]'
             )
-        if not (0 <= y < self.mod):
+        if not (0 <= y < self.mod or special_case):
             raise ValueError(
-                f'{y=} is outside the valid interval for modular addition [0, {self.mod})'
+                f'{y=} is outside the valid interval for modular addition [0, {self.mod}]'
             )
 
         y = (x + y) % self.mod

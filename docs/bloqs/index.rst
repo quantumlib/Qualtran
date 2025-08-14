@@ -19,8 +19,15 @@ Bloqs Library
     chemistry/trotter/hubbard/qpe_cost_optimization.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
-    factoring/factoring-via-modexp.ipynb
+    cryptography/rsa/factoring-via-modexp.ipynb
     state_preparation/state_preparation_via_rotation_tutorial.ipynb
+    optimization/k_xor_sat/kikuchi_guiding_state_tutorial.ipynb
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Root Bloqs:
+
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -85,9 +92,9 @@ Bloqs Library
     mod_arithmetic/mod_subtraction.ipynb
     mod_arithmetic/mod_multiplication.ipynb
     mod_arithmetic/mod_division.ipynb
-    factoring/rsa/rsa.ipynb
-    factoring/ecc/ec_add.ipynb
-    factoring/ecc/ecc.ipynb
+    cryptography/rsa/rsa.ipynb
+    cryptography/ecc/ec_add.ipynb
+    cryptography/ecc/ecc.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -98,6 +105,14 @@ Bloqs Library
     gf_arithmetic/gf2_add_k.ipynb
     gf_arithmetic/gf2_square.ipynb
     gf_arithmetic/gf2_inverse.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Polynomials over Galois Fields:
+
+    gf_poly_arithmetic/gf_poly_split_and_join.ipynb
+    gf_poly_arithmetic/gf2_poly_add_k.ipynb
+    gf_poly_arithmetic/gf2_poly_add.ipynb
 
 .. toctree::
     :maxdepth: 2

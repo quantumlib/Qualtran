@@ -38,6 +38,19 @@ def test_to_cirq():
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───S───S^-1───")
 
 
+def test_pl_interop():
+    import pennylane as qml
+
+    bloq = SGate()
+    pl_op_from_bloq = bloq.as_pl_op(wires=[0])
+    pl_op = qml.S(wires=[0])
+    assert pl_op_from_bloq == pl_op
+
+    matrix = pl_op.matrix()
+    should_be = bloq.tensor_contract()
+    np.testing.assert_allclose(should_be, matrix)
+
+
 def test_tensors():
     from_cirq = cirq.unitary(cirq.Circuit(cirq.S(cirq.LineQubit(0))))
     from_tensors = SGate().tensor_contract()

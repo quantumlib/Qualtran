@@ -317,7 +317,6 @@ def test_out_of_place_adder():
 def test_controlled_add_k():
     n, k = sympy.symbols('n k')
     addk = AddK(QUInt(n), k)
-    assert addk.controlled() == AddK(QUInt(n), k, is_controlled=True)
     _, sigma = addk.controlled(CtrlSpec(cvs=0)).call_graph(max_depth=1)
     assert sigma == {addk.controlled(): 1, XGate(): 2}
 
@@ -346,7 +345,7 @@ def test_add_k_decomp_signed(bitsize, k, cvs):
     'bitsize,k,x,cvs,ctrls,result',
     [
         (5, 1, 2, (), (), 3),
-        (5, 3, 2, (1,), 1, 5),
+        (5, 3, 2, (1,), (1,), 5),
         (5, 2, 0, (1, 0), (1, 0), 2),
         (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
     ],
@@ -407,3 +406,18 @@ def test_outofplaceadder_classical_action(bitsize):
     cb = b.decompose_bloq()
     for x, y in itertools.product(range(2**bitsize), repeat=2):
         assert b.call_classically(a=x, b=y, c=x + y) == cb.call_classically(a=x, b=y, c=x + y)
+
+
+def test_controlled_add_from_add():
+    add = Add(QUInt(32))
+    cadd = add.controlled(CtrlSpec(cvs=0))
+
+    ctrl, a, b = cadd.call_classically(ctrl=1, a=5, b=10)
+    assert ctrl == 1
+    assert a == 5
+    assert b == 10
+
+    ctrl, a, b = cadd.call_classically(ctrl=0, a=5, b=10)
+    assert ctrl == 0
+    assert a == 5
+    assert b == 15

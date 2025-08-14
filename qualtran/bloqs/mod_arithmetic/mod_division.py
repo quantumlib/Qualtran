@@ -323,10 +323,10 @@ class _KaliskiIterationStep6(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('b', QBit()),
                 Register('a', QBit()),
                 Register('m', QBit()),
@@ -406,10 +406,10 @@ class _KaliskiIteration(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('m', QBit()),
                 Register('f', QBit()),
                 Register('is_terminal', QBit()),
@@ -515,10 +515,10 @@ class _KaliskiModInverseImpl(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('u', QMontgomeryUInt(self.bitsize)),
-                Register('v', QMontgomeryUInt(self.bitsize)),
-                Register('r', QMontgomeryUInt(self.bitsize)),
-                Register('s', QMontgomeryUInt(self.bitsize)),
+                Register('u', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('v', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('r', QMontgomeryUInt(self.bitsize, self.mod)),
+                Register('s', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('m', QAny(2 * self.bitsize)),
                 Register('f', QBit()),
                 Register('terminal_condition', QAny(2 * self.bitsize)),
@@ -657,7 +657,7 @@ class KaliskiModInverse(Bloq):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('x', QMontgomeryUInt(self.bitsize, self.mod)),
                 Register('junk', QAny(4 * self.bitsize), side=side),
             ]
         )

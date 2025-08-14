@@ -41,6 +41,7 @@ def test_gf2_inverse_symbolic_toffoli_complexity():
     expected_expr = m**2 * (2 * ceil(log2(m)) - 1)
     assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - expected_expr == 0
     expected_expr = m * (3 * ceil(log2(m)) + 2)
+    assert isinstance(expected_expr, sympy.Expr)
     assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_expr) == 0
 
 
@@ -48,7 +49,7 @@ def test_gf2_inverse_classical_sim_quick():
     m = 1
     bloq = GF2Inverse(m)
     GFM = GF(2**m)
-    assert_consistent_classical_action(bloq, x=GFM.elements[1:])
+    assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
 @pytest.mark.slow
@@ -56,7 +57,7 @@ def test_gf2_inverse_classical_sim_quick():
 def test_gf2_inverse_classical_sim(m):
     bloq = GF2Inverse(m)
     GFM = GF(2**m)
-    assert_consistent_classical_action(bloq, x=GFM.elements[1:])
+    assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
 @pytest.mark.parametrize('m', [*range(1, 12)])

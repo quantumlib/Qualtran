@@ -579,11 +579,11 @@ def assert_bloq_example_serializes(bloq_ex: BloqExample) -> None:
     try:
         bloq_lib = bloqs_to_proto(bloq)
     except Exception as e:
-        raise BloqCheckException.fail('Serialization Failed:\n' + str(e)) from e
+        raise BloqCheckException.fail(f'Serialization Failed: {e!r}') from e
     try:
         bloq_roundtrip = bloqs_from_proto(bloq_lib)[0]
     except Exception as e:
-        raise BloqCheckException.fail('DeSerialization Failed:\n' + str(e)) from e
+        raise BloqCheckException.fail(f'DeSerialization Failed: {e!r}') from e
 
     try:
         assert bloq == bloq_roundtrip
@@ -696,7 +696,8 @@ def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, s
 
 
 def assert_consistent_classical_action(
-    bloq: Bloq, **parameter_ranges: Union[NDArray, Sequence[int]]
+    bloq: Bloq,
+    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
 ):
     """Check that the bloq has a classical action consistent with its decomposition.
 

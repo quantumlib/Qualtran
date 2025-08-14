@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
+import abc
 import itertools
 from typing import (
     Any,
@@ -28,6 +29,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import networkx as nx
 import numpy as np
 import sympy
@@ -36,7 +38,6 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     BloqInstance,
-    Connection,
     DanglingT,
     LeftDangle,
     Register,
@@ -44,16 +45,18 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.composite_bloq import _binst_to_cxns, _get_soquet
 
 if TYPE_CHECKING:
-    from qualtran import QDType
+    from qualtran import CompositeBloq, QCDType
 
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
+ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
 
 
-def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
-    from qualtran._infra.data_types import QBit, QInt, QUInt
+def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
+    # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
+    from qualtran._infra.data_types import CBit, QBit, QInt, QUInt
 
     if isinstance(dtype, QUInt):
         if dtype.bitsize <= 8:
@@ -75,7 +78,7 @@ def _numpy_dtype_from_qdtype(dtype: 'QDType') -> Type:
         elif dtype.bitsize <= 64:
             return np.int64
 
-    if isinstance(dtype, QBit):
+    if isinstance(dtype, (QBit, CBit)):
         return np.uint8
 
     return object
@@ -87,7 +90,7 @@ def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
     if isinstance(reg.dtype, QGF):
         return reg.dtype.gf_type.Zeros(reg.shape)
 
-    return np.empty(reg.shape, dtype=_numpy_dtype_from_qdtype(reg.dtype))
+    return np.empty(reg.shape, dtype=_numpy_dtype_from_qlt_dtype(reg.dtype))
 
 
 def _get_in_vals(
@@ -105,85 +108,406 @@ def _get_in_vals(
     return arg
 
 
-def _update_assign_from_vals(
-    regs: Iterable[Register],
-    binst: Union[DanglingT, BloqInstance],
-    vals: Union[Dict[str, Union[sympy.Symbol, ClassicalValT]], Dict[str, ClassicalValT]],
-    soq_assign: Union[
-        Dict[Soquet, Union[sympy.Symbol, ClassicalValT]], Dict[Soquet, ClassicalValT]
-    ],
-):
-    """Update `soq_assign` using `vals`.
+@attrs.frozen(hash=False)
+class ClassicalValDistribution:
+    """This class represents a distribution of classical values.
 
-    This helper function is responsible for error checking. We use `regs` to make sure all the
-    keys are present in the vals dictionary. We check the classical value shapes, types, and
-    ranges.
-    """
-    for reg in regs:
-        debug_str = f'{binst}.{reg.name}'
-        try:
-            val = vals[reg.name]
-        except KeyError as e:
-            raise ValueError(f"{binst} requires an input register named {reg.name}") from e
-
-        if reg.shape:
-            # `val` is an array
-            val = np.asanyarray(val)
-            if val.shape != reg.shape:
-                raise ValueError(
-                    f"Incorrect shape {val.shape} received for {debug_str}. " f"Want {reg.shape}."
-                )
-            reg.dtype.assert_valid_classical_val_array(val, debug_str)
-
-            for idx in reg.all_idxs():
-                soq = Soquet(binst, reg, idx=idx)
-                soq_assign[soq] = val[idx]
-
-        elif isinstance(val, sympy.Expr):
-            # `val` is symbolic
-            soq = Soquet(binst, reg)
-            soq_assign[soq] = val  # type: ignore[assignment]
-
-        else:
-            # `val` is one value.
-            reg.dtype.assert_valid_classical_val(val, debug_str)
-            soq = Soquet(binst, reg)
-            soq_assign[soq] = val
-
-
-def _binst_on_classical_vals(
-    binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ClassicalValT]
-):
-    """Call `on_classical_vals` on a given binst.
+    Use this if the bloq has performed a measurement or other projection
+    that has resulted in a mixed state of purely classical values.
 
     Args:
-        binst: The bloq instance whose bloq we will call `on_classical_vals`.
-        pred_cxns: Predecessor connections for the bloq instance.
-        soq_assign: Current assignment of soquets to classical values.
+        a: An array of choices, or `np.arange` if an integer is given.
+            This is the `a` parameter to `np.random.Generator.choice()`.
+        p: An array of probabilities. If not supplied, the uniform distribution is assumed.
+            This is the `p` parameter to `np.random.Generator.choice()`.
     """
 
-    # Track inter-Bloq name changes
-    for cxn in pred_cxns:
-        soq_assign[cxn.right] = soq_assign[cxn.left]
+    a: Union[int, np.typing.ArrayLike]
+    p: Optional[np.typing.ArrayLike] = None
 
-    def _in_vals(reg: Register):
-        # close over binst and `soq_assign`
-        return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
-    bloq = binst.bloq
-    in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
+class _ClassicalValHandler(metaclass=abc.ABCMeta):
+    """An internal class for returning a random classical value.
 
-    # Apply function
-    out_vals = bloq.on_classical_vals(**in_vals)
-    if not isinstance(out_vals, dict):
-        raise TypeError(f"{bloq.__class__.__name__}.on_classical_vals should return a dictionary.")
-    _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
+    Implmentors should write the get() function which returns a random
+    choice of values."""
+
+    @abc.abstractmethod
+    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any: ...
+
+
+class _RandomClassicalValHandler(_ClassicalValHandler):
+    """Returns a random classical value using a random number generator."""
+
+    def __init__(self, rng: 'np.random.Generator'):
+        self._gen = rng
+
+    def get(self, binst, distribution: ClassicalValDistribution):
+        return self._gen.choice(distribution.a, p=distribution.p)  # type:ignore[arg-type]
+
+
+class _FixedClassicalValHandler(_ClassicalValHandler):
+    """Returns a random classical value using a fixed value per bloq instance.
+
+    Useful for deterministic testing.
+
+    Args:
+        binst_i_to_val: mapping from BloqInstance.i instance indices
+            to the fixed classical value.
+    """
+
+    def __init__(self, binst_i_to_val: Dict[int, Any]):
+        self._binst_i_to_val = binst_i_to_val
+
+    def get(self, binst, distribution: ClassicalValDistribution):
+        return self._binst_i_to_val[binst.i]
+
+
+class _BannedClassicalValHandler(_ClassicalValHandler):
+    """Used when random classical value is not able to be performed."""
+
+    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any:
+        raise ValueError(
+            f"{binst} has non-deterministic classical action."
+            "Cannot simulate with classical values."
+        )
+
+
+@attrs.frozen
+class MeasurementPhase:
+    """Sentinel value for phases based on measurement outcomes:
+
+    This can be returned from `Bloq.basis_state_phase`
+    if a phase should be applied based on a measurement outcome.
+    This can be used in special circumstances to verify measurement-based uncomputation (MBUC).
+
+    Args:
+        reg_name: Name of the register
+        idx: Index of the register wire(s).
+    """
+
+    reg_name: str
+    idx: Tuple[int, ...] = ()
+
+
+class ClassicalSimState:
+    """A mutable class for classically simulating composite bloqs.
+
+    Consider using the public method `Bloq.call_classically(...)` for a simple interface
+    for classical simulation.
+
+    The `.step()` and `.finalize()` methods provide fine-grained control over the progress
+    of the simulation; or the `.simulate()` method will step through the entire composite bloq.
+
+    Args:
+        signature: The signature of the composite bloq.
+        binst_graph: The directed-graph form of the composite bloq. Consider constructing
+            this class with the `.from_cbloq` constructor method to correctly generate the
+            binst graph.
+        vals: A mapping of input register name to classical value to serve as inputs to the
+            procedure.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
+
+    Attributes:
+        soq_assign: An assignment of soquets to classical values. We store the classical state
+            of each soquet (wire connection point in the compute graph) for debugging and/or
+            visualization. After stepping through each bloq instance, the right-dangling soquet
+            are assigned the output classical values
+        last_binst: A record of the last bloq instance we processed during simulation. This
+            can be used in concert with `.step()` for debugging.
+
+    """
+
+    def __init__(
+        self,
+        signature: 'Signature',
+        binst_graph: nx.DiGraph,
+        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        random_handler: '_ClassicalValHandler' = _BannedClassicalValHandler(),
+    ):
+        self._signature = signature
+        self._binst_graph = binst_graph
+        self._binst_iter = nx.topological_sort(self._binst_graph)
+        self._random_handler = random_handler
+
+        # Keep track of each soquet's bit array. Initialize with LeftDangle
+        self.soq_assign: Dict[Soquet, ClassicalValT] = {}
+        self._update_assign_from_vals(self._signature.lefts(), LeftDangle, dict(vals))
+
+        self.last_binst: Optional['BloqInstance'] = None
+
+    @classmethod
+    def from_cbloq(
+        cls, cbloq: 'CompositeBloq', vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]]
+    ) -> 'ClassicalSimState':
+        """Initiate a classical simulation from a CompositeBloq.
+
+        Args:
+            cbloq: The composite bloq
+            vals: A mapping of input register name to classical value to serve as inputs to the
+                procedure.
+
+        Returns:
+            A new classical sim state.
+
+        """
+        return cls(signature=cbloq.signature, binst_graph=cbloq._binst_graph, vals=vals)
+
+    def _update_assign_from_vals(
+        self,
+        regs: Iterable[Register],
+        binst: Union[DanglingT, BloqInstance],
+        vals: Union[Dict[str, Union[sympy.Symbol, ClassicalValT]], Dict[str, ClassicalValT]],
+    ) -> None:
+        """Update `self.soq_assign` using `vals`.
+
+        This helper function is responsible for error checking. We use `regs` to make sure all the
+        keys are present in the vals dictionary. We check the classical value shapes, types, and
+        ranges.
+        """
+        for reg in regs:
+            debug_str = f'{binst}.{reg.name}'
+            try:
+                val = vals[reg.name]
+            except KeyError as e:
+                raise ValueError(f"{binst} requires a {reg.side} register named {reg.name}") from e
+
+            if reg.shape:
+                # `val` is an array
+                val = np.asanyarray(val)
+                if val.shape != reg.shape:
+                    raise ValueError(
+                        f"Incorrect shape {val.shape} received for {debug_str}. "
+                        f"Want {reg.shape}."
+                    )
+                reg.dtype.assert_valid_classical_val_array(val, debug_str)
+
+                for idx in reg.all_idxs():
+                    soq = Soquet(binst, reg, idx=idx)
+                    self.soq_assign[soq] = val[idx]
+
+            elif isinstance(val, sympy.Expr):
+                # `val` is symbolic
+                soq = Soquet(binst, reg)
+                self.soq_assign[soq] = val  # type: ignore[assignment]
+
+            else:
+                # `val` is one value.
+                if isinstance(val, ClassicalValDistribution):
+                    val = self._random_handler.get(binst, val)
+
+                reg.dtype.assert_valid_classical_val(val, debug_str)
+                soq = Soquet(binst, reg)
+                self.soq_assign[soq] = val
+
+    def _binst_on_classical_vals(self, binst, in_vals) -> None:
+        """Call `on_classical_vals` on a given bloq instance."""
+        bloq = binst.bloq
+
+        out_vals = bloq.on_classical_vals(**in_vals)
+        if not isinstance(out_vals, dict):
+            raise TypeError(
+                f"{bloq.__class__.__name__}.on_classical_vals should return a dictionary."
+            )
+        self._update_assign_from_vals(bloq.signature.rights(), binst, out_vals)
+
+    def _binst_basis_state_phase(self, binst, in_vals) -> None:
+        """Call `basis_state_phase` on a given bloq instance.
+
+        This base simulation class will raise an error if the bloq reports any phasing.
+        This method is overwritten in `PhasedClassicalSimState` to support phasing.
+        """
+        bloq = binst.bloq
+        bloq_phase = bloq.basis_state_phase(**in_vals)
+        if bloq_phase is not None:
+            raise ValueError(
+                f"{bloq} imparts a phase, and can't be simulated purely classically. Consider using `do_phased_classical_simulation`."
+            )
+
+    def step(self) -> 'ClassicalSimState':
+        """Advance the simulation by one bloq instance.
+
+        After calling this method, `self.last_binst` will contain the bloq instance that
+        was just simulated. `self.soq_assign` and any other state variables will be updated.
+
+        Returns:
+            self
+        """
+        binst = next(self._binst_iter)
+        self.last_binst = binst
+        if isinstance(binst, DanglingT):
+            return self
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=self._binst_graph)
+
+        # Track inter-Bloq name changes
+        for cxn in pred_cxns:
+            self.soq_assign[cxn.right] = self.soq_assign[cxn.left]
+
+        def _in_vals(reg: Register):
+            # close over binst and `soq_assign`
+            return _get_in_vals(binst, reg, soq_assign=self.soq_assign)
+
+        bloq = binst.bloq
+        in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
+
+        # Apply methods
+        self._binst_on_classical_vals(binst, in_vals)
+        self._binst_basis_state_phase(binst, in_vals)
+        return self
+
+    def finalize(self) -> Dict[str, 'ClassicalValT']:
+        """Finish simulating a composite bloq and extract final values.
+
+        Returns:
+            final_vals: The final classical values, keyed by the RIGHT register names of the
+                composite bloq.
+
+        Raises:
+            KeyError if `.step()` has not been called for each bloq instance.
+        """
+
+        # Track bloq-to-dangle name changes
+        if len(list(self._signature.rights())) > 0:
+            final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
+            for cxn in final_preds:
+                self.soq_assign[cxn.right] = self.soq_assign[cxn.left]
+
+        # Formulate output with expected API
+        def _f_vals(reg: Register):
+            return _get_in_vals(RightDangle, reg, soq_assign=self.soq_assign)
+
+        final_vals = {reg.name: _f_vals(reg) for reg in self._signature.rights()}
+        return final_vals
+
+    def simulate(self) -> Dict[str, 'ClassicalValT']:
+        """Simulate the composite bloq and return the final values."""
+        try:
+            while True:
+                self.step()
+        except StopIteration:
+            return self.finalize()
+
+
+class PhasedClassicalSimState(ClassicalSimState):
+    """A mutable class for classically simulating composite bloqs with phase tracking.
+
+    The convenience function `do_phased_classical_simulation` will simulate a bloq. Use this
+    class directly for more fine-grained control.
+
+    This simulation scheme supports a class of circuits containing only:
+     - classical operations corresponding to permutation matrices in the computational basis
+     - phase-like operations corresponding to diagonal matrices in the computational basis.
+
+    Args:
+        signature: The signature of the composite bloq.
+        binst_graph: The directed-graph form of the composite bloq. Consider constructing
+            this class with the `.from_cbloq` constructor method to correctly generate the
+            binst graph.
+        vals: A mapping of input register name to classical value to serve as inputs to the
+            procedure.
+        phase: The initial phase. It must be a valid phase: a complex number with unit modulus.
+
+    Attributes:
+        soq_assign: An assignment of soquets to classical values.
+        last_binst: A record of the last bloq instance we processed during simulation.
+        phase: The current phase of the simulation state.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
+    """
+
+    def __init__(
+        self,
+        signature: 'Signature',
+        binst_graph: nx.DiGraph,
+        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        *,
+        phase: complex = 1.0,
+        random_handler: '_ClassicalValHandler',
+    ):
+        super().__init__(
+            signature=signature, binst_graph=binst_graph, vals=vals, random_handler=random_handler
+        )
+        _assert_valid_phase(phase)
+        self.phase = phase
+
+    @classmethod
+    def from_cbloq(
+        cls,
+        cbloq: 'CompositeBloq',
+        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        rng: Optional['np.random.Generator'] = None,
+        fixed_random_vals: Optional[Dict[int, Any]] = None,
+    ) -> 'PhasedClassicalSimState':
+        """Initiate a classical simulation from a CompositeBloq.
+
+        Args:
+            cbloq: The composite bloq
+            vals: A mapping of input register name to classical value to serve as inputs to the
+                procedure.
+            rng: A random number generator to use for classical random values, such a np.random.
+            fixed_random_vals: A dictionary of bloq instances to values to perform fixed calculation
+                for classical values.
+
+        Returns:
+            A new classical sim state.
+        """
+        rnd_handler: _ClassicalValHandler
+        if rng is not None:
+            rnd_handler = _RandomClassicalValHandler(rng=rng)
+        elif fixed_random_vals is not None:
+            rnd_handler = _FixedClassicalValHandler(binst_i_to_val=fixed_random_vals)
+        else:
+            rnd_handler = _BannedClassicalValHandler()
+        return cls(
+            signature=cbloq.signature,
+            binst_graph=cbloq._binst_graph,
+            vals=vals,
+            random_handler=rnd_handler,
+        )
+
+    def _binst_basis_state_phase(self, binst, in_vals):
+        """Call `basis_state_phase` on a given bloq instance.
+
+        If this method returns a value, the current phase will be updated. Otherwise, we
+        leave the phase as-is.
+        """
+        bloq = binst.bloq
+        bloq_phase = bloq.basis_state_phase(**in_vals)
+        if isinstance(bloq_phase, MeasurementPhase):
+            # In this special case, there is a coupling between the classical result and the
+            # phase result (because the classical result is stochastic). We look up the measurement
+            # result and apply a phase if it is `1`.
+            meas_result = self.soq_assign[
+                _get_soquet(
+                    binst=binst,
+                    reg_name=bloq_phase.reg_name,
+                    right=True,
+                    idx=bloq_phase.idx,
+                    binst_graph=self._binst_graph,
+                )
+            ]
+            if meas_result == 1:
+                # Measurement result of 1, phase of -1
+                self.phase *= -1.0
+            else:
+                # Measurement result of 0, phase of +1
+                pass
+        elif bloq_phase is not None:
+            _assert_valid_phase(bloq_phase)
+            self.phase *= bloq_phase
+        else:
+            # Purely classical bloq; phase of 1
+            pass
 
 
 def call_cbloq_classically(
     signature: Signature,
     vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
     binst_graph: nx.DiGraph,
+    random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(
+        rng=np.random.default_rng()
+    ),
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -194,6 +518,8 @@ def call_cbloq_classically(
         signature: The cbloq's signature for validating inputs
         vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
 
     Returns:
         final_vals: A mapping from register name to output classical values
@@ -201,29 +527,48 @@ def call_cbloq_classically(
             corresponding to thru registers will be mapped to the *output* classical
             value.
     """
-    # Keep track of each soquet's bit array. Initialize with LeftDangle
-    soq_assign: Dict[Soquet, ClassicalValT] = {}
-    _update_assign_from_vals(signature.lefts(), LeftDangle, dict(vals), soq_assign)
+    sim = ClassicalSimState(signature, binst_graph, vals, random_handler)
+    final_vals = sim.simulate()
+    return final_vals, sim.soq_assign
 
-    # Bloq-by-bloq application
-    for binst in nx.topological_sort(binst_graph):
-        if isinstance(binst, DanglingT):
-            continue
-        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-        _binst_on_classical_vals(binst, pred_cxns, soq_assign)
 
-    # Track bloq-to-dangle name changes
-    if len(list(signature.rights())) > 0:
-        final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
-        for cxn in final_preds:
-            soq_assign[cxn.right] = soq_assign[cxn.left]
+def _assert_valid_phase(p: complex, atol: float = 1e-8):
+    if np.abs(np.abs(p) - 1.0) > atol:
+        raise ValueError(f"Phases must have unit modulus. Found {p}.")
 
-    # Formulate output with expected API
-    def _f_vals(reg: Register):
-        return _get_in_vals(RightDangle, reg, soq_assign)
 
-    final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
-    return final_vals, soq_assign
+def do_phased_classical_simulation(
+    bloq: 'Bloq',
+    vals: Mapping[str, 'ClassicalValT'],
+    rng: Optional['np.random.Generator'] = None,
+    fixed_random_vals: Optional[Dict[int, Any]] = None,
+):
+    """Do a phased classical simulation of the bloq.
+
+    This provides a simple interface to `PhasedClassicalSimState`. Advanced users
+    may wish to use that class directly.
+
+    Args:
+        bloq: The bloq to simulate
+        vals: A mapping from input register name to initial classical values. The initial phase is
+            assumed to be 1.0.
+        rng: A numpy random generator (e.g. from `np.random.default_rng()`). This function
+            will use this generator to supply random values from certain phased-classical operations
+            like `MeasX`. If not supplied, classical measurements will use a random value.
+        fixed_random_vals: A dictionary of instance to values to perform fixed calculation
+                for classical values.
+
+    Returns:
+        final_vals: A mapping of output register name to final classical values.
+        phase: The final phase.
+    """
+    cbloq = bloq.as_composite_bloq()
+    sim = PhasedClassicalSimState.from_cbloq(
+        cbloq, vals=vals, rng=rng, fixed_random_vals=fixed_random_vals
+    )
+    final_vals = sim.simulate()
+    phase = sim.phase
+    return final_vals, phase
 
 
 def get_classical_truth_table(
