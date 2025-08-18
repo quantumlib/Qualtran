@@ -27,6 +27,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     GF2MulK,
     GF2Multiplication,
     GF2MulViaKaratsuba,
+    GF2ShiftLeft,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
@@ -73,7 +74,7 @@ def test_synthesize_lr_circuit_slow(m):
 
 def test_gf2_plus_equal_prod_classical_sim_quick():
     m = 2
-    bloq = GF2Multiplication(m, plus_equal_prod=True)
+    bloq = GF2Multiplication(QGF(2, m), plus_equal_prod=True)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements, result=GFM.elements)
 
@@ -275,6 +276,37 @@ def test_GF2ShiftRight_classical_action(m_x, k):
     qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
 
 
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_decomposition(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_bloq_counts(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_complexity(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    cost = get_cost_value(blq, QECGatesCost())
+    clifford = k * (len(m_x) - 2) if len(m_x) > 2 else 0
+    assert cost.clifford == clifford
+    assert cost.total_t_count() == 0
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_classical_action(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
+
+
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])
 def test_gf2mulmod_decomposition(m_x):
     blq = GF2MulViaKaratsuba(m_x)
@@ -318,7 +350,8 @@ def test_gf2mulmod_classical_action_slow():
 def test_gf2mulmod_classical_action_adjoint(m_x):
     blq = GF2MulViaKaratsuba(m_x)
     adjoint = blq.adjoint()
-    for i, j in np.random.random_integers(0, len(blq.gf.elements) - 1, (10, 2)):
+    rs = np.random.default_rng(42)
+    for i, j in rs.integers(0, len(blq.gf.elements) - 1, (10, 2)):
         f = blq.gf.elements[i]
         g = blq.gf.elements[j]
         a, b, c = blq.call_classically(x=f, y=g)

@@ -34,7 +34,7 @@ from .su2_rotation import SU2RotationGate
 from .swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
-from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
+from .x_basis import MeasX, MinusEffect, MinusState, PlusEffect, PlusState, XGate
 from .y_gate import CYGate, YGate
 from .z_basis import (
     CZ,
