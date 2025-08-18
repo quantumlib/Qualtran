@@ -17,20 +17,20 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 
-# Begin monkeypatch:
-# the `Visitor` will use certain decorators to apply "labels" to the AST nodes, which
-# causes properties to be parsed as Attributes instead of Functions. By removing these
-# decorator-to-label mappings, they are kept as Function. We handle decorators for functions
-# in this script how we want.
-import _griffe.agents.visitor
 import attrs
 import griffe
 from griffe import GriffeLoader, Kind
 
 from ._render_context import RenderContext
 
-del _griffe.agents.visitor.builtin_decorators['property']
-del _griffe.agents.visitor.stdlib_decorators['functools.cached_property']
+# Begin monkeypatch:
+# the `Visitor` will use certain decorators to apply "labels" to the AST nodes, which
+# causes properties to be parsed as Attributes instead of Functions. By removing these
+# decorator-to-label mappings, they are kept as Function. We handle decorators for functions
+# in this script how we want.
+import griffe._internal.agents.visitor
+del griffe._internal.agents.visitor.builtin_decorators['property']
+del griffe._internal.agents.visitor.stdlib_decorators['functools.cached_property']
 
 from ._page import MajorClassPage, MemberType, ModulePage, ModulePageMember, Page
 from ._pages.render_major_class import render_major_class
@@ -195,7 +195,6 @@ class _PackageWalker:
 
         if len(aliases) == 0:
             # Warning issued in _get_all_aliases
-            # todo .. add to seen?
             return
 
         pref_path = _get_preferred_dotpath(aliases)
@@ -245,11 +244,7 @@ class _PackageWalker:
 def get_pages(
     root_mod: griffe.Module,
 ) -> Tuple[List[Page], Dict[str, str], Dict[str, Tuple[Page, Optional[str]]]]:
-    """Walk down from `root_mod`.
-
-    Returns:
-        todo
-    """
+    """Walk down from `root_mod`."""
     assert root_mod.is_module
     assert root_mod.is_init_module
     assert root_mod.parent is None
