@@ -25,6 +25,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran.resource_counting import SympySymbolAllocator, BloqCountDictT
 
 
 @attrs.frozen
@@ -66,6 +67,9 @@ class Always(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return bb.add_d(self.subbloq, **soqs)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return self.subbloq.build_call_graph(ssa)
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
