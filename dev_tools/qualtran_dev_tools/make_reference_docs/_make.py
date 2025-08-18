@@ -19,23 +19,25 @@ from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import attrs
 import griffe
-from griffe import GriffeLoader, Kind
 
-from ._render_context import RenderContext
-
-# Begin monkeypatch:
+# Monkeypatch!:
 # the `Visitor` will use certain decorators to apply "labels" to the AST nodes, which
 # causes properties to be parsed as Attributes instead of Functions. By removing these
 # decorator-to-label mappings, they are kept as Function. We handle decorators for functions
 # in this script how we want.
 import griffe._internal.agents.visitor
+
 del griffe._internal.agents.visitor.builtin_decorators['property']
 del griffe._internal.agents.visitor.stdlib_decorators['functools.cached_property']
+
+
+from griffe import GriffeLoader, Kind
 
 from ._page import MajorClassPage, MemberType, ModulePage, ModulePageMember, Page
 from ._pages.render_major_class import render_major_class
 from ._pages.render_module import render_module
 from ._pages.render_toc import render_toc
+from ._render_context import RenderContext
 
 MAJOR_CLASSES = [
     'qualtran.Bloq',
