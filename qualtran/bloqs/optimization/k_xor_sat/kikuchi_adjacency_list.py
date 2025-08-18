@@ -61,6 +61,8 @@ class ColumnOfKthNonZeroEntry(Bloq):
     Using $f'$ ensures the computation is reversible.
     Note: we must use the same extension $f'$ for both oracles.
 
+    See docstring for :class:`KXorInstance` for the overall problem definition.
+
     This algorithm is described by the following pseudo-code:
     ```
     def forward(S, k) -> f_S_k:
@@ -173,6 +175,8 @@ class IndexOfNonZeroColumn(Bloq):
     Using $f'$ ensures the computation is reversible.
     Note: we must use the same extension $f'$ for both oracles.
 
+    See docstring for :class:`KXorInstance` for the overall problem definition.
+
     This algorithm is described by the following pseudo-code:
     ```
     def reverse(S, f_S_k) -> k:
@@ -266,7 +270,10 @@ class KikuchiNonZeroIndex(Bloq):
     For a given row $S$ and column $T$, the entry $\mathcal{K}_{k}_{S, T}$
     is potentially non-zero if $S \Delta T = U_j$ for some $j$, which is
     equivalent to $T = S \Delta U_j$.
-    Here, $U_j$ is the $j$-th unique scope in the instance $\mathcal{I}$.
+    Here, $U_j$ is the $j$-th unique scope in the instance $\mathcal{I}$,
+    and $\Delta$ is the symmetric difference operator.
+
+    See docstring for :class:`KXorInstance` for the overall problem definition.
 
     To find the $k$-th non-zero entry, we use two oracles:
     1. $(S, k) \mapsto f(S, k)$, implemented by `ColumnOfKthNonZeroEntry`
@@ -278,7 +285,7 @@ class KikuchiNonZeroIndex(Bloq):
     Note on sparsity: This bloq expects the user to provide the sparsity, as it is in general
     difficult to compute the precise sparsity of the Kikuchi matrix efficiently. As long as the
     provided number is at least the true sparsity, the algorithm will work as expected.
-    In case the provides sparsity is smaller, it is equivalent to making the remaining entries zero in the final block encoding.
+    In case the provided sparsity is smaller, it is equivalent to making the remaining entries zero in the final block encoding.
 
     Args:
         inst: the kXOR instance $\mathcal{I}$.

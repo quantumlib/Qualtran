@@ -93,8 +93,9 @@ class KXorInstance:
     r"""A kXOR instance $\mathcal{I}$.
 
     Definition 2.1: A kXOR instance $\mathcal{I}$ over variables indexed by $[n]$
-    consists of a multiset of constraints $\mathcal{C} = (S, b)$, where each scope
-    $S \subseteq [n]$ has cardinality $k$, and each right-hand side $b \in \{\pm 1\}$.
+    consists of a multiset of constraints $\mathcal{C} = (S, b)$, where each
+    $S \subseteq [n]$ has cardinality $k$ and is called a scope, and each right-hand side
+    satisfies $b \in \{\pm 1\}$.
 
     Attributes:
         n: number of variables.
@@ -199,6 +200,11 @@ class KXorInstance:
     @cached_property
     def batched_scopes(self) -> Union[tuple[tuple[Scope, int], ...], HasLength]:
         r"""Group all the constraints by Scope, and add up the $b$ values.
+
+        A scope is a subset of variables of size $k$.
+        Given an instance $\mathcal{I} = \{ (S_i, b_i) \}_i$, this function groups
+        all equal sets $S_i$ by summing up the rhs-values $b_i$ corresponding to them.
+        The resulting sequence therefore has all unique scopes.
 
         This is a classical preprocessing step. Time $k m \log m$.
         """
