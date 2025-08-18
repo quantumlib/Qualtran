@@ -207,6 +207,12 @@ class KXorInstance:
         The resulting sequence therefore has all unique scopes.
 
         This is a classical preprocessing step. Time $k m \log m$.
+
+        See the reference for the definition of the distinct scopes.
+
+        References:
+            [Quartic quantum speedups for planted inference](https://arxiv.org/abs/2406.19378v1)
+            Theorem 4.17, proof paragraph 2.
         """
         if self.is_symbolic():
             return HasLength(self.m)

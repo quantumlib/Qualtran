@@ -21,9 +21,10 @@ We provide oracles to:
 3. `PRGAUniqueConstraintRHS` Given $j$, apply $Rx(arccos(\sqrt{B_\mathcal{I}(S)/M}))$ on a target qubit.
 (for an appropriate normalization $M$).
 
-
 The first two oracles are independent of the RHS.
 All these oracles can output arbitrary values for invalid inputs.
+
+See :class:`KXorInstance` for the overall problem definition.
 
 References:
     [Quartic quantum speedups for planted inference](https://arxiv.org/abs/2406.19378v1)
@@ -73,9 +74,10 @@ class LoadConstraintScopes(Bloq):
     Assuming `inst` has $\bar{m}$ unique constraints, we define $U_j \in {[n] \choose k}$
     for $j \in [\bar{m}]$ as the $j$-th unique constraint scope.
 
-    The scopes are loaded using a QROM.
+    See :class:`KXorInstance` for the overall problem definition.
 
-    If the input contains an invalid index, then any arbitrary value can be output.
+    The scopes are loaded using a QROM. If the input contains an invalid index, then
+    the output can be an arbitrary value.
 
     Registers:
         j: a number in [\bar{m}]
@@ -196,6 +198,8 @@ class LoadUniqueScopeIndex(Bloq):
 
     If the input contains an invalid scope, then any arbitrary value can be output.
 
+    See :class:`KXorInstance` for the overall problem definition.
+
     Registers:
         S: A scope $S \in {[n] \choose k}$.
         j (RIGHT): a number in $[\bar{m}]$ s.t. $S = U_j$.
@@ -244,6 +248,8 @@ class PRGAUniqueConstraintRHS(Bloq):
     We then apply the sign correction of $i$ for the negative entries by an $S$ gate.
     We ensure that the input data is sorted, therefore we can simply compare $j$
     with the largest negative index, and apply a `CS` gate.
+
+    See :class:`KXorInstance` for the overall problem definition.
 
     Args:
         inst: kXOR instance $\mathcal{I}$.
