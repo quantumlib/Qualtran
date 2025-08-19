@@ -28,8 +28,11 @@ from nbformat import NotebookNode
 from .git_tools import get_git_root
 
 
-def get_nb_rel_paths(sourceroot: Path) -> List[Path]:
-    """List all checked-in *.ipynb files within `sourceroot`."""
+def get_nb_rel_paths(sourceroot: Path) -> List[Tuple[Path, Path]]:
+    """List all checked-in *.ipynb files within `sourceroot`.
+
+    Returns a tuple of the relative path and the path it's relative to (aka sourceroot)
+    """
     cp = subprocess.run(
         ['git', 'ls-files', '*.ipynb'],
         capture_output=True,
@@ -38,8 +41,7 @@ def get_nb_rel_paths(sourceroot: Path) -> List[Path]:
         check=True,
     )
     outs = cp.stdout.splitlines()
-    nb_rel_paths = [Path(out) for out in outs]
-    print(nb_rel_paths)
+    nb_rel_paths = [(Path(out), sourceroot) for out in outs]
     return nb_rel_paths
 
 
@@ -67,8 +69,7 @@ class _NBInOutPaths:
     nb_out: Optional[Path]
 
     @classmethod
-    def from_nb_rel_path(cls, nb_rel_path: Path, reporoot: Path, output_md: bool, output_nbs: bool):
-        sourceroot = reporoot / 'qualtran'
+    def from_nb_rel_path(cls, nb_rel_path: Path, reporoot: Path, sourceroot: Path, output_md: bool, output_nbs: bool):
         nbpath = sourceroot / nb_rel_path
 
         md_rel_path = nb_rel_path.with_name(f'{nb_rel_path.stem}.md')
@@ -186,9 +187,9 @@ class _NotebookRunClosure:
         self.output_md = output_md
         self.only_out_of_date = only_out_of_date
 
-    def __call__(self, nb_rel_path: Path) -> Tuple[Path, Optional[Exception]]:
+    def __call__(self, nb_rel_path: Path, sourceroot:Path) -> Tuple[Path, Optional[Exception]]:
         paths = _NBInOutPaths.from_nb_rel_path(
-            nb_rel_path, self.reporoot, output_md=self.output_md, output_nbs=self.output_nbs
+            nb_rel_path, reporoot=self.reporoot, sourceroot=sourceroot, output_md=self.output_md, output_nbs=self.output_nbs
         )
 
         if self.only_out_of_date and not paths.needs_reexport():
@@ -212,8 +213,8 @@ def execute_and_export_notebooks(
             are out of date.
     """
     reporoot = get_git_root()
-    sourceroot = reporoot / 'qualtran'
-    nb_rel_paths = get_nb_rel_paths(sourceroot=sourceroot)
+    nb_rel_paths = get_nb_rel_paths(sourceroot=reporoot/'qualtran')
+    nb_rel_paths += get_nb_rel_paths(sourceroot=reporoot/'tutorials')
     func = _NotebookRunClosure(
         reporoot=reporoot,
         output_nbs=output_nbs,
@@ -221,7 +222,7 @@ def execute_and_export_notebooks(
         only_out_of_date=only_out_of_date,
     )
     with multiprocessing.Pool() as pool:
-        results = pool.map(func, nb_rel_paths)
+        results = pool.starmap(func, nb_rel_paths)
     bad_nbs = [nbname for nbname, err in results if err is not None]
 
     if len(bad_nbs) > 0:
