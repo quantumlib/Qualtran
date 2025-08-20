@@ -8,3 +8,4 @@ openfermion[resources]
 tensorflow-docs
 sphinx
 filelock
+griffe
