@@ -41,14 +41,13 @@ from qualtran.bloqs.arithmetic.lists import HasDuplicates, SortInPlace
 from qualtran.bloqs.basic_gates import Hadamard, OnEach, XGate
 from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.mcmt import MultiControlX
+from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
     SparseStatePreparationViaRotations,
 )
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
-
-from .kxor_instance import KXorInstance
 
 
 @frozen
