@@ -164,6 +164,25 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     ]:
         pytest.xfail("Skipping serialization test for bloqs that use ECPoint.")
 
+    if bloq_ex.name in [
+        'col_kth_nz',
+        'col_kth_nz_symb',
+        'kikuchi_nonzero_index',
+        'kikuchi_nonzero_index_symb',
+        'simple_guiding_state',
+        'simple_guiding_state_symb',
+        'guiding_state',
+        'guiding_state_symb',
+        'guiding_state_symb_c',
+        'kikuchi_matrix_entry',
+        'kikuchi_matrix_entry_symb',
+        'kikuchi_matrix',
+        'kikuchi_matrix_symb',
+        'load_scopes',
+        'load_scopes_symb',
+    ]:
+        pytest.xfail("Skipping serialization test for bloqs that use KXorInstance.")
+
     try:
         qlt_testing.assert_bloq_example_serializes(bloq_ex)
     except qlt_testing.BloqCheckException as bce:

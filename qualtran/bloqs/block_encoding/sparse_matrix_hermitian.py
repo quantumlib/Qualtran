@@ -15,18 +15,15 @@ import abc
 from collections import Counter
 from functools import cached_property
 
-import attrs
 import numpy as np
 import sympy
 from attrs import frozen
 
 from qualtran import (
-    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -35,10 +32,10 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, Ry, Swap
+from qualtran.bloqs.basic_gates import Ry, Swap
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.block_encoding.sparse_matrix import RowColumnOracle
-from qualtran.bloqs.bookkeeping import Partition
+from qualtran.bloqs.bookkeeping import Always, Partition
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
@@ -133,7 +130,6 @@ class SparseMatrixHermitian(BlockEncoding):
     col_oracle: RowColumnOracle
     entry_oracle: SqrtEntryOracle
     eps: SymbolicFloat
-    is_controlled: bool = False
 
     def __attrs_post_init__(self):
         if self.col_oracle.system_bitsize != self.entry_oracle.system_bitsize:
@@ -141,10 +137,7 @@ class SparseMatrixHermitian(BlockEncoding):
 
     @cached_property
     def signature(self) -> Signature:
-        n_ctrls = 1 if self.is_controlled else 0
-
         return Signature.build_from_dtypes(
-            ctrl=QAny(n_ctrls),
             system=QAny(self.system_bitsize),
             ancilla=QAny(self.ancilla_bitsize),
             resource=QAny(self.resource_bitsize),  # if resource_bitsize is 0, not present
@@ -190,28 +183,22 @@ class SparseMatrixHermitian(BlockEncoding):
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
 
-        counts[self.diffusion] += 1
-        counts[self.col_oracle] += 1
-        counts[self.entry_oracle] += 1
-        if self.is_controlled:
-            counts[CSwap(self.system_bitsize)] += 1
-            counts[CSwap(1)] += 1
-        else:
-            counts[Swap(self.system_bitsize)] += 1
-            counts[Swap(1)] += 1
-        counts[self.entry_oracle.adjoint()] += 1
-        counts[self.col_oracle.adjoint()] += 1
-        counts[self.diffusion.adjoint()] += 1
+        counts[Always(self.diffusion)] += 1
+        counts[Always(self.col_oracle)] += 1
+        counts[Always(self.entry_oracle)] += 1
+        counts[Swap(self.system_bitsize)] += 1
+        counts[Swap(1)] += 1
+        counts[Always(self.entry_oracle.adjoint())] += 1
+        counts[Always(self.col_oracle.adjoint())] += 1
+        counts[Always(self.diffusion.adjoint())] += 1
 
         return counts
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT, **soqs
+        self, bb: BloqBuilder, system: SoquetT, ancilla: SoquetT
     ) -> dict[str, SoquetT]:
         if is_symbolic(self.system_bitsize) or is_symbolic(self.col_oracle.num_nonzero):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self=}")
-
-        ctrl = soqs.pop('ctrl', None)
 
         assert not isinstance(ancilla, np.ndarray)
         partition_ancilla = Partition(
@@ -225,41 +212,23 @@ class SparseMatrixHermitian(BlockEncoding):
 
         a, l, b = bb.add(partition_ancilla, x=ancilla)
 
-        l = bb.add(self.diffusion, target=l)
-        l, system = bb.add(self.col_oracle, l=l, i=system)
-        b, l, system = bb.add(self.entry_oracle, q=b, i=l, j=system)
+        l = bb.add(Always(self.diffusion), target=l)
+        l, system = bb.add(Always(self.col_oracle), l=l, i=system)
+        b, l, system = bb.add(Always(self.entry_oracle), q=b, i=l, j=system)
 
-        if self.is_controlled:
-            ctrl, l, system = bb.add(CSwap(self.system_bitsize), ctrl=ctrl, x=l, y=system)
-            ctrl, a, b = bb.add(CSwap(1), ctrl=ctrl, x=a, y=b)
-        else:
-            l, system = bb.add(Swap(self.system_bitsize), x=l, y=system)
-            a, b = bb.add(Swap(1), x=a, y=b)
+        l, system = bb.add(Swap(self.system_bitsize), x=l, y=system)
+        a, b = bb.add(Swap(1), x=a, y=b)
 
-        b, l, system = bb.add(self.entry_oracle.adjoint(), q=b, i=l, j=system)
-        l, system = bb.add(self.col_oracle.adjoint(), l=l, i=system)
-        l = bb.add(self.diffusion.adjoint(), target=l)
+        b, l, system = bb.add(Always(self.entry_oracle.adjoint()), q=b, i=l, j=system)
+        l, system = bb.add(Always(self.col_oracle.adjoint()), l=l, i=system)
+        l = bb.add(Always(self.diffusion.adjoint()), target=l)
 
         ancilla = bb.add(partition_ancilla.adjoint(), a=a, l=l, b=b)
 
-        out_soqs = {"system": system, "ancilla": ancilla}
-        if self.is_controlled:
-            out_soqs |= {"ctrl": ctrl}
-        return out_soqs
+        return {"system": system, "ancilla": ancilla}
 
     def adjoint(self) -> 'SparseMatrixHermitian':
         return self
-
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
-
-        return get_ctrl_system_1bit_cv_from_bloqs(
-            self,
-            ctrl_spec,
-            current_ctrl_bit=1 if self.is_controlled else None,
-            bloq_with_ctrl=self if self.is_controlled else attrs.evolve(self, is_controlled=True),
-            ctrl_reg_name='ctrl',
-        )
 
 
 @frozen
