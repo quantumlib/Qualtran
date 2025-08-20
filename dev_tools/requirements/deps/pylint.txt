@@ -9,3 +9,4 @@ tensorflow-docs
 sphinx
 filelock
 griffe
+mdit-py-plugins
