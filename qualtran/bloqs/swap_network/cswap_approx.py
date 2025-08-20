@@ -16,6 +16,7 @@ from functools import cached_property
 from typing import Dict, Iterator, Optional, Tuple, TYPE_CHECKING
 
 import cirq
+import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
@@ -118,10 +119,7 @@ class CSwapApprox(GateWithRegisters):
 
 @bloq_example
 def _approx_cswap_symb() -> CSwapApprox:
-    # A symbolic version. The bitsize is the symbol 'n'.
-    from sympy import sympify
-
-    approx_cswap_symb = CSwapApprox(bitsize=sympify('n'))
+    approx_cswap_symb = CSwapApprox(bitsize=sympy.Symbol('n'))
     return approx_cswap_symb
 
 

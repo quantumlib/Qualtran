@@ -688,6 +688,7 @@ def make_ctrl_system_with_correct_metabloq(
        `ControlledViaAnd`, which computes the activation function once and re-uses it
        for each subbloq in the decomposition of `bloq`.
     """
+    from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 
     if ctrl_spec == CtrlSpec():
@@ -710,6 +711,6 @@ def make_ctrl_system_with_correct_metabloq(
     if qdtypes:
         return ControlledViaAnd.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
     if cdtypes:
-        raise NotImplementedError("Stay tuned...")
+        return ClassicallyControlled.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
 
     raise ValueError(f"Invalid control spec: {ctrl_spec}")

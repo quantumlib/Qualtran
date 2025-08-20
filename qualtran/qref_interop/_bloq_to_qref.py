@@ -25,7 +25,7 @@
 #  limitations under the License.
 
 from functools import singledispatch
-from typing import Any, Iterable, Optional, Union
+from typing import Any, cast, Iterable, Optional, Union
 
 import networkx as nx
 import sympy
@@ -430,7 +430,7 @@ def _extract_symbols_from_port_sizes(ports: list[PortV1]) -> list[str]:
     """Extracts symbols from the expressions for port sizes."""
     symbols: set[sympy.Symbol] = set()
     for port in ports:
-        symbols = symbols | sympy.sympify(port.size).free_symbols
+        symbols = symbols | cast(sympy.Symbol, sympy.sympify(port.size).free_symbols)
 
     return [str(symbol) for symbol in symbols]
 

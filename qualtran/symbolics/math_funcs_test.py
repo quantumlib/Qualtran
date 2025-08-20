@@ -144,5 +144,5 @@ def test_is_zero():
     assert is_zero(n * 0)
     assert is_zero(n * 2 - n - n)
 
-    assert is_zero(sympy.sympify("0"))
-    assert not is_zero(sympy.sympify("1"))
+    assert is_zero(sympy.core.numbers.Zero())
+    assert not is_zero(sympy.core.numbers.One())

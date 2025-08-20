@@ -371,7 +371,7 @@ class CompositeBloq(Bloq):
             in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
             if pred(binst):
                 try:
-                    new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
+                    new_out_soqs = bb.add_from(binst.bloq, **in_soqs)
                     did_work = True
                 except (DecomposeTypeError, DecomposeNotImplementedError):
                     new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
@@ -510,6 +510,42 @@ def _binst_to_cxns(
         succ_cxns.extend(binst_graph.edges[binst, succ]['cxns'])
 
     return pred_cxns, succ_cxns
+
+
+def _get_soquet(
+    binst: 'BloqInstance',
+    reg_name: str,
+    right: bool = False,
+    idx: Tuple[int, ...] = (),
+    *,
+    binst_graph: nx.DiGraph,
+) -> 'Soquet':
+    """Retrieve a soquet given identifying information.
+
+    We can uniquely address a Soquet by the arguments to this function.
+
+    Args:
+        binst: The bloq instance associated with the desired soquet.
+        reg_name: The name of the register associated with the desired soquet.
+        right: If False, get the input, left soquet. Otherwise: the right, output soquet
+        idx: The index of the soquet within a multidimensional register, or the empty
+            tuple for basic registers.
+    """
+    preds, succs = _binst_to_cxns(binst, binst_graph=binst_graph)
+    if right:
+        for suc in succs:
+            me = suc.left
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+    else:
+        for pred in preds:
+            me = pred.right
+            if me.reg.name == reg_name and me.idx == idx:
+                return me
+
+    raise ValueError(
+        f"Could not find the requested soquet with {binst=}, {reg_name=}, {right=}, {idx=}"
+    )
 
 
 def _cxns_to_soq_dict(
