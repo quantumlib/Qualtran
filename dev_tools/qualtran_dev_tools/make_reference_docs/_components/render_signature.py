@@ -32,9 +32,9 @@ def format_parameter(p: Parameter) -> str:
     if p.kind and p.kind is ParameterKind.positional_or_keyword:
         return s
     elif p.kind and p.kind is ParameterKind.positional_only:
-        return s  # TODO?
+        return s
     elif p.kind and p.kind is ParameterKind.keyword_only:
-        return s  # TODO?
+        return s
     elif p.kind and p.kind is ParameterKind.var_positional:
         return f'*{s}'
     elif p.kind and p.kind is ParameterKind.var_keyword:

@@ -132,7 +132,6 @@ def _write_admonition(f, part: DocstringSectionAdmonition, level: int):
 
 
 def _write_examples(f, part: DocstringSectionExamples, level: int):
-    # todo? "examples" heading?
     part = part.value
     for subkind, subtext in part:
         if subkind is DocstringSectionKind.examples:

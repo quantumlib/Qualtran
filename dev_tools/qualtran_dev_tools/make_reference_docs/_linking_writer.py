@@ -51,7 +51,7 @@ class LinkingWriter:
         self._linked: Set[str] = set()
         self._link_aliases = link_aliases
         self._link_d = link_d
-        self._reference_relpath = refdoc_relpath  # TODO: continue refactor -> refdoc_relpath
+        self._reference_relpath = refdoc_relpath
 
     def resolve_dotpath(self, dotpath: str) -> Optional[str]:
         maybe_cached = _CACHE[str(self._reference_relpath)].get(dotpath, None)

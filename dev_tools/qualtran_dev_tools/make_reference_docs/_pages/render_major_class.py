@@ -35,10 +35,8 @@ def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Obje
     if obj2.name == '__init__':
         return
     if obj2.is_special:
-        # TODO: do we want these?
         return
     if obj2.kind is Kind.ATTRIBUTE:
-        # TODO: do we want these?
         return
 
     # Member name

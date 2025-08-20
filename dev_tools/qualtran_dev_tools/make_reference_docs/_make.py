@@ -157,9 +157,7 @@ class _PackageWalker:
         """DFS through all the objects.
 
         First, we recurse on the objects we care about.
-
-        Then, we determine the "preferred dotpath" for each object. Todo .. doc
-
+        Then, we determine the "preferred dotpath" for each object.
         Finally, we sort the object into either a MajorClassPage or ModulePage.
         """
         if obj.canonical_path in SKIP_MODULES:
