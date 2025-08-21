@@ -80,7 +80,8 @@ if TYPE_CHECKING:
 class ZPowGate(CirqGateAsBloqBase):
     r"""Apply a power of the Pauli Z operator to a single qubit.
 
-    Given  `exponent` $t$, the unitary matrix of this gate is:
+    Given `exponent` $t$, the unitary matrix of this gate is:
+
     $$
     Z^t =
     \begin{bmatrix}
@@ -180,6 +181,7 @@ class CZPowGate(Bloq):
     r"""The controlled `ZPowGate`
 
     The unitary matrix of `CZPowGate(exponent=t)` is:
+
     $$
     C[Z^t] =
     \begin{bmatrix}
@@ -248,6 +250,7 @@ class XPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
+
     $$
     e^{i \pi t (s + 1/2)}
     \begin{bmatrix}
@@ -322,6 +325,7 @@ class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
+
     $$
         \begin{bmatrix}
             e^{i \pi t /2} \cos(\pi t /2) & - e^{i \pi t /2} \sin(\pi t /2) \\
@@ -396,6 +400,7 @@ class Rz(CirqGateAsBloqBase):
     r"""Apply a single-qubit Z rotation.
 
     Given `angle` $\theta$, the unitary matrix of this gate is:
+
     $$
     R_Z(\theta) = \exp(-i \frac{\theta}{2} Z) =
     \begin{bmatrix}
@@ -490,6 +495,7 @@ class CRz(Bloq):
     r"""A controlled Rz rotation.
 
     Given `angle` $\theta$, the unitary matrix of this gate is:
+
     $$
     C[R_Z(\theta)] =
     \begin{bmatrix}
@@ -557,6 +563,7 @@ class Rx(CirqGateAsBloqBase):
     r"""Rotates a qubit about the X-axis of the Bloch sphere.
 
     The unitary matrix for this gate is:
+
     $$
     R_x(\theta) = \exp(-i \frac{\theta}{2} X) =
     \begin{pmatrix}
@@ -621,6 +628,7 @@ class Ry(CirqGateAsBloqBase):
     r"""Rotates a qubit about the Y-axis of the Bloch sphere.
 
     The unitary matrix for this gate is:
+
     $$
     R_y(\theta) = \exp(-i \frac{\theta}{2} Y) =
     \begin{pmatrix}
