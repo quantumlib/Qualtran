@@ -25,3 +25,7 @@ from ._cirq_to_bloq import (
 )
 
 from ._bloq_to_cirq import BloqAsCirqGate
+
+from .._infra.gate_with_registers import get_named_qubits, merge_qubits
+
+assert [get_named_qubits, merge_qubits]

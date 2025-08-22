@@ -91,7 +91,7 @@ class QubitCount(CostKey[SymbolicInt]):
     This is an estimate for the number of qubits required by an algorithm. Specifically:
      - Bloqs are assumed to be executed sequentially, minimizing the number of qubits potentially
        at the expense of greater circuit depth or execution time.
-     - We do not consider "tetris-ing" subbloqs. In a decomposition, each subbloq is assumed
+     - We do not consider "tetris-ing" subbloqs. Within a decomposition, each subbloq is assumed
        to be using all of its qubits for the duration of its execution. This could potentially
        overestimate the total number of qubits.
 

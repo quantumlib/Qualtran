@@ -34,7 +34,7 @@ def minimum_time_steps(
         M_\mathrm{meas} + M_R + M_T + 3 M_\mathrm{Tof} + D_R \textrm{rotation cost}
     $$
 
-    Where:
+    Where
      - $M_\mathrm{meas}$ is the number of measurements.
      - $M_R$ is the number of rotations.
      - $M_T$ is the number of T operations.
@@ -44,7 +44,7 @@ def minimum_time_steps(
        Toffoli gates.
      - $\textrm{rotation cost}$ is the number of T operations needed to approximate a rotation to $\epsilon/(3*M_R)$.
 
-    Reference:
+    References:
         https://arxiv.org/abs/2211.07629.
         Equation D3.
 

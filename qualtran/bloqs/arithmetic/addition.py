@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 class Add(Bloq):
     r"""An n-bit addition gate.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $n - 1$ Toffoli gates.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -251,7 +251,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
-    using $4n - 4 T$ gates. Uncomputation requires 0 T-gates.
+    using $4n - 4$ T gates. Uncomputation requires 0 T gates.
 
     Args:
         bitsize: Number of bits used to represent each input integer. The allocated output register

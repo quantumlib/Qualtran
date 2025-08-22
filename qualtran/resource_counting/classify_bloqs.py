@@ -11,6 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""Functions for 'classifying' bloq objects into categories.
+
+Common categories relevant for resource esimtation include classifications
+like whether the bloq is a Clifford operation, whether it's a rotation, etc.
+"""
 import collections.abc as abc
 from collections import defaultdict
 from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union

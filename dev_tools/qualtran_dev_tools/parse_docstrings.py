@@ -59,6 +59,15 @@ def parse_reference(ref_text: str) -> ReferenceT:
     return UnparsedReference(ref_text)
 
 
+def parse_references(full_reference_text: str) -> List[ReferenceT]:
+    reference_texts = re.split(r'\n\n', full_reference_text)
+    my_refs = []
+    for ref_text in reference_texts:
+        ref = parse_reference(ref_text)
+        my_refs.append(ref)
+    return my_refs
+
+
 class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
 
@@ -88,12 +97,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         lines = self._dedent(self._consume_to_next_section())
 
         full_reference_text = '\n'.join(lines)
-        reference_texts = re.split(r'\n\n', full_reference_text)
-        my_refs = []
-        for ref_text in reference_texts:
-            ref = parse_reference(ref_text)
-            my_refs.append(ref)
-
+        my_refs = parse_references(full_reference_text)
         self.references.extend(my_refs)
         return ['#### References', '\n'.join(f' - {ref.text}' for ref in my_refs), '']
 

@@ -52,6 +52,8 @@ if TYPE_CHECKING:
 class CAdd(Bloq):
     r"""An n-bit controlled-addition gate.
 
+    This uses $n$ `And` gates plus an uncontrolled adder for a total of $2n - 1$ Toffolis.
+
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
         b_dtype: Quantum datatype used to represent the integer b. Must be large
