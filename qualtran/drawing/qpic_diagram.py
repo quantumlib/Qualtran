@@ -351,7 +351,7 @@ def qpic_input_to_diagram(
     # 2. Run the qpic script and generate the corresponding TEX output.
     tex_file = str(qpic_file) + '_tex'
     command = f'qpic {qpic_file} -f tex -o {tex_file}'
-    subprocess.run(command.split(), check=True, capture_output=True)
+    subprocess.run(command.split(), check=True)
     tex_file_path = pathlib.Path(tex_file)
 
     if output_type == 'tex':
@@ -394,7 +394,8 @@ def qpic_diagram_for_bloq(
     Args:
         bloq: The bloq to generate a qpic diagram for
         base_file_path: Prefix of the path where output file is saved. The output file corresponds
-            to f'{base_file_path}.{output_type}'
+            to f'{base_file_path}.{output_type}'. If not specified, the bloq's class name will be
+            used.
         output_type: Format of the diagram generated using qpic. Supported output types are one of
             ['qpic', 'tex', 'pdf', 'png']
     Returns:

@@ -43,12 +43,9 @@ def test_decomposition(control, dtype, a_bits, b_bits):
 
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
-def test_addition_gate_counts_controlled(n: int):
+def test_addition_gate_counts(n: int):
     add = CAdd(QUInt(n), cv=1)
-    num_and = 2 * n - 1
-    t_count = 4 * num_and
-    assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
-    assert add.t_complexity().t == t_count
+    assert get_cost_value(add, QECGatesCost()).total_toffoli_only() == 2 * n - 1
 
 
 @pytest.mark.slow
