@@ -10,8 +10,16 @@ types (``Register``), and algorithms (``CompositeBloq``).
 
 .. toctree::
    :maxdepth: 1
+   :caption: Tutorial
 
-   _infra/Bloqs-Tutorial.ipynb
+   quantum-programming/1-wiring-up.ipynb
+   quantum-programming/2-bloqs.ipynb
+   quantum-programming/3-addressing-bits.ipynb
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Concepts
+
    Protocols.ipynb
    DataTypes.ipynb
    simulation/classical_sim.ipynb
@@ -34,6 +42,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
    :maxdepth: 1
    :caption: Advanced Topics:
 
+   _infra/Bloqs-Tutorial.ipynb
    _infra/composite_bloq.ipynb
    cirq_interop/cirq_interop.ipynb
    cirq_interop/t_complexity.ipynb
