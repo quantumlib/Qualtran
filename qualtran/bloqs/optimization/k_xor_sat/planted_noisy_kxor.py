@@ -401,7 +401,7 @@ def _solve_planted() -> PlantedNoisyKXOR:
 @bloq_example
 def _solve_planted_symbolic() -> PlantedNoisyKXOR:
     from qualtran.bloqs.optimization.k_xor_sat import KXorInstance
-    from qualtran.symbolics import HasLength
+    from qualtran.symbolics import HasLength, ln
 
     n, m = sympy.symbols("n m", positive=True, integer=True)
     k = sympy.symbols("k", positive=True, integer=True, even=True)

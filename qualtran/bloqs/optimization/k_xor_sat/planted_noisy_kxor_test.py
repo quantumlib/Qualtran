@@ -15,12 +15,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran.drawing import show_call_graph
-from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
-from qualtran.symbolics import ln, log2
 import qualtran.testing as qlt_testing
-
 from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
 from qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor import (
     _solve_planted,
@@ -28,6 +23,8 @@ from qualtran.bloqs.optimization.k_xor_sat.planted_noisy_kxor import (
     AliceTheorem,
     PlantedNoisyKXOR,
 )
+from qualtran.resource_counting import get_cost_value, QECGatesCost
+from qualtran.symbolics import ln
 
 
 @pytest.fixture
@@ -89,11 +86,11 @@ def test_large(n):
     _cost = get_cost_value(bloq, QECGatesCost())
 
 
-@pytest.mark.notebook()
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('planted_noisy_kxor')
 
 
-@pytest.mark.notebook()
+@pytest.mark.notebook
 def test_tutorial():
     qlt_testing.execute_notebook('tutorial_planted_noisy_kxor')
