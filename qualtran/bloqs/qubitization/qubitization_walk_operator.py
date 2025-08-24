@@ -49,6 +49,7 @@ from qualtran.bloqs.block_encoding.lcu_block_encoding import (
 )
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,
@@ -116,7 +117,13 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.target_registers, *self.junk_registers])
+        # TODO Make `QubitizationWalkOperator` a `BlockEncoding`.
+        #      https://github.com/quantumlib/Qualtran/issues/1266
+        if isinstance(self.block_encoding, (SelectBlockEncoding, LCUBlockEncoding)):
+            return Signature(
+                [*self.selection_registers, *self.target_registers, *self.junk_registers]
+            )
+        return self.block_encoding.signature
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
@@ -135,6 +142,9 @@ class QubitizationWalkOperator(GateWithRegisters):
         soqs |= bb.add_d(self.reflect, **reflect_soqs)
 
         return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {self.block_encoding: 1, self.reflect: 1}
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['W'] * self.signature.n_qubits()
