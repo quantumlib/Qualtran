@@ -19,7 +19,7 @@ from .kxor_instance import Constraint, KXorInstance
 from .load_kxor_instance import LoadConstraintScopes, LoadUniqueScopeIndex, PRGAUniqueConstraintRHS
 from .planted_noisy_kxor import (
     AliceTheorem,
-    PlantedNoisyKXOR,
-    KikuchiAverageDegreeTheorem,
     GuidingStateOverlapTheorem,
+    KikuchiAverageDegreeTheorem,
+    PlantedNoisyKXOR,
 )
