@@ -219,6 +219,8 @@ class _ECAddStepTwo(Bloq):
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
         Fig 10.
+        [Validation of Quantum Elliptic Curve Point Addition Circuits](https://arxiv.org/abs/2506.03318)
+        Fig 1.
     """
 
     n: 'SymbolicInt'
@@ -665,7 +667,7 @@ class _ECAddStepFive(Bloq):
     is 0, the computed λ is undefined (and with this construction the computed λ will be set to 0),
     however the λ is non-zero and should be cleared with λ_r. We accomplish this with a controled
     Xor bloq controlled on the ctrl qubit and the condition that the x register (a - x_r) = 0. In
-    this ase we clear the λ register with λ_r.
+    this case we clear the λ register with λ_r.
 
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
@@ -686,6 +688,8 @@ class _ECAddStepFive(Bloq):
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
         Fig 10.
+        [Validation of Quantum Elliptic Curve Point Addition Circuits](https://arxiv.org/abs/2506.03318)
+        Fig 2.
     """
 
     n: 'SymbolicInt'
@@ -826,12 +830,16 @@ class _ECAddStepSix(Bloq):
     Include bugfixes for the following scenarios:
         1. f_2 is improperly cleared when ((x, y) = (0, 0) AND b = 0) OR ((a, b) = (0, 0) AND
             y = 0).
-        2. f_4 is improperly cleared when P_1 = P_2 AND f_4 is set.
+        2. f_1 is improperly cleared when ((x, y) = (0, 0) AND a = 0) OR ((a, b) = (0, 0) AND
+            x = 0).
+        3. f_4 is improperly cleared when P_1 = P_2 AND f_4 is set.
 
     The bugs are fixed respectively by:
         1. Clearing f_2 when x = y = b = 0 OR a = b = y = 0 using an XGate controlled on those
             registers.
-        2. Moving the CModSub and CModAdd bloqs before the Equals bloq.
+        2. Clearing f_1 when x = y = a = 0 OR a = b = x = 0 using an XGate controlled on those
+            registers.
+        3. Moving the CModSub and CModAdd bloqs before the Equals bloq.
 
     Args:
         n: The bitsize of the two registers storing the elliptic curve point
@@ -853,6 +861,8 @@ class _ECAddStepSix(Bloq):
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
         Fig 10.
+        [Validation of Quantum Elliptic Curve Point Addition Circuits](https://arxiv.org/abs/2506.03318)
+        Fig 3.
     """
 
     n: 'SymbolicInt'
@@ -917,8 +927,12 @@ class _ECAddStepSix(Bloq):
         f3 = f_ctrls[1]
         f4 = f_ctrls[2]
 
-        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
+        # Unset f1 if ((x, y) = (0, 0) AND a = 0) OR ((a, b) = (0, 0) AND x = 0).
         mcx = XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0]))
+        [a, x, y], f1 = bb.add(mcx, ctrl=[a, x, y], q=f1)
+        [x, a, b], f1 = bb.add(mcx, ctrl=[x, a, b], q=f1)
+
+        # Unset f2 if ((a, b) = (0, 0) AND y = 0) OR ((x, y) = (0, 0) AND b = 0).
         [a, b, y], f2 = bb.add(mcx, ctrl=[a, b, y], q=f2)
         [x, y, b], f2 = bb.add(mcx, ctrl=[x, y, b], q=f2)
 
@@ -1015,7 +1029,7 @@ class _ECAddStepSix(Bloq):
             cvs2 = HasLength(2 * self.n)
         return {
             MultiControlX(cvs=cvs2): 1,
-            XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0])): 2,
+            XGate().controlled(CtrlSpec(qdtypes=QMontgomeryUInt(self.n), cvs=[0, 0, 0])): 4,
             MultiControlX(cvs=[0] * 3): 1,
             CModSub(QMontgomeryUInt(self.n), mod=self.mod): 1,
             CModAdd(QMontgomeryUInt(self.n), mod=self.mod): 1,
