@@ -103,7 +103,10 @@ class And(GateWithRegisters):
             return {'ctrl': ctrl, 'target': out}
 
         # Uncompute
-        assert target == out
+        if target != out:
+            raise ValueError(
+                f"Inconsistent `target` found for uncomputing `And`: {ctrl=}, {target=}. Expected target={out}"
+            )
         return {'ctrl': ctrl}
 
     def my_tensors(
