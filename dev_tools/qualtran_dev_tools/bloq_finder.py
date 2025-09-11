@@ -13,9 +13,8 @@
 #  limitations under the License.
 import importlib
 import inspect
-import subprocess
 from pathlib import Path
-from typing import Callable, Iterable, List, Tuple, Type
+from typing import Callable, Iterable, List, Optional, Tuple, Type
 
 from qualtran import Bloq, BloqDocSpec, BloqExample
 
@@ -24,18 +23,11 @@ from .git_tools import get_git_root
 
 def _get_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> List[Path]:
     """Get *.py files based on `filter_func`."""
-    cp = subprocess.run(
-        ['git', 'ls-files', '*.py'],
-        capture_output=True,
-        universal_newlines=True,
-        cwd=bloqs_root,
-        check=True,
-    )
-    outs = cp.stdout.splitlines()
-    paths = [Path(out) for out in outs]
-
-    paths = [path for path in paths if filter_func(path)]
-    return paths
+    return [
+        path.relative_to(bloqs_root)
+        for path in bloqs_root.glob('**/*.py')
+        if filter_func(path)
+    ]
 
 
 def get_bloq_module_paths(bloqs_root: Path) -> List[Path]:
@@ -106,9 +98,11 @@ def modpath_to_bloqdocspecs(path: Path) -> Iterable[Tuple[str, str, BloqDocSpec]
         yield modname, name, obj
 
 
-def get_bloq_classes() -> List[Type[Bloq]]:
-    reporoot = get_git_root()
-    bloqs_root = reporoot / 'qualtran/bloqs'
+def get_bloq_classes(bloqs_root: Optional[Path] = None) -> List[Type[Bloq]]:
+    if bloqs_root is None:
+        reporoot = get_git_root()
+        bloqs_root = reporoot / 'qualtran/bloqs'
+
     paths = get_bloq_module_paths(bloqs_root)
     bloq_clss: List[Type[Bloq]] = []
     for path in paths:
