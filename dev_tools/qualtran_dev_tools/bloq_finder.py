@@ -38,15 +38,15 @@ def _get_git_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> Lis
     return paths
 
 
-def _get_paths(bloqs_root: Path, filter_func: Callable[[Path], bool], committed_only: bool = True) -> List[Path]:
+def _get_paths(
+    bloqs_root: Path, filter_func: Callable[[Path], bool], committed_only: bool = True
+) -> List[Path]:
     """Get *.py files based on `filter_func`."""
     if committed_only:
         return _get_git_paths(bloqs_root, filter_func)
 
     return [
-        path.relative_to(bloqs_root)
-        for path in bloqs_root.glob('**/*.py')
-        if filter_func(path)
+        path.relative_to(bloqs_root) for path in bloqs_root.glob('**/*.py') if filter_func(path)
     ]
 
 
