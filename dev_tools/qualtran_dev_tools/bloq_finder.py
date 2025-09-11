@@ -110,9 +110,11 @@ def get_bloq_classes(bloqs_root: Optional[Path] = None) -> List[Type[Bloq]]:
     return bloq_clss
 
 
-def get_bloq_examples() -> List[BloqExample]:
-    reporoot = get_git_root()
-    bloqs_root = reporoot / 'qualtran/bloqs'
+def get_bloq_examples(bloqs_root: Optional[Path] = None) -> List[BloqExample]:
+    if bloqs_root is None:
+        reporoot = get_git_root()
+        bloqs_root = reporoot / 'qualtran/bloqs'
+
     paths = get_bloq_module_paths(bloqs_root)
 
     bexamples: List[BloqExample] = []
@@ -123,9 +125,11 @@ def get_bloq_examples() -> List[BloqExample]:
     return bexamples
 
 
-def get_bloqdocspecs() -> List[BloqDocSpec]:
-    reporoot = get_git_root()
-    bloqs_root = reporoot / 'qualtran/bloqs'
+def get_bloqdocspecs(bloqs_root: Optional[Path] = None) -> List[BloqDocSpec]:
+    if bloqs_root is None:
+        reporoot = get_git_root()
+        bloqs_root = reporoot / 'qualtran/bloqs'
+
     paths = get_bloq_module_paths(bloqs_root)
 
     bdspecs: List[BloqDocSpec] = []
