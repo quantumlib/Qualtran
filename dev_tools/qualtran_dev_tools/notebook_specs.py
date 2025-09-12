@@ -95,6 +95,7 @@ import qualtran.bloqs.gf_arithmetic.gf2_square
 import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add
 import qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k
 import qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join
+import qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -981,6 +982,14 @@ OTHER: List[NotebookSpecV2] = [
         module=qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp,
         bloq_specs=[
             qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp._Hamiltonian_Simulation_by_GQSP_DOC
+        ],
+    ),
+    NotebookSpecV2(
+        title='Guided Hamiltonian Problem',
+        module=qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian,
+        bloq_specs=[
+            qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian._GUIDED_HAMILTONIAN_DOC,
+            qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian._GUIDED_HAMILTONIAN_PHASE_ESTIMATION_DOC,
         ],
     ),
 ]
