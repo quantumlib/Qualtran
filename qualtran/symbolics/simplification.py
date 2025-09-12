@@ -11,4 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from .guided_hamiltonian import GuidedHamiltonian, GuidedHamiltonianPhaseEstimation
+from qualtran.symbolics.types import SymbolicInt
+
+
+def extract_int(x: SymbolicInt) -> SymbolicInt:
+    """Extract a raw python int if the input is sympy.Integer, otherwise return as-is."""
+    try:
+        result = int(x)
+        return result
+    except TypeError:
+        return x

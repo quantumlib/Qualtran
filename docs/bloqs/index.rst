@@ -161,6 +161,7 @@ Bloqs Library
     optimization/k_xor_sat/kikuchi_adjacency_list.ipynb
     optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb
     optimization/k_xor_sat/kikuchi_block_encoding.ipynb
+    optimization/k_xor_sat/planted_noisy_kxor.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -180,3 +181,4 @@ Bloqs Library
     state_preparation/state_preparation_via_rotation.ipynb
     qsp/generalized_qsp.ipynb
     hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb
+    hamiltonian_simulation/guided_hamiltonian.ipynb
