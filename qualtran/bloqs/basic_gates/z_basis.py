@@ -392,7 +392,7 @@ _CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
 
 
 @frozen
-class MeasZ(Bloq):
+class MeasureZ(Bloq):
     """Measure a qubit in the Z basis.
 
     Registers:
@@ -427,6 +427,15 @@ class MeasZ(Bloq):
             tags=[str(self)],
         )
         return [t, DiscardInd((meas_result, 0))]
+
+
+@bloq_example
+def _meas_z() -> MeasureZ:
+    meas_z = MeasureZ()
+    return meas_z
+
+
+_MEASURE_Z_DOC = BloqDocSpec(bloq_cls=MeasureZ, examples=[_meas_z])
 
 
 @frozen

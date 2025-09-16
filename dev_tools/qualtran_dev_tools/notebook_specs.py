@@ -214,6 +214,15 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Measurement',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='measurement',
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._MEASURE_Z_DOC,
+            qualtran.bloqs.basic_gates.x_basis._MEASURE_X_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Basic Swaps',
         module=qualtran.bloqs.basic_gates.swap,
         bloq_specs=[

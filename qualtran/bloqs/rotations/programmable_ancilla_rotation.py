@@ -19,8 +19,7 @@ import sympy
 from attrs import field, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QBit, Register, Side, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate, ZPowGate
-from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, MeasureZ, XGate, ZPowGate
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
@@ -148,7 +147,7 @@ class ZPowUsingProgrammedAncilla(Bloq):
         if self.apply_final_correction:
             resources[ZPowGate(2**self.n_rounds * self.exponent, eps=self.eps / n_rz)] += 1
 
-        resources[Measure()] += self.n_rounds
+        resources[MeasureZ()] += self.n_rounds
 
         return resources
 

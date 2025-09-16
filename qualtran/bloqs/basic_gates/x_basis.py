@@ -282,7 +282,7 @@ class XGate(Bloq):
 
 
 @frozen
-class MeasX(Bloq):
+class MeasureX(Bloq):
     """Measure a qubit in the X basis.
 
     Registers:
@@ -327,3 +327,12 @@ class MeasX(Bloq):
             data=data, inds=[(incoming['q'], 0), (q_trace, 0), (outgoing['c'], 0)], tags=[str(self)]
         )
         return [t, DiscardInd((q_trace, 0))]
+
+
+@bloq_example
+def _meas_x() -> MeasureX:
+    meas_x = MeasureX()
+    return meas_x
+
+
+_MEASURE_X_DOC = BloqDocSpec(bloq_cls=MeasureX, examples=[_meas_x])
