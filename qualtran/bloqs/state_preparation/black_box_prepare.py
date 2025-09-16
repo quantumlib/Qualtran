@@ -86,7 +86,7 @@ class BlackBoxPrepare(Bloq):
         return bb.add_d(AutoPartition(self.prepare, partitions), **soqs)
 
     def __str__(self) -> str:
-        return f'BBPrepare[{self.prepare}]'
+        return 'Prep'
 
 
 @bloq_example
