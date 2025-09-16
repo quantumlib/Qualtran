@@ -110,6 +110,7 @@ import qualtran.bloqs.for_testing.many_registers
 import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
+import qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -392,6 +393,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
+    "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian": qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian,
+    "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation": qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation,
     "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP": qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
