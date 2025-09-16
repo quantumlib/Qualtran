@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT, MeasurementPhase
 
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
@@ -380,10 +380,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @cached_property
     def _thru_registers_only(self) -> bool:
-        for reg in self.subbloq.signature:
-            if reg.side != Side.THRU:
-                return False
-        return True
+        return self.signature.thru_registers_only
 
     @staticmethod
     def _make_ctrl_system(cb: '_ControlledBase') -> Tuple['_ControlledBase', 'AddControlledT']:
@@ -453,7 +450,9 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
         return vals
 
-    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+    def basis_state_phase(
+        self, **vals: 'ClassicalValT'
+    ) -> Union[complex, 'MeasurementPhase', None]:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -533,7 +532,15 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(f'C[{self.subbloq}]')
+            sub_title = self.subbloq.wire_symbol(None, idx)
+            if not isinstance(sub_title, Text):
+                raise ValueError(
+                    f"{self.subbloq} should return a `Text` object for reg=None wire symbol."
+                )
+            if sub_title.text == '':
+                return Text('')
+
+            return Text(f'C[{sub_title.text}]')
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
             return self.subbloq.wire_symbol(reg, idx)
