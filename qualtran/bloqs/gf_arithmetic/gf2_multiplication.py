@@ -292,7 +292,7 @@ class GF2MulK(Bloq):
         return self.dtype.gf_type.irreducible_poly
 
     @cached_property
-    def n(self) -> int:
+    def n(self) -> SymbolicInt:
         return self.dtype.bitsize
 
     @cached_property
@@ -318,7 +318,7 @@ class GF2MulK(Bloq):
         by a full rank matrix that can be decomposed into PLU where L and U are lower
         and upper traingular matricies and P is a permutation matrix.
         """
-        n = self.n
+        n = int(self.n)
         matrix = np.zeros((n, n), dtype=int)
         for i in range(n):
             p = self._const * self.galois_field(2**i)
@@ -977,7 +977,7 @@ class GF2MulViaKaratsuba(Bloq):
             raise ValueError(f'GF2MulViaKaratsuba is not supported for {self.m_x}')
 
     @cached_property
-    def n(self):
+    def n(self) -> SymbolicInt:
         return self.dtype.bitsize
 
     @cached_property
