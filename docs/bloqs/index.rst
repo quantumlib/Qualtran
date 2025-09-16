@@ -181,3 +181,4 @@ Bloqs Library
     state_preparation/state_preparation_via_rotation.ipynb
     qsp/generalized_qsp.ipynb
     hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb
+    hamiltonian_simulation/guided_hamiltonian.ipynb
