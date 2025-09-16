@@ -22,7 +22,7 @@ from qualtran.bloqs.basic_gates import (
     CZ,
     IntEffect,
     IntState,
-    MeasZ,
+    MeasureZ,
     MinusState,
     OneEffect,
     OneState,
@@ -283,12 +283,12 @@ def test_cz_phased_classical():
 
 def test_meas_z_supertensor():
     with pytest.raises(ValueError, match=r'.*superoperator.*'):
-        MeasZ().tensor_contract()
+        MeasureZ().tensor_contract()
 
     # Zero -> Zero
     bb = BloqBuilder()
     q = bb.add(ZeroState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.outer([1, 0], [1, 0])
@@ -297,7 +297,7 @@ def test_meas_z_supertensor():
     # One -> One
     bb = BloqBuilder()
     q = bb.add(OneState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.outer([0, 1], [0, 1])
@@ -306,7 +306,7 @@ def test_meas_z_supertensor():
     # Plus -> mixture
     bb = BloqBuilder()
     q = bb.add(PlusState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.diag([0.5, 0.5])
@@ -315,7 +315,7 @@ def test_meas_z_supertensor():
     # Minus -> mixture
     bb = BloqBuilder()
     q = bb.add(MinusState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.diag([0.5, 0.5])
@@ -327,7 +327,17 @@ def test_meas_z_classical():
     q = bb.add(IntState(val=52, bitsize=8))
     qs = bb.split(q)
     for i in range(8):
-        qs[i] = bb.add(MeasZ(), q=qs[i])
+        qs[i] = bb.add(MeasureZ(), q=qs[i])
     cbloq = bb.finalize(outs=qs)
     (ret,) = cbloq.call_classically()
     assert list(ret) == QUInt(8).to_bits(52)  # type: ignore[arg-type]
+
+
+@pytest.mark.notebook
+def test_states_and_effects_notebook():
+    qlt_testing.execute_notebook('states_and_effects')
+
+
+@pytest.mark.notebook
+def test_measurement_notebook():
+    qlt_testing.execute_notebook('measurement')

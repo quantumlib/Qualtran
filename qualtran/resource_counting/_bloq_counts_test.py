@@ -15,8 +15,7 @@ import pytest
 import sympy
 
 from qualtran.bloqs import basic_gates, mcmt, rotations
-from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
-from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.basic_gates import Hadamard, MeasureZ, TGate, Toffoli
 from qualtran.bloqs.for_testing.costing import make_example_costing_bloqs
 from qualtran.bloqs.mcmt import MultiAnd, MultiTargetCNOT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -99,7 +98,7 @@ def test_qec_gates_cost_cbloq():
         # Toffoli
         [basic_gates.Toffoli(), GateCounts(toffoli=1)],
         # Measure
-        [Measure(), GateCounts(measurement=1)],
+        [MeasureZ(), GateCounts(measurement=1)],
         # CSwap
         [basic_gates.TwoBitCSwap(), GateCounts(cswap=1)],
         # And

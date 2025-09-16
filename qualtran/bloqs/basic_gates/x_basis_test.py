@@ -17,7 +17,7 @@ import pytest
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import (
-    MeasX,
+    MeasureX,
     MinusState,
     OneState,
     PlusEffect,
@@ -133,9 +133,9 @@ def test_controlled_x():
 
 
 def test_meas_x_classical_sim() -> None:
-    bloq = MeasX()
+    bloq = MeasureX()
 
-    with pytest.raises(ValueError, match='MeasX imparts a phase'):
+    with pytest.raises(ValueError, match='MeasureX imparts a phase'):
         _ = bloq.call_classically(q=0)
 
     with pytest.raises(ValueError, match='Invalid classical value'):
@@ -163,7 +163,7 @@ def test_meas_x_classical_sim() -> None:
 
 
 def test_meas_x_basis_state_phase() -> None:
-    bloq = MeasX()
+    bloq = MeasureX()
     assert bloq.basis_state_phase(0) == 1
     assert bloq.basis_state_phase(1) == MeasurementPhase(reg_name='c')
 
@@ -173,12 +173,12 @@ def test_meas_x_basis_state_phase() -> None:
 
 def test_meas_z_supertensor():
     with pytest.raises(ValueError, match=r'.*superoperator.*'):
-        MeasX().tensor_contract()
+        MeasureX().tensor_contract()
 
     # Zero -> Fully mixed state
     bb = BloqBuilder()
     q = bb.add(ZeroState())
-    c = bb.add(MeasX(), q=q)
+    c = bb.add(MeasureX(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.asarray([[0.5, 0], [0, 0.5]])
@@ -187,7 +187,7 @@ def test_meas_z_supertensor():
     # One -> Fully mixed state
     bb = BloqBuilder()
     q = bb.add(OneState())
-    c = bb.add(MeasX(), q=q)
+    c = bb.add(MeasureX(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.asarray([[0.5, 0], [0, 0.5]])
@@ -196,7 +196,7 @@ def test_meas_z_supertensor():
     # Plus measurement -> deterministic zero
     bb = BloqBuilder()
     q = bb.add(PlusState())
-    c = bb.add(MeasX(), q=q)
+    c = bb.add(MeasureX(), q=q)
     cbloq = bb.finalize(c=c)
     rho = cbloq.tensor_contract(superoperator=True)
     should_be = np.asarray([[1, 0], [0, 0]])
