@@ -38,7 +38,7 @@ def test_gf2_inverse_symbolic(bloq_autotester):
 def test_gf2_inverse_symbolic_toffoli_complexity():
     bloq = _gf2_inverse_symbolic.make()
     m = bloq.bitsize
-    expected_expr = m**2 * (2 * ceil(log2(m)) - 1)
+    expected_expr = m ** log2(3) * (2 * ceil(log2(m)) - 1)
     assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - expected_expr == 0
     expected_expr = m * (3 * ceil(log2(m)) + 2)
     assert isinstance(expected_expr, sympy.Expr)

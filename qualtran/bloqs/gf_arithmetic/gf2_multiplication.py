@@ -94,6 +94,9 @@ class SynthesizeLRCircuit(Bloq):
     def adjoint(self) -> 'SynthesizeLRCircuit':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
+    def __str__(self):
+        return f'{self.__class__.__name__}†' if self.is_adjoint else f'{self.__class__.__name__}'
+
 
 def _qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
     if isinstance(x, QGF):
@@ -290,7 +293,7 @@ class GF2MulK(Bloq):
 
     @cached_property
     def n(self) -> int:
-        return self.m_x.degree
+        return self.dtype.bitsize
 
     @cached_property
     def qgf(self) -> QGF:
@@ -970,12 +973,12 @@ class GF2MulViaKaratsuba(Bloq):
         return self.dtype.gf_type.irreducible_poly
 
     def __attrs_post_init__(self):
-        if self.m_x.degree < 2:
+        if not is_symbolic(self.dtype) and self.m_x.degree < 2:
             raise ValueError(f'GF2MulViaKaratsuba is not supported for {self.m_x}')
 
     @cached_property
     def n(self):
-        return int(self.m_x.degrees.max())
+        return self.dtype.bitsize
 
     @cached_property
     def gf(self):
@@ -987,6 +990,9 @@ class GF2MulViaKaratsuba(Bloq):
 
     def adjoint(self) -> 'GF2MulViaKaratsuba':
         return attrs.evolve(self, uncompute=not self.uncompute)
+
+    def __str__(self):
+        return f'{self.__class__.__name__}†' if self.uncompute else f'{self.__class__.__name__}'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -1036,9 +1042,12 @@ class GF2MulViaKaratsuba(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if is_symbolic(self.n):
+            return {Toffoli(): self.n ** (log2(3)), CNOT(): self.n**2}
+
         if self.n == 1:
             return {Toffoli(): 1}
-        if not is_symbolic(self.n) and 2 * self.k == self.n:
+        if 2 * self.k == self.n:
             return {
                 CNOT(): 4 * (self.n - self.k),
                 BinaryPolynomialMultiplication(self.k): 3,

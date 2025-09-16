@@ -28,7 +28,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.symbolics import bit_length, ceil, is_symbolic, log2, SymbolicInt
@@ -152,7 +152,7 @@ class GF2Inverse(Bloq):
                     for j in range(2**i):
                         result = bb.add(GF2Square(self.bitsize), x=result)
                     beta, result, new_result = bb.add(
-                        GF2Multiplication(self.bitsize), x=beta, y=result
+                        GF2MulViaKaratsuba(self.bitsize), x=beta, y=result
                     )
                     junk.append(result)
                     result = new_result
@@ -161,7 +161,7 @@ class GF2Inverse(Bloq):
             for j in range(2**i):
                 beta_squared = bb.add(GF2Square(self.bitsize), x=beta_squared)
             beta, beta_squared, beta_new = bb.add(
-                GF2Multiplication(self.bitsize), x=beta, y=beta_squared
+                GF2MulViaKaratsuba(self.bitsize), x=beta, y=beta_squared
             )
             junk.extend([beta, beta_squared])
             beta = beta_new
@@ -182,7 +182,7 @@ class GF2Inverse(Bloq):
         return {
             GF2Addition(self.bitsize): 2 + ceil(log2(self.bitsize)),
             GF2Square(self.bitsize): square_count,
-            GF2Multiplication(self.bitsize): ceil(log2(self.bitsize))
+            GF2MulViaKaratsuba(self.bitsize): ceil(log2(self.bitsize))
             + self.bitsize_hamming_weight
             - 1,
         }
