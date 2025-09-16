@@ -119,7 +119,7 @@ class AliceTheorem:
     def __attrs_post_init__(self):
         assert self.k % 2 == 0, "k must be even"
         assert self.ell % self.k == 0, "l must be a multiple of k"
-        # assert self.n >= self.k * self.ell, "n must be atleast lk"
+        assert self.n >= self.k * self.ell, "n must be atleast lk"
         assert 0 <= self.kappa <= 1
         assert 0 < self.eps <= self.kappa / (2 + self.kappa)
 
@@ -135,7 +135,7 @@ class AliceTheorem:
 
     @cached_property
     def fail_prob(self):
-        return 3 / self.n ** (self.eps * self.ell)
+        return 3 / (self.n ** (self.eps * self.ell))
 
     @cached_property
     def min_m(self):

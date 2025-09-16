@@ -27,16 +27,15 @@ from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.symbolics import ln
 
 
-@pytest.mark.xfail
 def test_alice_thm_symb():
-    n, m = sympy.symbols("n m", positive=True, integer=True)
-    k = sympy.symbols("k", positive=True, integer=True, even=True)
-    rho = sympy.symbols(r"\rho", positive=True, real=True)
-    c = sympy.symbols(r"c", positive=True, integer=True)
+    n = 100
+    k, c = 4, 4
+    rho = 0.8
+
     thm = AliceTheorem(n=n, k=k, ell=c * k, kappa=0.99 * rho, eps=0.005)
-    _ = thm.C_kappa()
-    _ = thm.min_m()
-    _ = thm.fail_prob()
+
+    assert thm.min_m == 2755
+    np.testing.assert_approx_equal(thm.fail_prob, 2.2853438584779897)
 
 
 @pytest.mark.parametrize("bloq_ex", [_solve_planted, _solve_planted_symbolic])
