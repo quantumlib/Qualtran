@@ -27,11 +27,6 @@ from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.symbolics import ln
 
 
-@pytest.fixture
-def rng():
-    return np.random.default_rng(42)
-
-
 @pytest.mark.xfail
 def test_alice_thm_symb():
     n, m = sympy.symbols("n m", positive=True, integer=True)
@@ -49,9 +44,10 @@ def test_examples(bloq_autotester, bloq_ex):
     bloq_autotester(bloq_ex)
 
 
-def example_random_instance(*, k=4, n=100, m=1000, c=2, rho=0.8, seed=120) -> PlantedNoisyKXOR:
+def example_random_instance(
+    *, k=4, n=100, m=1000, c=2, rho=0.8, rng: np.random.Generator
+) -> PlantedNoisyKXOR:
     # generate instance
-    rng = np.random.default_rng(seed)
     ell = c * k
     inst = KXorInstance.random_instance(n=n, m=m, k=k, planted_advantage=rho, rng=rng)
     algo_bloq = PlantedNoisyKXOR.from_inst(inst=inst, ell=ell, rho=rho, zeta=1 / ln(n), rng=rng)
@@ -60,7 +56,8 @@ def example_random_instance(*, k=4, n=100, m=1000, c=2, rho=0.8, seed=120) -> Pl
 
 
 def test_gate_cost():
-    bloq = example_random_instance()
+    rng = np.random.default_rng(42)
+    bloq = example_random_instance(rng=rng)
     gc = get_cost_value(bloq, QECGatesCost())
     t_cost = gc.total_t_count(ts_per_cswap=4)
     assert t_cost == 104471529365303256253
@@ -73,7 +70,7 @@ def test_more_costs(n, k, c):
     if c * k == 32 and n <= 40:
         pytest.skip("too small n")
 
-    bloq = example_random_instance(k=k, c=c, n=n, m=n, seed=142)
+    bloq = example_random_instance(k=k, c=c, n=n, m=n, rng=np.random.default_rng(142))
     _cost = get_cost_value(bloq, QECGatesCost())
 
 
@@ -82,7 +79,7 @@ def test_more_costs(n, k, c):
 def test_large(n):
     k = 4
     c = 32 // 4
-    bloq = example_random_instance(k=k, c=c, n=n, m=n * 10, seed=142)
+    bloq = example_random_instance(k=k, c=c, n=n, m=n * 10, rng=np.random.default_rng(142))
     _cost = get_cost_value(bloq, QECGatesCost())
 
 
