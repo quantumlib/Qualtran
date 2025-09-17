@@ -155,7 +155,7 @@ class Toffoli(Bloq):
                 cc_cnot, ctrl2=np.array([new_ctrl, ctrl0]), ctrl=ctrl1, target=in_soqs.pop('target')
             )
 
-            return [new_ctrl], [(ctrl0, ctrl1), target]
+            return [new_ctrl], [np.array([ctrl0, ctrl1]), target]
 
         return cc_cnot, add_controlled
 
