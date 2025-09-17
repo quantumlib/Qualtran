@@ -554,7 +554,7 @@ def do_phased_classical_simulation(
             assumed to be 1.0.
         rng: A numpy random generator (e.g. from `np.random.default_rng()`). This function
             will use this generator to supply random values from certain phased-classical operations
-            like `MeasX`. If not supplied, classical measurements will use a random value.
+            like `MeasureX`. If not supplied, classical measurements will use a random value.
         fixed_random_vals: A dictionary of instance to values to perform fixed calculation
                 for classical values.
 
