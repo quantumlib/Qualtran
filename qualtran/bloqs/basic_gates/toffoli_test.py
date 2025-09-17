@@ -16,13 +16,13 @@ import itertools
 import cirq
 import numpy as np
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec
 from qualtran.bloqs.basic_gates import Toffoli, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
 from qualtran.bloqs.mcmt import And
 from qualtran.drawing.musical_score import Circle, ModPlus
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
-from qualtran.testing import assert_wire_symbols_match_expected
 
 
 def test_toffoli(bloq_autotester):
@@ -51,7 +51,7 @@ _c(1): ───@───@───
           │   │
 _c(2): ───X───X───""",
     )
-    assert_wire_symbols_match_expected(
+    qlt_testing.assert_wire_symbols_match_expected(
         Toffoli(), [Circle(filled=True), Circle(filled=True), ModPlus()]
     )
 
@@ -115,3 +115,11 @@ def test_ctrl_toffoli_cost():
 
     _, sigma = cc_tof.call_graph()
     assert sigma == {Toffoli(): 1, And(): 2, And().adjoint(): 2}
+
+
+def test_toffoli_controlled():
+    # https://github.com/quantumlib/Qualtran/issues/1709
+    from qualtran import Controlled
+
+    bloq = Controlled(Toffoli().as_composite_bloq(), CtrlSpec())
+    qlt_testing.assert_valid_bloq_decomposition(bloq)

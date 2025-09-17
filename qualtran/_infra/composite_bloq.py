@@ -843,8 +843,8 @@ def _map_soqs(
             flat_soq_map[old_soqs] = new_soqs
             continue
 
-        assert isinstance(old_soqs, np.ndarray), old_soqs
-        assert isinstance(new_soqs, np.ndarray), new_soqs
+        old_soqs = np.asarray(old_soqs)
+        new_soqs = np.asarray(new_soqs)
         assert old_soqs.shape == new_soqs.shape, (old_soqs.shape, new_soqs.shape)
         for o, n in zip(old_soqs.reshape(-1), new_soqs.reshape(-1)):
             flat_soq_map[o] = n
