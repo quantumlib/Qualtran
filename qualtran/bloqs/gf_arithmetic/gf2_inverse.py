@@ -109,7 +109,7 @@ class GF2Inverse(Bloq):
 
     @cached_property
     def n_junk_regs(self) -> SymbolicInt:
-        return 2 * bit_length(self.bitsize - 1) + self.bitsize_hamming_weight
+        return 2 * bit_length(self.bitsize - 1) + self.bitsize_hamming_weight - 2
 
     @cached_property
     def bitsize_hamming_weight(self) -> SymbolicInt:
@@ -143,7 +143,8 @@ class GF2Inverse(Bloq):
         x, beta = bb.add(GF2Addition(self.bitsize), x=x, y=beta)
         is_first = True
         bitsize_minus_one = int(self.bitsize - 1)
-        for i in range(bitsize_minus_one.bit_length()):
+        n_iters = bitsize_minus_one.bit_length()
+        for i in range(n_iters):
             if (1 << i) & bitsize_minus_one:
                 if is_first:
                     beta, result = bb.add(GF2Addition(self.bitsize), x=beta, y=result)
@@ -156,15 +157,16 @@ class GF2Inverse(Bloq):
                     )
                     junk.append(result)
                     result = new_result
-            beta_squared = bb.allocate(dtype=self.qgf)
-            beta, beta_squared = bb.add(GF2Addition(self.bitsize), x=beta, y=beta_squared)
-            for j in range(2**i):
-                beta_squared = bb.add(GF2Square(self.bitsize), x=beta_squared)
-            beta, beta_squared, beta_new = bb.add(
-                GF2MulViaKaratsuba(self.bitsize), x=beta, y=beta_squared
-            )
-            junk.extend([beta, beta_squared])
-            beta = beta_new
+            if i != n_iters - 1:
+                beta_squared = bb.allocate(dtype=self.qgf)
+                beta, beta_squared = bb.add(GF2Addition(self.bitsize), x=beta, y=beta_squared)
+                for j in range(2**i):
+                    beta_squared = bb.add(GF2Square(self.bitsize), x=beta_squared)
+                beta, beta_squared, beta_new = bb.add(
+                    GF2MulViaKaratsuba(self.bitsize), x=beta, y=beta_squared
+                )
+                junk.extend([beta, beta_squared])
+                beta = beta_new
         junk.append(beta)
         result = bb.add(GF2Square(self.bitsize), x=result)
         assert len(junk) == self.n_junk_regs, f'{len(junk)=}, {self.n_junk_regs=}'
@@ -179,13 +181,12 @@ class GF2Inverse(Bloq):
         if not is_symbolic(self.bitsize):
             n = self.bitsize - 1
             square_count -= n & (-n)
+            square_count -= 1 << (n.bit_length() - 1)
+        mul_count = ceil(log2(self.bitsize)) + self.bitsize_hamming_weight - 2
         return {
-            GF2Addition(self.bitsize): 2 + ceil(log2(self.bitsize)),
+            GF2Addition(self.bitsize): 1 + ceil(log2(self.bitsize)),
             GF2Square(self.bitsize): square_count,
-            GF2MulViaKaratsuba(self.bitsize): ceil(log2(self.bitsize))
-            + self.bitsize_hamming_weight
-            - 1,
-        }
+        } | ({GF2MulViaKaratsuba(self.bitsize): mul_count} if mul_count else {})
 
     def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
@@ -204,9 +205,10 @@ class GF2Inverse(Bloq):
                         result = result**2
                     junk.append(result)
                     result = result * beta
-            beta_squared = beta ** (2 ** (2**i))
-            junk.extend([beta, beta_squared])
-            beta = beta * beta_squared
+            if i != bitsize_minus_one.bit_length() - 1:
+                beta_squared = beta ** (2 ** (2**i))
+                junk.extend([beta, beta_squared])
+                beta = beta * beta_squared
         junk.append(beta)
         return {'x': x, 'result': x ** (-1) if x else self.qgf.gf_type(0), 'junk': np.array(junk)}
 
