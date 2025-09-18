@@ -78,7 +78,7 @@ def test_dtype_validation():
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
-    with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
+    with pytest.raises(ValueError, match=r'Bad bit value.*one_bit_int'):
         sim._update_assign_from_vals(regs, binst, vals2)  # type: ignore[arg-type]
 
     # int is a numpy int
