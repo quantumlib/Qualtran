@@ -19,7 +19,7 @@ from qualtran.bloqs.basic_gates import (
     CNOT,
     Discard,
     DiscardQ,
-    MeasZ,
+    MeasureZ,
     PlusState,
     ZeroEffect,
     ZeroState,
@@ -29,7 +29,7 @@ from qualtran.bloqs.basic_gates import (
 def test_discard():
     bb = BloqBuilder()
     q = bb.add(ZeroState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     bb.add(Discard(), c=c)
     cbloq = bb.finalize()
 
@@ -53,7 +53,7 @@ def test_discard_vs_project():
     # Measure and discard is trace preserving
     bb = BloqBuilder()
     q = bb.add(PlusState())
-    c = bb.add(MeasZ(), q=q)
+    c = bb.add(MeasureZ(), q=q)
     bb.add(Discard(), c=c)
     cbloq = bb.finalize()
     k = cbloq.tensor_contract(superoperator=True)

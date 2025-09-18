@@ -301,12 +301,11 @@ class QECGatesCost(CostKey[GateCounts]):
             Discard,
             GlobalPhase,
             Identity,
-            MeasX,
-            MeasZ,
+            MeasureX,
+            MeasureZ,
             Toffoli,
             TwoBitCSwap,
         )
-        from qualtran.bloqs.basic_gates._shims import Measure
         from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
         from qualtran.bloqs.mcmt import And, MultiTargetCNOT
 
@@ -334,7 +333,7 @@ class QECGatesCost(CostKey[GateCounts]):
             return GateCounts(toffoli=1)
 
         # Measurement
-        if isinstance(bloq, (Measure, MeasZ, MeasX)):
+        if isinstance(bloq, (MeasureZ, MeasureX)):
             return GateCounts(measurement=1)
 
         # 'And' bloqs
