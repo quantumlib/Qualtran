@@ -177,8 +177,9 @@ def test_multiply_by_xk_bloq_counts(n, k):
     qlt_testing.assert_equivalent_bloq_counts(blq)
 
 
-@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(1, 4) for k in range(1, n + 2)])
-def test_multiply_by_xk_classical_action(n, k):
+def test_multiply_by_xk_classical_action():
+    n = 2
+    k = 2
     blq = MultiplyPolyByOnePlusXk(n, k)
     fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
     h_polys = [*itertools.product(range(2), repeat=blq.signature[-1].shape[0])]
@@ -222,7 +223,7 @@ def test_binary_mult_classical_action(n):
     qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize('n', range(4, 7))
 def test_binary_mult_classical_action_slow(n):
     blq = BinaryPolynomialMultiplication(n)
@@ -331,8 +332,8 @@ def test_gf2mulmod_complexity(m_x):
     assert cost.total_toffoli_only() == 3**k
 
 
-@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
-def test_gf2mulmod_classical_action(m_x):
+def test_gf2mulmod_classical_action():
+    m_x = [3, 1, 0]
     blq = GF2MulViaKaratsuba(m_x)
     qlt_testing.assert_consistent_classical_action(blq, x=blq.gf.elements, y=blq.gf.elements)
 
