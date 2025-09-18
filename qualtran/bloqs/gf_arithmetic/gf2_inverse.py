@@ -109,7 +109,7 @@ class GF2Inverse(Bloq):
 
     @cached_property
     def n_junk_regs(self) -> SymbolicInt:
-        return 2 * bit_length(self.bitsize - 1) + self.bitsize_hamming_weight - 2
+        return 2 * bit_length(self.bitsize - 1) + self.bitsize_hamming_weight - 3
 
     @cached_property
     def bitsize_hamming_weight(self) -> SymbolicInt:
@@ -139,8 +139,7 @@ class GF2Inverse(Bloq):
             return {'x': x, 'result': result}
 
         junk = []
-        beta = bb.allocate(dtype=self.qgf)
-        x, beta = bb.add(GF2Addition(self.bitsize), x=x, y=beta)
+        beta = x
         is_first = True
         bitsize_minus_one = int(self.bitsize - 1)
         n_iters = bitsize_minus_one.bit_length()
@@ -169,6 +168,7 @@ class GF2Inverse(Bloq):
                 beta = beta_new
         junk.append(beta)
         result = bb.add(GF2Square(self.bitsize), x=result)
+        x = junk.pop(0)
         assert len(junk) == self.n_junk_regs, f'{len(junk)=}, {self.n_junk_regs=}'
         return {'x': x, 'result': result, 'junk': np.array(junk)}
 
@@ -184,7 +184,7 @@ class GF2Inverse(Bloq):
             square_count -= 1 << (n.bit_length() - 1)
         mul_count = ceil(log2(self.bitsize)) + self.bitsize_hamming_weight - 2
         return {
-            GF2Addition(self.bitsize): 1 + ceil(log2(self.bitsize)),
+            GF2Addition(self.bitsize): ceil(log2(self.bitsize)),
             GF2Square(self.bitsize): square_count,
         } | ({GF2MulViaKaratsuba(self.bitsize): mul_count} if mul_count else {})
 
@@ -210,6 +210,8 @@ class GF2Inverse(Bloq):
                 junk.extend([beta, beta_squared])
                 beta = beta * beta_squared
         junk.append(beta)
+        assert x == junk[0]
+        junk = junk[1:]
         return {'x': x, 'result': x ** (-1) if x else self.qgf.gf_type(0), 'junk': np.array(junk)}
 
 
