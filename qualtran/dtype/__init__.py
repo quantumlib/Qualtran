@@ -11,24 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# isort:skip_file
 
 """Data type objects for your quantum programs."""
 
 from qualtran._infra.data_types import (
-    BQUInt,
-    CBit,
+    QCDType,
     CDType,
+    QDType,
     QAny,
     QBit,
-    QCDType,
-    QDType,
+    CBit,
+    QInt,
+    CInt,
+    QIntOnesComp,
+    CIntOnesComp,
+    QUInt,
+    CUInt,
+    BQUInt,
     QFxp,
+    QMontgomeryUInt,
     QGF,
     QGFPoly,
-    QInt,
-    QIntOnesComp,
-    QMontgomeryUInt,
-    QUInt,
 )
 
 __all__ = [
@@ -39,8 +43,11 @@ __all__ = [
     'QBit',
     'CBit',
     'QInt',
+    'CInt',
     'QIntOnesComp',
+    'CIntOnesComp',
     'QUInt',
+    'CUInt',
     'BQUInt',
     'QFxp',
     'QMontgomeryUInt',

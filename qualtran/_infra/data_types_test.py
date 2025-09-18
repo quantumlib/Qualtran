@@ -71,7 +71,7 @@ def test_qint_ones():
     qint_8 = QIntOnesComp(8)
     assert str(qint_8) == 'QIntOnesComp(8)'
     assert qint_8.num_qubits == 8
-    with pytest.raises(ValueError, match="num_qubits must be > 1."):
+    with pytest.raises(ValueError, match="bitsize must be > 1."):
         QIntOnesComp(1)
     n = sympy.symbols('x')
     qint_8 = QIntOnesComp(n)

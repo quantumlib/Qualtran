@@ -15,9 +15,10 @@
 
 
 import abc
+import warnings
 from enum import Enum
 from functools import cached_property
-from typing import Any, Iterable, List, Optional, Sequence, Union
+from typing import Any, cast, Generic, Iterable, List, Optional, Sequence, TypeVar, Union
 
 import attrs
 import galois
@@ -27,9 +28,127 @@ from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
+T = TypeVar('T')
 
-class QCDType(metaclass=abc.ABCMeta):
+
+class BitEncoding(Generic[T], metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def bitsize(self) -> SymbolicInt: ...
+
+    @abc.abstractmethod
+    def get_domain(self) -> Iterable[T]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+
+    @abc.abstractmethod
+    def to_bits(self, x: T) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+
+    def to_bits_array(self, x_array: NDArray) -> NDArray[np.uint8]:
+        """Yields an NDArray of bits corresponding to binary representations of the input elements.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of values, and the output array satisfies
+        `output_shape = input_shape + (self.bitsize,)`.
+        """
+        return np.vectorize(
+            lambda x: np.asarray(self.to_bits(x), dtype=np.uint8), signature='()->(n)'
+        )(x_array)
+
+    @abc.abstractmethod
+    def from_bits(self, bits: Sequence[int]) -> T:
+        """Combine individual bits to form x"""
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray:
+        """Combine individual bits to form classical values.
+
+        Often, converting an array can be performed faster than converting each element individually.
+        This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
+        and the output array satisfies `output_shape = input_shape[:-1]`.
+        """
+        return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
+
+    @abc.abstractmethod
+    def assert_valid_val(self, val: T, debug_str: str = 'val') -> None:
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+
+    def assert_valid_val_array(self, val_array: NDArray, debug_str: str = 'val') -> None:
+        """Raises an exception if `val_array` is not a valid array of classical values
+        for this type.
+
+        Often, validation on an array can be performed faster than validating each element
+        individually.
+
+        Args:
+            val_array: A numpy array of classical values. Each value should be in the domain
+                of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        for val in val_array.reshape(-1):
+            self.assert_valid_val(val, debug_str=debug_str)
+
+
+@attrs.frozen
+class _BitEncodingShim(BitEncoding[T]):
+    """Shim an old-style QDType to follow the BitEncoding interface.
+
+    Before the introduction of classical data types (QCDType and CDType), QDType classes
+    described how to encode values into bits (for classical simulation) and qubits (for
+    quantum programs). The encoding schemes don't care whether the substrate is bits or
+    qubits but the CompositeBloq type-checking does care; so we've moved the encoding
+    logic to descendants of `BitEncoding`. Each `QCDType` "has a" BitEncoding and "is a"
+    quantum data type or classical data type.
+
+    This shim uses encoding logic found in the methods of an old-style QDType to satisfy
+    the BitEncoding interface for backwards compatibility. Developers with custom QDTypes
+    should port their custom data types to use a BitEncoding.
+
+    """
+
+    qdtype: 'QDType[T]'
+
+    @property
+    def bitsize(self) -> SymbolicInt:
+        return self.qdtype.num_qubits
+
+    def get_domain(self) -> Iterable[T]:
+        yield from self.qdtype.get_classical_domain()
+
+    def to_bits(self, x: T) -> List[int]:
+        return self.qdtype.to_bits(x)
+
+    def to_bits_array(self, x_array: NDArray) -> NDArray[np.uint8]:
+        return np.vectorize(
+            lambda x: np.asarray(self.qdtype.to_bits(x), dtype=np.uint8), signature='()->(n)'
+        )(x_array)
+
+    def from_bits(self, bits: Sequence[int]) -> T:
+        return self.qdtype.from_bits(bits)
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray:
+        return np.vectorize(self.qdtype.from_bits, signature='(n)->()')(bits_array)
+
+    def assert_valid_val(self, val: T, debug_str: str = 'val') -> None:
+        return self.qdtype.assert_valid_classical_val(val, debug_str=debug_str)
+
+    def assert_valid_val_array(self, val_array: NDArray, debug_str: str = 'val') -> None:
+        for val in val_array.reshape(-1):
+            self.qdtype.assert_valid_classical_val(val)
+
+
+class QCDType(Generic[T], metaclass=abc.ABCMeta):
     """The abstract interface for quantum/classical quantum computing data types."""
+
+    @property
+    @abc.abstractmethod
+    def _bit_encoding(self) -> BitEncoding[T]:
+        """The class describing how bits are encoded in this datatype."""
 
     @property
     def num_bits(self) -> int:
@@ -47,49 +166,47 @@ class QCDType(metaclass=abc.ABCMeta):
     def num_cbits(self) -> int:
         """Number of classical bits required to represent a single instance of this data type."""
 
-    @abc.abstractmethod
-    def get_classical_domain(self) -> Iterable[Any]:
+    def get_classical_domain(self) -> Iterable[T]:
         """Yields all possible classical (computational basis state) values representable
         by this type."""
+        yield from self._bit_encoding.get_domain()
 
-    @abc.abstractmethod
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x: T) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
+        return self._bit_encoding.to_bits(x)
 
-    def to_bits_array(self, x_array: NDArray[Any]) -> NDArray[np.uint8]:
+    def to_bits_array(self, x_array: NDArray) -> NDArray[np.uint8]:
         """Yields an NDArray of bits corresponding to binary representations of the input elements.
 
         Often, converting an array can be performed faster than converting each element individually.
         This operation accepts any NDArray of values, and the output array satisfies
         `output_shape = input_shape + (self.bitsize,)`.
         """
-        return np.vectorize(
-            lambda x: np.asarray(self.to_bits(x), dtype=np.uint8), signature='()->(n)'
-        )(x_array)
+        return self._bit_encoding.to_bits_array(x_array)
 
-    @abc.abstractmethod
-    def from_bits(self, bits: Sequence[int]):
+    def from_bits(self, bits: Sequence[int]) -> T:
         """Combine individual bits to form x"""
+        return self._bit_encoding.from_bits(bits)
 
-    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray:
         """Combine individual bits to form classical values.
 
         Often, converting an array can be performed faster than converting each element individually.
         This operation accepts any NDArray of bits such that the last dimension equals `self.bitsize`,
         and the output array satisfies `output_shape = input_shape[:-1]`.
         """
-        return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
+        return self._bit_encoding.from_bits_array(bits_array)
 
-    @abc.abstractmethod
-    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+    def assert_valid_classical_val(self, val: T, debug_str: str = 'val') -> None:
         """Raises an exception if `val` is not a valid classical value for this type.
 
         Args:
             val: A classical value that should be in the domain of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
+        return self._bit_encoding.assert_valid_val(val=val, debug_str=debug_str)
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(self, val_array: NDArray, debug_str: str = 'val') -> None:
         """Raises an exception if `val_array` is not a valid array of classical values
         for this type.
 
@@ -101,26 +218,39 @@ class QCDType(metaclass=abc.ABCMeta):
                 of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
-        for val in val_array.reshape(-1):
-            self.assert_valid_classical_val(val)
+        return self._bit_encoding.assert_valid_val_array(val_array=val_array, debug_str=debug_str)
 
-    @abc.abstractmethod
     def is_symbolic(self) -> bool:
         """Returns True if this dtype is parameterized with symbolic objects."""
+        return is_symbolic(self._bit_encoding.bitsize)
 
     def iteration_length_or_zero(self) -> SymbolicInt:
         """Safe version of iteration length.
 
         Returns the iteration_length if the type has it or else zero.
         """
+        # TODO: remove https://github.com/quantumlib/Qualtran/issues/1716
         return getattr(self, 'iteration_length', 0)
 
     def __str__(self):
-        return f'{self.__class__.__name__}({self.num_qubits})'
+        return f'{self.__class__.__name__}({self.num_bits})'
 
 
-class QDType(QCDType, metaclass=abc.ABCMeta):
+class QDType(QCDType[T], metaclass=abc.ABCMeta):
     """The abstract interface for quantum data types."""
+
+    @property
+    def _bit_encoding(self) -> BitEncoding[T]:
+        """The class describing how bits are encoded in this datatype."""
+        warnings.warn(
+            f"{self} must provide a BitEncoding. This shim will become an error in the future. Omitting this may cause infinite loops.",
+            DeprecationWarning,
+        )
+        return _BitEncodingShim(self)
+
+    @property
+    def num_qubits(self) -> int:
+        return cast(int, self._bit_encoding.bitsize)
 
     @property
     def num_cbits(self) -> int:
@@ -131,7 +261,7 @@ class QDType(QCDType, metaclass=abc.ABCMeta):
         return f'{self.__class__.__name__}({self.num_qubits})'
 
 
-class CDType(QCDType, metaclass=abc.ABCMeta):
+class CDType(QCDType[T], metaclass=abc.ABCMeta):
     """The abstract interface for classical data types."""
 
     @property
@@ -139,29 +269,47 @@ class CDType(QCDType, metaclass=abc.ABCMeta):
         """CDTypes have zero qubits."""
         return 0
 
+    @property
+    def num_cbits(self) -> int:
+        return cast(int, self._bit_encoding.bitsize)
+
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_cbits})'
 
 
-class _Bit(metaclass=abc.ABCMeta):
+@attrs.frozen
+class ClassicalVersion(CDType[T]):
+    qdtype: QDType[T]
+
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[T]:
+        return self.qdtype._bit_encoding
+
+    def __str__(self) -> str:
+        return f'Classical({self.qdtype})'
+
+
+@attrs.frozen
+class _Bit(BitEncoding[int]):
     """A single quantum or classical bit. The smallest addressable unit of data.
 
     Use either `QBit()` or `CBit()` for quantum or classical implementations, respectively.
     """
 
-    def get_classical_domain(self) -> Iterable[int]:
+    @property
+    def bitsize(self) -> int:
+        return 1
+
+    def get_domain(self) -> Iterable[int]:
         yield from (0, 1)
 
-    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val'):
         if not (val == 0 or val == 1):
-            raise ValueError(f"Bad {self} value {val} in {debug_str}")
+            raise ValueError(f"Bad bit value: {val} in {debug_str}")
 
-    def is_symbolic(self) -> bool:
-        return False
-
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        self.assert_valid_classical_val(x)
+        self.assert_valid_val(x)
         return [int(x)]
 
     def from_bits(self, bits: Sequence[int]) -> int:
@@ -169,32 +317,41 @@ class _Bit(metaclass=abc.ABCMeta):
         assert len(bits) == 1
         return bits[0]
 
-    def assert_valid_classical_val_array(
+    def assert_valid_val_array(
         self, val_array: NDArray[np.integer], debug_str: str = 'val'
-    ):
+    ) -> None:
         if not np.all((val_array == 0) | (val_array == 1)):
-            raise ValueError(f"Bad {self} value array in {debug_str}")
-
-    def __str__(self):
-        return f'{self.__class__.__name__}()'
+            raise ValueError(f"Bad bit value array in {debug_str}")
 
 
 @attrs.frozen
-class QBit(_Bit, QDType):
+class QBit(QDType[int]):
     """A single qubit. The smallest addressable unit of quantum data."""
 
-    @property
-    def num_qubits(self):
-        return 1
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _Bit()
+
+    def is_symbolic(self) -> bool:
+        return False
+
+    def __str__(self) -> str:
+        return 'QBit()'
 
 
 @attrs.frozen
-class CBit(_Bit, CDType):
+class CBit(CDType[int]):
     """A single classical bit. The smallest addressable unit of classical data."""
 
-    @property
-    def num_cbits(self) -> int:
-        return 1
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _Bit()
+
+    def is_symbolic(self) -> bool:
+        return False
+
+    def __str__(self) -> str:
+        return 'CBit()'
 
 
 @attrs.frozen
@@ -211,8 +368,8 @@ class QAny(QDType):
             raise ValueError()
 
     @property
-    def num_qubits(self):
-        return self.bitsize
+    def num_qubits(self) -> int:
+        return cast(int, self.bitsize)
 
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
@@ -236,28 +393,19 @@ class QAny(QDType):
 
 
 @attrs.frozen
-class QInt(QDType):
-    """Signed Integer of a given width bitsize.
+class _Int(BitEncoding[int]):
+    """Signed integer of a given bitsize.
+
+    Use `QInt` or `CInt` for quantum or classical implementations, respectively.
 
     A two's complement representation is used for negative integers.
-
-    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
-    bit is at index 0.
-
-    Args:
-        bitsize: The number of qubits used to represent the integer.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
     """
 
     bitsize: SymbolicInt
 
-    @property
-    def num_qubits(self):
-        return self.bitsize
-
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.bitsize)
-
-    def get_classical_domain(self) -> Iterable[int]:
+    def get_domain(self) -> Iterable[int]:
         max_val = 1 << (self.bitsize - 1)
         return range(-max_val, max_val)
 
@@ -265,7 +413,7 @@ class QInt(QDType):
         if is_symbolic(self.bitsize):
             raise ValueError(f"cannot compute bits with symbolic {self.bitsize=}")
 
-        self.assert_valid_classical_val(x)
+        self.assert_valid_val(x)
         return [int(b) for b in np.binary_repr(x, width=self.bitsize)]
 
     def from_bits(self, bits: Sequence[int]) -> int:
@@ -273,11 +421,11 @@ class QInt(QDType):
         x = (
             0
             if self.bitsize == 1
-            else QUInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
+            else _UInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
         )
         return ~x if sign else x
 
-    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         if val < -(2 ** (self.bitsize - 1)):
@@ -285,27 +433,20 @@ class QInt(QDType):
         if val >= 2 ** (self.bitsize - 1):
             raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(
-        self, val_array: NDArray[np.integer], debug_str: str = 'val'
-    ):
+    def assert_valid_val_array(self, val_array: NDArray[np.integer], debug_str: str = 'val'):
         if np.any(val_array < -(2 ** (self.bitsize - 1))):
             raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
             raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
 
-    def __str__(self):
-        return f'QInt({self.bitsize})'
-
 
 @attrs.frozen
-class QIntOnesComp(QDType):
-    """Signed Integer of a given width bitsize.
+class QInt(QDType[int]):
+    """Signed quantum integer of a given bitsize.
 
-    In contrast to `QInt`, this data type uses the ones' complement representation for negative
-    integers.
-
-    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
-    bit is at index 0.
+    A two's complement representation is used for negative integers.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
 
     Args:
         bitsize: The number of qubits used to represent the integer.
@@ -313,31 +454,60 @@ class QIntOnesComp(QDType):
 
     bitsize: SymbolicInt
 
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _Int(self.bitsize)
+
+
+@attrs.frozen
+class CInt(CDType[int]):
+    """Signed classical integer of a given bitsize.
+
+    A two's complement representation is used for negative integers.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
+
+    Args:
+        bitsize: The number of qubits used to represent the integer.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _Int(self.bitsize)
+
+
+@attrs.frozen
+class _IntOnesComp(BitEncoding[int]):
+    """Ones' complement signed integer of a given bitsize.
+
+    This contrasts with `_Int` by using the ones' complement representation for negative
+    integers.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
+    """
+
+    bitsize: SymbolicInt
+
     def __attrs_post_init__(self):
         if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
-
-    @property
-    def num_qubits(self):
-        return self.bitsize
-
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.bitsize)
+            if self.bitsize == 1:
+                raise ValueError("bitsize must be > 1.")
 
     def to_bits(self, x: int) -> List[int]:
-        self.assert_valid_classical_val(x)
-        return [int(x < 0)] + [y ^ int(x < 0) for y in QUInt(self.bitsize - 1).to_bits(abs(x))]
+        self.assert_valid_val(x)
+        return [int(x < 0)] + [y ^ int(x < 0) for y in _UInt(self.bitsize - 1).to_bits(abs(x))]
 
     def from_bits(self, bits: Sequence[int]) -> int:
-        x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
+        x = _UInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
         return (-1) ** bits[0] * x
 
-    def get_classical_domain(self) -> Iterable[int]:
+    def get_domain(self) -> Iterable[int]:
         max_val = 1 << (self.bitsize - 1)
         return range(-max_val + 1, max_val)
 
-    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         max_val = 1 << (self.bitsize - 1)
@@ -348,14 +518,13 @@ class QIntOnesComp(QDType):
 
 
 @attrs.frozen
-class QUInt(QDType):
-    """Unsigned integer of a given width bitsize which wraps around upon overflow.
+class QIntOnesComp(QDType[int]):
+    """Ones' complement signed quantum integer of a given bitsize.
 
-    Any intended wrap around effect is expected to be handled by the developer, similar
-    to an unsigned integer type in C.
-
-    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
-    bit is at index 0.
+    This contrasts with `QInt` by using the ones' complement representation for negative
+    integers.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
 
     Args:
         bitsize: The number of qubits used to represent the integer.
@@ -363,18 +532,56 @@ class QUInt(QDType):
 
     bitsize: SymbolicInt
 
-    @property
-    def num_qubits(self):
-        return self.bitsize
+    def __attrs_post_init__(self):
+        if isinstance(self.bitsize, int):
+            if self.bitsize == 1:
+                raise ValueError("bitsize must be > 1.")
 
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.bitsize)
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _IntOnesComp(self.bitsize)
 
-    def get_classical_domain(self) -> Iterable[Any]:
+
+@attrs.frozen
+class CIntOnesComp(CDType[int]):
+    """Ones' complement signed classical integer of a given bitsize.
+
+    This contrasts with `CInt` by using the ones' complement representation for negative
+    integers.
+    Here (and throughout Qualtran), we use a big-endian bit convention.
+    The most significant bit is at index 0.
+
+    Args:
+        bitsize: The number of classical bits used to represent the integer.
+    """
+
+    bitsize: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if isinstance(self.bitsize, int):
+            if self.bitsize == 1:
+                raise ValueError("bitsize must be > 1.")
+
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _IntOnesComp(self.bitsize)
+
+
+@attrs.frozen
+class _UInt(BitEncoding[int]):
+    """Unsigned integer of a given bitsize.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
+    """
+
+    bitsize: SymbolicInt
+
+    def get_domain(self) -> Iterable[int]:
         return range(2**self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
-        self.assert_valid_classical_val(x)
+        self.assert_valid_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
     def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
@@ -382,8 +589,9 @@ class QUInt(QDType):
             raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
 
         if self.bitsize > 64:
-            # use the default vectorized `to_bits`
-            return super().to_bits_array(x_array)
+            return np.vectorize(
+                lambda x: np.asarray(self.to_bits(x), dtype=np.uint8), signature='()->(n)'
+            )(x_array)
 
         w = int(self.bitsize)
         x = np.atleast_1d(x_array)
@@ -405,12 +613,12 @@ class QUInt(QDType):
 
         if self.bitsize > 64:
             # use the default vectorized `from_bits`
-            return super().from_bits_array(bits_array)
+            return np.vectorize(self.from_bits, signature='(n)->()')(bits_array)
 
         basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
         return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
 
-    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         if val < 0:
@@ -418,16 +626,49 @@ class QUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(
+    def assert_valid_val_array(
         self, val_array: NDArray[np.integer], debug_str: str = 'val'
-    ):
+    ) -> None:
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
-    def __str__(self):
-        return f'QUInt({self.bitsize})'
+
+@attrs.frozen
+class QUInt(QDType[int]):
+    """Unsigned quantum integer of a given bitsize.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
+
+    Args:
+        bitsize: The number of qubits used to represent the integer.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _UInt(self.bitsize)
+
+
+@attrs.frozen
+class CUInt(CDType[int]):
+    """Unsigned classical integer of a given bitsize.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
+
+    Args:
+        bitsize: The number of classical bits used to represent the integer.
+    """
+
+    bitsize: SymbolicInt
+
+    @cached_property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _UInt(self.bitsize)
 
 
 @attrs.frozen
