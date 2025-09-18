@@ -60,7 +60,9 @@ if TYPE_CHECKING:
 class Add(Bloq):
     r"""An n-bit addition gate.
 
-    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $n - 1$ Toffoli gates.
+    This computes `a + b` and stores the result in `b`. Specifically it
+    implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$
+    using $n - 1$ Toffoli gates.
 
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
@@ -116,7 +118,7 @@ class Add(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
+        unsigned = isinstance(self.b_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         return {
             'a': a,
