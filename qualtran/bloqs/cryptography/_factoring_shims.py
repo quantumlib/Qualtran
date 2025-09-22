@@ -31,7 +31,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.basic_gates import MeasureZ
 from qualtran.bloqs.qft import QFTTextBook
 from qualtran.drawing import RarrowTextBox, Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
@@ -55,12 +55,12 @@ class MeasureQFT(Bloq):
         x = bb.split(x)
 
         for i in range(self.n):
-            bb.add(Measure(), q=x[i])
+            bb.add(MeasureZ(), q=x[i])
 
         return {}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {QFTTextBook(self.n): 1, Measure(): self.n}
+        return {QFTTextBook(self.n): 1, MeasureZ(): self.n}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

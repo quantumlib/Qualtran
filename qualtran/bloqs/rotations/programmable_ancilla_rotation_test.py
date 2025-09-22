@@ -15,8 +15,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.basic_gates._shims import Measure
+from qualtran.bloqs.basic_gates import CNOT, MeasureZ, XGate
 from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
     _zpow_programmed_ancilla,
     _zpow_programmed_ancilla_symb,
@@ -75,7 +74,7 @@ def test_rz_via_par_call_graphs():
         XGate(): 2,
         ZPowProgrammedAncilla(np.pi / 4, eps=1e-11 / 2): 1,
         ZPowProgrammedAncilla(np.pi / 2, eps=1e-11 / 2): 1,
-        Measure(): 2,
+        MeasureZ(): 2,
     }
 
     phi, eps = sympy.symbols(r"\phi \epsilon")
@@ -87,7 +86,7 @@ def test_rz_via_par_call_graphs():
         ZPowProgrammedAncilla(phi, eps / 3): 1,
         ZPowProgrammedAncilla(2 * phi, eps / 3): 1,
         ZPowProgrammedAncilla(4 * phi, eps / 3): 1,
-        Measure(): 3,
+        MeasureZ(): 3,
     }
 
     phi0, n = sympy.symbols(r"_\phi0 n")
@@ -98,5 +97,5 @@ def test_rz_via_par_call_graphs():
         CNOT(): n,
         XGate(): n,
         ZPowProgrammedAncilla(phi0, eps / n): n,
-        Measure(): n,
+        MeasureZ(): n,
     }

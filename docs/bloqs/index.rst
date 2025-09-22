@@ -41,6 +41,7 @@ Bloqs Library
     basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
+    basic_gates/measurement.ipynb
     basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
@@ -180,3 +181,4 @@ Bloqs Library
     state_preparation/state_preparation_via_rotation.ipynb
     qsp/generalized_qsp.ipynb
     hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb
+    hamiltonian_simulation/guided_hamiltonian.ipynb
