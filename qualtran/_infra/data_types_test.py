@@ -99,7 +99,7 @@ def test_bounded_quint():
 
     assert qint_3.bitsize == 2
     assert qint_3.iteration_length == 3
-    with pytest.raises(ValueError, match="BQUInt iteration length.*"):
+    with pytest.raises(ValueError, match="iteration length is too large.*"):
         BQUInt(4, 76)
     n = sympy.symbols('x')
     l = sympy.symbols('l')

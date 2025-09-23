@@ -243,7 +243,9 @@ class QDType(QCDType[T], metaclass=abc.ABCMeta):
     def _bit_encoding(self) -> BitEncoding[T]:
         """The class describing how bits are encoded in this datatype."""
         warnings.warn(
-            f"{self} must provide a BitEncoding. This shim will become an error in the future. Omitting this may cause infinite loops.",
+            f"{self} must provide a BitEncoding. "
+            f"This shim will become an error in the future. "
+            f"Omitting this may cause infinite loops.",
             DeprecationWarning,
         )
         return _BitEncodingShim(self)
@@ -343,40 +345,29 @@ class CBit(CDType[int]):
 
 
 @attrs.frozen
-class QAny(QDType):
+class QAny(QDType[Any]):
     """Opaque bag-of-qubits type."""
 
     bitsize: SymbolicInt
+
+    @property
+    def _bit_encoding(self) -> BitEncoding[Any]:
+        return _UInt(self.bitsize)
 
     def __attrs_post_init__(self):
         if is_symbolic(self.bitsize):
             return
 
         if not isinstance(self.bitsize, int):
-            raise ValueError()
-
-    @property
-    def num_qubits(self) -> int:
-        return cast(int, self.bitsize)
+            raise ValueError(f"Bad bitsize for QAny: {self.bitsize}")
 
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
 
-    def to_bits(self, x) -> List[int]:
-        # TODO: Raise an error once usage of `QAny` is minimized across the library
-        return QUInt(self.bitsize).to_bits(x)
-
-    def from_bits(self, bits: Sequence[int]) -> int:
-        # TODO: Raise an error once usage of `QAny` is minimized across the library
-        return QUInt(self.bitsize).from_bits(bits)
-
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.bitsize)
-
-    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
         pass
 
-    def assert_valid_classical_val_array(self, val_array, debug_str: str = 'val'):
+    def assert_valid_classical_val_array(self, val_array: NDArray, debug_str: str = 'val'):
         pass
 
 
@@ -660,8 +651,61 @@ class CUInt(CDType[int]):
 
 
 @attrs.frozen
-class BQUInt(QDType):
+class _BUInt(BitEncoding[int]):
     """Unsigned integer whose values are bounded within a range.
+
+    Args:
+        bitsize: The number of bits used to represent the integer.
+        bound: The bound (exclusive)
+    """
+
+    bitsize: SymbolicInt
+    bound: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if is_symbolic(self.bitsize) or is_symbolic(self.bound):
+            return
+
+        if self.bound > 2**self.bitsize:
+            raise ValueError(
+                "BUInt value bound is too large for given bitsize. "
+                f"{self.bound} vs {2**self.bitsize}"
+            )
+
+    def get_domain(self) -> Iterable[int]:
+        if isinstance(self.bound, int):
+            return range(0, self.bound)
+        raise ValueError(f'Classical domain not defined for {self}')
+
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < 0:
+            raise ValueError(f"Negative classical value encountered in {debug_str}")
+        if val >= self.bound:
+            raise ValueError(f"Too-large classical value encountered in {debug_str}")
+
+    def to_bits(self, x: int) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_val(x)
+        return _UInt(self.bitsize).to_bits(x)
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        val = _UInt(self.bitsize).from_bits(bits)
+        self.assert_valid_val(val)
+        return val
+
+    def assert_valid_val_array(self, val_array: NDArray[np.integer], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= self.bound):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+
+@attrs.frozen
+class BQUInt(QDType[int]):
+    """Unsigned quantum integer whose values are bounded within a range.
 
     LCU methods often make use of coherent for-loops via UnaryIteration, iterating over a range
     of values stored as a superposition over the `SELECT` register. Such (nested) coherent
@@ -714,7 +758,7 @@ class BQUInt(QDType):
         if not self.is_symbolic():
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
-                    "BQUInt iteration length is too large for given bitsize. "
+                    f"{self} iteration length is too large for given bitsize. "
                     f"{self.iteration_length} vs {2**self.bitsize}"
                 )
 
@@ -722,45 +766,54 @@ class BQUInt(QDType):
     def _default_iteration_length(self):
         return 2**self.bitsize
 
+    @property
+    def bound(self) -> SymbolicInt:
+        return self.iteration_length
+
     def is_symbolic(self) -> bool:
         return is_symbolic(self.bitsize, self.iteration_length)
 
     @property
-    def num_qubits(self):
-        return self.bitsize
-
-    def get_classical_domain(self) -> Iterable[Any]:
-        if isinstance(self.iteration_length, int):
-            return range(0, self.iteration_length)
-        raise ValueError(f'Classical Domain not defined for expression: {self.iteration_length}')
-
-    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
-        if not isinstance(val, (int, np.integer)):
-            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
-        if val < 0:
-            raise ValueError(f"Negative classical value encountered in {debug_str}")
-        if val >= self.iteration_length:
-            raise ValueError(f"Too-large classical value encountered in {debug_str}")
-
-    def to_bits(self, x: int) -> List[int]:
-        """Yields individual bits corresponding to binary representation of x"""
-        self.assert_valid_classical_val(x, debug_str='val')
-        return QUInt(self.bitsize).to_bits(x)
-
-    def from_bits(self, bits: Sequence[int]) -> int:
-        """Combine individual bits to form x"""
-        return QUInt(self.bitsize).from_bits(bits)
-
-    def assert_valid_classical_val_array(
-        self, val_array: NDArray[np.integer], debug_str: str = 'val'
-    ):
-        if np.any(val_array < 0):
-            raise ValueError(f"Negative classical values encountered in {debug_str}")
-        if np.any(val_array >= self.iteration_length):
-            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _BUInt(self.bitsize, self.iteration_length)
 
     def __str__(self):
         return f'{self.__class__.__name__}({self.bitsize}, {self.iteration_length})'
+
+
+@attrs.frozen
+class BCUInt(CDType[int]):
+    """Unsigned classical integer whose values are bounded within a range.
+
+    Args:
+        bitsize: The number of bits used to represent the integer.
+        bound: The value bound (exclusive).
+    """
+
+    bitsize: SymbolicInt
+    bound: SymbolicInt = attrs.field()
+
+    def __attrs_post_init__(self):
+        if not self.is_symbolic():
+            if self.bound > 2**self.bitsize:
+                raise ValueError(
+                    f"{self} bound is too large for given bitsize. "
+                    f"{self.bound} vs {2 ** self.bitsize}"
+                )
+
+    @bound.default
+    def _default_bound(self):
+        return 2**self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize, self.bound)
+
+    @property
+    def _bit_encoding(self) -> BitEncoding[int]:
+        return _BUInt(self.bitsize, self.bound)
+
+    def __str__(self):
+        return f'{self.__class__.__name__}({self.bitsize}, {self.bound})'
 
 
 @attrs.frozen

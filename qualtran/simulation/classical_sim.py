@@ -56,9 +56,9 @@ ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDist
 
 def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
-    from qualtran._infra.data_types import CBit, QBit, QInt, QUInt
+    from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
 
-    if isinstance(dtype, QUInt):
+    if isinstance(dtype, (QUInt, QAny)):
         if dtype.bitsize <= 8:
             return np.uint8
         elif dtype.bitsize <= 16:

@@ -64,6 +64,7 @@ from ._infra.data_types import (
     QUInt,
     CUInt,
     BQUInt,
+    BCUInt,
     QFxp,
     QMontgomeryUInt,
     QGF,
