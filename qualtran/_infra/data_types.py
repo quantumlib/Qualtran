@@ -278,18 +278,6 @@ class CDType(QCDType[T], metaclass=abc.ABCMeta):
 
 
 @attrs.frozen
-class ClassicalVersion(CDType[T]):
-    qdtype: QDType[T]
-
-    @cached_property
-    def _bit_encoding(self) -> BitEncoding[T]:
-        return self.qdtype._bit_encoding
-
-    def __str__(self) -> str:
-        return f'Classical({self.qdtype})'
-
-
-@attrs.frozen
 class _Bit(BitEncoding[int]):
     """A single quantum or classical bit. The smallest addressable unit of data.
 
