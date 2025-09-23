@@ -37,7 +37,7 @@ from qualtran import (
     QMontgomeryUInt,
     QUInt,
 )
-from qualtran._infra.data_types import _QAnyInt
+from qualtran._infra.data_types import _Fxp, _QAnyInt
 from qualtran.symbolics import ceil, is_symbolic, log2
 
 
@@ -494,7 +494,7 @@ def test_qfxp_from_fixed_width_int():
 
 def test_qfxp_to_and_from_bits_using_fxp():
     # QFxp: Negative numbers are stored as twos complement
-    qfxp_4_3 = QFxp(4, 3, True)
+    qfxp_4_3 = _Fxp(4, 3, True)
     assert list(qfxp_4_3._fxp_to_bits(0.5)) == [0, 1, 0, 0]
     assert qfxp_4_3._from_bits_to_fxp(qfxp_4_3._fxp_to_bits(0.5)).get_val() == 0.5
     assert list(qfxp_4_3._fxp_to_bits(-0.5)) == [1, 1, 0, 0]
@@ -527,11 +527,11 @@ def test_qfxp_to_and_from_bits_using_fxp():
         _ = qfxp_4_3._fxp_to_bits(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
 
     for qfxp in [QFxp(4, 3, True), QFxp(3, 3, False), QFxp(7, 3, False), QFxp(7, 3, True)]:
-        for x in qfxp._get_classical_domain_fxp():
-            assert qfxp._from_bits_to_fxp(qfxp._fxp_to_bits(x)) == x
+        for x in qfxp._bit_encoding._get_domain_fxp():
+            assert qfxp._bit_encoding._from_bits_to_fxp(qfxp._bit_encoding._fxp_to_bits(x)) == x
 
-    assert list(QFxp(7, 3, True)._fxp_to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
-    assert list(QFxp(7, 3, True)._fxp_to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
+    assert list(_Fxp(7, 3, True)._fxp_to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
+    assert list(_Fxp(7, 3, True)._fxp_to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
 
 
 def test_iter_bits():
@@ -559,11 +559,11 @@ random.seed(1234)
 def test_fixed_point(val, width, signed):
     if (val < 0) and not signed:
         with pytest.raises(ValueError):
-            _ = QFxp(width + int(signed), width, signed=signed)._fxp_to_bits(
+            _ = _Fxp(width + int(signed), width, signed=signed)._fxp_to_bits(
                 val, require_exact=False, complement=False
             )
     else:
-        bits = QFxp(width + int(signed), width, signed=signed)._fxp_to_bits(
+        bits = _Fxp(width + int(signed), width, signed=signed)._fxp_to_bits(
             val, require_exact=False, complement=False
         )
         if signed:
