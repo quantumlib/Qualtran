@@ -183,6 +183,8 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'load_scopes_symb',
         'guided_phase_estimate_symb',
         'guided_hamiltonian_symb',
+        'solve_planted',
+        'solve_planted_symbolic',
     ]:
         pytest.xfail("Skipping serialization test for bloqs that use KXorInstance.")
 
