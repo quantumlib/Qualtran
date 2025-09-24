@@ -29,12 +29,14 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     GF2MulViaKaratsuba,
     GF2ShiftLeft,
     GF2ShiftRight,
+    GF2MulMBUC,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.testing import assert_consistent_classical_action
+from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
 
 def test_gf16_multiplication(bloq_autotester):
@@ -47,7 +49,7 @@ def test_gf2_multiplication_symbolic(bloq_autotester):
 
 @pytest.mark.parametrize('m', [2, 4, 6, 8])
 def test_synthesize_lr_circuit(m: int):
-    matrix = GF2Multiplication(m).reduction_matrix_q
+    matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
@@ -61,7 +63,7 @@ def test_synthesize_lr_circuit(m: int):
 @pytest.mark.slow
 @pytest.mark.parametrize('m', [3, 4, 5])
 def test_synthesize_lr_circuit_slow(m):
-    matrix = GF2Multiplication(m).reduction_matrix_q
+    matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
@@ -374,3 +376,35 @@ def test_gf2mulmod_classical_complexity(m_x):
 def test_gf2mul_invalid_input_raises():
     with pytest.raises(ValueError):
         _ = GF2MulViaKaratsuba([0, 1])  # type: ignore[arg-type]
+
+
+def test_gf2_mul_mbuc_quick():
+    m = 3
+    bloq_mbuc = GF2MulMBUC(m)
+    rng = np.random.default_rng(seed=123)
+    for x in bloq_mbuc.qgf.gf_type.elements:
+        for y in bloq_mbuc.qgf.gf_type.elements:
+            in_vals = {'x': x, 'y': y, 'result': x * y}
+            out_vals, phase = do_phased_classical_simulation(
+                bloq_mbuc.decompose_bloq(), in_vals, rng=rng
+            )
+            assert out_vals['x'] == x
+            assert out_vals['y'] == y
+            assert 'result' not in out_vals
+            assert phase == 1
+
+
+@pytest.mark.parametrize('m', [4, 5])
+def test_gf2_mul_mbuc(m: int):
+    bloq_mbuc = GF2MulMBUC(m)
+    rng = np.random.default_rng(seed=123)
+    for x in bloq_mbuc.qgf.gf_type.elements:
+        for y in bloq_mbuc.qgf.gf_type.elements:
+            in_vals = {'x': x, 'y': y, 'result': x * y}
+            out_vals, phase = do_phased_classical_simulation(
+                bloq_mbuc.decompose_bloq(), in_vals, rng=rng
+            )
+            assert out_vals['x'] == x
+            assert out_vals['y'] == y
+            assert 'result' not in out_vals
+            assert phase == 1
