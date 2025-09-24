@@ -22,21 +22,22 @@ import qualtran.testing as qlt_testing
 from qualtran import QGF
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
+    _GF2MulViaKaratsubaImpl,
     _gf16_multiplication,
     BinaryPolynomialMultiplication,
     GF2MulK,
+    GF2MulMBUC,
     GF2Multiplication,
     GF2MulViaKaratsuba,
     GF2ShiftLeft,
     GF2ShiftRight,
-    GF2MulMBUC,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
-from qualtran.testing import assert_consistent_classical_action
 from qualtran.simulation.classical_sim import do_phased_classical_simulation
+from qualtran.testing import assert_consistent_classical_action
 
 
 def test_gf16_multiplication(bloq_autotester):
@@ -351,15 +352,16 @@ def test_gf2mulmod_classical_action_slow():
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
 def test_gf2mulmod_classical_action_adjoint(m_x):
-    blq = GF2MulViaKaratsuba(m_x)
+    blq = _GF2MulViaKaratsubaImpl(m_x)
     adjoint = blq.adjoint()
     rs = np.random.default_rng(42)
-    for i, j in rs.integers(0, len(blq.gf.elements) - 1, (10, 2)):
-        f = blq.gf.elements[i]
-        g = blq.gf.elements[j]
-        a, b, c = blq.call_classically(x=f, y=g)
-        a, b = adjoint.call_classically(x=a, y=b, result=c)
-        assert a == f and b == g
+    zero = blq.qgf.gf_type(0)
+    for i, j in rs.integers(0, len(blq.qgf.gf_type.elements) - 1, (10, 2)):
+        f = blq.qgf.gf_type.elements[i]
+        g = blq.qgf.gf_type.elements[j]
+        a, b, c = blq.call_classically(f=f, g=g, h=zero)
+        a, b, c = adjoint.call_classically(f=a, g=b, h=c)
+        assert a == f and b == g and c == zero
 
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [8, 4, 3, 1, 0], [16, 5, 3, 1, 0]])

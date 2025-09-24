@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union, Mapping
+from typing import Dict, Mapping, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import galois
@@ -24,6 +24,8 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    CBit,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QGF,
@@ -31,14 +33,13 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran import CtrlSpec, CBit
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, MeasureX, Discard, CZ
+from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli
 from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
 def _data_or_shape_to_tuple(data_or_shape: Union[np.ndarray, Shaped]) -> tuple:
@@ -263,6 +264,7 @@ class Parity(Bloq):
     def on_classical_vals(
         self, *, x: Union['sympy.Symbol', 'ClassicalValT']
     ) -> Mapping[str, 'ClassicalValRetT']:
+        assert isinstance(x, np.ndarray)
         return {'x': x, 'parity': np.sum(x, dtype=int) & 1}
 
 
@@ -1042,7 +1044,6 @@ class GF2MulViaKaratsuba(Bloq):
 
     Args:
         m_x: The irreducible polynomial that defines the galois field.
-        uncompute: Whether to compute or uncompute the product.
 
     Registers:
         x: A TRHU register representing the first number (or polynomial).
@@ -1055,7 +1056,6 @@ class GF2MulViaKaratsuba(Bloq):
     """
 
     dtype: QGF = attrs.field(converter=_qgf_converter)
-    uncompute: bool = False
 
     @cached_property
     def m_x(self):
@@ -1077,21 +1077,16 @@ class GF2MulViaKaratsuba(Bloq):
     def qgf(self):
         return self.dtype
 
-    def adjoint(self) -> 'GF2MulViaKaratsuba':
-        return attrs.evolve(self, uncompute=not self.uncompute)
-
     def __str__(self):
-        return f'{self.__class__.__name__}†' if self.uncompute else f'{self.__class__.__name__}'
+        return f'{self.__class__.__name__}'
 
     @cached_property
     def signature(self) -> 'Signature':
-        # C is directional
-        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
                 Register('x', dtype=self.qgf),
                 Register('y', dtype=self.qgf),
-                Register('result', dtype=self.qgf, side=side),
+                Register('result', dtype=self.qgf, side=Side.RIGHT),
             ]
         )
 
@@ -1105,8 +1100,6 @@ class GF2MulViaKaratsuba(Bloq):
     @cached_property
     def _GF2MulViaKaratsubamod_impl(self) -> Bloq:
         impl = _GF2MulViaKaratsubaImpl(self.m_x)
-        if self.uncompute:
-            return impl.adjoint()
         return impl
 
     def build_composite_bloq(
@@ -1115,16 +1108,9 @@ class GF2MulViaKaratsuba(Bloq):
         if is_symbolic(self.k, self.n):
             raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")
 
-        if self.uncompute:
-            result = soqs['result']
-        else:
-            result = bb.allocate(self.n, self.qgf)
+        result = bb.allocate(self.n, self.qgf)
 
         x, y, result = bb.add_from(self._GF2MulViaKaratsubamod_impl, f=x, g=y, h=result)
-
-        if self.uncompute:
-            bb.free(result)  # type: ignore[arg-type]
-            return {'x': x, 'y': y}
 
         return {'x': x, 'y': y, 'result': result}
 
@@ -1158,9 +1144,6 @@ class GF2MulViaKaratsuba(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.gf)
         assert isinstance(y, self.gf)
-        if self.uncompute:
-            assert x * y == result
-            return {'x': x, 'y': y}
         return {'x': x, 'y': y, 'result': x * y}
 
     def adjoint(self) -> 'Bloq':
