@@ -38,9 +38,9 @@ def test_gf2_inverse_symbolic(bloq_autotester):
 def test_gf2_inverse_symbolic_toffoli_complexity():
     bloq = _gf2_inverse_symbolic.make()
     m = bloq.bitsize
-    expected_expr = m**2 * (2 * ceil(log2(m)) - 1)
+    expected_expr = m ** log2(3) * (2 * ceil(log2(m)) - 2)
     assert get_cost_value(bloq, QECGatesCost()).total_toffoli_only() - expected_expr == 0
-    expected_expr = m * (3 * ceil(log2(m)) + 2)
+    expected_expr = m * (3 * ceil(log2(m)) - 1)
     assert isinstance(expected_expr, sympy.Expr)
     assert sympy.simplify(get_cost_value(bloq, QubitCount()) - expected_expr) == 0
 
@@ -60,7 +60,7 @@ def test_gf2_inverse_classical_sim(m):
     assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
-@pytest.mark.parametrize('m', [*range(1, 12)])
+@pytest.mark.parametrize('m', [*range(1, 17)])
 def test_gf2_equivalent_bloq_counts(m):
     bloq = GF2Inverse(m)
     assert_equivalent_bloq_counts(bloq, generalizer=[ignore_split_join, ignore_alloc_free])
