@@ -520,8 +520,8 @@ class QROAMClean(SelectSwapQROM):
         # Construct and return dictionary of final soquets.
         soqs |= {reg.name: soq for reg, soq in zip(self.control_registers, ctrl)}
         soqs |= {reg.name: soq for reg, soq in zip(self.selection_registers, selection)}
-        soqs |= {reg.name: soq.flat[1:] for reg, soq in zip(self.junk_registers, qrom_targets)}  # type: ignore[union-attr]
-        soqs |= {reg.name: soq.flat[0] for reg, soq in zip(self.target_registers, qrom_targets)}  # type: ignore[union-attr]
+        soqs |= {reg.name: soq.flat[1:] for reg, soq in zip(self.junk_registers, qrom_targets)}  # type: ignore[attr-defined]
+        soqs |= {reg.name: soq.flat[0] for reg, soq in zip(self.target_registers, qrom_targets)}  # type: ignore[attr-defined]
         return soqs
 
     def on_classical_vals(

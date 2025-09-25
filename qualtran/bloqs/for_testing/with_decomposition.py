@@ -13,15 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Soquet
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.for_testing.atom import TestAtom
-
-if TYPE_CHECKING:
-    from qualtran import SoquetT
 
 
 @frozen
@@ -47,7 +44,7 @@ class TestParallelCombo(Bloq):
         return Signature.build(reg=3)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'SoquetT']:
-        assert isinstance(reg, Soquet)
+        assert BloqBuilder.is_single(reg)
         reg = bb.split(reg)
         for i in range(len(reg)):
             reg[i] = bb.add(TestAtom(), q=reg[i])

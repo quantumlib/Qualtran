@@ -153,11 +153,11 @@ class MultiplexedCSwap3D(Bloq):
         """
         # np.prod(()) returns a float (1.0), so take int
         size = int(np.prod(out_shape))
-        if isinstance(in_reg, np.ndarray):
+        if BloqBuilder.is_ndarray(in_reg):
             # split an array of bitsize qubits into flat list of qubits
             split_qubits = bb.split(bb.join(np.concatenate([bb.split(x) for x in in_reg.ravel()])))
         else:
-            split_qubits = bb.split(in_reg)
+            split_qubits = bb.split(in_reg.item())
         merged_qubits = np.array(
             [bb.join(split_qubits[i * bitsize : (i + 1) * bitsize]) for i in range(size)]
         )
