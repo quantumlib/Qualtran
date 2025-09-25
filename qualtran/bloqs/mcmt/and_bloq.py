@@ -312,7 +312,7 @@ class MultiAnd(Bloq):
         control_values: Tuple[SymbolicInt, ...],
         ancillas: NDArray[cirq.Qid],
         target: cirq.Qid,
-    ) -> cirq.ops.op_tree.OpTree:
+    ):
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
 
         if len(controls) == 2:
