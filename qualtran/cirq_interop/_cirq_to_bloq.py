@@ -514,8 +514,7 @@ def cirq_optree_to_cbloq(
         if reg.name not in in_quregs:
             raise ValueError(f"Register {reg.name} from signature must be present in in_quregs.")
         soqs = initial_soqs[reg.name]
-        if isinstance(soqs, Soquet):
-            soqs = np.array(soqs)
+        soqs = np.asarray(soqs)
         if in_quregs[reg.name].shape != soqs.shape:
             raise ValueError(
                 f"Shape {in_quregs[reg.name].shape} of cirq register "
