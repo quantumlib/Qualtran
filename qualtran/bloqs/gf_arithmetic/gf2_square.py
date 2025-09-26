@@ -69,7 +69,7 @@ class GF2Square(Bloq):
         r"""$m \times m$ matrix that maps the input $x^{i}$ to $x^{2 * i} % P(x)$"""
         m = int(self.bitsize)
         f = self.qgf.gf_type.irreducible_poly
-        M = np.zeros((m, m))
+        M = np.zeros((m, m), dtype=int)
         alpha = [0] * m
         for i in range(m):
             # x ** (2 * i) % f

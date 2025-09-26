@@ -52,10 +52,12 @@ def test_gf2_multiplication_symbolic(bloq_autotester):
 def test_synthesize_lr_circuit(m: int):
     matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
+    cbloq = bloq.decompose_bloq()
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
         bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
+        assert np.all(bloq_out == cbloq.call_classically(q=np.array(QGFM.to_bits(i)))[0])
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
         assert isinstance(bloq_adj_out, np.ndarray)
         assert i == QGFM.from_bits([*bloq_adj_out])
@@ -66,10 +68,12 @@ def test_synthesize_lr_circuit(m: int):
 def test_synthesize_lr_circuit_slow(m):
     matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
+    cbloq = bloq.decompose_bloq()
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
         bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
+        assert np.all(bloq_out == cbloq.call_classically(q=np.array(QGFM.to_bits(i)))[0])
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
         assert isinstance(bloq_adj_out, np.ndarray)
         assert i == QGFM.from_bits([*bloq_adj_out])

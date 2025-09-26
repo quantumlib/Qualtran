@@ -18,7 +18,7 @@ from galois import GF
 
 from qualtran.bloqs.gf_arithmetic.gf2_square import _gf2_square_symbolic, _gf16_square, GF2Square
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.symbolics import ceil, log2
+from qualtran.symbolics import ceil
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -41,7 +41,7 @@ def test_gf2_square_resource():
     bloq = _gf2_square_symbolic.make()
     m = bloq.bitsize
     assert get_cost_value(bloq, QECGatesCost()).total_t_count() == 0
-    expected_expr = ceil(m**2 / log2(m))
+    expected_expr = ceil(m**2)
     assert isinstance(expected_expr, sympy.Expr)
     assert sympy.simplify(get_cost_value(bloq, QECGatesCost()).clifford - expected_expr) == 0
 

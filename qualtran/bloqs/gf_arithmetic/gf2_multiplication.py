@@ -71,8 +71,47 @@ class SynthesizeLRCircuit(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        n, _ = self.matrix.shape
-        return Signature([Register('q', QBit(), shape=(n,))])
+        return Signature([Register('q', QBit(), shape=(self.n,))])
+
+    @cached_property
+    def n(self) -> SymbolicInt:
+        return self.matrix.shape[0]
+
+    @cached_property
+    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Returns the LUP decomposition of the matrix representing the operation.
+
+        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
+        by a full rank matrix that can be decomposed into PLU where L and U are lower
+        and upper traingular matricies and P is a permutation matrix.
+        """
+        assert isinstance(self.matrix, np.ndarray)
+        P, L, U = GF(2)(self.matrix).plu_decompose()
+        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        assert isinstance(q, np.ndarray)  # make mypy happy
+        L, U, P = self.lup
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if U[i, j]:
+                    q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
+
+        for i in reversed(range(self.n)):
+            for j in reversed(range(i)):
+                if L[i, j]:
+                    q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
+
+        column = [*range(self.n)]
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if P[i, column[j]]:
+                    q[i], q[j] = q[j], q[i]
+                    column[i], column[j] = column[j], column[i]
+        return {'q': q}
 
     def on_classical_vals(self, *, q: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if is_symbolic(self.matrix):
@@ -91,7 +130,14 @@ class SynthesizeLRCircuit(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         n = self.matrix.shape[0]
-        return {CNOT(): ceil(n**2 / log2(n))}
+        if is_symbolic(n):
+            return {CNOT(): ceil(n**2)}
+        L, U, _ = self.lup
+        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
+        cnots = np.sum(L) + np.sum(U) - 2 * self.n
+        if cnots:
+            return {CNOT(): cnots}
+        return {}
 
     def adjoint(self) -> 'SynthesizeLRCircuit':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
@@ -402,21 +448,15 @@ class GF2MulK(Bloq):
         return GF2MulK(dtype=qgf, const=sum(2 ** int(i) for i in f_x.nonzero_degrees))
 
     @cached_property
-    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Returns the LUP decomposition of the matrix representing the operation.
-
-        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
-        by a full rank matrix that can be decomposed into PLU where L and U are lower
-        and upper traingular matricies and P is a permutation matrix.
-        """
+    def reduction_matrix_q(self) -> np.ndarray:
+        """Returns the matrix representing the operation."""
         n = int(self.n)
         matrix = np.zeros((n, n), dtype=int)
         for i in range(n):
             p = self._const * self.galois_field(2**i)
             for j, v in enumerate(reversed(self.qgf.to_bits(p))):
                 matrix[j, i] = v
-        P, L, U = GF(2)(matrix).plu_decompose()
-        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+        return matrix
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -430,28 +470,9 @@ class GF2MulK(Bloq):
         return {'g': g * self._const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
-        L, U, P = self.lup
-        if is_symbolic(self.n):
-            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
-
         g_arr = bb.split(g)
         g_arr = g_arr[::-1]
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
-                if U[i, j]:
-                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
-
-        for i in reversed(range(self.n)):
-            for j in reversed(range(i)):
-                if L[i, j]:
-                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
-
-        column = [*range(self.n)]
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
-                if P[i, column[j]]:
-                    g_arr[i], g_arr[j] = g_arr[j], g_arr[i]
-                    column[i], column[j] = column[j], column[i]
+        g_arr = bb.add(SynthesizeLRCircuit(self.reduction_matrix_q), q=g_arr)
         g_arr = g_arr[::-1]
         g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
@@ -459,12 +480,7 @@ class GF2MulK(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        L, U, _ = self.lup
-        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
-        cnots = np.sum(L) + np.sum(U) - 2 * self.n
-        if cnots:
-            return {CNOT(): cnots}
-        return {}
+        return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
 
 @bloq_example
