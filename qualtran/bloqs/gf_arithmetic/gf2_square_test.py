@@ -18,7 +18,7 @@ from galois import GF
 
 from qualtran.bloqs.gf_arithmetic.gf2_square import _gf2_square_symbolic, _gf16_square, GF2Square
 from qualtran.resource_counting import get_cost_value, QECGatesCost
-from qualtran.symbolics import ceil, log2
+from qualtran.symbolics import ceil
 from qualtran.testing import assert_consistent_classical_action
 
 
