@@ -72,7 +72,8 @@ class CSwapApprox(GateWithRegisters):
     ) -> Iterator[cirq.OP_TREE]:
         ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 
-        def g(q: cirq.Qid, adjoint=False):
+
+        def g(q: cirq.Qid, adjoint=False) -> Iterator[cirq.OP_TREE]:
             yield [cirq.S(q), cirq.H(q)]
             yield cirq.T(q) ** (1 - 2 * adjoint)
             yield [cirq.H(q), cirq.S(q) ** -1]
