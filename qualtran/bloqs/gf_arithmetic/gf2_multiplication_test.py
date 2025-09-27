@@ -16,6 +16,7 @@ import itertools
 
 import numpy as np
 import pytest
+import sympy
 from galois import GF, Poly
 
 import qualtran.testing as qlt_testing
@@ -37,6 +38,7 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import do_phased_classical_simulation
+from qualtran.symbolics import Shaped
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -77,6 +79,17 @@ def test_synthesize_lr_circuit_slow(m):
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
         assert isinstance(bloq_adj_out, np.ndarray)
         assert i == QGFM.from_bits([*bloq_adj_out])
+
+
+def test_synthesize_lr_circuit_symbolic_resource():
+    bloq = SynthesizeLRCircuit(Shaped((4, 4)))
+    assert get_cost_value(bloq, QECGatesCost()).clifford == 16
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == 16
+
+    n = sympy.Symbol("n")
+    bloq = SynthesizeLRCircuit(Shaped((n, n)))
+    assert get_cost_value(bloq, QECGatesCost()).clifford == n**2
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == n**2
 
 
 def test_gf2_plus_equal_prod_classical_sim_quick():
