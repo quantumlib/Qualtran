@@ -83,13 +83,13 @@ def test_synthesize_lr_circuit_slow(m):
 
 def test_synthesize_lr_circuit_symbolic_resource():
     bloq = SynthesizeLRCircuit(Shaped((4, 4)))
-    assert get_cost_value(bloq, QECGatesCost()).clifford == 16
-    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == 16
+    assert get_cost_value(bloq, QECGatesCost()).clifford == 12
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == 12
 
     n = sympy.Symbol("n")
     bloq = SynthesizeLRCircuit(Shaped((n, n)))
-    assert get_cost_value(bloq, QECGatesCost()).clifford == n**2
-    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == n**2
+    assert get_cost_value(bloq, QECGatesCost()).clifford == n**2 - n
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == n**2 - n
 
 
 def test_gf2_plus_equal_prod_classical_sim_quick():
