@@ -78,6 +78,9 @@ class GF2Addition(Bloq):
         assert isinstance(x, self.qgf.gf_type) and isinstance(y, self.qgf.gf_type)
         return {'x': x, 'y': x + y}
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @bloq_example
 def _gf16_addition() -> GF2Addition:

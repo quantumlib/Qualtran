@@ -34,7 +34,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli
-from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
+from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -130,8 +130,8 @@ class SynthesizeLRCircuit(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         n = self.matrix.shape[0]
-        if is_symbolic(n):
-            return {CNOT(): ceil(n**2)}
+        if isinstance(self.matrix, Shaped):
+            return {CNOT(): n**2 - n}
         L, U, _ = self.lup
         # The number of cnots is the number of non zero off-diagnoal entries in L and U.
         cnots = np.sum(L) + np.sum(U) - 2 * self.n
