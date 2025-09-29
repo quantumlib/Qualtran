@@ -19,6 +19,7 @@ import numpy as np
 from galois import GF, Poly
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, DecomposeTypeError, QGF, Register, Signature
+from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import SynthesizeLRCircuit
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicInt
 
@@ -47,28 +48,25 @@ class GF2Square(Bloq):
     Thus, squaring can be implemented via a linear reversible circuit using only CNOT gates.
 
     Args:
-        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
-            qubits in the input register to be squared.
+        qgf: QGF type of the register.
         k: The number of times to apply the squaring operation.
-        qgf: Optional QGF type.
         uncompute: Whether this bloq is the adjoint or forward computation.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
     """
 
-    bitsize: SymbolicInt
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     k: int = 1
-    qgf: QGF = attrs.field()
     uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', dtype=self.qgf)])
 
-    @qgf.default
-    def _qgf_default(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.degree
 
     @cached_property
     def squaring_matrix(self) -> np.ndarray:

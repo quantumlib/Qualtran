@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
 from typing import cast, Dict, Set, TYPE_CHECKING, Union
 
@@ -27,6 +28,7 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba, SynthesizeLRCircuit
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
@@ -69,9 +71,7 @@ class GF2Inverse(Bloq):
     where $B_1 = x$ and $B_{i+j} = B_i B_j^{2^i}$.
 
     Args:
-        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
-            qubits in the input register whose inverse should be calculated.
-        qgf: Optional QGF type.
+        qgf: QGF type of the registers.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
@@ -90,8 +90,21 @@ class GF2Inverse(Bloq):
         Algorithm 2.
     """
 
-    bitsize: SymbolicInt
-    qgf: QGF = attrs.field()
+    qgf: QGF
+
+    def __init__(self, qgf=None, bitsize=None):
+        if not ((qgf is None) ^ (bitsize is None)):
+            raise TypeError("Exactly one of `qgf` or `bitsize` should be specified.")
+        if qgf is not None:
+            qgf = gf_utils.qgf_converter(qgf)
+        if bitsize is not None:
+            warnings.warn(
+                "The `bitsize` attribute is deprecated. Use `qgf` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            qgf = gf_utils.qgf_converter(bitsize)
+        object.__setattr__(self, 'qgf', qgf)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -108,9 +121,9 @@ class GF2Inverse(Bloq):
             ]
         )
 
-    @qgf.default
-    def _qgf_default(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.degree
 
     @cached_property
     def n_junk_regs(self) -> SymbolicInt:
@@ -147,7 +160,7 @@ class GF2Inverse(Bloq):
 
         if self.bitsize == 1:
             result = bb.allocate(dtype=self.qgf)
-            x, result = bb.add(GF2Addition(self.bitsize, self.qgf), x=x, y=result)
+            x, result = bb.add(GF2Addition(self.qgf), x=x, y=result)
             return {'x': x, 'result': result}
 
         t = (self.bitsize - 1).bit_count()
@@ -157,18 +170,16 @@ class GF2Inverse(Bloq):
         f[k] = bb.allocate(self.bitsize, self.qgf)
         f = cast(list['Soquet'], f)
         for i in range(1, k1 + 1):
-            f[i - 1], f[k] = bb.add(GF2Addition(self.bitsize, self.qgf), x=f[i - 1], y=f[k])
-            f[k] = bb.add(GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf), x=f[k])
+            f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
+            f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)), x=f[k])
             f[i - 1], f[k], f[i] = bb.add(GF2MulViaKaratsuba(self.qgf), x=f[i - 1], y=f[k])
-            f[k] = bb.add(GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf).adjoint(), x=f[k])
-            f[i - 1], f[k] = bb.add(GF2Addition(self.bitsize, self.qgf), x=f[i - 1], y=f[k])
+            f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)).adjoint(), x=f[k])
+            f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
         bits = self._bits
         if k1 + t - 1 == k:
             bb.free(f[k])
         for s in range(1, t):
-            f[k1 + s - 1] = bb.add(
-                GF2Square(self.bitsize, 2 ** bits[s + 1], qgf=self.qgf), x=f[k1 + s - 1]
-            )
+            f[k1 + s - 1] = bb.add(GF2Square(self.qgf, 2 ** bits[s + 1]), x=f[k1 + s - 1])
             f[k1 + s - 1], f[bits[s + 1]], f[k1 + s] = bb.add(
                 GF2MulViaKaratsuba(self.qgf), x=f[k1 + s - 1], y=f[bits[s + 1]]
             )
@@ -176,10 +187,10 @@ class GF2Inverse(Bloq):
         if t == 1:
             if k1 == 0:
                 assert self.bitsize == 2
-                f[0], f[k] = bb.add(GF2Addition(self.bitsize, self.qgf), x=f[0], y=f[k])
+                f[0], f[k] = bb.add(GF2Addition(self.qgf), x=f[0], y=f[k])
             f[k1], f[k] = f[k], f[k1]
 
-        f[k] = bb.add(GF2Square(self.bitsize, qgf=self.qgf), x=f[k])
+        f[k] = bb.add(GF2Square(qgf=self.qgf), x=f[k])
 
         return {'x': f[0], 'result': f[k], 'junk': np.array(f[1:k])}
 
@@ -187,35 +198,32 @@ class GF2Inverse(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
-            return {GF2Addition(self.bitsize): 1}
+            return {GF2Addition(self.qgf): 1}
         k1 = bit_length(self.bitsize - 1) - 1
         if is_symbolic(self.bitsize):
             t = bit_length(self.bitsize - 1)
             return {
-                GF2Addition(self.bitsize, self.qgf): 2 * k1,
+                GF2Addition(self.qgf): 2 * k1,
                 GF2MulViaKaratsuba(self.qgf): k1 + t - 1,
                 SynthesizeLRCircuit(Shaped((self.bitsize, self.bitsize))): 2 * k1 + t,
             }
 
         t = (self.bitsize - 1).bit_count()
         bloq_counts: dict[Bloq, int] = (
-            {GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf): 1 for i in range(2, k1 + 1)}
-            | {
-                GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf).adjoint(): 1
-                for i in range(1, k1 + 1)
-            }
-            | {GF2Square(self.bitsize, qgf=self.qgf): 1 + (k1 > 0)}
+            {GF2Square(self.qgf, 2 ** (i - 1)): 1 for i in range(2, k1 + 1)}
+            | {GF2Square(self.qgf, 2 ** (i - 1)).adjoint(): 1 for i in range(1, k1 + 1)}
+            | {GF2Square(self.qgf): 1 + (k1 > 0)}
         )
 
         for i in self._bits[2:]:
-            s = GF2Square(self.bitsize, 2**i, qgf=self.qgf)
+            s = GF2Square(self.qgf, 2**i)
             bloq_counts[s] = bloq_counts.get(s, 0) + 1
         mul_count = k1 + t - 1
         if mul_count:
             bloq_counts[GF2MulViaKaratsuba(self.qgf)] = mul_count
         add_count = 2 * k1 + (self.bitsize == 2)
         if add_count:
-            bloq_counts[GF2Addition(self.bitsize, self.qgf)] = add_count
+            bloq_counts[GF2Addition(self.qgf)] = add_count
         return bloq_counts
 
     def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
@@ -259,30 +267,3 @@ def _gf2_inverse_symbolic() -> GF2Inverse:
 
 
 _GF2_INVERSE_DOC = BloqDocSpec(bloq_cls=GF2Inverse, examples=(_gf16_inverse,))
-
-
-if __name__ == '__main__':
-    poly = [2, 1, 0]
-    m = max(poly)
-    blq = GF2Inverse(m, QGF(2, m, poly))
-    cblq = blq.decompose_bloq()
-    import galois
-
-    gf = galois.GF(2, m, irreducible_poly='x^2+x+1', verify=False)
-    for x in gf.elements[1:]:
-        assert x**-1 == cblq.call_classically(x=x)[1]
-
-    a = blq.bloq_counts()
-    b = cblq.bloq_counts()
-    for k in a.keys() & b.keys():
-        print(repr(k), '\n\t', a[k], b[k])
-    # for k in (a.keys() & b.keys()):
-    #     assert a[k] == b[k], f'{k=} {a[k]} {b[k]}'
-
-    print('D1:')
-    for k in a.keys() - b.keys():
-        print(k, a[k])
-    print()
-    print('D2:')
-    for k in b.keys() - a.keys():
-        print(k, b[k])

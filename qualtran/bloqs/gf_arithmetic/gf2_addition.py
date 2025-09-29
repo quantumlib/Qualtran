@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING, Union
 
@@ -18,6 +19,7 @@ import attrs
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, DecomposeTypeError, QGF, Register, Signature
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -39,25 +41,36 @@ class GF2Addition(Bloq):
     $$
 
     Args:
-        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
-            qubits in each of the two input registers x and y that should be added.
-        qgf: Optional QGF type.
+        qgf: QGF type of the registers.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
         y: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
     """
 
-    bitsize: SymbolicInt
-    qgf: QGF = attrs.field()
+    qgf: QGF
+
+    def __init__(self, qgf=None, bitsize=None):
+        if not ((qgf is None) ^ (bitsize is None)):
+            raise TypeError("Exactly one of `qgf` or `bitsize` should be specified.")
+        if qgf is not None:
+            qgf = gf_utils.qgf_converter(qgf)
+        if bitsize is not None:
+            warnings.warn(
+                "The `bitsize` attribute is deprecated. Use `qgf` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            qgf = gf_utils.qgf_converter(bitsize)
+        object.__setattr__(self, 'qgf', qgf)
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', dtype=self.qgf), Register('y', dtype=self.qgf)])
 
-    @qgf.default
-    def _qgf_default(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.degree
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'Soquet', y: 'Soquet'

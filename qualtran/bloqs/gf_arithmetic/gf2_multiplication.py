@@ -34,6 +34,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli
+from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
@@ -146,19 +147,6 @@ class SynthesizeLRCircuit(Bloq):
         return f'{self.__class__.__name__}†' if self.is_adjoint else f'{self.__class__.__name__}'
 
 
-def _qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
-    if isinstance(x, QGF):
-        return x
-    if isinstance(x, int):
-        return QGF(2, x)
-    if is_symbolic(x):
-        return QGF(2, x)
-    if isinstance(x, Poly):
-        return QGF(2, x.degree, x)
-    p = Poly.Degrees(x)
-    return QGF(2, p.degree, p)
-
-
 @attrs.frozen
 class GF2Multiplication(Bloq):
     r"""Out of place multiplication over GF($2^m$).
@@ -202,7 +190,7 @@ class GF2Multiplication(Bloq):
         over GF(2m)](https://ieeexplore.ieee.org/abstract/document/1306989)
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     plus_equal_prod: bool = False
 
     @cached_property
@@ -328,7 +316,7 @@ class GF2MulMBUC(Bloq):
         result: Register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -791,7 +779,7 @@ class GF2ShiftLeft(Bloq):
         f: The number (polynomial) to shift.
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     k: SymbolicInt = 1
 
     @cached_property
@@ -884,7 +872,7 @@ class GF2ShiftRight(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Section 3.1
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     k: SymbolicInt = 1
 
     @cached_property
@@ -957,7 +945,7 @@ _GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_gf2shi
 class _GF2MulViaKaratsubaImpl(Bloq):
     """Multiply two GF2 numbers (or binary polynomials) using quantum karatsuba algorithm."""
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
     def n(self):
@@ -1071,7 +1059,7 @@ class GF2MulViaKaratsuba(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 4.
     """
 
-    dtype: QGF = attrs.field(converter=_qgf_converter)
+    dtype: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
     def m_x(self):
