@@ -18,6 +18,7 @@ from typing import cast, Dict, Set, TYPE_CHECKING, Union
 import attrs
 import numpy as np
 
+import qualtran.bloqs.gf_arithmetic.gf_utils as gf_utils
 from qualtran import (
     Bloq,
     bloq_example,
@@ -28,7 +29,6 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba, SynthesizeLRCircuit
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
@@ -90,7 +90,7 @@ class GF2Inverse(Bloq):
         Algorithm 2.
     """
 
-    qgf: QGF
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     def __init__(self, qgf=None, bitsize=None):
         if not ((qgf is None) ^ (bitsize is None)):

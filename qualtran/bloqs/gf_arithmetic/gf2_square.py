@@ -18,8 +18,8 @@ import attrs
 import numpy as np
 from galois import GF, Poly
 
+import qualtran.bloqs.gf_arithmetic.gf_utils as gf_utils
 from qualtran import Bloq, bloq_example, BloqDocSpec, DecomposeTypeError, QGF, Register, Signature
-from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import SynthesizeLRCircuit
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicInt
 

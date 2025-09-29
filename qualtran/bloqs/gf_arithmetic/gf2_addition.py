@@ -17,9 +17,9 @@ from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
 
+import qualtran.bloqs.gf_arithmetic.gf_utils as gf_utils
 from qualtran import Bloq, bloq_example, BloqDocSpec, DecomposeTypeError, QGF, Register, Signature
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class GF2Addition(Bloq):
         y: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
     """
 
-    qgf: QGF
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     def __init__(self, qgf=None, bitsize=None):
         if not ((qgf is None) ^ (bitsize is None)):
