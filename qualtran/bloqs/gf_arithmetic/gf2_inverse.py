@@ -154,6 +154,10 @@ class GF2Inverse(Bloq):
         k1 = bit_length(self.bitsize - 1) - 1
         return [-1] + [k1 - i for i, b in enumerate(np.binary_repr(self.bitsize - 1)) if b == '1']
 
+    @cached_property
+    def gf2_multiplier(self) -> Bloq:
+        return GF2MulViaKaratsuba(self.qgf)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
@@ -172,7 +176,7 @@ class GF2Inverse(Bloq):
         for i in range(1, k1 + 1):
             f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
             f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)), x=f[k])
-            f[i - 1], f[k], f[i] = bb.add(GF2MulViaKaratsuba(self.qgf), x=f[i - 1], y=f[k])
+            f[i - 1], f[k], f[i] = bb.add(self.gf2_multiplier, x=f[i - 1], y=f[k])
             f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)).adjoint(), x=f[k])
             f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
         bits = self._bits
@@ -181,7 +185,7 @@ class GF2Inverse(Bloq):
         for s in range(1, t):
             f[k1 + s - 1] = bb.add(GF2Square(self.qgf, 2 ** bits[s + 1]), x=f[k1 + s - 1])
             f[k1 + s - 1], f[bits[s + 1]], f[k1 + s] = bb.add(
-                GF2MulViaKaratsuba(self.qgf), x=f[k1 + s - 1], y=f[bits[s + 1]]
+                self.gf2_multiplier, x=f[k1 + s - 1], y=f[bits[s + 1]]
             )
 
         if t == 1:
@@ -204,7 +208,7 @@ class GF2Inverse(Bloq):
             t = bit_length(self.bitsize - 1)
             return {
                 GF2Addition(self.qgf): 2 * k1,
-                GF2MulViaKaratsuba(self.qgf): k1 + t - 1,
+                self.gf2_multiplier: k1 + t - 1,
                 SynthesizeLRCircuit(Shaped((self.bitsize, self.bitsize))): 2 * k1 + t,
             }
 
@@ -220,7 +224,7 @@ class GF2Inverse(Bloq):
             bloq_counts[s] = bloq_counts.get(s, 0) + 1
         mul_count = k1 + t - 1
         if mul_count:
-            bloq_counts[GF2MulViaKaratsuba(self.qgf)] = mul_count
+            bloq_counts[self.gf2_multiplier] = mul_count
         add_count = 2 * k1 + (self.bitsize == 2)
         if add_count:
             bloq_counts[GF2Addition(self.qgf)] = add_count
