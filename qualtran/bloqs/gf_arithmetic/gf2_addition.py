@@ -48,13 +48,14 @@ class GF2Addition(Bloq):
     """
 
     bitsize: SymbolicInt
+    qgf: QGF = attrs.field()
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', dtype=self.qgf), Register('y', dtype=self.qgf)])
 
-    @cached_property
-    def qgf(self) -> QGF:
+    @qgf.default
+    def _qgf_default(self) -> QGF:
         return QGF(characteristic=2, degree=self.bitsize)
 
     def build_composite_bloq(
