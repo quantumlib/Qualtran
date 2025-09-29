@@ -50,6 +50,8 @@ class GF2Square(Bloq):
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
             qubits in the input register to be squared.
         k: The number of times to apply the squaring operation.
+        qgf: Optional QGF type.
+        uncompute: Whether this bloq is the adjoint or forward computation.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.

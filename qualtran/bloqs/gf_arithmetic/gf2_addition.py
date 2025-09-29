@@ -41,6 +41,7 @@ class GF2Addition(Bloq):
     Args:
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
             qubits in each of the two input registers x and y that should be added.
+        qgf: Optional QGF type.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.

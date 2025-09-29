@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import cast, Dict, Set, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -71,6 +71,7 @@ class GF2Inverse(Bloq):
     Args:
         bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
             qubits in the input register whose inverse should be calculated.
+        qgf: Optional QGF type.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
@@ -154,6 +155,7 @@ class GF2Inverse(Bloq):
         k = max(k1 + t - 1, k1 + 1)
         f = [x] + [None] * k
         f[k] = bb.allocate(self.bitsize, self.qgf)
+        f = cast(list['Soquet'], f)
         for i in range(1, k1 + 1):
             f[i - 1], f[k] = bb.add(GF2Addition(self.bitsize, self.qgf), x=f[i - 1], y=f[k])
             f[k] = bb.add(GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf), x=f[k])
@@ -196,7 +198,7 @@ class GF2Inverse(Bloq):
             }
 
         t = (self.bitsize - 1).bit_count()
-        squaring = (
+        bloq_counts: dict[Bloq, int] = (
             {GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf): 1 for i in range(2, k1 + 1)}
             | {
                 GF2Square(self.bitsize, 2 ** (i - 1), qgf=self.qgf).adjoint(): 1
@@ -207,14 +209,14 @@ class GF2Inverse(Bloq):
 
         for i in self._bits[2:]:
             s = GF2Square(self.bitsize, 2**i, qgf=self.qgf)
-            squaring[s] = squaring.get(s, 0) + 1
+            bloq_counts[s] = bloq_counts.get(s, 0) + 1
         mul_count = k1 + t - 1
+        if mul_count:
+            bloq_counts[GF2MulViaKaratsuba(self.qgf)] = mul_count
         add_count = 2 * k1 + (self.bitsize == 2)
-        return (
-            ({GF2Addition(self.bitsize, self.qgf): add_count} if add_count else {})
-            | ({GF2MulViaKaratsuba(self.qgf): mul_count} if mul_count else {})
-            | squaring
-        )
+        if add_count:
+            bloq_counts[GF2Addition(self.bitsize, self.qgf)] = add_count
+        return bloq_counts
 
     def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
