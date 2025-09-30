@@ -329,8 +329,8 @@ class CZ(Bloq):
     """Two-qubit controlled-Z gate.
 
     Registers:
-        ctrl: One-bit control register.
-        target: One-bit target register.
+        q1: One-bit control register.
+        q2: One-bit target register.
     """
 
     @cached_property
