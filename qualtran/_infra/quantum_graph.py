@@ -19,7 +19,7 @@ from typing import Tuple, TYPE_CHECKING, Union
 from attrs import field, frozen
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, Register
+    from qualtran import Bloq, BloqBuilder, QCDType, Register
 
 
 @frozen
@@ -103,6 +103,20 @@ class Soquet:
         for i, shape in zip(value, self.reg.shape):
             if i >= shape:
                 raise ValueError(f"Bad index {i} for {self.reg}.")
+        return value
+
+    @property
+    def dtype(self) -> 'QCDType':
+        return self.reg.dtype
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return ()
+
+    def item(self, *args) -> 'Soquet':
+        if args:
+            raise ValueError("Tried to index into a single soquet.")
+        return self
 
     def pretty(self) -> str:
         label = self.reg.name
