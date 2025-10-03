@@ -212,7 +212,7 @@ class Split2(_PartitionBase):
     Args:
         n1: The size of the y1 output register. n1 + n2 must add up to the size of the
             input register.
-        n1: The size of the y2 output register. n1 + n2 must add up to the size of the
+        n2: The size of the y2 output register. n1 + n2 must add up to the size of the
             input register.
 
     Registers:
@@ -273,7 +273,7 @@ class Join2(_PartitionBase):
     Args:
         n1: The size of the y1 input register. n1 + n2 must add up to the size of the
             output register.
-        n1: The size of the y2 input register. n1 + n2 must add up to the size of the
+        n2: The size of the y2 input register. n1 + n2 must add up to the size of the
             output register.
 
     Registers:
