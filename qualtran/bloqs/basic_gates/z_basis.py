@@ -268,6 +268,15 @@ class ZGate(Bloq):
             )
         ]
 
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        # Diagonal, but causes phases: see `basis_state_phase`
+        return vals
+
+    def basis_state_phase(self, q: int) -> Optional[complex]:
+        if q == 1:
+            return -1
+        return 1
+
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
