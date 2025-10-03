@@ -50,6 +50,7 @@ from qualtran import (
     AddControlledT,
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     BQUInt,
     CompositeBloq,
@@ -59,6 +60,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
 from qualtran.bloqs.bookkeeping import Join2, Split2
@@ -66,7 +68,7 @@ from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQ
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.drawing import Circle, directional_text_box, TextBox, WireSymbol
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicInt
 
 
@@ -262,8 +264,8 @@ class HubbardMajorannaOperator(Bloq):
         Section V. and Fig. 19, "Majoranna operators". See also Figure 9.
     """
 
-    x_dim: int
-    y_dim: int
+    x_dim: SymbolicInt
+    y_dim: SymbolicInt
     gate: str = 'Y'
     control_val: Optional[int] = attrs.field(default=None, kw_only=True)
 
