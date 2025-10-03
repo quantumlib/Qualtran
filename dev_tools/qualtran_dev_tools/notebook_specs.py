@@ -369,6 +369,24 @@ CHEMISTRY: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
     NotebookSpecV2(
+        title='Qubitized Hubbard',
+        module=qualtran.bloqs.chemistry.hubbard_model.qubitization,
+        path_stem='hubbard_model',
+        bloq_specs=[
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD_DOC,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard._PREPARE_HUBBARD,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Qubitized Hubbard Select',
+        module=qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD_DOC,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._HUBBARD_MAJORANNA_OPERATOR_DOC,
+            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._HUBBARD_SPIN_UP_Z_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Givens Rotations',
         module=qualtran.bloqs.chemistry.quad_fermion.givens_bloq,
         bloq_specs=[
@@ -928,15 +946,6 @@ OTHER: List[NotebookSpecV2] = [
         module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
         bloq_specs=[
             qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
-        ],
-    ),
-    NotebookSpecV2(
-        title='Qubitized Hubbard Model',
-        module=qualtran.bloqs.chemistry.hubbard_model.qubitization,
-        path_stem='hubbard_model',
-        bloq_specs=[
-            qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard._SELECT_HUBBARD,
-            qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard._PREPARE_HUBBARD,
         ],
     ),
     NotebookSpecV2(

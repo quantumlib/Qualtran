@@ -400,6 +400,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP": qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
     "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd": qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd,
