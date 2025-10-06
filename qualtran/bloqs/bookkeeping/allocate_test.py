@@ -38,4 +38,4 @@ def test_free_nonzero_state_vector_leads_to_unnormalized_state():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('bookkeeping')
+    execute_notebook('allocate')

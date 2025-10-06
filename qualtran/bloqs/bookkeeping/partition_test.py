@@ -27,7 +27,7 @@ from qualtran.bloqs.bookkeeping import Partition
 from qualtran.bloqs.bookkeeping.partition import _join2, _partition, _split2
 from qualtran.bloqs.for_testing import TestMultiRegister
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def test_partition(bloq_autotester):
@@ -136,3 +136,13 @@ def test_split2(bloq_autotester):
 
 def test_join2(bloq_autotester):
     bloq_autotester(_join2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('partition')
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('split2')
