@@ -285,6 +285,32 @@ def test_add_symb():
     assert get_cost_value(bloq, QubitCount()) == sympy.sympify('Max(3, 2*n)')
 
 
+def test_add_mixed_signed_result_reg():
+    bloq = Add(QUInt(4), QInt(4))
+    cbloq = bloq.decompose_bloq()
+
+    for a in range(2**4):
+        for b in range(-(2**3), 2**3):
+            a_res1, b_res1 = bloq.call_classically(a=a, b=b)
+            a_res2, b_res2 = cbloq.call_classically(a=a, b=b)
+            assert a_res1 == a
+            assert a_res1 == a_res2
+            assert b_res1 == b_res2
+
+
+def test_add_mixed_signed_op_reg():
+    bloq = Add(QInt(4), QUInt(4))
+    cbloq = bloq.decompose_bloq()
+
+    for a in range(-(2**3), 2**3):
+        for b in range(2**4):
+            a_res1, b_res1 = bloq.call_classically(a=a, b=b)
+            a_res2, b_res2 = cbloq.call_classically(a=a, b=b)
+            assert a_res1 == a
+            assert a_res1 == a_res2
+            assert b_res1 == b_res2
+
+
 def test_out_of_place_adder():
     basis_map = {}
     gate = OutOfPlaceAdder(bitsize=3)

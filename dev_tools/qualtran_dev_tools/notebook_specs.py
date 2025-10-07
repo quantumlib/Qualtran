@@ -214,6 +214,15 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Measurement',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        path_stem='measurement',
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._MEASURE_Z_DOC,
+            qualtran.bloqs.basic_gates.x_basis._MEASURE_X_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Basic Swaps',
         module=qualtran.bloqs.basic_gates.swap,
         bloq_specs=[
@@ -241,20 +250,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Identity Gate',
         module=qualtran.bloqs.basic_gates.identity,
         bloq_specs=[qualtran.bloqs.basic_gates.identity._IDENTITY_DOC],
-    ),
-    NotebookSpecV2(
-        title='Bookkeeping Bloqs',
-        module=qualtran.bloqs.bookkeeping,
-        bloq_specs=[
-            qualtran.bloqs.bookkeeping.allocate._ALLOC_DOC,
-            qualtran.bloqs.bookkeeping.free._FREE_DOC,
-            qualtran.bloqs.bookkeeping.split._SPLIT_DOC,
-            qualtran.bloqs.bookkeeping.join._JOIN_DOC,
-            qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
-            qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
-            qualtran.bloqs.bookkeeping.cast._CAST_DOC,
-            qualtran.bloqs.bookkeeping.always._ALWAYS_DOC,
-        ],
     ),
     NotebookSpecV2(
         title='Control Specification (And)',
@@ -885,6 +880,52 @@ OPTIMIZATION: List[NotebookSpecV2] = [
     ),
 ]
 
+BOOKKEEPING: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='Split / Join',
+        module=qualtran.bloqs.bookkeeping.split,
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.split._SPLIT_DOC,
+            qualtran.bloqs.bookkeeping.join._JOIN_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Split2 / Join2',
+        module=qualtran.bloqs.bookkeeping.partition,
+        path_stem='split2',
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.partition._SPLIT2_DOC,
+            qualtran.bloqs.bookkeeping.partition._JOIN2_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Alloc / Free',
+        module=qualtran.bloqs.bookkeeping.allocate,
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.allocate._ALLOC_DOC,
+            qualtran.bloqs.bookkeeping.free._FREE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Partition',
+        module=qualtran.bloqs.bookkeeping.partition,
+        bloq_specs=[
+            qualtran.bloqs.bookkeeping.partition._PARTITION_DOC,
+            qualtran.bloqs.bookkeeping.auto_partition._AUTO_PARTITION_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Cast',
+        module=qualtran.bloqs.bookkeeping.cast,
+        bloq_specs=[qualtran.bloqs.bookkeeping.cast._CAST_DOC],
+    ),
+    NotebookSpecV2(
+        title='Always',
+        module=qualtran.bloqs.bookkeeping.always,
+        bloq_specs=[qualtran.bloqs.bookkeeping.always._ALWAYS_DOC],
+    ),
+]
+
 # --------------------------------------------------------------------------
 # -----   Other   ----------------------------------------------------------
 # --------------------------------------------------------------------------
@@ -1011,5 +1052,6 @@ NB_BY_SECTION = [
     ('Rotations', ROT_QFT_PE),
     ('Block Encoding', BLOCK_ENCODING),
     ('Optimization', OPTIMIZATION),
+    ('Bookkeeping', BOOKKEEPING),
     ('Other', OTHER),
 ]

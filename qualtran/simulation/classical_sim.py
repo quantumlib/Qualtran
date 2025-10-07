@@ -34,11 +34,14 @@ import networkx as nx
 import numpy as np
 import sympy
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from qualtran import (
     Bloq,
     BloqInstance,
     DanglingT,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -301,31 +304,49 @@ class ClassicalSimState:
                 soq = Soquet(binst, reg)
                 self.soq_assign[soq] = val
 
-    def _binst_on_classical_vals(self, binst, in_vals) -> None:
-        """Call `on_classical_vals` on a given bloq instance."""
-        bloq = binst.bloq
+    def _recurse_impl(self, cbloq: 'CompositeBloq', in_vals):
+        """Overridable function to recursively simulate a composite bloq."""
+        out_vals, _ = call_cbloq_classically(cbloq.signature, in_vals, cbloq._binst_graph)
+        phase = None
 
-        out_vals = bloq.on_classical_vals(**in_vals)
-        if not isinstance(out_vals, dict):
-            raise TypeError(
-                f"{bloq.__class__.__name__}.on_classical_vals should return a dictionary."
-            )
-        self._update_assign_from_vals(bloq.signature.rights(), binst, out_vals)
+        return out_vals, phase
 
-    def _binst_basis_state_phase(self, binst, in_vals) -> None:
-        """Call `basis_state_phase` on a given bloq instance.
+    def _recurse(self, binst: 'BloqInstance', in_vals) -> Self:
+        """Recursively simulate a composite bloq.
 
-        This base simulation class will raise an error if the bloq reports any phasing.
-        This method is overwritten in `PhasedClassicalSimState` to support phasing.
+        This handles decomposing the bloq and using the results of the sub-simulation
+        to update the simulator state. Developers should override `_recurse_impl` to
+        customize the sub-simulation.
         """
         bloq = binst.bloq
-        bloq_phase = bloq.basis_state_phase(**in_vals)
+        try:
+            cbloq = bloq.decompose_bloq()
+            out_vals, bloq_phase = self._recurse_impl(cbloq, in_vals)
+
+        except DecomposeTypeError as e:
+            raise NotImplementedError(f"{bloq} is not classically simulable.") from e
+        except DecomposeNotImplementedError as e:
+            raise NotImplementedError(
+                f"{bloq} has no decomposition and does not "
+                f"support classical simulation directly"
+            ) from e
+        except NotImplementedError as e:
+            raise NotImplementedError(f"{bloq} does not support classical simulation: {e}") from e
+
+        self._update(binst, out_vals, bloq_phase)
+        return self
+
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+        """Overridable method to update the current simulator state."""
+        self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
+
         if bloq_phase is not None:
             raise ValueError(
-                f"{bloq} imparts a phase, and can't be simulated purely classically. Consider using `do_phased_classical_simulation`."
+                f"{binst.bloq} imparts a phase of {bloq_phase}, and can't be simulated purely classically. "
+                f"Consider using `do_phased_classical_simulation`."
             )
 
-    def step(self) -> 'ClassicalSimState':
+    def step(self) -> Self:
         """Advance the simulation by one bloq instance.
 
         After calling this method, `self.last_binst` will contain the bloq instance that
@@ -349,11 +370,32 @@ class ClassicalSimState:
             return _get_in_vals(binst, reg, soq_assign=self.soq_assign)
 
         bloq = binst.bloq
+        bcls_name = bloq.__class__.__name__
         in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
+        out_vals = bloq.on_classical_vals(**in_vals)
+        bloq_phase = bloq.basis_state_phase(**in_vals)
 
-        # Apply methods
-        self._binst_on_classical_vals(binst, in_vals)
-        self._binst_basis_state_phase(binst, in_vals)
+        #                     +--+ basis_state_phase
+        #   +- on_classical_vals
+        #   |                 |
+        # dict              None           Use classical values.
+        # dict              number         Use classical values and phase only if doing phased sim
+        # NotImplemented    None           decompose and use the correct simulator type
+        # NotImplemented    number         error
+
+        if out_vals is NotImplemented:
+            if bloq_phase is not None:
+                raise ValueError(
+                    f"`basis_state_phase` defined on {bcls_name}, but not `on_classical_vals`"
+                )
+
+            return self._recurse(binst, in_vals)
+
+        if not isinstance(out_vals, dict):
+            raise TypeError(f"`{bcls_name}.on_classical_vals` should return a dictionary.")
+
+        self._update(binst, out_vals, bloq_phase)
+
         return self
 
     def finalize(self) -> Dict[str, 'ClassicalValT']:
@@ -466,14 +508,19 @@ class PhasedClassicalSimState(ClassicalSimState):
             random_handler=rnd_handler,
         )
 
-    def _binst_basis_state_phase(self, binst, in_vals):
-        """Call `basis_state_phase` on a given bloq instance.
+    def _recurse_impl(self, cbloq, in_vals):
+        """Use phased classical simulation when recursing."""
+        sim = PhasedClassicalSimState(
+            cbloq.signature, cbloq._binst_graph, in_vals, random_handler=self._random_handler
+        )
+        final_vals = sim.simulate()
+        phase = sim.phase
+        return final_vals, phase
 
-        If this method returns a value, the current phase will be updated. Otherwise, we
-        leave the phase as-is.
-        """
-        bloq = binst.bloq
-        bloq_phase = bloq.basis_state_phase(**in_vals)
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+        """Update the current simulator state, including phase tracking."""
+        self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
+
         if isinstance(bloq_phase, MeasurementPhase):
             # In this special case, there is a coupling between the classical result and the
             # phase result (because the classical result is stochastic). We look up the measurement
@@ -554,7 +601,7 @@ def do_phased_classical_simulation(
             assumed to be 1.0.
         rng: A numpy random generator (e.g. from `np.random.default_rng()`). This function
             will use this generator to supply random values from certain phased-classical operations
-            like `MeasX`. If not supplied, classical measurements will use a random value.
+            like `MeasureX`. If not supplied, classical measurements will use a random value.
         fixed_random_vals: A dictionary of instance to values to perform fixed calculation
                 for classical values.
 

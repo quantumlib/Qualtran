@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Mapping, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import galois
@@ -24,6 +24,8 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqDocSpec,
+    CBit,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QGF,
@@ -31,13 +33,14 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import CNOT, Toffoli
-from qualtran.symbolics import ceil, is_symbolic, log2, Shaped, SymbolicInt
+from qualtran.bloqs.basic_gates import CNOT, CZ, Discard, MeasureX, Toffoli
+from qualtran.bloqs.gf_arithmetic import gf_utils
+from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 
 def _data_or_shape_to_tuple(data_or_shape: Union[np.ndarray, Shaped]) -> tuple:
@@ -69,8 +72,47 @@ class SynthesizeLRCircuit(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        n, _ = self.matrix.shape
-        return Signature([Register('q', QBit(), shape=(n,))])
+        return Signature([Register('q', QBit(), shape=(self.n,))])
+
+    @cached_property
+    def n(self) -> SymbolicInt:
+        return self.matrix.shape[0]
+
+    @cached_property
+    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Returns the LUP decomposition of the matrix representing the operation.
+
+        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
+        by a full rank matrix that can be decomposed into PLU where L and U are lower
+        and upper traingular matricies and P is a permutation matrix.
+        """
+        assert isinstance(self.matrix, np.ndarray)
+        P, L, U = GF(2)(self.matrix).plu_decompose()
+        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        assert isinstance(q, np.ndarray)  # make mypy happy
+        L, U, P = self.lup
+        if is_symbolic(self.n):
+            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
+
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if U[i, j]:
+                    q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
+
+        for i in reversed(range(self.n)):
+            for j in reversed(range(i)):
+                if L[i, j]:
+                    q[j], q[i] = bb.add(CNOT(), ctrl=q[j], target=q[i])
+
+        column = [*range(self.n)]
+        for i in range(self.n):
+            for j in range(i + 1, self.n):
+                if P[i, column[j]]:
+                    q[i], q[j] = q[j], q[i]
+                    column[i], column[j] = column[j], column[i]
+        return {'q': q}
 
     def on_classical_vals(self, *, q: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if is_symbolic(self.matrix):
@@ -89,23 +131,20 @@ class SynthesizeLRCircuit(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         n = self.matrix.shape[0]
-        return {CNOT(): ceil(n**2 / log2(n))}
+        if isinstance(self.matrix, Shaped):
+            return {CNOT(): n**2 - n}
+        L, U, _ = self.lup
+        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
+        cnots = np.sum(L) + np.sum(U) - 2 * self.n
+        if cnots:
+            return {CNOT(): cnots}
+        return {}
 
     def adjoint(self) -> 'SynthesizeLRCircuit':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-
-def _qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
-    if isinstance(x, QGF):
-        return x
-    if isinstance(x, int):
-        return QGF(2, x)
-    if is_symbolic(x):
-        return QGF(2, x)
-    if isinstance(x, Poly):
-        return QGF(2, x.degree, x)
-    p = Poly.Degrees(x)
-    return QGF(2, p.degree, p)
+    def __str__(self):
+        return f'{self.__class__.__name__}†' if self.is_adjoint else f'{self.__class__.__name__}'
 
 
 @attrs.frozen
@@ -151,7 +190,7 @@ class GF2Multiplication(Bloq):
         over GF(2m)](https://ieeexplore.ieee.org/abstract/document/1306989)
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     plus_equal_prod: bool = False
 
     @cached_property
@@ -168,21 +207,6 @@ class GF2Multiplication(Bloq):
     @cached_property
     def bitsize(self) -> SymbolicInt:
         return self.qgf.bitsize
-
-    @cached_property
-    def reduction_matrix_q(self) -> np.ndarray:
-        m = int(self.bitsize)
-        f = self.qgf.gf_type.irreducible_poly
-        M = np.zeros((m, m))
-        alpha = [1] + [0] * m
-        for i in range(m - 1):
-            # x ** (m + i) % f
-            coeffs = (Poly(alpha, GF(2)) % f).coeffs.tolist()[::-1]
-            coeffs = coeffs + [0] * (m - len(coeffs))
-            M[i] = coeffs
-            alpha += [0]
-        M[m - 1][m - 1] = 1
-        return np.transpose(M)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
@@ -259,6 +283,110 @@ _GF2_MULTIPLICATION_DOC = BloqDocSpec(
 
 
 @attrs.frozen
+class Parity(Bloq):
+    n: int
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', dtype=CBit(), shape=(self.n,)),
+                Register('parity', dtype=CBit(), side=Side.RIGHT),
+            ]
+        )
+
+    def on_classical_vals(
+        self, *, x: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Mapping[str, 'ClassicalValRetT']:
+        assert isinstance(x, np.ndarray)
+        return {'x': x, 'parity': np.sum(x, dtype=int) & 1}
+
+
+@attrs.frozen
+class GF2MulMBUC(Bloq):
+    r"""Measurement based uncomputation of out of place multiplication over GF($2^m$).
+
+    Args:
+        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
+            qubits in each of the two input registers $a$ and $b$ that should be multiplied.
+
+    Registers:
+        x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
+        y: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
+        result: Register of size $m$ that stores the product $x * y$ in $GF(2^m)$.
+    """
+
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', dtype=self.qgf),
+                Register('y', dtype=self.qgf),
+                Register('result', dtype=self.qgf, side=Side.LEFT),
+            ]
+        )
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.bitsize
+
+    @cached_property
+    def reduction_matrix_q(self) -> np.ndarray:
+        m = int(self.bitsize)
+        f = self.qgf.gf_type.irreducible_poly
+        M = np.zeros((m, m), dtype=int)
+        alpha = [1] + [0] * m
+        for i in range(m):
+            # x ** (m + i) % f
+            coeffs = (Poly(alpha, GF(2)) % f).coeffs.tolist()[::-1]
+            coeffs = coeffs + [0] * (m - len(coeffs))
+            M[i] = coeffs
+            alpha += [0]
+        return np.transpose(M)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'Soquet') -> Dict[str, 'Soquet']:
+        if is_symbolic(self.bitsize):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
+        x, y, result = soqs['x'], soqs['y'], soqs['result']
+        x, y, result = bb.split(x)[::-1], bb.split(y)[::-1], bb.split(result)[::-1]
+        result = np.array([bb.add(MeasureX(), q=q) for q in result])
+        m = int(self.bitsize)
+
+        # Inverse of Step-3: Multiply Monomials
+        ctrl_cz = CZ().controlled(CtrlSpec(qdtypes=[CBit()]))
+        for i in range(m):
+            for j in range(i + 1):
+                result[i], x[j], y[i - j] = bb.add(ctrl_cz, ctrl=result[i], q1=x[j], q2=y[i - j])
+
+        # Inverse of Step-1 & 2: Multiply Monomials.
+        for i in range(m):
+            inp_vec = GF(2).Zeros(m)
+            inp_vec[i] = 1
+            out_vec = GF(2)(self.reduction_matrix_q) @ inp_vec
+            indices = [k for k in range(m) if out_vec[k]]
+            result[indices], parity = bb.add(Parity(len(indices)), x=result[indices])
+            for j in range(i + 1, m):
+                parity, x[m - j + i], y[j] = bb.add(ctrl_cz, ctrl=parity, q1=x[m - j + i], q2=y[j])
+            bb.add(Discard(), c=parity)
+
+        # Done :)
+        for c in result:
+            bb.add(Discard(), c=c)
+        return {'x': bb.join(x[::-1], dtype=self.qgf), 'y': bb.join(y[::-1], dtype=self.qgf)}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        m = self.bitsize
+        return {CZ(): m**2}
+
+    def adjoint(self) -> 'Bloq':
+        return GF2MulViaKaratsuba(self.qgf)
+
+
+@attrs.frozen
 class GF2MulK(Bloq):
     r"""Multiply by constant $f(x)$ modulo $m(x)$. Both $f(x)$ and $m(x)$ are constants.
 
@@ -289,8 +417,8 @@ class GF2MulK(Bloq):
         return self.dtype.gf_type.irreducible_poly
 
     @cached_property
-    def n(self) -> int:
-        return self.m_x.degree
+    def n(self) -> SymbolicInt:
+        return self.dtype.bitsize
 
     @cached_property
     def qgf(self) -> QGF:
@@ -308,21 +436,15 @@ class GF2MulK(Bloq):
         return GF2MulK(dtype=qgf, const=sum(2 ** int(i) for i in f_x.nonzero_degrees))
 
     @cached_property
-    def lup(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Returns the LUP decomposition of the matrix representing the operation.
-
-        If m_x is irreducible, then the operation y := (y*f_x)%m_x can be represented
-        by a full rank matrix that can be decomposed into PLU where L and U are lower
-        and upper traingular matricies and P is a permutation matrix.
-        """
-        n = self.n
+    def reduction_matrix_q(self) -> np.ndarray:
+        """Returns the matrix representing the operation."""
+        n = int(self.n)
         matrix = np.zeros((n, n), dtype=int)
         for i in range(n):
             p = self._const * self.galois_field(2**i)
             for j, v in enumerate(reversed(self.qgf.to_bits(p))):
                 matrix[j, i] = v
-        P, L, U = GF(2)(matrix).plu_decompose()
-        return np.asarray(L, dtype=int), np.asarray(U, dtype=int), np.asarray(P, dtype=int)
+        return matrix
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -336,28 +458,9 @@ class GF2MulK(Bloq):
         return {'g': g * self._const}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', g: 'Soquet') -> Dict[str, 'SoquetT']:
-        L, U, P = self.lup
-        if is_symbolic(self.n):
-            raise DecomposeTypeError(f"Symbolic decomposition isn't supported for {self}")
-
         g_arr = bb.split(g)
         g_arr = g_arr[::-1]
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
-                if U[i, j]:
-                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
-
-        for i in reversed(range(self.n)):
-            for j in reversed(range(i)):
-                if L[i, j]:
-                    g_arr[j], g_arr[i] = bb.add(CNOT(), ctrl=g_arr[j], target=g_arr[i])
-
-        column = [*range(self.n)]
-        for i in range(self.n):
-            for j in range(i + 1, self.n):
-                if P[i, column[j]]:
-                    g_arr[i], g_arr[j] = g_arr[j], g_arr[i]
-                    column[i], column[j] = column[j], column[i]
+        g_arr = bb.add(SynthesizeLRCircuit(self.reduction_matrix_q), q=g_arr)
         g_arr = g_arr[::-1]
         g = bb.join(g_arr, dtype=self.qgf)
         return {'g': g}
@@ -365,12 +468,7 @@ class GF2MulK(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        L, U, _ = self.lup
-        # The number of cnots is the number of non zero off-diagnoal entries in L and U.
-        cnots = np.sum(L) + np.sum(U) - 2 * self.n
-        if cnots:
-            return {CNOT(): cnots}
-        return {}
+        return {SynthesizeLRCircuit(self.reduction_matrix_q): 1}
 
 
 @bloq_example
@@ -681,7 +779,7 @@ class GF2ShiftLeft(Bloq):
         f: The number (polynomial) to shift.
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     k: SymbolicInt = 1
 
     @cached_property
@@ -774,7 +872,7 @@ class GF2ShiftRight(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Section 3.1
     """
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
     k: SymbolicInt = 1
 
     @cached_property
@@ -847,7 +945,7 @@ _GF2_SHIFT_RIGHT_MOD_DOC = BloqDocSpec(bloq_cls=GF2ShiftRight, examples=(_gf2shi
 class _GF2MulViaKaratsubaImpl(Bloq):
     """Multiply two GF2 numbers (or binary polynomials) using quantum karatsuba algorithm."""
 
-    qgf: QGF = attrs.field(converter=_qgf_converter)
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
     def n(self):
@@ -950,7 +1048,6 @@ class GF2MulViaKaratsuba(Bloq):
 
     Args:
         m_x: The irreducible polynomial that defines the galois field.
-        uncompute: Whether to compute or uncompute the product.
 
     Registers:
         x: A TRHU register representing the first number (or polynomial).
@@ -962,20 +1059,19 @@ class GF2MulViaKaratsuba(Bloq):
             sub-quadratic Toffoli gate count](https://arxiv.org/abs/1910.02849v2) Algorithm 4.
     """
 
-    dtype: QGF = attrs.field(converter=_qgf_converter)
-    uncompute: bool = False
+    dtype: QGF = attrs.field(converter=gf_utils.qgf_converter)
 
     @cached_property
     def m_x(self):
         return self.dtype.gf_type.irreducible_poly
 
     def __attrs_post_init__(self):
-        if self.m_x.degree < 2:
+        if not is_symbolic(self.dtype) and self.m_x.degree < 2:
             raise ValueError(f'GF2MulViaKaratsuba is not supported for {self.m_x}')
 
     @cached_property
-    def n(self):
-        return int(self.m_x.degrees.max())
+    def n(self) -> SymbolicInt:
+        return self.dtype.bitsize
 
     @cached_property
     def gf(self):
@@ -985,18 +1081,16 @@ class GF2MulViaKaratsuba(Bloq):
     def qgf(self):
         return self.dtype
 
-    def adjoint(self) -> 'GF2MulViaKaratsuba':
-        return attrs.evolve(self, uncompute=not self.uncompute)
+    def __str__(self):
+        return f'{self.__class__.__name__}'
 
     @cached_property
     def signature(self) -> 'Signature':
-        # C is directional
-        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
                 Register('x', dtype=self.qgf),
                 Register('y', dtype=self.qgf),
-                Register('result', dtype=self.qgf, side=side),
+                Register('result', dtype=self.qgf, side=Side.RIGHT),
             ]
         )
 
@@ -1010,8 +1104,6 @@ class GF2MulViaKaratsuba(Bloq):
     @cached_property
     def _GF2MulViaKaratsubamod_impl(self) -> Bloq:
         impl = _GF2MulViaKaratsubaImpl(self.m_x)
-        if self.uncompute:
-            return impl.adjoint()
         return impl
 
     def build_composite_bloq(
@@ -1020,25 +1112,21 @@ class GF2MulViaKaratsuba(Bloq):
         if is_symbolic(self.k, self.n):
             raise DecomposeTypeError(f"Symbolic Decomposition is not supported for {self}")
 
-        if self.uncompute:
-            result = soqs['result']
-        else:
-            result = bb.allocate(self.n, self.qgf)
+        result = bb.allocate(self.n, self.qgf)
 
         x, y, result = bb.add_from(self._GF2MulViaKaratsubamod_impl, f=x, g=y, h=result)
-
-        if self.uncompute:
-            bb.free(result)  # type: ignore[arg-type]
-            return {'x': x, 'y': y}
 
         return {'x': x, 'y': y, 'result': result}
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        if is_symbolic(self.n):
+            return {Toffoli(): self.n ** (log2(3)), CNOT(): self.n**2}
+
         if self.n == 1:
             return {Toffoli(): 1}
-        if not is_symbolic(self.n) and 2 * self.k == self.n:
+        if 2 * self.k == self.n:
             return {
                 CNOT(): 4 * (self.n - self.k),
                 BinaryPolynomialMultiplication(self.k): 3,
@@ -1060,10 +1148,10 @@ class GF2MulViaKaratsuba(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.gf)
         assert isinstance(y, self.gf)
-        if self.uncompute:
-            assert x * y == result
-            return {'x': x, 'y': y}
         return {'x': x, 'y': y, 'result': x * y}
+
+    def adjoint(self) -> 'Bloq':
+        return GF2MulMBUC(self.qgf)
 
 
 @bloq_example

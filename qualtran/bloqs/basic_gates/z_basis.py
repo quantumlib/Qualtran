@@ -268,6 +268,15 @@ class ZGate(Bloq):
             )
         ]
 
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        # Diagonal, but causes phases: see `basis_state_phase`
+        return vals
+
+    def basis_state_phase(self, q: int) -> Optional[complex]:
+        if q == 1:
+            return -1
+        return 1
+
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             # Delegate to the general superclass behavior
@@ -320,8 +329,8 @@ class CZ(Bloq):
     """Two-qubit controlled-Z gate.
 
     Registers:
-        ctrl: One-bit control register.
-        target: One-bit target register.
+        q1: One-bit control register.
+        q2: One-bit target register.
     """
 
     @cached_property
@@ -392,7 +401,7 @@ _CZ_DOC = BloqDocSpec(bloq_cls=CZ, examples=[_cz], call_graph_example=None)
 
 
 @frozen
-class MeasZ(Bloq):
+class MeasureZ(Bloq):
     """Measure a qubit in the Z basis.
 
     Registers:
@@ -427,6 +436,15 @@ class MeasZ(Bloq):
             tags=[str(self)],
         )
         return [t, DiscardInd((meas_result, 0))]
+
+
+@bloq_example
+def _meas_z() -> MeasureZ:
+    meas_z = MeasureZ()
+    return meas_z
+
+
+_MEASURE_Z_DOC = BloqDocSpec(bloq_cls=MeasureZ, examples=[_meas_z])
 
 
 @frozen

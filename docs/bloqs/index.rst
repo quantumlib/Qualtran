@@ -41,11 +41,11 @@ Bloqs Library
     basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
+    basic_gates/measurement.ipynb
     basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
-    bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
     mcmt/controlled_via_and.ipynb
 
@@ -162,6 +162,17 @@ Bloqs Library
     optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb
     optimization/k_xor_sat/kikuchi_block_encoding.ipynb
     optimization/k_xor_sat/planted_noisy_kxor.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Bookkeeping:
+
+    bookkeeping/split.ipynb
+    bookkeeping/split2.ipynb
+    bookkeeping/allocate.ipynb
+    bookkeeping/partition.ipynb
+    bookkeeping/cast.ipynb
+    bookkeeping/always.ipynb
 
 .. toctree::
     :maxdepth: 2
