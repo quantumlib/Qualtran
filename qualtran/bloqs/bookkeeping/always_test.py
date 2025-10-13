@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
+
 from qualtran.bloqs.bookkeeping.always import _always_and, Always
 from qualtran.bloqs.for_testing import TestAtom
+from qualtran.testing import execute_notebook
 
 
 def test_example(bloq_autotester):
@@ -22,3 +25,8 @@ def test_example(bloq_autotester):
 def test_always():
     bloq = Always(TestAtom())
     assert bloq.controlled() == bloq
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('always')
