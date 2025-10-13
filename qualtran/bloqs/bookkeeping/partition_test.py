@@ -144,5 +144,5 @@ def test_notebook():
 
 
 @pytest.mark.notebook
-def test_notebook():
+def test_split2_notebook():
     execute_notebook('split2')
