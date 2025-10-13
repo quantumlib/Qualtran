@@ -440,12 +440,12 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
         other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
         if self.ctrl_spec.is_active(*ctrl_vals):
-            rets = {
-                **self.subbloq.on_classical_vals(**other_vals),
-                **{
-                    reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
-                },
-            }
+            rets = self.subbloq.on_classical_vals(**other_vals)
+            if rets is NotImplemented:
+                return NotImplemented
+            rets |= {
+                reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
+            }  # type: ignore[operator]
             return rets
 
         return vals

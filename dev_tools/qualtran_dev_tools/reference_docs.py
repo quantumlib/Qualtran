@@ -88,6 +88,7 @@ def mixin_custom_template(template_name: str) -> Type:
         JINJA_ENV = jinja2.Environment(
             trim_blocks=True,
             lstrip_blocks=True,
+            autoescape=True,
             loader=jinja2.FileSystemLoader(TEMPLATE_SEARCH_PATH),
         )
 

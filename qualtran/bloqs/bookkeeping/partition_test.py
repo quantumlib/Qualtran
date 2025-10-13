@@ -24,10 +24,10 @@ from qualtran import Bloq, BloqBuilder, QAny, QGF, Register, Signature, Soquet, 
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.bookkeeping import Partition
-from qualtran.bloqs.bookkeeping.partition import _partition
+from qualtran.bloqs.bookkeeping.partition import _join2, _partition, _split2
 from qualtran.bloqs.for_testing import TestMultiRegister
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def test_partition(bloq_autotester):
@@ -128,3 +128,21 @@ def test_partition_call_classically_gf():
         xx, yy = partition.call_classically(x=x)
         assert isinstance(xx, dtypes[0].gf_type) and isinstance(yy, dtypes[1].gf_type)
         assert (x,) == unpartition.call_classically(xx=xx, yy=yy)
+
+
+def test_split2(bloq_autotester):
+    bloq_autotester(_split2)
+
+
+def test_join2(bloq_autotester):
+    bloq_autotester(_join2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('partition')
+
+
+@pytest.mark.notebook
+def test_split2_notebook():
+    execute_notebook('split2')

@@ -281,6 +281,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.bookkeeping.always.Always": qualtran.bloqs.bookkeeping.always.Always,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
     "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
+    "qualtran.bloqs.bookkeeping.partition.Split2": qualtran.bloqs.bookkeeping.partition.Split2,
+    "qualtran.bloqs.bookkeeping.partition.Join2": qualtran.bloqs.bookkeeping.partition.Join2,
     "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,
     "qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs": qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs,
     "qualtran.bloqs.chemistry.black_boxes.QROAM": qualtran.bloqs.chemistry.black_boxes.QROAM,
