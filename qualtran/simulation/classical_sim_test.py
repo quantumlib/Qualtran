@@ -15,6 +15,7 @@
 import itertools
 from typing import Dict, Union
 
+import attrs
 import networkx as nx
 import numpy as np
 import pytest
@@ -38,8 +39,8 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _BannedClassicalValHandler,
     _FixedClassicalValHandler,
@@ -153,6 +154,8 @@ def test_normal_classical_on_phased():
 
 
 def test_cnot_assign_dict():
+    from qualtran.bloqs.basic_gates import CNOT
+
     cbloq = CNOT().as_composite_bloq()
     binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
     vals = dict(ctrl=1, target=0)
@@ -338,3 +341,38 @@ def test_phased_classical_distribution():
     )
     assert final_values['c'] == 1
     assert phase == 1
+
+
+@attrs.frozen
+class ComposedPhasing(Bloq):
+    n: int = 0
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QBit(), side=Side.RIGHT)])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        from qualtran.bloqs.basic_gates import OneState, ZGate
+
+        x = bb.add(OneState())
+        for _ in range(self.n):
+            x = bb.add(ZGate(), q=x)
+        return {'x': x}
+
+
+def test_derive_phasing_from_composed_bloq():
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(0), {})
+    assert vals == {'x': 1}
+    assert phase == +1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(1), {})
+    assert vals == {'x': 1}
+    assert phase == -1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(2), {})
+    assert vals == {'x': 1}
+    assert phase == +1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(3), {})
+    assert vals == {'x': 1}
+    assert phase == -1.0

@@ -18,6 +18,7 @@ import attrs
 import numpy as np
 from galois import GF, Poly
 
+import qualtran.bloqs.gf_arithmetic.gf_utils as gf_utils
 from qualtran import Bloq, bloq_example, BloqDocSpec, DecomposeTypeError, QGF, Register, Signature
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import SynthesizeLRCircuit
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicInt
@@ -36,7 +37,7 @@ class GF2Square(Bloq):
     from GF($2^m$). Specifically, it implements the transformation
 
     $$
-        |a\rangle \rightarrow |a^2\rangle
+        |a\rangle \rightarrow |a^(2k)\rangle
     $$
 
     The key insight is that for elements in GF($2^m$),
@@ -47,29 +48,32 @@ class GF2Square(Bloq):
     Thus, squaring can be implemented via a linear reversible circuit using only CNOT gates.
 
     Args:
-        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
-            qubits in the input register to be squared.
+        qgf: QGF type of the register.
+        k: The number of times to apply the squaring operation.
+        uncompute: Whether this bloq is the adjoint or forward computation.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
     """
 
-    bitsize: SymbolicInt
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
+    k: int = 1
+    uncompute: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', dtype=self.qgf)])
 
     @cached_property
-    def qgf(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.degree
 
     @cached_property
     def squaring_matrix(self) -> np.ndarray:
         r"""$m \times m$ matrix that maps the input $x^{i}$ to $x^{2 * i} % P(x)$"""
         m = int(self.bitsize)
         f = self.qgf.gf_type.irreducible_poly
-        M = np.zeros((m, m))
+        M = np.zeros((m, m), dtype=int)
         alpha = [0] * m
         for i in range(m):
             # x ** (2 * i) % f
@@ -78,16 +82,27 @@ class GF2Square(Bloq):
             coeffs = coeffs + [0] * (m - len(coeffs))
             M[i] = coeffs
             alpha[-i - 1] = 0
-        return np.transpose(M)
+        M = np.transpose(M)
+        R = np.eye(m, dtype=int)
+        e = self.k
+        while e > 1:
+            if e & 1:
+                R = (R @ R) % 2
+            M = (M @ M) % 2
+            e >>= 1
+        return (M @ R) % 2
 
     @cached_property
     def synthesize_squaring_matrix(self) -> SynthesizeLRCircuit:
         m = self.bitsize
-        return (
+        ret = (
             SynthesizeLRCircuit(Shaped((m, m)))
             if is_symbolic(m)
             else SynthesizeLRCircuit(self.squaring_matrix)
         )
+        if self.uncompute:
+            ret = ret.adjoint()
+        return ret
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'Soquet']:
         if is_symbolic(self.bitsize):
@@ -102,9 +117,17 @@ class GF2Square(Bloq):
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         return {self.synthesize_squaring_matrix: 1}
 
+    def adjoint(self):
+        return attrs.evolve(self, uncompute=not self.uncompute)
+
     def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
-        return {'x': x**2}
+        if self.uncompute:
+            for _ in range(self.k):
+                x = np.sqrt(x)
+        else:
+            x = x ** (2**self.k)
+        return {'x': x}
 
 
 @bloq_example

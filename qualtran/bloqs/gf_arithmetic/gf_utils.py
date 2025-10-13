@@ -11,22 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
+from typing import Sequence, Union
 
-from qualtran.bloqs.bookkeeping.always import _always_and, Always
-from qualtran.bloqs.for_testing import TestAtom
-from qualtran.testing import execute_notebook
+from galois import Poly
 
-
-def test_example(bloq_autotester):
-    bloq_autotester(_always_and)
+from qualtran import QGF
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
-def test_always():
-    bloq = Always(TestAtom())
-    assert bloq.controlled() == bloq
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('always')
+def qgf_converter(x: Union[QGF, int, Poly, SymbolicInt, Sequence[int]]) -> QGF:
+    if isinstance(x, QGF):
+        return x
+    if isinstance(x, int):
+        return QGF(2, x)
+    if is_symbolic(x):
+        return QGF(2, x)
+    if isinstance(x, Poly):
+        return QGF(2, x.degree, x)
+    p = Poly.Degrees(x)
+    return QGF(2, p.degree, p)
