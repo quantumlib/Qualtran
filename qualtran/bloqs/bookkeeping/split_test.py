@@ -21,6 +21,7 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.bookkeeping import Split
 from qualtran.bloqs.bookkeeping.split import _split
 from qualtran.simulation.classical_sim import call_cbloq_classically
+from qualtran.testing import execute_notebook
 
 
 def test_split(bloq_autotester):
@@ -77,3 +78,8 @@ def test_classical_sim_dtypes():
 
     with pytest.raises(ValueError):
         _ = s.call_classically(reg=np.uint16(256))
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('split')
