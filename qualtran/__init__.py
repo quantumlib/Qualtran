@@ -68,6 +68,7 @@ from ._infra.data_types import (
     QFxp,
     CFxp,
     QMontgomeryUInt,
+    CMontgomeryUInt,
     QGF,
     QGFPoly,
     QDTypeCheckingSeverity,

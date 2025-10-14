@@ -1187,60 +1187,31 @@ class CFxp(CDType[int]):
 
 
 @attrs.frozen
-class QMontgomeryUInt(QDType):
+class _MontgomeryUInt(BitEncoding[int]):
     r"""Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
         overflow.
 
-    Similar to unsigned integer types in C. Any intended wrap around effect is
-    expected to be handled by the developer. Any QMontgomeryUInt can be treated as a QUInt, but not
-    every QUInt can be treated as a QMontgomeryUInt. Montgomery form is used in order to compute
+    Any MontgomeryUInt can be treated as a UInt, but not
+    every UInt can be treated as a MontgomeryUInt. Montgomery form is used in order to compute
     fast modular multiplication.
-
-    In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
-
-    Conversion to Montgomery form is given by
-    `[x] = (x * r) % p`
-
-    Conversion from Montgomery form to normal form is given by
-    `x = REDC([x])`
-
-    Pseudocode for REDC(u) can be found in the resource below.
-
-    Args:
-        bitsize: The number of qubits used to represent the integer.
-
-    References:
-        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication).
-
-        [Performance Analysis of a Repetition Cat Code Architecture: Computing 256-bit Elliptic Curve Logarithm in 9 Hours with 126133 Cat Qubits](https://arxiv.org/abs/2302.06639).
-        Gouzien et al. 2023.
-        We follow Montgomery form as described in the above paper; namely, r = 2^bitsize.
     """
 
     bitsize: SymbolicInt
     modulus: Optional[SymbolicInt] = None
 
-    @property
-    def num_qubits(self):
-        return self.bitsize
-
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.bitsize)
-
-    def get_classical_domain(self) -> Iterable[Any]:
+    def get_domain(self) -> Iterable[int]:
         if self.modulus is None or is_symbolic(self.modulus):
             return range(2**self.bitsize)
         return range(1, int(self.modulus))
 
     def to_bits(self, x: int) -> List[int]:
-        self.assert_valid_classical_val(x)
+        self.assert_valid_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
     def from_bits(self, bits: Sequence[int]) -> int:
         return int("".join(str(x) for x in bits), 2)
 
-    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
         if val < 0:
@@ -1248,9 +1219,9 @@ class QMontgomeryUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(
+    def assert_valid_val_array(
         self, val_array: NDArray[np.integer], debug_str: str = 'val'
-    ):
+    ) -> None:
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
@@ -1294,6 +1265,110 @@ class QMontgomeryUInt(QDType):
         """
         assert self.modulus is not None and not is_symbolic(self.modulus)
         return (x * pow(2, int(self.bitsize), int(self.modulus))) % self.modulus
+
+
+@attrs.frozen
+class QMontgomeryUInt(QDType[int]):
+    r"""Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
+        overflow.
+
+    Similar to unsigned integer types in C. Any intended wrap around effect is
+    expected to be handled by the developer. Any QMontgomeryUInt can be treated as a QUInt, but not
+    every QUInt can be treated as a QMontgomeryUInt. Montgomery form is used in order to compute
+    fast modular multiplication.
+
+    In order to convert an unsigned integer from a finite field x % p into Montgomery form you
+    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
+
+    Conversion to Montgomery form is given by
+    `[x] = (x * r) % p`
+
+    Conversion from Montgomery form to normal form is given by
+    `x = REDC([x])`
+
+    Pseudocode for REDC(u) can be found in the resource below.
+
+    Args:
+        bitsize: The number of qubits used to represent the integer.
+        modulus: The modulus p.
+
+    References:
+        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication).
+
+        [Performance Analysis of a Repetition Cat Code Architecture: Computing 256-bit Elliptic Curve Logarithm in 9 Hours with 126133 Cat Qubits](https://arxiv.org/abs/2302.06639).
+        Gouzien et al. 2023.
+        We follow Montgomery form as described in the above paper; namely, r = 2^bitsize.
+    """
+
+    bitsize: SymbolicInt
+    modulus: Optional[SymbolicInt] = None
+
+    @cached_property
+    def _bit_encoding(self) -> _MontgomeryUInt:
+        return _MontgomeryUInt(self.bitsize, self.modulus)
+
+    def montgomery_inverse(self, xm: int) -> int:
+        """Returns the modular inverse of an integer in montgomery form.
+
+        Args:
+            xm: An integer in montgomery form.
+        """
+        return self._bit_encoding.montgomery_inverse(xm)
+
+    def montgomery_product(self, xm: int, ym: int) -> int:
+        """Returns the modular product of two integers in montgomery form.
+
+        Args:
+            xm: The first montgomery form integer for the product.
+            ym: The second montgomery form integer for the product.
+        """
+        return self._bit_encoding.montgomery_product(xm, ym)
+
+    def montgomery_to_uint(self, xm: int) -> int:
+        """Converts an integer in montgomery form to a normal form integer.
+
+        Args:
+            xm: An integer in montgomery form.
+        """
+        return self._bit_encoding.montgomery_to_uint(xm)
+
+    def uint_to_montgomery(self, x: int) -> int:
+        """Converts an integer into montgomery form.
+
+        Args:
+            x: An integer.
+        """
+        return self._bit_encoding.uint_to_montgomery(x)
+
+    def __str__(self):
+        if self.modulus is not None:
+            modstr = f', {self.modulus}'
+        else:
+            modstr = ''
+        return f'{self.__class__.__name__}({self.bitsize}{modstr})'
+
+
+@attrs.frozen
+class CMontgomeryUInt(CDType[int]):
+    r"""Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
+        overflow.
+
+    This is a classical version of QMontgomeryUInt. See the documentation for that class.
+    """
+
+    bitsize: SymbolicInt
+    modulus: Optional[SymbolicInt] = None
+
+    @cached_property
+    def _bit_encoding(self) -> _MontgomeryUInt:
+        return _MontgomeryUInt(self.bitsize, self.modulus)
+
+    def __str__(self):
+        if self.modulus is not None:
+            modstr = f', {self.modulus}'
+        else:
+            modstr = ''
+        return f'{self.__class__.__name__}({self.bitsize}{modstr})'
 
 
 def _poly_converter(p) -> Union[galois.Poly, None]:
