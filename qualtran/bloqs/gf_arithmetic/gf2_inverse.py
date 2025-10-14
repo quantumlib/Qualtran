@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import cast, Dict, Set, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
 
+import qualtran.bloqs.gf_arithmetic.gf_utils as gf_utils
 from qualtran import (
     Bloq,
     bloq_example,
@@ -28,10 +30,10 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba, SynthesizeLRCircuit
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
-from qualtran.symbolics import bit_length, ceil, is_symbolic, log2, SymbolicInt
+from qualtran.symbolics import bit_length, is_symbolic, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
@@ -69,8 +71,7 @@ class GF2Inverse(Bloq):
     where $B_1 = x$ and $B_{i+j} = B_i B_j^{2^i}$.
 
     Args:
-        bitsize: The degree $m$ of the galois field $GF(2^m)$. Also corresponds to the number of
-            qubits in the input register whose inverse should be calculated.
+        qgf: QGF type of the registers.
 
     Registers:
         x: Input THRU register of size $m$ that stores elements from $GF(2^m)$.
@@ -84,9 +85,26 @@ class GF2Inverse(Bloq):
 
         [Structure of parallel multipliers for a class of fields GF(2^m)](https://doi.org/10.1016/0890-5401(89)90045-X).
         Itoh and Tsujii. 1989.
+
+        [Concrete quantum cryptanalysisof binary elliptic curves](https://tches.iacr.org/index.php/TCHES/article/view/8741/8341)
+        Algorithm 2.
     """
 
-    bitsize: SymbolicInt
+    qgf: QGF = attrs.field(converter=gf_utils.qgf_converter)
+
+    def __init__(self, qgf=None, bitsize=None):
+        if not ((qgf is None) ^ (bitsize is None)):
+            raise TypeError("Exactly one of `qgf` or `bitsize` should be specified.")
+        if qgf is not None:
+            qgf = gf_utils.qgf_converter(qgf)
+        if bitsize is not None:
+            warnings.warn(
+                "The `bitsize` attribute is deprecated. Use `qgf` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            qgf = gf_utils.qgf_converter(bitsize)
+        object.__setattr__(self, 'qgf', qgf)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -104,12 +122,14 @@ class GF2Inverse(Bloq):
         )
 
     @cached_property
-    def qgf(self) -> QGF:
-        return QGF(characteristic=2, degree=self.bitsize)
+    def bitsize(self) -> SymbolicInt:
+        return self.qgf.degree
 
     @cached_property
     def n_junk_regs(self) -> SymbolicInt:
-        return 2 * bit_length(self.bitsize - 1) + self.bitsize_hamming_weight
+        if is_symbolic(self.bitsize):
+            return 2 * bit_length(self.bitsize - 1) - 2
+        return bit_length(self.bitsize - 1) - 2 + max(self.bitsize_hamming_weight - 1, 1)
 
     @cached_property
     def bitsize_hamming_weight(self) -> SymbolicInt:
@@ -129,86 +149,110 @@ class GF2Inverse(Bloq):
 
         return NotImplemented
 
+    @cached_property
+    def _bits(self) -> list[int]:
+        k1 = bit_length(self.bitsize - 1) - 1
+        return [-1] + [k1 - i for i, b in enumerate(np.binary_repr(self.bitsize - 1)) if b == '1']
+
+    @cached_property
+    def gf2_multiplier(self) -> Bloq:
+        return GF2MulViaKaratsuba(self.qgf)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
 
-        result = bb.allocate(dtype=self.qgf)
         if self.bitsize == 1:
-            x, result = bb.add(GF2Addition(self.bitsize), x=x, y=result)
+            result = bb.allocate(dtype=self.qgf)
+            x, result = bb.add(GF2Addition(self.qgf), x=x, y=result)
             return {'x': x, 'result': result}
 
-        junk = []
-        beta = bb.allocate(dtype=self.qgf)
-        x, beta = bb.add(GF2Addition(self.bitsize), x=x, y=beta)
-        is_first = True
-        bitsize_minus_one = int(self.bitsize - 1)
-        for i in range(bitsize_minus_one.bit_length()):
-            if (1 << i) & bitsize_minus_one:
-                if is_first:
-                    beta, result = bb.add(GF2Addition(self.bitsize), x=beta, y=result)
-                    is_first = False
-                else:
-                    for j in range(2**i):
-                        result = bb.add(GF2Square(self.bitsize), x=result)
-                    beta, result, new_result = bb.add(
-                        GF2Multiplication(self.bitsize), x=beta, y=result
-                    )
-                    junk.append(result)
-                    result = new_result
-            beta_squared = bb.allocate(dtype=self.qgf)
-            beta, beta_squared = bb.add(GF2Addition(self.bitsize), x=beta, y=beta_squared)
-            for j in range(2**i):
-                beta_squared = bb.add(GF2Square(self.bitsize), x=beta_squared)
-            beta, beta_squared, beta_new = bb.add(
-                GF2Multiplication(self.bitsize), x=beta, y=beta_squared
+        t = (self.bitsize - 1).bit_count()
+        k1 = bit_length(self.bitsize - 1) - 1
+        k = max(k1 + t - 1, k1 + 1)
+        f = [x] + [None] * k
+        f[k] = bb.allocate(self.bitsize, self.qgf)
+        f = cast(list['Soquet'], f)
+        for i in range(1, k1 + 1):
+            f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
+            f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)), x=f[k])
+            f[i - 1], f[k], f[i] = bb.add(self.gf2_multiplier, x=f[i - 1], y=f[k])
+            f[k] = bb.add(GF2Square(self.qgf, 2 ** (i - 1)).adjoint(), x=f[k])
+            f[i - 1], f[k] = bb.add(GF2Addition(self.qgf), x=f[i - 1], y=f[k])
+        bits = self._bits
+        if k1 + t - 1 == k:
+            bb.free(f[k])
+        for s in range(1, t):
+            f[k1 + s - 1] = bb.add(GF2Square(self.qgf, 2 ** bits[s + 1]), x=f[k1 + s - 1])
+            f[k1 + s - 1], f[bits[s + 1]], f[k1 + s] = bb.add(
+                self.gf2_multiplier, x=f[k1 + s - 1], y=f[bits[s + 1]]
             )
-            junk.extend([beta, beta_squared])
-            beta = beta_new
-        junk.append(beta)
-        result = bb.add(GF2Square(self.bitsize), x=result)
-        assert len(junk) == self.n_junk_regs, f'{len(junk)=}, {self.n_junk_regs=}'
-        return {'x': x, 'result': result, 'junk': np.array(junk)}
+
+        if t == 1:
+            if k1 == 0:
+                assert self.bitsize == 2
+                f[0], f[k] = bb.add(GF2Addition(self.qgf), x=f[0], y=f[k])
+            f[k1], f[k] = f[k], f[k1]
+
+        f[k] = bb.add(GF2Square(qgf=self.qgf), x=f[k])
+
+        return {'x': f[0], 'result': f[k], 'junk': np.array(f[1:k])}
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
-            return {GF2Addition(self.bitsize): 1}
-        square_count = self.bitsize + 2 ** ceil(log2(self.bitsize)) - 1
-        if not is_symbolic(self.bitsize):
-            n = self.bitsize - 1
-            square_count -= n & (-n)
-        return {
-            GF2Addition(self.bitsize): 2 + ceil(log2(self.bitsize)),
-            GF2Square(self.bitsize): square_count,
-            GF2Multiplication(self.bitsize): ceil(log2(self.bitsize))
-            + self.bitsize_hamming_weight
-            - 1,
-        }
+            return {GF2Addition(self.qgf): 1}
+        k1 = bit_length(self.bitsize - 1) - 1
+        if is_symbolic(self.bitsize):
+            t = bit_length(self.bitsize - 1)
+            return {
+                GF2Addition(self.qgf): 2 * k1,
+                self.gf2_multiplier: k1 + t - 1,
+                SynthesizeLRCircuit(Shaped((self.bitsize, self.bitsize))): 2 * k1 + t,
+            }
+
+        t = (self.bitsize - 1).bit_count()
+        bloq_counts: dict[Bloq, int] = (
+            {GF2Square(self.qgf, 2 ** (i - 1)): 1 for i in range(2, k1 + 1)}
+            | {GF2Square(self.qgf, 2 ** (i - 1)).adjoint(): 1 for i in range(1, k1 + 1)}
+            | {GF2Square(self.qgf): 1 + (k1 > 0)}
+        )
+
+        for i in self._bits[2:]:
+            s = GF2Square(self.qgf, 2**i)
+            bloq_counts[s] = bloq_counts.get(s, 0) + 1
+        mul_count = k1 + t - 1
+        if mul_count:
+            bloq_counts[self.gf2_multiplier] = mul_count
+        add_count = 2 * k1 + (self.bitsize == 2)
+        if add_count:
+            bloq_counts[GF2Addition(self.qgf)] = add_count
+        return bloq_counts
 
     def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
-        junk = []
-        bitsize_minus_one = int(self.bitsize - 1)
-        beta = x
-        result = self.qgf.gf_type(0)
-        is_first = True
-        for i in range(bitsize_minus_one.bit_length()):
-            if (1 << i) & bitsize_minus_one:
-                if is_first:
-                    is_first = False
-                    result = beta
-                else:
-                    for j in range(2**i):
-                        result = result**2
-                    junk.append(result)
-                    result = result * beta
-            beta_squared = beta ** (2 ** (2**i))
-            junk.extend([beta, beta_squared])
-            beta = beta * beta_squared
-        junk.append(beta)
-        return {'x': x, 'result': x ** (-1) if x else self.qgf.gf_type(0), 'junk': np.array(junk)}
+        t = (self.bitsize - 1).bit_count()
+        k1 = bit_length(self.bitsize - 1) - 1
+        k = max(k1 + t - 1, k1 + 1)
+        f = [x] + [0] * k
+        for i in range(1, k1 + 1):
+            f[i] = f[i - 1] ** (2 ** (2 ** (i - 1)) + 1)
+        bits = self._bits
+        for s in range(1, t):
+            f[k1 + s - 1] = f[k1 + s - 1] ** (2 ** (2 ** bits[s + 1]))
+            f[k1 + s] = f[k1 + s - 1] * f[bits[s + 1]]
+
+        if t == 1:
+            f[k1], f[k] = f[k], f[k1]
+
+        f[k] = f[k] ** 2
+
+        return {
+            'x': x,
+            'result': x ** (-1) if x else self.qgf.gf_type(0),
+            'junk': np.array(f[1:-1]),
+        }
 
 
 @bloq_example(generalizer=[ignore_split_join, ignore_alloc_free])

@@ -272,19 +272,10 @@ class Bloq(metaclass=abc.ABCMeta):
                 registers with `shape` will be an ndarray of values of the expected type.
 
         Returns:
-            A dictionary mapping right (or thru) register name to output classical values.
+            A dictionary mapping right (or thru) register name to output classical values or
+                NotImplemented if this is not classical-reversible logic.
         """
-        try:
-            return self.decompose_bloq().on_classical_vals(**vals)
-        except DecomposeTypeError as e:
-            raise NotImplementedError(f"{self} is not classically simulable.") from e
-        except DecomposeNotImplementedError as e:
-            raise NotImplementedError(
-                f"{self} has no decomposition and does not "
-                f"support classical simulation directly"
-            ) from e
-        except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+        return NotImplemented
 
     def basis_state_phase(
         self, **vals: 'ClassicalValT'

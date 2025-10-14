@@ -18,6 +18,7 @@ from qualtran.bloqs.bookkeeping import Cast
 from qualtran.bloqs.bookkeeping.cast import _cast
 from qualtran.bloqs.for_testing import TestCastToFrom
 from qualtran.simulation.tensor import cbloq_to_quimb
+from qualtran.testing import execute_notebook
 
 
 def test_cast(bloq_autotester):
@@ -69,3 +70,8 @@ def test_cast_classical():
 
     c = Cast(CBit(), QBit(), allow_quantum_to_classical=True)
     assert c.call_classically(reg=1) == (1,)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('cast')
