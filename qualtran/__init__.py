@@ -70,6 +70,7 @@ from ._infra.data_types import (
     QMontgomeryUInt,
     CMontgomeryUInt,
     QGF,
+    CGF,
     QGFPoly,
     QDTypeCheckingSeverity,
     check_dtypes_consistent,

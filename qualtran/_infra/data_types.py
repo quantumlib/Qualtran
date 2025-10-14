@@ -18,7 +18,18 @@ import abc
 import warnings
 from enum import Enum
 from functools import cached_property
-from typing import Any, cast, Generic, Iterable, List, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    cast,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 import attrs
 import galois
@@ -26,6 +37,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
+
+if TYPE_CHECKING:
+    import galois
 
 T = TypeVar('T')
 
@@ -1380,7 +1394,78 @@ def _poly_converter(p) -> Union[galois.Poly, None]:
 
 
 @attrs.frozen
-class QGF(QDType):
+class _GF(BitEncoding['galois.FieldArray']):
+    r"""Galois Field type to represent elements of a finite field."""
+
+    characteristic: SymbolicInt
+    degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
+
+    @irreducible_poly.default
+    def _irreducible_poly_default(self):
+        if is_symbolic(self.characteristic, self.degree):
+            return None
+
+        from galois import GF
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic), int(self.degree), compile='python-calculate'
+        ).irreducible_poly
+
+    @cached_property
+    def order(self) -> SymbolicInt:
+        return self.characteristic**self.degree
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return bit_length(self.order - 1)
+
+    def get_domain(self) -> Iterable[Any]:
+        yield from self.gf_type.elements
+
+    @cached_property
+    def _uint_encoder(self) -> _UInt:
+        return _UInt(self.bitsize)
+
+    @cached_property
+    def gf_type(self):
+        from galois import GF
+
+        poly = self.irreducible_poly if self.degree > 1 else None
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic),
+            int(self.degree),
+            irreducible_poly=poly,
+            verify=False,
+            repr='poly',
+            compile='python-calculate',
+        )
+
+    def to_bits(self, x) -> List[int]:
+        self.assert_valid_val(x)
+        return self._uint_encoder.to_bits(int(x))
+
+    def from_bits(self, bits: Sequence[int]):
+        return self.gf_type(self._uint_encoder.from_bits(bits))
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]):
+        return self.gf_type(self._uint_encoder.from_bits_array(bits_array))
+
+    def assert_valid_val(self, val: Any, debug_str: str = 'val'):
+        if not isinstance(val, self.gf_type):
+            raise ValueError(f"{debug_str} should be a {self.gf_type}, not {val!r}")
+
+    def assert_valid_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= self.order):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+
+@attrs.frozen
+class QGF(QDType['galois.FieldArray']):
     r"""Galois Field type to represent elements of a finite field.
 
     A Finite Field or Galois Field is a field that contains finite number of elements. The order
@@ -1431,59 +1516,25 @@ class QGF(QDType):
         ).irreducible_poly
 
     @cached_property
-    def order(self) -> SymbolicInt:
-        return self.characteristic**self.degree
-
-    @cached_property
-    def bitsize(self) -> SymbolicInt:
-        """Bitsize of qubit register required to represent a single instance of this data type."""
-        return bit_length(self.order - 1)
-
-    @cached_property
-    def num_qubits(self) -> SymbolicInt:
-        return self.bitsize
-
-    def get_classical_domain(self) -> Iterable[Any]:
-        yield from self.gf_type.elements
-
-    @cached_property
-    def _quint_equivalent(self) -> QUInt:
-        return QUInt(self.num_qubits)
-
-    @cached_property
-    def gf_type(self):
-        from galois import GF
-
-        poly = self.irreducible_poly if self.degree > 1 else None
-
-        return GF(  # type: ignore[call-overload]
-            int(self.characteristic),
-            int(self.degree),
-            irreducible_poly=poly,
-            verify=False,
-            repr='poly',
-            compile='python-calculate',
+    def _bit_encoding(self) -> _GF:
+        return _GF(
+            characteristic=self.characteristic,
+            degree=self.degree,
+            irreducible_poly=self.irreducible_poly,
         )
 
-    def to_bits(self, x) -> List[int]:
-        self.assert_valid_classical_val(x)
-        return self._quint_equivalent.to_bits(int(x))
+    @property
+    def order(self) -> SymbolicInt:
+        return self._bit_encoding.order
 
-    def from_bits(self, bits: Sequence[int]):
-        return self.gf_type(self._quint_equivalent.from_bits(bits))
+    @property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return self._bit_encoding.bitsize
 
-    def from_bits_array(self, bits_array: NDArray[np.uint8]):
-        return self.gf_type(self._quint_equivalent.from_bits_array(bits_array))
-
-    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
-        if not isinstance(val, self.gf_type):
-            raise ValueError(f"{debug_str} should be a {self.gf_type}, not {val!r}")
-
-    def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
-        if np.any(val_array < 0):
-            raise ValueError(f"Negative classical values encountered in {debug_str}")
-        if np.any(val_array >= self.order):
-            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+    @property
+    def gf_type(self):
+        return self._bit_encoding.gf_type
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.characteristic, self.order)
@@ -1493,6 +1544,59 @@ class QGF(QDType):
 
     def __str__(self):
         return f'QGF({self.characteristic}**{self.degree})'
+
+
+@attrs.frozen
+class CGF(CDType['galois.FieldArray']):
+    r"""Galois Field classical type to represent elements of a finite field.
+
+    See QGF for documentation.
+    """
+
+    characteristic: SymbolicInt
+    degree: SymbolicInt
+    irreducible_poly: Optional['galois.Poly'] = attrs.field(converter=_poly_converter)
+
+    @irreducible_poly.default
+    def _irreducible_poly_default(self):
+        if is_symbolic(self.characteristic, self.degree):
+            return None
+
+        from galois import GF
+
+        return GF(  # type: ignore[call-overload]
+            int(self.characteristic), int(self.degree), compile='python-calculate'
+        ).irreducible_poly
+
+    @cached_property
+    def _bit_encoding(self) -> _GF:
+        return _GF(
+            characteristic=self.characteristic,
+            degree=self.degree,
+            irreducible_poly=self.irreducible_poly,
+        )
+
+    @property
+    def order(self) -> SymbolicInt:
+        return self._bit_encoding.order
+
+    @property
+    def bitsize(self) -> SymbolicInt:
+        """Bitsize of qubit register required to represent a single instance of this data type."""
+        return self._bit_encoding.bitsize
+
+    @property
+    def gf_type(self):
+        return self._bit_encoding.gf_type
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.characteristic, self.order)
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        return self.order
+
+    def __str__(self):
+        return f'CGF({self.characteristic}**{self.degree})'
 
 
 @attrs.frozen
