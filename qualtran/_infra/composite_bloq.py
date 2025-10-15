@@ -1367,7 +1367,7 @@ class BloqBuilder:
 
         self.add(Free(dtype=qdtype, dirty=dirty), reg=soq)
 
-    def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
+    def split(self, soq: SoquetInT) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.bookkeeping import Split
 

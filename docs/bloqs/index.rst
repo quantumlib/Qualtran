@@ -63,6 +63,8 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
+    chemistry/hubbard_model/qubitization/select_hubbard.ipynb
     chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
@@ -178,7 +180,6 @@ Bloqs Library
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
-    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
