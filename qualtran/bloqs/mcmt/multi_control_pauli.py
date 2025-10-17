@@ -226,7 +226,7 @@ _CC_PAULI_DOC = BloqDocSpec(bloq_cls=MultiControlX, examples=(_ccpauli,))
 
 
 @frozen
-class MultiControlZ(MultiControlPauli):
+class MultiControlZ(MultiControlPauliBase):
     r"""Implements multi-control, single-target Z gate.
 
     Reduces multiple controls to a single control using an `And` ladder.
