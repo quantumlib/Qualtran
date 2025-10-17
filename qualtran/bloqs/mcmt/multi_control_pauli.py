@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import abc
 import warnings
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
@@ -45,33 +46,26 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-@frozen
-class MultiControlPauli(GateWithRegisters):
-    r"""Implements multi-control, single-target C^{n}P gate.
-
-    Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
-    clean ancillas using a multi-controlled `AND` gate. Uses the Toffoli ladder
-    construction described in "n−2 Ancilla Bits" section of Ref[1] but uses an
-    $\text{AND} / \text{AND}^\dagger$ ladder instead for computing / uncomputing
-    using clean ancillas instead of the Toffoli ladder. The measurement based
-    uncomputation of $\text{AND}$ does not consume any magic states and thus has
-    better constant factors.
-
-    References:
-        [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
+class MultiControlPauliBase(GateWithRegisters):
+    r"""Abstract base class for MultiControlPauli and its specializations.
     """
 
-    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
-    target_bloq: Bloq
-
-    def __attrs_post_init__(self):
-        warnings.warn(
+    def __init__(self):
+         warnings.warn(
             "`MultiControlPauli` is deprecated. Use `bloq.controlled(...)` which now defaults"
             "to reducing controls using an `And` ladder."
             "For the same signature as `MultiControlPauli(cvs, target_bloq)`,"
             "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
             DeprecationWarning,
         )
+
+    @property
+    @abc.abstractmethod
+    def cvs(self) -> Union[HasLength, Tuple[int, ...]]: ...
+
+    @property
+    @abc.abstractmethod
+    def target_bloq(self) -> 'Bloq': ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -165,7 +159,27 @@ class MultiControlPauli(GateWithRegisters):
 
 
 @frozen
-class MultiControlX(MultiControlPauli):
+class MultiControlPauli(MultiControlPauliBase):
+    r"""Implements multi-control, single-target C^{n}P gate.
+
+    Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
+    clean ancillas using a multi-controlled `AND` gate. Uses the Toffoli ladder
+    construction described in "n−2 Ancilla Bits" section of Ref[1] but uses an
+    $\text{AND} / \text{AND}^\dagger$ ladder instead for computing / uncomputing
+    using clean ancillas instead of the Toffoli ladder. The measurement based
+    uncomputation of $\text{AND}$ does not consume any magic states and thus has
+    better constant factors.
+
+    References:
+        [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
+    """
+
+    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    target_bloq: Bloq
+
+
+@frozen
+class MultiControlX(MultiControlPauliBase):
     r"""Implements multi-control, single-target X gate.
 
     Reduces multiple controls to a single control using an `And` ladder.
@@ -181,14 +195,14 @@ class MultiControlX(MultiControlPauli):
         target: single qubit target register.
     """
 
-    target_bloq: Bloq = field(init=False)
-
-    @target_bloq.default
-    def _X(self):
-        return XGate()
+    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
     def __attrs_post_init__(self):
         pass
+
+    @property
+    def target_bloq(self) -> 'Bloq':
+        return XGate()
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -228,14 +242,14 @@ class MultiControlZ(MultiControlPauli):
         target: single qubit target register.
     """
 
-    target_bloq: Bloq = field(init=False)
-
-    @target_bloq.default
-    def _Z(self):
-        return ZGate()
+    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
     def __attrs_post_init__(self):
         pass
+
+    @property
+    def target_bloq(self) -> 'Bloq':
+        return ZGate()
 
     def adjoint(self) -> 'Bloq':
         return self
