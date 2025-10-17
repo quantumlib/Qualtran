@@ -19,10 +19,12 @@ import sympy
 from attrs import field, frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QBit,
     QInt,
@@ -168,6 +170,19 @@ class CAdd(Bloq):
             Add(self.a_dtype, self.b_dtype): 1,
             And(self.cv, 1).adjoint(): self.a_dtype.bitsize,
         }
+
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
+
+        return get_ctrl_system_1bit_cv(
+            bloq=self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=self.cv,
+            get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (
+                CAdd(a_dtype=self.a_dtype, b_dtype=self.b_dtype, cv=cv),
+                "ctrl",
+            ),
+        )
 
 
 @bloq_example(generalizer=ignore_split_join)
