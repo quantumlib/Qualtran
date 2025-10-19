@@ -46,18 +46,8 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-class MultiControlPauliBase(GateWithRegisters):
-    r"""Abstract base class for MultiControlPauli and its specializations.
-    """
-
-    def __init__(self):
-         warnings.warn(
-            "`MultiControlPauli` is deprecated. Use `bloq.controlled(...)` which now defaults"
-            "to reducing controls using an `And` ladder."
-            "For the same signature as `MultiControlPauli(cvs, target_bloq)`,"
-            "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
-            DeprecationWarning,
-        )
+class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
+    r"""Abstract base class for MultiControlPauli and its specializations."""
 
     @property
     @abc.abstractmethod
@@ -176,6 +166,15 @@ class MultiControlPauli(MultiControlPauliBase):
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
     target_bloq: Bloq
+
+    def __attrs_post_init__(self):
+        warnings.warn(
+            "`MultiControlPauli` is deprecated. Use `bloq.controlled(...)` which now defaults"
+            "to reducing controls using an `And` ladder."
+            "For the same signature as `MultiControlPauli(cvs, target_bloq)`,"
+            "use `target_bloq.controlled(CtrlSpec(cvs=cvs))`.",
+            DeprecationWarning,
+        )
 
 
 @frozen
