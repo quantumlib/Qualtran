@@ -196,10 +196,7 @@ class MultiControlX(MultiControlPauliBase):
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
-    def __attrs_post_init__(self):
-        pass
-
-    @property
+    @cached_property
     def target_bloq(self) -> 'Bloq':
         return XGate()
 
@@ -243,10 +240,7 @@ class MultiControlZ(MultiControlPauliBase):
 
     cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
-    def __attrs_post_init__(self):
-        pass
-
-    @property
+    @cached_property
     def target_bloq(self) -> 'Bloq':
         return ZGate()
 
