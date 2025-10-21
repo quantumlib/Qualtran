@@ -246,7 +246,7 @@ def execute_and_export_notebooks(
         results = [func(nb_rel_path, sourceroot) for nb_rel_path, sourceroot in nb_rel_paths]
     else:
         print(f"Multiprocessing with {n_workers=}")
-        with multiprocessing.Pool(n_workers) as pool:
+        with multiprocessing.Pool(n_workers, maxtasksperchild=1) as pool:
             results = pool.starmap(func, nb_rel_paths)
         assert results
     bad_nbs = [result.nb_in for result in results if result.err is not None]
