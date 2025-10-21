@@ -39,7 +39,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 """
 
 from functools import cached_property
-from typing import Dict, Iterator, Optional, Tuple, Union, Set
+from typing import Dict, Iterator, Optional, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -69,6 +69,7 @@ from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicInt
 
 
@@ -318,7 +319,6 @@ class HubbardMajorannaOperator(Bloq):
             target_gate=self._target_cirq_gate,
         )
 
-
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x, y, spin, target, control=None
     ) -> Dict[str, 'SoquetT']:
@@ -339,7 +339,6 @@ class HubbardMajorannaOperator(Bloq):
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
         return self.selected_majoranna_fermion_bloq.build_call_graph(ssa)
-
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -469,11 +468,7 @@ class HubbardSpinUpZ(Bloq):
 
         # Delegate to `ApplyGateToLthQubit`.
         control, y, x, spin_up = bb.add_from(
-            self._apply_z_to_lth,
-           x=x,
-            y=y,
-            control=control,
-            target=spin_up,
+            self._apply_z_to_lth, x=x, y=y, control=control, target=spin_up
         )
         target = bb.add(Join2(n_half, n_half), y1=spin_down, y2=spin_up)
 

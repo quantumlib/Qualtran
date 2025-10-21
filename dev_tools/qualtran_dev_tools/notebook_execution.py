@@ -182,12 +182,12 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
 
     return None
 
+
 @attrs.frozen
 class _NotebookRunResult:
     nb_in: Path
     err: Optional[Exception]
     duration_s: float
-
 
 
 class _NotebookRunClosure:
@@ -216,11 +216,11 @@ class _NotebookRunClosure:
         err = execute_and_export_notebook(paths)
         end = time.time()
         print(f"Exported {nb_rel_path} in {end-start:.2f} seconds.")
-        return _NotebookRunResult(paths.nb_in, err, duration_s=end-start)
+        return _NotebookRunResult(paths.nb_in, err, duration_s=end - start)
 
 
 def execute_and_export_notebooks(
-    *, output_nbs: bool, output_md: bool, only_out_of_date: bool = True, n_workers=None,
+    *, output_nbs: bool, output_md: bool, only_out_of_date: bool = True, n_workers: Optional[int]=None
 ):
     """Find, execute, and export all checked-in ipynbs.
 
@@ -229,6 +229,8 @@ def execute_and_export_notebooks(
         output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
+        n_workers: If set to 1, do not use parallelization. Otherwise, use
+            `multiprocessing.Pool(n_workers)` to execute notebooks in parallel.
     """
     reporoot = get_git_root()
     nb_rel_paths = get_nb_rel_paths(sourceroot=reporoot / 'qualtran')
@@ -262,4 +264,3 @@ def execute_and_export_notebooks(
     print("Slowest 10 notebooks:")
     for result in duration_nbs[:10]:
         print(f'{result.duration_s:5.2f}s {result.nb_in}')
-
