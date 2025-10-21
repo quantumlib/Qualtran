@@ -76,7 +76,7 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          python dev_tools/execute-notebooks.py --n-workers=1
+          python dev_tools/execute-notebooks.py --n-workers=8
         env:
           NUMBA_NUM_THREADS: 4
 

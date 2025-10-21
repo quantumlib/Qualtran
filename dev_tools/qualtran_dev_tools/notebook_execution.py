@@ -13,6 +13,7 @@
 #  limitations under the License.
 import asyncio
 import multiprocessing
+import random
 import subprocess
 import sys
 import time
@@ -232,6 +233,7 @@ def execute_and_export_notebooks(
     reporoot = get_git_root()
     nb_rel_paths = get_nb_rel_paths(sourceroot=reporoot / 'qualtran')
     nb_rel_paths += get_nb_rel_paths(sourceroot=reporoot / 'tutorials')
+    random.shuffle(nb_rel_paths)
     print(f"Found {len(nb_rel_paths)} notebooks.")
     func = _NotebookRunClosure(
         reporoot=reporoot,
@@ -244,7 +246,7 @@ def execute_and_export_notebooks(
         results = [func(nb_rel_path, sourceroot) for nb_rel_path, sourceroot in nb_rel_paths]
     else:
         print(f"Multiprocessing with {n_workers=}")
-        with multiprocessing.Pool(n_workers) as pool:
+        with multiprocessing.Pool(n_workers, maxtasksperchild=1) as pool:
             results = pool.starmap(func, nb_rel_paths)
         assert results
     bad_nbs = [result.nb_in for result in results if result.err is not None]
