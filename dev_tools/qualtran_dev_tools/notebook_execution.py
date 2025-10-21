@@ -220,7 +220,11 @@ class _NotebookRunClosure:
 
 
 def execute_and_export_notebooks(
-    *, output_nbs: bool, output_md: bool, only_out_of_date: bool = True, n_workers: Optional[int]=None
+    *,
+    output_nbs: bool,
+    output_md: bool,
+    only_out_of_date: bool = True,
+    n_workers: Optional[int] = None,
 ):
     """Find, execute, and export all checked-in ipynbs.
 
