@@ -19,6 +19,7 @@ import sympy
 import qualtran.testing as qlt_testing
 from qualtran import QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.controlled_addition import _cadd_large, _cadd_small, CAdd
+from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 
@@ -43,12 +44,9 @@ def test_decomposition(control, dtype, a_bits, b_bits):
 
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
-def test_addition_gate_counts_controlled(n: int):
+def test_addition_gate_counts(n: int):
     add = CAdd(QUInt(n), cv=1)
-    num_and = 2 * n - 1
-    t_count = 4 * num_and
-    assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
-    assert add.t_complexity().t == t_count
+    assert get_cost_value(add, QECGatesCost()).total_toffoli_only() == 2 * n - 1
 
 
 @pytest.mark.slow
@@ -127,3 +125,10 @@ def test_consistent_tcomplexity(control, dtype):
     cost = get_cost_value(b, QECGatesCost()).total_t_and_ccz_count()
     assert cost['n_t'] == 0
     assert b.t_complexity().t == 4 * cost['n_ccz']
+
+
+def test_controlled_cadd():
+    bloq = CAdd(QUInt(10), QUInt(10))
+    ctrl_bloq = bloq.controlled()
+    assert ctrl_bloq.bloq_counts() == {And(): 1, And().adjoint(): 1, bloq: 1}
+    _ = ctrl_bloq.t_complexity()

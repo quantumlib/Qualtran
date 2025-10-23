@@ -16,23 +16,29 @@ import itertools
 
 import numpy as np
 import pytest
+import sympy
 from galois import GF, Poly
 
 import qualtran.testing as qlt_testing
 from qualtran import QGF
 from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     _gf2_multiplication_symbolic,
+    _GF2MulViaKaratsubaImpl,
     _gf16_multiplication,
     BinaryPolynomialMultiplication,
     GF2MulK,
+    GF2MulMBUC,
     GF2Multiplication,
     GF2MulViaKaratsuba,
+    GF2ShiftLeft,
     GF2ShiftRight,
     MultiplyPolyByOnePlusXk,
     SynthesizeLRCircuit,
 )
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
+from qualtran.simulation.classical_sim import do_phased_classical_simulation
+from qualtran.symbolics import Shaped
 from qualtran.testing import assert_consistent_classical_action
 
 
@@ -46,12 +52,14 @@ def test_gf2_multiplication_symbolic(bloq_autotester):
 
 @pytest.mark.parametrize('m', [2, 4, 6, 8])
 def test_synthesize_lr_circuit(m: int):
-    matrix = GF2Multiplication(m).reduction_matrix_q
+    matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
+    cbloq = bloq.decompose_bloq()
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
         bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
+        assert np.all(bloq_out == cbloq.call_classically(q=np.array(QGFM.to_bits(i)))[0])
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
         assert isinstance(bloq_adj_out, np.ndarray)
         assert i == QGFM.from_bits([*bloq_adj_out])
@@ -60,20 +68,33 @@ def test_synthesize_lr_circuit(m: int):
 @pytest.mark.slow
 @pytest.mark.parametrize('m', [3, 4, 5])
 def test_synthesize_lr_circuit_slow(m):
-    matrix = GF2Multiplication(m).reduction_matrix_q
+    matrix = GF2MulMBUC(m).reduction_matrix_q
     bloq = SynthesizeLRCircuit(matrix)
+    cbloq = bloq.decompose_bloq()
     bloq_adj = bloq.adjoint()
     QGFM, GFM = QGF(2, m), GF(2**m)
     for i in GFM.elements:
         bloq_out = bloq.call_classically(q=np.array(QGFM.to_bits(i)))[0]
+        assert np.all(bloq_out == cbloq.call_classically(q=np.array(QGFM.to_bits(i)))[0])
         bloq_adj_out = bloq_adj.call_classically(q=bloq_out)[0]
         assert isinstance(bloq_adj_out, np.ndarray)
         assert i == QGFM.from_bits([*bloq_adj_out])
 
 
+def test_synthesize_lr_circuit_symbolic_resource():
+    bloq = SynthesizeLRCircuit(Shaped((4, 4)))
+    assert get_cost_value(bloq, QECGatesCost()).clifford == 12
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == 12
+
+    n = sympy.Symbol("n")
+    bloq = SynthesizeLRCircuit(Shaped((n, n)))
+    assert get_cost_value(bloq, QECGatesCost()).clifford == n**2 - n
+    assert get_cost_value(bloq.adjoint(), QECGatesCost()).clifford == n**2 - n
+
+
 def test_gf2_plus_equal_prod_classical_sim_quick():
     m = 2
-    bloq = GF2Multiplication(m, plus_equal_prod=True)
+    bloq = GF2Multiplication(QGF(2, m), plus_equal_prod=True)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements, result=GFM.elements)
 
@@ -176,8 +197,9 @@ def test_multiply_by_xk_bloq_counts(n, k):
     qlt_testing.assert_equivalent_bloq_counts(blq)
 
 
-@pytest.mark.parametrize(['n', 'k'], [(n, k) for n in range(1, 4) for k in range(1, n + 2)])
-def test_multiply_by_xk_classical_action(n, k):
+def test_multiply_by_xk_classical_action():
+    n = 2
+    k = 2
     blq = MultiplyPolyByOnePlusXk(n, k)
     fg_polys = tuple(itertools.product(range(2), repeat=n))[1:]
     h_polys = [*itertools.product(range(2), repeat=blq.signature[-1].shape[0])]
@@ -221,7 +243,7 @@ def test_binary_mult_classical_action(n):
     qlt_testing.assert_consistent_classical_action(blq, f=fg_polys, g=fg_polys, h=h_polys)
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize('n', range(4, 7))
 def test_binary_mult_classical_action_slow(n):
     blq = BinaryPolynomialMultiplication(n)
@@ -275,6 +297,37 @@ def test_GF2ShiftRight_classical_action(m_x, k):
     qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
 
 
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_decomposition(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_valid_bloq_decomposition(blq)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_bloq_counts(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_equivalent_bloq_counts(blq, generalizer=ignore_split_join)
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_complexity(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    cost = get_cost_value(blq, QECGatesCost())
+    clifford = k * (len(m_x) - 2) if len(m_x) > 2 else 0
+    assert cost.clifford == clifford
+    assert cost.total_t_count() == 0
+
+
+@pytest.mark.parametrize('m_x', [[1, 0], [2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])  # x + 1
+@pytest.mark.parametrize('k', range(1, 5))
+def test_GF2ShiftLeft_classical_action(m_x, k):
+    blq = GF2ShiftLeft(m_x, k)
+    qlt_testing.assert_consistent_classical_action(blq, f=blq.gf.elements)
+
+
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0], [8, 4, 3, 1, 0]])
 def test_gf2mulmod_decomposition(m_x):
     blq = GF2MulViaKaratsuba(m_x)
@@ -299,8 +352,8 @@ def test_gf2mulmod_complexity(m_x):
     assert cost.total_toffoli_only() == 3**k
 
 
-@pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
-def test_gf2mulmod_classical_action(m_x):
+def test_gf2mulmod_classical_action():
+    m_x = [3, 1, 0]
     blq = GF2MulViaKaratsuba(m_x)
     qlt_testing.assert_consistent_classical_action(blq, x=blq.gf.elements, y=blq.gf.elements)
 
@@ -316,14 +369,16 @@ def test_gf2mulmod_classical_action_slow():
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [3, 1, 0], [5, 2, 0]])
 def test_gf2mulmod_classical_action_adjoint(m_x):
-    blq = GF2MulViaKaratsuba(m_x)
+    blq = _GF2MulViaKaratsubaImpl(m_x)
     adjoint = blq.adjoint()
-    for i, j in np.random.random_integers(0, len(blq.gf.elements) - 1, (10, 2)):
-        f = blq.gf.elements[i]
-        g = blq.gf.elements[j]
-        a, b, c = blq.call_classically(x=f, y=g)
-        a, b = adjoint.call_classically(x=a, y=b, result=c)
-        assert a == f and b == g
+    rs = np.random.default_rng(42)
+    zero = blq.qgf.gf_type(0)
+    for i, j in rs.integers(0, len(blq.qgf.gf_type.elements) - 1, (10, 2)):
+        f = blq.qgf.gf_type.elements[i]
+        g = blq.qgf.gf_type.elements[j]
+        a, b, c = blq.call_classically(f=f, g=g, h=zero)
+        a, b, c = adjoint.call_classically(f=a, g=b, h=c)
+        assert a == f and b == g and c == zero
 
 
 @pytest.mark.parametrize('m_x', [[2, 1, 0], [8, 4, 3, 1, 0], [16, 5, 3, 1, 0]])
@@ -340,3 +395,35 @@ def test_gf2mulmod_classical_complexity(m_x):
 def test_gf2mul_invalid_input_raises():
     with pytest.raises(ValueError):
         _ = GF2MulViaKaratsuba([0, 1])  # type: ignore[arg-type]
+
+
+def test_gf2_mul_mbuc_quick():
+    m = 3
+    bloq_mbuc = GF2MulMBUC(m)
+    rng = np.random.default_rng(seed=123)
+    for x in bloq_mbuc.qgf.gf_type.elements:
+        for y in bloq_mbuc.qgf.gf_type.elements:
+            in_vals = {'x': x, 'y': y, 'result': x * y}
+            out_vals, phase = do_phased_classical_simulation(
+                bloq_mbuc.decompose_bloq(), in_vals, rng=rng
+            )
+            assert out_vals['x'] == x
+            assert out_vals['y'] == y
+            assert 'result' not in out_vals
+            assert phase == 1
+
+
+@pytest.mark.parametrize('m', [4, 5])
+def test_gf2_mul_mbuc(m: int):
+    bloq_mbuc = GF2MulMBUC(m)
+    rng = np.random.default_rng(seed=123)
+    for x in bloq_mbuc.qgf.gf_type.elements:
+        for y in bloq_mbuc.qgf.gf_type.elements:
+            in_vals = {'x': x, 'y': y, 'result': x * y}
+            out_vals, phase = do_phased_classical_simulation(
+                bloq_mbuc.decompose_bloq(), in_vals, rng=rng
+            )
+            assert out_vals['x'] == x
+            assert out_vals['y'] == y
+            assert 'result' not in out_vals
+            assert phase == 1

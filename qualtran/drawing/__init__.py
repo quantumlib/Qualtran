@@ -16,7 +16,7 @@
 
 """Draw and visualize bloqs."""
 
-from .graphviz import GraphDrawer, PrettyGraphDrawer
+from .graphviz import GraphDrawer, PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import (
     RegPosition,
     HLine,

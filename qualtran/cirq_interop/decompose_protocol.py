@@ -12,13 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import cirq
-from cirq.protocols.decompose_protocol import DecomposeResult
+
+if TYPE_CHECKING:
+    from cirq.protocols.decompose_protocol import DecomposeResult
 
 
-def _decompose_once_considering_known_decomposition(val: Any) -> DecomposeResult:
+def _decompose_once_considering_known_decomposition(val: Any) -> 'DecomposeResult':
     """Decomposes a value into operations, if possible.
 
     Args:

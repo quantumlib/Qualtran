@@ -38,20 +38,17 @@ from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, Symbo
 
 @frozen
 class ZPowConstViaPhaseGradient(Bloq):
-    r"""Apply an $Z**t$ on a qubit using a phase gradient state.
+    r"""Apply an $Z^t$ on a qubit using a phase gradient state.
 
-    This bloq implements a `Z**t` by conditionally loading `t/2` into a quantum
+    This bloq implements `Z**t` by conditionally loading `t/2` into a quantum
     register, conditioned on the qubit `q` (rotation target), and then adding
     this value to the phase gradient to get a phase kickback, and uncomputes the load.
-    This controlled-load trick is taken from Ref. [2], Fig 2a.
 
-    See :class:`PhaseGradientState` for details on phase gradients.
+    See `PhaseGradientState` for details on phase gradients.
 
     It loads an approximation of `t/2` to `phase_grad_bitsize` bits,
-    which is loaded using `phase_grad_bitsize` clean ancilla.
-
-    The total Tofolli cost is `phase_grad_bitsize - 2`.
-
+    which uses `phase_grad_bitsize` clean ancilla. The total Tofolli cost
+    is `phase_grad_bitsize - 2`.
 
     Args:
         exponent: value of `t` to apply `Z**t`
@@ -62,8 +59,12 @@ class ZPowConstViaPhaseGradient(Bloq):
         phase_grad: phase gradient state of type `QFxp` with `phase_grad_bitsize` fractional bits.
 
     References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
+        Appendix A: Addition for controlled rotations.
+
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
-        Haner et al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
+        Haner et al. 2020. Section 3: Components. "Integer addition" and Fig 2a describes the
+        controlled-load trick.
     """
 
     exponent: SymbolicFloat

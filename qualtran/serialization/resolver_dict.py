@@ -110,6 +110,7 @@ import qualtran.bloqs.for_testing.many_registers
 import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
+import qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.controlled_via_and
@@ -129,6 +130,12 @@ import qualtran.bloqs.multiplexers.select_base
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
+import qualtran.bloqs.optimization.k_xor_sat
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding
+import qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state
+import qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance
 import qualtran.bloqs.phase_estimation.kaiser_window_state
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.phase_estimation.qpe_window_state
@@ -274,6 +281,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.bookkeeping.always.Always": qualtran.bloqs.bookkeeping.always.Always,
     "qualtran.bloqs.bookkeeping.join.Join": qualtran.bloqs.bookkeeping.join.Join,
     "qualtran.bloqs.bookkeeping.partition.Partition": qualtran.bloqs.bookkeeping.partition.Partition,
+    "qualtran.bloqs.bookkeeping.partition.Split2": qualtran.bloqs.bookkeeping.partition.Split2,
+    "qualtran.bloqs.bookkeeping.partition.Join2": qualtran.bloqs.bookkeeping.partition.Join2,
     "qualtran.bloqs.bookkeeping.split.Split": qualtran.bloqs.bookkeeping.split.Split,
     "qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs": qualtran.bloqs.chemistry.black_boxes.ApplyControlledZs,
     "qualtran.bloqs.chemistry.black_boxes.QROAM": qualtran.bloqs.chemistry.black_boxes.QROAM,
@@ -386,9 +395,13 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
+    "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian": qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonian,
+    "qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation": qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian.GuidedHamiltonianPhaseEstimation,
     "qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP": qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp.HamiltonianSimulationByGQSP,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard.PrepareHubbard,
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.SelectHubbard,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardMajorannaOperator,
+    "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
     "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd": qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd,
@@ -406,6 +419,19 @@ RESOLVER_DICT = {
     "qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU": qualtran.bloqs.multiplexers.select_pauli_lcu.SelectPauliLCU,
     "qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion": qualtran.bloqs.multiplexers.selected_majorana_fermion.SelectedMajoranaFermion,
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.ColumnOfKthNonZeroEntry": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.ColumnOfKthNonZeroEntry,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.IndexOfNonZeroColumn": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.IndexOfNonZeroColumn,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.KikuchiNonZeroIndex": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_list.KikuchiNonZeroIndex,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix.KikuchiMatrixEntry": qualtran.bloqs.optimization.k_xor_sat.kikuchi_adjacency_matrix.KikuchiMatrixEntry,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiEntryOracle": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiEntryOracle,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiRowColumnOracle": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.BlackBoxKikuchiRowColumnOracle,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian": qualtran.bloqs.optimization.k_xor_sat.kikuchi_block_encoding.KikuchiHamiltonian,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.GuidingState,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.ProbabilisticUncompute,
+    "qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState": qualtran.bloqs.optimization.k_xor_sat.kikuchi_guiding_state.SimpleGuidingState,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadConstraintScopes,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadUniqueScopeIndex": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.LoadUniqueScopeIndex,
+    "qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.PRGAUniqueConstraintRHS": qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.PRGAUniqueConstraintRHS,
     "qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState": qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState,
     "qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState": qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep": qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep,

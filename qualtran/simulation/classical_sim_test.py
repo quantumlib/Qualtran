@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 import itertools
-from typing import Dict
+from typing import Dict, Union
 
+import attrs
 import networkx as nx
 import numpy as np
 import pytest
@@ -25,6 +26,7 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     BQUInt,
+    CBit,
     LeftDangle,
     QAny,
     QBit,
@@ -37,13 +39,18 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
+    _BannedClassicalValHandler,
+    _FixedClassicalValHandler,
     add_ints,
     call_cbloq_classically,
     ClassicalSimState,
+    ClassicalValDistribution,
+    ClassicalValRetT,
     do_phased_classical_simulation,
+    MeasurementPhase,
 )
 from qualtran.testing import execute_notebook
 
@@ -147,6 +154,8 @@ def test_normal_classical_on_phased():
 
 
 def test_cnot_assign_dict():
+    from qualtran.bloqs.basic_gates import CNOT
+
     cbloq = CNOT().as_composite_bloq()
     binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
     vals = dict(ctrl=1, target=0)
@@ -260,3 +269,110 @@ def test_multidimensional_classical_sim_for_gqf():
     y = bloq.call_classically(x=x)[0]
     assert isinstance(y, dtype.gf_type)
     np.testing.assert_equal(y, x)
+
+
+@frozen
+class ClassicalDistributionTest(Bloq):
+    """Bloq that outputs a random bit for testing."""
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
+        )
+
+    def on_classical_vals(self, *, q: int) -> Dict[str, ClassicalValRetT]:
+        return {'c': ClassicalValDistribution(2)}
+
+
+@frozen
+class ClassicalDistributionWithPhaseTest(ClassicalDistributionTest):
+    """Bloq that outputs a random bit with phase for testing."""
+
+    def basis_state_phase(self, q: int) -> Union[complex, MeasurementPhase]:
+        if q == 0:
+            return 1
+        return MeasurementPhase(reg_name='c')
+
+
+def test_classical_distribution() -> None:
+    bloq = ClassicalDistributionTest()
+    results = [bloq.call_classically(q=0)[0] for _ in range(100)]
+    assert all(c in {0, 1} for c in results)
+    assert any(c == 0 for c in results)
+    assert any(c == 1 for c in results)
+
+
+def test_fixed_distribution() -> None:
+    cbloq = ClassicalDistributionTest().as_composite_bloq()
+    fixed_rng = _FixedClassicalValHandler(binst_i_to_val={0: 1})
+    binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
+    results = [
+        call_cbloq_classically(cbloq.signature, dict(q=0), binst_graph, random_handler=fixed_rng)[
+            0
+        ]['c']
+        for _ in range(100)
+    ]
+    assert all(c == 1 for c in results)
+
+
+def test_banned_distribution() -> None:
+    cbloq = ClassicalDistributionTest().as_composite_bloq()
+    banned_rng = _BannedClassicalValHandler()
+    binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
+    with pytest.raises(ValueError, match='non-deterministic classical action'):
+        _ = call_cbloq_classically(
+            cbloq.signature, dict(q=0), binst_graph, random_handler=banned_rng
+        )
+
+
+def test_phased_classical_distribution():
+    bloq = ClassicalDistributionWithPhaseTest()
+    _, phase = do_phased_classical_simulation(bloq, dict(q=0), rng=np.random.default_rng())
+    assert phase == 1
+    for _ in range(50):
+        final_vals, phase = do_phased_classical_simulation(
+            bloq, dict(q=1), rng=np.random.default_rng()
+        )
+        assert phase == (-1 if final_vals['c'] else 1)
+
+    final_values, phase = do_phased_classical_simulation(
+        bloq, dict(q=0), fixed_random_vals={0: 1, 1: 1}
+    )
+    assert final_values['c'] == 1
+    assert phase == 1
+
+
+@attrs.frozen
+class ComposedPhasing(Bloq):
+    n: int = 0
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QBit(), side=Side.RIGHT)])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        from qualtran.bloqs.basic_gates import OneState, ZGate
+
+        x = bb.add(OneState())
+        for _ in range(self.n):
+            x = bb.add(ZGate(), q=x)
+        return {'x': x}
+
+
+def test_derive_phasing_from_composed_bloq():
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(0), {})
+    assert vals == {'x': 1}
+    assert phase == +1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(1), {})
+    assert vals == {'x': 1}
+    assert phase == -1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(2), {})
+    assert vals == {'x': 1}
+    assert phase == +1.0
+
+    vals, phase = do_phased_classical_simulation(ComposedPhasing(3), {})
+    assert vals == {'x': 1}
+    assert phase == -1.0

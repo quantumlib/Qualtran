@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class BloqInstance:
     """A unique instance of a Bloq within a `CompositeBloq`.
 
-    Attributes:
+    Args:
         bloq: The `Bloq`.
         i: An arbitrary index to disambiguate this instance from other Bloqs of the same type
             within a `CompositeBloq`.
@@ -39,13 +39,8 @@ class BloqInstance:
         return f'{self.bloq}<{self.i}>'
 
     def bloq_is(self, t) -> bool:
-        """Helper method that does `isinstance(self.bloq, t)`.
-
-        This is also defined on `DanglingT`, so using this method on `binst` is equivalent
-        to:
-
-        >>> not isinstance(binst, DanglingT) and isinstance(binst.bloq, t)
-        """
+        """Helper method that does `isinstance(self.bloq, t)`, but works safely on
+        `Union[BloqInstance, DanglingT]`"""
         return isinstance(self.bloq, t)
 
 
@@ -64,10 +59,8 @@ class DanglingT:
         return self._name
 
     def bloq_is(self, t) -> bool:
-        """DanglingT.bloq_is(...) is always False.
-
-        This is to support convenient isinstance checking on binst.bloq where
-        binst may be a `DanglingT`.
+        """`DanglingT.bloq_is(...)` is always False, but works safely on
+        `Union[BloqInstance, DanglingT]`.
         """
         return False
 
@@ -91,7 +84,7 @@ class Soquet:
     A `Soquet` can also be present in an external connection (i.e. represent an unconnected input
     or output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
 
-    Attributes:
+    Args:
         binst: The BloqInstance to which this soquet belongs.
         reg: The register that this soquet is an instance of.
         idx: Registers with non-empty `shape` attributes are multi-dimensional. A soquet

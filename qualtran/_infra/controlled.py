@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT, MeasurementPhase
 
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
@@ -89,7 +89,7 @@ class CtrlSpec:
         CtrlSpec()
         CtrlSpec(qdtypes=QBit(), cvs=1)
 
-    This class supports additional control specifications:
+    This class supports additional control specifications.
      1. 'negative' controls where the bloq is active if the input is |0>.
      2. integer-equality controls where a QInt input must match an integer control value.
      3. ndarrays of control values, where the bloq is active if **all** inputs are active.
@@ -380,10 +380,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @cached_property
     def _thru_registers_only(self) -> bool:
-        for reg in self.subbloq.signature:
-            if reg.side != Side.THRU:
-                return False
-        return True
+        return self.signature.thru_registers_only
 
     @staticmethod
     def _make_ctrl_system(cb: '_ControlledBase') -> Tuple['_ControlledBase', 'AddControlledT']:
@@ -443,17 +440,19 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]
         other_vals = {reg.name: vals[reg.name] for reg in self.subbloq.signature}
         if self.ctrl_spec.is_active(*ctrl_vals):
-            rets = {
-                **self.subbloq.on_classical_vals(**other_vals),
-                **{
-                    reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
-                },
-            }
+            rets = self.subbloq.on_classical_vals(**other_vals)
+            if rets is NotImplemented:
+                return NotImplemented
+            rets |= {
+                reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
+            }  # type: ignore[operator]
             return rets
 
         return vals
 
-    def basis_state_phase(self, **vals: 'ClassicalValT') -> Union[complex, None]:
+    def basis_state_phase(
+        self, **vals: 'ClassicalValT'
+    ) -> Union[complex, 'MeasurementPhase', None]:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -533,7 +532,15 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         from qualtran.drawing import Text
 
         if reg is None:
-            return Text(f'C[{self.subbloq}]')
+            sub_title = self.subbloq.wire_symbol(None, idx)
+            if not isinstance(sub_title, Text):
+                raise ValueError(
+                    f"{self.subbloq} should return a `Text` object for reg=None wire symbol."
+                )
+            if sub_title.text == '':
+                return Text('')
+
+            return Text(f'C[{sub_title.text}]')
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
             return self.subbloq.wire_symbol(reg, idx)
@@ -677,9 +684,9 @@ class Controlled(_ControlledBase):
 def make_ctrl_system_with_correct_metabloq(
     bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
 ) -> Tuple['_ControlledBase', 'AddControlledT']:
-    """The default fallback for `Bloq.make_ctrl_system.
+    """The default fallback for `Bloq.make_ctrl_system`.
 
-    This intelligently selects the correct implemetation of `_ControlledBase` based
+    This intelligently selects the correct implementation of `_ControlledBase` based
     on the control spec.
 
      - A 1-qubit, positive control (i.e. `CtrlSpec()`) uses `Controlled`, which uses a
@@ -688,6 +695,7 @@ def make_ctrl_system_with_correct_metabloq(
        `ControlledViaAnd`, which computes the activation function once and re-uses it
        for each subbloq in the decomposition of `bloq`.
     """
+    from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 
     if ctrl_spec == CtrlSpec():
@@ -710,6 +718,6 @@ def make_ctrl_system_with_correct_metabloq(
     if qdtypes:
         return ControlledViaAnd.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
     if cdtypes:
-        raise NotImplementedError("Stay tuned...")
+        return ClassicallyControlled.make_ctrl_system(bloq, ctrl_spec=ctrl_spec)
 
     raise ValueError(f"Invalid control spec: {ctrl_spec}")

@@ -41,11 +41,11 @@ Bloqs Library
     basic_gates/y_gate.ipynb
     mcmt/and_bloq.ipynb
     basic_gates/states_and_effects.ipynb
+    basic_gates/measurement.ipynb
     basic_gates/swap.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
     basic_gates/identity.ipynb
-    bookkeeping/bookkeeping.ipynb
     mcmt/ctrl_spec_and.ipynb
     mcmt/controlled_via_and.ipynb
 
@@ -63,6 +63,8 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
+    chemistry/hubbard_model/qubitization/select_hubbard.ipynb
     chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
@@ -156,14 +158,28 @@ Bloqs Library
     :maxdepth: 2
     :caption: Optimization:
 
+    optimization/k_xor_sat/load_kxor_instance.ipynb
     optimization/k_xor_sat/kikuchi_guiding_state.ipynb
+    optimization/k_xor_sat/kikuchi_adjacency_list.ipynb
+    optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb
+    optimization/k_xor_sat/kikuchi_block_encoding.ipynb
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Bookkeeping:
+
+    bookkeeping/split.ipynb
+    bookkeeping/split2.ipynb
+    bookkeeping/allocate.ipynb
+    bookkeeping/partition.ipynb
+    bookkeeping/cast.ipynb
+    bookkeeping/always.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Other:
 
     state_preparation/prepare_uniform_superposition.ipynb
-    chemistry/hubbard_model/qubitization/hubbard_model.ipynb
     multiplexers/apply_gate_to_lth_target.ipynb
     multiplexers/apply_lth_bloq.ipynb
     data_loading/qrom.ipynb
@@ -176,3 +192,4 @@ Bloqs Library
     state_preparation/state_preparation_via_rotation.ipynb
     qsp/generalized_qsp.ipynb
     hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb
+    hamiltonian_simulation/guided_hamiltonian.ipynb

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
+import abc
 import itertools
 from typing import (
     Any,
@@ -28,28 +29,32 @@ from typing import (
     Union,
 )
 
+import attrs
 import networkx as nx
 import numpy as np
 import sympy
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from qualtran import (
     Bloq,
     BloqInstance,
     DanglingT,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
     Signature,
     Soquet,
 )
-from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.composite_bloq import _binst_to_cxns, _get_soquet
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq, QCDType
 
 ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
-ClassicalValRetT = Union[int, np.integer, NDArray[np.integer]]
+ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
 
 
 def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
@@ -106,6 +111,88 @@ def _get_in_vals(
     return arg
 
 
+@attrs.frozen(hash=False)
+class ClassicalValDistribution:
+    """This class represents a distribution of classical values.
+
+    Use this if the bloq has performed a measurement or other projection
+    that has resulted in a mixed state of purely classical values.
+
+    Args:
+        a: An array of choices, or `np.arange` if an integer is given.
+            This is the `a` parameter to `np.random.Generator.choice()`.
+        p: An array of probabilities. If not supplied, the uniform distribution is assumed.
+            This is the `p` parameter to `np.random.Generator.choice()`.
+    """
+
+    a: Union[int, np.typing.ArrayLike]
+    p: Optional[np.typing.ArrayLike] = None
+
+
+class _ClassicalValHandler(metaclass=abc.ABCMeta):
+    """An internal class for returning a random classical value.
+
+    Implmentors should write the get() function which returns a random
+    choice of values."""
+
+    @abc.abstractmethod
+    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any: ...
+
+
+class _RandomClassicalValHandler(_ClassicalValHandler):
+    """Returns a random classical value using a random number generator."""
+
+    def __init__(self, rng: 'np.random.Generator'):
+        self._gen = rng
+
+    def get(self, binst, distribution: ClassicalValDistribution):
+        return self._gen.choice(distribution.a, p=distribution.p)  # type:ignore[arg-type]
+
+
+class _FixedClassicalValHandler(_ClassicalValHandler):
+    """Returns a random classical value using a fixed value per bloq instance.
+
+    Useful for deterministic testing.
+
+    Args:
+        binst_i_to_val: mapping from BloqInstance.i instance indices
+            to the fixed classical value.
+    """
+
+    def __init__(self, binst_i_to_val: Dict[int, Any]):
+        self._binst_i_to_val = binst_i_to_val
+
+    def get(self, binst, distribution: ClassicalValDistribution):
+        return self._binst_i_to_val[binst.i]
+
+
+class _BannedClassicalValHandler(_ClassicalValHandler):
+    """Used when random classical value is not able to be performed."""
+
+    def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any:
+        raise ValueError(
+            f"{binst} has non-deterministic classical action."
+            "Cannot simulate with classical values."
+        )
+
+
+@attrs.frozen
+class MeasurementPhase:
+    """Sentinel value for phases based on measurement outcomes:
+
+    This can be returned from `Bloq.basis_state_phase`
+    if a phase should be applied based on a measurement outcome.
+    This can be used in special circumstances to verify measurement-based uncomputation (MBUC).
+
+    Args:
+        reg_name: Name of the register
+        idx: Index of the register wire(s).
+    """
+
+    reg_name: str
+    idx: Tuple[int, ...] = ()
+
+
 class ClassicalSimState:
     """A mutable class for classically simulating composite bloqs.
 
@@ -122,6 +209,8 @@ class ClassicalSimState:
             binst graph.
         vals: A mapping of input register name to classical value to serve as inputs to the
             procedure.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
 
     Attributes:
         soq_assign: An assignment of soquets to classical values. We store the classical state
@@ -138,10 +227,12 @@ class ClassicalSimState:
         signature: 'Signature',
         binst_graph: nx.DiGraph,
         vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        random_handler: '_ClassicalValHandler' = _BannedClassicalValHandler(),
     ):
         self._signature = signature
         self._binst_graph = binst_graph
         self._binst_iter = nx.topological_sort(self._binst_graph)
+        self._random_handler = random_handler
 
         # Keep track of each soquet's bit array. Initialize with LeftDangle
         self.soq_assign: Dict[Soquet, ClassicalValT] = {}
@@ -206,35 +297,56 @@ class ClassicalSimState:
 
             else:
                 # `val` is one value.
+                if isinstance(val, ClassicalValDistribution):
+                    val = self._random_handler.get(binst, val)
+
                 reg.dtype.assert_valid_classical_val(val, debug_str)
                 soq = Soquet(binst, reg)
                 self.soq_assign[soq] = val
 
-    def _binst_on_classical_vals(self, binst, in_vals) -> None:
-        """Call `on_classical_vals` on a given bloq instance."""
-        bloq = binst.bloq
+    def _recurse_impl(self, cbloq: 'CompositeBloq', in_vals):
+        """Overridable function to recursively simulate a composite bloq."""
+        out_vals, _ = call_cbloq_classically(cbloq.signature, in_vals, cbloq._binst_graph)
+        phase = None
 
-        out_vals = bloq.on_classical_vals(**in_vals)
-        if not isinstance(out_vals, dict):
-            raise TypeError(
-                f"{bloq.__class__.__name__}.on_classical_vals should return a dictionary."
-            )
-        self._update_assign_from_vals(bloq.signature.rights(), binst, out_vals)
+        return out_vals, phase
 
-    def _binst_basis_state_phase(self, binst, in_vals) -> None:
-        """Call `basis_state_phase` on a given bloq instance.
+    def _recurse(self, binst: 'BloqInstance', in_vals) -> Self:
+        """Recursively simulate a composite bloq.
 
-        This base simulation class will raise an error if the bloq reports any phasing.
-        This method is overwritten in `PhasedClassicalSimState` to support phasing.
+        This handles decomposing the bloq and using the results of the sub-simulation
+        to update the simulator state. Developers should override `_recurse_impl` to
+        customize the sub-simulation.
         """
         bloq = binst.bloq
-        bloq_phase = bloq.basis_state_phase(**in_vals)
+        try:
+            cbloq = bloq.decompose_bloq()
+            out_vals, bloq_phase = self._recurse_impl(cbloq, in_vals)
+
+        except DecomposeTypeError as e:
+            raise NotImplementedError(f"{bloq} is not classically simulable.") from e
+        except DecomposeNotImplementedError as e:
+            raise NotImplementedError(
+                f"{bloq} has no decomposition and does not "
+                f"support classical simulation directly"
+            ) from e
+        except NotImplementedError as e:
+            raise NotImplementedError(f"{bloq} does not support classical simulation: {e}") from e
+
+        self._update(binst, out_vals, bloq_phase)
+        return self
+
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+        """Overridable method to update the current simulator state."""
+        self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
+
         if bloq_phase is not None:
             raise ValueError(
-                f"{bloq} imparts a phase, and can't be simulated purely classically. Consider using `do_phased_classical_simulation`."
+                f"{binst.bloq} imparts a phase of {bloq_phase}, and can't be simulated purely classically. "
+                f"Consider using `do_phased_classical_simulation`."
             )
 
-    def step(self) -> 'ClassicalSimState':
+    def step(self) -> Self:
         """Advance the simulation by one bloq instance.
 
         After calling this method, `self.last_binst` will contain the bloq instance that
@@ -258,11 +370,32 @@ class ClassicalSimState:
             return _get_in_vals(binst, reg, soq_assign=self.soq_assign)
 
         bloq = binst.bloq
+        bcls_name = bloq.__class__.__name__
         in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
+        out_vals = bloq.on_classical_vals(**in_vals)
+        bloq_phase = bloq.basis_state_phase(**in_vals)
 
-        # Apply methods
-        self._binst_on_classical_vals(binst, in_vals)
-        self._binst_basis_state_phase(binst, in_vals)
+        #                     +--+ basis_state_phase
+        #   +- on_classical_vals
+        #   |                 |
+        # dict              None           Use classical values.
+        # dict              number         Use classical values and phase only if doing phased sim
+        # NotImplemented    None           decompose and use the correct simulator type
+        # NotImplemented    number         error
+
+        if out_vals is NotImplemented:
+            if bloq_phase is not None:
+                raise ValueError(
+                    f"`basis_state_phase` defined on {bcls_name}, but not `on_classical_vals`"
+                )
+
+            return self._recurse(binst, in_vals)
+
+        if not isinstance(out_vals, dict):
+            raise TypeError(f"`{bcls_name}.on_classical_vals` should return a dictionary.")
+
+        self._update(binst, out_vals, bloq_phase)
+
         return self
 
     def finalize(self) -> Dict[str, 'ClassicalValT']:
@@ -273,7 +406,7 @@ class ClassicalSimState:
                 composite bloq.
 
         Raises:
-            KeyError if `.step()` has not been called for each bloq instance.
+            KeyError: if `.step()` has not been called for each bloq instance.
         """
 
         # Track bloq-to-dangle name changes
@@ -304,7 +437,7 @@ class PhasedClassicalSimState(ClassicalSimState):
     The convenience function `do_phased_classical_simulation` will simulate a bloq. Use this
     class directly for more fine-grained control.
 
-    This simulation scheme supports a class of circuits containing only:
+    This simulation scheme supports a class of circuits containing only
      - classical operations corresponding to permutation matrices in the computational basis
      - phase-like operations corresponding to diagonal matrices in the computational basis.
 
@@ -321,6 +454,8 @@ class PhasedClassicalSimState(ClassicalSimState):
         soq_assign: An assignment of soquets to classical values.
         last_binst: A record of the last bloq instance we processed during simulation.
         phase: The current phase of the simulation state.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
     """
 
     def __init__(
@@ -330,14 +465,21 @@ class PhasedClassicalSimState(ClassicalSimState):
         vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
         *,
         phase: complex = 1.0,
+        random_handler: '_ClassicalValHandler',
     ):
-        super().__init__(signature=signature, binst_graph=binst_graph, vals=vals)
+        super().__init__(
+            signature=signature, binst_graph=binst_graph, vals=vals, random_handler=random_handler
+        )
         _assert_valid_phase(phase)
         self.phase = phase
 
     @classmethod
     def from_cbloq(
-        cls, cbloq: 'CompositeBloq', vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]]
+        cls,
+        cbloq: 'CompositeBloq',
+        vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
+        rng: Optional['np.random.Generator'] = None,
+        fixed_random_vals: Optional[Dict[int, Any]] = None,
     ) -> 'PhasedClassicalSimState':
         """Initiate a classical simulation from a CompositeBloq.
 
@@ -345,21 +487,60 @@ class PhasedClassicalSimState(ClassicalSimState):
             cbloq: The composite bloq
             vals: A mapping of input register name to classical value to serve as inputs to the
                 procedure.
+            rng: A random number generator to use for classical random values, such a np.random.
+            fixed_random_vals: A dictionary of bloq instances to values to perform fixed calculation
+                for classical values.
 
         Returns:
             A new classical sim state.
         """
-        return cls(signature=cbloq.signature, binst_graph=cbloq._binst_graph, vals=vals)
+        rnd_handler: _ClassicalValHandler
+        if rng is not None:
+            rnd_handler = _RandomClassicalValHandler(rng=rng)
+        elif fixed_random_vals is not None:
+            rnd_handler = _FixedClassicalValHandler(binst_i_to_val=fixed_random_vals)
+        else:
+            rnd_handler = _BannedClassicalValHandler()
+        return cls(
+            signature=cbloq.signature,
+            binst_graph=cbloq._binst_graph,
+            vals=vals,
+            random_handler=rnd_handler,
+        )
 
-    def _binst_basis_state_phase(self, binst, in_vals):
-        """Call `basis_state_phase` on a given bloq instance.
+    def _recurse_impl(self, cbloq, in_vals):
+        """Use phased classical simulation when recursing."""
+        sim = PhasedClassicalSimState(
+            cbloq.signature, cbloq._binst_graph, in_vals, random_handler=self._random_handler
+        )
+        final_vals = sim.simulate()
+        phase = sim.phase
+        return final_vals, phase
 
-        If this method returns a value, the current phase will be updated. Otherwise, we
-        leave the phase as-is.
-        """
-        bloq = binst.bloq
-        bloq_phase = bloq.basis_state_phase(**in_vals)
-        if bloq_phase is not None:
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+        """Update the current simulator state, including phase tracking."""
+        self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
+
+        if isinstance(bloq_phase, MeasurementPhase):
+            # In this special case, there is a coupling between the classical result and the
+            # phase result (because the classical result is stochastic). We look up the measurement
+            # result and apply a phase if it is `1`.
+            meas_result = self.soq_assign[
+                _get_soquet(
+                    binst=binst,
+                    reg_name=bloq_phase.reg_name,
+                    right=True,
+                    idx=bloq_phase.idx,
+                    binst_graph=self._binst_graph,
+                )
+            ]
+            if meas_result == 1:
+                # Measurement result of 1, phase of -1
+                self.phase *= -1.0
+            else:
+                # Measurement result of 0, phase of +1
+                pass
+        elif bloq_phase is not None:
             _assert_valid_phase(bloq_phase)
             self.phase *= bloq_phase
         else:
@@ -371,6 +552,9 @@ def call_cbloq_classically(
     signature: Signature,
     vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
     binst_graph: nx.DiGraph,
+    random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(
+        rng=np.random.default_rng()
+    ),
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -381,6 +565,8 @@ def call_cbloq_classically(
         signature: The cbloq's signature for validating inputs
         vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
+        random_handler: The classical random number handler to use for use in
+            measurement-based outcomes (e.g. MBUC).
 
     Returns:
         final_vals: A mapping from register name to output classical values
@@ -388,7 +574,7 @@ def call_cbloq_classically(
             corresponding to thru registers will be mapped to the *output* classical
             value.
     """
-    sim = ClassicalSimState(signature, binst_graph, vals)
+    sim = ClassicalSimState(signature, binst_graph, vals, random_handler)
     final_vals = sim.simulate()
     return final_vals, sim.soq_assign
 
@@ -398,7 +584,12 @@ def _assert_valid_phase(p: complex, atol: float = 1e-8):
         raise ValueError(f"Phases must have unit modulus. Found {p}.")
 
 
-def do_phased_classical_simulation(bloq: 'Bloq', vals: Mapping[str, 'ClassicalValT']):
+def do_phased_classical_simulation(
+    bloq: 'Bloq',
+    vals: Mapping[str, 'ClassicalValT'],
+    rng: Optional['np.random.Generator'] = None,
+    fixed_random_vals: Optional[Dict[int, Any]] = None,
+) -> Tuple[Dict[str, 'ClassicalValT'], complex]:
     """Do a phased classical simulation of the bloq.
 
     This provides a simple interface to `PhasedClassicalSimState`. Advanced users
@@ -408,13 +599,20 @@ def do_phased_classical_simulation(bloq: 'Bloq', vals: Mapping[str, 'ClassicalVa
         bloq: The bloq to simulate
         vals: A mapping from input register name to initial classical values. The initial phase is
             assumed to be 1.0.
+        rng: A numpy random generator (e.g. from `np.random.default_rng()`). This function
+            will use this generator to supply random values from certain phased-classical operations
+            like `MeasureX`. If not supplied, classical measurements will use a random value.
+        fixed_random_vals: A dictionary of instance to values to perform fixed calculation
+                for classical values.
 
     Returns:
         final_vals: A mapping of output register name to final classical values.
         phase: The final phase.
     """
     cbloq = bloq.as_composite_bloq()
-    sim = PhasedClassicalSimState.from_cbloq(cbloq, vals=vals)
+    sim = PhasedClassicalSimState.from_cbloq(
+        cbloq, vals=vals, rng=rng, fixed_random_vals=fixed_random_vals
+    )
     final_vals = sim.simulate()
     phase = sim.phase
     return final_vals, phase
@@ -473,24 +671,20 @@ def format_classical_truth_table(
 
 
 def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
-    r"""Performs addition modulo $2^\mathrm{num\_bits}$ of (un)signed in a reversible way.
+    r"""Classically performs addition modulo $2^n$ of two integers in a reversible way.
 
-    Addition of signed integers can result in an overflow. In most classical programming languages (e.g. C++)
-    what happens when an overflow happens is left as an implementation detail for compiler designers. However,
-    for quantum subtraction, the operation should be unitary and that means that the unitary of the bloq should
-    be a permutation matrix.
-
-    If we hold `a` constant then the valid range of values of $b \in [-2^{\mathrm{num\_bits}-1}, 2^{\mathrm{num\_bits}-1})$
-    gets shifted forward or backward by `a`. To keep the operation unitary overflowing values wrap around. This is the same
-    as moving the range $2^\mathrm{num\_bits}$ by the same amount modulo $2^\mathrm{num\_bits}$. That is add
-    $2^{\mathrm{num\_bits}-1})$ before addition modulo and then remove it.
+    Addition of integers can result in an overflow. In C/C++, overflow behavior is left as an
+    implementation detail for compiler designers. However, for quantum programs, the operation
+    must be unitary (i.e. reversible). To keep the operation unitary, overflowing values wrap
+    around.
 
     Args:
         a: left operand of addition.
         b: right operand of addition.
-        num_bits: optional num_bits. When specified addition is done in the interval [0, 2**num_bits) or
-            [-2**(num_bits-1), 2**(num_bits-1)) based on the value of `is_signed`.
-        is_signed: boolean whether the numbers are unsigned or signed ints. This value is only used when
+        num_bits: When specified, addition is done in the interval `[0, 2**num_bits)` or
+            `[-2**(num_bits-1), 2**(num_bits-1))` based on the value of `is_signed`. Otherwise,
+            arbitrary-precision Python integer addition is performed.
+        is_signed: Whether the numbers are unsigned or signed ints. This value is only used when
             `num_bits` is provided.
     """
     c = a + b

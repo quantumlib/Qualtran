@@ -39,7 +39,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets, _get_soquet
 from qualtran._infra.data_types import BQUInt, QAny, QBit, QFxp, QUInt
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.bookkeeping import Join
@@ -617,6 +617,30 @@ def test_decompose_symbolic_register_shape_raises():
     bloq = TestSymbolicRegisterShape(n)
     with pytest.raises(DecomposeTypeError):
         bloq.decompose_bloq()
+
+
+class LeftRightSoquets(Bloq):
+    """Bloq that outputs a random bit for testing."""
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('in', QBit(), side=Side.LEFT), Register('out', QBit(), side=Side.RIGHT)]
+        )
+
+
+def test_get_soquet():
+    bloq = LeftRightSoquets()
+    cbloq = bloq.as_composite_bloq()
+    binst = BloqInstance(bloq, 0)
+    binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
+
+    soquet = _get_soquet(binst=binst, reg_name='out', right=True, binst_graph=binst_graph)
+    assert soquet.reg.name == 'out'
+    soquet = _get_soquet(binst=binst, reg_name='in', right=False, binst_graph=binst_graph)
+    assert soquet.reg.name == 'in'
+    with pytest.raises(ValueError, match='Could not find the requested soquet'):
+        _ = _get_soquet(binst=binst, reg_name='in', right=True, binst_graph=binst_graph)
 
 
 @pytest.mark.notebook

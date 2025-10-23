@@ -26,6 +26,7 @@
 
 import pytest
 
+import qualtran
 import qualtran.testing as qlt_testing
 from qualtran import BloqExample
 
@@ -164,6 +165,27 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     ]:
         pytest.xfail("Skipping serialization test for bloqs that use ECPoint.")
 
+    if bloq_ex.name in [
+        'col_kth_nz',
+        'col_kth_nz_symb',
+        'kikuchi_nonzero_index',
+        'kikuchi_nonzero_index_symb',
+        'simple_guiding_state',
+        'simple_guiding_state_symb',
+        'guiding_state',
+        'guiding_state_symb',
+        'guiding_state_symb_c',
+        'kikuchi_matrix_entry',
+        'kikuchi_matrix_entry_symb',
+        'kikuchi_matrix',
+        'kikuchi_matrix_symb',
+        'load_scopes',
+        'load_scopes_symb',
+        'guided_phase_estimate_symb',
+        'guided_hamiltonian_symb',
+    ]:
+        pytest.xfail("Skipping serialization test for bloqs that use KXorInstance.")
+
     try:
         qlt_testing.assert_bloq_example_serializes(bloq_ex)
     except qlt_testing.BloqCheckException as bce:
@@ -194,3 +216,9 @@ def bloq_autotester(request):
     name, func = request.param
     func.check_name = name
     return func
+
+
+@pytest.fixture(autouse=True)
+def add_qlt(doctest_namespace):
+    # Make qualtran available (without explicit import) in doctests
+    doctest_namespace['qualtran'] = qualtran

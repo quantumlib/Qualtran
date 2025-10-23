@@ -15,13 +15,13 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
-import numbers
 import warnings
 from functools import cached_property
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -434,9 +434,9 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](exponent=gate.exponent)
 
     if isinstance(gate, cirq.GlobalPhaseGate):
-        if isinstance(gate.coefficient, numbers.Complex):
-            return GlobalPhase.from_coefficient(coefficient=complex(gate.coefficient))
-        return GlobalPhase.from_coefficient(coefficient=gate.coefficient)
+        if isinstance(gate.coefficient, sympy.Expr):
+            return GlobalPhase.from_coefficient(coefficient=gate.coefficient)
+        return GlobalPhase.from_coefficient(coefficient=complex(gate.coefficient))
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)

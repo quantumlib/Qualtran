@@ -13,13 +13,24 @@
 #  limitations under the License.
 import cirq
 import numpy as np
+import pytest
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import MinusState, PlusEffect, PlusState, XGate
+from qualtran.bloqs.basic_gates import (
+    MeasureX,
+    MinusState,
+    OneState,
+    PlusEffect,
+    PlusState,
+    XGate,
+    ZeroState,
+)
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.simulation.classical_sim import (
+    do_phased_classical_simulation,
     format_classical_truth_table,
     get_classical_truth_table,
+    MeasurementPhase,
 )
 
 
@@ -119,3 +130,74 @@ def test_controlled_x():
     bloq = XGate().controlled(CtrlSpec(qdtypes=QUInt(n), cvs=1))
     _, sigma = bloq.call_graph(keep=_keep_and)
     assert sigma == {And(): n - 1, CNOT(): 1, And().adjoint(): n - 1, XGate(): 4 * (n - 1)}
+
+
+def test_meas_x_classical_sim() -> None:
+    bloq = MeasureX()
+
+    with pytest.raises(ValueError, match='MeasureX imparts a phase'):
+        _ = bloq.call_classically(q=0)
+
+    with pytest.raises(ValueError, match='Invalid classical value'):
+        _ = bloq.on_classical_vals(q=2)
+
+    rng = np.random.default_rng(seed=12345)
+    results = [do_phased_classical_simulation(bloq, {'q': 0}, rng=rng) for _ in range(100)]
+
+    # Assert measurements are random
+    assert all(c[0]['c'] in {0, 1} for c in results)
+    assert any(c[0]['c'] == 0 for c in results)
+    assert any(c[0]['c'] == 1 for c in results)
+    # Assert phase is 1
+    assert all(c[1] == 1 for c in results)
+
+    rng = np.random.default_rng(seed=12345)
+    results = [do_phased_classical_simulation(bloq, {'q': 1}, rng=rng) for _ in range(100)]
+    # Assert measurements are random
+    assert all(c[0]['c'] in {0, 1} for c in results)
+    assert any(c[0]['c'] == 0 for c in results)
+    assert any(c[0]['c'] == 1 for c in results)
+    # Assert phase is -1 only if measurement is 1
+    assert all(c[1] == -1 for c in results if c[0]['c'] == 1)
+    assert all(c[1] == 1 for c in results if c[0]['c'] == 0)
+
+
+def test_meas_x_basis_state_phase() -> None:
+    bloq = MeasureX()
+    assert bloq.basis_state_phase(0) == 1
+    assert bloq.basis_state_phase(1) == MeasurementPhase(reg_name='c')
+
+    with pytest.raises(ValueError, match='Invalid classical value'):
+        _ = bloq.basis_state_phase(2)
+
+
+def test_meas_z_supertensor():
+    with pytest.raises(ValueError, match=r'.*superoperator.*'):
+        MeasureX().tensor_contract()
+
+    # Zero -> Fully mixed state
+    bb = BloqBuilder()
+    q = bb.add(ZeroState())
+    c = bb.add(MeasureX(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.asarray([[0.5, 0], [0, 0.5]])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # One -> Fully mixed state
+    bb = BloqBuilder()
+    q = bb.add(OneState())
+    c = bb.add(MeasureX(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.asarray([[0.5, 0], [0, 0.5]])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)
+
+    # Plus measurement -> deterministic zero
+    bb = BloqBuilder()
+    q = bb.add(PlusState())
+    c = bb.add(MeasureX(), q=q)
+    cbloq = bb.finalize(c=c)
+    rho = cbloq.tensor_contract(superoperator=True)
+    should_be = np.asarray([[1, 0], [0, 0]])
+    np.testing.assert_allclose(rho, should_be, atol=1e-8)

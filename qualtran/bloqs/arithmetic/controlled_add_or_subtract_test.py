@@ -67,6 +67,21 @@ def test_controlled_add_or_subtract_classical_sim(bitsize: int):
                     assert b_out_unsigned == (b_unsigned - a_unsigned + 2**bitsize) % 2**bitsize
 
 
+def test_caddsub_mixed_dtype():
+    from qualtran.bloqs.arithmetic import Add
+
+    bloq = Add(QUInt(4), QInt(4))
+    a, b_res = bloq.call_classically(a=0, b=-1)
+    assert a == 0
+    assert b_res == -1
+
+    bloq = ControlledAddOrSubtract(QUInt(4), QInt(4))
+    ctrl, a, b_result = bloq.call_classically(a=0, b=-1, ctrl=1)
+    assert ctrl == 1
+    assert a == 0
+    assert b_result == -1
+
+
 @frozen
 class TestNaiveControlledAddOrSubtract(Bloq):
     """A naive implementation of controlled add or subtract using two controlled bloqs.
@@ -107,3 +122,11 @@ def test_t_complexity():
     counts = get_cost_value(bloq, QECGatesCost()).total_t_and_ccz_count()
     assert counts['n_t'] == 0, 'toffoli only'
     assert counts['n_ccz'] == n - 1
+
+
+def test_controlled_t_complexity():
+    dtype = QUInt(10)
+    bloq = ControlledAddOrSubtract(dtype, dtype)
+
+    _ = bloq.controlled().adjoint().t_complexity()
+    _ = bloq.adjoint().controlled().t_complexity()
