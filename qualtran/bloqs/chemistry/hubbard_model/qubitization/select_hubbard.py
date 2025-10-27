@@ -62,8 +62,9 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
+from qualtran.bloqs.basic_gates import CNOT, CSwap, CZ, TwoBitCSwap
 from qualtran.bloqs.bookkeeping import Join2, Split2
+from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
@@ -277,6 +278,10 @@ class HubbardMajorannaOperator(Bloq):
         return ceil(log2(self.x_dim))
 
     @cached_property
+    def N(self):
+        return 2 * self.x_dim * self.y_dim
+
+    @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
@@ -290,7 +295,7 @@ class HubbardMajorannaOperator(Bloq):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
+        return (Register('target', QAny(self.N)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -307,9 +312,13 @@ class HubbardMajorannaOperator(Bloq):
         else:
             raise ValueError(f"Unknown gate {self.gate}")
 
-    @cached_property
-    def selected_majoranna_fermion_bloq(self) -> SelectedMajoranaFermion:
-        return SelectedMajoranaFermion(
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x, y, spin, target, control=None
+    ) -> Dict[str, 'SoquetT']:
+        if is_symbolic(self.x_dim, self.y_dim):
+            raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
+
+        smf = SelectedMajoranaFermion(
             selection_regs=(
                 Register('x', BQUInt(self.log_m, self.x_dim)),
                 Register('y', BQUInt(self.log_m, self.y_dim)),
@@ -318,14 +327,6 @@ class HubbardMajorannaOperator(Bloq):
             control_regs=self.control_registers,
             target_gate=self._target_cirq_gate,
         )
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x, y, spin, target, control=None
-    ) -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.x_dim, self.y_dim):
-            raise DecomposeTypeError(f"Cannot decompose symbolic x_dim, y_dim in {self}")
-
-        smf = self.selected_majoranna_fermion_bloq
         if self.control_val:
             control, x, y, spin, target = bb.add_from(
                 smf, control=control, x=x, y=y, spin=spin, target=target
@@ -338,7 +339,11 @@ class HubbardMajorannaOperator(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        return self.selected_majoranna_fermion_bloq.build_call_graph(ssa)
+
+        count = self.N - 1
+        if self.control_val is None:
+            count -= 1
+        return {And(): count, And().adjoint(): count}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -436,18 +441,6 @@ class HubbardSpinUpZ(Bloq):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    @cached_property
-    def _apply_z_to_lth(self) -> ApplyGateToLthQubit:
-        c_size = 1 if self.control_val is None else 2
-        return ApplyGateToLthQubit(
-            selection_regs=(
-                Register('y', BQUInt(self.signature.get_left('y').total_bits(), self.y_dim)),
-                Register('x', BQUInt(self.signature.get_left('x').total_bits(), self.x_dim)),
-            ),
-            nth_gate=lambda *_: cirq.Z,
-            control_regs=Register('control', QAny(c_size)),
-        )
-
     def build_composite_bloq(
         self, bb: 'BloqBuilder', V, x, y, target, control=None
     ) -> Dict[str, 'SoquetT']:
@@ -457,8 +450,10 @@ class HubbardSpinUpZ(Bloq):
         # If we have a control bit, pack it into `ApplyToLthQubit` control register
         if self.control_val is not None:
             control = bb.join([V, control])
+            c_size = 2
         else:
             control = V
+            c_size = 1
 
         # `target` is a QAny(xdim * ydim * 2).
         # We index into it like (alpha, y, x),
@@ -468,7 +463,18 @@ class HubbardSpinUpZ(Bloq):
 
         # Delegate to `ApplyGateToLthQubit`.
         control, y, x, spin_up = bb.add_from(
-            self._apply_z_to_lth, x=x, y=y, control=control, target=spin_up
+            ApplyGateToLthQubit(
+                selection_regs=(
+                    Register('y', BQUInt(self.signature.get_left('y').total_bits(), self.y_dim)),
+                    Register('x', BQUInt(self.signature.get_left('x').total_bits(), self.x_dim)),
+                ),
+                nth_gate=lambda *_: cirq.Z,
+                control_regs=Register('control', QAny(c_size)),
+            ),
+            x=x,
+            y=y,
+            control=control,
+            target=spin_up,
         )
         target = bb.add(Join2(n_half, n_half), y1=spin_down, y2=spin_up)
 
@@ -485,7 +491,11 @@ class HubbardSpinUpZ(Bloq):
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
     ) -> Union['BloqCountDictT', Set['BloqCountT']]:
-        return self._apply_z_to_lth.build_call_graph(ssa)
+        half_N = self.x_dim * self.y_dim
+        count = half_N
+        if self.control_val is None:
+            count -= 1
+        return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
