@@ -39,7 +39,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 """
 
 from functools import cached_property
-from typing import Dict, Iterator, Optional, Tuple
+from typing import Dict, Iterator, Optional, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -62,13 +62,15 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
+from qualtran.bloqs.basic_gates import CNOT, CSwap, CZ, TwoBitCSwap
 from qualtran.bloqs.bookkeeping import Join2, Split2
+from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.multiplexers.select_base import SelectOracle
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicInt
 
 
@@ -276,6 +278,10 @@ class HubbardMajorannaOperator(Bloq):
         return ceil(log2(self.x_dim))
 
     @cached_property
+    def N(self):
+        return 2 * self.x_dim * self.y_dim
+
+    @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
@@ -289,7 +295,7 @@ class HubbardMajorannaOperator(Bloq):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
+        return (Register('target', QAny(self.N)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -329,6 +335,15 @@ class HubbardMajorannaOperator(Bloq):
         else:
             x, y, spin, target = bb.add_from(smf, x=x, y=y, spin=spin, target=target)
             return {'x': x, 'y': y, 'spin': spin, 'target': target}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+
+        count = self.N - 1
+        if self.control_val is None:
+            count -= 1
+        return {And(): count, And().adjoint(): count}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
@@ -472,6 +487,15 @@ class HubbardSpinUpZ(Bloq):
             ret = {'V': V}
 
         return ret | {'x': x, 'y': y, 'target': target}
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        half_N = self.x_dim * self.y_dim
+        count = half_N
+        if self.control_val is None:
+            count -= 1
+        return {And(): count, And().adjoint(): count, CNOT(): half_N - 1, CZ(): half_N}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

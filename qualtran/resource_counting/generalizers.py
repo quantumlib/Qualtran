@@ -43,9 +43,17 @@ def _ignore_wrapper(f: Callable[[Bloq], Optional[Bloq]], b: Bloq) -> Optional[Bl
 
 def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores split and join operations."""
-    from qualtran.bloqs.bookkeeping import AutoPartition, Cast, Join, Partition, Split
+    from qualtran.bloqs.bookkeeping import (
+        AutoPartition,
+        Cast,
+        Join,
+        Join2,
+        Partition,
+        Split,
+        Split2,
+    )
 
-    if isinstance(b, (Split, Join, Partition, Cast)):
+    if isinstance(b, (Split, Split2, Join, Join2, Partition, Cast)):
         return None
     if isinstance(b, AutoPartition):
         return ignore_split_join(b.bloq)

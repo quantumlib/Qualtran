@@ -16,8 +16,13 @@ from unittest.mock import ANY
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import QAny, QUInt
-from qualtran.bloqs.chemistry.hubbard_model.qubitization import HubbardSpinUpZ, SelectHubbard
+from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
+    HubbardMajorannaOperator,
+    HubbardSpinUpZ,
+    SelectHubbard,
+)
 from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
     _hubb_majoranna,
     _hubb_majoranna_small,
@@ -26,6 +31,12 @@ from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
     _sel_hubb,
 )
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
+from qualtran.resource_counting.generalizers import (
+    generalize_cvs,
+    ignore_alloc_free,
+    ignore_cliffords,
+    ignore_split_join,
+)
 from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
 
@@ -62,12 +73,42 @@ def test_hubbard_majoranna_small(bloq_autotester):
     bloq_autotester(_hubb_majoranna_small)
 
 
+def test_hubb_majoranna_bloq_counts():
+    for n in [2, 3, 10, 11]:
+        bloq = HubbardMajorannaOperator(x_dim=n, y_dim=n, control_val=None)
+        qlt_testing.assert_equivalent_bloq_counts(
+            bloq,
+            generalizer=[ignore_cliffords, ignore_alloc_free, ignore_split_join, generalize_cvs],
+        )
+
+    for n in [2, 3, 10, 11]:
+        bloq = HubbardMajorannaOperator(x_dim=n, y_dim=n, control_val=1)
+        qlt_testing.assert_equivalent_bloq_counts(
+            bloq,
+            generalizer=[ignore_cliffords, ignore_alloc_free, ignore_split_join, generalize_cvs],
+        )
+
+
 def test_hubbard_spin_up_z_symb(bloq_autotester):
     bloq_autotester(_hubb_spin_up_z)
 
 
 def test_hubbard_spin_up_z(bloq_autotester):
     bloq_autotester(_hubb_spin_up_z_small)
+
+
+def test_hubbard_spin_up_z_bloq_counts():
+    for n in [2, 3, 10, 11]:
+        bloq = HubbardSpinUpZ(x_dim=n, y_dim=n, control_val=None)
+        qlt_testing.assert_equivalent_bloq_counts(
+            bloq, generalizer=[ignore_alloc_free, ignore_split_join, generalize_cvs]
+        )
+
+    for n in [2, 3, 10, 11]:
+        bloq = HubbardSpinUpZ(x_dim=n, y_dim=n, control_val=1)
+        qlt_testing.assert_equivalent_bloq_counts(
+            bloq, generalizer=[ignore_alloc_free, ignore_split_join, generalize_cvs]
+        )
 
 
 def test_hubbard_spin_up_z_classical():
