@@ -233,8 +233,11 @@ def execute_and_export_notebooks(
         output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
-        n_workers: If set to 1, do not use parallelization. Otherwise, use
-            `multiprocessing.Pool(n_workers)` to execute notebooks in parallel.
+        n_workers: If set to 1, do not use parallelization. If set to `None` (the detault),
+            `multiprocessing.Pool()` will be used, which uses the number of processors as
+            a default. Otherwise, this argument is passed to
+            `multiprocessing.Pool(n_workers)` to execute notebooks in parallel on this many
+            worker processes..
     """
     reporoot = get_git_root()
     nb_rel_paths = get_nb_rel_paths(sourceroot=reporoot / 'qualtran')
