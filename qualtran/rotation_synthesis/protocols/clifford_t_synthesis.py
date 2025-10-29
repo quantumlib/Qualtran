@@ -94,7 +94,7 @@ def diagonal_unitary_approx(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.UnitaryChannel]:
-    """Approximates Rz(theta) using the diagonal protocol.
+    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
 
     Args:
         theta: Target angle.
@@ -135,7 +135,7 @@ def fallback_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProjectiveChannel]:
-    """Approximates Rz(theta) using the fallback protocol.
+    r"""Approximates $Rz(2\theta)$ using the fallback protocol.
 
     Args:
         theta: Target angle.
@@ -219,7 +219,7 @@ def mixed_diagonal_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    """Approximates Rz(theta) using the diagonal protocol.
+    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
 
     Args:
         theta: Target angle.
@@ -277,7 +277,7 @@ def mixed_fallback_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    """Approximates Rz(theta) using the diagonal protocol.
+    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
 
     Args:
         theta: Target angle.
