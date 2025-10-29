@@ -45,7 +45,7 @@ def bf(A, B, bounds):
             yield x
 
 
-@pytest.mark.parametrize("w", 1 / (1 + mc.NumpyConfig.sqrt2) * np.random.random(10))
+@pytest.mark.parametrize("w", 1 / (1 + mc.NumpyConfig.sqrt2) * np.random.default_rng(0).random(10))
 def test_enumerate1d_requiring_scaling_up(w):
     A = lattice.Range(start=0, end=w)
     B = lattice.Range(start=0, end=10)

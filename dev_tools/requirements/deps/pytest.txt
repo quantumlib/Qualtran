@@ -10,6 +10,3 @@ filelock
 
 # chemistry resource estimates
 openfermion[resources]
-
-# rotation synthesis
-mpmath
