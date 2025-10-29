@@ -3,21 +3,6 @@
 Rotation-Synthesis implements the state of the art rotation synthesis protocols for compiling $SU(2)$ unitaries into clifford+T gates.
 
 
-## Getting Started
-
-1. Clone the repository
-    ```sh
-    $ git clone sso://quantum-experimental/research
-    $ cd research/rotation_synthesis
-    ```
-1. Setup a virtual environment
-    ```sh
-    $ python3 -m venv rotation_synthesis_env
-    $ source rotation_synthesis_env/bin/activate
-    $ pip install -r requirements.txt
-    $ python  # optional: enter the python terminal
-    ```
-
 ## Minimal Examples
 
 ### Common Setup
