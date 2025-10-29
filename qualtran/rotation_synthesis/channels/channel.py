@@ -38,6 +38,34 @@ class Channel(abc.ABC):
 
 @attrs.frozen
 class UnitaryChannel(Channel):
+    r"""A Unitary operation.
+
+    The unitary matrix of an $SU(2)$ matrix is defined with two complex numbers $u, v$ as
+    $$
+    \begin{bmatrix}
+    u & -v^*\\
+    v & u^*
+    \end{bmatrix}
+    $$
+    for clifford+T unitarys the matrix can be written as
+    $$
+    \frac{1}{\sqrt{2(2+\sqrt{2})^n}}
+    \begin{bmatrix}
+    p & -q^*\\
+    q & p^*
+    \end{bmatrix}
+    $$
+    where $n$ is the number of T gates and $p, q \in \mathbb{Z}[e^{i\pi/4}]$.
+
+
+    Attributes:
+        p: The upper left elemenet of the clifford+T matrix.
+        q: The lower left elemenet of the clifford+T matrix.
+        n: The number of T gates.
+        twirl: If True, the unitary is twirled with gates equiprobable chosen
+            from the gates $\{I, Z, S, S^\dagger\}$.
+    """
+
     p: rings.ZW = attrs.field(validator=attrs.validators.instance_of(rings.ZW))
     q: rings.ZW = attrs.field(validator=attrs.validators.instance_of(rings.ZW))
     n: int = attrs.field(validator=attrs.validators.instance_of(int))
@@ -85,30 +113,46 @@ class UnitaryChannel(Channel):
 
 @attrs.frozen
 class ProjectiveChannel(Channel):
-    proj: UnitaryChannel
+    """A fallback (a.k.a RUS channel).
+
+    This channel applies the following circuit where $V$ is the `rotation` channel and $C$ is the
+    correction channel.
+
+    q: ─────────@───V───@───────Y───C───
+                │       │       ║   ║
+    ancilla: ───X───────X───M───╫───╫───
+                            ║   ║   ║
+    m: ═════════════════════@═══^═══^═══
+
+    Attributes:
+        rotation: This first half of the channel (i.e. $V$).
+        correction: The correction channel, this is applied only when the measurement result is one
+    """
+
+    rotation: UnitaryChannel
     correction: Channel
 
     def success_probability(self, config: mc.MathConfig) -> rst.Real:
         """Constructs a probablity of a zero measurement."""
-        v = self.proj.q.polar(config)[0] / zsqrt2.radius_at_n(
-            zsqrt2.LAMBDA_KLIUCHNIKOV, self.proj.n, config
+        v = self.rotation.q.polar(config)[0] / zsqrt2.radius_at_n(
+            zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
         )
         return 1 - v * v
 
     def rotation_angle(self, config: mc.MathConfig) -> rst.Real:
         """Returns the rotation angle applied with when the measurement result is zero."""
-        return self.proj.rotation_angle(config)
+        return self.rotation.rotation_angle(config)
 
     def failure_angle(self, config: mc.MathConfig) -> rst.Real:
         """Returns the rotation angle applied with when the measurement result is one."""
-        return self.proj.failure_angle(config)
+        return self.rotation.failure_angle(config)
 
     def expected_num_ts(self, config: mc.MathConfig) -> rst.Real:
-        v = self.proj.q.value(config.sqrt2)
+        v = self.rotation.q.value(config.sqrt2)
         fail_prob = (v * v.conjugate()).real / zsqrt2.radius2_at_n(
-            zsqrt2.LAMBDA_KLIUCHNIKOV, self.proj.n, config
+            zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
         )
-        return self.proj.expected_num_ts(config) + fail_prob * self.correction.expected_num_ts(
+        return self.rotation.expected_num_ts(config) + fail_prob * self.correction.expected_num_ts(
             config
         )
 
@@ -124,7 +168,7 @@ class ProjectiveChannel(Channel):
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         p = self.success_probability(config)
         return p * ProjectiveChannel.diamond_distance_to_rz_on_measurement_success(
-            self.proj.p, theta, config
+            self.rotation.p, theta, config
         ) + (1 - p) * self.correction.diamond_norm_distance_to_rz(
             theta - self.failure_angle(config), config
         )
@@ -132,6 +176,14 @@ class ProjectiveChannel(Channel):
 
 @attrs.frozen
 class ProbabilisticChannel(Channel):
+    """A Channel that randomly applies one of two channels.
+
+    Attributes:
+        c1: The first channel.
+        c2: The second channel.
+        probability: The probablility of applying the first channel.
+    """
+
     c1: Channel
     c2: Channel
     probability: rst.Real = attrs.field(default=1, converter=lambda x: max(min(x, 1), 0))
