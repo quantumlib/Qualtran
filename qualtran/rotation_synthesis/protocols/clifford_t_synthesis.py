@@ -105,6 +105,9 @@ def diagonal_unitary_approx(
         verbose: whether to print debug statements or not.
     Returns:
         A Unitary channel.
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.2
     """
     theta = config.number(theta)
     eps = config.number(eps)
@@ -151,6 +154,9 @@ def fallback_protocol(
         verbose: whether to print debug statements or not.
     Returns:
         A ProjectiveChannel.
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.3
     """
     theta = config.number(theta)
     eps = config.number(eps)
@@ -219,7 +225,7 @@ def mixed_diagonal_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
+    r"""Approximates $Rz(2\theta)$ using the mixed diagonal protocol.
 
     Args:
         theta: Target angle.
@@ -234,6 +240,10 @@ def mixed_diagonal_protocol(
         verbose: whether to print debug statements or not.
     Returns:
         A ProbabilisticChannel channel.
+
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.4
     """
     theta = config.number(theta)
     eps = config.number(eps)
@@ -277,7 +287,7 @@ def mixed_fallback_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
+    r"""Approximates $Rz(2\theta)$ using the mixed fallback protocol.
 
     Args:
         theta: Target angle.
@@ -298,6 +308,10 @@ def mixed_fallback_protocol(
 
     Returns:
         A ProbabilisticChannel channel.
+
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.5
     """
     theta = config.number(theta)
     eps = config.number(eps)
