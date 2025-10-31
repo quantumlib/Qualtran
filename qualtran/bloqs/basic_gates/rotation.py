@@ -220,8 +220,7 @@ class CZPowGate(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
-        q1, q2 = q  # type: ignore
-        (q1, q2), anc = bb.add(And(), ctrl=[q1, q2])
+        (q1, q2), anc = bb.add(And(), ctrl=q)
         anc = bb.add(ZPowGate(self.exponent, eps=self.eps), q=anc)
         (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
