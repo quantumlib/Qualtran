@@ -28,7 +28,8 @@ def test_generated_rotations_determinant():
     all_rotations = generate_rotations(5)
     for n in range(len(all_rotations)):
         assert np.allclose(
-            [abs(np.linalg.det(r.numpy())) for r in all_rotations[n]], 2 * (2 + np.sqrt(2)) ** n
+            [abs(np.linalg.det(r.matrix.astype(complex))) for r in all_rotations[n]],
+            2 * (2 + np.sqrt(2)) ** n,
         )
 
 
@@ -58,4 +59,4 @@ def test_generated_rotations_unitary():
             assert gates is not None
             for p in gates:
                 u = _numpy_matrix_for_symbol[p] @ u
-            assert _are_close_up_to_global_phase(u, r.numpy())
+            assert _are_close_up_to_global_phase(u, r.matrix.astype(complex))
