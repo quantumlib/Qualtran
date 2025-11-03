@@ -13,8 +13,10 @@
 #  limitations under the License.
 
 import numpy as np
-import qualtran.rotation_synthesis.math_config as mc
+
 import qualtran.rotation_synthesis._typing as rst
+import qualtran.rotation_synthesis.math_config as mc
+
 
 def su_unitary_to_zxz_angles(
     u: np.ndarray, config: mc.MathConfig
@@ -40,12 +42,7 @@ def su_unitary_to_zxz_angles(
 def rx(phi: rst.Real, config: mc.MathConfig) -> np.ndarray:
     c = config.cos(phi / 2)
     s = config.sin(phi / 2)
-    return np.array(
-        [
-            [c, -1j * s],
-            [-1j * s, c],
-        ]
-    )
+    return np.array([[c, -1j * s], [-1j * s, c]])
 
 
 def rz(theta: rst.Real, config: mc.MathConfig) -> np.ndarray:

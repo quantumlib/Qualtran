@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import pytest
 import numpy as np
-from qualtran.rotation_synthesis.matrix import analytical_decomposition as ad
-import qualtran.rotation_synthesis.math_config as mc
+import pytest
 from scipy import stats
+
+import qualtran.rotation_synthesis.math_config as mc
+from qualtran.rotation_synthesis.matrix import analytical_decomposition as ad
+
 
 def _random_angles(n, seed):
     rng = np.random.default_rng(seed)
@@ -27,6 +29,7 @@ def _random_angles(n, seed):
 def _random_su2(n, seed):
     for u in stats.unitary_group(2).rvs(n, seed):
         yield u / np.linalg.det(u) ** 0.5
+
 
 @pytest.mark.parametrize(["theta1", "phi", "theta2"], _random_angles(100, seed=0))
 def test_decomposition_round_trip(theta1, phi, theta2):
