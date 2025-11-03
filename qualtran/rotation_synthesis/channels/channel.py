@@ -127,7 +127,7 @@ class UnitaryChannel(Channel):
         a = config.one
         b = -w[0, 0] - w[1, 1]
         c = w[0, 0] * w[1, 1] - w[0, 1] * w[1, 0]
-        d = config.sqrt(b**2 - 4 * c)
+        d = config.sqrt(b**2 - 4 * a * c)
         eigv0, eigv1 = [(-b - d) / (2 * a), (-b + d) / (2 * a)]
         # Compute the norm of the difference.
         diameter_vec = eigv1 - eigv0
