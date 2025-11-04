@@ -10,6 +10,7 @@ The examples assume the following lines have been executed.
 
 ```py3
 >>> import mpmath
+>>> import qualtran.rotation_synthesis as rs
 >>> from qualtran.rotation_synthesis import math_config as mc
 >>> from qualtran.rotation_synthesis.protocols import clifford_t_synthesis as cts
 >>> # 300 digits of precision is enough for eps as low as 10^-30.
@@ -40,7 +41,7 @@ SU2CliffordT(matrix=array([[ZW(coords=(1509861905169903736208, 11747542590833689
         ZW(coords=(1509861905169903736208, 960512924518388809952, -151491500481353346337, -1174754259083368969221))]],
       dtype=object), gates=())
 
->>> diagonal.to_matrix().to_sequence()  # Print gate names
+>>> rs.to_sequence(diagonal.to_matrix())  # Print gate names
 ('S', 'H', 'Tz', 'Tx', 'Ty', 'Tz', 'Tx', 'Tz', 'Tx', 'Tz', 'Ty', 'Tz', 'Ty', 'Tx', 'Tz', 'Tx', 'Ty', 'Tx', 'Ty', 'Tx', 'Tz', 'Ty', 'Tz', 'Ty', 'Tz', 'Ty', 'Tz', 'Ty', 'Tx', 'Tz', 'Ty', 'Tz', 'Ty', 'Tz', 'Tx', 'Tz', 'Ty', 'Tz', 'Ty', 'Tx', 'Ty', 'Tz', 'Tx', 'Tz', 'Ty', 'Tx', 'Ty', 'Tx', 'Tz', 'Tx', 'Ty', 'Tz', 'Ty', 'Tx', 'Ty', 'Tx', 'Ty', 'Tz', 'Tx', 'Tz', 'Ty', 'Tz', 'Ty', 'Tz', 'Tx', 'Ty', 'Tz', 'Tx', 'Tz', 'Ty', 'Tx', 'Ty', 'Tz', 'Tx', 'Ty', 'Tx', 'Ty', 'Tx', 'Ty', 'Tz', 'Ty', 'Tz')
 ```
 
