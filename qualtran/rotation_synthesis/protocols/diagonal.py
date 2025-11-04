@@ -64,7 +64,7 @@ def make_ellipse_for_circular_segment(
 class Diagonal(protocol.ApproxProblem):
     r"""Approximate a Z-rotation with a string of Clifford+T gates.
 
-    The inequality $D(U, e^{i\theta}) < \epsilon$ where $D$ is a distance measure (e.g. diamond)
+    The inequality $D(U, e^{i\theta Z}) < \epsilon$ where $D$ is a distance measure (e.g. diamond)
     puts a geometric constraint on the upper left element of $U$ so that it belongs to a circular
     segment.
 

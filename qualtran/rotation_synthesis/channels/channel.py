@@ -34,7 +34,7 @@ class Channel(abc.ABC):
 
     @abc.abstractmethod
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
-        r"""Returns the diamond norm distance to $e^{i\theta}$."""
+        r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
 
 
 @attrs.frozen
