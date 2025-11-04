@@ -15,7 +15,8 @@
 r"""A submodule for compiling $\mathbb{Z}[e^{i \pi/4}]$ matrices to Clifford+T as well as generating them."""
 
 from qualtran.rotation_synthesis.matrix.generation import (
+    generate_cliffords,
     generate_rotations,
     generate_rotations_iter,
 )
-from qualtran.rotation_synthesis.matrix.su2_ct import generate_cliffords, SU2CliffordT
+from qualtran.rotation_synthesis.matrix.su2_ct import SU2CliffordT

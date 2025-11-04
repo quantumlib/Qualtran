@@ -14,7 +14,6 @@
 
 from typing import Optional
 
-import cirq
 import numpy as np
 import pytest
 
@@ -80,29 +79,3 @@ def test_t_gates(g, g_numpy):
     np.testing.assert_allclose(
         g.adjoint().numpy() / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy.T.conjugate()
     )
-
-
-@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_to_seq(g):
-    seq = g.to_sequence()
-    got = su2_ct.SU2CliffordT.from_sequence(seq)
-    assert got == g or got * -1 == g
-
-
-def are_close_up_to_global_phase(u, v):
-    i, j = np.unravel_index(  # pylint: disable=unbalanced-tuple-unpacking
-        np.abs(u).argmax(), u.shape
-    )
-    return np.allclose(u * v[i, j] / u[i, j], v)
-
-
-def test_generate_cliffords():
-    cliffords = su2_ct.generate_cliffords()
-    cirq_cliffords = [
-        cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
-    ]
-    assert np.allclose(np.abs([np.linalg.det(c.numpy()) for c in cliffords]), 2)
-    sqrt2 = np.sqrt(2)
-    for c in cliffords:
-        u = c.numpy() / sqrt2
-        assert np.any([are_close_up_to_global_phase(u, c) for c in cirq_cliffords])
