@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 from qualtran.rotation_synthesis.math_config import NumpyConfig, with_dps
-from qualtran.rotation_synthesis.protocols.clifford_t_synthesis import (
+from qualtran.rotation_synthesis.protocols import (
     diagonal_unitary_approx,
     fallback_protocol,
+    magnitude_approx,
     mixed_diagonal_protocol,
     mixed_fallback_protocol,
 )

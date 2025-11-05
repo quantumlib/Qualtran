@@ -121,7 +121,7 @@ class Diagonal(protocol.ApproxProblem):
         n = 0
         while True:
             if verbose:
-                print(f"{n=}")
+                print(f"{n=}", flush=True)
             for offset in False, True:
                 os = self.make_state(n, config, offset=offset)
                 overall_action = lattice.get_overall_action(os, config)
