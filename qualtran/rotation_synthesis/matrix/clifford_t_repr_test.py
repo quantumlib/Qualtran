@@ -41,11 +41,28 @@ def test_to_xyz_seq(g):
     got = su2_ct.SU2CliffordT.from_sequence(seq)
     assert got == g
 
+def reduce(g: su2_ct.SU2CliffordT):
+    import qualtran.rotation_synthesis.rings.zsqrt2 as z2
+    import qualtran.rotation_synthesis.rings.zw as zw
+    if not(g.det() > 2 * z2.LAMBDA_KLIUCHNIKOV):
+        return g
+    if not all(v.is_divisible_by(zw.LAMBDA_KLIUCHNIKOV) for v in g.matrix.flat):
+        return g
+    return reduce(su2_ct.SU2CliffordT([[v//zw.LAMBDA_KLIUCHNIKOV for v in r] for r in g.matrix]))
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
 def test_to_xz_seq(g):
+    g = reduce(g)
     seq = ctr.to_sequence(g, 'xz')
     assert not any('Ty' in g for g in seq)
+    first_t = None
+    for i in range(len(seq)):
+        if seq[i].startswith('T'):
+            first_t = i
+            break
+    if first_t is not None:
+        ts = 'Tx', 'Tx*', 'Tz', 'Tz*'
+        assert all(s in ts for s in seq[first_t:-2]), f'{seq=}'
     got = su2_ct.SU2CliffordT.from_sequence(seq)
     assert got == g
 
