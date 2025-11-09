@@ -45,7 +45,7 @@ class Range:
         elif all(rst.is_int(x) for x in sides):
             dtype = int
         elif any(isinstance(x, np.number) for x in sides):
-            dtype = np.float128
+            dtype = np.longdouble
         else:
             dtype = float
         return Range(*map(dtype, sides))

@@ -91,7 +91,7 @@ NumpyConfig = MathConfig(
     lambda x: int(np.ceil(x)),
     np.arctan2,
     np.arcsin,
-    np.float128,
+    np.longdouble,
 )
 
 
