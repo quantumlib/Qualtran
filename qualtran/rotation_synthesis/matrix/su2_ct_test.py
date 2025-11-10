@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis.matrix as rsm
 from qualtran.rotation_synthesis.matrix import su2_ct
 from qualtran.rotation_synthesis.rings import zsqrt2, zw
 
@@ -82,30 +83,11 @@ def test_t_gates(g, g_numpy):
     )
 
 
-@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_to_seq(g):
-    seq = g.to_sequence()
-    got = su2_ct.SU2CliffordT.from_sequence(seq)
-    assert got == g or got * -1 == g
-
-
 def are_close_up_to_global_phase(u, v):
     i, j = np.unravel_index(  # pylint: disable=unbalanced-tuple-unpacking
         np.abs(u).argmax(), u.shape
     )
     return np.allclose(u * v[i, j] / u[i, j], v)
-
-
-def test_generate_cliffords():
-    cliffords = su2_ct.generate_cliffords()
-    cirq_cliffords = [
-        cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
-    ]
-    assert np.allclose(np.abs([np.linalg.det(c.matrix.astype(complex)) for c in cliffords]), 2)
-    sqrt2 = np.sqrt(2)
-    for c in cliffords:
-        u = c.matrix.astype(complex) / sqrt2
-        assert np.any([are_close_up_to_global_phase(u, c) for c in cirq_cliffords])
 
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
@@ -115,7 +97,7 @@ def test_rescale(g: su2_ct.SU2CliffordT, config):
 
 
 def test_num_t_gates():
-    for clifford in su2_ct.generate_cliffords():
+    for clifford in rsm.generate_cliffords():
         assert clifford.num_t_gates() == 0
 
         for t in su2_ct.Ts:

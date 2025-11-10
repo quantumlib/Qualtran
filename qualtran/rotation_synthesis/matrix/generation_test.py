@@ -68,8 +68,7 @@ def test_generate_cliffords():
     cirq_cliffords = [
         cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
     ]
-    assert np.allclose(np.abs([np.linalg.det(c.numpy()) for c in cliffords]), 2)
-    sqrt2 = np.sqrt(2)
+    assert np.allclose(np.abs([np.linalg.det(c.numpy()) for c in cliffords]), 1)
     for c in cliffords:
-        u = c.numpy() / sqrt2
+        u = c.numpy()
         assert np.any([_are_close_up_to_global_phase(u, c) for c in cirq_cliffords])
