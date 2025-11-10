@@ -132,11 +132,20 @@ class UnitaryChannel(Channel):
             q = cirq.q(0)
         return cirq.Circuit(ctr.to_cirq(self.to_matrix(), fmt, q))
 
-    def to_quirk(self, fmt: str = "xz") -> str:
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
         """Retruns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
+            allow_global_phase: whether the result can have a global phase or not.
+                If this is False, then each gate (except H) gets replaced by SU2 version:
+                    - S -> Rz(pi/2)
+                    - T -> Rz(pi/4)
+                    - X -> Rx(-pi)
+                    - Y -> Ry(-pi)
+                    - Z -> Rz(-pi)
+                Then a prefix composed of SXSX that corrects the phase difference caused by H gates
+                is added.
         Returns:
             A quirk link.
         Raises:
@@ -144,7 +153,7 @@ class UnitaryChannel(Channel):
         """
         if self.twirl:
             raise ValueError("to_quirk is not supported when twirl=True")
-        gates = ctr.to_quirk(self.to_matrix(), fmt)
+        gates = ctr.to_quirk(self.to_matrix(), fmt, allow_global_phase)
         cols = '[' + ','.join(f'[{g}]' for g in gates) + ']'
         return "https://algassert.com/quirk#circuit={\"cols\":%s}" % cols
 
@@ -277,30 +286,43 @@ class ProjectiveChannel(Channel):
             ),
         )
 
-    def to_quirk(self, fmt: str = "xz") -> str:
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
         """Retruns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
+            allow_global_phase: whether the result can have a global phase or not.
+                If this is False then each gate (except H) gets replaced by SU2 version:
+                    - S -> Rz(pi/2)
+                    - T -> Rz(pi/4)
+                    - X -> Rx(-pi)
+                    - Y -> Ry(-pi)
+                    - Z -> Rz(-pi)
+                Then a prefix composed of SXSX that corrects the phase difference caused by H gates
+                is added.
         Returns:
             A quirk link.
         """
         correction = self.correction
         if not isinstance(correction, UnitaryChannel):
             raise ValueError(f"to_quirk is not supported for correction of type {type(correction)}")
-        rot = ctr.to_quirk(self.rotation.to_matrix(), fmt)
-        cor = ctr.to_quirk(correction.to_matrix(), fmt)
+        rot = ctr.to_quirk(self.rotation.to_matrix(), fmt, allow_global_phase)
+        cor = ctr.to_quirk(correction.to_matrix(), fmt, allow_global_phase)
+        if allow_global_phase:
+            xgate = '"X"'
+        else:
+            xgate = '{"id":"Rzft","arg":"-pi"}'
         first_row = []
         second_row = []
         # CNOT
         first_row.append("\"•\"")
-        second_row.append("\"X\"")
+        second_row.append(xgate)
         # rotation
         first_row.extend(rot)
         second_row.extend("1" for _ in rot)
         # CNOT
         first_row.append("\"•\"")
-        second_row.append("\"X\"")
+        second_row.append(xgate)
         # measure
         first_row.append("1")
         second_row.append("\"Measure\"")
