@@ -15,9 +15,10 @@
 from __future__ import annotations
 
 import abc
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import attrs
+import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.math_config as mc
@@ -33,7 +34,7 @@ class Channel(abc.ABC):
 
     @abc.abstractmethod
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
-        r"""Returns the diamond norm distance to $Rz(2\theta)$."""
+        r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
 
 
 @attrs.frozen
@@ -109,6 +110,44 @@ class UnitaryChannel(Channel):
         u = su2_ct.SU2CliffordT.from_sequence(seq)
         n = sum(g.startswith("T") for g in seq)
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
+
+    def diamond_norm_distance_to_unitary(
+        self, unitary: np.ndarray, config: mc.MathConfig
+    ) -> rst.Real:
+        r"""Returns the diamond norm distance between self and the given unitary.
+
+        From Theorem B.1 of arxiv:2203.10064, the diamond norm distance between two untiaries
+        $U, V$ is $|v_1 - v_0|$ where $v_i$ are the eigen values of $V^\dagger U$. Geometrically
+        this is the diameter of the smallest disc in the complex plane that contains both
+        eigenvalues.
+        """
+        # W = V^\dagger U
+        w = self.to_matrix().adjoint().numpy(config) @ unitary
+        # Compute the eigen values of W
+        a = config.one
+        b = -w[0, 0] - w[1, 1]
+        c = w[0, 0] * w[1, 1] - w[0, 1] * w[1, 0]
+        d = config.sqrt(b**2 - 4 * a * c)
+        eigv0, eigv1 = [(-b - d) / (2 * a), (-b + d) / (2 * a)]
+        # Compute the norm of the difference.
+        diameter_vec = eigv1 - eigv0
+        return config.sqrt(diameter_vec.real**2 + diameter_vec.imag**2)
+
+    @classmethod
+    def from_unitaries(
+        cls, *unitaries: Union[UnitaryChannel, su2_ct.SU2CliffordT]
+    ) -> UnitaryChannel:
+        if not unitaries:
+            raise ValueError('at least one unitary should be provided')
+
+        unitary = su2_ct.ISqrt2
+        for u in unitaries:
+            if isinstance(u, UnitaryChannel):
+                unitary = unitary @ u.to_matrix()
+            else:
+                unitary = unitary @ u
+        unitary = unitary.rescale()
+        return UnitaryChannel(unitary.matrix[0, 0], unitary.matrix[1, 0], unitary.num_t_gates())
 
 
 @attrs.frozen

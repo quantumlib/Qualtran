@@ -19,6 +19,7 @@ from typing import cast, Optional, Sequence, Union
 import attrs
 import numpy as np
 
+import qualtran.rotation_synthesis.math_config as mc
 from qualtran.rotation_synthesis.rings import zsqrt2, zw
 
 
@@ -81,8 +82,23 @@ class SU2CliffordT:
     def __eq__(self, other):
         return np.all(self.matrix == other.matrix)
 
-    def numpy(self) -> np.ndarray:
-        return self.matrix.astype(complex)
+    def numpy(self, config: Optional[mc.MathConfig] = None) -> np.ndarray:
+        """Returns the numpy representation of the unitary.
+        Args:
+            config: An optional MathConfig used to convert the matrix entries to complex
+                numbers and normalize the result. If not given numpy methods are used.
+        """
+        if config is None:
+            result = self.matrix.astype(complex)
+            result = result / np.linalg.det(result) ** 0.5
+            return result
+        result = np.zeros((2, 2)) + 1j * config.zero
+        sqrt_det = config.sqrt(self.det().value(config.sqrt2))
+        for i in range(2):
+            for j in range(2):
+                result[i, j] = self.matrix[i, j].value(config.sqrt2)
+        result = result / sqrt_det
+        return result
 
     def adjoint(self) -> "SU2CliffordT":
         return SU2CliffordT(self.matrix.T.conj())
@@ -206,16 +222,32 @@ class SU2CliffordT:
         _, _, n1 = self.matrix[1, 0].to_zsqrt2()
         return n0 == n1
 
+    def rescale(self) -> 'SU2CliffordT':
+        r"""Rescales the matrix such that its determinant is minimized.
 
-_KEY_MAP = {
-    (0, 0, 0, 0): "Tx",
-    (0, 0, 1, 0): "Tz",
-    (0, 1, 0, 0): "Ty",
-    (0, 1, 1, 0): "Tx",
-    (1, 0, 1, 0): "Tx",
-    (1, 1, 0, 0): "Tx",
-    (1, 1, 1, 0): "Tz",
-}
+        The determinant of the unitary can be written as $2\lambda^n$ where $\lambda=2+\sqrt{l}$
+        and $n$ is the number of $T$ gates needed to synthesize the matrix. When all entries of
+        the matrix are divisible by $\lambda$ then we can divide through by $\lambda$ to reduce $n$
+        """
+        u = self
+        while u.det() > 2 * zsqrt2.LAMBDA_KLIUCHNIKOV:
+            if not all(a.is_divisible_by(zw.LAMBDA_KLIUCHNIKOV) for a in u.matrix.flat):
+                break
+            u = SU2CliffordT(
+                [[x // zw.LAMBDA_KLIUCHNIKOV for x in row] for row in u.matrix], u.gates
+            )
+        return u
+
+    def num_t_gates(self) -> int:
+        """Returns the number of T gates needed to synthesize the matrix."""
+        det = self.det()
+        x = zsqrt2.ZSqrt2(2)
+        n = 0
+        while x < det:
+            x = x * zsqrt2.LAMBDA_KLIUCHNIKOV
+            n += 1
+        assert x == det
+        return n
 
 
 @functools.cache
