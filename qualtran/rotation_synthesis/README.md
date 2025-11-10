@@ -116,3 +116,15 @@ expected number of T gates is 18.982
 >>> 'actual diamond distance: %e'%mixed_fallback.diamond_norm_distance_to_rz(theta, config)
 'actual diamond distance: 5.397363e-10'
 ```
+
+## Effect of digits of precision
+The number of digits of precision used (i.e. rs.with_dps(digits_of_precision)) affects the result of the synthesis as follows:
+
+- very low => A math error will be raised by one of the checks|
+- low => A valid solution may be missed, in other words you get either a solution that has more T gates or None|
+- just right => A correct solution that has a number of T gates on par with the current state of the art|
+- high => same solution as above but in more time|
+
+Essentially, the code will either return a valid synthesis or None. If the code returns a result then it may be improved by increasing the number of digits of precision and if the code returns None then we need to increase the number of digits of precisions or `max_n` or both.
+
+As a rule of thumb, the number of digits of precision should be close to $10\log_{10}{1/\epsilon}$ (obtained experimentally). This works for large $\epsilon$ and is an upperbound for very small $\epsilon$, for example for $\epsilon=10^{-50}$ we need 400 digits and for $\epsilon=10^{-100}$ we need 800 digits.
