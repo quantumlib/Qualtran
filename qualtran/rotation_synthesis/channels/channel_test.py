@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import cirq
 import numpy as np
 import pytest
 
 import qualtran.rotation_synthesis.channels as ch
 import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
 import qualtran.rotation_synthesis.matrix.su2_ct as su2_ct
 
 
@@ -309,4 +311,39 @@ def test_diamond_distance_for_mixed_fallback(
     c = ch.ProbabilisticChannel.from_projective_channels(p1, p2, theta, mc.NumpyConfig)
     np.testing.assert_allclose(
         float(c.diamond_norm_distance_to_rz(theta, mc.NumpyConfig)), distance, atol=3e-5
+    )
+
+
+@pytest.mark.parametrize(
+    "gates",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize("fmt", ["xz", "xyz"])
+def test_unitary_to_cirq(gates, fmt):
+    u = ch.UnitaryChannel.from_sequence(gates)
+    assert u.to_cirq(fmt) == cirq.Circuit(ctr.to_cirq(u.to_matrix(), fmt))
+
+
+@pytest.mark.parametrize(
+    "gates1",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize(
+    "gates2",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize("fmt", ["xz", "xyz"])
+def test_fallback_to_cirq(gates1, gates2, fmt):
+    c = ch.ProjectiveChannel(
+        ch.UnitaryChannel.from_sequence(gates1), ch.UnitaryChannel.from_sequence(gates2)
+    )
+    q0, q1 = cirq.LineQubit.range(2)
+    assert c.to_cirq(fmt) == cirq.Circuit(
+        cirq.CNOT(q0, q1),
+        cirq.CircuitOperation(cirq.FrozenCircuit(ctr.to_cirq(c.rotation.to_matrix(), fmt, q0))),
+        cirq.CNOT(q0, q1),
+        cirq.measure(q1, key='m'),
+        cirq.CircuitOperation(
+            cirq.FrozenCircuit(ctr.to_cirq(c.correction.to_matrix(), fmt, q0))  # type: ignore[attr-defined]
+        ).with_classical_controls('m'),
     )

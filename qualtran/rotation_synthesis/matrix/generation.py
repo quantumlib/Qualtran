@@ -12,11 +12,30 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterator, Sequence
+import functools
+from typing import cast, Iterator, Sequence
 
 from tqdm import tqdm
 
 from qualtran.rotation_synthesis.matrix import su2_ct
+
+
+@functools.cache
+def generate_cliffords() -> dict[su2_ct.SU2CliffordT, tuple[str, ...]]:
+    ret = []
+    st = [su2_ct.ISqrt2]
+    seen = set(st)
+    while st:
+        c = st.pop()
+        ret.append(c)
+        assert len(ret) <= 24
+        for p in su2_ct.SSqrt2, su2_ct.HSqrt2:
+            nc = c @ p
+            if not any(u in seen for u in [nc, -nc]):
+                st.append(nc)
+                seen.add(nc)
+    assert len(ret) == 24
+    return cast(dict[su2_ct.SU2CliffordT, tuple[str, ...]], {v: v.gates for v in ret})
 
 
 def generate_rotations_iter(
@@ -31,7 +50,7 @@ def generate_rotations_iter(
     Yields:
         max_num_ts+1 lists where the kth list contains Clifford+T unitaries that use k T gates.
     """
-    cliffords = tuple(su2_ct.generate_cliffords())
+    cliffords = tuple(generate_cliffords())
     frontier: Sequence[su2_ct.SU2CliffordT] = cliffords
     seen = set(cliffords)
     yield cliffords

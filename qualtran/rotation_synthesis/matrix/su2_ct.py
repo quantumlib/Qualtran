@@ -14,7 +14,7 @@
 
 import functools
 import itertools
-from typing import cast, Optional, Sequence, Union
+from typing import cast, Mapping, Optional, Sequence, Union
 
 import attrs
 import numpy as np
@@ -124,7 +124,7 @@ class SU2CliffordT:
         """Creates an SU2CliffordT from a Clifford+T gate sequence."""
         u = ISqrt2
         for g in seq:
-            u = GATE_MAP[g] @ u
+            u = _gate_from_name(g) @ u
         return u
 
     def parametric_form(self) -> tuple[zsqrt2.ZSqrt2, zsqrt2.ZSqrt2, zsqrt2.ZSqrt2, zsqrt2.ZSqrt2]:
@@ -156,18 +156,6 @@ class SU2CliffordT:
         # for elements of Z[sqrt(2)] this is equivalent ot taking the mod with sqrt(2)
         # which is the same as the parity of the integer part.
         return cast(tuple[int, int, int, int], tuple(v.a % 2 for v in pf))
-
-    def to_sequence(self) -> tuple[str, ...]:
-        if self.det() == 2:
-            cliffords = generate_cliffords()
-            if self in cliffords:
-                return cliffords[self]
-            return ("Z", "X", "Z", "X") + cliffords[-self]
-
-        t = _key_map()[self._key]
-        nxt = (GATE_MAP[t].adjoint() @ self).scale_down()
-        assert nxt.det() < self.det()
-        return nxt.to_sequence() + (t,)
 
     @classmethod
     def from_pair(
@@ -250,6 +238,19 @@ class SU2CliffordT:
         return n
 
 
+def _gate_from_name(gate_name: str) -> SU2CliffordT:
+    adjoint = gate_name.count('*') % 2 == 1
+    if gate_name.endswith('*'):
+        first_star_index = gate_name.index('*')
+        suffix = gate_name[first_star_index:]
+        gate_name = gate_name[:first_star_index]
+        assert suffix.count('*') == len(suffix)
+    gate = GATE_MAP[gate_name]
+    if adjoint:
+        gate = gate.adjoint()
+    return gate
+
+
 @functools.cache
 def _key_map():
     Ts = {"Tx": Tx, "Ty": Ty, "Tz": Tz}
@@ -306,7 +307,7 @@ Tz = SU2CliffordT(_I * zw.SQRT_2 + _I - _Z * zw.J, ("Tz",))
 Ts = [Tx, Ty, Tz]
 
 
-GATE_MAP = {
+GATE_MAP: Mapping[str, SU2CliffordT] = {
     "I": ISqrt2,
     "S": SSqrt2,
     "H": HSqrt2,
@@ -324,21 +325,3 @@ PARAMETRIC_FORM_BASES = [
     _I + _Y * zw.J,
     np.array([[zw.Omega, zw.Omega], [-zw.Omega.conj(), zw.Omega.conj()]]),
 ]
-
-
-@functools.cache
-def generate_cliffords() -> dict[SU2CliffordT, tuple[str, ...]]:
-    ret = []
-    st = [ISqrt2]
-    seen = set(st)
-    while st:
-        c = st.pop()
-        ret.append(c)
-        assert len(ret) <= 24
-        for p in SSqrt2, HSqrt2:
-            nc = c @ p
-            if not any(u in seen for u in [nc, -nc]):
-                st.append(nc)
-                seen.add(nc)
-    assert len(ret) == 24
-    return cast(dict[SU2CliffordT, tuple[str, ...]], {v: v.gates for v in ret})
