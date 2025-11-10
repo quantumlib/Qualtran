@@ -127,4 +127,4 @@ The number of digits of precision used (i.e. rs.with_dps(digits_of_precision)) a
 
 Essentially, the code will either return a valid synthesis or None. If the code returns a result then it may be improved by increasing the number of digits of precision and if the code returns None then we need to increase the number of digits of precisions or `max_n` or both.
 
-As a rule of thumb, the number of digits of precision should be close to $9\log_10{1/\epsilon}$. This works for large $epsilon$ and is an upperbound for very small $\epsilon$, for example for $\epsilon=10^{-50}$ we need 400 digits and for $\epsilon=10^{-100}$ we need 800 digits.
+As a rule of thumb, the number of digits of precision should be close to $9\log_{10}{1/\epsilon}$. This works for large $epsilon$ and is an upperbound for very small $\epsilon$, for example for $\epsilon=10^{-50}$ we need 400 digits and for $\epsilon=10^{-100}$ we need 800 digits.
