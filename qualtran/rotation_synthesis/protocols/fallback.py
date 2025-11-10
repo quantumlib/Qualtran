@@ -225,9 +225,7 @@ class Fallback(protocol.ApproxProblem):
             fig, ax = plt.subplots(figsize=(9, 6))
 
         state = self.make_state(n, mc.NumpyConfig, offset)
-        r = float(
-            mc.NumpyConfig.sqrt((2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n).value(mc.NumpyConfig.sqrt2))
-        )
+        r = float(zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, mc.NumpyConfig))
 
         state.m1.plot(ax, add_label=False, fill=False, alpha=0)
         ax.relim()

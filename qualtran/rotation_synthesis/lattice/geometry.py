@@ -213,7 +213,7 @@ class Ellipse:
             fig, ax = plt.subplots(1)
 
         theta = float(self.tilt(mc.NumpyConfig))
-        e = self.rotate(-theta, mc.NumpyConfig)
+        e = self.rotate(theta, mc.NumpyConfig)
         w = 2 / np.sqrt(float(e.D[0, 0]))
         h = 2 / np.sqrt(float(e.D[1, 1]))
         c = self.center.astype(float).tolist()

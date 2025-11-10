@@ -48,6 +48,10 @@ def test_unitary_from_sequence(gates):
 def test_diamond_distance_for_unitary(gates, theta, distance):
     c = ch.UnitaryChannel.from_sequence(gates)
     np.testing.assert_allclose(c.diamond_norm_distance_to_rz(theta, mc.NumpyConfig), distance)
+    u = np.zeros((2, 2), complex)
+    u[1, 1] = np.exp(-1j * theta)
+    u[0, 0] = u[1, 1].conjugate()
+    np.testing.assert_allclose(c.diamond_norm_distance_to_unitary(u, mc.NumpyConfig), distance)
 
 
 @pytest.mark.parametrize(

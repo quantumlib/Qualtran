@@ -17,6 +17,7 @@ from typing import Optional
 import numpy as np
 import pytest
 
+import qualtran.rotation_synthesis.math_config as mc
 from qualtran.rotation_synthesis.matrix import su2_ct
 from qualtran.rotation_synthesis.rings import zsqrt2, zw
 
@@ -53,9 +54,9 @@ def test_multiply(seq):
     for i in seq:
         g = g @ _GATES[i]
         k += i >= 3  # is a T gate.
-        g_numpy = (g_numpy @ _GATES[i].numpy()) / _SQRT2
+        g_numpy = (g_numpy @ _GATES[i].matrix.astype(complex)) / _SQRT2
     assert g.det() == 2 * _LAMBDA**k
-    np.testing.assert_allclose(g.numpy() / _SQRT2, g_numpy, atol=1e-9)
+    np.testing.assert_allclose(g.matrix.astype(complex) / _SQRT2, g_numpy, atol=1e-9)
 
 
 @pytest.mark.parametrize("g", _make_random_su(10, 3, random_cliffords=False, seed=0))
@@ -75,7 +76,58 @@ _TZ_numpy = (np.eye(2) + (np.eye(2) - 1j * _Z) / _SQRT2) / np.sqrt(2 + _SQRT2)
     ["g", "g_numpy"], [[su2_ct.Tx, _TX_numpy], [su2_ct.Ty, _TY_numpy], [su2_ct.Tz, _TZ_numpy]]
 )
 def test_t_gates(g, g_numpy):
-    np.testing.assert_allclose(g.numpy() / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy)
+    np.testing.assert_allclose(g.matrix.astype(complex) / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy)
     np.testing.assert_allclose(
-        g.adjoint().numpy() / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy.T.conjugate()
+        g.adjoint().matrix.astype(complex) / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy.T.conjugate()
     )
+
+
+@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
+def test_to_seq(g):
+    seq = g.to_sequence()
+    got = su2_ct.SU2CliffordT.from_sequence(seq)
+    assert got == g or got * -1 == g
+
+
+def are_close_up_to_global_phase(u, v):
+    i, j = np.unravel_index(  # pylint: disable=unbalanced-tuple-unpacking
+        np.abs(u).argmax(), u.shape
+    )
+    return np.allclose(u * v[i, j] / u[i, j], v)
+
+
+def test_generate_cliffords():
+    cliffords = su2_ct.generate_cliffords()
+    cirq_cliffords = [
+        cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
+    ]
+    assert np.allclose(np.abs([np.linalg.det(c.matrix.astype(complex)) for c in cliffords]), 2)
+    sqrt2 = np.sqrt(2)
+    for c in cliffords:
+        u = c.matrix.astype(complex) / sqrt2
+        assert np.any([are_close_up_to_global_phase(u, c) for c in cirq_cliffords])
+
+
+@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
+@pytest.mark.parametrize("config", [None, mc.NumpyConfig])
+def test_rescale(g: su2_ct.SU2CliffordT, config):
+    np.testing.assert_allclose(g.numpy(config), g.rescale().numpy(config))
+
+
+def test_num_t_gates():
+    for clifford in su2_ct.generate_cliffords():
+        assert clifford.num_t_gates() == 0
+
+        for t in su2_ct.Ts:
+            assert (clifford @ t).num_t_gates() == 1
+
+    for t1 in su2_ct.Ts:
+        for t2 in su2_ct.Ts:
+            assert (t1 @ t2).num_t_gates() == 2
+
+    for t in su2_ct.Ts:
+        # still two T gates
+        assert (t @ t.adjoint()).num_t_gates() == 2
+
+        # We need to call .rescale to remove the common factor and reduce the T count.
+        assert (t @ t.adjoint()).rescale().num_t_gates() == 0
