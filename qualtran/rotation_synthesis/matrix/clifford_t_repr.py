@@ -52,9 +52,9 @@ _T_list = [
 ]
 
 
-def _xz_sequence(matrix: su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'dummy') -> Optional[tuple[str, ...]]:
-    # if use_hs:
-        # matrix = matrix.reduce()
+def _xz_sequence(
+    matrix: su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'dummy'
+) -> Optional[tuple[str, ...]]:
     if matrix.det() == 2:
         return clifford(matrix)
     cliffords = [su2_ct.ISqrt2]
@@ -64,7 +64,8 @@ def _xz_sequence(matrix: su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'd
     candidates = []
     pref = prv.removesuffix('*')
     for name, t in _T_list:
-        if name.startswith(pref): continue
+        if name.startswith(pref):
+            continue
         for c in cliffords:
             new = c.adjoint() @ matrix
             new = t.adjoint() @ new
@@ -138,14 +139,14 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
         if name == "H":
             return "\"H\""
         if name in ("X", "Y", "Z"):
-            return '{"id":"R%sft","arg":"-pi"}'%(name.lower())
+            return '{"id":"R%sft","arg":"-pi"}' % (name.lower())
         if name == "S":
             return '{"id":"Rzft","arg":"pi/2"}'
         if name == "S*":
             return '{"id":"Rzft","arg":"-pi/2"}'
         if name.startswith("T"):
             angle = ['pi/4', '-pi/4'][name.endswith('*')]
-            return '{"id":"R%sft","arg":"%s"}'%(name[1].lower(), angle)
+            return '{"id":"R%sft","arg":"%s"}' % (name[1].lower(), angle)
     raise ValueError(f"{name=} is not supported")
 
 
@@ -165,7 +166,9 @@ def to_cirq(
     return tuple(_CIRQ_GATE_MAP[g](q) for g in to_sequence(matrix, fmt))
 
 
-def to_quirk(matrix: su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = False) -> tuple[str, ...]:
+def to_quirk(
+    matrix: su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = False
+) -> tuple[str, ...]:
     """Retruns a representation of the matrix as a sequence of quirk symbols.
 
     Args:
@@ -184,8 +187,8 @@ def to_quirk(matrix: su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = F
         A tuple quirk symbols.
     """
     sequence = to_sequence(matrix, fmt)
-    phase_correction = ()
+    phase_correction = tuple[str, ...]()
     if not allow_global_phase:
-        phase = sum(g=='H' for g in sequence) % 4
+        phase = sum(g == 'H' for g in sequence) % 4
         phase_correction = ('"Z^½"', '"X"', '"Z^½"', '"X"') * phase
     return phase_correction + tuple(_to_quirk_name(name, allow_global_phase) for name in sequence)

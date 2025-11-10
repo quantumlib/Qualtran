@@ -221,9 +221,12 @@ class SU2CliffordT:
         while u.det() > 2 * zsqrt2.LAMBDA_KLIUCHNIKOV:
             if not all(a.is_divisible_by(zw.LAMBDA_KLIUCHNIKOV) for a in u.matrix.flat):
                 break
-            u = SU2CliffordT(
+            new_u = SU2CliffordT(
                 [[x // zw.LAMBDA_KLIUCHNIKOV for x in row] for row in u.matrix], u.gates
             )
+            if not new_u.is_valid():
+                break
+            u = new_u
         return u
 
     def num_t_gates(self) -> int:

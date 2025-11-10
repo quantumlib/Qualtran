@@ -62,8 +62,6 @@ def _solve(
         m = n
         real_bound_fn = protocol.make_real_bound_fn(m, config)
         if not real_bound_fn(p):
-            # if verbose:
-            #     print('skip', p)
             bad += new
             if verbose and bad % 10**5 == 0:
                 print(f"at {n=}", "seen", bad, "out of", total, "points, ratio =", bad / total)

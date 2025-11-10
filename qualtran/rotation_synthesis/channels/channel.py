@@ -132,13 +132,13 @@ class UnitaryChannel(Channel):
             q = cirq.q(0)
         return cirq.Circuit(ctr.to_cirq(self.to_matrix(), fmt, q))
 
-    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = False) -> str:
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
         """Retruns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
             allow_global_phase: whether the result can have a global phase or not.
-                If this is set then each gate (except H) gets replaced by SU2 version:
+                If this is False, then each gate (except H) gets replaced by SU2 version:
                     - S -> Rz(pi/2)
                     - T -> Rz(pi/4)
                     - X -> Rx(-pi)
@@ -286,13 +286,13 @@ class ProjectiveChannel(Channel):
             ),
         )
 
-    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = False) -> str:
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
         """Retruns a quirk link representing the channel operation.
 
         Args:
             fmt: The gates to use (see the documentation of to_sequence).
             allow_global_phase: whether the result can have a global phase or not.
-                If this is set then each gate (except H) gets replaced by SU2 version:
+                If this is False then each gate (except H) gets replaced by SU2 version:
                     - S -> Rz(pi/2)
                     - T -> Rz(pi/4)
                     - X -> Rx(-pi)
