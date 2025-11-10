@@ -15,12 +15,15 @@
 from __future__ import annotations
 
 import abc
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import attrs
+import cirq
+import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
 import qualtran.rotation_synthesis.rings as rings
 from qualtran.rotation_synthesis.matrix import su2_ct
 from qualtran.rotation_synthesis.rings import zsqrt2
@@ -33,7 +36,7 @@ class Channel(abc.ABC):
 
     @abc.abstractmethod
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
-        r"""Returns the diamond norm distance to $Rz(2\theta)$."""
+        r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
 
 
 @attrs.frozen
@@ -110,6 +113,79 @@ class UnitaryChannel(Channel):
         n = sum(g.startswith("T") for g in seq)
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
 
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            qs: Optional qubits to operate on.
+        Returns:
+            A cirq circuit
+        Raises:
+            ValueError: If twirl=True
+        """
+        if self.twirl:
+            raise ValueError("to_cirq is not supported when twirl=True")
+        if qs:
+            (q,) = qs
+        else:
+            q = cirq.q(0)
+        return cirq.Circuit(ctr.to_cirq(self.to_matrix(), fmt, q))
+
+    def to_quirk(self, fmt: str = "xz") -> str:
+        """Retruns a quirk link representing the channel operation.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+        Returns:
+            A quirk link.
+        Raises:
+            ValueError: If twirl=True
+        """
+        if self.twirl:
+            raise ValueError("to_quirk is not supported when twirl=True")
+        gates = ctr.to_quirk(self.to_matrix(), fmt)
+        cols = '[' + ','.join(f'[{g}]' for g in gates) + ']'
+        return "https://algassert.com/quirk#circuit={\"cols\":%s}" % cols
+
+    def diamond_norm_distance_to_unitary(
+        self, unitary: np.ndarray, config: mc.MathConfig
+    ) -> rst.Real:
+        r"""Returns the diamond norm distance between self and the given unitary.
+
+        From Theorem B.1 of arxiv:2203.10064, the diamond norm distance between two untiaries
+        $U, V$ is $|v_1 - v_0|$ where $v_i$ are the eigen values of $V^\dagger U$. Geometrically
+        this is the diameter of the smallest disc in the complex plane that contains both
+        eigenvalues.
+        """
+        # W = V^\dagger U
+        w = self.to_matrix().adjoint().numpy(config) @ unitary
+        # Compute the eigen values of W
+        a = config.one
+        b = -w[0, 0] - w[1, 1]
+        c = w[0, 0] * w[1, 1] - w[0, 1] * w[1, 0]
+        d = config.sqrt(b**2 - 4 * a * c)
+        eigv0, eigv1 = [(-b - d) / (2 * a), (-b + d) / (2 * a)]
+        # Compute the norm of the difference.
+        diameter_vec = eigv1 - eigv0
+        return config.sqrt(diameter_vec.real**2 + diameter_vec.imag**2)
+
+    @classmethod
+    def from_unitaries(
+        cls, *unitaries: Union[UnitaryChannel, su2_ct.SU2CliffordT]
+    ) -> UnitaryChannel:
+        if not unitaries:
+            raise ValueError('at least one unitary should be provided')
+
+        unitary = su2_ct.ISqrt2
+        for u in unitaries:
+            if isinstance(u, UnitaryChannel):
+                unitary = unitary @ u.to_matrix()
+            else:
+                unitary = unitary @ u
+        unitary = unitary.rescale()
+        return UnitaryChannel(unitary.matrix[0, 0], unitary.matrix[1, 0], unitary.num_t_gates())
+
 
 @attrs.frozen
 class ProjectiveChannel(Channel):
@@ -172,6 +248,71 @@ class ProjectiveChannel(Channel):
         ) + (1 - p) * self.correction.diamond_norm_distance_to_rz(
             theta - self.failure_angle(config), config
         )
+
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            qs: Optional qubits to operate on.
+        Returns:
+            A cirq circuit
+        Raises:
+            ValueError: If the correction channel is not a UnitaryChannel.
+        """
+        if qs:
+            q0, q1 = qs
+        else:
+            q0, q1 = cirq.LineQubit.range(2)
+        correction = self.correction
+        if not isinstance(correction, UnitaryChannel):
+            raise ValueError('to_cirq does not support a non unitary correction')
+        return cirq.Circuit(
+            cirq.CNOT(q0, q1),
+            cirq.CircuitOperation(self.rotation.to_cirq(fmt, (q0,)).freeze()),
+            cirq.CNOT(q0, q1),
+            cirq.measure(q1, key='m'),
+            cirq.CircuitOperation(correction.to_cirq(fmt, (q0,)).freeze()).with_classical_controls(
+                'm'
+            ),
+        )
+
+    def to_quirk(self, fmt: str = "xz") -> str:
+        """Retruns a quirk link representing the channel operation.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+        Returns:
+            A quirk link.
+        """
+        correction = self.correction
+        if not isinstance(correction, UnitaryChannel):
+            raise ValueError(f"to_quirk is not supported for correction of type {type(correction)}")
+        rot = ctr.to_quirk(self.rotation.to_matrix(), fmt)
+        cor = ctr.to_quirk(correction.to_matrix(), fmt)
+        first_row = []
+        second_row = []
+        # CNOT
+        first_row.append("\"•\"")
+        second_row.append("\"X\"")
+        # rotation
+        first_row.extend(rot)
+        second_row.extend("1" for _ in rot)
+        # CNOT
+        first_row.append("\"•\"")
+        second_row.append("\"X\"")
+        # measure
+        first_row.append("1")
+        second_row.append("\"Measure\"")
+        # correction
+        first_row.extend(cor)
+        second_row.extend("\"•\"" for _ in cor)
+        cols = (
+            '['
+            + ','.join(f'[{g1},{g2}]' for g1, g2 in zip(first_row, second_row, strict=True))
+            + ']'
+        )
+        return "https://algassert.com/quirk#circuit={\"cols\":%s}" % cols
 
 
 @attrs.frozen

@@ -14,11 +14,12 @@
 
 import functools
 import itertools
-from typing import cast, Optional, Sequence, Union
+from typing import cast, Mapping, Optional, Sequence, Union
 
 import attrs
 import numpy as np
 
+import qualtran.rotation_synthesis.math_config as mc
 from qualtran.rotation_synthesis.rings import zsqrt2, zw
 
 
@@ -81,8 +82,23 @@ class SU2CliffordT:
     def __eq__(self, other):
         return np.all(self.matrix == other.matrix)
 
-    def numpy(self) -> np.ndarray:
-        return self.matrix.astype(complex)
+    def numpy(self, config: Optional[mc.MathConfig] = None) -> np.ndarray:
+        """Returns the numpy representation of the unitary.
+        Args:
+            config: An optional MathConfig used to convert the matrix entries to complex
+                numbers and normalize the result. If not given numpy methods are used.
+        """
+        if config is None:
+            result = self.matrix.astype(complex)
+            result = result / np.linalg.det(result) ** 0.5
+            return result
+        result = np.zeros((2, 2)) + 1j * config.zero
+        sqrt_det = config.sqrt(self.det().value(config.sqrt2))
+        for i in range(2):
+            for j in range(2):
+                result[i, j] = self.matrix[i, j].value(config.sqrt2)
+        result = result / sqrt_det
+        return result
 
     def adjoint(self) -> "SU2CliffordT":
         return SU2CliffordT(self.matrix.T.conj())
@@ -108,7 +124,7 @@ class SU2CliffordT:
         """Creates an SU2CliffordT from a Clifford+T gate sequence."""
         u = ISqrt2
         for g in seq:
-            u = GATE_MAP[g] @ u
+            u = _gate_from_name(g) @ u
         return u
 
     def parametric_form(self) -> tuple[zsqrt2.ZSqrt2, zsqrt2.ZSqrt2, zsqrt2.ZSqrt2, zsqrt2.ZSqrt2]:
@@ -140,18 +156,6 @@ class SU2CliffordT:
         # for elements of Z[sqrt(2)] this is equivalent ot taking the mod with sqrt(2)
         # which is the same as the parity of the integer part.
         return cast(tuple[int, int, int, int], tuple(v.a % 2 for v in pf))
-
-    def to_sequence(self) -> tuple[str, ...]:
-        if self.det() == 2:
-            cliffords = generate_cliffords()
-            if self in cliffords:
-                return cliffords[self]
-            return ("Z", "X", "Z", "X") + cliffords[-self]
-
-        t = _key_map()[self._key]
-        nxt = (GATE_MAP[t].adjoint() @ self).scale_down()
-        assert nxt.det() < self.det()
-        return nxt.to_sequence() + (t,)
 
     @classmethod
     def from_pair(
@@ -206,16 +210,45 @@ class SU2CliffordT:
         _, _, n1 = self.matrix[1, 0].to_zsqrt2()
         return n0 == n1
 
+    def rescale(self) -> 'SU2CliffordT':
+        r"""Rescales the matrix such that its determinant is minimized.
 
-_KEY_MAP = {
-    (0, 0, 0, 0): "Tx",
-    (0, 0, 1, 0): "Tz",
-    (0, 1, 0, 0): "Ty",
-    (0, 1, 1, 0): "Tx",
-    (1, 0, 1, 0): "Tx",
-    (1, 1, 0, 0): "Tx",
-    (1, 1, 1, 0): "Tz",
-}
+        The determinant of the unitary can be written as $2\lambda^n$ where $\lambda=2+\sqrt{l}$
+        and $n$ is the number of $T$ gates needed to synthesize the matrix. When all entries of
+        the matrix are divisible by $\lambda$ then we can divide through by $\lambda$ to reduce $n$
+        """
+        u = self
+        while u.det() > 2 * zsqrt2.LAMBDA_KLIUCHNIKOV:
+            if not all(a.is_divisible_by(zw.LAMBDA_KLIUCHNIKOV) for a in u.matrix.flat):
+                break
+            u = SU2CliffordT(
+                [[x // zw.LAMBDA_KLIUCHNIKOV for x in row] for row in u.matrix], u.gates
+            )
+        return u
+
+    def num_t_gates(self) -> int:
+        """Returns the number of T gates needed to synthesize the matrix."""
+        det = self.det()
+        x = zsqrt2.ZSqrt2(2)
+        n = 0
+        while x < det:
+            x = x * zsqrt2.LAMBDA_KLIUCHNIKOV
+            n += 1
+        assert x == det
+        return n
+
+
+def _gate_from_name(gate_name: str) -> SU2CliffordT:
+    adjoint = gate_name.count('*') % 2 == 1
+    if gate_name.endswith('*'):
+        first_star_index = gate_name.index('*')
+        suffix = gate_name[first_star_index:]
+        gate_name = gate_name[:first_star_index]
+        assert suffix.count('*') == len(suffix)
+    gate = GATE_MAP[gate_name]
+    if adjoint:
+        gate = gate.adjoint()
+    return gate
 
 
 @functools.cache
@@ -274,7 +307,7 @@ Tz = SU2CliffordT(_I * zw.SQRT_2 + _I - _Z * zw.J, ("Tz",))
 Ts = [Tx, Ty, Tz]
 
 
-GATE_MAP = {
+GATE_MAP: Mapping[str, SU2CliffordT] = {
     "I": ISqrt2,
     "S": SSqrt2,
     "H": HSqrt2,
@@ -292,21 +325,3 @@ PARAMETRIC_FORM_BASES = [
     _I + _Y * zw.J,
     np.array([[zw.Omega, zw.Omega], [-zw.Omega.conj(), zw.Omega.conj()]]),
 ]
-
-
-@functools.cache
-def generate_cliffords() -> dict[SU2CliffordT, tuple[str, ...]]:
-    ret = []
-    st = [ISqrt2]
-    seen = set(st)
-    while st:
-        c = st.pop()
-        ret.append(c)
-        assert len(ret) <= 24
-        for p in SSqrt2, HSqrt2:
-            nc = c @ p
-            if not any(u in seen for u in [nc, -nc]):
-                st.append(nc)
-                seen.add(nc)
-    assert len(ret) == 24
-    return cast(dict[SU2CliffordT, tuple[str, ...]], {v: v.gates for v in ret})

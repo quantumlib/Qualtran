@@ -14,6 +14,7 @@
 
 import numpy as np
 import pytest
+from scipy import stats
 
 import qualtran.rotation_synthesis.math_config as mc
 import qualtran.rotation_synthesis.rings as rings
@@ -69,3 +70,13 @@ def test_mixed_fallback_protocol(theta, error):
     assert res.expected_num_ts(_CONFIG) <= (-0.53 * np.log2(error) + 5) * 1.3
     actual_error = res.diamond_norm_distance_to_rz(theta, _CONFIG)
     assert actual_error <= error
+
+
+@pytest.mark.parametrize(
+    ["u", "eps"], zip(stats.unitary_group(2).rvs(10, 0), np.linspace(1e-3, 1e-1, 10), strict=True)
+)
+def test_magnitude_approx(u, eps):
+    config = mc.with_dps(50)
+    res = clifford_t_synthesis.magnitude_approx(u, eps, 50, config)
+    assert res is not None
+    assert res.diamond_norm_distance_to_unitary(u, config) <= eps

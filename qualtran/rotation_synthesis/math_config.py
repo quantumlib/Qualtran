@@ -40,6 +40,7 @@ class MathConfig:
     _ceil: Callable[[Real], int] = math.ceil
     _arctan2: Callable[[Real, Real], Real] = math.atan2
     _arcsin: Callable[[Real], Real] = math.asin
+    _arccos: Callable[[Real], Real] = math.acos
     _number: Callable[[Real], Real] = float
 
     def number(self, x) -> Real:
@@ -75,6 +76,9 @@ class MathConfig:
     def arcsin(self, x: Real) -> Real:
         return self._arcsin(x)
 
+    def arccos(self, x: Real) -> Real:
+        return self._arccos(x)
+
 
 NumpyConfig = MathConfig(
     "numpy",
@@ -91,6 +95,7 @@ NumpyConfig = MathConfig(
     lambda x: int(np.ceil(x)),
     np.arctan2,
     np.arcsin,
+    np.arccos,
     np.longdouble,
 )
 
@@ -124,5 +129,6 @@ def with_dps(dps: int) -> MathConfig:
         lambda x: int(mpmath.ceil(x)),
         mpmath.atan2,
         mpmath.asin,
+        mpmath.acos,
         mpmath.mpf,
     )

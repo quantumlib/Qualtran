@@ -17,6 +17,7 @@ from typing import cast, Optional, Union
 
 import attrs
 import mpmath
+import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.channels as channels
@@ -24,6 +25,8 @@ import qualtran.rotation_synthesis.math_config as mc
 import qualtran.rotation_synthesis.protocols.protocol as rsp
 import qualtran.rotation_synthesis.relative_norm as relative_norm
 import qualtran.rotation_synthesis.rings as rings
+from qualtran.rotation_synthesis.matrix import analytical_decomposition as rsad
+from qualtran.rotation_synthesis.matrix import su2_ct
 from qualtran.rotation_synthesis.protocols import diagonal, fallback, mixed_diagonal
 from qualtran.rotation_synthesis.rings import zsqrt2
 
@@ -94,7 +97,7 @@ def diagonal_unitary_approx(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.UnitaryChannel]:
-    r"""Approximates $Rz(2\theta)$ using the diagonal protocol.
+    r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the diagonal protocol.
 
     Args:
         theta: Target angle.
@@ -138,7 +141,7 @@ def fallback_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProjectiveChannel]:
-    r"""Approximates $Rz(2\theta)$ using the fallback protocol.
+    r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the fallback protocol.
 
     Args:
         theta: Target angle.
@@ -225,7 +228,7 @@ def mixed_diagonal_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    r"""Approximates $Rz(2\theta)$ using the mixed diagonal protocol.
+    r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the mixed diagonal protocol.
 
     Args:
         theta: Target angle.
@@ -287,7 +290,7 @@ def mixed_fallback_protocol(
     relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
     verbose: bool = False,
 ) -> Optional[channels.ProbabilisticChannel]:
-    r"""Approximates $Rz(2\theta)$ using the mixed fallback protocol.
+    r"""Approximates $e^{i\theta Z} = Rz(-2\theta)$ using the mixed fallback protocol.
 
     Args:
         theta: Target angle.
@@ -435,3 +438,79 @@ def mixed_fallback_protocol(
             best_cost = cost
             best_result = cand
     return best_result
+
+
+def magnitude_approx(
+    unitary: np.ndarray,
+    eps: rst.Real,
+    max_n: int,
+    config: mc.MathConfig,
+    eps_split: Optional[tuple[rst.Real, rst.Real, rst.Real]] = None,
+    relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
+    verbose: bool = False,
+) -> Optional[channels.UnitaryChannel]:
+    r"""Approximates a unitary using the magnitude approximation protocol.
+
+    Any $SU(2)$ unitary can be written as a product of 3 rotations ZXZ. This method computes these
+    rotation angles (and ignores the global phase if the given unitary is not in $SU(2)$) and
+    approximates each of them independently before merging the results to obtain a single unitary.
+
+    Args:
+        unitary: the target unitary, this can be 2x2 numpy array of mpmath.mpc objects.
+        eps: Target error.
+        max_n: Maximum number of T gates to check.
+        config: A math config.
+        eps_split: Optional splitting of the error budget for three rotations.
+            If None, `eps` is split into $0.14\epsilon$ for the X-rotation and $0.43\epsilon$ for
+            each of the Z-rotations.
+        relative_norm_solver: The relative norm solver to use.
+        verbose: whether to print debug statements or not.
+    Returns:
+        A UnitaryChannels or None.
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.1
+    """
+    eps = config.number(eps)
+    det = unitary[0, 0] * unitary[1, 1] - unitary[1, 0] * unitary[0, 1]
+    unitary = unitary / config.sqrt(det)
+    if eps_split is None:
+        eps_split = 0.43 * eps, 0.14 * eps, 0.43 * eps
+    phi1, theta, phi2 = rsad.su_unitary_to_zxz_angles(unitary, config)
+    rx_approx = diagonal_unitary_approx(
+        -theta / 2,
+        eps=eps_split[1],
+        max_n=max_n,
+        config=config,
+        relative_norm_solver=relative_norm_solver,
+        verbose=verbose,
+    )
+    if rx_approx is None:
+        return None
+    x_rotation = (su2_ct.HSqrt2 @ rx_approx.to_matrix() @ su2_ct.HSqrt2.adjoint()).numpy(config)
+
+    angles_for_approx_x_rot = rsad.su_unitary_to_zxz_angles(x_rotation, config)
+
+    rz1_approx = diagonal_unitary_approx(
+        -(phi1 - angles_for_approx_x_rot[0]) / 2,
+        eps_split[0],
+        max_n=max_n,
+        config=config,
+        relative_norm_solver=relative_norm_solver,
+        verbose=verbose,
+    )
+    if rz1_approx is None:
+        return None
+    rz2_approx = diagonal_unitary_approx(
+        -(phi2 - angles_for_approx_x_rot[2]) / 2,
+        eps_split[2],
+        max_n=max_n,
+        config=config,
+        relative_norm_solver=relative_norm_solver,
+        verbose=verbose,
+    )
+    if rz2_approx is None:
+        return None
+    return channels.UnitaryChannel.from_unitaries(
+        rz1_approx, su2_ct.HSqrt2, rx_approx, su2_ct.HSqrt2.adjoint(), rz2_approx
+    )

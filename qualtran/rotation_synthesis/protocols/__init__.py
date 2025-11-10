@@ -12,6 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.rotation_synthesis.protocols.clifford_t_synthesis import (
+    diagonal_unitary_approx,
+    fallback_protocol,
+    magnitude_approx,
+    mixed_diagonal_protocol,
+    mixed_fallback_protocol,
+)
 from qualtran.rotation_synthesis.protocols.diagonal import Diagonal
 from qualtran.rotation_synthesis.protocols.fallback import Fallback
 from qualtran.rotation_synthesis.protocols.mixed_diagonal import MixedDiagonal
