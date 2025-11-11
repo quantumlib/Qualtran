@@ -47,7 +47,8 @@ def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
 @pytest.mark.slow
 @pytest.mark.parametrize('num_sites,eps', [(3, 0.5), (4, 0.5)])
 def test_qubitization_walk_operator(num_sites: int, eps: float):
-    # TODO: cirq slowdown
+    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
     walk, ham = get_walk_operator_for_1d_ising_model(num_sites, eps)
     assert_valid_bloq_decomposition(walk)
 

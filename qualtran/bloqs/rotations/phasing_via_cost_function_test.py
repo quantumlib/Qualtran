@@ -100,7 +100,10 @@ class TestHammingWeightPhasing(GateWithRegisters):
 def test_hamming_weight_phasing_using_phase_via_cost_function(
     n: int, exponent: float, eps: float, use_phase_gradient: bool, normalize_cost_function: bool
 ):
-    return pytest.xfail("Cirq regression sigkill")  # TODO: error message
+    # TODO: This test is broken due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
+    #       It can cause a SIGKILL
+    return pytest.xfail("Broken Cirq simulation")
     # pylint: disable=unreachable
     cost_reg_size = 2 ** n.bit_length()
     normalization_factor = 1 if normalize_cost_function else cost_reg_size

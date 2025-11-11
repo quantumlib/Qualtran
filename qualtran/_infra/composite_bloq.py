@@ -397,7 +397,6 @@ class CompositeBloq(Bloq):
         # pylint: disable=protected-access
         bb._i = max(binst.i for binst in self.bloq_instances) + 1
 
-        # soq_map: List[Tuple[SoquetT, SoquetT]] = []
         flat_soq_map: Dict[Soquet, Soquet] = {}
         new_out_soqs: Tuple[SoquetT, ...]
         did_work = False
@@ -418,7 +417,6 @@ class CompositeBloq(Bloq):
                 new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
 
             _update_flat_soq_map(zip(old_out_soqs, new_out_soqs), flat_soq_map)
-            # soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         if not did_work:
             raise DidNotFlattenAnythingError()
@@ -887,7 +885,8 @@ def _map_flat_soqs(
     return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
 
 
-def _update_flat_soq_map(soq_map: Iterable[Tuple[SoquetT, SoquetT]], flat_soq_map):
+def _update_flat_soq_map(soq_map: Iterable[Tuple[SoquetT, SoquetT]], flat_soq_map: Dict[Soquet, Soquet]):
+    """Flatten SoquetT into a flat_soq_map. This function mutates `flat_soq_map`."""
     for old_soqs, new_soqs in soq_map:
         if isinstance(old_soqs, Soquet):
             assert isinstance(new_soqs, Soquet), new_soqs

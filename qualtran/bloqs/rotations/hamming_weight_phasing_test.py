@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])
 @pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
 def test_hamming_weight_phasing(n: int, theta: float):
-
     gate = HammingWeightPhasing(n, theta)
     qlt_testing.assert_valid_bloq_decomposition(gate)
     qlt_testing.assert_equivalent_bloq_counts(
@@ -51,9 +50,14 @@ def test_hamming_weight_phasing(n: int, theta: float):
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
 
     if n == 6 or n == 7:
-        return pytest.skip("Cirq performance regression")  # TODO: github issue
+        # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+        #       https://github.com/quantumlib/Qualtran/issues/1763
+        return pytest.skip("Cirq performance regression")
     if n == 8:
-        return pytest.xfail("Cirq sigkill")  # TODO: github issue
+        # TODO: This test is broken due to Cirq compatibility issues:
+        #       https://github.com/quantumlib/Qualtran/issues/1763
+        #       It can cause a SIGKILL
+        return pytest.xfail("Broken Cirq simulation")
 
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)

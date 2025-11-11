@@ -324,6 +324,7 @@ class ComputeUncompute(Bloq):
 
 
 def test_compute_uncompute_simulation():
+    # From https://github.com/quantumlib/Qualtran/issues/1488
     u1 = ComputeUncompute().tensor_contract()
     u2 = cirq.unitary(BloqAsCirqGate(ComputeUncompute()))
 

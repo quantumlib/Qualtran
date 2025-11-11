@@ -96,7 +96,8 @@ def verify_hamiltonian_simulation_by_gqsp(
 def test_hamiltonian_simulation_by_gqsp(
     select_bitsize: int, target_bitsize: int, t: float, precision: float
 ):
-    # TODO: this is slow again
+    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
     random_state = np.random.RandomState(42)
 
     for _ in range(5):

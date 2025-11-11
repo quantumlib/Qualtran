@@ -72,9 +72,8 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
 )
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
-    # TODO: This is slow.
-    # if num_terms >= 2:
-    #     return pytest.xfail("Cirq regression") # TODO: Github Issue
+    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
 
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)

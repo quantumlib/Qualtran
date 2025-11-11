@@ -53,7 +53,8 @@ def test_textbook_phase_estimation_zpow_theta(theta):
 )
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_state: bool):
-    # TODO: broken
+    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)
 
