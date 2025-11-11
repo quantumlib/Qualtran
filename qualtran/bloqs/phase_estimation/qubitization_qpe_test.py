@@ -152,7 +152,7 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
 
 
 @pytest.mark.notebook
-def test_phase_estimation_of_qubitized_hubbard_model():
+def test_phase_estimation_of_qubitized_hubbard_model_notebook():
     execute_notebook('phase_estimation_of_quantum_walk')
 
 
