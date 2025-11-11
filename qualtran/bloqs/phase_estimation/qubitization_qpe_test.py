@@ -72,13 +72,15 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
 )
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
+    if num_terms >= 2:
+        return pytest.xfail("Cirq regression") # TODO: Github Issue
+
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)
 
     ham_coeff = np.array([abs(ps.coefficient.real) for ps in ham])
     qubitization_lambda = np.sum(ham_coeff)
     g = GateHelper(walk)
-    # matrix = cirq.unitary(walk)
     L_state = np.zeros(2 ** len(g.quregs['selection']))
     L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
 

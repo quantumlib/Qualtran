@@ -96,7 +96,7 @@ NumpyConfig = MathConfig(
     np.arctan2,
     np.arcsin,
     np.arccos,
-    np.float128,
+    np.longdouble,
 )
 
 

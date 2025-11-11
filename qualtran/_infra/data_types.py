@@ -331,7 +331,7 @@ class QIntOnesComp(QDType):
 
     def from_bits(self, bits: Sequence[int]) -> int:
         x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
-        return (-1) ** bits[0] * x
+        return (-1) ** int(bits[0]) * x
 
     def get_classical_domain(self) -> Iterable[int]:
         max_val = 1 << (self.bitsize - 1)

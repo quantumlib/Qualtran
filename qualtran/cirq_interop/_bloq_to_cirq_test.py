@@ -13,6 +13,7 @@
 #  limitations under the License.
 from typing import Dict, List, Tuple, TYPE_CHECKING
 
+import attrs
 import cirq
 import numpy as np
 import pytest
@@ -308,6 +309,32 @@ def test_toffoli_circuit_diagram():
 """,
         use_unicode_characters=False,
     )
+
+@attrs.frozen
+class ComputeUncompute(Bloq):
+    @property
+    def signature(self):
+        return Signature.build(a=1, b=1)
+
+    def build_composite_bloq(self, bb, a, b):
+        [a, b], c = bb.add(And(), ctrl=[a, b])
+        [a, b] = bb.add(And().adjoint(), ctrl=[a, b], target=c)
+        return dict(a=a, b=b)
+
+def test_compute_uncompute_simulation():
+    u1 = ComputeUncompute().tensor_contract()
+    u2 = cirq.unitary(BloqAsCirqGate(ComputeUncompute()))
+
+    cbloq = ComputeUncompute().as_composite_bloq().flatten()
+    circuit = cbloq.to_cirq_circuit()
+    print()
+    print(circuit)
+    print()
+    sim = cirq.Simulator()
+    v3 = sim.simulate(circuit).final_state_vector
+    np.testing.assert_allclose(u1, u2)
+    np.testing.assert_allclose(u1@[1,0,0,0], v3.reshape((2,2,2))[0, :, :].reshape(4,))
+    # np.testing.assert_allclose(u1, u3)
 
 
 @pytest.mark.notebook

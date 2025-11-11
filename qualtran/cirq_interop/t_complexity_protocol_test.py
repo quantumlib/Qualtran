@@ -118,7 +118,9 @@ def test_gates():
     assert t_complexity(And() ** -1) == TComplexity(clifford=4)
 
     assert t_complexity_compat(cirq.FREDKIN) == TComplexity(t=7, clifford=14)
-    assert t_complexity_compat(cirq.H.controlled()) == TComplexity(clifford=4, rotations=2)
+    assert (t_complexity_compat(cirq.H.controlled()) == TComplexity(clifford=4, rotations=2)  # cirq <=1.4
+            or
+            t_complexity_compat(cirq.H.controlled()) == TComplexity(t=2, clifford=4, rotations=2))
     assert t_complexity(CHadamard()) == TComplexity(clifford=4, rotations=2)
 
     # Global phase
