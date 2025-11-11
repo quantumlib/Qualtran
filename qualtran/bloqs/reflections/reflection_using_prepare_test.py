@@ -116,6 +116,7 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
 @pytest.mark.parametrize('global_phase', [+1, -1j])
 def test_reflection_using_prepare(num_ones, eps, global_phase):
     return pytest.xfail("Cirq regression")  # TODO error message
+    # pylint: disable=unreachable
 
     data = [1] * num_ones
     prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)
@@ -142,6 +143,7 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
             "sign function has failed to return 1 or -1. This may be due to nan or complex input."
         )
     assert cirq.dirac_notation(prepared_state) == get_3q_uniform_dirac_notation(signs, global_phase)
+    # pylint: enable=unreachable
 
 
 def test_reflection_using_prepare_diagram():
