@@ -18,10 +18,12 @@ import abc
 from typing import Optional, Sequence, Union
 
 import attrs
+import cirq
 import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
 import qualtran.rotation_synthesis.rings as rings
 from qualtran.rotation_synthesis.matrix import su2_ct
 from qualtran.rotation_synthesis.rings import zsqrt2
@@ -110,6 +112,50 @@ class UnitaryChannel(Channel):
         u = su2_ct.SU2CliffordT.from_sequence(seq)
         n = sum(g.startswith("T") for g in seq)
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
+
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            qs: Optional qubits to operate on.
+        Returns:
+            A cirq circuit
+        Raises:
+            ValueError: If twirl=True
+        """
+        if self.twirl:
+            raise ValueError("to_cirq is not supported when twirl=True")
+        if qs:
+            (q,) = qs
+        else:
+            q = cirq.q(0)
+        return cirq.Circuit(ctr.to_cirq(self.to_matrix(), fmt, q))
+
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
+        """Retruns a quirk link representing the channel operation.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            allow_global_phase: whether the result can have a global phase or not.
+                If this is False, then each gate (except H) gets replaced by SU2 version:
+                    - S -> Rz(pi/2)
+                    - T -> Rz(pi/4)
+                    - X -> Rx(-pi)
+                    - Y -> Ry(-pi)
+                    - Z -> Rz(-pi)
+                Then a prefix composed of SXSX that corrects the phase difference caused by H gates
+                is added.
+        Returns:
+            A quirk link.
+        Raises:
+            ValueError: If twirl=True
+        """
+        if self.twirl:
+            raise ValueError("to_quirk is not supported when twirl=True")
+        gates = ctr.to_quirk(self.to_matrix(), fmt, allow_global_phase)
+        cols = '[' + ','.join(f'[{g}]' for g in gates) + ']'
+        return "https://algassert.com/quirk#circuit={\"cols\":%s}" % cols
 
     def diamond_norm_distance_to_unitary(
         self, unitary: np.ndarray, config: mc.MathConfig
@@ -211,6 +257,81 @@ class ProjectiveChannel(Channel):
         ) + (1 - p) * self.correction.diamond_norm_distance_to_rz(
             theta - self.failure_angle(config), config
         )
+
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            qs: Optional qubits to operate on.
+        Returns:
+            A cirq circuit
+        Raises:
+            ValueError: If the correction channel is not a UnitaryChannel.
+        """
+        if qs:
+            q0, q1 = qs
+        else:
+            q0, q1 = cirq.LineQubit.range(2)
+        correction = self.correction
+        if not isinstance(correction, UnitaryChannel):
+            raise ValueError('to_cirq does not support a non unitary correction')
+        return cirq.Circuit(
+            cirq.CNOT(q0, q1),
+            cirq.CircuitOperation(self.rotation.to_cirq(fmt, (q0,)).freeze()),
+            cirq.CNOT(q0, q1),
+            cirq.measure(q1, key='m'),
+            cirq.CircuitOperation(correction.to_cirq(fmt, (q0,)).freeze()).with_classical_controls(
+                'm'
+            ),
+        )
+
+    def to_quirk(self, fmt: str = "xz", allow_global_phase: bool = True) -> str:
+        """Retruns a quirk link representing the channel operation.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            allow_global_phase: whether the result can have a global phase or not.
+                If this is False then each gate (except H) gets replaced by SU2 version:
+                    - S -> Rz(pi/2)
+                    - T -> Rz(pi/4)
+                    - X -> Rx(-pi)
+                    - Y -> Ry(-pi)
+                    - Z -> Rz(-pi)
+                Then a prefix composed of SXSX that corrects the phase difference caused by H gates
+                is added.
+        Returns:
+            A quirk link.
+        """
+        correction = self.correction
+        if not isinstance(correction, UnitaryChannel):
+            raise ValueError(f"to_quirk is not supported for correction of type {type(correction)}")
+        rot = ctr.to_quirk(self.rotation.to_matrix(), fmt, allow_global_phase)
+        cor = ctr.to_quirk(correction.to_matrix(), fmt, allow_global_phase)
+        xgate = '"X"'
+        first_row = []
+        second_row = []
+        # CNOT
+        first_row.append("\"•\"")
+        second_row.append(xgate)
+        # rotation
+        first_row.extend(rot)
+        second_row.extend("1" for _ in rot)
+        # CNOT
+        first_row.append("\"•\"")
+        second_row.append(xgate)
+        # measure
+        first_row.append("1")
+        second_row.append("\"Measure\"")
+        # correction
+        first_row.extend(cor)
+        second_row.extend("\"•\"" for _ in cor)
+        cols = (
+            '['
+            + ','.join(f'[{g1},{g2}]' for g1, g2 in zip(first_row, second_row, strict=True))
+            + ']'
+        )
+        return "https://algassert.com/quirk#circuit={\"cols\":%s}" % cols
 
 
 @attrs.frozen
