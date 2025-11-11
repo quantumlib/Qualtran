@@ -308,10 +308,7 @@ class ProjectiveChannel(Channel):
             raise ValueError(f"to_quirk is not supported for correction of type {type(correction)}")
         rot = ctr.to_quirk(self.rotation.to_matrix(), fmt, allow_global_phase)
         cor = ctr.to_quirk(correction.to_matrix(), fmt, allow_global_phase)
-        if allow_global_phase:
-            xgate = '"X"'
-        else:
-            xgate = '{"id":"Rzft","arg":"-pi"}'
+        xgate = '"X"'
         first_row = []
         second_row = []
         # CNOT
