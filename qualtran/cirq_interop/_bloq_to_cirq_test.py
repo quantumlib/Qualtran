@@ -310,6 +310,7 @@ def test_toffoli_circuit_diagram():
         use_unicode_characters=False,
     )
 
+
 @attrs.frozen
 class ComputeUncompute(Bloq):
     @property
@@ -321,20 +322,17 @@ class ComputeUncompute(Bloq):
         [a, b] = bb.add(And().adjoint(), ctrl=[a, b], target=c)
         return dict(a=a, b=b)
 
+
 def test_compute_uncompute_simulation():
     u1 = ComputeUncompute().tensor_contract()
     u2 = cirq.unitary(BloqAsCirqGate(ComputeUncompute()))
 
     cbloq = ComputeUncompute().as_composite_bloq().flatten()
     circuit = cbloq.to_cirq_circuit()
-    print()
-    print(circuit)
-    print()
     sim = cirq.Simulator()
     v3 = sim.simulate(circuit).final_state_vector
     np.testing.assert_allclose(u1, u2)
-    np.testing.assert_allclose(u1@[1,0,0,0], v3.reshape((2,2,2))[0, :, :].reshape(4,))
-    # np.testing.assert_allclose(u1, u3)
+    np.testing.assert_allclose(u1 @ [1, 0, 0, 0], v3.reshape((2, 2, 2))[0, :, :].reshape(4))
 
 
 @pytest.mark.notebook

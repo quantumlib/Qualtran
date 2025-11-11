@@ -109,12 +109,13 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
         ret = ret + f' {c} {term}'
     return ret
 
+
 @pytest.mark.slow
 @pytest.mark.parametrize('num_ones', [5])
 @pytest.mark.parametrize('eps', [0.05])
 @pytest.mark.parametrize('global_phase', [+1, -1j])
 def test_reflection_using_prepare(num_ones, eps, global_phase):
-    return pytest.xfail("Cirq regression") # TODO error message
+    return pytest.xfail("Cirq regression")  # TODO error message
 
     data = [1] * num_ones
     prepare_gate = StatePreparationAliasSampling.from_probabilities(data, precision=eps)

@@ -40,11 +40,6 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])
 @pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
 def test_hamming_weight_phasing(n: int, theta: float):
-    if n == 6 or n==7:
-        return pytest.skip("Cirq regression") # TODO: github issue
-    if n == 8:
-        return pytest.xfail("Cirq regression") # TODO: github issue
-
 
     gate = HammingWeightPhasing(n, theta)
     qlt_testing.assert_valid_bloq_decomposition(gate)
@@ -54,6 +49,11 @@ def test_hamming_weight_phasing(n: int, theta: float):
 
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
+
+    if n == 6 or n == 7:
+        return pytest.skip("Cirq performance regression")  # TODO: github issue
+    if n == 8:
+        return pytest.xfail("Cirq sigkill")  # TODO: github issue
 
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)

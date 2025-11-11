@@ -508,13 +508,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return controlled_bloq
 
     def _unitary_(self):
-        if all(reg.side == Side.THRU for reg in self.signature):
-            try:
-                tensor = self.tensor_contract()
-                assert tensor.ndim == 2, "All registers should have been checked to be THRU."
-                return tensor
-            except (DecomposeNotImplementedError, DecomposeTypeError, NotImplementedError):
-                return NotImplemented
         return NotImplemented
 
     def my_tensors(

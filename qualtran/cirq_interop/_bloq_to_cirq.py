@@ -138,39 +138,14 @@ class BloqAsCirqGate(cirq.Gate):
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
 
-    # def _has_unitary_(self):
-    #     if all(reg.side == Side.THRU for reg in self.bloq.signature):
-    #         try:
-    #             # If decomposable, return NotImplemented to let the cirq protocol
-    #             # try its decomposition-based strategies.
-    #             _ = self.bloq.decompose_bloq()
-    #             return NotImplemented
-    #         except (DecomposeNotImplementedError, DecomposeTypeError):
-    #             tensor = self.bloq.tensor_contract()
-    #             assert tensor.ndim == 2, "All registers should have been checked to be THRU."
-    #             return True
-    #         except NotImplementedError:
-    #             return NotImplemented
-    #     return False
-
     def _unitary_(self):
         if all(reg.side == Side.THRU for reg in self.bloq.signature):
             try:
                 tensor = self.bloq.tensor_contract()
                 assert tensor.ndim == 2, "All registers should have been checked to be THRU."
                 return tensor
-
-                # # If decomposable, return NotImplemented to let the cirq protocol
-                # # try its decomposition-based strategies.
-                # _ = self.bloq.decompose_bloq()
-                # return NotImplemented
             except (DecomposeNotImplementedError, DecomposeTypeError, NotImplementedError):
                 return NotImplemented
-                # tensor = self.bloq.tensor_contract()
-                # assert tensor.ndim == 2, "All registers should have been checked to be THRU."
-                # return tensor
-            # except NotImplementedError:
-            #     return NotImplemented
         return NotImplemented
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

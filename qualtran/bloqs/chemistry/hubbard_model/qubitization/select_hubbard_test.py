@@ -73,20 +73,13 @@ def test_hubbard_majoranna_small(bloq_autotester):
     bloq_autotester(_hubb_majoranna_small)
 
 
-def test_hubb_majoranna_bloq_counts():
-    for n in [2, 3, 10, 11]:
-        bloq = HubbardMajorannaOperator(x_dim=n, y_dim=n, control_val=None)
-        qlt_testing.assert_equivalent_bloq_counts(
-            bloq,
-            generalizer=[ignore_cliffords, ignore_alloc_free, ignore_split_join, generalize_cvs],
-        )
-
-    for n in [2, 3, 10, 11]:
-        bloq = HubbardMajorannaOperator(x_dim=n, y_dim=n, control_val=1)
-        qlt_testing.assert_equivalent_bloq_counts(
-            bloq,
-            generalizer=[ignore_cliffords, ignore_alloc_free, ignore_split_join, generalize_cvs],
-        )
+@pytest.mark.parametrize('n', [2, 3, 10, 11])
+@pytest.mark.parametrize('cv', [None, 1])
+def test_hubb_majoranna_bloq_counts(cv, n):
+    bloq = HubbardMajorannaOperator(x_dim=n, y_dim=n, control_val=cv)
+    qlt_testing.assert_equivalent_bloq_counts(
+        bloq, generalizer=[ignore_cliffords, ignore_alloc_free, ignore_split_join, generalize_cvs]
+    )
 
 
 def test_hubbard_spin_up_z_symb(bloq_autotester):
