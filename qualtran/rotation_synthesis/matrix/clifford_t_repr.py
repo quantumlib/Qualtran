@@ -61,12 +61,11 @@ def _xz_sequence(
     if use_hs:
         cliffords.append(su2_ct.HSqrt2)
         cliffords.append(su2_ct.HSqrt2 @ su2_ct.SSqrt2)
-    candidates = []
     pref = prv.removesuffix('*')
-    for name, t in _T_list:
-        if name.startswith(pref):
-            continue
-        for c in cliffords:
+    for c in cliffords:
+        for name, t in _T_list:
+            if name.startswith(pref):
+                continue
             new = c.adjoint() @ matrix
             new = t.adjoint() @ new
             new = new.scale_down()
@@ -76,11 +75,8 @@ def _xz_sequence(
             if seq is None:
                 continue
             gates = cast(tuple[str, ...], c.gates)
-            candidates.append(seq + (name,) + gates)
-            break
-    if not candidates:
-        return None
-    return min(candidates, key=len)
+            return seq + (name,) + gates
+    return None
 
 
 def to_sequence(matrix: su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
