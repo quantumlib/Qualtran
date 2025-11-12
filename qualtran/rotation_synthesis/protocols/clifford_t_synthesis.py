@@ -193,7 +193,7 @@ def fallback_protocol(
             rotation.p, theta, config
         )
         assert err_proj <= eps_rotation, f"err_proj={err_proj:e} eps_rotation={eps_rotation:e}"
-        eps_correction = min((eps - err_proj) / max(abs_v2, 1 - success_probability), 0.1)
+        eps_correction = min((eps - err_proj) / max(abs_v2, 1 - success_probability), 0.1)  # type: ignore[type-var]
         protocol = diagonal.Diagonal(theta - arg_v, eps_correction, 400)
         correction_cands = cast(
             list[channels.UnitaryChannel],
@@ -393,12 +393,12 @@ def mixed_fallback_protocol(
         assert isinstance(over, channels.UnitaryChannel)
         delta1 = under.rotation_angle(config) - theta
         delta2 = over.rotation_angle(config) - theta
-        eps_proj = 2 * max(config.sin(delta1) ** 2, config.sin(delta2) ** 2)
+        eps_proj = 2 * max(config.sin(delta1) ** 2, config.sin(delta2) ** 2)  # type: ignore[type-var]
         if eps - eps_proj < fallback_min_eps:
             continue
 
         rem = (eps - eps_proj) / (1 - success_probability)
-        rem = min(rem, 1e-1)
+        rem = min(rem, 1e-1)  # type: ignore[type-var]
         correction_under = mixed_diagonal_protocol(
             theta - under.failure_angle(config),
             rem,

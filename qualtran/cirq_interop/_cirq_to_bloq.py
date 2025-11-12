@@ -71,7 +71,8 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-# TODO: Reference GitHub issue
+# TODO: Cirq's ControlledGate validation logic is incompatible with the Qualtran data model.
+#       https://github.com/quantumlib/Qualtran/issues/1764
 def _monkey_patch_ControlledGate_validate(x):
     pass
 

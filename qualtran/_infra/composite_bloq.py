@@ -885,7 +885,9 @@ def _map_flat_soqs(
     return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
 
 
-def _update_flat_soq_map(soq_map: Iterable[Tuple[SoquetT, SoquetT]], flat_soq_map: Dict[Soquet, Soquet]):
+def _update_flat_soq_map(
+    soq_map: Iterable[Tuple[SoquetT, SoquetT]], flat_soq_map: Dict[Soquet, Soquet]
+):
     """Flatten SoquetT into a flat_soq_map. This function mutates `flat_soq_map`."""
     for old_soqs, new_soqs in soq_map:
         if isinstance(old_soqs, Soquet):
