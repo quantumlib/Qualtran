@@ -93,7 +93,7 @@ def qsp_complementary_polynomial(
     # Here H and T are defined on reals, so the initial definition of R is only on the unit circle.
     # We analytically continue this definition to the entire complex plane by replacing $e^{i\theta}$ by $z$.
     R = Polynomial.basis(d) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
-    roots = R.roots()
+    roots: Iterable[complex] = R.roots()
 
     # R is self-inversive, so larger_roots and smaller_roots occur in conjugate pairs.
     units: list[complex] = []  # roots r s.t. \abs{r} = 1

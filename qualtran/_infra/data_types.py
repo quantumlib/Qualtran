@@ -331,7 +331,7 @@ class QIntOnesComp(QDType):
 
     def from_bits(self, bits: Sequence[int]) -> int:
         x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
-        return (-1) ** bits[0] * x
+        return (-1) ** int(bits[0]) * x
 
     def get_classical_domain(self) -> Iterable[int]:
         max_val = 1 << (self.bitsize - 1)
@@ -398,7 +398,7 @@ class QUInt(QDType):
     def from_bits(self, bits: Sequence[int]) -> int:
         return int("".join(str(x) for x in bits), 2)
 
-    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.integer]:
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.uint64]:
         bitstrings = np.atleast_2d(bits_array)
         if bitstrings.shape[1] != self.bitsize:
             raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
@@ -408,7 +408,7 @@ class QUInt(QDType):
             return super().from_bits_array(bits_array)
 
         basis = 2 ** np.arange(self.bitsize - 1, 0 - 1, -1, dtype=np.uint64)
-        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)
+        return np.sum(basis * bitstrings, axis=1, dtype=np.uint64)  # type: ignore[return-value]
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):

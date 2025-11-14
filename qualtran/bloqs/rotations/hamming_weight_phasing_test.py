@@ -49,6 +49,16 @@ def test_hamming_weight_phasing(n: int, theta: float):
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
 
+    if n == 6 or n == 7:
+        # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+        #       https://github.com/quantumlib/Qualtran/issues/1763
+        return pytest.skip("Cirq performance regression")
+    if n == 8:
+        # TODO: This test is broken due to Cirq compatibility issues:
+        #       https://github.com/quantumlib/Qualtran/issues/1763
+        #       It can cause a SIGKILL
+        return pytest.xfail("Broken Cirq simulation")
+
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)
     initial_state = cirq.testing.random_superposition(dim=2**n, random_state=12345)

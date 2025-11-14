@@ -33,8 +33,8 @@ def check_gqsp_polynomial_pair_on_random_points_on_unit_circle(
     Given a pair of GQSP polynomials $P, Q$, this function checks that $|P(z)|^2 + |Q(z)|^2 = 1$
     for random $z$ on the complex unit circle (i.e. $|z| = 1$).
     """
-    P = Polynomial(P)
-    Q = Polynomial(Q)
+    P = Polynomial(P)  # type: ignore[arg-type]
+    Q = Polynomial(Q)  # type: ignore[arg-type]
 
     z = np.exp(random_state.random(size=n_points) * np.pi * 2j)
     np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)

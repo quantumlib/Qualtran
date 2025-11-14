@@ -17,7 +17,6 @@ from typing import Dict
 
 import numpy as np
 from attrs import frozen
-from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -53,14 +52,14 @@ class TestMultiRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: NDArray['Soquet'], zz: Soquet  # type: ignore[type-var]
+        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: Soquet  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
                 a, b = bb.split(yy[i, j])  # type: ignore[index]
                 a, b = bb.add(TestTwoBitOp(), ctrl=a, target=b)
-                yy[i, j] = bb.join(np.array([a, b]))
+                yy[i, j] = bb.join(np.array([a, b]))  # type: ignore[index]
         a, b, c = bb.split(zz)
         zz = bb.join(np.array([a, b, c]))
         return {'xx': xx, 'yy': yy, 'zz': zz}

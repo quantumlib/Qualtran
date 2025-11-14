@@ -134,7 +134,7 @@ class SelingerState:
                 g = go.KSqrt2
                 name = "K"
             elif 0.3 <= e1.z and 0.3 <= e2.z:
-                c = min(e1.z, e2.z)
+                c = min(e1.z, e2.z)  # type: ignore[type-var]
                 n = max(1, config.floor(l_value**c / 2))
                 g = go.ASqrt2**n
                 name = f"A^{n}"
@@ -148,7 +148,7 @@ class SelingerState:
                 g = go.RSqrt2
                 name = "R"
             elif e1.z >= -0.2 and e2.z >= -0.2:
-                c = min(e1.z, e2.z)
+                c = min(e1.z, e2.z)  # type: ignore[type-var]
                 n = max(1, config.floor(l_value**c / config.sqrt2))
                 g = go.BSqrt2**n
                 name = f"B^{n}"
