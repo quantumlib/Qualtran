@@ -71,6 +71,15 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
+# TODO: Cirq's ControlledGate validation logic is incompatible with the Qualtran data model.
+#       https://github.com/quantumlib/Qualtran/issues/1764
+def _monkey_patch_ControlledGate_validate(x):
+    pass
+
+
+cirq.ops.controlled_gate._validate_sub_object = _monkey_patch_ControlledGate_validate
+
+
 class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
     """A base class to bootstrap a bloq from a `cirq.Gate`.
 

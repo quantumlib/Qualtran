@@ -13,11 +13,14 @@
 #  limitations under the License.
 import asyncio
 import multiprocessing
+import random
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import attrs
 import filelock
 import nbconvert
 import nbformat
@@ -180,6 +183,13 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     return None
 
 
+@attrs.frozen
+class _NotebookRunResult:
+    nb_in: Path
+    err: Optional[Exception]
+    duration_s: float
+
+
 class _NotebookRunClosure:
     """Used to run notebook execution logic in subprocesses."""
 
@@ -189,7 +199,7 @@ class _NotebookRunClosure:
         self.output_md = output_md
         self.only_out_of_date = only_out_of_date
 
-    def __call__(self, nb_rel_path: Path, sourceroot: Path) -> Tuple[Path, Optional[Exception]]:
+    def __call__(self, nb_rel_path: Path, sourceroot: Path) -> _NotebookRunResult:
         paths = _NBInOutPaths.from_nb_rel_path(
             nb_rel_path,
             reporoot=self.reporoot,
@@ -200,15 +210,21 @@ class _NotebookRunClosure:
 
         if self.only_out_of_date and not paths.needs_reexport():
             print(f'{nb_rel_path} up to date')
-            return paths.nb_in, None
+            return _NotebookRunResult(paths.nb_in, None, 0.0)
 
+        start = time.time()
         err = execute_and_export_notebook(paths)
-        print(f"Exported {nb_rel_path}")
-        return paths.nb_in, err
+        end = time.time()
+        print(f"Exported {nb_rel_path} in {end-start:.2f} seconds.")
+        return _NotebookRunResult(paths.nb_in, err, duration_s=end - start)
 
 
 def execute_and_export_notebooks(
-    *, output_nbs: bool, output_md: bool, only_out_of_date: bool = True
+    *,
+    output_nbs: bool,
+    output_md: bool,
+    only_out_of_date: bool = True,
+    n_workers: Optional[int] = None,
 ):
     """Find, execute, and export all checked-in ipynbs.
 
@@ -217,19 +233,32 @@ def execute_and_export_notebooks(
         output_md: Whether to save the executed notebooks as markdown
         only_out_of_date: Only re-execute and re-export notebooks whose output files
             are out of date.
+        n_workers: If set to 1, do not use parallelization. If set to `None` (the detault),
+            `multiprocessing.Pool()` will be used, which uses the number of processors as
+            a default. Otherwise, this argument is passed to
+            `multiprocessing.Pool(n_workers)` to execute notebooks in parallel on this many
+            worker processes..
     """
     reporoot = get_git_root()
     nb_rel_paths = get_nb_rel_paths(sourceroot=reporoot / 'qualtran')
     nb_rel_paths += get_nb_rel_paths(sourceroot=reporoot / 'tutorials')
+    random.shuffle(nb_rel_paths)
+    print(f"Found {len(nb_rel_paths)} notebooks.")
     func = _NotebookRunClosure(
         reporoot=reporoot,
         output_nbs=output_nbs,
         output_md=output_md,
         only_out_of_date=only_out_of_date,
     )
-    with multiprocessing.Pool() as pool:
-        results = pool.starmap(func, nb_rel_paths)
-    bad_nbs = [nbname for nbname, err in results if err is not None]
+    if n_workers == 1:
+        print("(Not using multiprocessing, n_workers=1)")
+        results = [func(nb_rel_path, sourceroot) for nb_rel_path, sourceroot in nb_rel_paths]
+    else:
+        print(f"Multiprocessing with {n_workers=}")
+        with multiprocessing.Pool(n_workers, maxtasksperchild=1) as pool:
+            results = pool.starmap(func, nb_rel_paths)
+        assert results
+    bad_nbs = [result.nb_in for result in results if result.err is not None]
 
     if len(bad_nbs) > 0:
         print()
@@ -237,3 +266,8 @@ def execute_and_export_notebooks(
         for nb in bad_nbs:
             print(' ', nb)
         sys.exit(1)
+
+    duration_nbs = sorted(results, key=lambda r: r.duration_s, reverse=True)
+    print("Slowest 10 notebooks:")
+    for result in duration_nbs[:10]:
+        print(f'{result.duration_s:5.2f}s {result.nb_in}')

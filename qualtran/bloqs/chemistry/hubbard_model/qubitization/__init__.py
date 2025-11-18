@@ -50,5 +50,5 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
  - $p>q$, YZY term.
 """
 from .prepare_hubbard import PrepareHubbard
-from .select_hubbard import SelectHubbard
+from .select_hubbard import HubbardMajorannaOperator, HubbardSpinUpZ, SelectHubbard
 from .walk_operator import get_walk_operator_for_hubbard_model

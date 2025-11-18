@@ -126,6 +126,11 @@ def test_qvr_phase_gradient_unitary_for_inexact_gamma():
 @pytest.mark.slow
 @pytest.mark.parametrize('normalize', [True, False])
 def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
+    # TODO: This test is broken due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
+    #       It can cause a SIGKILL
+    return pytest.xfail("Broken Cirq simulation")
+    # pylint: disable=unreachable
     n, gamma, eps = (9, (2**20 - 1) / 2**20, 1e-1)
     # Note that `gamma` is of the form `0.111111111` and thus has worst case complexity
     # in terms of adding errors
@@ -145,6 +150,7 @@ def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
         ]
     )
     np.testing.assert_allclose(final_state, expected_state, atol=eps)
+    # pylint: enable=unreachable
 
 
 @pytest.mark.parametrize('n', range(2, 50))
