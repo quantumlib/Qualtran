@@ -33,13 +33,13 @@ from typing import (
 )
 
 import attrs
-import galois
 import numpy as np
 from numpy.typing import NDArray
 
 from qualtran.symbolics import bit_length, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
+    import fxpmath
     import galois
 
 T = TypeVar('T')
@@ -1386,7 +1386,9 @@ class CMontgomeryUInt(CDType[int]):
         return f'{self.__class__.__name__}({self.bitsize}{modstr})'
 
 
-def _poly_converter(p) -> Union[galois.Poly, None]:
+def _poly_converter(p) -> Union['galois.Poly', None]:
+    import galois
+
     if p is None:
         return None
     if isinstance(p, galois.Poly):
@@ -1626,18 +1628,22 @@ class _GFPoly(BitEncoding):
         for it in itertools.product(self.gf.gf_type.elements, repeat=(self.degree + 1)):
             yield Poly(self.gf.gf_type(it), field=self.gf.gf_type)
 
-    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
+    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
         """Returns a big-endian array of coefficients of the polynomial f(x)."""
         f_x_coeffs = self.gf.gf_type.Zeros(self.degree + 1)
         f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
         return f_x_coeffs
 
-    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
+    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
         """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
+        import galois
+
         return galois.Poly(f_x, field=self.gf.gf_type)
 
     def to_bits(self, x) -> List[int]:
         """Returns individual bits corresponding to binary representation of x"""
+        import galois
+
         self.assert_valid_val(x)
         assert isinstance(x, galois.Poly)
         return self.gf.to_bits_array(self.to_gf_coefficients(x)).reshape(-1).tolist()
@@ -1654,6 +1660,8 @@ class _GFPoly(BitEncoding):
             val: A classical value that should be in the domain of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
+        import galois
+
         if not isinstance(val, galois.Poly):
             raise ValueError(f"{debug_str} should be a {galois.Poly}, not {val!r}")
         if val.field is not self.gf.gf_type:
@@ -1696,6 +1704,18 @@ class QGFPoly(QDType):
     @cached_property
     def _bit_encoding(self) -> _GFPoly:
         return _GFPoly(self.degree, self.qgf._bit_encoding)
+
+    @property
+    def bitsize(self) -> SymbolicInt:
+        return self._bit_encoding.bitsize
+
+    def to_gf_coefficients(self, f_x: 'galois.Poly') -> 'galois.Array':
+        """Returns a big-endian array of coefficients of the polynomial f(x)."""
+        return self._bit_encoding.to_gf_coefficients(f_x)
+
+    def from_gf_coefficients(self, f_x: 'galois.Array') -> 'galois.Poly':
+        """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
+        return self._bit_encoding.from_gf_coefficients(f_x)
 
     @cached_property
     def _quint_equivalent(self) -> QUInt:

@@ -244,7 +244,7 @@ def test_validation_errs():
         QUInt(3).assert_valid_classical_val(-1)
 
     with pytest.raises(ValueError):
-        QGF(2, 8).assert_valid_classical_val(2**8)
+        QGF(2, 8).assert_valid_classical_val(2**8)  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
         qgf = QGF(2, 3)
@@ -359,7 +359,7 @@ def test_qgf_to_and_from_bits():
         assert x == gf256.Vector(qgf_256.to_bits(x))
 
     with pytest.raises(ValueError):
-        qgf_256.to_bits(21)
+        qgf_256.to_bits(21)  # type: ignore[arg-type]
     assert_to_and_from_bits_array_consistent(qgf_256, gf256([*range(256)]))
 
 
