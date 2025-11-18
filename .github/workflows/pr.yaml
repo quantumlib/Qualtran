@@ -41,7 +41,7 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest --durations=10 -v
+          check/pytest --durations=10 -v -n=0
 
   dev-tools:
     runs-on: ubuntu-24.04
