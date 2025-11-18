@@ -72,6 +72,7 @@ from ._infra.data_types import (
     QGF,
     CGF,
     QGFPoly,
+    CGFPoly,
     QDTypeCheckingSeverity,
     check_dtypes_consistent,
 )

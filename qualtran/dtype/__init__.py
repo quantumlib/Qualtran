@@ -37,6 +37,7 @@ from qualtran._infra.data_types import (
     QGF,
     CGF,
     QGFPoly,
+    CGFPoly,
 )
 
 __all__ = [
@@ -61,4 +62,5 @@ __all__ = [
     'QGF',
     'CGF',
     'QGFPoly',
+    'CGFPoly',
 ]

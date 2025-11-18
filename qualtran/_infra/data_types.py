@@ -15,6 +15,7 @@
 
 
 import abc
+import itertools
 import warnings
 from enum import Enum
 from functools import cached_property
@@ -1600,8 +1601,72 @@ class CGF(CDType['galois.FieldArray']):
 
 
 @attrs.frozen
-class QGFPoly(QDType):
+class _GFPoly(BitEncoding):
     r"""Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
+
+    Args:
+        degree: The degree $n$ of the univariate polynomial $f(x)$ represented by this type.
+        gf: An instance of `_GF` that represents the galois field $GF(p^m)$ over which the
+            univariate polynomial $f(x)$ is defined.
+
+    """
+
+    degree: SymbolicInt
+    gf: _GF
+
+    @cached_property
+    def bitsize(self) -> SymbolicInt:
+        return self.gf.bitsize * (self.degree + 1)
+
+    def get_domain(self) -> Iterable[Any]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+        from galois import Poly
+
+        for it in itertools.product(self.gf.gf_type.elements, repeat=(self.degree + 1)):
+            yield Poly(self.gf.gf_type(it), field=self.gf.gf_type)
+
+    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
+        """Returns a big-endian array of coefficients of the polynomial f(x)."""
+        f_x_coeffs = self.gf.gf_type.Zeros(self.degree + 1)
+        f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
+        return f_x_coeffs
+
+    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
+        """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
+        return galois.Poly(f_x, field=self.gf.gf_type)
+
+    def to_bits(self, x) -> List[int]:
+        """Returns individual bits corresponding to binary representation of x"""
+        self.assert_valid_val(x)
+        assert isinstance(x, galois.Poly)
+        return self.gf.to_bits_array(self.to_gf_coefficients(x)).reshape(-1).tolist()
+
+    def from_bits(self, bits: Sequence[int]):
+        """Combine individual bits to form x"""
+        reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.gf.bitsize)))
+        return self.from_gf_coefficients(self.gf.from_bits_array(reshaped_bits))  # type: ignore
+
+    def assert_valid_val(self, val: Any, debug_str: str = 'val'):
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        if not isinstance(val, galois.Poly):
+            raise ValueError(f"{debug_str} should be a {galois.Poly}, not {val!r}")
+        if val.field is not self.gf.gf_type:
+            raise ValueError(
+                f"{debug_str} should be defined over {self.gf.gf_type}, not {val.field}"
+            )
+        if val.degree > self.degree:
+            raise ValueError(f"{debug_str} should have a degree <= {self.degree}, not {val.degree}")
+
+
+@attrs.frozen
+class QGFPoly(QDType):
+    r"""Quantum Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
 
     This data type represents a degree-$n$ univariate polynomials
     $f(x)=\sum_{i=0}^{n} a_i x^{i}$ where the coefficients $a_{i}$ of the polynomial
@@ -1629,79 +1694,45 @@ class QGFPoly(QDType):
     qgf: QGF
 
     @cached_property
-    def bitsize(self) -> SymbolicInt:
-        """Bitsize of qubit register required to represent a single instance of this data type."""
-        return self.qgf.bitsize * (self.degree + 1)
-
-    @cached_property
-    def num_qubits(self) -> SymbolicInt:
-        """Number of qubits required to represent a single instance of this data type."""
-        return self.bitsize
-
-    def get_classical_domain(self) -> Iterable[Any]:
-        """Yields all possible classical (computational basis state) values representable
-        by this type."""
-        import itertools
-
-        from galois import Poly
-
-        for it in itertools.product(self.qgf.gf_type.elements, repeat=(self.degree + 1)):
-            yield Poly(self.qgf.gf_type(it), field=self.qgf.gf_type)
+    def _bit_encoding(self) -> _GFPoly:
+        return _GFPoly(self.degree, self.qgf._bit_encoding)
 
     @cached_property
     def _quint_equivalent(self) -> QUInt:
         return QUInt(self.num_qubits)
 
-    def to_gf_coefficients(self, f_x: galois.Poly) -> galois.Array:
-        """Returns a big-endian array of coefficients of the polynomial f(x)."""
-        f_x_coeffs = self.qgf.gf_type.Zeros(self.degree + 1)
-        f_x_coeffs[self.degree - f_x.degree :] = f_x.coeffs
-        return f_x_coeffs
-
-    def from_gf_coefficients(self, f_x: galois.Array) -> galois.Poly:
-        """Expects a big-endian array of coefficients that represent a polynomial f(x)."""
-        return galois.Poly(f_x, field=self.qgf.gf_type)
-
-    def to_bits(self, x) -> List[int]:
-        """Returns individual bits corresponding to binary representation of x"""
-        self.assert_valid_classical_val(x)
-        assert isinstance(x, galois.Poly)
-        return self.qgf.to_bits_array(self.to_gf_coefficients(x)).reshape(-1).tolist()
-
-    def from_bits(self, bits: Sequence[int]):
-        """Combine individual bits to form x"""
-        reshaped_bits = np.array(bits).reshape((int(self.degree) + 1, int(self.qgf.bitsize)))
-        return self.from_gf_coefficients(self.qgf.from_bits_array(reshaped_bits))
-
-    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
-        """Raises an exception if `val` is not a valid classical value for this type.
-
-        Args:
-            val: A classical value that should be in the domain of this QDType.
-            debug_str: Optional debugging information to use in exception messages.
-        """
-        if not isinstance(val, galois.Poly):
-            raise ValueError(f"{debug_str} should be a {galois.Poly}, not {val!r}")
-        if val.field is not self.qgf.gf_type:
-            raise ValueError(
-                f"{debug_str} should be defined over {self.qgf.gf_type}, not {val.field}"
-            )
-        if val.degree > self.degree:
-            raise ValueError(f"{debug_str} should have a degree <= {self.degree}, not {val.degree}")
-
     def is_symbolic(self) -> bool:
-        """Returns True if this qdtype is parameterized with symbolic objects."""
         return is_symbolic(self.degree, self.qgf)
 
     def iteration_length_or_zero(self) -> SymbolicInt:
-        """Safe version of iteration length.
-
-        Returns the iteration_length if the type has it or else zero.
-        """
         return self.qgf.order
 
     def __str__(self):
         return f'QGFPoly({self.degree}, {self.qgf!s})'
+
+
+@attrs.frozen
+class CGFPoly(CDType):
+    r"""Classical Univariate Polynomials with coefficients in a Galois Field GF($p^m$).
+
+    This is a "classical" version of QGFPoly.
+    """
+
+    degree: SymbolicInt
+    qgf: QGF
+
+    @cached_property
+    def _bit_encoding(self) -> _GFPoly:
+        return _GFPoly(self.degree, self.qgf._bit_encoding)
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.degree, self.qgf)
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
+        return self.qgf.order
+
+    def __str__(self):
+        return f'CGFPoly({self.degree}, {self.qgf!s})'
 
 
 _QAnyInt = (QInt, QUInt, BQUInt, QMontgomeryUInt)
