@@ -228,7 +228,7 @@ def test_notebook():
 )
 def test_t_complexity(data):
     qrom = QROM.build_from_data(*data)
-    n = np.prod(qrom.data[0].shape)
+    n = int(np.prod(qrom.data[0].shape))
     assert t_complexity(qrom).t == max(0, 4 * n - 8), n
 
 

@@ -361,7 +361,7 @@ class MultiAnd(Bloq):
             or is_symbolic(*self.concrete_cvs)
             or (self.n_ctrls == sum(self.concrete_cvs))
         ):
-            cost[XGate()] = 2 * (self.n_ctrls - sum(self.concrete_cvs))
+            cost[XGate()] = 2 * (self.n_ctrls - sum(int(cv) for cv in self.concrete_cvs))
 
         return cost
 

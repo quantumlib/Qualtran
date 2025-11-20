@@ -43,6 +43,9 @@ class BloqInstance:
         `Union[BloqInstance, DanglingT]`"""
         return isinstance(self.bloq, t)
 
+    def __hash__(self):
+        return hash(self.i)
+
 
 class DanglingT:
     """The type of the singleton objects `LeftDangle` and `RightDangle`.
