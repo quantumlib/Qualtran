@@ -73,6 +73,7 @@ MINIMAL_SKIP_CANONPATHS = [
     'qualtran.linalg',
     'qualtran._infra.gate_with_registers.GateWithRegisters',
     'qualtran.resource_counting.t_counts_from_sigma',
+    'qualtran.rotation_synthesis', # TODO: https://github.com/quantumlib/Qualtran/issues/1767
 ]
 MINIMAL = True
 
@@ -341,7 +342,7 @@ def make_reference_docs(
     The steps are
 
         1. Walk the package structure with `get_pages`.
-        2. Write each page; and write the table of contentes (TOC).
+        2. Write each page; and write the table of contents (TOC).
 
     There are multiple 'types' of 'path's we must consider when rendering the documentation.
 
