@@ -103,7 +103,7 @@ class UnitaryChannel(Channel):
 
         Args:
             seq: A sequence of gate names in circuit order.
-               Supported gate names are {Tx, Ty, Tz, H, S, X, Y, Z}.
+                Supported gate names are {Tx, Ty, Tz, H, S, X, Y, Z}.
             twirl: Whether the unitary is applied with a ZS twirling or not.
 
         Returns:
