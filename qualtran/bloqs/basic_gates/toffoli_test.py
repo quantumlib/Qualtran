@@ -17,10 +17,10 @@ import cirq
 import numpy as np
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, CtrlSpec
-from qualtran.bloqs.basic_gates import Toffoli, ZeroState
+from qualtran import BloqBuilder, CtrlSpec, QBit, Register, Signature
+from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
-from qualtran.bloqs.mcmt import And
+from qualtran.bloqs.mcmt import And, ControlledViaAnd
 from qualtran.drawing.musical_score import Circle, ModPlus
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 
@@ -106,15 +106,15 @@ def test_ctrl_toffoli_cost():
     ctrl_tof = Toffoli().controlled()
 
     _, sigma = ctrl_tof.call_graph()
-    assert sigma == {Toffoli(): 1, And(): 1, And().adjoint(): 1}
+    assert sigma == {CNOT(): 1, And(): 2, And().adjoint(): 2}
 
     gc = get_cost_value(ctrl_tof, QECGatesCost())
-    assert gc == GateCounts(and_bloq=1, toffoli=1, clifford=1, measurement=1)
+    assert gc == GateCounts(and_bloq=2, clifford=3, measurement=2)
 
     cc_tof = Toffoli().controlled(CtrlSpec(cvs=[1, 1]))
 
     _, sigma = cc_tof.call_graph()
-    assert sigma == {Toffoli(): 1, And(): 2, And().adjoint(): 2}
+    assert sigma == {CNOT(): 1, And(): 3, And().adjoint(): 3}
 
 
 def test_toffoli_controlled():
@@ -123,3 +123,18 @@ def test_toffoli_controlled():
 
     bloq = Controlled(Toffoli().as_composite_bloq(), CtrlSpec())
     qlt_testing.assert_valid_bloq_decomposition(bloq)
+
+
+def test_toffoli_controlled_2():
+    # https://github.com/quantumlib/Qualtran/issues/1768
+
+    c0t = Toffoli().controlled(CtrlSpec(QBit(), cvs=0))
+    c1t = Toffoli().controlled(CtrlSpec(QBit(), cvs=1))
+
+    assert c0t == ControlledViaAnd(XGate(), CtrlSpec(qdtypes=(QBit(), QBit()), cvs=(0, [1, 1])))
+    assert c1t == ControlledViaAnd(XGate(), CtrlSpec(qdtypes=(QBit(), QBit()), cvs=(1, [1, 1])))
+
+    assert c0t.signature == c1t.signature
+    assert c0t.signature == Signature(
+        [Register('ctrl1', QBit()), Register('ctrl2', QBit(), shape=(2,)), Register('q', QBit())]
+    )
