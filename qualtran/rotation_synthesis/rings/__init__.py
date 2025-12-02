@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""A sub-package represnting the rings used in rotation synthesis."""
+"""A sub-package representing the rings used in rotation synthesis."""
 
 from qualtran.rotation_synthesis.rings._zsqrt2 import ZSqrt2
 from qualtran.rotation_synthesis.rings._zw import ZW
