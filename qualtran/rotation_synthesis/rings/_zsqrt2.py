@@ -22,8 +22,8 @@ import attrs
 import numpy as np
 from sympy import ntheory
 
-import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis._typing as rst
 
 _SQRT_2 = float(np.sqrt(2))
 

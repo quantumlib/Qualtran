@@ -21,8 +21,8 @@ import attrs
 import numpy as np
 from sympy import ntheory
 
-import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis._math_config as rc
+import qualtran.rotation_synthesis._typing as rst
 from qualtran.rotation_synthesis.rings import _zsqrt2
 
 _Z8 = np.exp(1j * np.pi / 4)

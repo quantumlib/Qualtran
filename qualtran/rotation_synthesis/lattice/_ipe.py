@@ -18,9 +18,9 @@ from typing import Iterator
 
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.lattice._geometry as _geometry
 import qualtran.rotation_synthesis.lattice._grid_operators as go
-import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.rings as rings
 from qualtran.rotation_synthesis.lattice import _state
 

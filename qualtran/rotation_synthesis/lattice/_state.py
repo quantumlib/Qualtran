@@ -18,8 +18,8 @@ from typing import Union
 
 import attrs
 
-import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis._typing as rst
 from qualtran.rotation_synthesis.lattice import _geometry
 from qualtran.rotation_synthesis.lattice import _grid_operators as go
 from qualtran.rotation_synthesis.rings import _zw

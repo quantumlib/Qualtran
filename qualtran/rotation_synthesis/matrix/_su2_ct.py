@@ -127,7 +127,9 @@ class SU2CliffordT:
             u = _gate_from_name(g) @ u
         return u
 
-    def parametric_form(self) -> tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2]:
+    def parametric_form(
+        self,
+    ) -> tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2]:
         real0, imag0, n0 = self.matrix[0, 0].to_zsqrt2()
         d = imag0 * _zsqrt2.SQRT_2 + n0
         real1, imag1, n1 = self.matrix[1, 0].to_zsqrt2()

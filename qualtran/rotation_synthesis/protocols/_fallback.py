@@ -23,9 +23,9 @@ if TYPE_CHECKING:
 import attrs
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.protocols._protocol as _protocol
 import qualtran.rotation_synthesis.rings as rings
 from qualtran.rotation_synthesis.rings import _zsqrt2

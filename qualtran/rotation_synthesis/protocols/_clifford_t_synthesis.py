@@ -19,9 +19,9 @@ import attrs
 import mpmath
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.channels as channels
-import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.protocols._protocol as rsp
 import qualtran.rotation_synthesis.relative_norm as relative_norm
 import qualtran.rotation_synthesis.rings as rings

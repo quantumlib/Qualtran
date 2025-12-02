@@ -21,8 +21,8 @@ import attrs
 import cirq
 import numpy as np
 
-import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
 import qualtran.rotation_synthesis.rings as rings
 from qualtran.rotation_synthesis.matrix import _su2_ct

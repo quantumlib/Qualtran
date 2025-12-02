@@ -86,7 +86,8 @@ class GridOperator:
             np.array([[_zsqrt2.One, _zsqrt2.Zero], [_zsqrt2.Zero, l_inv**k]]) * _zsqrt2.SQRT_2
         )
         right = GridOperator(
-            np.array([[lambda_value**k, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.One]]) * _zsqrt2.SQRT_2
+            np.array([[lambda_value**k, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.One]])
+            * _zsqrt2.SQRT_2
         )
         return left @ self @ right
 
@@ -187,7 +188,9 @@ KConjSqrt2 = GridOperator(
     [[-_zsqrt2.LAMBDA_INV.conj(), -_zsqrt2.One], [_zsqrt2.LAMBDA.conj(), _zsqrt2.One]]
 )
 
-ASqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, -2 * _zsqrt2.SQRT_2], [_zsqrt2.Zero, _zsqrt2.SQRT_2]]))
+ASqrt2 = GridOperator(
+    np.array([[_zsqrt2.SQRT_2, -2 * _zsqrt2.SQRT_2], [_zsqrt2.Zero, _zsqrt2.SQRT_2]])
+)
 
 BSqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, 2 * _zsqrt2.One], [_zsqrt2.Zero, _zsqrt2.SQRT_2]]))
 
