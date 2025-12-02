@@ -15,7 +15,7 @@
 import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis._math_config as mc
 
 
 def su_unitary_to_zxz_angles(

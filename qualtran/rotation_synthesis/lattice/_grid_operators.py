@@ -18,8 +18,8 @@ import attrs
 import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.rings.zsqrt2 as zsqrt2
-import qualtran.rotation_synthesis.rings.zw as zw
+import qualtran.rotation_synthesis.rings._zsqrt2 as _zsqrt2
+import qualtran.rotation_synthesis.rings._zw as _zw
 
 
 @attrs.frozen
@@ -48,7 +48,7 @@ class GridOperator:
         m = self.matrix
         assert isinstance(m.dtype, object)
         assert m.shape == (2, 2)
-        assert all(isinstance(x, zsqrt2.ZSqrt2) for x in m.reshape(-1))
+        assert all(isinstance(x, _zsqrt2.ZSqrt2) for x in m.reshape(-1))
         assert sum(x.a for x in self.matrix.reshape(-1)) % 2 == 0
         assert sum(x.b for x in self.matrix.reshape(-1)) % 2 == 0
 
@@ -75,18 +75,18 @@ class GridOperator:
         """
         k = int(k)
         if k >= 0:
-            lambda_value = zsqrt2.LAMBDA
-            l_inv = zsqrt2.LAMBDA_INV
+            lambda_value = _zsqrt2.LAMBDA
+            l_inv = _zsqrt2.LAMBDA_INV
         else:
-            l_inv = zsqrt2.LAMBDA
-            lambda_value = zsqrt2.LAMBDA_INV
+            l_inv = _zsqrt2.LAMBDA
+            lambda_value = _zsqrt2.LAMBDA_INV
 
         k = abs(k)
         left = GridOperator(
-            np.array([[zsqrt2.One, zsqrt2.Zero], [zsqrt2.Zero, l_inv**k]]) * zsqrt2.SQRT_2
+            np.array([[_zsqrt2.One, _zsqrt2.Zero], [_zsqrt2.Zero, l_inv**k]]) * _zsqrt2.SQRT_2
         )
         right = GridOperator(
-            np.array([[lambda_value**k, zsqrt2.Zero], [zsqrt2.Zero, zsqrt2.One]]) * zsqrt2.SQRT_2
+            np.array([[lambda_value**k, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.One]]) * _zsqrt2.SQRT_2
         )
         return left @ self @ right
 
@@ -135,12 +135,12 @@ class GridOperator:
     def scaled_inverse(self) -> "GridOperator":
         """Returns the inverse of the operator multiplied by sqrt(2)."""
         a, b, c, d = self.matrix.reshape(-1)
-        det: zsqrt2.ZSqrt2 = a * d - b * c
+        det: _zsqrt2.ZSqrt2 = a * d - b * c
         assert det.b == 0 and det.a in (-2, 2)
         sgn = -1 if det.a == -2 else 1
         return GridOperator(np.array([[d, -b], [-c, a]]) * sgn)
 
-    def apply(self, z: zw.ZW) -> zw.ZW:
+    def apply(self, z: _zw.ZW) -> _zw.ZW:
         r"""Applies the operator on the given point in $\mathbb{\omega}$."""
 
         # The operator is a 2x2 matrix that acts on the real and imaginary parts of a point.
@@ -150,56 +150,56 @@ class GridOperator:
         a, b, c, d = self.matrix.reshape(-1)
 
         if include_w:
-            x = x * zsqrt2.SQRT_2 + zsqrt2.One
-            y = y * zsqrt2.SQRT_2 + zsqrt2.One
+            x = x * _zsqrt2.SQRT_2 + _zsqrt2.One
+            y = y * _zsqrt2.SQRT_2 + _zsqrt2.One
             xp = a * x + b * y
             yp = c * x + d * y
             assert xp.a % 2 == yp.a % 2 == 0
             assert xp.b % 2 == yp.b % 2
             if xp.b % 2 == 0:
-                xp = zsqrt2.ZSqrt2(xp.a // 2, xp.b // 2)
-                yp = zsqrt2.ZSqrt2(yp.a // 2, yp.b // 2)
-                return zw.ZW.from_pair(xp, yp, False)
+                xp = _zsqrt2.ZSqrt2(xp.a // 2, xp.b // 2)
+                yp = _zsqrt2.ZSqrt2(yp.a // 2, yp.b // 2)
+                return _zw.ZW.from_pair(xp, yp, False)
             else:
-                xp = zsqrt2.ZSqrt2(xp.a // 2, (xp.b - 1) // 2)
-                yp = zsqrt2.ZSqrt2(yp.a // 2, (yp.b - 1) // 2)
-                return zw.ZW.from_pair(xp, yp, True)
+                xp = _zsqrt2.ZSqrt2(xp.a // 2, (xp.b - 1) // 2)
+                yp = _zsqrt2.ZSqrt2(yp.a // 2, (yp.b - 1) // 2)
+                return _zw.ZW.from_pair(xp, yp, True)
         else:
             xp = a * x + b * y
             yp = c * x + d * y
             assert (xp.a + yp.a) % 2 == 0
             if xp.a % 2 == 0:
-                return zw.ZW.from_pair(xp.divide_by_sqrt2(), yp.divide_by_sqrt2(), False)
+                return _zw.ZW.from_pair(xp.divide_by_sqrt2(), yp.divide_by_sqrt2(), False)
             else:
-                xp = xp - zsqrt2.One
-                yp = yp - zsqrt2.One
-                return zw.ZW.from_pair(xp.divide_by_sqrt2(), yp.divide_by_sqrt2(), True)
+                xp = xp - _zsqrt2.One
+                yp = yp - _zsqrt2.One
+                return _zw.ZW.from_pair(xp.divide_by_sqrt2(), yp.divide_by_sqrt2(), True)
 
 
 ####### The operators {R, K, K^\bullet, A, B, X, Z, I, Sigma} * sqrt(2) ############
 
 
-RSqrt2 = GridOperator([[zsqrt2.One, -zsqrt2.One], [zsqrt2.One, zsqrt2.One]])
+RSqrt2 = GridOperator([[_zsqrt2.One, -_zsqrt2.One], [_zsqrt2.One, _zsqrt2.One]])
 
-KSqrt2 = GridOperator([[-zsqrt2.LAMBDA_INV, -zsqrt2.One], [zsqrt2.LAMBDA, zsqrt2.One]])
+KSqrt2 = GridOperator([[-_zsqrt2.LAMBDA_INV, -_zsqrt2.One], [_zsqrt2.LAMBDA, _zsqrt2.One]])
 
 KConjSqrt2 = GridOperator(
-    [[-zsqrt2.LAMBDA_INV.conj(), -zsqrt2.One], [zsqrt2.LAMBDA.conj(), zsqrt2.One]]
+    [[-_zsqrt2.LAMBDA_INV.conj(), -_zsqrt2.One], [_zsqrt2.LAMBDA.conj(), _zsqrt2.One]]
 )
 
-ASqrt2 = GridOperator(np.array([[zsqrt2.SQRT_2, -2 * zsqrt2.SQRT_2], [zsqrt2.Zero, zsqrt2.SQRT_2]]))
+ASqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, -2 * _zsqrt2.SQRT_2], [_zsqrt2.Zero, _zsqrt2.SQRT_2]]))
 
-BSqrt2 = GridOperator(np.array([[zsqrt2.SQRT_2, 2 * zsqrt2.One], [zsqrt2.Zero, zsqrt2.SQRT_2]]))
+BSqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, 2 * _zsqrt2.One], [_zsqrt2.Zero, _zsqrt2.SQRT_2]]))
 
-XSqrt2 = GridOperator(np.array([[zsqrt2.Zero, zsqrt2.SQRT_2], [zsqrt2.SQRT_2, zsqrt2.Zero]]))
-ZSqrt2 = GridOperator(np.array([[zsqrt2.SQRT_2, zsqrt2.Zero], [zsqrt2.Zero, -zsqrt2.SQRT_2]]))
+XSqrt2 = GridOperator(np.array([[_zsqrt2.Zero, _zsqrt2.SQRT_2], [_zsqrt2.SQRT_2, _zsqrt2.Zero]]))
+ZSqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, _zsqrt2.Zero], [_zsqrt2.Zero, -_zsqrt2.SQRT_2]]))
 
-ISqrt2 = GridOperator(np.array([[zsqrt2.SQRT_2, zsqrt2.Zero], [zsqrt2.Zero, zsqrt2.SQRT_2]]))
+ISqrt2 = GridOperator(np.array([[_zsqrt2.SQRT_2, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.SQRT_2]]))
 
 HALF_SIGMA_Sqrt2 = GridOperator(
-    zsqrt2.SQRT_2 * np.array([[zsqrt2.LAMBDA, zsqrt2.Zero], [zsqrt2.Zero, zsqrt2.One]])
+    _zsqrt2.SQRT_2 * np.array([[_zsqrt2.LAMBDA, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.One]])
 )
 
 HALF_SIGMA_INV_Sqrt2 = GridOperator(
-    zsqrt2.SQRT_2 * np.array([[zsqrt2.LAMBDA_INV, zsqrt2.Zero], [zsqrt2.Zero, zsqrt2.One]])
+    _zsqrt2.SQRT_2 * np.array([[_zsqrt2.LAMBDA_INV, _zsqrt2.Zero], [_zsqrt2.Zero, _zsqrt2.One]])
 )

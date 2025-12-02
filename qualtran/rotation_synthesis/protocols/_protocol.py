@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 import qualtran.rotation_synthesis.channels as channels
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.rings as rings
 
 

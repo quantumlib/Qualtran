@@ -14,5 +14,5 @@
 
 """A sub-package represnting the rings used in rotation synthesis."""
 
-from qualtran.rotation_synthesis.rings.zsqrt2 import ZSqrt2
-from qualtran.rotation_synthesis.rings.zw import ZW
+from qualtran.rotation_synthesis.rings._zsqrt2 import ZSqrt2
+from qualtran.rotation_synthesis.rings._zw import ZW

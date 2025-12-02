@@ -17,14 +17,14 @@ from typing import cast, Mapping, Optional
 
 import cirq
 
-import qualtran.rotation_synthesis.matrix.generation as ctg
-import qualtran.rotation_synthesis.matrix.su2_ct as su2_ct
-import qualtran.rotation_synthesis.rings.zsqrt2 as zsqrt2
+import qualtran.rotation_synthesis.matrix._generation as ctg
+import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
+import qualtran.rotation_synthesis.rings._zsqrt2 as _zsqrt2
 
-_TWO = zsqrt2.ZSqrt2(2)
+_TWO = _zsqrt2.ZSqrt2(2)
 
 
-def clifford(matrix: su2_ct.SU2CliffordT) -> tuple[str, ...]:
+def clifford(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
     assert matrix.det() == 2
     cliffords = ctg.generate_cliffords()
     if matrix in cliffords:
@@ -32,11 +32,11 @@ def clifford(matrix: su2_ct.SU2CliffordT) -> tuple[str, ...]:
     return ("Z", "X", "Z", "X") + cliffords[-matrix]
 
 
-def _xyz_sequence(matrix: su2_ct.SU2CliffordT) -> tuple[str, ...]:
+def _xyz_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
     seq = []
     while matrix.det() > _TWO:
-        t = su2_ct._key_map()[matrix._key]
-        nxt = (su2_ct.GATE_MAP[t].adjoint() @ matrix).scale_down()
+        t = _su2_ct._key_map()[matrix._key]
+        nxt = (_su2_ct.GATE_MAP[t].adjoint() @ matrix).scale_down()
         assert nxt is not None
         assert nxt.det() < matrix.det()
         seq.append(t)
@@ -45,22 +45,22 @@ def _xyz_sequence(matrix: su2_ct.SU2CliffordT) -> tuple[str, ...]:
 
 
 _T_list = [
-    ('Tz', su2_ct.Tz),
-    ('Tx', su2_ct.Tx),
-    ('Tz*', su2_ct.Tz.adjoint()),
-    ('Tx*', su2_ct.Tx.adjoint()),
+    ('Tz', _su2_ct.Tz),
+    ('Tx', _su2_ct.Tx),
+    ('Tz*', _su2_ct.Tz.adjoint()),
+    ('Tx*', _su2_ct.Tx.adjoint()),
 ]
 
 
 def _xz_sequence(
-    matrix: su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'dummy'
+    matrix: _su2_ct.SU2CliffordT, use_hs: bool = True, prv: str = 'dummy'
 ) -> Optional[tuple[str, ...]]:
     if matrix.det() == 2:
         return clifford(matrix)
-    cliffords = [su2_ct.ISqrt2]
+    cliffords = [_su2_ct.ISqrt2]
     if use_hs:
-        cliffords.append(su2_ct.HSqrt2)
-        cliffords.append(su2_ct.HSqrt2 @ su2_ct.SSqrt2)
+        cliffords.append(_su2_ct.HSqrt2)
+        cliffords.append(_su2_ct.HSqrt2 @ _su2_ct.SSqrt2)
     pref = prv.removesuffix('*')
     for c in cliffords:
         for name, t in _T_list:
@@ -79,7 +79,7 @@ def _xz_sequence(
     return None
 
 
-def to_sequence(matrix: su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
+def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
     r"""Returns a sequence of Clifford+T that produces the given matrix.
 
     Args:
@@ -147,7 +147,7 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
 
 
 def to_cirq(
-    matrix: su2_ct.SU2CliffordT, fmt: str, q: Optional[cirq.Qid] = None
+    matrix: _su2_ct.SU2CliffordT, fmt: str, q: Optional[cirq.Qid] = None
 ) -> tuple[cirq.Operation]:
     """Retruns a representation of the matrix as a sequence of Cirq operations.
 
@@ -163,7 +163,7 @@ def to_cirq(
 
 
 def to_quirk(
-    matrix: su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = False
+    matrix: _su2_ct.SU2CliffordT, fmt: str, allow_global_phase: bool = False
 ) -> tuple[str, ...]:
     """Retruns a representation of the matrix as a sequence of quirk symbols.
 

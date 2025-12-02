@@ -22,8 +22,8 @@ import numpy as np
 from sympy import ntheory
 
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as rc
-from qualtran.rotation_synthesis.rings import zsqrt2
+import qualtran.rotation_synthesis._math_config as rc
+from qualtran.rotation_synthesis.rings import _zsqrt2
 
 _Z8 = np.exp(1j * np.pi / 4)
 _Z8_POWERS = np.array([_Z8**i for i in range(4)])
@@ -176,7 +176,7 @@ class ZW:
         return self.sqrt2_conjugate()
 
     @staticmethod
-    def from_pair(a: zsqrt2.ZSqrt2, b: zsqrt2.ZSqrt2, include_w: bool = False) -> "ZW":
+    def from_pair(a: _zsqrt2.ZSqrt2, b: _zsqrt2.ZSqrt2, include_w: bool = False) -> "ZW":
         r"""Constructs a $\mathbb{Z}[\omega]$ element from its $\mathbb{\sqrt{2}}$ representation.
 
         Constructs the element defined by $a + i b + \mathrm{include\_w} * \omega$
@@ -189,7 +189,7 @@ class ZW:
         """
         return ZW([a.a, a.b + b.b + int(include_w), b.a, b.b - a.b])
 
-    def to_zsqrt2(self) -> tuple[zsqrt2.ZSqrt2, zsqrt2.ZSqrt2, bool]:
+    def to_zsqrt2(self) -> tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, bool]:
         r"""Writes an elements of $\mathbb{Z}[\omega=e^{i \pi/4}]$ in terms of $\mathbb{Z}[\sqrt{2}]
 
         Every element of $\mathbb{Z}[e^{i \pi/4}]$ can be written in one of two forms, either
@@ -201,8 +201,8 @@ class ZW:
         m0, m1, m2, m3 = self.coords
         r = (m1 + m3) % 2
         return (
-            zsqrt2.ZSqrt2(m0, (m1 - m3 - r) // 2),
-            zsqrt2.ZSqrt2(m2, (m1 + m3 - r) // 2),
+            _zsqrt2.ZSqrt2(m0, (m1 - m3 - r) // 2),
+            _zsqrt2.ZSqrt2(m2, (m1 + m3 - r) // 2),
             r == 1,
         )
 

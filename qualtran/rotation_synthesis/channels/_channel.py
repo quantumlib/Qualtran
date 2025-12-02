@@ -22,11 +22,11 @@ import cirq
 import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
+import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
 import qualtran.rotation_synthesis.rings as rings
-from qualtran.rotation_synthesis.matrix import su2_ct
-from qualtran.rotation_synthesis.rings import zsqrt2
+from qualtran.rotation_synthesis.matrix import _su2_ct
+from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 class Channel(abc.ABC):
@@ -74,8 +74,8 @@ class UnitaryChannel(Channel):
     n: int = attrs.field(validator=attrs.validators.instance_of(int))
     twirl: bool = False
 
-    def to_matrix(self) -> su2_ct.SU2CliffordT:
-        return su2_ct.SU2CliffordT.from_pair(self.p, self.q, pick_phase=True)
+    def to_matrix(self) -> _su2_ct.SU2CliffordT:
+        return _su2_ct.SU2CliffordT.from_pair(self.p, self.q, pick_phase=True)
 
     def expected_num_ts(self, config: Optional[mc.MathConfig] = None) -> rst.Real:
         return self.n
@@ -90,7 +90,7 @@ class UnitaryChannel(Channel):
 
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         u = self.p.value(config.sqrt2)
-        u = u / zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, self.n, config)
+        u = u / _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, self.n, config)
         neg_rot = config.cos(theta) - config.sin(theta) * 1j
         real_squared = (u * neg_rot).real ** 2
         if self.twirl:
@@ -109,7 +109,7 @@ class UnitaryChannel(Channel):
         Returns:
             A UnitaryChannel.
         """
-        u = su2_ct.SU2CliffordT.from_sequence(seq)
+        u = _su2_ct.SU2CliffordT.from_sequence(seq)
         n = sum(g.startswith("T") for g in seq)
         return UnitaryChannel(u.matrix[0, 0], u.matrix[1, 0], n, twirl)
 
@@ -181,12 +181,12 @@ class UnitaryChannel(Channel):
 
     @classmethod
     def from_unitaries(
-        cls, *unitaries: Union[UnitaryChannel, su2_ct.SU2CliffordT]
+        cls, *unitaries: Union[UnitaryChannel, _su2_ct.SU2CliffordT]
     ) -> UnitaryChannel:
         if not unitaries:
             raise ValueError('at least one unitary should be provided')
 
-        unitary = su2_ct.ISqrt2
+        unitary = _su2_ct.ISqrt2
         for u in unitaries:
             if isinstance(u, UnitaryChannel):
                 unitary = unitary @ u.to_matrix()
@@ -219,8 +219,8 @@ class ProjectiveChannel(Channel):
 
     def success_probability(self, config: mc.MathConfig) -> rst.Real:
         """Constructs a probablity of a zero measurement."""
-        v = self.rotation.q.polar(config)[0] / zsqrt2.radius_at_n(
-            zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
+        v = self.rotation.q.polar(config)[0] / _zsqrt2.radius_at_n(
+            _zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
         )
         return 1 - v * v
 
@@ -234,8 +234,8 @@ class ProjectiveChannel(Channel):
 
     def expected_num_ts(self, config: mc.MathConfig) -> rst.Real:
         v = self.rotation.q.value(config.sqrt2)
-        fail_prob = (v * v.conjugate()).real / zsqrt2.radius2_at_n(
-            zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
+        fail_prob = (v * v.conjugate()).real / _zsqrt2.radius2_at_n(
+            _zsqrt2.LAMBDA_KLIUCHNIKOV, self.rotation.n, config
         )
         return self.rotation.expected_num_ts(config) + fail_prob * self.correction.expected_num_ts(
             config
@@ -387,8 +387,8 @@ class ProbabilisticChannel(Channel):
         r2, phi2 = u2.p.polar(config)
         delta1 = phi1 - target_theta
         delta2 = phi2 - target_theta
-        r1 /= zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, u1.n, config)
-        r2 /= zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, u2.n, config)
+        r1 /= _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, u1.n, config)
+        r2 /= _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, u2.n, config)
         prob = (
             r2**2
             * config.sin(2 * delta2)

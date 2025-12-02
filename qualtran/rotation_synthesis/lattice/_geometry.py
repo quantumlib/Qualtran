@@ -26,7 +26,7 @@ import mpmath
 import numpy as np
 
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis._math_config as mc
 
 
 @attrs.frozen

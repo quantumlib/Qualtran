@@ -18,17 +18,17 @@ import cirq
 import numpy as np
 import pytest
 
-import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
-import qualtran.rotation_synthesis.matrix.su2_ct as su2_ct
+import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
+import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
 
 
 def _make_random_su(n: int, m: int, random_cliffords: bool = False, seed: Optional[int] = None):
     rng = np.random.default_rng(seed)
-    gates = [su2_ct.Tx, su2_ct.Ty, su2_ct.Tz]
+    gates = [_su2_ct.Tx, _su2_ct.Ty, _su2_ct.Tz]
     if random_cliffords:
-        gates += [su2_ct.SSqrt2, su2_ct.HSqrt2]
+        gates += [_su2_ct.SSqrt2, _su2_ct.HSqrt2]
     for _ in range(n):
-        res = su2_ct.ISqrt2
+        res = _su2_ct.ISqrt2
         for i in rng.choice(len(gates), m):
             res = res @ gates[i]
         yield res
@@ -38,12 +38,12 @@ def _make_random_su(n: int, m: int, random_cliffords: bool = False, seed: Option
 def test_to_xyz_seq(g):
     seq = ctr.to_sequence(g, 'xyz')
     assert not any('*' in g for g in seq)
-    got = su2_ct.SU2CliffordT.from_sequence(seq)
+    got = _su2_ct.SU2CliffordT.from_sequence(seq)
     assert got == g
 
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_to_xz_seq(g: su2_ct.SU2CliffordT):
+def test_to_xz_seq(g: _su2_ct.SU2CliffordT):
     g = g.rescale()
     seq = ctr.to_sequence(g, 'xz')
     assert not any('Ty' in g for g in seq)
@@ -55,7 +55,7 @@ def test_to_xz_seq(g: su2_ct.SU2CliffordT):
     if first_t is not None:
         ts = 'Tx', 'Tx*', 'Tz', 'Tz*'
         assert all(s in ts for s in seq[first_t:-2]), f'{seq=}'
-    got = su2_ct.SU2CliffordT.from_sequence(seq)
+    got = _su2_ct.SU2CliffordT.from_sequence(seq)
     assert got == g
 
 
