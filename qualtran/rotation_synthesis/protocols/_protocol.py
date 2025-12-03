@@ -20,9 +20,9 @@ from typing import Callable, Iterator, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     import matplotlib.pyplot as plt
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.channels as channels
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis.math_config as mc
 import qualtran.rotation_synthesis.rings as rings
 
 

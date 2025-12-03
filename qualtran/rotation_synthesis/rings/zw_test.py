@@ -18,9 +18,9 @@ from typing import Optional
 import numpy as np
 import pytest
 
-from qualtran.rotation_synthesis import math_config as mc
+from qualtran.rotation_synthesis import _math_config as mc
 from qualtran.rotation_synthesis import rings
-from qualtran.rotation_synthesis.rings import test_utils as tu
+from qualtran.rotation_synthesis.rings import _test_utils as tu
 
 _Z8 = np.exp(1j * np.pi / 4)
 _SQRT_2 = np.sqrt(2)

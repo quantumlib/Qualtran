@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 from scipy import stats
 
-import qualtran.rotation_synthesis.math_config as mc
-from qualtran.rotation_synthesis.matrix import analytical_decomposition as ad
+import qualtran.rotation_synthesis._math_config as mc
+from qualtran.rotation_synthesis.matrix import _analytical_decomposition as ad
 
 
 def _random_angles(n, seed):

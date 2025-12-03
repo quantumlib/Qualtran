@@ -17,18 +17,18 @@ import random
 
 import pytest
 
-from qualtran.rotation_synthesis.relative_norm import clifford_t
-from qualtran.rotation_synthesis.rings import zw
+from qualtran.rotation_synthesis.relative_norm import _clifford_t
+from qualtran.rotation_synthesis.rings import _zw
 
-_BASES = [zw.Omega**i for i in range(4)]
+_BASES = [_zw.Omega**i for i in range(4)]
 
 
 @pytest.mark.parametrize("a", range(-10, 10))
 @pytest.mark.parametrize("b", range(-10, 10))
 def test_simple_cases(a, b):
-    w = a + zw.Omega * b
+    w = a + _zw.Omega * b
     target = (w * w.conjugate()).to_zsqrt2()[0]
-    solver = clifford_t.CliffordTRelativeNormSolver()
+    solver = _clifford_t.CliffordTRelativeNormSolver()
     got = solver.solve(target)
     assert got is not None
     assert (got * got.conjugate()).to_zsqrt2()[0] == target, f"{got=} {w=} {target}"
@@ -38,9 +38,9 @@ def test_simple_cases(a, b):
     "m", random.sample(tuple(itertools.product(range(-5, 5), repeat=4)), k=200)
 )
 def test_all_possiblities(m):
-    w = zw.ZW(m)
+    w = _zw.ZW(m)
     target = (w * w.conjugate()).to_zsqrt2()[0]
-    solver = clifford_t.CliffordTRelativeNormSolver()
+    solver = _clifford_t.CliffordTRelativeNormSolver()
     got = solver.solve(target)
     assert got is not None
     assert (got * got.conjugate()).to_zsqrt2()[0] == target, f"{got=} {w=} {target} {m=}"

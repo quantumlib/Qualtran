@@ -18,11 +18,11 @@ from typing import Iterator
 
 import numpy as np
 
-import qualtran.rotation_synthesis.lattice.geometry as geometry
-import qualtran.rotation_synthesis.lattice.grid_operators as go
-import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis.lattice._geometry as _geometry
+import qualtran.rotation_synthesis.lattice._grid_operators as go
 import qualtran.rotation_synthesis.rings as rings
-from qualtran.rotation_synthesis.lattice import state
+from qualtran.rotation_synthesis.lattice import _state
 
 LAMBDA = rings.ZSqrt2(1, 1)
 LAMBDA_INV = rings.ZSqrt2(-1, 1)
@@ -31,7 +31,7 @@ NEG_LAMBDA_INV = -LAMBDA_INV
 
 
 def enumerate_1d(
-    inter: geometry.Range, comp_inter: geometry.Range, config: mc.MathConfig
+    inter: _geometry.Range, comp_inter: _geometry.Range, config: mc.MathConfig
 ) -> Iterator[rings.ZSqrt2]:
     r"""Yield points $p \in \mathbb{Z}[\sqrt{2}]$ contained in the region.
 
@@ -82,7 +82,7 @@ def enumerate_1d(
 
 
 def enumerate_upright(
-    r: geometry.Rectangle, comp_r: geometry.Rectangle, config: mc.MathConfig
+    r: _geometry.Rectangle, comp_r: _geometry.Rectangle, config: mc.MathConfig
 ) -> Iterator[rings.ZW]:
     r"""Yield $p \in \mathbb{Z}[e^{i \pi/4}]$ such that $p \in r$ and $p^\sbullet \in \textit{comp_r}$
 
@@ -110,8 +110,8 @@ def enumerate_upright(
 
 
 def get_overall_action(
-    s: state.SelingerState, config: mc.MathConfig, verbose: bool = False
-) -> state.GridOperatorAction:
+    s: _state.SelingerState, config: mc.MathConfig, verbose: bool = False
+) -> _state.GridOperatorAction:
     """Returns GridOperatorAction whose effect on the state reduces its skew to be below 15
 
     Args:
@@ -122,8 +122,8 @@ def get_overall_action(
     Returns:
         A GridOperatorAction whose effect reduces the skew of the state to be less that 15.
     """
-    s = state.SelingerState(s.m1.normalize(config), s.m2.normalize(config))
-    overall_action = state.GridOperatorAction(go.ISqrt2)
+    s = _state.SelingerState(s.m1.normalize(config), s.m2.normalize(config))
+    overall_action = _state.GridOperatorAction(go.ISqrt2)
     i = 0
     if verbose:
         skew, bias = s.skew(config), s.bias(config)
@@ -141,7 +141,7 @@ def get_overall_action(
     return overall_action
 
 
-def get_points_from_state(s: state.SelingerState, config: mc.MathConfig) -> Iterator[rings.ZW]:
+def get_points_from_state(s: _state.SelingerState, config: mc.MathConfig) -> Iterator[rings.ZW]:
     r"""Yields the points $p \in \mathbb{Z}[\omega]$ contained in the given state."""
     for p in enumerate_upright(s.m1.bounding_box(config), s.m2.bounding_box(config), config):
         if s.contains(p, config):
