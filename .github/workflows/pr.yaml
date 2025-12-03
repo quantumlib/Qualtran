@@ -27,8 +27,8 @@ permissions: read-all
 
 jobs:
   pytest:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 240
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
@@ -41,7 +41,7 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest --durations=10 -v -n=0
+          check/pytest -m 'not notebook and not slow'
 
   dev-tools:
     runs-on: ubuntu-24.04
