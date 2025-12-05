@@ -23,12 +23,12 @@ import attrs
 import numpy as np
 from matplotlib import patches
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.protocols.protocol as protocol
+import qualtran.rotation_synthesis.protocols._protocol as _protocol
 import qualtran.rotation_synthesis.rings as rings
-from qualtran.rotation_synthesis.rings import zsqrt2
+from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 def make_ellipse_for_circular_segment(
@@ -61,10 +61,10 @@ def make_ellipse_for_circular_segment(
 
 
 @attrs.frozen
-class Diagonal(protocol.ApproxProblem):
+class Diagonal(_protocol.ApproxProblem):
     r"""Approximate a Z-rotation with a string of Clifford+T gates.
 
-    The inequality $D(U, Rz(2*\theta)) < \epsilon$ where $D$ is a distance measure (e.g. diamond)
+    The inequality $D(U, e^{i\theta Z}) < \epsilon$ where $D$ is a distance measure (e.g. diamond)
     puts a geometric constraint on the upper left element of $U$ so that it belongs to a circular
     segment.
 
@@ -88,8 +88,8 @@ class Diagonal(protocol.ApproxProblem):
         if offset:
             theta += config.pi
 
-        r0 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
-        r1 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
+        r0 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+        r1 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
 
         e1 = make_ellipse_for_circular_segment(self.eps, r0, theta, config)
         e2 = lattice.Ellipse.from_axes(
@@ -105,9 +105,9 @@ class Diagonal(protocol.ApproxProblem):
 
         def fn(p):
             u = p.value(config.sqrt2)
-            u = u / zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+            u = u / _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
             abs_p2, _, _ = (p * p.conj()).to_zsqrt2()
-            target = 2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n
+            target = 2 * _zsqrt2.LAMBDA_KLIUCHNIKOV**n
             if abs_p2 > target:
                 return False
             diamond_distance_squared = 4 * (1 - (u * neg_rot).real ** 2)
@@ -121,7 +121,7 @@ class Diagonal(protocol.ApproxProblem):
         n = 0
         while True:
             if verbose:
-                print(f"{n=}")
+                print(f"{n=}", flush=True)
             for offset in False, True:
                 os = self.make_state(n, config, offset=offset)
                 overall_action = lattice.get_overall_action(os, config)
@@ -148,7 +148,7 @@ class Diagonal(protocol.ApproxProblem):
             fig, ax = plt.subplots(figsize=(9, 6))
 
         state = self.make_state(n, mc.NumpyConfig, offset)
-        r = float(zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, mc.NumpyConfig))
+        r = float(_zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, mc.NumpyConfig))
 
         state.m1.plot(ax, add_label=False, fill=False, alpha=0)
         ax.relim()

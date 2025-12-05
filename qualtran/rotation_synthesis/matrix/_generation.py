@@ -12,16 +12,35 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterator, Sequence
+import functools
+from typing import cast, Iterator, Sequence
 
 from tqdm import tqdm
 
-from qualtran.rotation_synthesis.matrix import su2_ct
+from qualtran.rotation_synthesis.matrix import _su2_ct
+
+
+@functools.cache
+def generate_cliffords() -> dict[_su2_ct.SU2CliffordT, tuple[str, ...]]:
+    ret = []
+    st = [_su2_ct.ISqrt2]
+    seen = set(st)
+    while st:
+        c = st.pop()
+        ret.append(c)
+        assert len(ret) <= 24
+        for p in _su2_ct.SSqrt2, _su2_ct.HSqrt2:
+            nc = c @ p
+            if not any(u in seen for u in [nc, -nc]):
+                st.append(nc)
+                seen.add(nc)
+    assert len(ret) == 24
+    return cast(dict[_su2_ct.SU2CliffordT, tuple[str, ...]], {v: v.gates for v in ret})
 
 
 def generate_rotations_iter(
     max_num_ts: int, with_progress_bar: bool = True, verbose: bool = False
-) -> Iterator[Sequence[su2_ct.SU2CliffordT]]:
+) -> Iterator[Sequence[_su2_ct.SU2CliffordT]]:
     """Yield lists where the kth list contains Clifford+T unitaries that use k Ts.
 
     Args:
@@ -31,14 +50,14 @@ def generate_rotations_iter(
     Yields:
         max_num_ts+1 lists where the kth list contains Clifford+T unitaries that use k T gates.
     """
-    cliffords = tuple(su2_ct.generate_cliffords())
-    frontier: Sequence[su2_ct.SU2CliffordT] = cliffords
+    cliffords = tuple(generate_cliffords())
+    frontier: Sequence[_su2_ct.SU2CliffordT] = cliffords
     seen = set(cliffords)
     yield cliffords
     for n in range(1, max_num_ts + 1):
         nxt = []
         for r in tqdm(frontier, f"generate level {n}", disable=not with_progress_bar):
-            for t in su2_ct.Ts:
+            for t in _su2_ct.Ts:
                 rot = r @ t
                 if any(u in seen for u in (rot, -rot)):
                     continue
@@ -52,7 +71,7 @@ def generate_rotations_iter(
 
 def generate_rotations(
     max_num_ts: int, with_progress_bar: bool = True, verbose: bool = False
-) -> list[Sequence[su2_ct.SU2CliffordT]]:
+) -> list[Sequence[_su2_ct.SU2CliffordT]]:
     """Returns a list of lists where the kth list contains Clifford+T unitaries that use k Ts.
 
     Args:

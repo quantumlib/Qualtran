@@ -25,8 +25,8 @@ import attrs
 import mpmath
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as mc
 
 
 @attrs.frozen
@@ -45,7 +45,7 @@ class Range:
         elif all(rst.is_int(x) for x in sides):
             dtype = int
         elif any(isinstance(x, np.number) for x in sides):
-            dtype = np.float128
+            dtype = np.longdouble
         else:
             dtype = float
         return Range(*map(dtype, sides))
@@ -213,7 +213,7 @@ class Ellipse:
             fig, ax = plt.subplots(1)
 
         theta = float(self.tilt(mc.NumpyConfig))
-        e = self.rotate(-theta, mc.NumpyConfig)
+        e = self.rotate(theta, mc.NumpyConfig)
         w = 2 / np.sqrt(float(e.D[0, 0]))
         h = 2 / np.sqrt(float(e.D[1, 1]))
         c = self.center.astype(float).tolist()

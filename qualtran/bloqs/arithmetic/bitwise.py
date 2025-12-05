@@ -155,7 +155,7 @@ class Xor(Bloq):
         ys = bb.split(y)
 
         for i in range(len(xs)):
-            xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])
+            xs[i], ys[i] = bb.add_t(CNOT(), ctrl=xs[i], target=ys[i])  # type: ignore[assignment]
 
         return {'x': bb.join(xs, dtype=self.dtype), 'y': bb.join(ys, dtype=self.dtype)}
 

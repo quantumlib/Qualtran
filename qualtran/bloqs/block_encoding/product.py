@@ -230,7 +230,7 @@ class Product(BlockEncoding):
                 # flag_bits_soq will always be assigned based on the following assertion
                 assert self.ancilla_bitsize > 0
                 # pylint: disable=used-before-assignment
-                controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(
+                controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(  # type: ignore[assignment]
                     MultiControlX(tuple([0] * u.ancilla_bitsize)),
                     controls=controls[: u.ancilla_bitsize],
                     target=flag_bits_soq[i],

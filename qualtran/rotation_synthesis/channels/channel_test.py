@@ -12,16 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import cirq
 import numpy as np
 import pytest
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.channels as ch
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.matrix.su2_ct as su2_ct
+import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
+import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
 
 
 def _make_gates(n_seqs: int, n_gates: int, seed: int):
-    gates = tuple(su2_ct.GATE_MAP.keys())
+    gates = tuple(_su2_ct.GATE_MAP.keys())
     rng = np.random.default_rng(seed)
     for _ in range(n_seqs):
         yield [gates[i] for i in rng.choice(len(gates), n_gates)]
@@ -30,7 +32,7 @@ def _make_gates(n_seqs: int, n_gates: int, seed: int):
 @pytest.mark.parametrize("gates", _make_gates(10, 4, 0))
 def test_unitary_from_sequence(gates):
     u = ch.UnitaryChannel.from_sequence(gates)
-    assert u.to_matrix() == su2_ct.SU2CliffordT.from_sequence(gates)
+    assert u.to_matrix() == _su2_ct.SU2CliffordT.from_sequence(gates)
 
 
 @pytest.mark.parametrize(
@@ -46,6 +48,10 @@ def test_unitary_from_sequence(gates):
 def test_diamond_distance_for_unitary(gates, theta, distance):
     c = ch.UnitaryChannel.from_sequence(gates)
     np.testing.assert_allclose(c.diamond_norm_distance_to_rz(theta, mc.NumpyConfig), distance)
+    u = np.zeros((2, 2), complex)
+    u[1, 1] = np.exp(-1j * theta)
+    u[0, 0] = u[1, 1].conjugate()
+    np.testing.assert_allclose(c.diamond_norm_distance_to_unitary(u, mc.NumpyConfig), distance)
 
 
 @pytest.mark.parametrize(
@@ -305,4 +311,39 @@ def test_diamond_distance_for_mixed_fallback(
     c = ch.ProbabilisticChannel.from_projective_channels(p1, p2, theta, mc.NumpyConfig)
     np.testing.assert_allclose(
         float(c.diamond_norm_distance_to_rz(theta, mc.NumpyConfig)), distance, atol=3e-5
+    )
+
+
+@pytest.mark.parametrize(
+    "gates",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize("fmt", ["xz", "xyz"])
+def test_unitary_to_cirq(gates, fmt):
+    u = ch.UnitaryChannel.from_sequence(gates)
+    assert u.to_cirq(fmt) == cirq.Circuit(ctr.to_cirq(u.to_matrix(), fmt))
+
+
+@pytest.mark.parametrize(
+    "gates1",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize(
+    "gates2",
+    [["I", "Z", "I", "Tz"], ["I", "S", "Tz"], ["I", "S", "Tz"], ["I", "Z", "S", "Tz"], ["I", "S"]],
+)
+@pytest.mark.parametrize("fmt", ["xz", "xyz"])
+def test_fallback_to_cirq(gates1, gates2, fmt):
+    c = ch.ProjectiveChannel(
+        ch.UnitaryChannel.from_sequence(gates1), ch.UnitaryChannel.from_sequence(gates2)
+    )
+    q0, q1 = cirq.LineQubit.range(2)
+    assert c.to_cirq(fmt) == cirq.Circuit(
+        cirq.CNOT(q0, q1),
+        cirq.CircuitOperation(cirq.FrozenCircuit(ctr.to_cirq(c.rotation.to_matrix(), fmt, q0))),
+        cirq.CNOT(q0, q1),
+        cirq.measure(q1, key='m'),
+        cirq.CircuitOperation(
+            cirq.FrozenCircuit(ctr.to_cirq(c.correction.to_matrix(), fmt, q0))  # type: ignore[attr-defined]
+        ).with_classical_controls('m'),
     )

@@ -397,11 +397,11 @@ class CompositeBloq(Bloq):
         # pylint: disable=protected-access
         bb._i = max(binst.i for binst in self.bloq_instances) + 1
 
-        soq_map: List[Tuple[SoquetT, SoquetT]] = []
+        flat_soq_map: Dict[Soquet, Soquet] = {}
         new_out_soqs: Tuple[SoquetT, ...]
         did_work = False
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
-            in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
+            in_soqs = _map_flat_soqs(in_soqs, flat_soq_map)  # update `in_soqs` from old to new.
             if pred(binst):
                 try:
                     new_out_soqs = bb.add_from(binst.bloq, **in_soqs)
@@ -416,12 +416,12 @@ class CompositeBloq(Bloq):
                 # pylint: disable=protected-access
                 new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
 
-            soq_map.extend(zip(old_out_soqs, new_out_soqs))
+            _update_flat_soq_map(zip(old_out_soqs, new_out_soqs), flat_soq_map)
 
         if not did_work:
             raise DidNotFlattenAnythingError()
 
-        fsoqs = _map_soqs(self.final_soqs(), soq_map)
+        fsoqs = _map_flat_soqs(self.final_soqs(), flat_soq_map)
         return bb.finalize(**fsoqs)
 
     def flatten(
@@ -863,6 +863,43 @@ def _map_soqs(
         return vmap(soqs)
 
     return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
+
+
+def _map_flat_soqs(
+    soqs: Dict[str, SoquetT], flat_soq_map: Dict[Soquet, Soquet]
+) -> Dict[str, SoquetT]:
+
+    # use vectorize to use the flat mapping.
+    def _map_soq(soq: Soquet) -> Soquet:
+        # Helper function to map an individual soquet.
+        return flat_soq_map.get(soq, soq)
+
+    # Use `vectorize` to call `_map_soq` on each element of the array.
+    vmap = np.vectorize(_map_soq, otypes=[object])
+
+    def _map_soqs(soqs: SoquetT) -> SoquetT:
+        if isinstance(soqs, Soquet):
+            return _map_soq(soqs)
+        return vmap(soqs)
+
+    return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
+
+
+def _update_flat_soq_map(
+    soq_map: Iterable[Tuple[SoquetT, SoquetT]], flat_soq_map: Dict[Soquet, Soquet]
+):
+    """Flatten SoquetT into a flat_soq_map. This function mutates `flat_soq_map`."""
+    for old_soqs, new_soqs in soq_map:
+        if isinstance(old_soqs, Soquet):
+            assert isinstance(new_soqs, Soquet), new_soqs
+            flat_soq_map[old_soqs] = new_soqs
+            continue
+
+        assert isinstance(old_soqs, np.ndarray), old_soqs
+        assert isinstance(new_soqs, np.ndarray), new_soqs
+        assert old_soqs.shape == new_soqs.shape, (old_soqs.shape, new_soqs.shape)
+        for o, n in zip(old_soqs.reshape(-1), new_soqs.reshape(-1)):
+            flat_soq_map[o] = n
 
 
 class BloqBuilder:

@@ -18,11 +18,11 @@ from typing import Union
 
 import attrs
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
-import qualtran.rotation_synthesis.math_config as mc
-from qualtran.rotation_synthesis.lattice import geometry
-from qualtran.rotation_synthesis.lattice import grid_operators as go
-from qualtran.rotation_synthesis.rings import zw
+from qualtran.rotation_synthesis.lattice import _geometry
+from qualtran.rotation_synthesis.lattice import _grid_operators as go
+from qualtran.rotation_synthesis.rings import _zw
 
 
 def _grid_operation_path_converter(seq):
@@ -67,8 +67,8 @@ class SelingerState:
         Appendix A of https://arxiv.org/abs/1403.2975
     """
 
-    m1: geometry.Ellipse
-    m2: geometry.Ellipse
+    m1: _geometry.Ellipse
+    m2: _geometry.Ellipse
 
     def skew(self, config: mc.MathConfig) -> rst.Real:
         """Returns the skew of the state."""
@@ -80,8 +80,8 @@ class SelingerState:
 
     @staticmethod
     def from_parametric_forms(
-        e1: geometry.EllipseParametricForm,
-        e2: geometry.EllipseParametricForm,
+        e1: _geometry.EllipseParametricForm,
+        e2: _geometry.EllipseParametricForm,
         config: mc.MathConfig,
     ) -> "SelingerState":
         """Constructs a state from the parametric form of the two regions."""
@@ -134,7 +134,7 @@ class SelingerState:
                 g = go.KSqrt2
                 name = "K"
             elif 0.3 <= e1.z and 0.3 <= e2.z:
-                c = min(e1.z, e2.z)
+                c = min(e1.z, e2.z)  # type: ignore[type-var]
                 n = max(1, config.floor(l_value**c / 2))
                 g = go.ASqrt2**n
                 name = f"A^{n}"
@@ -148,7 +148,7 @@ class SelingerState:
                 g = go.RSqrt2
                 name = "R"
             elif e1.z >= -0.2 and e2.z >= -0.2:
-                c = min(e1.z, e2.z)
+                c = min(e1.z, e2.z)  # type: ignore[type-var]
                 n = max(1, config.floor(l_value**c / config.sqrt2))
                 g = go.BSqrt2**n
                 name = f"B^{n}"
@@ -176,16 +176,16 @@ class SelingerState:
         m1 = g.T @ m1 @ g / 2
         m2 = g_conj.T @ m2 @ g_conj / 2
         return SelingerState(
-            geometry.Ellipse(
+            _geometry.Ellipse(
                 m1, operator.scaled_inverse().actual_value(config.sqrt2) @ self.m1.center
             ),
-            geometry.Ellipse(
+            _geometry.Ellipse(
                 m2,
                 operator.sqrt2_conj().scaled_inverse().actual_value(config.sqrt2) @ self.m2.center,
             ),
         )
 
-    def contains(self, x: zw.ZW, config: mc.MathConfig) -> bool:
+    def contains(self, x: _zw.ZW, config: mc.MathConfig) -> bool:
         """Returns whether the given point belongs in the region defined by the state.
 
         Args:
