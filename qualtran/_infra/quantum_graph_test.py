@@ -48,6 +48,9 @@ def test_soquet():
     assert soq.idx == ()
     assert soq.pretty() == 'x'
 
+    assert soq.item() == soq
+    assert soq.dtype == QAny(10)
+
 
 def test_soquet_idxed():
     binst = BloqInstance(TestTwoBitOp(), i=0)
