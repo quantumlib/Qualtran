@@ -2,9 +2,9 @@
 attrs>=23.2.0
 cachetools>=5.3
 networkx
-numpy~=1.26
+numpy>=1.26,<3.0
 sympy
-cirq-core>=1.4.0,<1.5  # https://github.com/quantumlib/Qualtran/issues/1708
+cirq-core~=1.4
 fxpmath
 galois
 

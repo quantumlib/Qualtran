@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import cirq
 import numpy as np
 
-from qualtran.rotation_synthesis.matrix import generate_rotations
+from qualtran.rotation_synthesis.matrix import generate_cliffords, generate_rotations
 
 
 def _are_close_up_to_global_phase(u, v):
@@ -28,7 +29,8 @@ def test_generated_rotations_determinant():
     all_rotations = generate_rotations(5)
     for n in range(len(all_rotations)):
         assert np.allclose(
-            [abs(np.linalg.det(r.numpy())) for r in all_rotations[n]], 2 * (2 + np.sqrt(2)) ** n
+            [abs(np.linalg.det(r.matrix.astype(complex))) for r in all_rotations[n]],
+            2 * (2 + np.sqrt(2)) ** n,
         )
 
 
@@ -59,3 +61,14 @@ def test_generated_rotations_unitary():
             for p in gates:
                 u = _numpy_matrix_for_symbol[p] @ u
             assert _are_close_up_to_global_phase(u, r.numpy())
+
+
+def test_generate_cliffords():
+    cliffords = generate_cliffords()
+    cirq_cliffords = [
+        cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
+    ]
+    assert np.allclose(np.abs([np.linalg.det(c.numpy()) for c in cliffords]), 1)
+    for c in cliffords:
+        u = c.numpy()
+        assert np.any([_are_close_up_to_global_phase(u, c) for c in cirq_cliffords])

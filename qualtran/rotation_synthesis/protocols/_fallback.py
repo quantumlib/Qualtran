@@ -23,12 +23,12 @@ if TYPE_CHECKING:
 import attrs
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.protocols.protocol as protocol
+import qualtran.rotation_synthesis.protocols._protocol as _protocol
 import qualtran.rotation_synthesis.rings as rings
-from qualtran.rotation_synthesis.rings import zsqrt2
+from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 @functools.cache
@@ -109,7 +109,7 @@ def create_ellipse_for_error(eps: rst.Real, success_probability: rst.Real, confi
 
 
 @attrs.frozen
-class Fallback(protocol.ApproxProblem):
+class Fallback(_protocol.ApproxProblem):
     r"""Approximate a Z-rotation with a fallback channel.
 
     Approximate the $Rz(2\theta)$ with the channel
@@ -146,8 +146,8 @@ class Fallback(protocol.ApproxProblem):
         if offset:
             theta += config.pi
 
-        r0 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
-        r1 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
+        r0 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+        r1 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
 
         cos_t, sin_t = config.cos(theta), config.sin(theta)
         rotation_matrix = np.array([[cos_t, -sin_t], [sin_t, cos_t]])
@@ -165,11 +165,11 @@ class Fallback(protocol.ApproxProblem):
     def make_real_bound_fn(self, n: int, config: mc.MathConfig) -> Callable[[rings.ZW], bool]:
         def fn(p):
             abs_p2 = (p * p.conj()).to_zsqrt2()[0]
-            target = 2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n
+            target = 2 * _zsqrt2.LAMBDA_KLIUCHNIKOV**n
             if abs_p2 > target:
                 return False
             u = p.value(config.sqrt2)
-            u = u / zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+            u = u / _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
             abs_u2 = u.real**2 + u.imag**2
             if abs_u2 < self.success_probability and not config.isclose(
                 abs_u2, self.success_probability
@@ -225,9 +225,7 @@ class Fallback(protocol.ApproxProblem):
             fig, ax = plt.subplots(figsize=(9, 6))
 
         state = self.make_state(n, mc.NumpyConfig, offset)
-        r = float(
-            mc.NumpyConfig.sqrt((2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n).value(mc.NumpyConfig.sqrt2))
-        )
+        r = float(_zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, mc.NumpyConfig))
 
         state.m1.plot(ax, add_label=False, fill=False, alpha=0)
         ax.relim()

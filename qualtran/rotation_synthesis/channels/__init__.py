@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.rotation_synthesis.channels.channel import (
+from qualtran.rotation_synthesis.channels._channel import (
     Channel,
     ProbabilisticChannel,
     ProjectiveChannel,

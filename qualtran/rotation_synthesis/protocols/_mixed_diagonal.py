@@ -22,17 +22,17 @@ if TYPE_CHECKING:
 import attrs
 import numpy as np
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis._typing as rst
 import qualtran.rotation_synthesis.lattice as lattice
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.protocols.diagonal as diagonal
-import qualtran.rotation_synthesis.protocols.protocol as protocol
+import qualtran.rotation_synthesis.protocols._diagonal as _diagonal
+import qualtran.rotation_synthesis.protocols._protocol as _protocol
 import qualtran.rotation_synthesis.rings as rings
-from qualtran.rotation_synthesis.rings import zsqrt2
+from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 @attrs.frozen
-class MixedDiagonal(protocol.ApproxProblem):
+class MixedDiagonal(_protocol.ApproxProblem):
     r"""Approximate a Z-rotation with a twirled string of Clifford+T gates.
 
     Attributes:
@@ -54,10 +54,10 @@ class MixedDiagonal(protocol.ApproxProblem):
         theta = self.theta
         if offset:
             theta += config.pi
-        r0 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
-        r1 = zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
+        r0 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+        r1 = _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV_CONJ, n, config)
 
-        e1 = diagonal.make_ellipse_for_circular_segment(
+        e1 = _diagonal.make_ellipse_for_circular_segment(
             config.sqrt(self.eps / 2) * 2, r0, theta, config
         )
         e2 = lattice.Ellipse.from_axes(
@@ -70,11 +70,11 @@ class MixedDiagonal(protocol.ApproxProblem):
 
         def fn(p):
             abs_p2, _, _ = (p * p.conj()).to_zsqrt2()
-            target = 2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n
+            target = 2 * _zsqrt2.LAMBDA_KLIUCHNIKOV**n
             if abs_p2 > target:
                 return False
             u = p.value(config.sqrt2)
-            u = u / zsqrt2.radius_at_n(zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
+            u = u / _zsqrt2.radius_at_n(_zsqrt2.LAMBDA_KLIUCHNIKOV, n, config)
             return (u * neg_rot).real ** 2 >= 1 - self.eps / 2
 
         return fn
@@ -113,7 +113,7 @@ class MixedDiagonal(protocol.ApproxProblem):
 
         state = self.make_state(n, mc.NumpyConfig, offset)
         r = float(
-            mc.NumpyConfig.sqrt((2 * zsqrt2.LAMBDA_KLIUCHNIKOV**n).value(mc.NumpyConfig.sqrt2))
+            mc.NumpyConfig.sqrt((2 * _zsqrt2.LAMBDA_KLIUCHNIKOV**n).value(mc.NumpyConfig.sqrt2))
         )
 
         state.m1.plot(ax, add_label=False, fill=False, alpha=0)

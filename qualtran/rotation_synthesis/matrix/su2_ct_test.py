@@ -14,54 +14,55 @@
 
 from typing import Optional
 
-import cirq
 import numpy as np
 import pytest
 
-from qualtran.rotation_synthesis.matrix import su2_ct
-from qualtran.rotation_synthesis.rings import zsqrt2, zw
+import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis.matrix as rsm
+from qualtran.rotation_synthesis.matrix import _su2_ct
+from qualtran.rotation_synthesis.rings import _zsqrt2, _zw
 
-_GATES = [su2_ct.ISqrt2, su2_ct.SSqrt2, su2_ct.HSqrt2, su2_ct.Tx, su2_ct.Ty, su2_ct.Tz]
+_GATES = [_su2_ct.ISqrt2, _su2_ct.SSqrt2, _su2_ct.HSqrt2, _su2_ct.Tx, _su2_ct.Ty, _su2_ct.Tz]
 _SQRT2 = np.sqrt(2)
-_LAMBDA = zsqrt2.ZSqrt2(2, 1)
-_LAMBDA_ZW = zw.ZW.from_pair(_LAMBDA, zsqrt2.Zero)
+_LAMBDA = _zsqrt2.ZSqrt2(2, 1)
+_LAMBDA_ZW = _zw.ZW.from_pair(_LAMBDA, _zsqrt2.Zero)
 
 
 def _make_random_su(n: int, m: int, random_cliffords: bool = False, seed: Optional[int] = None):
     rng = np.random.default_rng(seed)
-    gates = [su2_ct.Tx, su2_ct.Ty, su2_ct.Tz]
+    gates = [_su2_ct.Tx, _su2_ct.Ty, _su2_ct.Tz]
     if random_cliffords:
-        gates += [su2_ct.SSqrt2, su2_ct.HSqrt2]
+        gates += [_su2_ct.SSqrt2, _su2_ct.HSqrt2]
     for _ in range(n):
-        res = su2_ct.ISqrt2
+        res = _su2_ct.ISqrt2
         for i in rng.choice(len(gates), m):
             res = res @ gates[i]
         yield res
 
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_parametric_form(g: su2_ct.SU2CliffordT):
+def test_parametric_form(g: _su2_ct.SU2CliffordT):
     pf = g.parametric_form()
-    got = su2_ct.SU2CliffordT.from_parametric_form(pf)
+    got = _su2_ct.SU2CliffordT.from_parametric_form(pf)
     assert got == g
 
 
 @pytest.mark.parametrize("seq", np.random.choice(6, size=(10, 5)))
 def test_multiply(seq):
-    g = su2_ct.ISqrt2
+    g = _su2_ct.ISqrt2
     g_numpy = np.eye(2)
     k = 0
     for i in seq:
         g = g @ _GATES[i]
         k += i >= 3  # is a T gate.
-        g_numpy = (g_numpy @ _GATES[i].numpy()) / _SQRT2
+        g_numpy = (g_numpy @ _GATES[i].matrix.astype(complex)) / _SQRT2
     assert g.det() == 2 * _LAMBDA**k
-    np.testing.assert_allclose(g.numpy() / _SQRT2, g_numpy, atol=1e-9)
+    np.testing.assert_allclose(g.matrix.astype(complex) / _SQRT2, g_numpy, atol=1e-9)
 
 
 @pytest.mark.parametrize("g", _make_random_su(10, 3, random_cliffords=False, seed=0))
 def test_adjoint(g):
-    assert g @ g.adjoint() == su2_ct.ISqrt2 * _LAMBDA_ZW**3
+    assert g @ g.adjoint() == _su2_ct.ISqrt2 * _LAMBDA_ZW**3
 
 
 _X = np.array([[0, 1], [1, 0]])
@@ -73,20 +74,13 @@ _TZ_numpy = (np.eye(2) + (np.eye(2) - 1j * _Z) / _SQRT2) / np.sqrt(2 + _SQRT2)
 
 
 @pytest.mark.parametrize(
-    ["g", "g_numpy"], [[su2_ct.Tx, _TX_numpy], [su2_ct.Ty, _TY_numpy], [su2_ct.Tz, _TZ_numpy]]
+    ["g", "g_numpy"], [[_su2_ct.Tx, _TX_numpy], [_su2_ct.Ty, _TY_numpy], [_su2_ct.Tz, _TZ_numpy]]
 )
 def test_t_gates(g, g_numpy):
-    np.testing.assert_allclose(g.numpy() / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy)
+    np.testing.assert_allclose(g.matrix.astype(complex) / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy)
     np.testing.assert_allclose(
-        g.adjoint().numpy() / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy.T.conjugate()
+        g.adjoint().matrix.astype(complex) / _SQRT2 / np.sqrt(2 + _SQRT2), g_numpy.T.conjugate()
     )
-
-
-@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_to_seq(g):
-    seq = g.to_sequence()
-    got = su2_ct.SU2CliffordT.from_sequence(seq)
-    assert got == g or got * -1 == g
 
 
 def are_close_up_to_global_phase(u, v):
@@ -96,13 +90,26 @@ def are_close_up_to_global_phase(u, v):
     return np.allclose(u * v[i, j] / u[i, j], v)
 
 
-def test_generate_cliffords():
-    cliffords = su2_ct.generate_cliffords()
-    cirq_cliffords = [
-        cirq.unitary(c) for c in cirq.SingleQubitCliffordGate.all_single_qubit_cliffords
-    ]
-    assert np.allclose(np.abs([np.linalg.det(c.numpy()) for c in cliffords]), 2)
-    sqrt2 = np.sqrt(2)
-    for c in cliffords:
-        u = c.numpy() / sqrt2
-        assert np.any([are_close_up_to_global_phase(u, c) for c in cirq_cliffords])
+@pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
+@pytest.mark.parametrize("config", [None, mc.NumpyConfig])
+def test_rescale(g: _su2_ct.SU2CliffordT, config):
+    np.testing.assert_allclose(g.numpy(config), g.rescale().numpy(config))
+
+
+def test_num_t_gates():
+    for clifford in rsm.generate_cliffords():
+        assert clifford.num_t_gates() == 0
+
+        for t in _su2_ct.Ts:
+            assert (clifford @ t).num_t_gates() == 1
+
+    for t1 in _su2_ct.Ts:
+        for t2 in _su2_ct.Ts:
+            assert (t1 @ t2).num_t_gates() == 2
+
+    for t in _su2_ct.Ts:
+        # still two T gates
+        assert (t @ t.adjoint()).num_t_gates() == 2
+
+        # We need to call .rescale to remove the common factor and reduce the T count.
+        assert (t @ t.adjoint()).rescale().num_t_gates() == 0

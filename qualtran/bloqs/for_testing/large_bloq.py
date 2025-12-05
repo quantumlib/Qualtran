@@ -58,5 +58,5 @@ class LargeBloq(Bloq):
                     and_op.adjoint(), ctrl=np.array([ancs[i], sel[i + 1]]), target=ancs[i + 1]
                 )
 
-        sel[0] = ancs[0]
+        sel[0] = ancs[0]  # type: ignore[assignment]
         return {'select': bb.join(sel), 'target': target}

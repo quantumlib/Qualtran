@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 import sympy
 from attrs import frozen
+from numpy.typing import NDArray
 
 import qualtran
 import qualtran.testing as qlt_testing
@@ -192,7 +193,7 @@ def test_cirq_optree_to_cbloq():
             qualtran.Register('yy', QBit(), shape=(2, 3)),
         ]
     )
-    cirq_quregs = {
+    cirq_quregs: Dict[str, NDArray] = {
         'xx': np.asarray(qubits[:18]).reshape((3, 2, 3)),
         'yy': np.asarray(qubits[18:]).reshape((2, 3, 1)),
     }

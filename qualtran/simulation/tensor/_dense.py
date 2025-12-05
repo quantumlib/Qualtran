@@ -118,7 +118,7 @@ def quimb_to_dense(
 ) -> NDArray:
     """Contract a quimb tensor network `tn` to a dense matrix consistent with `signature`."""
     inds = _group_outer_inds(tn, signature, superoperator=superoperator)
-    if tn.contraction_width() > 8:
+    if tn.contraction_width() > 12:
         tn.full_simplify(inplace=True)
 
     if inds:

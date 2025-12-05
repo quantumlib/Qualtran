@@ -16,8 +16,8 @@ from typing import Iterator, Optional
 
 import numpy as np
 
-import qualtran.rotation_synthesis.lattice.grid_operators as go
-from qualtran.rotation_synthesis.lattice import geometry, state
+import qualtran.rotation_synthesis.lattice._grid_operators as go
+from qualtran.rotation_synthesis.lattice import _geometry, _state
 
 ALL_CORE_GRID_OPS = [
     go.ISqrt2,
@@ -62,15 +62,15 @@ def random_grid_operator(
         yield g
 
 
-def make_states(n: int, seed: Optional[int] = 0) -> Iterator[state.SelingerState]:
+def make_states(n: int, seed: Optional[int] = 0) -> Iterator[_state.SelingerState]:
     """Yields `n` random states."""
     rng = np.random.default_rng(seed)
     yield from [
-        state.SelingerState(geometry.Ellipse(make_psd(rng)), geometry.Ellipse(make_psd(rng)))
+        _state.SelingerState(_geometry.Ellipse(make_psd(rng)), _geometry.Ellipse(make_psd(rng)))
         for _ in range(n)
     ]
 
 
-def make_ellipses(n, seed=0) -> Iterator[geometry.Ellipse]:
+def make_ellipses(n, seed=0) -> Iterator[_geometry.Ellipse]:
     rng = np.random.default_rng(seed)
-    yield from [geometry.Ellipse(make_psd(rng), 10 * (rng.random() * 2 - 1)) for _ in range(n)]
+    yield from [_geometry.Ellipse(make_psd(rng), 10 * (rng.random() * 2 - 1)) for _ in range(n)]
