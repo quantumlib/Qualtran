@@ -39,8 +39,8 @@ from qualtran import (
     Side,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran.symbolics import is_symbolic
 from qualtran.simulation.classical_sim import do_phased_classical_simulation
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -718,6 +718,7 @@ def assert_consistent_classical_action(
             bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
         )
 
+
 def assert_consistent_phased_classical_action(
     bloq: Bloq,
     **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
@@ -740,5 +741,5 @@ def assert_consistent_phased_classical_action(
         np.testing.assert_equal(
             bloq_phase,
             decomposed_phase,
-            err_msg=f'{bloq=} {call_with=} {bloq_phase=} {decomposed_phase=}'
+            err_msg=f'{bloq=} {call_with=} {bloq_phase=} {decomposed_phase=}',
         )

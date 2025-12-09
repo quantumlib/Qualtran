@@ -20,7 +20,10 @@ from qualtran import BQUInt, QUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop.testing import GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, assert_consistent_phased_classical_action
+from qualtran.testing import (
+    assert_consistent_phased_classical_action,
+    assert_valid_bloq_decomposition,
+)
 
 
 @pytest.mark.slow
@@ -149,14 +152,12 @@ def test_selected_majorana_fermion_gate_make_on():
     op2 = SelectedMajoranaFermion.make_on(target_gate=cirq.X, **get_named_qubits(gate.signature))
     assert op == op2
 
+
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 5)])
 def test_selected_majorana_fermion_classical_action(selection_bitsize, target_bitsize):
     gate = SelectedMajoranaFermion(
         Register('selection', BQUInt(selection_bitsize, target_bitsize)), target_gate=cirq.X
     )
     assert_consistent_phased_classical_action(
-        gate,
-        selection=range(target_bitsize),
-        target=range(2**target_bitsize),
-        control=range(2)
+        gate, selection=range(target_bitsize), target=range(2**target_bitsize), control=range(2)
     )
