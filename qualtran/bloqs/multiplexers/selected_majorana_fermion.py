@@ -27,6 +27,7 @@ from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.simulation.classical_sim import ClassicalValT
 
+
 @attrs.frozen
 class SelectedMajoranaFermion(UnaryIterationGate):
     """Implements U s.t. U|l>|Psi> -> |l> T_{l} . Z_{l - 1} ... Z_{0} |Psi>
