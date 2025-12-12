@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, CtrlSpec, Register, QBit
 from qualtran.bloqs.basic_gates import OneState
 from qualtran.bloqs.basic_gates.identity import _identity, _identity_n, _identity_symb, Identity
 from qualtran.simulation.classical_sim import (
@@ -104,6 +104,18 @@ def test_identity_controlled():
 
     n = sympy.Symbol("n")
     assert Identity(n).controlled() == Identity(n + 1)
+
+
+def test_identity_ctrl_adder():
+
+    ctrl_I, ctrl_adder = Identity(1).get_ctrl_system(CtrlSpec())
+
+    bb = BloqBuilder()
+    ctrl_soqs = [bb.add_register(Register("ctrl_0", QBit()))]
+    in_soqs = {"q": bb.add_register(Register("q", QBit()))}
+    [ctrl_out], (out_reg,) = ctrl_adder(bb, ctrl_soqs=ctrl_soqs, in_soqs=in_soqs)
+    composite = bb.finalize(ctrl_0=ctrl_out, q=out_reg)
+    composite.flatten()
 
 
 @pytest.mark.notebook

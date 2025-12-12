@@ -34,6 +34,7 @@ from qualtran import (
 )
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.bloqs.bookkeeping import Partition
 
 if TYPE_CHECKING:
     import cirq
@@ -116,11 +117,17 @@ class Identity(Bloq):
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             parts = [
-                (Register(f'ctrl_{i}', dtype=dtype, shape=shape), 'q')
+                Register(f"ctrl_{i}", dtype=dtype, shape=shape)
                 for i, (dtype, shape) in enumerate(ctrl_spec.activation_function_dtypes())
-            ] + [(reg, 'q') for reg in self.signature]
-            all_soqs = in_soqs | {f'ctrl_{i}': ctrl_soq for i, ctrl_soq in enumerate(ctrl_soqs)}
-            out_soqs = bb.add_and_partition(ctrl_I, partitions=parts, left_only=False, **all_soqs)
+            ] + [reg for reg in self.signature]
+
+            all_soqs = in_soqs | {f"ctrl_{i}": ctrl_soq for i, ctrl_soq in enumerate(ctrl_soqs)}
+
+            pratition = Partition(ctrl_I.signature.n_qubits(), regs=parts)
+            q = bb.add(pratition.adjoint(), **all_soqs)
+            q = bb.add(ctrl_I, q=q)
+            out_soqs = bb.add(pratition, x=q)
+
             return out_soqs[:-1], out_soqs[-1:]
 
         return ctrl_I, ctrl_adder
