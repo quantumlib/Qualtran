@@ -367,8 +367,13 @@ class LinearCombination(BlockEncoding):
             ctrl_reg_name='ctrl',
         )
 
-    def adjoint(self) -> 'LinearCombination':
-        return self
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.ONE)
 
 
 @bloq_example
