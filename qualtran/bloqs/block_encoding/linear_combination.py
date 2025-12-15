@@ -114,7 +114,9 @@ class LinearCombination(BlockEncoding):
             ),
         ):
             raise ValueError(
-                "If given, select oracle must have block encoding `system` register as target."
+                "Invalid select oracle target registers. "
+                "The `system` register must include the block encoding's system, ancilla, "
+                "and resource registers."
             )
         if not all(
             isinstance(u.signal_state.prepare, PrepareIdentity) for u in self._block_encodings
