@@ -697,6 +697,10 @@ class Bloq(metaclass=abc.ABCMeta):
         return self.__class__.__name__
 
     @classmethod
+    def _pkg_(cls) -> str:
+        return '.'.join(cls.__module__.split('.')[:-1])
+
+    @classmethod
     def _class_name_in_pkg_(cls) -> str:
         """The bloq class's name with its package.
 
@@ -704,5 +708,4 @@ class Bloq(metaclass=abc.ABCMeta):
         `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
         "*.py" file) and re-exported one level up.
         """
-        pkg = '.'.join(cls.__module__.split('.')[:-1])
-        return f'{pkg}.{cls.__name__}'
+        return f'{cls._pkg_()}.{cls.__name__}'

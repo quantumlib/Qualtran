@@ -48,6 +48,9 @@ class Side(enum.Flag):
     THRU = LEFT | RIGHT
     """The register is input/output."""
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}.{self._name_}'
+
 
 @frozen
 class Register:
@@ -73,6 +76,13 @@ class Register:
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
+
+    @classmethod
+    def _pkg_(cls):
+        return 'qualtran'
+
+    def __repr__(self):
+        return f'Register({self.name!r}, dtype={self.dtype!r}, shape={self.shape!r}, side={self.side!r})'
 
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, QCDType):

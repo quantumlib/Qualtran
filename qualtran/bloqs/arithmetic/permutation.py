@@ -137,6 +137,11 @@ class PermutationCycle(Bloq):
 
         return super().build_call_graph(ssa)
 
+    @classmethod
+    def _pkg_(cls) -> str:
+        # This isn't re-exported
+        return '.'.join(cls.__module__.split('.')[:])
+
 
 @bloq_example
 def _permutation_cycle() -> PermutationCycle:
@@ -282,6 +287,11 @@ class Permutation(Bloq):
             return {PermutationCycle(self.N, cycle, self.bitsize): 1}
 
         return super().build_call_graph(ssa)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # This isn't re-exported
+        return '.'.join(cls.__module__.split('.')[:])
 
 
 @bloq_example

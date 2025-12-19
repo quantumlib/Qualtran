@@ -246,6 +246,10 @@ class QCDType(Generic[T], metaclass=abc.ABCMeta):
         # TODO: remove https://github.com/quantumlib/Qualtran/issues/1716
         return getattr(self, 'iteration_length', 0)
 
+    @classmethod
+    def _pkg_(cls):
+        return 'qualtran'
+
     def __str__(self):
         return f'{self.__class__.__name__}({self.num_bits})'
 
