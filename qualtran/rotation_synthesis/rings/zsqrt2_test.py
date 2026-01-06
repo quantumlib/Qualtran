@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from qualtran.rotation_synthesis import rings
-from qualtran.rotation_synthesis.rings import test_utils as tu
+from qualtran.rotation_synthesis.rings import _test_utils as tu
 
 _SQRT_2 = math.sqrt(2)
 
