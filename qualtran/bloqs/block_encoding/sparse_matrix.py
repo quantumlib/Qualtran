@@ -33,10 +33,10 @@ from qualtran import (
     QInt,
     QUInt,
     Register,
+    Side,
     Signature,
     Soquet,
     SoquetT,
-    Side,
 )
 from qualtran.bloqs.arithmetic import Add, AddK
 from qualtran.bloqs.basic_gates import Ry, Swap
