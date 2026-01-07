@@ -65,7 +65,7 @@ def split_qubits(
 
 def merge_qubits(
     registers: Iterable[Register],
-    **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],
+    **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],  # type: ignore[type-var]
 ) -> List['cirq.Qid']:
     """Merges the dictionary of appropriately shaped qubit arrays into a flat list of qubits."""
 
@@ -84,7 +84,7 @@ def merge_qubits(
     return ret
 
 
-def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray['cirq.Qid']]:
+def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray['cirq.Qid']]:  # type: ignore[type-var]
     """Returns a dictionary of appropriately shaped named qubit signature for input `signature`."""
 
     def _qubit_array(reg: Register):
@@ -327,7 +327,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return total_bits(self.signature)
 
     def decompose_from_registers(
-        self, *, context: 'cirq.DecompositionContext', **quregs: NDArray['cirq.Qid']
+        self, *, context: 'cirq.DecompositionContext', **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
     ) -> 'cirq.OP_TREE':
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
@@ -361,7 +361,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return cirq.Gate.on(self, *qubits)
 
     def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']]
+        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']]  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 

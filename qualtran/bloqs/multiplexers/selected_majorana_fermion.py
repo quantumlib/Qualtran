@@ -97,7 +97,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         return (Register('accumulator', QBit()),)
 
     def decompose_from_registers(
-        self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
         control: Sequence['cirq.Qid'] = (

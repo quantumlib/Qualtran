@@ -131,7 +131,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
                 )
 
     def decompose_zero_selection(
-        self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         controls = tuple(merge_qubits(self.control_registers, **quregs))
         target_regs = {reg.name: quregs[reg.name] for reg in self.target_registers}
@@ -154,7 +154,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> cirq.OP_TREE:
         if self.has_data():
             return super().decompose_from_registers(context=context, **quregs)

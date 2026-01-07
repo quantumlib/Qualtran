@@ -200,7 +200,7 @@ class PhaseGradientState(GateWithRegisters):
         return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
@@ -479,7 +479,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return int(np.floor(result.astype(float) * 2**self.phase_dtype.bitsize) * sign)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.gamma, sympy.Expr):
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
