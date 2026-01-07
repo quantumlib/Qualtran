@@ -9,7 +9,7 @@ author = "Google Quantum AI"
 author_email = "mpharrigan@google.com"
 description = "Software for fault-tolerant quantum algorithms research."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [
     # core dependencies
