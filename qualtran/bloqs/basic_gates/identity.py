@@ -32,9 +32,9 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran.bloqs.bookkeeping import Partition
 from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.symbolics import is_symbolic, SymbolicInt
-from qualtran.bloqs.bookkeeping import Partition
 
 if TYPE_CHECKING:
     import cirq
