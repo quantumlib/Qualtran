@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.rotation_synthesis.math_config import NumpyConfig, with_dps
+from qualtran.rotation_synthesis._math_config import NumpyConfig, with_dps
 from qualtran.rotation_synthesis.matrix import to_cirq, to_quirk, to_sequence
 from qualtran.rotation_synthesis.protocols import (
     diagonal_unitary_approx,

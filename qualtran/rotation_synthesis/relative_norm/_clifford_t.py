@@ -17,22 +17,22 @@ from typing import Optional
 import attrs
 from sympy import ntheory
 
-from qualtran.rotation_synthesis.rings import zsqrt2, zw
+from qualtran.rotation_synthesis.rings import _zsqrt2, _zw
 
 
 @attrs.frozen
 class IdealInfo:
     """Holds the result of Algorithm 3 of https://arxiv.org/abs/2203.10064"""
 
-    ideal: zw.ZW
-    chi: zw.ZW
-    eta: zsqrt2.ZSqrt2
+    ideal: _zw.ZW
+    chi: _zw.ZW
+    eta: _zsqrt2.ZSqrt2
     is_inert: bool
 
 
 def factor_into_generators(
-    r: zsqrt2.ZSqrt2, etas: list[zsqrt2.ZSqrt2]
-) -> tuple[zsqrt2.ZSqrt2, list[int]]:
+    r: _zsqrt2.ZSqrt2, etas: list[_zsqrt2.ZSqrt2]
+) -> tuple[_zsqrt2.ZSqrt2, list[int]]:
     r"""factors $r$ into the given $\eta_i$s
 
     The function finds $u$ and maximal $e_i$ such that
@@ -60,25 +60,25 @@ class CliffordTRelativeNormSolver:
     $O_L = \mathbb{Z}[e^{i pi/4}]$.
     """
 
-    def _get_root(self, chi: zw.ZW) -> Optional[zw.ZW]:
+    def _get_root(self, chi: _zw.ZW) -> Optional[_zw.ZW]:
         r"""Returns a power of $\omega = \zeta_8$ such that makes $\chi$ a prime ideal or None.
 
         This function finds if there is a a unit $v$ in the quotient group of units of
         $\mathbb{Z}[e^{i pi/4}]$ and $\mathbb{Z}[\sqrt{2}]$ such that $v \chi$ is a prime ideal
         of $\mathbb{Z}[\sqrt{2}]$. The quotient group contains the powers of $\omega$.
         """
-        for v in zw.One, zw.Omega, zw.Omega**2, zw.Omega**3:
+        for v in _zw.One, _zw.Omega, _zw.Omega**2, _zw.Omega**3:
             r = v * chi
             a, b, need_w = r.to_zsqrt2()
             if need_w:
                 continue
-            if b != zsqrt2.Zero:
+            if b != _zsqrt2.Zero:
                 continue
             if a.is_prime_ideal():
                 return v
         return None
 
-    def compute_w(self, unit: zsqrt2.ZSqrt2) -> Optional[zw.ZW]:
+    def compute_w(self, unit: _zsqrt2.ZSqrt2) -> Optional[_zw.ZW]:
         r"""Finds a unit in $\mathbb{Z}[e^{i pi/4}]$ such that $ww^*$ equals the given unit.
 
 
@@ -109,10 +109,10 @@ class CliffordTRelativeNormSolver:
             return None
         n >>= 1
         if sign == -1:
-            return (-zw.One + zw.SQRT_2) ** n
-        return (zw.One + zw.SQRT_2) ** n
+            return (-_zw.One + _zw.SQRT_2) ** n
+        return (_zw.One + _zw.SQRT_2) ** n
 
-    def solve(self, r: zsqrt2.ZSqrt2) -> Optional[zw.ZW]:
+    def solve(self, r: _zsqrt2.ZSqrt2) -> Optional[_zw.ZW]:
         r"""Returns a solution if it exists or None.
 
         Args:
@@ -122,15 +122,15 @@ class CliffordTRelativeNormSolver:
             $v \in \mathbb{Z}[e^{i pi/4}]$ such that $v^*v = r$ if it exists
             or None.
         """
-        if r == zsqrt2.Zero:
-            return zw.Zero
-        if r == zsqrt2.One:
-            return zw.One
+        if r == _zsqrt2.Zero:
+            return _zw.Zero
+        if r == _zsqrt2.One:
+            return _zw.One
         norm = r.norm()
         info = []
         for p in ntheory.factorint(norm):
-            for ideal in zw.ZW.factor_prime(p):
-                chi = ideal.gcd(zw.ZW((p, 0, 0, 0)))
+            for ideal in _zw.ZW.factor_prime(p):
+                chi = ideal.gcd(_zw.ZW((p, 0, 0, 0)))
                 v = self._get_root(chi)
                 if v is None:
                     eta = chi * chi.conj()
@@ -149,7 +149,7 @@ class CliffordTRelativeNormSolver:
                 continue
             if ideal_info.is_inert:
                 if e % 2 == 0:
-                    eta = zw.ZW.from_pair(ideal_info.eta, zsqrt2.Zero, False)
+                    eta = _zw.ZW.from_pair(ideal_info.eta, _zsqrt2.Zero, False)
                     m = m * eta ** (e >> 1)
                 else:
                     return None
