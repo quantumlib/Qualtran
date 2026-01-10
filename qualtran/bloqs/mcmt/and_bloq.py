@@ -308,9 +308,9 @@ class MultiAnd(Bloq):
 
     def _decompose_via_tree(
         self,
-        controls: NDArray[cirq.Qid],
+        controls: NDArray[cirq.Qid],  # type: ignore[type-var]
         control_values: Tuple[SymbolicInt, ...],
-        ancillas: NDArray[cirq.Qid],
+        ancillas: NDArray[cirq.Qid],  # type: ignore[type-var]
         target: cirq.Qid,
     ) -> Iterator[cirq.OP_TREE]:
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
@@ -326,7 +326,7 @@ class MultiAnd(Bloq):
         yield from self._decompose_via_tree(new_controls, new_control_values, ancillas[1:], target)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         control, ancilla, target = (
             quregs['ctrl'].flatten(),
