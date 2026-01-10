@@ -23,6 +23,7 @@ from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
+    HammingWeightPhasingWithConfigurableAncilla,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.cirq_interop.testing import GateHelper
@@ -31,6 +32,12 @@ from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_split_join,
 )
+from qualtran.resource_counting import (
+    QECGatesCost, 
+    GateCounts, 
+    get_cost_value,
+)
+
 from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
@@ -137,3 +144,39 @@ def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: f
     naive_total_t = naive_hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
 
     assert total_t < naive_total_t
+
+@pytest.mark.parametrize('n, ancillasize', [(n, ancillasize) for n in range(3, 9) for ancillasize in range(1, n-1)])
+@pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
+def test_hamming_weight_phasing_with_configurable_ancilla(n: int, ancillasize: int, theta: float):
+    gate = HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_equivalent_bloq_counts(
+        gate, [ignore_split_join, cirq_to_bloqs, generalize_rotation_angle]
+    )
+    
+    gh = GateHelper(gate)
+    sim = cirq.Simulator(dtype=np.complex128)
+    initial_state = cirq.testing.random_superposition(dim=2**n, random_state=12345)
+    state_prep = cirq.Circuit(cirq.StatePreparationChannel(initial_state).on(*gh.quregs['x']))
+    brute_force_phasing = cirq.Circuit(state_prep, (cirq.Z**theta).on_each(*gh.quregs['x']))
+    expected_final_state = sim.simulate(brute_force_phasing).final_state_vector
+
+    hw_phasing = cirq.Circuit(state_prep, HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta).on(*gh.quregs['x']))
+    hw_final_state = sim.simulate(hw_phasing).final_state_vector
+    assert np.allclose(expected_final_state, hw_final_state, atol=1e-7)
+
+
+@pytest.mark.parametrize('n, ancillasize', [(n, ancillasize) for n in range(3, 9) for ancillasize in range(1, n-1)])
+@pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
+def test_hamming_weight_phasing_with_configurable_ancilla_bloq_counts(n: int, ancillasize: int, theta: float):
+    gate = HammingWeightPhasingWithConfigurableAncilla(n, ancillasize, theta)
+    remainder = n % (ancillasize+1)
+
+#    assert gate.t_complexity().rotations == (-(-n // (ancillasize+1))-1) * (ancillasize+1).bit_length() + remainder.bit_length() # exact, fails for remainder = 0.
+#    Outdated method of doing gatecount tests. Also tests T-count rather than Toffoli count.
+#    assert gate.t_complexity().rotations <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length() # upper bound
+#    assert gate.t_complexity().t <= 4 * (ancillasize) * -(-n // (ancillasize+1)
+
+    gc = get_cost_value(gate, QECGatesCost())
+    assert gc.rotation <= (-(-n // (ancillasize+1))) * (ancillasize+1).bit_length() + remainder.bit_length()
+    assert gc.toffoli + gc.and_bloq + gc.cswap <= ancillasize * -(-n // (ancillasize+1))
