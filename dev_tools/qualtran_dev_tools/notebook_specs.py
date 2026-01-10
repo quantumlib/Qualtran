@@ -136,6 +136,7 @@ import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
+import qualtran.bloqs.swap_network.one_hot_encoding
 import qualtran.bloqs.swap_network.swap_with_zero
 
 from .jupyter_autogen import NotebookSpecV2
@@ -239,6 +240,14 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
             qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='One Hot Encodings',
+        module=qualtran.bloqs.swap_network.one_hot_encoding,
+        bloq_specs=[
+            qualtran.bloqs.swap_network.one_hot_encoding._ONE_HOT_LOG_DEPTH_DOC,
+            qualtran.bloqs.swap_network.one_hot_encoding._ONE_HOT_LINEAR_DEPTH_DOC,
         ],
     ),
     NotebookSpecV2(
