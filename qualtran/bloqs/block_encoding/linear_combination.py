@@ -108,10 +108,15 @@ class LinearCombination(BlockEncoding):
                 "If given, prepare and select oracles must have same selection registers."
             )
         if self._select is not None and self._select.target_registers != (
-            self.signature.get_left("system"),
+            Register(
+                "system",
+                QAny(self.system_bitsize + self.be_ancilla_bitsize + self.be_resource_bitsize),
+            ),
         ):
             raise ValueError(
-                "If given, select oracle must have block encoding `system` register as target."
+                "Invalid select oracle target registers. "
+                "The `system` register must include the block encoding's system, ancilla, "
+                "and resource registers."
             )
         if not all(
             isinstance(u.signal_state.prepare, PrepareIdentity) for u in self._block_encodings
@@ -367,8 +372,13 @@ class LinearCombination(BlockEncoding):
             ctrl_reg_name='ctrl',
         )
 
-    def adjoint(self) -> 'LinearCombination':
-        return self
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.ONE)
 
 
 @bloq_example
