@@ -321,7 +321,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         raise NotImplementedError("no need to implement with_registers.")
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> cirq.OP_TREE:
         if not isinstance(self.bitsize, int):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
