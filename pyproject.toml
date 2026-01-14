@@ -1,6 +1,132 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = 'qualtran'
+dynamic = ["version"]
+author = "Google Quantum AI"
+author_email = "mpharrigan@google.com"
+description = "Software for fault-tolerant quantum algorithms research."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    # core dependencies
+    "attrs>=23.2.0",
+    "cachetools>=5.3",
+    "typing_extensions>=4.10.0",
+    "networkx",
+    "numpy>=1.26,<3.0",
+    "sympy",
+    "cirq-core~=1.4",
+    "fxpmath",
+    "galois",
+
+    # drawing
+    "notebook",
+    "nbconvert",
+    "nbformat",
+    "pydot",
+    "ipython",
+    "matplotlib",
+    "ipywidgets",
+
+    # ui
+    "dash",
+    "plotly",
+
+    # quimb simulation
+    "quimb",
+
+    # qsharp resource estimator interop
+    "qsharp",
+    "qsharp-widgets",
+
+    # qref bartiq interop
+    "qref==0.11.0",
+    "bartiq==0.12.1",
+
+    # pyzx interop
+    "pyzx",
+
+    # Pennylane interop
+    "pennylane",
+
+    # serialization
+    "protobuf",
+
+    # rotation_synthesis
+    "mpmath",
+]
+
+[tool.hatch.version]
+path = "qualtran/_version.py"
+
+[dependency-groups]
+dev = [
+    { include-group = "test"},
+    { include-group = "typing"},
+    { include-group = "lint"},
+    { include-group = "format"},
+    { include-group = "doc"},
+]
+
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-xdist",
+
+    # test executing notebooks
+    "ipykernel",
+    "filelock",
+
+    # chemistry resource estimates
+    "openfermion[resources]",
+]
+
+typing = [
+    "mypy~=1.14",
+    "mypy-protobuf",
+    "sympy",
+]
+
+lint = [
+   "pylint~=3.3.1",
+
+    # for checking _test.py files
+    "pytest",
+    "openfermion[resources]",
+
+    # dev tools
+    "tensorflow-docs",
+    "sphinx",
+    "filelock",
+    "griffe",
+    "mdit-py-plugins",
+]
+
+format = [
+    "flynt~=0.60",
+    "black~=24.8.0",
+    "isort~=5.10.1",
+]
+
+doc = [
+    "ipywidgets",
+    "nbconvert",
+    "nbformat",
+    "sphinx",
+    "sphinx-autobuild",
+    "pydata-sphinx-theme",
+    "myst-nb",
+    "tensorflow-docs~=2023.5.24",
+    "griffe~=1.0",
+]
+
 [tool.black]
 line-length = 100
-target_version = ['py39', 'py310', 'py311', 'py312']
 skip-string-normalization = true
 skip-magic-trailing-comma = true
 exclude = "qualtran/protos/*"
