@@ -154,9 +154,10 @@ def test_selected_majorana_fermion_gate_make_on():
 
 
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 5)])
-def test_selected_majorana_fermion_classical_action(selection_bitsize, target_bitsize):
+@pytest.mark.parametrize("target_gate", [cirq.X, cirq.Z])
+def test_selected_majorana_fermion_classical_action(selection_bitsize, target_bitsize, target_gate):
     gate = SelectedMajoranaFermion(
-        Register('selection', BQUInt(selection_bitsize, target_bitsize)), target_gate=cirq.X
+        Register('selection', BQUInt(selection_bitsize, target_bitsize)), target_gate=target_gate
     )
     assert_consistent_phased_classical_action(
         gate, selection=range(target_bitsize), target=range(2**target_bitsize), control=range(2)
