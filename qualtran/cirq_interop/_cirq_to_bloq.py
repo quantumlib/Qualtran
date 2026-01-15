@@ -319,11 +319,8 @@ def _ensure_in_reg_exists(
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             # Cast single QBit registers to the appropriate single-bit register dtype.
-            err_msg = (
-                "Found non-QBit type register which shouldn't happen: "
-                f"{soq.reg.name} {soq.reg.dtype}"
-            )
-            assert isinstance(soq.reg.dtype, QBit), err_msg
+            err_msg = "Found non-QBit type register which shouldn't happen: " f"{soq}"
+            assert isinstance(soq.dtype, QBit), err_msg
             if not isinstance(in_reg.dtype, QBit):
                 qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
             else:
@@ -526,8 +523,7 @@ def cirq_optree_to_cbloq(
         if reg.name not in in_quregs:
             raise ValueError(f"Register {reg.name} from signature must be present in in_quregs.")
         soqs = initial_soqs[reg.name]
-        if isinstance(soqs, Soquet):
-            soqs = np.array(soqs)
+        soqs = np.asarray(soqs)
         if in_quregs[reg.name].shape != soqs.shape:
             raise ValueError(
                 f"Shape {in_quregs[reg.name].shape} of cirq register "

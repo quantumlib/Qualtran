@@ -19,7 +19,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, CtrlSpec, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, CtrlSpec, Signature, SoquetT
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
@@ -32,7 +32,6 @@ from qualtran.linalg.polynomial.qsp_testing import scale_down_to_qsp_polynomial
 from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
@@ -175,11 +174,11 @@ class HamiltonianSimulationByGQSP(Bloq):
         soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla, adjoint=True)
 
         for soq in state_prep_ancilla.values():
-            if isinstance(soq, Soquet):
-                bb.free(soq)
+            if BloqBuilder.is_ndarray(soq):
+                for soq_element in soq.reshape(-1):
+                    bb.free(soq_element.item())
             else:
-                for soq_element in soq:
-                    bb.free(cast(Soquet, soq_element))
+                bb.free(soq.item())
 
         return soqs
 
