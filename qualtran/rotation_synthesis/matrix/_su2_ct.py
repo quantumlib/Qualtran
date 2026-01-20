@@ -37,7 +37,7 @@ class SU2CliffordT:
     Where $u, v \in \mathbb{Z}[e^{i \pi/4}]$ and $n$ is the needed number of $T$ gates with a
     determinant $\frac{1}{2(2+\sqrt{2})^n} (|u|^2 + |v|^2) = 1$.
 
-    Instances of this class represent the matrix [[u, -v^*], [v, u^*]] with the scaling factor
+    Instances of this class represent the matrix `[[u, -v^*], [v, u^*]]` with the scaling factor
     being implicit.
 
     Attributes:

@@ -35,7 +35,7 @@ def enumerate_1d(
 ) -> Iterator[rings.ZSqrt2]:
     r"""Yield points $p \in \mathbb{Z}[\sqrt{2}]$ contained in the region.
 
-    Point $p$ belongs to the region iff $p \in inter$ and $p^sbullet \in \texit{comp_inter}$
+    Point $p$ belongs to the region iff $p \in \textit{inter}$ and $p^\bullet \in \textit{comp_inter}$
 
     Follows section 4 of https://arxiv.org/abs/1403.2975
 
@@ -84,7 +84,7 @@ def enumerate_1d(
 def enumerate_upright(
     r: _geometry.Rectangle, comp_r: _geometry.Rectangle, config: mc.MathConfig
 ) -> Iterator[rings.ZW]:
-    r"""Yield $p \in \mathbb{Z}[e^{i \pi/4}]$ such that $p \in r$ and $p^\sbullet \in \textit{comp_r}$
+    r"""Yield $p \in \mathbb{Z}[e^{i \pi/4}]$ such that $p \in r$ and $p^\bullet \in \textit{comp_r}$
 
     Follows section 5 of https://arxiv.org/abs/1403.2975
 
@@ -94,7 +94,7 @@ def enumerate_upright(
         config: The MathConfig to use.
 
     Yields:
-        Points $p$ such that $p \in r$ and $p^\sbullet \in \textit{comp_r}$
+        Points $p$ such that $p \in r$ and $p^\bullet \in \textit{comp_r}$
     """
     second_part = tuple(enumerate_1d(r.y_bounds, comp_r.y_bounds, config))
     for a in enumerate_1d(r.x_bounds, comp_r.x_bounds, config):
