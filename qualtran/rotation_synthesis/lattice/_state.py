@@ -56,7 +56,7 @@ class GridOperatorAction:
 class SelingerState:
     r"""A state is a region in space defined by two ellipses (A, B).
 
-    A point $p$ belongs to the region iff $p \in A$ and $p^\bullet in B$. Where
+    A point $p$ belongs to the region iff $p \in A$ and $p^\bullet \in B$. Where
     $p^\bullet$ is the sqrt2-conjugate of $p$.
 
     Attributes:
