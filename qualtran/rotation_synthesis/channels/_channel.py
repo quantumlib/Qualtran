@@ -38,6 +38,9 @@ class Channel(abc.ABC):
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
 
+    @abc.abstractmethod
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit."""
 
 @attrs.frozen
 class UnitaryChannel(Channel):
@@ -416,3 +419,8 @@ class ProbabilisticChannel(Channel):
         assert term2 >= 0
         prob = term2 / (term2 - term1)
         return ProbabilisticChannel(under_channel, over_channel, prob)
+
+
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        #TODO: implement this method
+        raise NotImplementedError()
