@@ -16,6 +16,7 @@ import math
 from typing import cast, Mapping, Optional
 
 import cirq
+import numpy as np
 
 import qualtran.rotation_synthesis.matrix._generation as ctg
 import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
@@ -79,16 +80,64 @@ def _xz_sequence(
     return None
 
 
+def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
+    """Represents the Clifford+T operator in the Matsumoto-Amano normal form.
+
+    Returns:
+        a list of gates matching the regular expression $(T|\eps)(HT|SHT)^*C$,
+        where C is a Clifford operator, itself represented as a list of H and S gates.
+        The gates are returned in the order they need to be applied to generate the
+        input matrix.
+
+    Raises:
+        ValueError if the parity matrix doesn't match any of the forms in
+        Lemma 4.10, https://arxiv.org/abs/1312.6584, or if during the decomposition
+        an invalid SU2CliffordT matrix is created.
+    """
+    if matrix.det() == 2:
+        return clifford(matrix)
+    parity = matrix.bloch_form_parity()
+    # Parity matrix must have a 0 column, see Lemma 4.10, https://arxiv.org/abs/1312.6584.
+    # We move it to be last.
+    for i in range(2):
+        if np.all(parity[:, i] == 0):
+            parity[:, [i, 2]] = parity[:, [2, i]]
+            break
+    if np.array_equal(parity, np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])):
+        # Leftmost syllabe is T
+        new = _su2_ct.TSqrt2.adjoint() @ matrix
+        gates = ('T',)
+    elif np.array_equal(parity, np.array([[0, 0, 0], [1, 1, 0], [1, 1, 0]])):
+        # Leftmost syllabe is HT
+        new = _su2_ct.HSqrt2.adjoint() @ matrix
+        new = _su2_ct.TSqrt2.adjoint() @ new
+        gates = ('T', 'H')
+    elif np.array_equal(parity, np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])):
+        # Leftmost syllabe is SHT
+        new = _su2_ct.SSqrt2.adjoint() @ matrix
+        new = _su2_ct.HSqrt2.adjoint() @ new
+        new = _su2_ct.TSqrt2.adjoint() @ new
+        gates = ('T', 'H', 'S')
+    else:
+        raise ValueError(f'Unexpected parity matrix:\n{parity}')
+    new = new.scale_down()
+    if new is None or not new.is_valid():
+        raise ValueError(f'Invalid SU2CliffordT matrix\n{new.matrix}')
+    seq = _matsumoto_amano_sequence(new)
+    return seq + gates
+
+
 def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
     r"""Returns a sequence of Clifford+T that produces the given matrix.
 
     Allowable format strings are
      - 'xyz' uses Tx, Ty, Tz gates.
      - 'xz' uses $Tx, Tz, Tx^\dagger, Tz^\dagger$
+     - 't' uses T gates, and returns the Matsumoto-Amano normal form.
 
     Args:
         matrix: The matrix to represent.
-        fmt: A string from the set {'xz', 'xyz'} representing the allowed T gates described above.
+        fmt: A string from the set {'xz', 'xyz', t'} representing the allowed T gates described above.
 
     Returns:
         A tuple of strings representing the gates.
@@ -100,6 +149,8 @@ def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ..
         return _xyz_sequence(matrix)
     if fmt == 'xz':
         return cast(tuple[str, ...], _xz_sequence(matrix))
+    if fmt == 't':
+        return _matsumoto_amano_sequence(matrix)
     raise ValueError(f'{type=} is not supported')
 
 
@@ -116,6 +167,7 @@ _CIRQ_GATE_MAP: Mapping[str, cirq.Gate] = {
     "Tx*": cirq.rx(-math.pi / 4),
     "Ty*": cirq.ry(-math.pi / 4),
     "Tz*": cirq.rz(-math.pi / 4),
+    "T": cirq.rz(math.pi / 4),
 }
 
 
@@ -130,6 +182,8 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
         if name == "S*":
             return "\"Z^-½\""
         if name.startswith("T"):
+            if name == "T":
+                return "\"Z^¼\""
             if name.endswith("*"):
                 return "\"" + name[1].upper() + "^-¼" + "\""
             return "\"" + name[1].upper() + "^¼" + "\""
@@ -145,6 +199,8 @@ def _to_quirk_name(name: str, allow_global_phase: bool = False) -> str:
         if name == "S*":
             return '{"id":"Rzft","arg":"-pi/2"}'
         if name.startswith("T"):
+            if name == "T":
+                return '{"id":"Rzft","arg":"pi/4"}'
             angle = ['pi/4', '-pi/4'][name.endswith('*')]
             return '{"id":"R%sft","arg":"%s"}' % (name[1].lower(), angle)
     raise ValueError(f"{name=} is not supported")

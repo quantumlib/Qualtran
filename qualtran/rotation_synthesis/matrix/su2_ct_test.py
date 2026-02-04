@@ -113,3 +113,55 @@ def test_num_t_gates():
 
         # We need to call .rescale to remove the common factor and reduce the T count.
         assert (t @ t.adjoint()).rescale().num_t_gates() == 0
+
+
+_H_bloch_form_numpy = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]])
+_S_bloch_form_numpy = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
+_T_bloch_form_numpy = np.array([[1, -1, 0], [1, 1, 0], [0, 0, _SQRT2]]) / _SQRT2
+
+
+@pytest.mark.parametrize(
+    ["g", "bloch_form", "n"],
+    [
+        [_su2_ct.HSqrt2, _H_bloch_form_numpy, 0],
+        [_su2_ct.SSqrt2, _S_bloch_form_numpy, 0],
+        [_su2_ct.TSqrt2, _T_bloch_form_numpy, 1],
+    ],
+)
+def test_bloch_sphere_form_generators(g: _su2_ct.SU2CliffordT, bloch_form: np.ndarray, n: int):
+    g_so3, m = g.bloch_sphere_form()
+    assert m == n
+    np.testing.assert_allclose(g_so3.astype(float) / (2 * _SQRT2 * (2 + _SQRT2) ** m), bloch_form)
+
+
+def _matrix_from_pauli(coords: np.ndarray) -> np.ndarray:
+    return coords[0] * _X + coords[1] * _Y + coords[2] * _Z
+
+
+@pytest.mark.parametrize("g", _make_random_su(10, 5, random_cliffords=True, seed=0))
+@pytest.mark.parametrize("vector", np.random.choice(2, size=(10, 3)))
+def test_bloch_sphere_form_random(g: _su2_ct.SU2CliffordT, vector: np.ndarray):
+    g_so3, _ = g.bloch_sphere_form()
+    g_action = (
+        g.matrix.astype(complex) @ _matrix_from_pauli(vector) @ g.adjoint().matrix.astype(complex)
+    )
+    g_so3_action = g_so3.astype(float) @ vector.T / _SQRT2
+    np.testing.assert_allclose(_matrix_from_pauli(g_so3_action), g_action, atol=1e-7)
+
+
+_T_parity_numpy = np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])
+_HT_parity_numpy = np.array([[0, 0, 0], [1, 1, 0], [1, 1, 0]])
+_SHT_parity_numpy = np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])
+
+
+@pytest.mark.parametrize(
+    ["g", "parity"],
+    [
+        [_su2_ct.TSqrt2, _T_parity_numpy],
+        [_su2_ct.HSqrt2 @ _su2_ct.TSqrt2, _HT_parity_numpy],
+        [_su2_ct.SSqrt2 @ _su2_ct.HSqrt2 @ _su2_ct.TSqrt2, _SHT_parity_numpy],
+    ],
+)
+def test_bloch_form_parity(g: _su2_ct.SU2CliffordT, parity: np.ndarray):
+    g_parity = g.bloch_form_parity()
+    np.testing.assert_equal(g_parity, parity)

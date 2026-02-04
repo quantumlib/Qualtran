@@ -242,6 +242,62 @@ class SU2CliffordT:
         assert x == det
         return n
 
+    def bloch_sphere_form(self) -> tuple[np.ndarray, int]:
+        r"""Represents the unitary operator as a scaled element of SO(3).
+
+        The entries of the returned matrix are in $\mathbb{Z}[\sqrt{2}]$,
+        scaled by $\frac{1}{2\sqrt{2}(2+\sqrt{2})^n}$. The scaling factor
+        is implicit. The additional $\sqrt{2}$ factor is needed to ensure
+        the entries are in $\mathbb{Z}[\sqrt{2}]$.
+
+        See Section 4 in https://arxiv.org/abs/1312.6584.
+
+        Returns:
+            the scaled SO(3) matrix and the value n.
+        """
+        u = self.matrix[0, 0]
+        v = self.matrix[1, 0]
+        return (
+            np.array(
+                [
+                    [
+                        (u**2 - v.conj() ** 2).real_zsqrt2(),
+                        (u**2 - v**2).imag_zsqrt2(),
+                        2 * (u * v.conj()).real_zsqrt2(),
+                    ],
+                    [
+                        -(u**2 - v.conj() ** 2).imag_zsqrt2(),
+                        (u**2 + v**2).real_zsqrt2(),
+                        -2 * (u * v.conj()).imag_zsqrt2(),
+                    ],
+                    [
+                        -2 * (u * v).real_zsqrt2(),
+                        -2 * (u * v).imag_zsqrt2(),
+                        (u * u.conj() - v * v.conj()).real_zsqrt2(),
+                    ],
+                ]
+            ),
+            self.num_t_gates(),
+        )
+
+    def bloch_form_parity(self) -> np.ndarray:
+        """Returns the n-parity of the SO(3) Bloch sphere representation.
+
+        See Definition 4.7, https://arxiv.org/abs/1312.6584 for the definition of k-parity.
+        From Lemma 4.10, the least denominator exponent for the Bloch form equals the T-count,
+        and so the n-parity is well-defined.
+        """
+        bf, n = self.bloch_sphere_form()
+        bf = bf * _zsqrt2.SQRT_2**n
+        scale_factor = _zsqrt2.ZSqrt2(2, 0) * _zsqrt2.SQRT_2 * _zsqrt2.LAMBDA_KLIUCHNIKOV**n
+        if not all(x.is_divisible_by(scale_factor) for x in bf.flat):
+            raise ValueError(
+                "Not all entries of the \\sqrt{2}^n * SO(3) matrix are divisible "
+                f"by 2\\sqrt{2}(2+\\sqrt{2})^n. The matrix is:\n{bf}"
+            )
+        scaled_bf = [[x // scale_factor for x in row] for row in bf]
+        return np.array([[x.a % 2 for x in row] for row in scaled_bf])
+
 
 def _gate_from_name(gate_name: str) -> SU2CliffordT:
     adjoint = gate_name.count('*') % 2 == 1
@@ -291,6 +347,14 @@ SSqrt2 = (
     * SU2CliffordT(np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.J]]), ("S",))
 )
 
+# T gate scaled by sqrt(2) * (1 + w^*) to make its determinant = 2(2+sqrt(2))
+# TSqrt2 is equal to Tz below
+TSqrt2 = (
+    _zw.SQRT_2
+    * (1 + _zw.Omega.conj())
+    * SU2CliffordT(np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.Omega]]), ("T",))
+)
+
 # Paulis
 ISqrt2: SU2CliffordT = _zw.SQRT_2 * SU2CliffordT(
     np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.One]]), ()
@@ -322,6 +386,7 @@ GATE_MAP: Mapping[str, SU2CliffordT] = {
     "X": XSqrt2,
     "Y": YSqrt2,
     "Z": ZSqrt2,
+    "T": TSqrt2,
 }
 
 PARAMETRIC_FORM_BASES = [
