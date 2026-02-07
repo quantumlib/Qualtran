@@ -207,12 +207,12 @@ class ZW:
         )
 
     def real_zsqrt2(self) -> _zsqrt2.ZSqrt2:
-        """Returns \sqrt{2} * the real part of the element."""
+        r"""Returns \sqrt{2} * the real part of the element."""
         a, _, need_w = self.to_zsqrt2()
         return a * _zsqrt2.SQRT_2 + _zsqrt2.ZSqrt2(need_w, 0)
 
     def imag_zsqrt2(self) -> _zsqrt2.ZSqrt2:
-        """Returns \sqrt{2} * the imaginary part of the element."""
+        r"""Returns \sqrt{2} * the imaginary part of the element."""
         _, b, need_w = self.to_zsqrt2()
         return b * _zsqrt2.SQRT_2 + _zsqrt2.ZSqrt2(need_w, 0)
 

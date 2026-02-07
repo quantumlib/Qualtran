@@ -81,7 +81,7 @@ def _xz_sequence(
 
 
 def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
-    """Represents the Clifford+T operator in the Matsumoto-Amano normal form.
+    r"""Represents the Clifford+T operator in the Matsumoto-Amano normal form.
 
     Returns:
         a list of gates matching the regular expression $(T|\eps)(HT|SHT)^*C$,
@@ -103,6 +103,7 @@ def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
         if np.all(parity[:, i] == 0):
             parity[:, [i, 2]] = parity[:, [2, i]]
             break
+    gates : tuple[str, ...] = ()
     if np.array_equal(parity, np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])):
         # Leftmost syllabe is T
         new = _su2_ct.TSqrt2.adjoint() @ matrix
