@@ -76,7 +76,7 @@ checking formatting against the style guidelines. You can run those tools
 locally during development. Wrapper scripts are located in the
 [`check/`](./check/) subdirectory to simplify running the tools.
 
-*   Run `check/pytest` to run the Pytest suite
+*   Run `check/pytest-quick` to run the Pytest suite
 *   Run `check/mypy` to run the Mypy type checker
 *   Run `check/pylint` to run the Pylint code linter
 

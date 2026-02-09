@@ -13,6 +13,12 @@ thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
 topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
 cd "${topdir}" || exit $?
 
+echo "Warning: running the full test suite, which may take tens of minutes."
+echo ""
+echo "  To run the recommended test suite for development: use check/pytest-quick"
+echo "  To suppress this warning: use check/pytest-full"
+echo ""
+
 # Run in parallel by default.  Pass the `-n0` option for a single-process run.
 # (the last `-n` option wins)
 PYTEST_ARGS=( "-n=auto" "$@" )
