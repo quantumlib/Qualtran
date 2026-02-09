@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+################################################################################
+# Runs the quick pytest suite on the repository.
+#
+# This is the recommended set of unit tests for ordinary development.
+#
+# Usage:
+#     check/pytest-quick [--flags for pytest]
+#
+################################################################################
+
 # Get the working directory to the repo root.
 cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1
 cd "$(git rev-parse --show-toplevel)" || exit 1
