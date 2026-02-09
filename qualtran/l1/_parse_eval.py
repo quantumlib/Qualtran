@@ -12,19 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from functools import lru_cache
-from typing import cast, Dict, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import qualtran.dtype as qdt
+from ._eval import eval_cvalue_node
+from ._parse import parse_objectstring
 
 
-@lru_cache
-def get_builtin_qdtypes() -> Dict[str, Type['qdt.QCDType']]:
-    """Datatypes that are available without namespacing and with `safe=True`."""
-    from qualtran.dtype import BQUInt, CBit, QAny, QBit, QFxp, QInt, QMontgomeryUInt, QUInt
-
-    return {
-        k.__name__: cast(Type['qdt.QCDType'], k)
-        for k in [BQUInt, QAny, QBit, QInt, QUInt, QFxp, QMontgomeryUInt, CBit]
-    }
+def load_objectstring(objectstring: str, *, safe=True) -> object:
+    cobject_node = parse_objectstring(objectstring)
+    return eval_cvalue_node(cobject_node, safe=safe)

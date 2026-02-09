@@ -56,7 +56,7 @@ class LiteralNode(CValueNode):
 class TupleNode(CValueNode):
     """A sequence (tuple) of classical values."""
 
-    items: Sequence[CValueNode] = attrs.field(converter=tuple)
+    items: Sequence[CValueNode] = attrs.field(converter=tuple[CValueNode])
 
     def canonical_str(self):
         if len(self.items) == 1:
@@ -88,7 +88,7 @@ class CObjectNode(CValueNode):
     """
 
     name: str
-    cargs: Sequence[CArgNode] = attrs.field(converter=tuple)
+    cargs: Sequence[CArgNode] = attrs.field(converter=tuple[CArgNode])
 
     def canonical_str(self) -> str:
         carg_str = ', '.join(carg.canonical_str() for carg in self.cargs)

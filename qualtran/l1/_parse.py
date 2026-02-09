@@ -62,6 +62,7 @@ def tokenize(code: str) -> List[Token]:
     tokens = []
     for mo in re.finditer(tok_regex, code):
         kind = mo.lastgroup
+        assert kind is not None
         value = mo.group()
         column = mo.start() - line_start
         if kind == 'STRING':
@@ -214,11 +215,11 @@ class QualtranL1Parser:
         return CArgNode(key=None, value=value)
 
     def parse_int_literal(self, err_ctx: str = 'parsing') -> int:
-        tok = self.consume('NUMBER', f'expected an integer literal in {err_ctx}.')
+        tok = self.consume('NUMBER', f'Expected an integer literal in {err_ctx}')
         try:
             return int(tok.value)
         except ValueError as e:
-            raise ValueError(f"expected an integer literal in {err_ctx}, not {tok.value}") from e
+            raise ValueError(f"Expected an integer literal in {err_ctx}, not {tok.value}") from e
 
     def parse_cvalue(self) -> CValueNode:
         """Parse a value (literal or ccall).
