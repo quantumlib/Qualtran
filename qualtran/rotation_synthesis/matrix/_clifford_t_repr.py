@@ -82,13 +82,17 @@ def _xz_sequence(
 def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
     r"""Returns a sequence of Clifford+T that produces the given matrix.
 
+    Allowable format strings are
+     - 'xyz' uses Tx, Ty, Tz gates.
+     - 'xz' uses $Tx, Tz, Tx^\dagger, Tz^\dagger$
+
     Args:
         matrix: The matrix to represent.
-        fmt: A string from the set {'xz', 'xyz'} representing the allowed T gates where
-            - 'xyz' uses Tx, Ty, Tz gates.
-            - 'xz' uses $Tx, Tz, Tx^\dagger, Tz^\dagger$
+        fmt: A string from the set {'xz', 'xyz'} representing the allowed T gates described above.
+
     Returns:
         A tuple of strings representing the gates.
+
     Raises:
         ValueError: If `fmt` is not supported.
     """

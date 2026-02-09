@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
@@ -22,6 +22,7 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     bloq_example,
+    BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
     Connection,
@@ -30,6 +31,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    SoquetT,
 )
 
 if TYPE_CHECKING:
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
     from pennylane.operation import Operation
     from pennylane.wires import Wires
 
-    from qualtran import AddControlledT, BloqBuilder, SoquetT
+    from qualtran import AddControlledT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -137,27 +139,33 @@ class Toffoli(Bloq):
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran.bloqs.basic_gates import CNOT
-        from qualtran.bloqs.mcmt import ControlledViaAnd
+        from qualtran.bloqs.basic_gates import XGate
 
-        if ctrl_spec != CtrlSpec():
-            return super().get_ctrl_system(ctrl_spec)
+        # Perform the Logical-AND of `ctrl_spec` with Toffoli's implicit XGate ctrl spec
+        # of cvs=(1, 1).
+        anded_ctrl_spec = CtrlSpec(
+            qdtypes=ctrl_spec.qdtypes + (QBit(),), cvs=ctrl_spec.cvs + (np.array([1, 1]),)
+        )
+        ctrl_via_and, adder1 = XGate().get_ctrl_system(anded_ctrl_spec)
 
-        cc_cnot = ControlledViaAnd(CNOT(), CtrlSpec(cvs=[1, 1]))
-
-        def add_controlled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            (new_ctrl,) = ctrl_soqs
-            ctrl0, ctrl1 = cast(NDArray, in_soqs.pop('ctrl'))
-
-            (new_ctrl, ctrl0), ctrl1, target = bb.add(
-                cc_cnot, ctrl2=np.array([new_ctrl, ctrl0]), ctrl=ctrl1, target=in_soqs.pop('target')
+        # We have to wire up the *new* ctrl registers vs Toffoli's *existing* ctrl register
+        # while also translating between Toffoli() and ControlledViaAnd(XGate(), cvs=(1,1)).
+        def adder2(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # Note: in adder2, `ctrl_soqs` matches the requested `ctrl_spec`
+            #       in adder1, `ctrl_soqs` matches `anded_ctrl_spec`
+            # Note: in adder2 `in_soqs` matches the signature of Toffoli
+            #       in adder1, `in_soqs` matches the signature of XGate
+            tof_ctrl = in_soqs['ctrl']
+            tof_target = in_soqs['target']
+            (*ctrl_soqs, tof_ctrl), (tof_target,) = adder1(
+                bb, list(ctrl_soqs) + [tof_ctrl], {'q': tof_target}
             )
 
-            return [new_ctrl], [np.array([ctrl0, ctrl1]), target]
+            return ctrl_soqs, [tof_ctrl, tof_target]
 
-        return cc_cnot, add_controlled
+        return ctrl_via_and, adder2
 
 
 @bloq_example

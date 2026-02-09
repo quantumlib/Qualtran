@@ -73,7 +73,6 @@ MINIMAL_SKIP_CANONPATHS = [
     'qualtran.linalg',
     'qualtran._infra.gate_with_registers.GateWithRegisters',
     'qualtran.resource_counting.t_counts_from_sigma',
-    'qualtran.rotation_synthesis',  # TODO: https://github.com/quantumlib/Qualtran/issues/1767
 ]
 MINIMAL = True
 

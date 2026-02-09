@@ -31,3 +31,7 @@ pip-compile --output-file=envs/pytest.env.txt    --resolver=backtracking --const
 pip-compile --output-file=envs/mypy.env.txt      --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/mypy.txt
 pip-compile --output-file=envs/docs.env.txt      --resolver=backtracking --constraint=envs/dev.env.txt deps/runtime.txt deps/docs.txt
 pip-compile --output-file=envs/pip-tools.env.txt --resolver=backtracking --constraint=envs/dev.env.txt deps/pip-tools.txt
+
+
+# This file is called from Dockerfile if you're running in docker.
+# Increment this number if you need to bust the docker image cache: 1

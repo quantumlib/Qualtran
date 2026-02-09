@@ -113,11 +113,13 @@ class Fallback(_protocol.ApproxProblem):
     r"""Approximate a Z-rotation with a fallback channel.
 
     Approximate the $Rz(2\theta)$ with the channel
+    ```
     q: ─────────@───V───@───────Y───C───
                 │       │       ║   ║
     ancilla: ───X───────X───M───╫───╫───
                             ║   ║   ║
     m: ═════════════════════@═══^═══^═══
+    ```
 
     where a cheap (in terms of T gates) rotation `V` is applied and then depending on
     the result of the measurement we may need to apply an expensive correction. The problem
