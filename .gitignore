@@ -139,3 +139,6 @@ ui_export/
 
 # Jupyter
 jupyter_kernel.lock
+
+# Mac OS
+.DS_Store
