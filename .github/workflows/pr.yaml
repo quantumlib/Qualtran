@@ -41,7 +41,7 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest -m 'not notebook and not slow'
+          check/pytest-quick
 
   dev-tools:
     runs-on: ubuntu-24.04
