@@ -43,7 +43,6 @@ from qualtran.simulation.classical_sim import add_ints
 from qualtran.symbolics.types import is_symbolic
 
 if TYPE_CHECKING:
-    import quimb.tensor as qtn
 
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
