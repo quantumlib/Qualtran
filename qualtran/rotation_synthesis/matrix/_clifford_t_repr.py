@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import cast, Mapping, Optional
+from typing import cast, Mapping, Optional, Union
 
 import cirq
 import numpy as np
@@ -103,27 +103,28 @@ def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
         if np.all(parity[:, i] == 0):
             parity[:, [i, 2]] = parity[:, [2, i]]
             break
-    gates : tuple[str, ...] = ()
+    gates: tuple[str, ...] = ()
+    new: Union[_su2_ct.SU2CliffordT, None]
     if np.array_equal(parity, np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])):
         # Leftmost syllabe is T
-        new = _su2_ct.TSqrt2.adjoint() @ matrix
+        new = _su2_ct.Tz.adjoint() @ matrix
         gates = ('T',)
     elif np.array_equal(parity, np.array([[0, 0, 0], [1, 1, 0], [1, 1, 0]])):
         # Leftmost syllabe is HT
         new = _su2_ct.HSqrt2.adjoint() @ matrix
-        new = _su2_ct.TSqrt2.adjoint() @ new
+        new = _su2_ct.Tz.adjoint() @ new
         gates = ('T', 'H')
     elif np.array_equal(parity, np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])):
         # Leftmost syllabe is SHT
         new = _su2_ct.SSqrt2.adjoint() @ matrix
         new = _su2_ct.HSqrt2.adjoint() @ new
-        new = _su2_ct.TSqrt2.adjoint() @ new
+        new = _su2_ct.Tz.adjoint() @ new
         gates = ('T', 'H', 'S')
     else:
         raise ValueError(f'Unexpected parity matrix:\n{parity}')
     new = new.scale_down()
     if new is None or not new.is_valid():
-        raise ValueError(f'Invalid SU2CliffordT matrix\n{new.matrix}')
+        raise ValueError('Invalid SU2CliffordT matrix')
     seq = _matsumoto_amano_sequence(new)
     return seq + gates
 

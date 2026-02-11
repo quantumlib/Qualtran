@@ -75,7 +75,7 @@ def test_to_cirq(g: _su2_ct.SU2CliffordT, fmt: str):
     [
         [_su2_ct.HSqrt2, "t", ('"Z^½"', '"X"', '"Z^½"', '"X"', '"H"')],
         [_su2_ct.SSqrt2, "t", ('{"id":"Rzft","arg":"pi/2"}',)],
-        [_su2_ct.TSqrt2, "t", ('{"id":"Rzft","arg":"pi/4"}',)],
+        [_su2_ct.Tz, "t", ('{"id":"Rzft","arg":"pi/4"}',)],
     ],
 )
 def test_to_quirk(g: _su2_ct.SU2CliffordT, fmt: str, expected: tuple[str, ...]):

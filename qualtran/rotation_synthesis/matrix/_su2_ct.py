@@ -347,14 +347,6 @@ SSqrt2 = (
     * SU2CliffordT(np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.J]]), ("S",))
 )
 
-# T gate scaled by sqrt(2) * (1 + w^*) to make its determinant = 2(2+sqrt(2))
-# TSqrt2 is equal to Tz below
-TSqrt2 = (
-    _zw.SQRT_2
-    * (1 + _zw.Omega.conj())
-    * SU2CliffordT(np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.Omega]]), ("T",))
-)
-
 # Paulis
 ISqrt2: SU2CliffordT = _zw.SQRT_2 * SU2CliffordT(
     np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.One]]), ()
@@ -372,6 +364,7 @@ _I = np.array([[_zw.One, _zw.Zero], [_zw.Zero, _zw.One]])
 # Tx, Ty, Tz scaled by sqrt(2*(2+sqrt(2)))
 Tx = SU2CliffordT(_I * _zw.SQRT_2 + _I - _X * _zw.J, ("Tx",))
 Ty = SU2CliffordT(_I * _zw.SQRT_2 + _I - _Y * _zw.J, ("Ty",))
+# Tz = sqrt(2) * (1 + w^*) * T and has determinant = 2(2+sqrt(2))
 Tz = SU2CliffordT(_I * _zw.SQRT_2 + _I - _Z * _zw.J, ("Tz",))
 Ts = [Tx, Ty, Tz]
 

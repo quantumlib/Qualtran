@@ -125,7 +125,7 @@ _T_bloch_form_numpy = np.array([[1, -1, 0], [1, 1, 0], [0, 0, _SQRT2]]) / _SQRT2
     [
         [_su2_ct.HSqrt2, _H_bloch_form_numpy, 0],
         [_su2_ct.SSqrt2, _S_bloch_form_numpy, 0],
-        [_su2_ct.TSqrt2, _T_bloch_form_numpy, 1],
+        [_su2_ct.Tz, _T_bloch_form_numpy, 1],
     ],
 )
 def test_bloch_sphere_form_generators(g: _su2_ct.SU2CliffordT, bloch_form: np.ndarray, n: int):
@@ -157,9 +157,9 @@ _SHT_parity_numpy = np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])
 @pytest.mark.parametrize(
     ["g", "parity"],
     [
-        [_su2_ct.TSqrt2, _T_parity_numpy],
-        [_su2_ct.HSqrt2 @ _su2_ct.TSqrt2, _HT_parity_numpy],
-        [_su2_ct.SSqrt2 @ _su2_ct.HSqrt2 @ _su2_ct.TSqrt2, _SHT_parity_numpy],
+        [_su2_ct.Tz, _T_parity_numpy],
+        [_su2_ct.HSqrt2 @ _su2_ct.Tz, _HT_parity_numpy],
+        [_su2_ct.SSqrt2 @ _su2_ct.HSqrt2 @ _su2_ct.Tz, _SHT_parity_numpy],
     ],
 )
 def test_bloch_form_parity(g: _su2_ct.SU2CliffordT, parity: np.ndarray):
