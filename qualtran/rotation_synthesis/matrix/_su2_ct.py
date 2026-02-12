@@ -379,7 +379,7 @@ GATE_MAP: Mapping[str, SU2CliffordT] = {
     "X": XSqrt2,
     "Y": YSqrt2,
     "Z": ZSqrt2,
-    "T": TSqrt2,
+    "T": Tz,
 }
 
 PARAMETRIC_FORM_BASES = [
