@@ -32,6 +32,8 @@ from qualtran import (
     Signature,
     Soquet,
     SoquetT,
+    CtrlSpec,
+    AddControlledT,
 )
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
@@ -171,6 +173,9 @@ class Product(BlockEncoding):
             ret.append(AutoPartition(u, partition, left_only=False))
         return ret
 
+    def _mulitControllX(self, ancilla_bitsize) -> Tuple[Bloq, AddControlledT]:
+        return XGate().get_ctrl_system(ctrl_spec=CtrlSpec(QAny(ancilla_bitsize), cvs=0))
+
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
         for bloq in self.constituents:
@@ -178,8 +183,12 @@ class Product(BlockEncoding):
         n = len(self.block_encodings)
         for i, u in enumerate(reversed(self.block_encodings)):
             if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
-                counts[MultiControlX(HasLength(u.ancilla_bitsize))] += 1
+                counts[self._mulitControllX(u.ancilla_bitsize)[0]] += 1
                 counts[XGate()] += 1
+
+        if not is_symbolic(self.ancilla_bitsize):
+            counts[self.anc_part] += 1
+            counts[self.anc_part.adjoint()] += 1
         return counts
 
     def build_composite_bloq(
@@ -226,17 +235,12 @@ class Product(BlockEncoding):
 
             # set corresponding flag if ancillas are all zero
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
-                controls = bb.split(cast(Soquet, anc_soq))
                 # flag_bits_soq will always be assigned based on the following assertion
                 assert self.ancilla_bitsize > 0
                 # pylint: disable=used-before-assignment
-                controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(  # type: ignore[assignment]
-                    MultiControlX(tuple([0] * u.ancilla_bitsize)),
-                    controls=controls[: u.ancilla_bitsize],
-                    target=flag_bits_soq[i],
-                )
+                _, adderMultCX = self._mulitControllX(u.ancilla_bitsize)
+                [anc_soq], (flag_bits_soq[i],) = adderMultCX(bb, [anc_soq], {"q": flag_bits_soq[i]})
                 flag_bits_soq[i] = bb.add(XGate(), q=flag_bits_soq[i])
-                anc_soq = bb.join(controls)
 
         out = {"system": system}
         if self.resource_bitsize > 0:
@@ -260,6 +264,17 @@ def _product_block_encoding() -> Product:
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
     product_block_encoding = Product((Unitary(TGate()), Unitary(Hadamard())))
+    return product_block_encoding
+
+
+@bloq_example()
+def _product_block_encoding_with_ancillas() -> Product:
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    product_block_encoding = Product(
+        (Unitary(TGate(), ancilla_bitsize=3), Unitary(Hadamard(), ancilla_bitsize=3))
+    )
     return product_block_encoding
 
 
