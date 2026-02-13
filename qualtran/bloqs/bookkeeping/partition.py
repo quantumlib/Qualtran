@@ -13,12 +13,13 @@
 #  limitations under the License.
 import abc
 from functools import cached_property
-from typing import Dict, List, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
+import warnings
 
 from qualtran import (
     Bloq,
@@ -28,6 +29,7 @@ from qualtran import (
     ConnectionT,
     DecomposeTypeError,
     QAny,
+    QUInt,
     QDType,
     Register,
     Side,
@@ -46,6 +48,26 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+class LegacyPartitionWarning(DeprecationWarning):
+    """Warnings for legacy Partition usage, when declaring only n."""
+
+    pass
+
+
+def _constrain_qany_reg(reg: Register):
+    """Changes the dtype of a register to note break legacy code
+
+    This function should be bound to dissapear
+    """
+    if isinstance(reg.dtype, QAny):
+        warnings.warn(
+            f"Doing classical casting with QAny ({reg=}) is ambiguous, transforming it as QUInt for legacy purposes",
+            category=LegacyPartitionWarning,
+        )
+        return evolve(reg, dtype=QUInt(reg.dtype.bitsize))
+    return reg
+
+
 class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
     """Generalized paritioning functionality."""
 
@@ -53,9 +75,9 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def n(self) -> SymbolicInt: ...
 
-    @cached_property
-    def lumped_dtype(self) -> QDType:
-        return QAny(bitsize=self.n)
+    @property
+    @abc.abstractmethod
+    def lumped_dtype(self) -> QDType: ...
 
     @property
     @abc.abstractmethod
@@ -124,6 +146,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
         xbits = self.lumped_dtype.to_bits(x)
         start = 0
         for reg in self._regs:
+            reg = _constrain_qany_reg(reg)
             size = int(np.prod(reg.shape + (reg.bitsize,)))
             bits_reg = xbits[start : start + size]
             if reg.shape == ():
@@ -138,6 +161,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
     def _classical_unpartition_to_bits(self, **vals: 'ClassicalValT') -> NDArray[np.uint8]:
         out_vals: list[NDArray[np.uint8]] = []
         for reg in self._regs:
+            reg = _constrain_qany_reg(reg)
             reg_val = np.asanyarray(vals[reg.name])
             bitstrings = reg.dtype.to_bits_array(reg_val.ravel())
             out_vals.append(bitstrings.ravel())
@@ -168,6 +192,7 @@ class Partition(_PartitionBase):
     Args:
         n: The total bitsize of the un-partitioned register
         regs: Registers to partition into. The `side` attribute is ignored.
+        dtype_in: Type of the un-partitioned register, this is
         partition: `False` means un-partition instead.
 
     Registers:
@@ -175,14 +200,38 @@ class Partition(_PartitionBase):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: SymbolicInt
+    n: Optional[SymbolicInt]
     regs: Tuple[Register, ...] = field(
         converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
     )
-    partition: bool = True
+    dtype_in: Optional[QDType] = field(default=None)
+    partition: bool = field(default=True)
 
     def __attrs_post_init__(self):
+        match (self.n, self.dtype_in):
+            case (None, None):
+                raise ValueError("Provide exactly n or dtype_in")
+            case (None, dt):
+                object.__setattr__(self, "n", dt.num_qubits)
+            case (n, None):
+                warnings.warn(
+                    "Partition: By not setting dtype_in you could encounter errors when running "
+                    "assert_consistent_classical_action",
+                    category=LegacyPartitionWarning,
+                )
+            case (n, dt):
+                if n != dt.num_qubits:
+                    raise ValueError(f"{dt=} should have size {n=}, currently {dt.num_qubits=}")
+                warnings.warn(
+                    "Specifying both n and dtype_in is redundant",
+                    category=UserWarning,
+                    stacklevel=1,
+                )
         self._validate()
+
+    @property
+    def lumped_dtype(self) -> QDType:
+        return QUInt(bitsize=self.n) if self.dtype_in is None else self.dtype_in
 
     @property
     def _regs(self) -> Sequence[Register]:
@@ -227,6 +276,10 @@ class Split2(_PartitionBase):
     @property
     def n(self) -> SymbolicInt:
         return self.n1 + self.n2
+
+    @property
+    def lumped_dtype(self) -> QDType:
+        return QUInt(bitsize=self.n)
 
     @property
     def partition(self) -> bool:
@@ -288,6 +341,10 @@ class Join2(_PartitionBase):
     @property
     def n(self) -> SymbolicInt:
         return self.n1 + self.n2
+
+    @property
+    def lumped_dtype(self) -> QDType:
+        return QUInt(bitsize=self.n)
 
     @property
     def partition(self) -> bool:
