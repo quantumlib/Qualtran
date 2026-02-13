@@ -16,7 +16,8 @@ from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import frozen, evolve
+import warnings
 
 from qualtran import (
     Bloq,
@@ -44,6 +45,7 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 
 
 @frozen
@@ -125,9 +127,20 @@ class CtrlSpecAnd(Bloq):
             return HasLength(self.n_ctrl_qubits)
 
         flat_cvs: list[int] = []
-        for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
-            assert isinstance(cv, np.ndarray)
-            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
+        for reg, cvs in zip(self.control_registers, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
+
+            if isinstance(reg.dtype, QAny) and not np.all(cvs == 0):
+                warnings.warn(
+                    f"Asking for a non zero controll value ({cvs}) for a QAny ({reg=}) is ambiguous, "
+                    "transforming QAny in QUInt for legacy purposes",
+                    category=LegacyPartitionWarning,
+                )
+                reg = evolve(reg, dtype=QUInt(reg.dtype.bitsize))
+            else:
+                print(reg.dtype, cvs)
+
+            flat_cvs.extend(reg.dtype.to_bits_array(cvs.ravel()).ravel())
         return tuple(flat_cvs)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:

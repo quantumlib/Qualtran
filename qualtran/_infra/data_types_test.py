@@ -441,10 +441,32 @@ def test_qbit_to_and_from_bits():
     assert_to_and_from_bits_array_consistent(QBit(), [0, 1])
 
 
-def test_qany_to_and_from_bits():
-    assert list(QAny(4).to_bits(10)) == [1, 0, 1, 0]
+def test_qany_to_bits():
+    with pytest.raises(TypeError, match=r"Ambiguous encoding"):
+        QAny(4).to_bits(10)
 
-    assert_to_and_from_bits_array_consistent(QAny(4), range(16))
+
+def test_qany_from_bits_only_all_zeros():
+    assert QAny(4).from_bits([0, 0, 0, 0]) == 0
+
+    with pytest.raises(TypeError, match=r"Ambiguous value"):
+        QAny(4).from_bits([1, 0, 0, 0])
+
+
+def test_qany_to_bits_array():
+    enc = QAny(4)
+    assert np.all(enc.to_bits_array(np.array([0, 0])) == 0)
+
+    with pytest.raises(TypeError, match=r"Ambiguous encoding"):
+        enc.to_bits_array(np.array([1]))
+
+
+def test_qany_from_bits_array():
+    enc = QAny(4)
+    assert np.all(enc.from_bits_array(np.zeros((2, 4), dtype=np.uint8)) == 0)
+
+    with pytest.raises(TypeError, match=r"Ambiguous value"):
+        enc.from_bits_array(np.array([[1, 0, 0, 0]], dtype=np.uint8))
 
 
 def test_qintonescomp_to_and_from_bits():

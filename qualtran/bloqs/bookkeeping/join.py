@@ -16,9 +16,11 @@ from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
+import warnings
 
 from qualtran import (
     Bloq,
+    QAny,
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
@@ -32,6 +34,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -99,6 +102,13 @@ class Join(_BookkeepingBloq):
         ]
 
     def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
+        if isinstance(self.dtype, QAny):
+            warnings.warn(
+                "Doing classical operations with QAny is ambiguous, returning a QUInt for legacy purposes",
+                category=LegacyPartitionWarning,
+            )
+            return {'reg': QUInt(self.dtype.bitsize).from_bits(reg.tolist())}
+
         return {'reg': self.dtype.from_bits(reg.tolist())}
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':

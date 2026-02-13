@@ -124,7 +124,7 @@ def test_hubbard_spin_up_z_classical():
         onehot[the_x + M * the_y] = 1
 
         # The bloqs deal with one monolithic target register.
-        system = QAny(2 * N).from_bits(all_ones + onehot)
+        system = QUInt(2 * N).from_bits(all_ones + onehot)
 
         # Go through all possible x,y selection indices and see if a phase is applied.
         negative_phases = []

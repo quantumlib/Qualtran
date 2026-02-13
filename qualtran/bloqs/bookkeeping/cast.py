@@ -17,6 +17,7 @@ from typing import Dict, List, Tuple, TYPE_CHECKING
 import attrs
 import numpy as np
 from attrs import frozen
+import warnings
 
 from qualtran import (
     Bloq,
@@ -26,6 +27,8 @@ from qualtran import (
     CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
+    QAny,
+    QUInt,
     QCDType,
     QDType,
     Register,
@@ -33,6 +36,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
@@ -120,7 +124,23 @@ class Cast(_BookkeepingBloq):
         ]
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
+        if isinstance(self.inp_dtype, QAny) or isinstance(self.out_dtype, QAny):
+            warnings.warn(
+                "Doing classical casting with QAny is ambiguous, transforming it as QUInt for legacy purposes",
+                category=LegacyPartitionWarning,
+            )
+        match (self.inp_dtype, self.out_dtype):
+            case (QAny(), _):
+                res = self.out_dtype.from_bits(QUInt(self.inp_dtype.bitsize).to_bits(reg))
+            case (_, QAny()):
+                res = QUInt(self.out_dtype.bitsize).from_bits(self.inp_dtype.to_bits(reg))
+            case (QAny(), QAny()):
+                res = QUInt(self.out_dtype.bitsize).from_bits(
+                    QUInt(self.inp_dtype.bitsize).to_bits(reg)
+                )
+            case _:
+                res = self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))
+
         return {'reg': res}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:

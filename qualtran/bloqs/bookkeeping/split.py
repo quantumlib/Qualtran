@@ -18,6 +18,8 @@ from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
+import warnings
+
 
 from qualtran import (
     Bloq,
@@ -27,6 +29,8 @@ from qualtran import (
     ConnectionT,
     DecomposeTypeError,
     QBit,
+    QAny,
+    QUInt,
     QDType,
     QUInt,
     Register,
@@ -34,6 +38,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -92,6 +97,13 @@ class Split(_BookkeepingBloq):
         return None
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.dtype, QAny):
+            warnings.warn(
+                "Doing classical operations with QAny is ambiguous, returning a QUInt for legacy purposes",
+                category=LegacyPartitionWarning,
+            )
+            return {'reg': np.asarray(QUInt(self.dtype.bitsize).to_bits(reg))}
+
         return {'reg': np.asarray(self.dtype.to_bits(reg))}
 
     def my_tensors(
