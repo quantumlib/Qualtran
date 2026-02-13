@@ -51,8 +51,6 @@ if TYPE_CHECKING:
 class LegacyPartitionWarning(DeprecationWarning):
     """Warnings for legacy Partition usage, when declaring only n."""
 
-    pass
-
 
 def _constrain_qany_reg(reg: Register):
     """Changes the dtype of a register to note break legacy code
@@ -73,7 +71,7 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def n(self) -> SymbolicInt: ...
+    def n(self) -> Optional[SymbolicInt]: ...
 
     @property
     @abc.abstractmethod
@@ -120,6 +118,8 @@ class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
     ) -> List['qtn.Tensor']:
         import quimb.tensor as qtn
 
+        if self.n is None:
+            raise DecomposeTypeError(f"cannot compute tensors with unknown n for {self}")
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"cannot compute tensors for symbolic {self}")
 
@@ -211,15 +211,18 @@ class Partition(_PartitionBase):
         match (self.n, self.dtype_in):
             case (None, None):
                 raise ValueError("Provide exactly n or dtype_in")
-            case (None, dt):
-                object.__setattr__(self, "n", dt.num_qubits)
             case (n, None):
                 warnings.warn(
                     "Partition: By not setting dtype_in you could encounter errors when running "
                     "assert_consistent_classical_action",
                     category=LegacyPartitionWarning,
                 )
+            case (None, dt):
+                assert dt is not None
+                object.__setattr__(self, "n", dt.num_qubits)
             case (n, dt):
+                assert dt is not None
+                assert n is not None  # for mypy
                 if n != dt.num_qubits:
                     raise ValueError(f"{dt=} should have size {n=}, currently {dt.num_qubits=}")
                 warnings.warn(
@@ -231,7 +234,11 @@ class Partition(_PartitionBase):
 
     @property
     def lumped_dtype(self) -> QDType:
-        return QUInt(bitsize=self.n) if self.dtype_in is None else self.dtype_in
+        if self.dtype_in is not None:
+            return self.dtype_in
+
+        assert self.n is not None
+        return QUInt(bitsize=self.n)
 
     @property
     def _regs(self) -> Sequence[Register]:
