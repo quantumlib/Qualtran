@@ -173,8 +173,25 @@ class Product(BlockEncoding):
             ret.append(AutoPartition(u, partition, left_only=False))
         return ret
 
-    def _mulitControllX(self, ancilla_bitsize) -> Tuple[Bloq, AddControlledT]:
-        return XGate().get_ctrl_system(ctrl_spec=CtrlSpec(QAny(ancilla_bitsize), cvs=0))
+    def _multCX(self, bitsize) -> Bloq:
+        return XGate().controlled(ctrl_spec=CtrlSpec(QAny(bitsize), cvs=0))
+
+    def _multCX_autopart(self, *, used_bits: int, total_bits: int) -> Bloq:
+        if used_bits <= 0:
+            raise ValueError("used_bits must be > 0")
+        if used_bits > total_bits:
+            raise ValueError(f"{used_bits=} cannot exceed {total_bits=}")
+
+        ctrl_parts = (
+            ["ctrl", Unused(total_bits - used_bits)] if total_bits > used_bits else ["ctrl"]
+        )
+        return AutoPartition(
+            self._multCX(used_bits),
+            partitions=[
+                (Register("ctrl", QAny(total_bits)), ctrl_parts),
+                (Register("q", QBit()), ["q"]),
+            ],
+        )
 
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
@@ -183,7 +200,15 @@ class Product(BlockEncoding):
         n = len(self.block_encodings)
         for i, u in enumerate(reversed(self.block_encodings)):
             if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
-                counts[self._mulitControllX(u.ancilla_bitsize)[0]] += 1
+                anc_bits = self.ancilla_bitsize - (n - 1)
+                if not is_symbolic(self.ancilla_bitsize):
+                    counts[
+                        self._multCX_autopart(used_bits=u.ancilla_bitsize, total_bits=anc_bits)
+                    ] += 1
+                else:
+                    counts[
+                        self._multCX(u.ancilla_bitsize)
+                    ]  # Right ? A TESTER ENCORE, REGARDER LE RéSULTATS
                 counts[XGate()] += 1
 
         if not is_symbolic(self.ancilla_bitsize):
@@ -238,8 +263,8 @@ class Product(BlockEncoding):
                 # flag_bits_soq will always be assigned based on the following assertion
                 assert self.ancilla_bitsize > 0
                 # pylint: disable=used-before-assignment
-                _, adderMultCX = self._mulitControllX(u.ancilla_bitsize)
-                [anc_soq], (flag_bits_soq[i],) = adderMultCX(bb, [anc_soq], {"q": flag_bits_soq[i]})
+                MultCX = self._multCX_autopart(used_bits=u.ancilla_bitsize, total_bits=anc_bits)
+                anc_soq, flag_bits_soq[i] = bb.add(MultCX, ctrl=anc_soq, q=flag_bits_soq[i])
                 flag_bits_soq[i] = bb.add(XGate(), q=flag_bits_soq[i])
 
         out = {"system": system}
