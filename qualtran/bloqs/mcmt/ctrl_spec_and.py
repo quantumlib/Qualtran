@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
-from attrs import frozen, evolve
-import warnings
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -44,8 +44,8 @@ from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen

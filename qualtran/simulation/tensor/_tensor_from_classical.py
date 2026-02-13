@@ -16,12 +16,13 @@ from typing import Iterable, TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
+
 from qualtran.bloqs.bookkeeping.partition import _constrain_qany_reg
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq, ConnectionT, Register, QAny, QUInt
+    from qualtran import Bloq, ConnectionT, QAny, QUInt, Register
     from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
     from qualtran.simulation.classical_sim import ClassicalValT
 

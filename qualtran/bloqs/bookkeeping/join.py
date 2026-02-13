@@ -11,21 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
 from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
-import warnings
 
 from qualtran import (
     Bloq,
-    QAny,
     bloq_example,
     BloqDocSpec,
     CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
+    QAny,
     QBit,
     QDType,
     QUInt,
