@@ -34,9 +34,9 @@ from qualtran.bloqs.basic_gates import (
 from qualtran.bloqs.block_encoding.block_encoding_base import BlockEncoding
 from qualtran.bloqs.block_encoding.product import (
     _product_block_encoding,
-    _product_block_encoding_with_ancillas,
     _product_block_encoding_properties,
     _product_block_encoding_symb,
+    _product_block_encoding_with_ancillas,
     Product,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
@@ -228,6 +228,18 @@ def test_product_signal_state():
 
 def test_product_counts():
     assert_equivalent_bloq_example_counts(_product_block_encoding_with_ancillas)
+
+
+def test_product_symbolic_call_graph_decomposes():
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    product_block_encoding = Product(
+        (
+            Unitary(TGate(), ancilla_bitsize=sympy.symbols("anc")),
+            Unitary(Hadamard(), ancilla_bitsize=sympy.symbols("anc")),
+        )
+    )
 
 
 @pytest.mark.notebook

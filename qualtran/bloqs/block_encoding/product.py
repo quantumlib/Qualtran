@@ -25,6 +25,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -32,19 +33,16 @@ from qualtran import (
     Signature,
     Soquet,
     SoquetT,
-    CtrlSpec,
-    AddControlledT,
 )
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import is_zero
 
 
@@ -201,14 +199,12 @@ class Product(BlockEncoding):
         for i, u in enumerate(reversed(self.block_encodings)):
             if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
                 anc_bits = self.ancilla_bitsize - (n - 1)
-                if not is_symbolic(self.ancilla_bitsize):
+                if not is_symbolic(u.ancilla_bitsize):
                     counts[
                         self._multCX_autopart(used_bits=u.ancilla_bitsize, total_bits=anc_bits)
                     ] += 1
                 else:
-                    counts[
-                        self._multCX(u.ancilla_bitsize)
-                    ]  # Right ? A TESTER ENCORE, REGARDER LE RéSULTATS
+                    counts[self._multCX(u.ancilla_bitsize)] += 1
                 counts[XGate()] += 1
 
         if not is_symbolic(self.ancilla_bitsize):
