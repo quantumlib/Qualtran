@@ -55,7 +55,6 @@ def test_multidim_register():
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
 def test_selection_registers_indexing(n, N, m, M):
     dtypes = [BQUInt(n, N), BQUInt(m, M)]
-    regs = [Register(sym, dtype) for sym, dtype in zip(['x', 'y'], dtypes)]
     for x in range(int(dtypes[0].iteration_length)):
         for y in range(int(dtypes[1].iteration_length)):
             assert np.ravel_multi_index((x, y), (N, M)) == x * M + y

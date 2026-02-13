@@ -29,7 +29,7 @@ _SQRT_2 = float(np.sqrt(2))
 
 
 @attrs.frozen(hash=True)
-class ZSqrt2:
+class ZSqrt2:  # noqa: PLW1641 (false positive)
     r"""Elements of the ring $\mathbb{Z}[\sqrt{2}]$.
 
     Elements of the ring $\mathbb{Z}[\sqrt{2}]$ are represented by $a+b\sqrt{2}$

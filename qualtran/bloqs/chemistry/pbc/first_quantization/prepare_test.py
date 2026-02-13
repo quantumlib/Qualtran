@@ -17,4 +17,4 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
 
 
 def test_uniform_super_position_ij():
-    prep = UniformSuperpostionIJFirstQuantization(eta=10, num_bits_rot_aa=8)
+    _ = UniformSuperpostionIJFirstQuantization(eta=10, num_bits_rot_aa=8)

@@ -19,20 +19,20 @@ from qualtran.bloqs.for_testing import TestAtom, TestTwoBitOp
 
 
 def test_dangling():
-    assert LeftDangle is LeftDangle
-    assert RightDangle is RightDangle
+    assert LeftDangle is LeftDangle  # noqa: PLR0124
+    assert RightDangle is RightDangle  # noqa: PLR0124
     assert LeftDangle is not RightDangle
     assert RightDangle is not LeftDangle
 
     assert isinstance(LeftDangle, DanglingT)
     assert isinstance(RightDangle, DanglingT)
 
-    assert LeftDangle == LeftDangle
-    assert RightDangle == RightDangle
+    assert LeftDangle == LeftDangle  # noqa: PLR0124
+    assert RightDangle == RightDangle  # noqa: PLR0124
     assert LeftDangle != RightDangle
 
     with pytest.raises(ValueError, match='Do not instantiate.*'):
-        my_new_dangle = DanglingT('hi mom')
+        _ = DanglingT('hi mom')
 
 
 def test_dangling_hash():
