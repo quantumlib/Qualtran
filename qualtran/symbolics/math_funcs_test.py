@@ -78,7 +78,7 @@ def test_smax():
     assert smax(1) == 1
     assert smax([1]) == 1
     assert smax((1, 2)) == 2
-    assert smax(None) == None
+    assert smax(None) is None
     with pytest.raises(TypeError):
         _ = smax(None, None)
     with pytest.raises(TypeError):
@@ -101,7 +101,7 @@ def test_smin():
     assert smin(1) == 1
     assert smin([1]) == 1
     assert smin((1, 2)) == 1
-    assert smin(None) == None
+    assert smin(None) is None
     with pytest.raises(TypeError):
         _ = smin(None, None)
     with pytest.raises(TypeError):

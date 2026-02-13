@@ -37,10 +37,11 @@ import sympy
 
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
+from ._generalization import _make_composite_generalizer, GeneralizerT
+
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 BloqCountDictT = Mapping[Bloq, Union[int, sympy.Expr]]
 MutableBloqCountDictT = MutableMapping[Bloq, Union[int, sympy.Expr]]
-from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
 def big_O(expr) -> sympy.Order:

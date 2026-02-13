@@ -202,18 +202,17 @@ def _less_than_equal_expected_t_complexity(gate: LessThanEqual):
         # When both registers are of the same size the T complexity is
         # 8n - 4 same as in the second reference.
         return TComplexity(t=8 * n - 4, clifford=46 * n - 21)
+    # When the registers differ in size and `n` is the size of the smaller one and
+    # `d` is the difference in size. The T complexity is the sum of the tree
+    # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
+    # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
+    # From the decomposition we get that the constant is -4 as well as the clifford counts.
+    elif d == 1:
+        return TComplexity(t=8 * n, clifford=46 * n - 1 + 2 * is_second_longer)
     else:
-        # When the registers differ in size and `n` is the size of the smaller one and
-        # `d` is the difference in size. The T complexity is the sum of the tree
-        # decomposition as before giving 8n + O(1) and the T complexity of an `And` gate
-        # over `d` registers giving 4d + O(1) totaling 8n + 4d + O(1).
-        # From the decomposition we get that the constant is -4 as well as the clifford counts.
-        if d == 1:
-            return TComplexity(t=8 * n, clifford=46 * n - 1 + 2 * is_second_longer)
-        else:
-            return TComplexity(
-                t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 18 + 2 * is_second_longer
-            )
+        return TComplexity(
+            t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 18 + 2 * is_second_longer
+        )
 
 
 @pytest.mark.parametrize("x_bitsize", [*range(1, 5)])
@@ -302,7 +301,7 @@ def test_greater_than_constant():
     q0 = bb.add_register('x', bitsize)
     anc = bb.add_register('result', 1)
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
-    cbloq = bb.finalize(x=q0, result=anc)
+    bb.finalize(x=q0, result=anc)
     qlt_testing.assert_wire_symbols_match_expected(
         GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
     )
