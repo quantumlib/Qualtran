@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import abc
+import warnings
 from functools import cached_property
 from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
@@ -19,7 +20,6 @@ import numpy as np
 import sympy
 from attrs import evolve, field, frozen, validators
 from numpy.typing import NDArray
-import warnings
 
 from qualtran import (
     Bloq,
@@ -29,8 +29,8 @@ from qualtran import (
     ConnectionT,
     DecomposeTypeError,
     QAny,
-    QUInt,
     QDType,
+    QUInt,
     Register,
     Side,
     Signature,
