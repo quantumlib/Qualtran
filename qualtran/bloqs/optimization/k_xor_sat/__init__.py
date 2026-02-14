@@ -17,3 +17,9 @@ from .kikuchi_block_encoding import KikuchiHamiltonian
 from .kikuchi_guiding_state import GuidingState, SimpleGuidingState
 from .kxor_instance import Constraint, KXorInstance
 from .load_kxor_instance import LoadConstraintScopes, LoadUniqueScopeIndex, PRGAUniqueConstraintRHS
+from .planted_noisy_kxor import (
+    AliceTheorem,
+    GuidingStateOverlapTheorem,
+    KikuchiAverageDegreeTheorem,
+    PlantedNoisyKXOR,
+)
