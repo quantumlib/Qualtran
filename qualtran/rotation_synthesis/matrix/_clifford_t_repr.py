@@ -80,6 +80,36 @@ def _xz_sequence(
     return None
 
 
+def _matsumoto_amano_syllable(matrix: _su2_ct.SU2CliffordT) -> list[str]:
+    """Computes the next syllable in the Matsumoto-Amano decomposition for matrix.
+
+    Returns:
+        the next syllable as a list of gates, representing either T, HT, or SHT.
+
+    Raises:
+        ValueError if the parity matrix doesn't match any of the forms in
+        Lemma 4.10, https://arxiv.org/abs/1312.6584.
+    """
+    parity = matrix.bloch_form_parity()
+    # Parity matrix must have a 0 column, see Lemma 4.10, https://arxiv.org/abs/1312.6584.
+    # We move it to be last.
+    for i in range(2):
+        if np.all(parity[:, i] == 0):
+            parity[:, [i, 2]] = parity[:, [2, i]]
+            break
+    if np.array_equal(parity, np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])):
+        # Leftmost syllable is T
+        return ['T']
+    elif np.array_equal(parity, np.array([[0, 0, 0], [1, 1, 0], [1, 1, 0]])):
+        # Leftmost syllable is HT
+        return ['H', 'T']
+    elif np.array_equal(parity, np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])):
+        # Leftmost syllable is SHT
+        return ['S', 'H', 'T']
+    else:
+        raise ValueError(f'Unexpected parity matrix:\n{parity}')
+
+
 def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
     r"""Represents the Clifford+T operator in the Matsumoto-Amano normal form.
 
@@ -90,43 +120,19 @@ def _matsumoto_amano_sequence(matrix: _su2_ct.SU2CliffordT) -> tuple[str, ...]:
         input matrix.
 
     Raises:
-        ValueError if the parity matrix doesn't match any of the forms in
-        Lemma 4.10, https://arxiv.org/abs/1312.6584, or if during the decomposition
-        an invalid SU2CliffordT matrix is created.
+        ValueError if during the decomposition an invalid SU2CliffordT matrix is created.
     """
-    if matrix.det() == 2:
-        return clifford(matrix)
-    parity = matrix.bloch_form_parity()
-    # Parity matrix must have a 0 column, see Lemma 4.10, https://arxiv.org/abs/1312.6584.
-    # We move it to be last.
-    for i in range(2):
-        if np.all(parity[:, i] == 0):
-            parity[:, [i, 2]] = parity[:, [2, i]]
-            break
-    gates: tuple[str, ...] = ()
-    new: Union[_su2_ct.SU2CliffordT, None]
-    if np.array_equal(parity, np.array([[1, 1, 0], [1, 1, 0], [0, 0, 0]])):
-        # Leftmost syllabe is T
-        new = _su2_ct.Tz.adjoint() @ matrix
-        gates = ('T',)
-    elif np.array_equal(parity, np.array([[0, 0, 0], [1, 1, 0], [1, 1, 0]])):
-        # Leftmost syllabe is HT
-        new = _su2_ct.HSqrt2.adjoint() @ matrix
-        new = _su2_ct.Tz.adjoint() @ new
-        gates = ('T', 'H')
-    elif np.array_equal(parity, np.array([[1, 1, 0], [0, 0, 0], [1, 1, 0]])):
-        # Leftmost syllabe is SHT
-        new = _su2_ct.SSqrt2.adjoint() @ matrix
-        new = _su2_ct.HSqrt2.adjoint() @ new
-        new = _su2_ct.Tz.adjoint() @ new
-        gates = ('T', 'H', 'S')
-    else:
-        raise ValueError(f'Unexpected parity matrix:\n{parity}')
-    new = new.scale_down()
-    if new is None or not new.is_valid():
-        raise ValueError('Invalid SU2CliffordT matrix')
-    seq = _matsumoto_amano_sequence(new)
-    return seq + gates
+    gates = []
+    while matrix.det() != _TWO:
+        syllable = _matsumoto_amano_syllable(matrix)
+        gates += syllable
+        for gate in syllable:
+            matrix = _su2_ct.GATE_MAP[gate].adjoint() @ matrix
+        new = matrix.scale_down()
+        if new is None or not new.is_valid():
+            raise ValueError('Invalid SU2CliffordT matrix')
+        matrix = new
+    return clifford(matrix) + tuple(gates[::-1])
 
 
 def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ...]:
@@ -135,11 +141,11 @@ def to_sequence(matrix: _su2_ct.SU2CliffordT, fmt: str = 'xyz') -> tuple[str, ..
     Allowable format strings are
      - 'xyz' uses Tx, Ty, Tz gates.
      - 'xz' uses $Tx, Tz, Tx^\dagger, Tz^\dagger$
-     - 't' uses T gates, and returns the Matsumoto-Amano normal form.
+     - 't' uses only Tz gates, and returns the Matsumoto-Amano normal form.
 
     Args:
         matrix: The matrix to represent.
-        fmt: A string from the set {'xz', 'xyz', t'} representing the allowed T gates described above.
+        fmt: A string from the set {'xz', 'xyz', 't'} representing the allowed T gates described above.
 
     Returns:
         A tuple of strings representing the gates.

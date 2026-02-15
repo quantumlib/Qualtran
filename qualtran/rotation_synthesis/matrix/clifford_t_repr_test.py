@@ -60,7 +60,7 @@ def test_to_xz_seq(g: _su2_ct.SU2CliffordT):
 
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-@pytest.mark.parametrize("fmt", ('xyz', 't'))
+@pytest.mark.parametrize("fmt", ('xyz', 'xz', 't'))
 def test_to_cirq(g: _su2_ct.SU2CliffordT, fmt: str):
     g = g.rescale()
     circuit = cirq.Circuit(ctr.to_cirq(g, fmt))
