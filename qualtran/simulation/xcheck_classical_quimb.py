@@ -17,7 +17,7 @@ from typing import cast, Dict, Iterable, Optional, TYPE_CHECKING
 
 import numpy as np
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -56,7 +56,7 @@ def _add_classical_bras(
         if reg.shape:
             reg_vals = np.asarray(vals[reg.name])
             reg_name = soqs[reg.name]
-            if isinstance(reg_name, Soquet):
+            if not BloqBuilder.is_ndarray(reg_name):
                 raise ValueError(f'soqs {reg.name} must be a numpy array: {soqs[reg.name]}')
             for idx in reg.all_idxs():
                 bb.add(IntEffect(val=reg_vals[idx], bitsize=reg.bitsize), val=reg_name[idx])
