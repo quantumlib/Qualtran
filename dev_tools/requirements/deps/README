@@ -1,0 +1,3 @@
+This directory use to contain "factored out" dependencies, with one dependency group per file.
+The Python packaging ecosystem now has better support for dependency groups through `uv`,
+ so please find the dependency groups in pyproject.toml.

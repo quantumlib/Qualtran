@@ -1,9 +1,0 @@
--r pip-tools.txt
--r mypy.txt
--r pytest.txt
--r format.txt
--r pylint.txt
--r docs.txt
--r packaging.txt
-
-notebook

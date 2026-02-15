@@ -1,0 +1,8 @@
+We use `uv` to manage dependencies.
+
+ - From the project's root directory, run `uv lock` to pin the versions of all transitive
+   dependencies in the uv.lock file.
+ - Run `uv lock -U` to upgrade the pinned versions.
+ - Run `uv sync --frozen --no-dev [--group test/typing/lint/..]` to install the pinned dependencies.
+ - You can use `export-from-uv-lock.sh` in this directory to output legacy requirements.txt
+   environment files.
