@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterator, Sequence, Tuple, Union
+from typing import Dict, Iterator, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -25,6 +25,7 @@ from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @attrs.frozen
@@ -136,6 +137,44 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield cirq.CNOT(control, *accumulator)
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
+
+    def on_classical_vals(self, **vals) -> Dict[str, 'ClassicalValT']:
+        if self.target_gate != cirq.X and self.target_gate != cirq.Z:
+            return NotImplemented
+        if len(self.control_registers) > 1 or len(self.selection_registers) > 1:
+            return NotImplemented
+        control_name = self.control_registers[0].name
+        control = vals[control_name]
+        selection_name = self.selection_registers[0].name
+        selection = vals[selection_name]
+        target = vals['target']
+
+        # When target_gate == cirq.X, the action is (modulo phase) a single bitflip.
+        if control and self.target_gate == cirq.X:
+            max_selection = self.selection_registers[0].dtype.iteration_length_or_zero() - 1
+            target = (2 ** (max_selection - selection)) ^ target
+        # When target_gate == cirq.Z, the action is only in the phase.
+
+        return {control_name: control, selection_name: selection, 'target': target}
+
+    def basis_state_phase(self, **vals) -> Union[complex, None]:
+        if self.target_gate != cirq.X and self.target_gate != cirq.Z:
+            return None
+        if len(self.control_registers) > 1 or len(self.selection_registers) > 1:
+            return None
+        control_name = self.control_registers[0].name
+        control = vals[control_name]
+        selection_name = self.selection_registers[0].name
+        selection = vals[selection_name]
+        target = vals['target']
+        if control:
+            max_selection = self.selection_registers[0].dtype.iteration_length_or_zero() - 1
+            if self.target_gate == cirq.X:
+                num_phases = (target >> (max_selection - selection + 1)).bit_count()
+            else:
+                num_phases = (target >> (max_selection - selection)).bit_count()
+            return 1 if (num_phases % 2) == 0 else -1
+        return 1
 
     def __str__(self):
         return f'SelectedMajoranaFermion({self.target_gate})'

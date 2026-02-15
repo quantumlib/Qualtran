@@ -39,6 +39,7 @@ from qualtran import (
     Side,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
+from qualtran.simulation.classical_sim import do_phased_classical_simulation
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
@@ -713,4 +714,30 @@ def assert_consistent_classical_action(
         decomposed_res = cb.call_classically(**call_with)
         np.testing.assert_equal(
             bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        )
+
+
+def assert_consistent_phased_classical_action(
+    bloq: Bloq,
+    **parameter_ranges: Union[NDArray, Sequence[int], Sequence[Union[Sequence[int], NDArray]]],
+):
+    """Check that the bloq has a phased classical action consistent with its decomposition.
+
+    Args:
+        bloq: bloq to test.
+        parameter_ranges: named arguments giving ranges for each of the registers of the bloq.
+    """
+    cb = bloq.decompose_bloq()
+    parameter_names = tuple(parameter_ranges.keys())
+    for vals in itertools.product(*[parameter_ranges[p] for p in parameter_names]):
+        call_with = {p: v for p, v in zip(parameter_names, vals)}
+        bloq_res, bloq_phase = do_phased_classical_simulation(bloq, call_with)
+        decomposed_res, decomposed_phase = do_phased_classical_simulation(cb, call_with)
+        np.testing.assert_equal(
+            bloq_res, decomposed_res, err_msg=f'{bloq=} {call_with=} {bloq_res=} {decomposed_res=}'
+        )
+        np.testing.assert_equal(
+            bloq_phase,
+            decomposed_phase,
+            err_msg=f'{bloq=} {call_with=} {bloq_phase=} {decomposed_phase=}',
         )
