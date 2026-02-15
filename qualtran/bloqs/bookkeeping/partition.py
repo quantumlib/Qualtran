@@ -66,6 +66,17 @@ def _constrain_qany_reg(reg: Register):
     return reg
 
 
+def _regs_to_tuple(x):
+    if x is None:
+        return None
+    return x if isinstance(x, tuple) else tuple(x)
+
+
+def _not_none(_inst, attr, value):
+    if value is None:
+        raise ValueError(f"{attr.name} cannot be None")
+
+
 class _PartitionBase(_BookkeepingBloq, metaclass=abc.ABCMeta):
     """Generalized paritioning functionality."""
 
@@ -190,9 +201,11 @@ class Partition(_PartitionBase):
     """Partition a generic index into multiple registers.
 
     Args:
-        n: The total bitsize of the un-partitioned register
+        n: The total bit-size of the un-partitioned register. Required if `dtype_in` is None.
+            Deprecated. Kept for backward compatibility. Use `dtype_in` instead whenever possible.
         regs: Registers to partition into. The `side` attribute is ignored.
-        dtype_in: Type of the un-partitioned register, this is
+        dtype_in: Type of the un-partitioned register. Required if `n` is None. If None,
+            the type is inferred as `QUInt(n)`.
         partition: `False` means un-partition instead.
 
     Registers:
@@ -200,9 +213,9 @@ class Partition(_PartitionBase):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: Optional[SymbolicInt]
-    regs: Tuple[Register, ...] = field(
-        converter=lambda x: x if isinstance(x, tuple) else tuple(x), validator=validators.min_len(1)
+    n: Optional[SymbolicInt] = field(default=None)
+    regs: Optional[Tuple[Register, ...]] = field(
+        converter=_regs_to_tuple, validator=(_not_none, validators.min_len(1)), default=None
     )
     dtype_in: Optional[QDType] = field(default=None)
     partition: bool = field(default=True)
@@ -218,7 +231,7 @@ class Partition(_PartitionBase):
                     category=LegacyPartitionWarning,
                 )
             case (None, dt):
-                assert dt is not None
+                assert dt is not None  # for mypy
                 object.__setattr__(self, "n", dt.num_qubits)
             case (n, dt):
                 assert dt is not None
@@ -230,6 +243,7 @@ class Partition(_PartitionBase):
                     category=UserWarning,
                     stacklevel=1,
                 )
+
         self._validate()
 
     @property
@@ -237,7 +251,7 @@ class Partition(_PartitionBase):
         if self.dtype_in is not None:
             return self.dtype_in
 
-        assert self.n is not None
+        assert self.n is not None  # for mypy
         return QUInt(bitsize=self.n)
 
     @property
@@ -255,7 +269,7 @@ class Partition(_PartitionBase):
         )
 
     def adjoint(self):
-        return evolve(self, partition=not self.partition)
+        return evolve(self, n=None, dtype_in=self.lumped_dtype, partition=not self.partition)
 
 
 @frozen
