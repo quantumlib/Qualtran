@@ -42,7 +42,7 @@ class ZW:
 
     Elements of $\mathbb{Z}[\omega]$ can be represented by 4 integers as
     $$
-        \sum_{i=0}^4 a_i \omega^i
+        \sum_{i=0}^3 a_i \omega^i
     $$
 
     Attributes:
@@ -205,6 +205,16 @@ class ZW:
             _zsqrt2.ZSqrt2(m2, (m1 + m3 - r) // 2),
             r == 1,
         )
+
+    def real_zsqrt2(self) -> _zsqrt2.ZSqrt2:
+        r"""Returns \sqrt{2} * the real part of the element."""
+        a, _, need_w = self.to_zsqrt2()
+        return a * _zsqrt2.SQRT_2 + _zsqrt2.ZSqrt2(need_w, 0)
+
+    def imag_zsqrt2(self) -> _zsqrt2.ZSqrt2:
+        r"""Returns \sqrt{2} * the imaginary part of the element."""
+        _, b, need_w = self.to_zsqrt2()
+        return b * _zsqrt2.SQRT_2 + _zsqrt2.ZSqrt2(need_w, 0)
 
     def norm(self) -> int:
         res = self * self.conj() * self.sqrt2_conj() * self.sqrt2_conj().conj()
