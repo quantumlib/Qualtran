@@ -14,7 +14,7 @@
 import abc
 import warnings
 from functools import cached_property
-from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, cast
+from typing import cast, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
