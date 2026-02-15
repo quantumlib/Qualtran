@@ -14,7 +14,7 @@
 import abc
 import warnings
 from functools import cached_property
-from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, cast
 
 import numpy as np
 import sympy
@@ -221,42 +221,34 @@ class Partition(_PartitionBase):
     partition: bool = field(default=True)
 
     def __attrs_post_init__(self):
-        match (self.n, self.dtype_in):
-            case (None, None):
-                raise ValueError("Provide exactly n or dtype_in")
-            case (n, None):
-                warnings.warn(
-                    "Partition: By not setting dtype_in you could encounter errors when running "
-                    "assert_consistent_classical_action",
-                    category=LegacyPartitionWarning,
+        if self.n is None and self.dtype_in is None:
+            raise ValueError(f"Provide exactly n or dtype_in {self.n=}, {self.dtype_in=}")
+        elif self.n is not None and self.dtype_in is None:
+            warnings.warn(
+                "Partition: By not setting dtype_in you could encounter errors when running "
+                "assert_consistent_classical_action",
+                category=LegacyPartitionWarning,
+            )
+        elif self.n is None and self.dtype_in is not None:
+            object.__setattr__(self, "n", self.dtype_in.num_qubits)
+        elif self.n is not None and self.dtype_in is not None:
+            if self.n != self.dtype_in.num_qubits:
+                raise ValueError(
+                    f"{self.dtype_in=} should have size {self.n=}, currently {self.dtype_in.num_qubits=}"
                 )
-            case (None, dt):
-                assert dt is not None  # for mypy
-                object.__setattr__(self, "n", dt.num_qubits)
-            case (n, dt):
-                assert dt is not None
-                assert n is not None  # for mypy
-                if n != dt.num_qubits:
-                    raise ValueError(f"{dt=} should have size {n=}, currently {dt.num_qubits=}")
-                warnings.warn(
-                    "Specifying both n and dtype_in is redundant",
-                    category=UserWarning,
-                    stacklevel=1,
-                )
+            warnings.warn(
+                "Specifying both n and dtype_in is redundant", category=UserWarning, stacklevel=1
+            )
 
         self._validate()
 
     @property
     def lumped_dtype(self) -> QDType:
-        if self.dtype_in is not None:
-            return self.dtype_in
-
-        assert self.n is not None  # for mypy
-        return QUInt(bitsize=self.n)
+        return QUInt(bitsize=cast(SymbolicInt, self.n)) if self.dtype_in is None else self.dtype_in
 
     @property
     def _regs(self) -> Sequence[Register]:
-        return self.regs
+        return cast(Tuple[Register, ...], self.regs)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -265,7 +257,7 @@ class Partition(_PartitionBase):
 
         return Signature(
             [Register('x', self.lumped_dtype, side=lumped)]
-            + [evolve(reg, side=partitioned) for reg in self.regs]
+            + [evolve(reg, side=partitioned) for reg in self._regs]
         )
 
     def adjoint(self):
