@@ -38,6 +38,9 @@ class Channel(abc.ABC):
     def diamond_norm_distance_to_rz(self, theta: rst.Real, config: mc.MathConfig) -> rst.Real:
         r"""Returns the diamond norm distance to $e^{i\theta Z}$."""
 
+    @abc.abstractmethod
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit."""
 
 @attrs.frozen
 class UnitaryChannel(Channel):
@@ -416,3 +419,46 @@ class ProbabilisticChannel(Channel):
         assert term2 >= 0
         prob = term2 / (term2 - term1)
         return ProbabilisticChannel(under_channel, over_channel, prob)
+
+
+    def to_cirq(self, fmt: str = "xz", qs: Optional[Sequence[cirq.Qid]] = None) -> cirq.Circuit:
+        """Retruns a representation of the channel as a cirq circuit.
+
+        Args:
+            fmt: The gates to use (see the documentation of to_sequence).
+            qs: Optional qubits to operate on.
+        Returns:
+            A cirq circuit
+        """
+
+        if isinstance(self.c1, UnitaryChannel) and isinstance(self.c2, UnitaryChannel):
+            if len(qs) > 1:
+                q0, q1 = qs
+            else:
+                q0, q1 = cirq.LineQubit.range(2)
+            
+            theta = 2 * np.arcsin(np.sqrt(self.probability))
+            
+            circuit = cirq.Circuit(
+                cirq.ry(theta)(q1),
+                cirq.measure(q1, key="m"),
+            )
+            
+            c1_circuit = self.c1.to_cirq(fmt, (q0,))
+            c2_circuit = self.c2.to_cirq(fmt, (q0,))
+            
+            circuit.append(c2_circuit)
+
+            
+            c2_inverse_circuit = cirq.inverse(c2_circuit)
+            
+            conditional_circuit = cirq.Circuit(c2_inverse_circuit, c1_circuit)
+            circuit.append(cirq.CircuitOperation(conditional_circuit.freeze()).with_classical_controls('m') )
+            
+            return circuit
+    
+        elif isinstance(self.c1, ProjectiveChannel) and isinstance(self.c2, ProjectiveChannel):
+            raise NotImplementedError()
+
+        else:
+            raise NotImplementedError()
