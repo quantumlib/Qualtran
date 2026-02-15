@@ -15,6 +15,7 @@ skip_glob = ["qualtran/protos/*"]
 [tool.pytest.ini_options]
 filterwarnings = [
     'ignore::DeprecationWarning:quimb.linalg.approx_spectral:',
+    'ignore::qualtran.bloqs.bookkeeping.partition.LegacyPartitionWarning',
     'ignore:.*standard platformdirs.*:DeprecationWarning:jupyter_client.*'
 ]
 # we define classes like TestBloq etc. which pytest tries to collect,
