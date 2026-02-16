@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import QAny, QUInt
+from qualtran import QUInt
 from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
     HubbardMajorannaOperator,
     HubbardSpinUpZ,
