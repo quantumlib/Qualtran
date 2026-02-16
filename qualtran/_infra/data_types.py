@@ -236,7 +236,7 @@ class QCDType(Generic[T], metaclass=abc.ABCMeta):
 
     def is_symbolic(self) -> bool:
         """Returns True if this dtype is parameterized with symbolic objects."""
-        return is_symbolic(self.num_bits)
+        return is_symbolic(self._bit_encoding.bitsize)
 
     def iteration_length_or_zero(self) -> SymbolicInt:
         """Safe version of iteration length.
@@ -381,7 +381,7 @@ class _Any(BitEncoding[int]):
             f"Ambiguous encoding for {self} when encoding non zero value {x=}. Please use a more specific type."
         )
 
-    def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:  # TODO
+    def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
         if is_symbolic(self.bitsize):
             raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
 
@@ -404,7 +404,7 @@ class _Any(BitEncoding[int]):
             f"Ambiguous value for {self} when bits ({bits}) are non zero. Please use a more specific type."
         )
 
-    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.uint64]:  # TODO
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.uint64]:
         bitstrings = np.atleast_2d(bits_array)
         if bitstrings.shape[1] != self.bitsize:
             raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
