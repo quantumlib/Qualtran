@@ -137,8 +137,6 @@ class CtrlSpecAnd(Bloq):
                     category=LegacyPartitionWarning,
                 )
                 reg = evolve(reg, dtype=QUInt(reg.dtype.bitsize))
-            else:
-                print(reg.dtype, cvs)
 
             flat_cvs.extend(reg.dtype.to_bits_array(cvs.ravel()).ravel())
         return tuple(flat_cvs)
