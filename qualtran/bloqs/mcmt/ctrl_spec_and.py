@@ -36,12 +36,11 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning, Partition
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
-from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
