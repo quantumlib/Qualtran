@@ -174,7 +174,7 @@ def test_t_like_rotation_gates():
     [Rx(0.01), Ry(0.01), Rz(0.01), ZPowGate(0.01), YPowGate(0.01), XPowGate(0.01), CZPowGate(0.01)],
 )
 def test_rotation_gates_adjoint(bloq):
-    assert type(bloq) == type(bloq.adjoint())
+    assert type(bloq) == type(bloq.adjoint())  # noqa: E721
     np.testing.assert_allclose(
         bloq.tensor_contract() @ bloq.adjoint().tensor_contract(),
         np.identity(2 ** bloq.signature.n_qubits()),

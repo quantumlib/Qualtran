@@ -25,6 +25,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     DecomposeTypeError,
     QAny,
     QBit,
@@ -37,12 +38,11 @@ from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.block_encoding import BlockEncoding
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
-from qualtran.bloqs.mcmt import MultiControlX
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
-from qualtran.symbolics import HasLength, is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicFloat, SymbolicInt
 from qualtran.symbolics.math_funcs import is_zero
 
 
@@ -171,6 +171,26 @@ class Product(BlockEncoding):
             ret.append(AutoPartition(u, partition, left_only=False))
         return ret
 
+    def _multCX(self, bitsize) -> Bloq:
+        return XGate().controlled(ctrl_spec=CtrlSpec(QAny(bitsize), cvs=0))
+
+    def _multCX_autopart(self, *, used_bits: int, total_bits: int) -> Bloq:
+        if used_bits <= 0:
+            raise ValueError("used_bits must be > 0")
+        if used_bits > total_bits:
+            raise ValueError(f"{used_bits=} cannot exceed {total_bits=}")
+
+        ctrl_parts = (
+            ["ctrl", Unused(total_bits - used_bits)] if total_bits > used_bits else ["ctrl"]
+        )
+        return AutoPartition(
+            self._multCX(used_bits),
+            partitions=[
+                (Register("ctrl", QAny(total_bits)), ctrl_parts),
+                (Register("q", QBit()), ["q"]),
+            ],
+        )
+
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         counts = Counter[Bloq]()
         for bloq in self.constituents:
@@ -178,8 +198,18 @@ class Product(BlockEncoding):
         n = len(self.block_encodings)
         for i, u in enumerate(reversed(self.block_encodings)):
             if not is_zero(u.ancilla_bitsize) and n - 1 > 0 and i != n - 1:
-                counts[MultiControlX(HasLength(u.ancilla_bitsize))] += 1
+                anc_bits = self.ancilla_bitsize - (n - 1)
+                if not is_symbolic(u.ancilla_bitsize):
+                    counts[
+                        self._multCX_autopart(used_bits=u.ancilla_bitsize, total_bits=anc_bits)
+                    ] += 1
+                else:
+                    counts[self._multCX(u.ancilla_bitsize)] += 1
                 counts[XGate()] += 1
+
+        if not is_symbolic(self.ancilla_bitsize):
+            counts[self.anc_part] += 1
+            counts[self.anc_part.adjoint()] += 1
         return counts
 
     def build_composite_bloq(
@@ -226,17 +256,12 @@ class Product(BlockEncoding):
 
             # set corresponding flag if ancillas are all zero
             if u.ancilla_bitsize > 0 and n - 1 > 0 and i != n - 1:
-                controls = bb.split(cast(Soquet, anc_soq))
                 # flag_bits_soq will always be assigned based on the following assertion
                 assert self.ancilla_bitsize > 0
                 # pylint: disable=used-before-assignment
-                controls[: u.ancilla_bitsize], flag_bits_soq[i] = bb.add_t(  # type: ignore[assignment]
-                    MultiControlX(tuple([0] * u.ancilla_bitsize)),
-                    controls=controls[: u.ancilla_bitsize],
-                    target=flag_bits_soq[i],
-                )
+                MultCX = self._multCX_autopart(used_bits=u.ancilla_bitsize, total_bits=anc_bits)
+                anc_soq, flag_bits_soq[i] = bb.add(MultCX, ctrl=anc_soq, q=flag_bits_soq[i])
                 flag_bits_soq[i] = bb.add(XGate(), q=flag_bits_soq[i])
-                anc_soq = bb.join(controls)
 
         out = {"system": system}
         if self.resource_bitsize > 0:
@@ -260,6 +285,17 @@ def _product_block_encoding() -> Product:
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
     product_block_encoding = Product((Unitary(TGate()), Unitary(Hadamard())))
+    return product_block_encoding
+
+
+@bloq_example()
+def _product_block_encoding_with_ancillas() -> Product:
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    product_block_encoding = Product(
+        (Unitary(TGate(), ancilla_bitsize=3), Unitary(Hadamard(), ancilla_bitsize=3))
+    )
     return product_block_encoding
 
 

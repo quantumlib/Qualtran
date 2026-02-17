@@ -32,7 +32,7 @@ def test_free_nonzero_state_vector_leads_to_unnormalized_state():
     bb = BloqBuilder()
     qs1 = bb.add(Allocate(QAny(10)))
     qs2 = bb.add(OnEach(10, Hadamard()), q=qs1)
-    no_return = bb.add(Free(QAny(10)), reg=qs2)
+    _no_return = bb.add(Free(QAny(10)), reg=qs2)
     assert np.allclose(bb.finalize().tensor_contract(), np.sqrt(1 / 2**10))
 
 
