@@ -23,10 +23,8 @@ from qualtran.bloqs.cryptography.ecc.ec_add_r import (
     _ec_window_add_r_small,
     ECWindowAddR,
 )
+from qualtran.bloqs.cryptography.ecc.ec_point import ECPoint
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
-
-from .ec_add_r import ECWindowAddR
-from .ec_point import ECPoint
 
 
 @pytest.mark.parametrize('bloq', [_ec_add_r, _ec_add_r_small, _ec_window_add_r_small])

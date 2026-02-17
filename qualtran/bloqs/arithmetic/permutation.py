@@ -49,7 +49,6 @@ from qualtran.linalg.permutation import (
 from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicInt
 
 if TYPE_CHECKING:
-    import sympy
 
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator

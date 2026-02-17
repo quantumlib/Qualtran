@@ -32,7 +32,6 @@ from typing import (
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
-    import pennylane as qml
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
@@ -41,7 +40,6 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
-        Adjoint,
         BloqBuilder,
         CompositeBloq,
         ConnectionT,

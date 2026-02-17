@@ -73,7 +73,7 @@ class GF2PolyAddK(Bloq):
             if value.degree > self.qgf_poly.degree:
                 raise ValueError(f"Degree of constant polynomial must be <= {self.qgf_poly.degree}")
         if not is_symbolic(self.qgf_poly.degree, self.qgf_poly.qgf):
-            if not value.field is self.qgf_poly.qgf.gf_type:
+            if value.field is not self.qgf_poly.qgf.gf_type:
                 raise ValueError(
                     f"Constant polynomial must be defined over galois field {self.qgf_poly.qgf.gf_type}"
                 )

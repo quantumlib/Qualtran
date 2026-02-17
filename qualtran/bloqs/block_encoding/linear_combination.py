@@ -35,10 +35,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.block_encoding import BlockEncoding
-from qualtran.bloqs.block_encoding.lcu_block_encoding import BlackBoxPrepare, BlackBoxSelect
 from qualtran.bloqs.block_encoding.phase import Phase
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.multiplexers.black_box_select import BlackBoxSelect
 from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.linalg.lcu_util import preprocess_probabilities_for_reversible_sampling
