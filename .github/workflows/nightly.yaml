@@ -43,4 +43,4 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest --durations=10 -v -n=0
+          check/pytest-full --durations=10 -v -n=0

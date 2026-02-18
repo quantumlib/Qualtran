@@ -36,6 +36,7 @@ from qualtran.bloqs.block_encoding.product import (
     _product_block_encoding,
     _product_block_encoding_properties,
     _product_block_encoding_symb,
+    _product_block_encoding_with_ancillas,
     Product,
 )
 from qualtran.bloqs.block_encoding.unitary import Unitary
@@ -56,6 +57,9 @@ def test_product(bloq_autotester):
 def test_product_signature():
     assert _product_block_encoding().signature == Signature(
         [Register("system", QAny(1)), Register("ancilla", QAny(1))]
+    )
+    assert _product_block_encoding_with_ancillas().signature == Signature(
+        [Register("system", QAny(1)), Register("ancilla", QAny(4))]
     )
     assert _product_block_encoding_properties().signature == Signature(
         [Register("system", QAny(1)), Register("ancilla", QAny(3)), Register("resource", QAny(1))]
@@ -111,6 +115,13 @@ def test_product_params():
     assert bloq.alpha == 1
     assert bloq.epsilon == 0
     assert bloq.ancilla_bitsize == 1
+    assert bloq.resource_bitsize == 0
+
+    bloq = _product_block_encoding_with_ancillas()
+    assert bloq.system_bitsize == 1
+    assert bloq.alpha == 1
+    assert bloq.epsilon == 0
+    assert bloq.ancilla_bitsize == 4
     assert bloq.resource_bitsize == 0
 
     bloq = _product_block_encoding_properties()
@@ -216,7 +227,19 @@ def test_product_signal_state():
 
 
 def test_product_counts():
-    assert_equivalent_bloq_example_counts(_product_block_encoding)
+    assert_equivalent_bloq_example_counts(_product_block_encoding_with_ancillas)
+
+
+def test_product_symbolic_call_graph_decomposes():
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    product_block_encoding = Product(
+        (
+            Unitary(TGate(), ancilla_bitsize=sympy.symbols("anc")),
+            Unitary(Hadamard(), ancilla_bitsize=sympy.symbols("anc")),
+        )
+    )
 
 
 @pytest.mark.notebook

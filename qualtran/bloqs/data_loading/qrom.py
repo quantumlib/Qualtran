@@ -219,7 +219,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         ret = 0
         for i, d in enumerate(self.data):
-            target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
+            _target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
             for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])

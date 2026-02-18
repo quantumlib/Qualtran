@@ -36,7 +36,6 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
-    import pennylane
     import quimb.tensor as qtn
     from pennylane.operation import Operation
     from pennylane.wires import Wires
