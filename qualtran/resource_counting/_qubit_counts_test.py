@@ -95,6 +95,35 @@ def test_many_alloc():
         assert get_cost_value(bloq, QubitCount()) == 11
 
 
+def test_qubit_count_ignores_cbits():
+    import functools
+
+    import attr
+
+    from qualtran import Bloq, BloqBuilder, CBit, QBit, Register, Signature
+
+    @attr.frozen
+    class MyBloq(Bloq):
+        n: int
+        m: int
+
+        @functools.cached_property
+        def signature(self):
+            return Signature(
+                [Register('qs', QBit(), shape=(self.n,)), Register('cs', CBit(), shape=(self.m,))]
+            )
+
+        def build_call_graph(self, ssa):
+            return {}
+
+        def build_composite_bloq(self, bb: BloqBuilder, qs, cs):
+            return {'qs': qs, 'cs': cs}
+
+    blq = MyBloq(5, 100)
+    assert get_cost_value(blq, QubitCount()) == 5
+    assert get_cost_value(blq.decompose_bloq(), QubitCount()) == 5
+
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook("qubit_counts")
