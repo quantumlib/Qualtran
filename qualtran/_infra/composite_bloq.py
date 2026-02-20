@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+
 from collections.abc import Hashable
 from functools import cached_property
 from typing import (

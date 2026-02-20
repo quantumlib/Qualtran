@@ -19,6 +19,7 @@ a technique for initializing a state with $L$ unique coefficients (provided by a
 database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is the
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
+
 from functools import cached_property
 from typing import Sequence, Tuple, TYPE_CHECKING, Union
 

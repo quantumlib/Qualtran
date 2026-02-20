@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
+
 from collections import Counter
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING

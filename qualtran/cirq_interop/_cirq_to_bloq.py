@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
+
 import abc
 import itertools
 import warnings
@@ -339,7 +340,9 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
+    bb: BloqBuilder,
+    op_quregs: Dict[str, NDArray[_QReg]],  # type: ignore[type-var]
+    qreg_to_qvar: Dict[_QReg, Soquet],
 ) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
     qvars_in: Dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():

@@ -42,7 +42,6 @@ with different costs.
    Barenco et. al. 1995.
 """
 
-
 from functools import cached_property
 from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 

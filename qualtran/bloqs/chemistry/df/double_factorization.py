@@ -30,6 +30,7 @@ $$
 $$
 where $\Xi^{(l)} $ is the rank of second factorization.
 """
+
 from functools import cached_property
 from typing import Dict, Iterable, TYPE_CHECKING
 

@@ -317,7 +317,9 @@ def test_out_of_place_adder():
     cbloq = gate.decompose_bloq()
     for x in range(2**3):
         for y in range(2**3):
-            basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
+            basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(
+                f'0b_{x:03b}_{y:03b}_{x + y:04b}', 2
+            )
             assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
             assert cbloq.call_classically(a=x, b=y, c=0) == (x, y, x + y)
     op = GateHelper(gate).operation

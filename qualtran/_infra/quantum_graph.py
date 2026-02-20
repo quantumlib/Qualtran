@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
+
 from functools import cached_property
 from typing import Tuple, TYPE_CHECKING, Union
 

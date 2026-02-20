@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
+
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 
