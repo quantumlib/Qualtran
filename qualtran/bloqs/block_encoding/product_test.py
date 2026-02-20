@@ -234,12 +234,12 @@ def test_product_symbolic_call_graph_decomposes():
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    product_block_encoding = Product(
+    Product(
         (
             Unitary(TGate(), ancilla_bitsize=sympy.symbols("anc")),
             Unitary(Hadamard(), ancilla_bitsize=sympy.symbols("anc")),
         )
-    )
+    ).decompose_bloq()
 
 
 @pytest.mark.notebook
