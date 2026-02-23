@@ -140,13 +140,46 @@ class Connection:
     right: Soquet
 
     @cached_property
-    def shape(self) -> int:
-        ls = self.left.reg.bitsize
-        rs = self.right.reg.bitsize
+    def num_qubits(self) -> int:
+        """The number of qubits in the connection.
 
-        if ls != rs:
-            raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
-        return ls
+        This excludes classical bits.
+        """
+        lq = self.left.reg.dtype.num_qubits
+        rq = self.right.reg.dtype.num_qubits
+
+        if lq != rq:
+            raise ValueError(f"Invalid Connection {self}: num_qubits mismatch: {lq} != {rq}")
+        return lq
+
+    @cached_property
+    def num_cbits(self) -> int:
+        """The number of classical bits in the connection."""
+        lc = self.left.reg.dtype.num_cbits
+        rc = self.right.reg.dtype.num_cbits
+
+        if lc != rc:
+            raise ValueError(f"Invalid Connection {self}: num_cbits mismatch: {lc} != {rc}")
+        return lc
+
+    @cached_property
+    def num_bits(self) -> int:
+        """The number of bits in the connection (quantum + classical)."""
+        lb = self.left.reg.dtype.num_bits
+        rb = self.right.reg.dtype.num_bits
+
+        if lb != rb:
+            raise ValueError(f"Invalid Connection {self}: shape mismatch: {lb} != {rb}")
+        return lb
+
+    @cached_property
+    def shape(self) -> int:
+        """The number of bits in the connection (quantum + classical).
+
+        This is a misleading name for this property kept for backwards compatibility.
+        Please prefer `.num_bits`.
+        """
+        return self.num_bits
 
     def __str__(self) -> str:
         return f'{self.left} -> {self.right}'

@@ -311,7 +311,7 @@ class GraphDrawer:
 
     def cxn_label(self, cxn: Connection) -> str:
         """Overridable method to return labels for connections."""
-        return str(cxn.shape)
+        return str(cxn.num_bits)
 
     def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
         """Overridable method to style a pydot.Edge for connecionts."""
