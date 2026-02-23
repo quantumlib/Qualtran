@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import lru_cache
-from typing import cast, Dict, Type, TYPE_CHECKING
+from typing import cast, Dict, Tuple, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import qualtran.dtype as qdt
 
 
 @lru_cache
-def get_builtin_qdtypes() -> Dict[str, Type['qdt.QCDType']]:
+def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
     """Datatypes that are available without namespacing and with `safe=True`."""
     from qualtran.dtype import BQUInt, CBit, QAny, QBit, QFxp, QInt, QMontgomeryUInt, QUInt
 
@@ -28,3 +28,8 @@ def get_builtin_qdtypes() -> Dict[str, Type['qdt.QCDType']]:
         k.__name__: cast(Type['qdt.QCDType'], k)
         for k in [BQUInt, QAny, QBit, QInt, QUInt, QFxp, QMontgomeryUInt, CBit]
     }
+
+
+@lru_cache
+def get_builtin_qdtypes() -> Tuple[Type['qdt.QCDType'], ...]:
+    return tuple(get_builtin_qdtype_mapping().values())

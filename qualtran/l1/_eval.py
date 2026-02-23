@@ -21,7 +21,7 @@ import numpy as np
 import sympy
 
 from ..bloqs.manifest import BLOQ_CLASS_NAMES
-from ._dtypes import get_builtin_qdtypes
+from ._dtypes import get_builtin_qdtype_mapping
 from .nodes import CArgNode, CObjectNode, CValueNode, LiteralNode, TupleNode
 
 if TYPE_CHECKING:
@@ -155,7 +155,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
         return tuple(eval_cvalue_node(n, safe=safe) for n in node.items)
 
     # Objects
-    safe_context = get_builtin_qdtypes() | _get_safe_loadables()
+    safe_context = get_builtin_qdtype_mapping() | _get_safe_loadables()
     if isinstance(node, CObjectNode):
         # Known speciality types
         if node.name in _CVALUE_EVALUATORS:

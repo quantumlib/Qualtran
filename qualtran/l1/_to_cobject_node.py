@@ -17,8 +17,9 @@ import attrs
 import numpy as np
 import sympy
 
-from qualtran import CtrlSpec, Side
+from qualtran import CtrlSpec, QDType, Side
 
+from ._dtypes import get_builtin_qdtypes
 from .nodes import CArgNode, CObjectNode, CValueNode, LiteralNode, TupleNode
 
 
@@ -29,7 +30,9 @@ def _get_pkg(cls) -> str:
     return '.'.join(cls.__module__.split('.')[:-1])
 
 
-def to_cobject_node(o: object, fieldnames: Optional[Sequence[str]] = None) -> CObjectNode:
+def object_to_object_node(
+    o: object, *, fieldnames: Optional[Sequence[str]] = None, pkg: Optional[str] = None
+) -> CObjectNode:
     """Convert an object to a CObjectNode.
 
     This function inspects the fields of the given object
@@ -45,6 +48,12 @@ def to_cobject_node(o: object, fieldnames: Optional[Sequence[str]] = None) -> CO
             If not provided, the object must be an `attrs` class and all fields defined in
             the attrs class are used, and they are saved either positionally or as keyword
             args according to their `kw_only` attribute.
+        pkg: The dot-delimited package string to use in the resultant AST node's name. If
+            the provided value is the empty string, no package name will be included. If
+            there is no value provided, a package string will be deduced from 1) a _pkg_
+            classmethod on the object, if present or 2) the class's `__module__` parts,
+            excluding the final name. This matches the Qualtran convention of re-exporting
+            bloq classes one level up.
 
     Returns:
         A CObjectNode representing the object.
@@ -66,7 +75,7 @@ def to_cobject_node(o: object, fieldnames: Optional[Sequence[str]] = None) -> CO
     kwargs: List[CArgNode] = []
     for fieldname, kwonly in zip(fieldnames, kwonlys):
         v = getattr(o, fieldname)
-        v = any_to_cvalue(v)
+        v = to_cobject_node(v)
         if kwonly:
             pos = False
 
@@ -75,9 +84,10 @@ def to_cobject_node(o: object, fieldnames: Optional[Sequence[str]] = None) -> CO
         else:
             kwargs.append(CArgNode(fieldname, v))
 
-    pkg = _get_pkg(o.__class__)
+    pkg = _get_pkg(o.__class__) if pkg is None else str(pkg)
     name = o.__class__.__name__
-    return CObjectNode(name=f'{pkg}.{name}', cargs=args + kwargs)
+    qualname = f'{pkg}.{name}' if pkg else name
+    return CObjectNode(name=f'{qualname}', cargs=args + kwargs)
 
 
 def unserializable_object(name: str) -> CObjectNode:
@@ -92,7 +102,7 @@ def unserializable_object(name: str) -> CObjectNode:
     return CObjectNode(name='Unserializable', cargs=[CArgNode(None, LiteralNode(name))])
 
 
-def tuple_to_tupleval(t: tuple) -> TupleNode:
+def tuple_to_tuplenode(t: tuple) -> TupleNode:
     """Convert a Python tuple to a TupleNode.
 
     Recursively converts each element of the tuple.
@@ -105,12 +115,12 @@ def tuple_to_tupleval(t: tuple) -> TupleNode:
     """
     vals = []
     for v in t:
-        v = any_to_cvalue(v)
+        v = to_cobject_node(v)
         vals.append(v)
     return TupleNode(items=vals)
 
 
-def ndarray_to_ndarr_objectval(a: np.ndarray, max_size: int = 100) -> CObjectNode:
+def ndarray_to_ndarr_objectnode(a: np.ndarray, max_size: int = 100) -> CObjectNode:
     """Convert a numpy array to a CObjectNode representing an NDArr.
 
     If the array is too large (> `max_size` elements), it returns an unserializable object node.
@@ -125,12 +135,12 @@ def ndarray_to_ndarr_objectval(a: np.ndarray, max_size: int = 100) -> CObjectNod
     if a.size > max_size:
         return unserializable_object('ndarray_too_large')
 
-    shape = tuple_to_tupleval(a.shape)
-    data = any_to_cvalue(tuple(a.reshape(-1).tolist()))
+    shape = tuple_to_tuplenode(a.shape)
+    data = to_cobject_node(tuple(a.reshape(-1).tolist()))
     return CObjectNode(name='NDArr', cargs=[CArgNode('shape', shape), CArgNode('data', data)])
 
 
-def any_to_cvalue(x: Any) -> CValueNode:
+def to_cobject_node(x: Any) -> CValueNode:
     """Convert any supported Python value to a CValueNode.
 
     Include support for `None`, `True`, `False`, integers, strings, floats, tuples, and
@@ -160,13 +170,13 @@ def any_to_cvalue(x: Any) -> CValueNode:
         return LiteralNode(value=x)
 
     if isinstance(x, tuple):
-        return tuple_to_tupleval(x)
+        return tuple_to_tuplenode(x)
 
     if isinstance(x, np.ndarray):
-        return ndarray_to_ndarr_objectval(x)
+        return ndarray_to_ndarr_objectnode(x)
 
     if isinstance(x, CtrlSpec):
-        return to_cobject_node(x, fieldnames=['qdtypes', 'cvs'])
+        return object_to_object_node(x, fieldnames=['qdtypes', 'cvs'])
 
     if isinstance(x, sympy.Symbol):
         assert isinstance(x.name, str)
@@ -176,7 +186,14 @@ def any_to_cvalue(x: Any) -> CValueNode:
         assert isinstance(x.name, str)
         return CObjectNode(name='Side', cargs=[CArgNode(None, LiteralNode(x.name))])
 
+    if isinstance(x, QDType) and isinstance(x, get_builtin_qdtypes()):
+        return object_to_object_node(x, pkg='')
+
     if attrs.has(x):
-        return to_cobject_node(x)
+        return object_to_object_node(x)
 
     return unserializable_object(x.__class__.__name__)
+
+
+def dump_objectstring(x: Any) -> str:
+    return to_cobject_node(x).canonical_str()

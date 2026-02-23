@@ -18,7 +18,7 @@ import pytest
 import sympy
 
 from qualtran import CtrlSpec, QBit, Side
-from qualtran.l1._to_cobject_node import any_to_cvalue, to_cobject_node
+from qualtran.l1._to_cobject_node import object_to_object_node, to_cobject_node
 from qualtran.l1.nodes import CObjectNode, LiteralNode, TupleNode
 
 
@@ -34,31 +34,31 @@ class NestedClass:
 
 
 def test_literals():
-    v1 = any_to_cvalue(1)
+    v1 = to_cobject_node(1)
     assert isinstance(v1, LiteralNode)
     assert v1.value == 1
 
-    v1_5 = any_to_cvalue(1.5)
+    v1_5 = to_cobject_node(1.5)
     assert isinstance(v1_5, LiteralNode)
     assert v1_5.value == 1.5
 
-    vfoo = any_to_cvalue("foo")
+    vfoo = to_cobject_node("foo")
     assert isinstance(vfoo, LiteralNode)
     assert vfoo.value == "foo"
 
 
 def test_bool_none():
-    node = any_to_cvalue(True)
+    node = to_cobject_node(True)
     assert isinstance(node, CObjectNode)
     assert node.name == 'True'
     assert not node.cargs
 
-    node = any_to_cvalue(False)
+    node = to_cobject_node(False)
     assert isinstance(node, CObjectNode)
     assert node.name == 'False'
     assert not node.cargs
 
-    node = any_to_cvalue(None)
+    node = to_cobject_node(None)
     assert isinstance(node, CObjectNode)
     assert node.name == 'None'
     assert not node.cargs
@@ -66,7 +66,7 @@ def test_bool_none():
 
 def test_tuple():
     t = (1, "a")
-    node = any_to_cvalue(t)
+    node = to_cobject_node(t)
     assert isinstance(node, TupleNode)
     assert len(node.items) == 2
     assert isinstance(node.items[0], LiteralNode)
@@ -77,7 +77,7 @@ def test_tuple():
 
 def test_ndarray():
     arr = np.array([1, 2])
-    node = any_to_cvalue(arr)
+    node = to_cobject_node(arr)
     assert isinstance(node, CObjectNode)
     assert node.name == 'NDArr'
     # Check args: shape and data
@@ -100,7 +100,7 @@ def test_ndarray():
 
 def test_ndarray_too_large():
     arr = np.zeros(101)
-    node = any_to_cvalue(arr)
+    node = to_cobject_node(arr)
     assert isinstance(node, CObjectNode)
     assert node.name == 'Unserializable'
     assert isinstance(node.cargs[0].value, LiteralNode)
@@ -109,7 +109,7 @@ def test_ndarray_too_large():
 
 def test_attrs_class():
     obj = SimpleClass(x=10, y="hello")
-    node = any_to_cvalue(obj)
+    node = to_cobject_node(obj)
     assert isinstance(node, CObjectNode)
     assert node.name.endswith('SimpleClass')
     assert len(node.cargs) == 2
@@ -121,7 +121,7 @@ def test_attrs_class():
 
 def test_nested_attrs_class():
     obj = NestedClass(s=SimpleClass(x=1, y="b"))
-    node = any_to_cvalue(obj)
+    node = to_cobject_node(obj)
     assert isinstance(node, CObjectNode)
     assert node.name.endswith('NestedClass')
     assert len(node.cargs) == 1
@@ -133,7 +133,7 @@ def test_nested_attrs_class():
 
 def test_sympy_symbol():
     s = sympy.Symbol('x')
-    node = any_to_cvalue(s)
+    node = to_cobject_node(s)
     assert isinstance(node, CObjectNode)
     assert node.name == 'Symbol'
     assert isinstance(node.cargs[0].value, LiteralNode)
@@ -142,7 +142,7 @@ def test_sympy_symbol():
 
 def test_side():
     s = Side.LEFT
-    node = any_to_cvalue(s)
+    node = to_cobject_node(s)
     assert isinstance(node, CObjectNode)
     assert node.name == 'Side'
     assert isinstance(node.cargs[0].value, LiteralNode)
@@ -151,7 +151,7 @@ def test_side():
 
 def test_ctrl_spec():
     cs = CtrlSpec(qdtypes=QBit(), cvs=1)
-    node = any_to_cvalue(cs)
+    node = to_cobject_node(cs)
     assert isinstance(node, CObjectNode)
     assert node.name.endswith('CtrlSpec')
     # Should have qdtypes and cvs
@@ -164,7 +164,7 @@ def test_unserializable_fallback():
         pass
 
     obj = UnserializableClass()
-    node = any_to_cvalue(obj)
+    node = to_cobject_node(obj)
 
     assert isinstance(node, CObjectNode)
     assert node.name == 'Unserializable'
@@ -178,4 +178,4 @@ def test_to_cobject_node_not_attrs():
 
     obj = NonAttrsClass()
     with pytest.raises(TypeError, match="is not an attrs class"):
-        to_cobject_node(obj)
+        object_to_object_node(obj)

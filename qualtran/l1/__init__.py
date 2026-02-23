@@ -14,4 +14,5 @@
 
 from ._eval import eval_cvalue_node
 from ._parse import parse_objectstring
-from ._to_cobject_node import to_cobject_node
+from ._parse_eval import load_objectstring
+from ._to_cobject_node import dump_objectstring, to_cobject_node
