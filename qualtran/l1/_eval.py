@@ -20,7 +20,8 @@ import attrs
 import numpy as np
 import sympy
 
-from ..bloqs.manifest import BLOQ_CLASS_NAMES
+from qualtran.bloqs.manifest import BLOQ_CLASS_NAMES
+
 from ._dtypes import get_builtin_qdtype_mapping
 from .nodes import CArgNode, CObjectNode, CValueNode, LiteralNode, TupleNode
 
