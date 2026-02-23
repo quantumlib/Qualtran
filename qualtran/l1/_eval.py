@@ -20,19 +20,18 @@ import attrs
 import numpy as np
 import sympy
 
-from qualtran import Side
-
+from ..bloqs.manifest import BLOQ_CLASS_NAMES
 from ._dtypes import get_builtin_qdtypes
 from .nodes import CArgNode, CObjectNode, CValueNode, LiteralNode, TupleNode
 
 if TYPE_CHECKING:
-    pass
+    import qualtran
 
 logger = logging.getLogger(__name__)
 
 
 @lru_cache
-def _get_safe_loadables():
+def _get_safe_loadables() -> Dict[str, type[Any]]:
     from qualtran import CtrlSpec, Register
 
     return {'CtrlSpec': CtrlSpec, 'Register': Register}
@@ -90,8 +89,10 @@ def eval_symbol_node(node: CObjectNode, *, safe: bool) -> sympy.Symbol:
     return sympy.Symbol(args[0])
 
 
-def eval_side_node(node: CObjectNode, *, safe: bool) -> Side:
+def eval_side_node(node: CObjectNode, *, safe: bool) -> 'qualtran.Side':
     """Evaluate a CObjectNode where `name` is `"Side"` to a `qualtran.Side`"""
+    from qualtran import Side
+
     args, kwargs = eval_carg_nodes(node.cargs, safe=safe)
     if kwargs:
         raise TypeError(f"Side nodes should be positional only: {node}")
@@ -135,37 +136,51 @@ class UnevaluatedCValue:
     )
 
 
+def _eval_imported(name: str, args: Sequence[Any], kwargs: Dict[str, Any]):
+    name_parts = name.split('.')
+    package = '.'.join(name_parts[:-1])
+    logger.debug("importing %s", package)
+    module = importlib.import_module(package)
+    cls = getattr(module, name_parts[-1])
+    return cls(*args, **kwargs)
+
+
 def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
+    # Literals
     if isinstance(node, LiteralNode):
         return node.value
 
+    # Recurse on tuples
     if isinstance(node, TupleNode):
         return tuple(eval_cvalue_node(n, safe=safe) for n in node.items)
 
+    # Objects
     safe_context = get_builtin_qdtypes() | _get_safe_loadables()
     if isinstance(node, CObjectNode):
+        # Known speciality types
         if node.name in _CVALUE_EVALUATORS:
             eval_func = _CVALUE_EVALUATORS[node.name]
             return eval_func(node, safe=safe)
 
+        # Known generic constructors
         args, kwargs = eval_carg_nodes(node.cargs, safe=safe)
         if node.name in safe_context:
             cls = safe_context[node.name]
             return cls(*args, **kwargs)
 
+        # Allowlisted importable bloq classes
+        if '.' in node.name and node.name in BLOQ_CLASS_NAMES:
+            return _eval_imported(node.name, args, kwargs)
+
+        # Unknown (safe mode): return unevaluated
         if safe:
             uneval_cargs: list[tuple[Optional[str], Any]] = [(None, arg) for arg in args]
             uneval_cargs.extend((k, v) for k, v in kwargs.items())
             return UnevaluatedCValue(name=node.name, cargs=uneval_cargs)
 
-        # Unsafe: use `importlib` to load the class.
+        # Unknown, unsafe: use `importlib` to load the class.
         if '.' not in node.name:
             raise ValueError(f"Unknown CValueNode {node}.")
-        name_parts = node.name.split('.')
-        package = '.'.join(name_parts[:-1])
-        logger.debug("importing %s", package)
-        module = importlib.import_module(package)
-        cls = getattr(module, name_parts[-1])
-        return cls(*args, **kwargs)
+        return _eval_imported(node.name, args, kwargs)
 
     raise TypeError(f"Unknown AST node type: {type(node)}")

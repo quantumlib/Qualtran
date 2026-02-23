@@ -82,7 +82,7 @@ class Register:
         return 'qualtran'
 
     def __repr__(self):
-        return f'Register({self.name!r}, dtype={self.dtype!r}, shape={self.shape!r}, side={self.side!r})'
+        return f'Register({self.name!r}, dtype={self.dtype!r}, shape={self._shape!r}, side={self.side!r})'
 
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, QCDType):
