@@ -12,9 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import io
+
 import pytest
 
-from qualtran.l1._parse import parse_objectstring, QualtranL1Parser, tokenize
+from qualtran.l1._parse import (
+    dump_ast,
+    l1_ast_node_to_json,
+    parse_objectstring,
+    QualtranL1Parser,
+    Token,
+    tokenize,
+)
 from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
 
 
@@ -125,3 +134,85 @@ def test_parse_int_literal():
     parser = QualtranL1Parser(tokens)
     with pytest.raises(ValueError, match='Expected an integer.*foo'):
         parser.parse_int_literal()
+
+
+def test_parse_newlines_comments():
+    code = "MyBloq(\n# A comment\n1)"
+    tokens = tokenize(code)
+    # verify it skips comments and newlines correctly
+    node = QualtranL1Parser(tokens).parse_cobject_node()
+    assert isinstance(node, CObjectNode)
+    assert len(node.cargs) == 1
+
+
+def test_parse_mismatch():
+    with pytest.raises(ValueError, match="unexpected on line"):
+        tokenize("MyBloq(1, ^)")
+
+
+def test_parse_prev():
+    tokens = tokenize("MyBloq(1)")
+    parser = QualtranL1Parser(tokens)
+    parser.advance()
+    assert parser.prev().type == 'NAME'
+
+
+def test_parse_missing_delimiter():
+    tokens = tokenize("MyBloq(1 2)")
+    parser = QualtranL1Parser(tokens)
+    with pytest.raises(ValueError, match="Extraneous elements"):
+        parser.parse_cobject_node()
+
+
+def test_parse_bloq_key():
+    tokens = tokenize("MyBloq()")
+    parser = QualtranL1Parser(tokens)
+    assert parser.parse_bloq_key() == "MyBloq"
+
+
+def test_parse_empty_tuple():
+    tokens = tokenize("()")
+    parser = QualtranL1Parser(tokens)
+    node = parser.parse_cvalue()
+    assert isinstance(node, TupleNode)
+    assert len(node.items) == 0
+
+
+def test_parse_float_literal():
+    tokens = tokenize("1.5")
+    parser = QualtranL1Parser(tokens)
+    node = parser.parse_cvalue()
+    assert isinstance(node, LiteralNode)
+    assert node.value == 1.5
+
+    tokens2 = tokenize("1e-3")
+    parser2 = QualtranL1Parser(tokens2)
+    node2 = parser2.parse_cvalue()
+    assert isinstance(node2, LiteralNode)
+    assert node2.value == 1e-3
+
+
+def test_ast_node_to_json():
+
+    node = CArgNode('x', LiteralNode(1))
+    f = io.StringIO()
+    dump_ast(node, f)
+    result = f.getvalue()
+    assert '"_l1_node": "CArgNode"' in result
+    assert '"key": "x"' in result
+
+    # Test fallback
+    assert l1_ast_node_to_json("string") == "string"
+
+
+def test_parse_int_literal_invalid():
+    parser = QualtranL1Parser([Token('NUMBER', '1.5', 1, 0)])
+    with pytest.raises(ValueError, match="Expected an integer literal"):
+        parser.parse_int_literal()
+
+
+def test_parse_cvalue_cobject():
+    parser = QualtranL1Parser([Token('NAME', 'MyBloq', 1, 0), Token('EOF', '', 1, 0)])
+    node = parser.parse_cvalue()
+    assert isinstance(node, CObjectNode)
+    assert node.name == 'MyBloq'

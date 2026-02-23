@@ -14,10 +14,11 @@
 
 import attrs
 import numpy as np
+import pytest
 import sympy
 
 from qualtran import CtrlSpec, QBit, Side
-from qualtran.l1._to_cobject_node import any_to_cvalue
+from qualtran.l1._to_cobject_node import any_to_cvalue, to_cobject_node
 from qualtran.l1.nodes import CObjectNode, LiteralNode, TupleNode
 
 
@@ -156,3 +157,25 @@ def test_ctrl_spec():
     # Should have qdtypes and cvs
     arg_keys = [arg.key for arg in node.cargs]
     assert arg_keys == ['qdtypes', 'cvs']
+
+
+def test_unserializable_fallback():
+    class UnserializableClass:
+        pass
+
+    obj = UnserializableClass()
+    node = any_to_cvalue(obj)
+
+    assert isinstance(node, CObjectNode)
+    assert node.name == 'Unserializable'
+    assert node.cargs[0].value.value == 'UnserializableClass'  # type: ignore[attr-defined]
+
+
+def test_to_cobject_node_not_attrs():
+
+    class NonAttrsClass:
+        pass
+
+    obj = NonAttrsClass()
+    with pytest.raises(TypeError, match="is not an attrs class"):
+        to_cobject_node(obj)
