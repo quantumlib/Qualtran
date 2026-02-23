@@ -25,7 +25,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNucle
 from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen

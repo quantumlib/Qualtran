@@ -21,7 +21,7 @@ import qualtran.rotation_synthesis._typing as rst
 def su_unitary_to_zxz_angles(
     u: np.ndarray, config: mc.MathConfig
 ) -> tuple[rst.Real, rst.Real, rst.Real]:
-    det = u[0, 0] * u[1, 1] - u[0, 1] * u[1, 0]
+    _det = u[0, 0] * u[1, 1] - u[0, 1] * u[1, 0]
     # print(det)
     # assert config.isclose(det, 1)
 

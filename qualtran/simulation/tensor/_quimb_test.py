@@ -63,7 +63,7 @@ def test_cbloq_to_quimb_with_no_ops_on_register():
     selection, target = soqs['selection'], soqs['target']
     selection = bb.add(Split(QAny(2)), reg=selection)
     selection = bb.add(Join(QAny(2)), reg=selection)
-    cbloq = bb.finalize(selection=selection, target=soqs['target'])
+    cbloq = bb.finalize(selection=selection, target=target)
     np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2**3))
 
     # Single qubit with no operation acting on it.
