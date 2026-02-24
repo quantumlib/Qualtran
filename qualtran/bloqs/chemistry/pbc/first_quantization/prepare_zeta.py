@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian.
-"""
+r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian."""
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -63,7 +63,6 @@ class PrepareZetaState(Bloq):
             # appropriate qrom call down the line.
             return {Toffoli(): int(np.ceil(self.lambda_zeta**0.5))}
         else:
-
             return {Toffoli(): self.lambda_zeta}
 
 

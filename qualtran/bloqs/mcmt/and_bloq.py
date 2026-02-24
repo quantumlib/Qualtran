@@ -21,6 +21,7 @@ means that a bit value of '1' is logical true for the and operation. A control v
 The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bit according
 to the and of its control registers. `And` will output the result into a fresh register.
 """
+
 import itertools
 from functools import cached_property
 from typing import cast, Dict, Iterable, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
@@ -156,7 +157,10 @@ class And(GateWithRegisters):
         return f'And{dag}'
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 

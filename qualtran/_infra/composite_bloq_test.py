@@ -338,7 +338,10 @@ class TestMultiCNOT(Bloq):
         return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']  # type: ignore[type-var]
+        self,
+        bb: 'BloqBuilder',
+        control: 'Soquet',
+        target: NDArray['Soquet'],  # type: ignore[type-var]
     ) -> Dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):

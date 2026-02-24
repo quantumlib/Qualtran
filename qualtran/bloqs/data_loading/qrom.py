@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Quantum read-only memory."""
+
 import numbers
 from typing import cast, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
@@ -126,8 +127,10 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
             for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
-                yield XorK(QUInt(target_bitsize), data_to_load).on(*target[idx]).controlled_by(
-                    *ctrl_qubits
+                yield (
+                    XorK(QUInt(target_bitsize), data_to_load)
+                    .on(*target[idx])
+                    .controlled_by(*ctrl_qubits)
                 )
 
     def decompose_zero_selection(

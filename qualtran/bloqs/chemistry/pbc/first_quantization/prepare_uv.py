@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
+
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 

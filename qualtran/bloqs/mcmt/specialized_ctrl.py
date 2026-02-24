@@ -92,7 +92,7 @@ class _MultiControlledFromSinglyControlled(Bloq):
         return ctrl_bloq, _adder
 
     def __str__(self):
-        return f'C[{len(self.cvs)-1}][{self.ctrl_bloq}]'
+        return f'C[{len(self.cvs) - 1}][{self.ctrl_bloq}]'
 
 
 def _get_ctrl_system_1bit_cv(

@@ -206,7 +206,7 @@ class ModAddK(GateWithRegisters):
         if isinstance(value, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
             return
         if not 1 <= value <= 2**self.bitsize:
-            raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
+            raise ValueError(f"mod: {value} must be between [1, {2**self.bitsize}].")
 
     @cached_property
     def signature(self) -> Signature:

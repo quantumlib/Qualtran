@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Functions for specifying the Ising model and building LCU coefficients."""
+
 from typing import List, Sequence
 
 import cirq

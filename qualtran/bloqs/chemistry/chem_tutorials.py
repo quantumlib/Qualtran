@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Some utility functions for chemistry tutorials"""
+
 from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
