@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+# ruff: noqa: E402
 import ast
 import warnings
 from collections import defaultdict
@@ -341,7 +343,7 @@ def make_reference_docs(
     The steps are
 
         1. Walk the package structure with `get_pages`.
-        2. Write each page; and write the table of contentes (TOC).
+        2. Write each page; and write the table of contents (TOC).
 
     There are multiple 'types' of 'path's we must consider when rendering the documentation.
 

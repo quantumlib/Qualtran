@@ -122,3 +122,11 @@ def test_t_complexity():
     counts = get_cost_value(bloq, QECGatesCost()).total_t_and_ccz_count()
     assert counts['n_t'] == 0, 'toffoli only'
     assert counts['n_ccz'] == n - 1
+
+
+def test_controlled_t_complexity():
+    dtype = QUInt(10)
+    bloq = ControlledAddOrSubtract(dtype, dtype)
+
+    _ = bloq.controlled().adjoint().t_complexity()
+    _ = bloq.adjoint().controlled().t_complexity()

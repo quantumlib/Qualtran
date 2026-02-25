@@ -40,7 +40,6 @@ class LargeBloq(Bloq):
         assert cvs.shape == (self.n_ops, self.n_select - 1)
 
         for op_i in range(self.n_ops):
-
             # Ladder of ands
             for i in range(self.n_select - 1):
                 and_op = And(cv1=cvs[op_i, i], cv2=1)
@@ -58,5 +57,5 @@ class LargeBloq(Bloq):
                     and_op.adjoint(), ctrl=np.array([ancs[i], sel[i + 1]]), target=ancs[i + 1]
                 )
 
-        sel[0] = ancs[0]
+        sel[0] = ancs[0]  # type: ignore[assignment]
         return {'select': bb.join(sel), 'target': target}

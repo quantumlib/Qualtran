@@ -363,7 +363,12 @@ class SingleWindowModMul(Bloq):
         return {'target': target, 'qrom_index': qrom_index, 'x': x, 'y': y}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: NDArray[Soquet], y: Soquet, target: NDArray[Soquet], qrom_index: Soquet  # type: ignore[type-var]
+        self,
+        bb: 'BloqBuilder',
+        x: NDArray[Soquet],  # type: ignore[type-var]
+        y: Soquet,
+        target: NDArray[Soquet],  # type: ignore[type-var]
+        qrom_index: Soquet,
     ):
         if is_symbolic(self.window_size):
             raise DecomposeNotImplementedError(f'symbolic decomposition not supported for {self}')

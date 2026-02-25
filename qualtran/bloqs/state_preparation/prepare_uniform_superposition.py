@@ -123,7 +123,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
             return
 
         ancilla = context.qubit_manager.qalloc(1)
-        theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
+        theta = acos(1 - (2 ** floor(log2(l))) / l)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1  # type: ignore[operator]

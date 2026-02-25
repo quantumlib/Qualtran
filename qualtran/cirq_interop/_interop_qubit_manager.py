@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Qubit Manager to use when converting Cirq gates to/from Bloqs."""
+
 from typing import Iterable, List, Optional, Set
 
 import cirq

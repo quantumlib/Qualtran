@@ -116,7 +116,10 @@ class CNOT(Bloq):
         return bloq, add_controlled
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
+        self,
+        qubit_manager: 'cirq.QubitManager',
+        ctrl: 'CirqQuregT',
+        target: 'CirqQuregT',  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 

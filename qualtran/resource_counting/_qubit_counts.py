@@ -65,12 +65,12 @@ def _cbloq_max_width(
                 # During the application of the binst, we have "observer" connections that have
                 # width as well as the width from the binst itself. We consider the case where
                 # the bloq may have a max_width greater than the max of its left/right registers.
-                during_size = _bloq_max_width(binst.bloq) + sum(s.shape for s in in_play)
+                during_size = _bloq_max_width(binst.bloq) + sum(s.num_qubits for s in in_play)
                 max_width = smax(max_width, during_size)
 
             # After the binst, its successor connections are 'in play'.
             in_play.update(succ_cxns)
-            after_size = sum(s.shape for s in in_play)
+            after_size = sum(s.num_qubits for s in in_play)
             max_width = smax(max_width, after_size)
 
     return max_width

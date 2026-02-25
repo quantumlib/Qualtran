@@ -22,9 +22,13 @@ def parse_args():
     p.add_argument('--output-nbs', action=argparse.BooleanOptionalAction, default=True)
     p.add_argument('--output-md', action=argparse.BooleanOptionalAction, default=False)
     p.add_argument('--only-out-of-date', action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument('--n-workers', type=int, default=None)
     args = p.parse_args()
     execute_and_export_notebooks(
-        output_nbs=args.output_nbs, output_md=args.output_md, only_out_of_date=args.only_out_of_date
+        output_nbs=args.output_nbs,
+        output_md=args.output_md,
+        only_out_of_date=args.only_out_of_date,
+        n_workers=args.n_workers,
     )
 
 

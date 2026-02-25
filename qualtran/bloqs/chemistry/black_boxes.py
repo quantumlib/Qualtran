@@ -15,6 +15,7 @@
 
 These are for temporary convenience to lock-in the quoted literature costs.
 """
+
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 

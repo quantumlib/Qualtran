@@ -32,7 +32,6 @@ from typing import (
 if TYPE_CHECKING:
     import cirq
     import networkx as nx
-    import pennylane as qml
     import quimb.tensor as qtn
     import sympy
     from numpy.typing import NDArray
@@ -41,7 +40,6 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
-        Adjoint,
         BloqBuilder,
         CompositeBloq,
         ConnectionT,
@@ -635,7 +633,8 @@ class Bloq(metaclass=abc.ABCMeta):
         return cirq.Gate.on(BloqAsCirqGate(bloq=self), *qubits)
 
     def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]']  # type: ignore[type-var]
+        self,
+        **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]'],  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         """A `cirq.Operation` of this bloq operating on the given qubit registers.
 

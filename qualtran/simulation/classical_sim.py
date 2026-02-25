@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
+
 import abc
 import itertools
 from typing import (
@@ -59,9 +60,9 @@ ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDist
 
 def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
-    from qualtran._infra.data_types import CBit, QBit, QInt, QUInt
+    from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
 
-    if isinstance(dtype, QUInt):
+    if isinstance(dtype, (QUInt, QAny)):
         if dtype.bitsize <= 8:
             return np.uint8
         elif dtype.bitsize <= 16:
@@ -171,8 +172,7 @@ class _BannedClassicalValHandler(_ClassicalValHandler):
 
     def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any:
         raise ValueError(
-            f"{binst} has non-deterministic classical action."
-            "Cannot simulate with classical values."
+            f"{binst} has non-deterministic classical action.Cannot simulate with classical values."
         )
 
 
@@ -281,8 +281,7 @@ class ClassicalSimState:
                 val = np.asanyarray(val)
                 if val.shape != reg.shape:
                     raise ValueError(
-                        f"Incorrect shape {val.shape} received for {debug_str}. "
-                        f"Want {reg.shape}."
+                        f"Incorrect shape {val.shape} received for {debug_str}. Want {reg.shape}."
                     )
                 reg.dtype.assert_valid_classical_val_array(val, debug_str)
 
@@ -327,8 +326,7 @@ class ClassicalSimState:
             raise NotImplementedError(f"{bloq} is not classically simulable.") from e
         except DecomposeNotImplementedError as e:
             raise NotImplementedError(
-                f"{bloq} has no decomposition and does not "
-                f"support classical simulation directly"
+                f"{bloq} has no decomposition and does not support classical simulation directly"
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{bloq} does not support classical simulation: {e}") from e

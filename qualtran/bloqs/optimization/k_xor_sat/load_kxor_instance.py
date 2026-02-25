@@ -31,6 +31,7 @@ References:
     Notation 2.24 for $B_\mathcal{I}$.
     Theorem 4.17, proof para 2 for $U_j$.
 """
+
 from functools import cached_property
 from typing import Counter, Sequence, Union
 

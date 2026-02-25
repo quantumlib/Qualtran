@@ -21,6 +21,7 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.bookkeeping import Split
 from qualtran.bloqs.bookkeeping.split import _split
 from qualtran.simulation.classical_sim import call_cbloq_classically
+from qualtran.testing import execute_notebook
 
 
 def test_split(bloq_autotester):
@@ -70,10 +71,20 @@ def test_classical_sim_dtypes():
     assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
-    # Warning: numpy will wrap too-large values
-    (xx,) = s.call_classically(reg=np.uint8(256))
-    assert isinstance(xx, np.ndarray)
-    assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+    numpy_major_version = int(np.__version__.split('.')[0])
+    if numpy_major_version < 2:
+        # Warning: numpy 1 will wrap too-large values
+        (xx,) = s.call_classically(reg=np.uint8(256))
+        assert isinstance(xx, np.ndarray)
+        assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+    else:
+        with pytest.raises(OverflowError):
+            (xx,) = s.call_classically(reg=np.uint8(256))
 
     with pytest.raises(ValueError):
         _ = s.call_classically(reg=np.uint16(256))
+
+
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('split')

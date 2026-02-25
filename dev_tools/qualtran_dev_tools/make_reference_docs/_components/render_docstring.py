@@ -167,7 +167,7 @@ def _write_yields(f, part: DocstringSectionYields, level: int):
         f.write('\n')
 
     else:
-        subpart: DocstringYield
+        param: DocstringYield
         for param in part.value:
             pname = param.name if param.name else 'yld'
             f.write(f'{pname}\n')

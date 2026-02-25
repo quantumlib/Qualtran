@@ -48,7 +48,7 @@ def test_ctrl_lcu_be_cost():
     assert bloq.controlled(CtrlSpec(cvs=0)) == attrs.evolve(bloq, control_val=0)
 
     assert get_cost_value(bloq.controlled(), QECGatesCost()) == GateCounts(
-        cswap=28, and_bloq=77, clifford=438, rotation=16, measurement=77
+        cswap=28, and_bloq=77, clifford=294, rotation=16, measurement=77
     )
 
 

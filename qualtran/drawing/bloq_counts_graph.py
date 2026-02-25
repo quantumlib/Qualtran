@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for drawing bloq counts graphs with Graphviz."""
+
 import abc
 import html
 import warnings

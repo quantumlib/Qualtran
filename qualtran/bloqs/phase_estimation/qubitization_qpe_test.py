@@ -72,13 +72,15 @@ def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
 )
 @pytest.mark.parametrize('use_resource_state', [True, False])
 def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
+    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
+    #       https://github.com/quantumlib/Qualtran/issues/1763
+
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)
 
     ham_coeff = np.array([abs(ps.coefficient.real) for ps in ham])
     qubitization_lambda = np.sum(ham_coeff)
     g = GateHelper(walk)
-    # matrix = cirq.unitary(walk)
     L_state = np.zeros(2 ** len(g.quregs['selection']))
     L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
 
@@ -149,7 +151,7 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
 
 
 @pytest.mark.notebook
-def test_phase_estimation_of_qubitized_hubbard_model():
+def test_phase_estimation_of_qubitized_hubbard_model_notebook():
     execute_notebook('phase_estimation_of_quantum_walk')
 
 

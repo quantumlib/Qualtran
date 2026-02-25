@@ -507,7 +507,7 @@ class UnaryIterationGate(GateWithRegisters):
         return False
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> cirq.OP_TREE:
         if total_bits(self.selection_registers) == 0 or self._break_early(
             (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()

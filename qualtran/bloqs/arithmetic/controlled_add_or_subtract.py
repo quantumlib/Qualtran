@@ -14,7 +14,7 @@
 from functools import cached_property
 from typing import TYPE_CHECKING, Union
 
-from attrs import field, frozen
+from attrs import evolve, field, frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QInt, QMontgomeryUInt, QUInt, Signature
 from qualtran.bloqs.arithmetic.addition import Add
@@ -67,7 +67,7 @@ class ControlledAddOrSubtract(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    add_when_ctrl_is_on = True
+    add_when_ctrl_is_on: bool = True
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -97,6 +97,9 @@ class ControlledAddOrSubtract(Bloq):
             ctrl = bb.add(XGate(), q=ctrl)
 
         return {'ctrl': ctrl, 'a': a, 'b': b}
+
+    def adjoint(self):
+        return evolve(self, add_when_ctrl_is_on=not self.add_when_ctrl_is_on)
 
 
 @bloq_example

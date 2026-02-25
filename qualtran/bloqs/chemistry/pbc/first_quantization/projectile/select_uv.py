@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 r"""Bloqs for SELECT for the U and V parts of the first quantized chemistry Hamiltonian."""
+
 from collections import Counter
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
@@ -25,7 +26,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNucle
 from qualtran.drawing import Text, WireSymbol
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
 @frozen
