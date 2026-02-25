@@ -138,3 +138,13 @@ def test_factor_prime(p):
     else:
         assert r.coords[1:] == (0, 0, 0)
         assert r.coords[0] % p == 0
+
+
+@pytest.mark.parametrize("x", _create_random_elements(20))
+def test_real_zsqrt2(x: rings.ZW):
+    np.testing.assert_allclose((x.real_zsqrt2()).value(_SQRT_2), x.value(_SQRT_2).real * _SQRT_2)
+
+
+@pytest.mark.parametrize("x", _create_random_elements(20))
+def test_imag_zsqrt2(x: rings.ZW):
+    np.testing.assert_allclose((x.imag_zsqrt2()).value(_SQRT_2), x.value(_SQRT_2).imag * _SQRT_2)
