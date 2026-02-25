@@ -40,7 +40,6 @@ class LargeBloq(Bloq):
         assert cvs.shape == (self.n_ops, self.n_select - 1)
 
         for op_i in range(self.n_ops):
-
             # Ladder of ands
             for i in range(self.n_select - 1):
                 and_op = And(cv1=cvs[op_i, i], cv2=1)

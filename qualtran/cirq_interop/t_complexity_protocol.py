@@ -64,9 +64,7 @@ class TComplexity:
 
     def __str__(self) -> str:
         return (
-            f'T-count:   {self.t:g}\n'
-            f'Rotations: {self.rotations:g}\n'
-            f'Cliffords: {self.clifford:g}\n'
+            f'T-count:   {self.t:g}\nRotations: {self.rotations:g}\nCliffords: {self.clifford:g}\n'
         )
 
 
@@ -221,5 +219,5 @@ def t_complexity_compat(stc: Any) -> TComplexity:
         ret = None
 
     if ret is None:
-        raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
+        raise TypeError(f"couldn't compute TComplexity of:\ntype: {type(stc)}\nvalue: {stc}")
     return ret

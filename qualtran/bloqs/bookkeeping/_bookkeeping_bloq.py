@@ -18,7 +18,6 @@ from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 from qualtran import Bloq, BloqBuilder, SoquetT
 
 if TYPE_CHECKING:
-
     from qualtran import AddControlledT, CtrlSpec
 
 

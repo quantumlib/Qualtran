@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes to apply single qubit bloq to multiple qubits."""
+
 from functools import cached_property
 from typing import Dict, Optional, Tuple
 

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """A module containing geomtry objects used in enumeration."""
+
 from __future__ import annotations
 
 import functools

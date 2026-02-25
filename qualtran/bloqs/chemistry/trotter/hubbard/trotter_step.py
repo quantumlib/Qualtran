@@ -21,6 +21,7 @@ U \approx e^{i \frac{t}{2} H_I} e^{i \frac{t}{2} H_h^p} e^{i t H_h^g}
 $$
 
 """
+
 from typing import Sequence
 
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingTile, HoppingTileHWP
