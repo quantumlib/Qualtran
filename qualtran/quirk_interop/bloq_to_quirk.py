@@ -17,7 +17,8 @@ class SparseLineManager(LineManager):
     LineManager which keeps partitioned line slots reserved for them until they need it again
     """
 
-    # DIDN'TDO: only handles partition patterns of the type (QAny(n)/QUInt(n)/... -> QBit((n,)) or QBit((n,)) -> QAny(n))
+    # DIDN'TDO: only handles partition patterns of the type (QAny(n)/QUInt(n)/... -> QBit((n,))
+    # or QBit((n,)) -> QAny(n))
 
     def maybe_reserve(self, binst, reg, idx):
         if binst.bloq_is(Join) and reg.shape:
