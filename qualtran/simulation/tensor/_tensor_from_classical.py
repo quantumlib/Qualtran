@@ -17,10 +17,13 @@ from typing import Iterable, TYPE_CHECKING
 import numpy as np
 from numpy.typing import NDArray
 
+from qualtran.bloqs.bookkeeping.partition import _constrain_qany_reg
+
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import Bloq, ConnectionT, Register
+    from qualtran import Bloq, ConnectionT, QAny, QUInt, Register
+    from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -55,7 +58,7 @@ def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
         assert np.size(last) == 0
 
         input_kwargs = {
-            reg.name: _bits_to_classical_reg_data(reg, bits)
+            reg.name: _bits_to_classical_reg_data(_constrain_qany_reg(reg), bits)
             for reg, bits in zip(bloq.signature.lefts(), inputs_t)
         }
         output_args = bloq.call_classically(**input_kwargs)
@@ -63,7 +66,7 @@ def _bloq_to_dense_via_classical_action(bloq: 'Bloq') -> NDArray:
         if output_args:
             output_t = np.concatenate(
                 [
-                    reg.dtype.to_bits_array(np.asarray(vals)).flat
+                    _constrain_qany_reg(reg).dtype.to_bits_array(np.asarray(vals)).flat
                     for reg, vals in zip(bloq.signature.rights(), output_args)
                 ]
             )
