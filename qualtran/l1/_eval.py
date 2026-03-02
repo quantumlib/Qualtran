@@ -85,7 +85,7 @@ def eval_symbol_node(node: CObjectNode, *, safe: bool) -> sympy.Symbol:
     if len(args) != 1:
         raise TypeError(f"Symbol nodes must have one argument, not {args}")
     arg = args[0]
-    if safe and type(arg) != str:
+    if safe and type(arg) is not str:
         raise TypeError(f"Symbol nodes must take one string argument, not {arg}")
     return sympy.Symbol(args[0])
 

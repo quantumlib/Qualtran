@@ -20,9 +20,9 @@ from typing import List
 
 import attrs
 
-logger = logging.getLogger(__name__)
-
 from .nodes import CArgNode, CObjectNode, CValueNode, L1ASTNode, LiteralNode, TupleNode
+
+logger = logging.getLogger(__name__)
 
 
 @attrs.frozen
@@ -134,10 +134,9 @@ class QualtranL1Parser:
             # Assume we already checked for an empty list and parsed an item.
             # A delimiter after an entry is always valid.
             self.advance()
-        else:
-            # A missing delimiter demands end of list
-            if not self.check(rbrack):
-                raise ValueError(f"Extraneous elements in {list_name} at {self.peek()}")
+        # A missing delimiter demands end of list
+        elif not self.check(rbrack):
+            raise ValueError(f"Extraneous elements in {list_name} at {self.peek()}")
 
         if self.check(rbrack):
             if consume_rbrack:
