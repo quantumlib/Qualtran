@@ -215,7 +215,7 @@ class _NotebookRunClosure:
         start = time.time()
         err = execute_and_export_notebook(paths)
         end = time.time()
-        print(f"Exported {nb_rel_path} in {end-start:.2f} seconds.")
+        print(f"Exported {nb_rel_path} in {end - start:.2f} seconds.")
         return _NotebookRunResult(paths.nb_in, err, duration_s=end - start)
 
 

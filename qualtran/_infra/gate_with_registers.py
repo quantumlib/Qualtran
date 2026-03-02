@@ -327,7 +327,10 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return total_bits(self.signature)
 
     def decompose_from_registers(
-        self, *, context: 'cirq.DecompositionContext', **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
+        self,
+        *,
+        context: 'cirq.DecompositionContext',
+        **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
     ) -> 'cirq.OP_TREE':
         raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
@@ -361,7 +364,8 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return cirq.Gate.on(self, *qubits)
 
     def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']]  # type: ignore[type-var]
+        self,
+        **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], NDArray['cirq.Qid']],  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 

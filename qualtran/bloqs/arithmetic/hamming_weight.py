@@ -105,7 +105,10 @@ class HammingWeightCompute(GateWithRegisters):
             x = [*y]
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         # Qubit order needs to be reversed because the registers store Big Endian representation
         # of integers.

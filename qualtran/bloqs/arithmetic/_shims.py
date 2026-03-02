@@ -18,6 +18,7 @@ in `qualtran.bloqs.cryptography` and `qualtran.bloqs.mod_arithmetic`. They are p
 so we don't have undefined symbols and can still merge the high-level algorithms. These shims
 will be fleshed out and moved to their final organizational location soon (written: 2024-05-06).
 """
+
 from functools import cached_property
 
 from attrs import frozen

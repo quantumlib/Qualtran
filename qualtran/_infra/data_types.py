@@ -13,7 +13,6 @@
 #  limitations under the License.
 """Quantum data type definitions."""
 
-
 import abc
 import itertools
 import warnings
@@ -816,7 +815,7 @@ class BCUInt(CDType[int]):
             if self.bound > 2**self.bitsize:
                 raise ValueError(
                     f"{self} bound is too large for given bitsize. "
-                    f"{self.bound} vs {2 ** self.bitsize}"
+                    f"{self.bound} vs {2**self.bitsize}"
                 )
 
     @bound.default

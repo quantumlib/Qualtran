@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Function for building a walk operator for the THC hamiltonian."""
+
 from numpy.typing import NDArray
 
 from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding

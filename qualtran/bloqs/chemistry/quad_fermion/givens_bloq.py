@@ -45,6 +45,7 @@ References:
       Phys. Rev. Res. 3, 033055 (2021).
 
 """
+
 from functools import cached_property
 from typing import Dict
 

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for drawing bloqs with Graphviz."""
+
 import html
 import itertools
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple

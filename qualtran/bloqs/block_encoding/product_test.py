@@ -230,16 +230,17 @@ def test_product_counts():
     assert_equivalent_bloq_example_counts(_product_block_encoding_with_ancillas)
 
 
-def test_product_symbolic_call_graph_decomposes():
+def test_product_symbolic_call_graph():
     from qualtran.bloqs.basic_gates import Hadamard, TGate
     from qualtran.bloqs.block_encoding.unitary import Unitary
 
-    product_block_encoding = Product(
+    g, _ = Product(
         (
             Unitary(TGate(), ancilla_bitsize=sympy.symbols("anc")),
             Unitary(Hadamard(), ancilla_bitsize=sympy.symbols("anc")),
         )
-    )
+    ).call_graph()
+    assert g
 
 
 @pytest.mark.notebook

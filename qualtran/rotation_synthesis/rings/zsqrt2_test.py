@@ -86,7 +86,7 @@ def test_factor_prime(p):
     r = rings.ZSqrt2(1, 0)
     for ideal, exponent in rings.ZSqrt2.factor_prime(p).items():
         r = r * ideal**exponent
-    assert r == p, f"{p%8}"
+    assert r == p, f"{p % 8}"
 
 
 @pytest.mark.parametrize("x", [rings.ZSqrt2(*p) for p in itertools.product(range(-2, 2), repeat=2)])

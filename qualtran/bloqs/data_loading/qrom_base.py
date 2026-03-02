@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Base class for Bloqs implementing a QROM (Quantum read-only memory) circuit."""
+
 import abc
 import numbers
 from functools import cached_property

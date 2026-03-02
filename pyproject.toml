@@ -93,7 +93,8 @@ typing = [
 ]
 
 lint = [
-   "pylint~=3.3.1",
+    "pylint~=3.3.1",
+    "ruff~=0.15.0",
 
     # for checking _test.py files
     "pytest",
@@ -111,6 +112,7 @@ format = [
     "flynt~=0.60",
     "black~=24.8.0",
     "isort~=5.10.1",
+    "ruff~=0.15.0",
 ]
 
 doc = [
@@ -130,6 +132,72 @@ line-length = 100
 skip-string-normalization = true
 skip-magic-trailing-comma = true
 exclude = "qualtran/protos/*"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    "qualtran/protos/*",
+    "*_pb2.py",
+    "*.ipynb",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    # "I", # isort (disabled until we switch formatters)
+    "W", # pycodestyle warnings
+    "PL", # pylint
+]
+ignore = [
+    # From the default ruleset:
+    "E741", # ambiguous variable name 'l', 'O', or 'I'
+    "E743", # ambiguous function definition
+    "E731", # assigning a lambda expression to a variable
+
+    # Handled by the formatter
+    "E501", # line too long (let ruff format handle this)
+    "W291", # trailing whitespace
+    "W293", # blank line contains whitespace
+
+    # We productively use these
+    "PLC0415", # import outside top-level
+    "PLW2901", # loop variable overwritten
+    "PLC0206", # Extracting value from dictionary without calling .items()
+    "PLW0406", # Module import itself
+
+    # Pylint 'refactor' rules
+    "PLR0913", # Too many arguments
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "PLR0914", # Too many local variables
+    "PLR2004", # Magic value used in comparison
+    "PLR0911", # Too many return statements
+    "PLR1704", # Redefining argument with the local name
+    "PLR1714", # Consider merging multiple comparisons
+    "PLR1730", # replace if with min, max. Can be enabled.
+
+    # Might be enabled at some point
+    "PLR0402" # Prevalent in the rotation_synthesis submodule.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    # Ruff wants us to redundantly re-export symbols in __init__.py files, but the
+    # automated fix isn't in the stable release yet.
+    "F401", # Unused import
+]
+
+
+[tool.ruff.lint.isort]
+order-by-type = false
+force-to-top = []
+split-on-trailing-comma = false
+
+[tool.ruff.format]
+quote-style = "preserve"
+skip-magic-trailing-comma = true
 
 [tool.isort]
 profile = 'black'
