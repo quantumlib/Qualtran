@@ -126,6 +126,7 @@ def main():
         bloq = be.make()
         try:
             cobject_node = to_cobject_node(bloq)
+            assert isinstance(cobject_node, CObjectNode)
         except Exception as e:  # pylint: disable=broad-except
             cobject_node = CObjectNode(
                 name=bloq._class_name_in_pkg_(), cargs=[CArgNode(None, LiteralNode(str(e)))]
