@@ -224,8 +224,8 @@ def test_parse_nested():
     from qualtran.l1._eval import eval_cvalue_node
 
     n = 100
-    str = '(' * n + '5,' + ')' * n
-    tokens = tokenize(str)
+    s = '(' * n + '5,' + ')' * n
+    tokens = tokenize(s)
     parser = QualtranL1Parser(tokens)
     ast = parser.parse_cvalue()
     result = eval_cvalue_node(ast)
@@ -238,8 +238,8 @@ def test_parse_nested():
 
 def test_parse_too_nested():
     n = sys.getrecursionlimit() + 1
-    str = '(' * n + '5,' + ')' * n
-    tokens = tokenize(str)
+    s = '(' * n + '5,' + ')' * n
+    tokens = tokenize(s)
     parser = QualtranL1Parser(tokens)
     with pytest.raises(RecursionError):
         ast = parser.parse_cvalue()
