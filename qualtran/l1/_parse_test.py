@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import io
+import sys
 
 import pytest
 
@@ -216,3 +217,28 @@ def test_parse_cvalue_cobject():
     node = parser.parse_cvalue()
     assert isinstance(node, CObjectNode)
     assert node.name == 'MyBloq'
+
+
+def test_parse_nested():
+    from qualtran.l1._eval import eval_cvalue_node
+
+    n = 100
+    str = '(' * n + '5,' + ')' * n
+    tokens = tokenize(str)
+    parser = QualtranL1Parser(tokens)
+    ast = parser.parse_cvalue()
+    result = eval_cvalue_node(ast)
+
+    should_be = 5
+    for i in range(n):
+        should_be = (should_be,)
+    assert result == should_be
+
+
+def test_parse_too_nested():
+    n = sys.getrecursionlimit() + 1
+    str = '(' * n + '5,' + ')' * n
+    tokens = tokenize(str)
+    parser = QualtranL1Parser(tokens)
+    with pytest.raises(RecursionError):
+        ast = parser.parse_cvalue()

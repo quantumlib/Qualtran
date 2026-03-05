@@ -208,3 +208,17 @@ def test_imported_bloq_class():
 def test_eval_cvalue_node_type_error():
     with pytest.raises(TypeError, match="Unknown AST node type"):
         eval_cvalue_node("just a string")  # type: ignore[arg-type]
+
+
+def test_too_many_args():
+    node = CObjectNode(name='Test', cargs=[CArgNode(None, LiteralNode(5))] * 1_001)
+
+    with pytest.raises(ValueError, match=r'Too many.*'):
+        _ = eval_cvalue_node(node, safe=True)
+
+
+def test_too_many_values():
+    node = TupleNode([LiteralNode(5)] * 1_001)
+
+    with pytest.raises(ValueError, match=r'Too many.*'):
+        _ = eval_cvalue_node(node, safe=True)

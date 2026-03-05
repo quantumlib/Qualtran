@@ -47,6 +47,8 @@ def eval_carg_nodes(
         args: The evaluated positional arguments
         kwargs: The evaluated keyword arguments
     """
+    if len(cargs) > 1_000 and safe:
+        raise ValueError("Too many arguments for safe=True loading.")
     args: List[Any] = []
     kwargs: Dict[str, Any] = {}
     kwarg_only = False
@@ -153,6 +155,8 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
 
     # Recurse on tuples
     if isinstance(node, TupleNode):
+        if len(node.items) > 1_000 and safe:
+            raise ValueError("Too many elements for safe=True tuple.")
         return tuple(eval_cvalue_node(n, safe=safe) for n in node.items)
 
     # Objects
