@@ -311,6 +311,10 @@ class CtrlSpec:
 
         return int(control_bit)
 
+    @classmethod
+    def _pkg_(cls):
+        return 'qualtran'
+
 
 class AddControlledT(Protocol):
     """The signature for the `add_controlled` callback part of `ctrl_system`.
@@ -673,6 +677,10 @@ class Controlled(_ControlledBase):
 
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        return 'qualtran'
 
 
 def make_ctrl_system_with_correct_metabloq(
