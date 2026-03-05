@@ -14,6 +14,7 @@
 
 import io
 import sys
+from typing import Any
 
 import pytest
 
@@ -229,7 +230,7 @@ def test_parse_nested():
     ast = parser.parse_cvalue()
     result = eval_cvalue_node(ast)
 
-    should_be = 5
+    should_be: Any = 5
     for i in range(n):
         should_be = (should_be,)
     assert result == should_be
