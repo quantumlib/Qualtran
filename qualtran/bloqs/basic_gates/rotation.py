@@ -43,7 +43,7 @@ with different costs.
 """
 
 from functools import cached_property
-from typing import Callable, Dict, Iterable, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -491,8 +491,15 @@ _PowClsT = Union[Type[XPowGate], Type[YPowGate], Type[ZPowGate]]
 
 
 def _controlled_rp_circuit(
-    bb: 'BloqBuilder', /, *, single_q_pow_cls: _PowClsT, angle: float, eps: float, ctrl, q
-) -> Dict[str, Soquet]:
+    bb: 'BloqBuilder',
+    /,
+    *,
+    single_q_pow_cls: _PowClsT,
+    angle: SymbolicFloat,
+    eps: SymbolicFloat,
+    ctrl: 'Soquet',
+    q: 'Soquet',
+) -> Dict[str, 'SoquetT']:
     from qualtran.bloqs.basic_gates import CNOT
 
     t = angle / np.pi
