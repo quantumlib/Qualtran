@@ -30,6 +30,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
 
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
@@ -122,11 +124,19 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
         bloq_instances: Optionally specify the unique bloq instances. Otherwise, deduce them from
             the connections.
+        decomposed_from: Optionally include a reference to the bloq from whence this
+            `CompositeBloq` was decomposed. This can be used for debugging and error
+            reporting, but is never used for deriving any properties.
+        bloq_key: An optional string key for this bloq. This can be used for debugging and
+            error reporting, but is never used for deriving any properties.
     """
 
     connections: Tuple[Connection, ...] = attrs.field(converter=_to_tuple)
     signature: Signature
     bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
+
+    decomposed_from: Optional[Bloq] = attrs.field(default=None, kw_only=True)
+    bloq_key: Optional[str] = attrs.field(default=None, kw_only=True)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
@@ -505,7 +515,23 @@ class CompositeBloq(Bloq):
         delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
         return delimited_gens
 
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        from qualtran.drawing import Text
+
+        if reg is None:
+            if self.decomposed_from is not None:
+                return self.decomposed_from.wire_symbol(None)
+            if self.bloq_key is not None:
+                return Text(self.bloq_key)
+            return Text('cbloq')
+
+        return super().wire_symbol(reg, idx)
+
     def __str__(self):
+        if self.bloq_key is not None:
+            return self.bloq_key
         return f'CompositeBloq([{len(self.bloq_instances)} subbloqs...])'
 
 
@@ -535,6 +561,9 @@ def _binst_to_cxns(
     binst: Union[BloqInstance, DanglingT], binst_graph: nx.DiGraph
 ) -> Tuple[List[Connection], List[Connection]]:
     """Helper method to extract all predecessor and successor Connections for a binst."""
+    if binst not in binst_graph.nodes:
+        return [], []
+
     pred_cxns: List[Connection] = []
     for pred in binst_graph.pred[binst]:
         pred_cxns.extend(binst_graph.edges[pred, binst]['cxns'])
