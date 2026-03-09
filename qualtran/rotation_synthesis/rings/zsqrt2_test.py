@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from qualtran.rotation_synthesis import rings
-from qualtran.rotation_synthesis.rings import test_utils as tu
+from qualtran.rotation_synthesis.rings import _test_utils as tu
 
 _SQRT_2 = math.sqrt(2)
 
@@ -27,6 +27,10 @@ _SQRT_2 = math.sqrt(2)
 @pytest.mark.parametrize("x", [rings.ZSqrt2(*p) for p in itertools.product(range(-2, 2), repeat=2)])
 def test_value(x: rings.ZSqrt2):
     assert float(x) == pytest.approx(x.a + _SQRT_2 * x.b)
+
+
+def test_hash():
+    assert hash(rings.ZSqrt2(3, 4)) == hash(rings.ZSqrt2(3, 4))
 
 
 @pytest.mark.parametrize("p", range(10))
@@ -82,7 +86,7 @@ def test_factor_prime(p):
     r = rings.ZSqrt2(1, 0)
     for ideal, exponent in rings.ZSqrt2.factor_prime(p).items():
         r = r * ideal**exponent
-    assert r == p, f"{p%8}"
+    assert r == p, f"{p % 8}"
 
 
 @pytest.mark.parametrize("x", [rings.ZSqrt2(*p) for p in itertools.product(range(-2, 2), repeat=2)])

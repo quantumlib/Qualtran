@@ -17,9 +17,9 @@ import itertools
 import numpy as np
 import pytest
 
-import qualtran.rotation_synthesis.lattice.grid_operators as go
-import qualtran.rotation_synthesis.lattice.test_utils as tu
-import qualtran.rotation_synthesis.math_config as mc
+import qualtran.rotation_synthesis._math_config as mc
+import qualtran.rotation_synthesis.lattice._grid_operators as go
+import qualtran.rotation_synthesis.lattice._test_utils as tu
 import qualtran.rotation_synthesis.rings as rings
 
 _SQRT_2 = np.sqrt(2)

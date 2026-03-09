@@ -16,14 +16,14 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.rotation_synthesis._math_config as mc
 import qualtran.rotation_synthesis.channels as ch
-import qualtran.rotation_synthesis.math_config as mc
-import qualtran.rotation_synthesis.matrix.clifford_t_repr as ctr
-import qualtran.rotation_synthesis.matrix.su2_ct as su2_ct
+import qualtran.rotation_synthesis.matrix._clifford_t_repr as ctr
+import qualtran.rotation_synthesis.matrix._su2_ct as _su2_ct
 
 
 def _make_gates(n_seqs: int, n_gates: int, seed: int):
-    gates = tuple(su2_ct.GATE_MAP.keys())
+    gates = tuple(_su2_ct.GATE_MAP.keys())
     rng = np.random.default_rng(seed)
     for _ in range(n_seqs):
         yield [gates[i] for i in rng.choice(len(gates), n_gates)]
@@ -32,7 +32,7 @@ def _make_gates(n_seqs: int, n_gates: int, seed: int):
 @pytest.mark.parametrize("gates", _make_gates(10, 4, 0))
 def test_unitary_from_sequence(gates):
     u = ch.UnitaryChannel.from_sequence(gates)
-    assert u.to_matrix() == su2_ct.SU2CliffordT.from_sequence(gates)
+    assert u.to_matrix() == _su2_ct.SU2CliffordT.from_sequence(gates)
 
 
 @pytest.mark.parametrize(

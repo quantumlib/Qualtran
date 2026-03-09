@@ -73,7 +73,6 @@ class ProgRotGateArray(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # Step 4 in the reference.
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
-        nxi = (self.num_spin_orb // 2 - 1).bit_length()
         cost_a = nlxi - 1  # contiguous register
         data_size = self.num_eig + self.num_spin_orb // 2
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations

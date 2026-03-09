@@ -196,7 +196,7 @@ class LineManager:
         self,
         binst: Union[DanglingT, BloqInstance],
         reg: Register,
-        arr: Union[RegPosition, NDArray[RegPosition]],
+        arr: Union[RegPosition, NDArray[RegPosition]],  # type: ignore[type-var]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -221,7 +221,7 @@ class LineManager:
 
 def _get_in_vals(
     binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, RegPosition]
-) -> Union[RegPosition, NDArray[RegPosition]]:
+) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
@@ -250,7 +250,7 @@ def _update_assign_from_vals(
     """
     for reg in regs:
         try:
-            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]
+            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]  # type: ignore[type-var]
         except KeyError:
             arr = manager.new(
                 binst=cast(BloqInstance, binst), reg=reg, seq_x=seq_x, topo_gen=topo_gen

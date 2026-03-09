@@ -282,6 +282,11 @@ class BitonicMerge(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {Comparator(self.bitsize): self.num_comparisons}
 
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
+
 
 @bloq_example
 def _bitonic_merge() -> BitonicMerge:
@@ -382,6 +387,11 @@ class BitonicSort(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> BloqCountDictT:
         return {Comparator(self.bitsize): self.num_comparisons}
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # This isn't re-exported
+        return '.'.join(cls.__module__.split('.')[:])
 
 
 @bloq_example

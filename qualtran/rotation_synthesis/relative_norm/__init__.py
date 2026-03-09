@@ -12,4 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.rotation_synthesis.relative_norm.clifford_t import CliffordTRelativeNormSolver
+from qualtran.rotation_synthesis.relative_norm._clifford_t import CliffordTRelativeNormSolver

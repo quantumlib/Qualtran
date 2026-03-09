@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Quantum read-only memory."""
+
 import numbers
 from typing import cast, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
@@ -126,12 +127,14 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
             for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])
-                yield XorK(QUInt(target_bitsize), data_to_load).on(*target[idx]).controlled_by(
-                    *ctrl_qubits
+                yield (
+                    XorK(QUInt(target_bitsize), data_to_load)
+                    .on(*target[idx])
+                    .controlled_by(*ctrl_qubits)
                 )
 
     def decompose_zero_selection(
-        self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         controls = tuple(merge_qubits(self.control_registers, **quregs))
         target_regs = {reg.name: quregs[reg.name] for reg in self.target_registers}
@@ -154,7 +157,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> cirq.OP_TREE:
         if self.has_data():
             return super().decompose_from_registers(context=context, **quregs)
@@ -219,7 +222,7 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         ret = 0
         for i, d in enumerate(self.data):
-            target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
+            _target_bitsize, target_shape = self.target_bitsizes[i], self.target_shapes[i]
             assert all(isinstance(x, (int, numbers.Integral)) for x in target_shape)
             for idx in np.ndindex(cast(Tuple[int, ...], target_shape)):
                 data_to_load = int(d[selection_idx + idx])

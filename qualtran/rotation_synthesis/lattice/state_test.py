@@ -15,10 +15,10 @@
 import numpy as np
 import pytest
 
-import qualtran.rotation_synthesis.math_config as mc
-from qualtran.rotation_synthesis.lattice import grid_operators as go
-from qualtran.rotation_synthesis.lattice import state as lattice_state
-from qualtran.rotation_synthesis.lattice import test_utils as tu
+import qualtran.rotation_synthesis._math_config as mc
+from qualtran.rotation_synthesis.lattice import _grid_operators as go
+from qualtran.rotation_synthesis.lattice import _state as lattice_state
+from qualtran.rotation_synthesis.lattice import _test_utils as tu
 
 _L_VALUE = 1 + mc.NumpyConfig.sqrt2
 

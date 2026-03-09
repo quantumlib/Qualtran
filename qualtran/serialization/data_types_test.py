@@ -18,7 +18,6 @@ import pytest
 import sympy
 
 from qualtran import BQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
-from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.serialization.data_types import data_type_from_proto, data_type_to_proto
 
 

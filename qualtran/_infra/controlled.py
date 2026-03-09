@@ -33,7 +33,8 @@ import attrs
 import numpy as np
 from numpy.typing import NDArray
 
-from ..symbolics import is_symbolic, prod, Shaped, SymbolicInt
+from qualtran.symbolics import is_symbolic, prod, Shaped, SymbolicInt
+
 from .bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from .data_types import CDType, QBit, QCDType, QDType
 from .gate_with_registers import GateWithRegisters
@@ -52,18 +53,11 @@ if TYPE_CHECKING:
 ControlBit: TypeAlias = int
 """A control bit, either 0 or 1."""
 
+_CVInLeafT: TypeAlias = Union[int, np.integer, NDArray[np.integer], Shaped]
+_CVInType: TypeAlias = Union[_CVInLeafT, Sequence['_CVInType']]
 
-def _cvs_convert(
-    cvs: Union[
-        int,
-        np.integer,
-        NDArray[np.integer],
-        Shaped,
-        Sequence[Union[int, np.integer]],
-        Sequence[Sequence[Union[int, np.integer]]],
-        Sequence[Union[NDArray[np.integer], Shaped]],
-    ]
-) -> Tuple[Union[NDArray[np.integer], Shaped], ...]:
+
+def _cvs_convert(cvs: _CVInType) -> Tuple[Union[NDArray[np.integer], Shaped], ...]:
     if isinstance(cvs, Shaped):
         return (cvs,)
     if isinstance(cvs, (int, np.integer)):
@@ -316,6 +310,10 @@ class CtrlSpec:
         (control_bit,) = dtype.to_bits(cv[idx])
 
         return int(control_bit)
+
+    @classmethod
+    def _pkg_(cls):
+        return 'qualtran'
 
 
 class AddControlledT(Protocol):
@@ -679,6 +677,10 @@ class Controlled(_ControlledBase):
 
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        return 'qualtran'
 
 
 def make_ctrl_system_with_correct_metabloq(

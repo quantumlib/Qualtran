@@ -14,12 +14,12 @@
 
 """A package that provides methods for integer point enumeration."""
 
-from qualtran.rotation_synthesis.lattice.geometry import Ellipse, Range, Rectangle
-from qualtran.rotation_synthesis.lattice.grid_operators import GridOperator
-from qualtran.rotation_synthesis.lattice.ipe import (
+from qualtran.rotation_synthesis.lattice._geometry import Ellipse, Range, Rectangle
+from qualtran.rotation_synthesis.lattice._grid_operators import GridOperator
+from qualtran.rotation_synthesis.lattice._ipe import (
     enumerate_1d,
     enumerate_upright,
     get_overall_action,
     get_points_from_state,
 )
-from qualtran.rotation_synthesis.lattice.state import GridOperatorAction, SelingerState
+from qualtran.rotation_synthesis.lattice._state import GridOperatorAction, SelingerState

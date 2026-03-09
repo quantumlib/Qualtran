@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
+
 import abc
 import itertools
 import warnings
@@ -336,7 +337,9 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
+    bb: BloqBuilder,
+    op_quregs: Dict[str, NDArray[_QReg]],  # type: ignore[type-var]
+    qreg_to_qvar: Dict[_QReg, Soquet],
 ) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
     qvars_in: Dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
@@ -540,12 +543,12 @@ def cirq_optree_to_cbloq(
 
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
-        all_op_quregs: Dict[str, NDArray[_QReg]] = {
+        all_op_quregs: Dict[str, NDArray[_QReg]] = {  # type: ignore[type-var]
             k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 
-        in_op_quregs: Dict[str, NDArray[_QReg]] = {
+        in_op_quregs: Dict[str, NDArray[_QReg]] = {  # type: ignore[type-var]
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
         }
         # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to

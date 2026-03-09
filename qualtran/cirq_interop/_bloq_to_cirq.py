@@ -95,7 +95,10 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager  # type: ignore[type-var]
+        cls,
+        bloq: Bloq,
+        cirq_quregs: Dict[str, 'CirqQuregT'],
+        qubit_manager: cirq.QubitManager,  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 

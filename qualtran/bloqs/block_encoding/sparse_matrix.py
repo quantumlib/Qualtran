@@ -33,6 +33,7 @@ from qualtran import (
     QInt,
     QUInt,
     Register,
+    Side,
     Signature,
     Soquet,
     SoquetT,
@@ -94,8 +95,12 @@ class RowColumnOracle(Bloq, abc.ABC):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build_from_dtypes(
-            l=BQUInt(self.system_bitsize, self.num_nonzero), i=QUInt(self.system_bitsize)
+        return Signature(
+            [
+                Register("l", BQUInt(self.system_bitsize, self.num_nonzero), side=Side.LEFT),
+                Register("l", QUInt(self.system_bitsize), side=Side.RIGHT),
+                Register("i", QUInt(self.system_bitsize)),
+            ]
         )
 
 

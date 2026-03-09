@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+
 from collections.abc import Hashable
 from functools import cached_property
 from typing import (
@@ -699,7 +700,6 @@ def _get_dangling_soquets(signature: Signature, right: bool = True) -> Dict[str,
         dang = LeftDangle
 
     all_soqs: Dict[str, SoquetT] = {}
-    soqs: SoquetT
     for reg in regs:
         all_soqs[reg.name] = _reg_to_soq(dang, reg)
     return all_soqs

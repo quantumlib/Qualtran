@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile.
-"""
+r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian with projectile."""
+
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 

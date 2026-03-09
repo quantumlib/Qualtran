@@ -80,7 +80,10 @@ class QFTPhaseGradient(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         if self.bitsize == 1:
             yield cirq.H(*quregs['q'])

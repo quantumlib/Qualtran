@@ -24,6 +24,8 @@ types (``Register``), and algorithms (``CompositeBloq``).
    DataTypes.ipynb
    simulation/classical_sim.ipynb
    simulation/tensor.ipynb
+   simulation/MBUC.ipynb
+   simulation/supertensor.ipynb
    resource_counting/call_graph.ipynb
    resource_counting/qubit_counts.ipynb
    Adjoint.ipynb
@@ -53,4 +55,5 @@ types (``Register``), and algorithms (``CompositeBloq``).
    drawing/musical_score.ipynb
    drawing/drawing_call_graph.ipynb
    simulation/xcheck_classical_quimb.ipynb
+   l1/L1-Objectstring.ipynb
    Autodoc.ipynb

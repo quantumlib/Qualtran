@@ -37,9 +37,9 @@ from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, BloqBuilder, SoquetT, QDType
+    from qualtran import Bloq, BloqBuilder, QDType, SoquetT
+    from qualtran.resource_counting import BloqCountDictT, CostKey, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator, CostKey
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
 

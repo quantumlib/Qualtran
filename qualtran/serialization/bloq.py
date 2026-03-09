@@ -349,7 +349,7 @@ def _search_for_subbloqs(
                     _search_for_subbloqs(subbloq, bloq_to_id, pred, max_depth - 1)
                 else:
                     _search_for_subbloqs(subbloq, bloq_to_id, pred, 0)
-        except (DecomposeTypeError, DecomposeNotImplementedError) as e:
+        except (DecomposeTypeError, DecomposeNotImplementedError):
             # No decomposition, nothing to recurse on.
             pass
 

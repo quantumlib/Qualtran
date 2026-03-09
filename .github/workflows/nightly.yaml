@@ -30,17 +30,17 @@ permissions: read-all
 jobs:
   pytest:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest --durations=10
+          check/pytest-full --durations=10 -v -n=0

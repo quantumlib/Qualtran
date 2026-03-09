@@ -15,7 +15,7 @@
 import numpy as np
 
 import qualtran.rotation_synthesis.lattice as lattice
-from qualtran.rotation_synthesis.lattice import test_utils as tu
+from qualtran.rotation_synthesis.lattice import _test_utils as tu
 
 
 def test_make_psd():
