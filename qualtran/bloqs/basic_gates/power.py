@@ -12,12 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Side, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran.drawing import LarrowTextBox, RarrowTextBox, Text, TextBox, WireSymbol
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -86,3 +88,21 @@ class Power(GateWithRegisters):
         wire_symbols = [f'{symbol}^{self.power}' for symbol in info.wire_symbols]
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+
+        if reg is None:
+            sub_title = self.bloq.wire_symbol(None, idx)
+            if not isinstance(sub_title, Text):
+                raise ValueError(
+                    f"{self.bloq} should return a `Text` object for reg=None wire symbol."
+                )
+            if sub_title.text == '':
+                return Text('')
+
+            return Text(f'{sub_title.text}**{self.power}')
+
+        ws = self.bloq.wire_symbol(reg, idx)
+        if isinstance(ws, (Text, TextBox, RarrowTextBox, LarrowTextBox)):
+            return attrs.evolve(ws, text=f'{ws.text}**{self.power}')
+        return ws

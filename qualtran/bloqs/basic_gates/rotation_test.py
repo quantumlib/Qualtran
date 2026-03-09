@@ -257,15 +257,15 @@ def test_pl_interop():
 
 
 def test_str():
-    assert str(ZPowGate()) == "Z**1.0"
-    assert str(XPowGate()) == "X**1.0"
-    assert str(YPowGate()) == "Y**1.0"
+    assert str(ZPowGate()) == "Z(pow=1.0)"
+    assert str(XPowGate()) == "X(pow=1.0)"
+    assert str(YPowGate()) == "Y(pow=1.0)"
     assert str(_ry()) == "Ry(0.7853981633974483)"
     assert str(_rx()) == "Rx(0.7853981633974483)"
     assert str(_rz()) == "Rz(a)"
 
-    assert str(CZPowGate(1.0)) == 'CZ**1.0'
-    assert str(CZPowGate(0.9)) == 'CZ**0.9'
+    assert str(CZPowGate(1.0)) == 'CZ(pow=1.0)'
+    assert str(CZPowGate(0.9)) == 'CZ(pow=0.9)'
 
 
 def test_rx(bloq_autotester):
