@@ -26,7 +26,15 @@ from qualtran.l1._parse import (
     Token,
     tokenize,
 )
-from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
+from qualtran.l1.nodes import (
+    CArgNode,
+    CObjectNode,
+    LiteralNode,
+    QArgValueNode,
+    QDefImplNode,
+    QDTypeNode,
+    TupleNode,
+)
 
 
 def test_tokenize():
@@ -243,3 +251,93 @@ def test_parse_too_nested():
     parser = QualtranL1Parser(tokens)
     with pytest.raises(RecursionError):
         ast = parser.parse_cvalue()
+
+
+def test_parse_module_empty():
+    parser = QualtranL1Parser([Token('EOF', '', 1, 0)])
+    module = parser.parse_module()
+    assert len(module.qdefs) == 0
+
+
+from qualtran.l1._parse import parse_module
+
+
+def test_parse_module_full():
+    code = """
+extern qdef MyBloq() [
+    q: t -> |
+]
+
+qdef OtherBloq() from qualtran.bloqs.OtherBloq() [
+    q: t
+] {
+    q = MyBloq()[q=q]
+    return [q=q]
+}
+"""
+    module = parse_module(code)
+    assert len(module.qdefs) == 2
+    assert module.qdefs[0].bloq_key == "MyBloq"
+    assert module.qdefs[0].qsignature[0].name == "q"
+    assert module.qdefs[1].bloq_key == "OtherBloq"
+    assert isinstance(module.qdefs[1], QDefImplNode)
+    assert module.qdefs[1].body[0].lvalues == ("q",)  # type: ignore
+    assert module.qdefs[1].body[0].bloq_key == "MyBloq"  # type: ignore
+
+
+def test_parse_lvalues_pipe():
+    parser = QualtranL1Parser(tokenize("| = MyBloq()"))
+    lvals = parser.parse_lvalues()
+    assert lvals == []
+
+
+def test_parse_qarg_nested():
+    parser = QualtranL1Parser(tokenize("target=[x[0], [y[1], z[2]]] ]"))
+    qarg = parser.parse_qarg()
+    assert qarg.key == "target"
+    assert isinstance(qarg.value, tuple) or isinstance(qarg.value, list)
+    assert len(qarg.value) == 2
+    assert isinstance(qarg.value[0], QArgValueNode)
+    assert qarg.value[0].name == "x"
+    assert qarg.value[0].idx == (0,)
+    assert isinstance(qarg.value[1], tuple) or isinstance(qarg.value[1], list)
+    assert len(qarg.value[1]) == 2
+
+
+def test_parse_signature_types():
+    code = "qdef Foo() [ a: t, b: t -> |, c: | -> t, d: t1 -> t2, e: t1[2, 3] ] {}"
+    module = parse_module(code)
+    qdef = module.qdefs[0]
+    assert len(qdef.qsignature) == 5
+    assert qdef.qsignature[0].name == "a"
+    assert qdef.qsignature[1].name == "b"
+    assert qdef.qsignature[2].name == "c"
+    assert qdef.qsignature[3].name == "d"
+    assert qdef.qsignature[4].name == "e"
+    assert isinstance(qdef.qsignature[4].dtype, QDTypeNode)
+    assert qdef.qsignature[4].dtype.shape == [2, 3]
+
+
+def test_parse_errors():
+    with pytest.raises(ValueError, match="Expected 'extern qdef'"):
+        parse_module("extern foo MyBloq() [q: t -> |]")
+
+    with pytest.raises(ValueError, match="qdef from must start with 'from'"):
+        parser = QualtranL1Parser(tokenize("foo qualtran.bloqs.Bloq()"))
+        parser.parse_qdef_from()
+
+    with pytest.raises(ValueError, match="return statement must start with 'return'"):
+        parser = QualtranL1Parser(tokenize("foo [a=b]"))
+        parser.parse_return_statement()
+
+    with pytest.raises(ValueError, match="only one lvalue may be specified"):
+        parse_module("qdef Foo() [] { a, b = qualtran.bloqs.Bloq }")
+
+
+def test_parse_empty_brackets():
+    code = "qdef Foo() [] { a = MyBloq()[] } qdef Bar() [a: t[]] { c = qualtran.bloqs.Bloq }"
+    module = parse_module(code)
+    assert module.qdefs[0].qsignature == ()
+    assert module.qdefs[0].body[0].qargs == ()  # type: ignore
+    assert module.qdefs[1].qsignature[0].dtype.shape == []  # type: ignore
+    assert module.qdefs[1].body[0].alias == "c"  # type: ignore[attr-defined]

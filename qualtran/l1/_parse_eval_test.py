@@ -12,17 +12,33 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import cast
+
 import pytest
 
-from qualtran import CtrlSpec
-from qualtran.l1._parse_eval import load_objectstring
+import qualtran as qlt
+from qualtran.l1 import load_bloq, load_module, load_objectstring
 
 
 def test_load_objectstring_safe():
     # Normal loading of safe context object
     obj = load_objectstring("CtrlSpec()")
-    assert isinstance(obj, CtrlSpec)
+    assert isinstance(obj, qlt.CtrlSpec)
     assert obj.cvs == (1,)
+
+
+def test_issue_1713():
+    # https://github.com/quantumlib/Qualtran/issues/1713
+    s = "qualtran.bloqs.mcmt.MultiControlZ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))"
+    bloq = load_bloq(s)
+    assert bloq
+
+
+@pytest.mark.xfail(reason="Missing _pkg_")
+def test_load_bloq():
+    s = "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.chemistry.hubbard_model.qubitization.PrepareHubbard(5, 5, 2.0, 0.1), None, -1, 1e-11)"
+    bloq = load_bloq(s)
+    assert bloq
 
 
 def test_load_objectstring_unsafe():
@@ -43,3 +59,33 @@ def test_load_objectstring_unsafe_import():
     import sympy
 
     assert isinstance(obj, sympy.Symbol)
+
+
+def test_load_negate():
+    module = load_module(
+        """
+    # Qualtran-L1
+    # 1.0.0
+
+    qdef Negate
+    [
+        x: QUInt(8),
+    ] {
+        x2                   = BitwiseNot(8)    [x=x]
+        x3                   = AddK(k=1)        [x=x2]
+                               return           [x=x3]
+    }
+
+
+    extern qdef BitwiseNot(8)
+    from qualtran.bloqs.arithmetic.BitwiseNot(QUInt(8))
+    [x: QUInt(8)]
+
+    extern qdef AddK(k=1)
+    from qualtran.bloqs.arithmetic.AddK(QUInt(8), 1)
+    [x: QUInt(8)]"""
+    )
+
+    assert set(module.keys()) == {'Negate', 'BitwiseNot(8)', 'AddK(k=1)'}
+    cbloq = cast(qlt.CompositeBloq, module['Negate'])
+    assert len(cbloq.bloq_instances) == 2

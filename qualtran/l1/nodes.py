@@ -14,7 +14,7 @@
 """The Qualtran-L1 AST Nodes."""
 
 import abc
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Tuple, TypeAlias, Union
 
 import attrs
 
@@ -95,3 +95,173 @@ class CObjectNode(CValueNode):
         if carg_str:
             return f'{self.name}({carg_str})'
         return self.name
+
+
+@attrs.frozen
+class QDTypeNode(L1ASTNode):
+    """A quantum data type, optionally with a shape."""
+
+    dtype: CObjectNode
+    shape: Optional[Sequence[int]]
+
+
+@attrs.frozen
+class QSignatureEntry(L1ASTNode):
+    """A quantum signature entry."""
+
+    name: str
+    dtype: Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
+
+
+class StatementNode(L1ASTNode, metaclass=abc.ABCMeta):
+    """Nodes which can serve as statements in a qdef.
+
+    This base class's implementors include:
+     - `AliasAssignmentNode`
+     - `QCallNode`
+     - `QReturnNode`
+    """
+
+
+@attrs.frozen
+class AliasAssignmentNode(StatementNode):
+    """A statement that assigns `bloq_key` to `alias`."""
+
+    alias: str
+    bloq_key: str
+
+    def __str__(self):
+        return f'[AA] {self.alias} = {self.bloq_key}'
+
+
+@attrs.frozen
+class QArgValueNode(L1ASTNode):
+    """A quantum argument (specifically the value, not the kv pair).
+
+    In general, a quantum argument is referenced by a local variable name and optional
+    indices into the local variable.
+    """
+
+    name: str
+    idx: Sequence[int]
+
+
+NestedQArgValue: TypeAlias = Union[QArgValueNode, Sequence['NestedQArgValue']]
+
+
+@attrs.frozen
+class QArgNode(L1ASTNode):
+    """A quantum argument given as a key-value pair.
+
+    During a quantum call, we provide quantum arguments (always by keyword). The value
+    being passed can be a local variable, an indexed local variable, or an arbitrarily nested
+    list of indexed local variables.
+    """
+
+    key: str
+    value: NestedQArgValue  # TODO: turn all to tuple
+
+
+@attrs.frozen
+class QCallNode(StatementNode):
+    """A statement that calls a quantum subroutine."""
+
+    bloq_key: str
+    lvalues: Sequence[str] = attrs.field(converter=tuple[str])
+    qargs: Sequence[QArgNode] = attrs.field(converter=tuple[QArgNode])
+
+
+@attrs.frozen
+class QReturnNode(StatementNode):
+    """A statement that returns from a subroutine."""
+
+    ret_mapping: Sequence[QArgNode]
+
+
+class QDefNode(L1ASTNode, metaclass=abc.ABCMeta):
+    """Nodes that serve as 'qdefs'.
+
+    This base class's implementors include:
+     - `QDefImplNode`
+     - `QDefExternNode`
+    """
+
+    @property
+    @abc.abstractmethod
+    def bloq_key(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def qsignature(self) -> Sequence[QSignatureEntry]: ...
+
+    @property
+    @abc.abstractmethod
+    def cobject_from(self) -> Optional[CObjectNode]: ...
+
+
+@attrs.frozen
+class QDefImplNode(QDefNode):
+    """A qdef defining a quantum subroutine.
+
+    Args:
+        bloq_key: The bloq_key this qdef defines.
+        qsignature: The qdef's signature
+        body: The sequence of statements forming the qdef's body.
+        cobject_from: Optional classical object in the "from" clause.
+
+    ```qlt
+    qdef bloq1 [ ..qsignature.. ]
+    from ..cobject_from..
+    { ..body.. }
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    body: Sequence[StatementNode] = attrs.field(converter=tuple[StatementNode])
+    cobject_from: Optional[CObjectNode]
+
+
+@attrs.frozen
+class QDefExternNode(QDefNode):
+    """A qdef declaring an external quantum subroutine.
+
+    Args:
+        bloq_key: The bloq_key this qdef declares.
+        qsignature: The signature of the external subroutine.
+        cobject_from: Classical object in the "from" clause. This is mandatory, but that
+            should be enforced by the evaluation logic.
+
+    ```qlt
+    extern qdef X
+    from qualtran.bloqs.basic_gates.XGate()
+    [q: QBit()]
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    cobject_from: Optional[CObjectNode]
+
+
+@attrs.frozen
+class L1Module(L1ASTNode):
+    """A module consisting of a sequence of qdefs.
+
+    In Qualtran-L1, a text file containing a module must begin with the
+    string "# Qualtran-L1", followed by a newline, followed by a syntax
+    version specifier "# {major}.{minor}.{patch}".
+
+    Args:
+        qdefs: The sequence of qdefs.
+
+    ```qlt
+    # Qualtran-L1
+    # 1.0.0
+
+    qdef bloq1 [x: QBit()] { ... }
+    qdef bloq2 [...] {...}
+    ```
+    """
+
+    qdefs: Sequence[QDefNode] = attrs.field(converter=tuple[QDefNode])
