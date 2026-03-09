@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import lru_cache
-from typing import cast, Dict, Tuple, Type, TYPE_CHECKING
+from typing import cast, Dict, Tuple, Type
 
 import qualtran as qlt
 import qualtran.dtype as qdt

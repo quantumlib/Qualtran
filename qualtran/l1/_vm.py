@@ -20,7 +20,6 @@ import numpy as np
 
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, CompositeBloq, Register
-from qualtran.l1_lite._eval_lite import LiteCompositeBloq
 
 
 def _mock_return_values(regs: Iterable[Register]):
@@ -77,7 +76,7 @@ class StandardQualtranArchitectureAgnosticVirtualMachine:
         self.n_atoms += 1
 
     def execute(self, bloq: 'Bloq', **soqs):
-        if isinstance(bloq, (CompositeBloq, LiteCompositeBloq)):
+        if isinstance(bloq, CompositeBloq):
             return self.qcall(bloq, **soqs)
 
         if self.bloq_in_isa(bloq):

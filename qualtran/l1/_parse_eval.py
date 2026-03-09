@@ -16,7 +16,7 @@ from typing import Dict
 
 import qualtran as qlt
 from qualtran.l1._eval import BloqKey, eval_module
-from qualtran.l1._parse import CObjectNode, parse_module
+from qualtran.l1._parse import parse_module
 
 from ._eval import eval_cvalue_node
 from ._parse import parse_objectstring

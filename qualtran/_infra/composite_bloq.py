@@ -30,7 +30,6 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    Type,
     TYPE_CHECKING,
     TypeVar,
     Union,

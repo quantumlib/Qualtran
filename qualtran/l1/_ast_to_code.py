@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import abc
 import functools
-from typing import Any, Dict
-
-import attrs
+from typing import Any
 
 from qualtran.symbolics import SymbolicInt
 
@@ -24,7 +21,6 @@ from .nodes import (
     AliasAssignmentNode,
     CArgNode,
     CObjectNode,
-    CValueNode,
     L1ASTNode,
     L1Module,
     LiteralNode,
@@ -36,7 +32,6 @@ from .nodes import (
     QDTypeNode,
     QReturnNode,
     QSignatureEntry,
-    StatementNode,
     TupleNode,
 )
 

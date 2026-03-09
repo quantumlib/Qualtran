@@ -235,8 +235,8 @@ def eval_qdtype_node(dt: QDTypeNode) -> Tuple['qualtran.QCDType', Sequence[int]]
     context = get_builtin_qdtype_mapping() | _get_custom_dtypes()
     try:
         dt_cls = context[dt.dtype.name]
-    except KeyError:
-        raise ValueError(f"Unknown data type {dt.dtype.name}")
+    except KeyError as e:
+        raise ValueError(f"Unknown data type {dt.dtype.name}") from e
     args, kwargs = eval_carg_nodes(dt.dtype.cargs)
     qdt = dt_cls(*args, **kwargs)
 
@@ -287,7 +287,7 @@ def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtr
     try:
         bloq = eval_cvalue_node(qdef.cobject_from, safe=safe)
     except (ValueError, ImportError, AttributeError, TypeError) as e:
-        raise ValueError(*e.args, f'in {qdef}')
+        raise ValueError(*e.args, f'in {qdef}') from e
     return bloq
 
 
@@ -430,7 +430,7 @@ def _eval_qdef_impl_node(
             cbloq = attrs.evolve(
                 cbloq, decomposed_from=bobj
             )  # TODO: Include decomposed_frm in BloqBuilder
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(
                 "Failed to load the corresponding bloq 'from' for %s: %s", qdef.bloq_key, e
             )

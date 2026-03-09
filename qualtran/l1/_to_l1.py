@@ -25,7 +25,6 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    TYPE_CHECKING,
     TypeAlias,
     Union,
 )
@@ -34,7 +33,6 @@ import attrs
 import numpy as np
 
 import qualtran as qlt
-import qualtran.dtype as qdt
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns, _cxns_to_soq_dict
 
@@ -42,18 +40,13 @@ from ._dtypes import reg_to_qdtype_node
 from ._to_cobject_node import to_cobject_node
 from .nodes import (
     AliasAssignmentNode,
-    CArgNode,
-    CObjectNode,
     L1Module,
-    LiteralNode,
-    NestedQArgValue,
     QArgNode,
     QArgValueNode,
     QCallNode,
     QDefExternNode,
     QDefImplNode,
     QDefNode,
-    QDTypeNode,
     QReturnNode,
     QSignatureEntry,
     StatementNode,
@@ -310,7 +303,7 @@ def bloq_to_code(
     *,
     extern_only_from: bool,
     force_extern: bool = False,
-) -> Tuple[QDefWithContext, List['Bloq']]:
+) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
     """Turn a bloq into Qualtran-L1 code.
 
     Generally just calls the right methods on `SubroutineFormatter`.
@@ -327,7 +320,7 @@ def bloq_to_code(
         qglobals[bloq] = bloq_key
 
     qdb = QDefBuilder(bloq=bloq, bloq_key=bloq_key, qglobals=qglobals)
-    log.info(f"Compiling %s -> %s", repr(bloq), bloq_key)
+    log.info("Compiling %s -> %s", repr(bloq), bloq_key)
 
     # Signature
     qdb.add_signature(bloq.signature)
@@ -447,7 +440,7 @@ def dump_l1(
     *,
     annotate_costs: bool = False,
     extern_only_from: bool = False,
-    force_extern_pred: Callable[['Bloq'], bool] = lambda b: False,
+    force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
 ) -> Optional[str]:
     from qualtran.l1 import L1ASTPrinter
 
