@@ -21,7 +21,6 @@ from functools import cached_property
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
-import sympy
 from attrs import field, frozen
 
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicInt
@@ -54,9 +53,9 @@ class Side(enum.Flag):
 
 
 def _consume_register_dtype(dtype: Union[QCDType, ShapedQCDType]) -> QCDType:
-    # In __attrs_post_init__, we actually handle the ShapedQCDType case. This is for type
-    # checking.
-    return dtype
+    # In __attrs_post_init__, we actually handle the ShapedQCDType case, which isn't accounted
+    # for in attrs type checking.
+    return cast(QCDType, dtype)
 
 
 @frozen
@@ -209,12 +208,14 @@ class Signature:
 
     @classmethod
     def build(cls, *args, **kwargs) -> 'Signature':
-        """Construct a Signature comprised of untyped thru registers of the given bitsizes.
+        """Construct a Signature using a more natural syntax.
 
-        For rapid prorotyping or simple gates, this syntactic sugar can be used.
+        This builder constructs a `Signature` flexibly from a mix of types, positional elements,
+        and named keyword arguments. For rapid prototyping or simple gates, you can quickly define
+        registers without manually instantiating `Register` objects.
 
         Examples:
-            The following constructors are equivalent
+            The following constructors are equivalent:
 
             >>> sig1 = Signature.build(a=32, b=1)
             >>> sig2 = Signature([
@@ -224,9 +225,40 @@ class Signature:
             >>> sig1 == sig2
             True
 
+            We can also build signatures with fully instantiated `QCDType` arguments, including
+            shaped multidimensional registers:
+
+            >>> from qualtran import QBit, QUInt
+            >>> sig = Signature.build(ctrl=QBit()[5, 5], system=QUInt(32))
+            >>> sig == Signature([
+            ...     Register('ctrl', QBit(), shape=(5, 5)),
+            ...     Register('system', QUInt(32))
+            ... ])
+            True
+
+            Left and Right registers can be specified with a 2-tuple `(LEFT, RIGHT)`.
+            Here, we allocate `b` as a right register.
+
+            >>> sig = Signature.build(a=(QBit(), QBit()), b=(None, QBit()))
+            >>> sig == Signature([
+            ...     Register('a', QBit(), side=Side.THRU),
+            ...     Register('b', QBit(), side=Side.RIGHT)
+            ... ])
+            True
+
+            Positional arguments can be used to join previously defined components:
+
+            >>> sig1 = Signature.build(a=1)
+            >>> extra = [Register('c', QAny(5))]
+            >>> sig2 = Signature.build(sig1, extra)
+
         Args:
-            **registers: Keyword arguments mapping register names to bitsizes. All registers
-                will be 0-dimensional, THRU, and of type QAny/QBit.
+            *args: Positional arguments must be instances of `Register`, `Signature`, or iterables
+                thereof, which will be concatenated in order of layout.
+            **kwargs: Keyword arguments mapping register names to data types or sizes.
+                Values can be integer bitsizes (where 1 maps to `QBit` and n to `QAny(n)`),
+                `QCDType` instances, `ShapedQCDType` instances, or 2-tuples of
+                `(left_dtype, right_dtype)` to explicitly specify sides.
         """
         if args and kwargs:
             raise ValueError(
@@ -283,6 +315,7 @@ class Signature:
                     f"Invalid data type for Signature.build keyword argument '{k}': {v}"
                 )
             else:
+                dt: QCDType
                 if v == 1:
                     dt = QBit()
                 else:
