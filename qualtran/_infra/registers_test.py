@@ -155,10 +155,87 @@ def test_signature_build():
     sig1 = Signature([Register("r1", QAny(5)), Register("r2", QAny(2))])
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
-    assert sig1.n_qubits() == 7
+    assert sig2.n_qubits() == 7
+
+
+def test_signature_build_drops_falsey():
+    should_be = Signature([Register('x', QBit())])
+    assert Signature.build(x=1, y=0) == should_be
+    assert Signature.build(x=1, y=None) == should_be
+
+
+def test_signature_build_dtypes():
+    should_be = Signature([Register('system', QUInt(8))])
+    assert Signature.build(system=QUInt(8)) == should_be
+
+
+def test_signature_build_shaped():
+    should_be = Signature([Register('qubits', QBit(), shape=(5, 5))])
+    assert Signature.build(qubits=QBit()[5, 5]) == should_be
+
+    should_be = Signature([Register('ctrl', QBit()), Register('ints', QInt(8), shape=(5,))])
+    assert Signature.build(ctrl=1, ints=QInt(8)[5]) == should_be
+
+
+def test_signature_build_sided():
+    should_be = Signature(
+        [Register('x_in', QAny(3), side=Side.LEFT), Register('x_out', QAny(3), side=Side.RIGHT)]
+    )
+    assert Signature.build(x_in=(QAny(3), None), x_out=(None, QAny(3))) == should_be
+
+
+def test_signature_build_grouped_sided():
+    should_be = Signature(
+        [Register('x', QAny(3), side=Side.LEFT), Register('x', QBit(), shape=(3,), side=Side.RIGHT)]
+    )
+    assert Signature.build(x=(QAny(3), QBit()[3])) == should_be
+
+
+def test_signature_build_signature():
+    should_be = Signature(
+        [Register('x', QAny(3), side=Side.LEFT), Register('x', QBit(), shape=(3,), side=Side.RIGHT)]
+    )
+    assert Signature.build(should_be) == should_be
+
+
+def test_signature_build_registers():
+    should_be = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    assert Signature.build(Register('ctrl', QBit()), Register('system', QAny(5))) == should_be
+
+
+def test_signature_build_signature_registers():
+    should_be = Signature(
+        [
+            Register('ctrl', QBit()),
+            Register('system', QAny(5)),
+            Register('x_in', QAny(3), side=Side.LEFT),
+            Register('x_out', QAny(3), side=Side.RIGHT),
+            Register('x', QBit()),
+        ]
+    )
+
+    first_signature = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    regs = [Register('x_in', QAny(3), side=Side.LEFT), Register('x_out', QAny(3), side=Side.RIGHT)]
+    last_signature = Signature([Register('x', QBit())])
+    assert Signature.build(first_signature, regs, last_signature) == should_be
+
+
+def test_signature_build_mixed_args_kwargs():
+    first_signature = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    with pytest.raises(ValueError, match=r'either.*not both.*'):
+        Signature.build(first_signature, y=QBit())
+
+
+def test_signature_build_kwregs():
+    with pytest.raises(ValueError, match=r"Invalid data type.*'x'.*"):
+        Signature.build(x=Register('x', QBit()))
+
+
+def test_signature_build_from_dtypes():
     sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
     assert sig1 == sig2
+
     sig1 = Signature([Register("r1", QInt(7))])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QAny(0))
     assert sig1 == sig2
