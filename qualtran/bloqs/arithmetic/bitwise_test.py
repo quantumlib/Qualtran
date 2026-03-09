@@ -184,3 +184,8 @@ def test_bitwisenot_classical_action(dtype, bitsize):
     else:
         valid_range = range(2**bitsize)
     qlt_testing.assert_consistent_classical_action(b, x=valid_range)
+
+
+def test_bitwise_not_str():
+    bloq = BitwiseNot(QUInt(5))
+    assert str(bloq) == "BitwiseNot(5)"
