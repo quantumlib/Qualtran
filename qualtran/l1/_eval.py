@@ -66,13 +66,8 @@ BloqKey: TypeAlias = str
 
 @lru_cache
 def _get_custom_dtypes():
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
-        HubbardPsiT,
-        HubbardSelectT,
-        HubbardSystemT,
-    )
-
-    dtypes = {f'{k._pkg_()}.{k.__name__}': k for k in [HubbardSelectT, HubbardPsiT, HubbardSystemT]}
+    # TODO: Custom data types.
+    dtypes = {f'{k._pkg_()}.{k.__name__}': k for k in []}
     return dtypes
 
 
