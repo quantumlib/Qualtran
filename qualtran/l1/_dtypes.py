@@ -78,5 +78,5 @@ def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
         assert isinstance(cval_node, CObjectNode)
         dtype_node = cval_node
 
-    shape = reg.shape_symbolic if reg.shape_symbolic else None
-    return QDTypeNode(dtype=dtype_node, shape=shape)  # type: ignore[arg-type]
+    shape = reg.shape if reg._shape else None
+    return QDTypeNode(dtype=dtype_node, shape=shape)
