@@ -412,6 +412,7 @@ class QualtranL1Parser:
         key = self.consume('NAME', 'invalid qarg key').value
         self.consume('EQUALS', 'invalid qargs k=v specification')
 
+        val: NestedQArgValue
         if self.check('LBRACK'):
             # Start a list
             val = self.parse_qarg_value_list()
@@ -425,7 +426,7 @@ class QualtranL1Parser:
 
         Lists can be arbitrarily nested.
         """
-        qarg_value_list = []
+        qarg_value_list: List[NestedQArgValue] = []
         self.consume('LBRACK', 'qarg value list must start with [')
         while True:
             if self.check('LBRACK'):

@@ -14,7 +14,7 @@
 
 import abc
 import functools
-from typing import Any, Dict
+from typing import Any, cast, Dict
 
 import attrs
 
@@ -37,7 +37,7 @@ from ._parse import (
 class L1VisitorBase(metaclass=abc.ABCMeta):
     @functools.singledispatchmethod
     def visit(self, node: L1ASTNode) -> Dict[str, Any]:
-        record = attrs.asdict(node, recurse=False)
+        record = attrs.asdict(cast(Any, node), recurse=False)
         record = {k: self.visit(v) if isinstance(v, L1ASTNode) else v for k, v in record.items()}
         return record
 

@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import cast
+
 import pytest
 
 import qualtran as qlt
@@ -85,5 +87,5 @@ def test_load_negate():
     )
 
     assert set(module.keys()) == {'Negate', 'BitwiseNot(8)', 'AddK(k=1)'}
-    cbloq: qlt.CompositeBloq = module['Negate']
+    cbloq = cast(qlt.CompositeBloq, module['Negate'])
     assert len(cbloq.bloq_instances) == 2

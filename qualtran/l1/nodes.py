@@ -167,8 +167,8 @@ class QCallNode(StatementNode):
     """A statement that calls a quantum subroutine."""
 
     bloq_key: str
-    lvalues: Sequence[str] = attrs.field(converter=tuple)
-    qargs: Sequence[QArgNode] = attrs.field(converter=tuple)
+    lvalues: Sequence[str] = attrs.field(converter=tuple[str])
+    qargs: Sequence[QArgNode] = attrs.field(converter=tuple[QArgNode])
 
 
 @attrs.frozen
@@ -217,8 +217,8 @@ class QDefImplNode(QDefNode):
     """
 
     bloq_key: str
-    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple)
-    body: Sequence[StatementNode] = attrs.field(converter=tuple)
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    body: Sequence[StatementNode] = attrs.field(converter=tuple[StatementNode])
     cobject_from: Optional[CObjectNode]
 
 
@@ -229,7 +229,8 @@ class QDefExternNode(QDefNode):
     Args:
         bloq_key: The bloq_key this qdef declares.
         qsignature: The signature of the external subroutine.
-        cobject_from: Manditory classical object in the "from" clause.
+        cobject_from: Classical object in the "from" clause. This is mandatory, but that
+            should be enforced by the evaluation logic.
 
     ```qlt
     extern qdef X
@@ -239,8 +240,8 @@ class QDefExternNode(QDefNode):
     """
 
     bloq_key: str
-    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple)
-    cobject_from: CObjectNode
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+    cobject_from: Optional[CObjectNode]
 
 
 @attrs.frozen
@@ -263,4 +264,4 @@ class L1Module(L1ASTNode):
     ```
     """
 
-    qdefs: Sequence[QDefNode] = attrs.field(converter=tuple)
+    qdefs: Sequence[QDefNode] = attrs.field(converter=tuple[QDefNode])

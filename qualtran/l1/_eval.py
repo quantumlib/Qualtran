@@ -16,8 +16,10 @@ import logging
 from functools import lru_cache
 from typing import (
     Any,
+    cast,
     Dict,
     List,
+    Mapping,
     Optional,
     Protocol,
     Sequence,
@@ -31,7 +33,17 @@ import attrs
 import numpy as np
 import sympy
 
-from qualtran import Bloq, BloqBuilder, BloqError, CompositeBloq, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    BloqError,
+    CompositeBloq,
+    QCDType,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.manifest import BLOQ_CLASS_NAMES
 
 from ._dtypes import get_builtin_qdtype_mapping
@@ -65,9 +77,9 @@ BloqKey: TypeAlias = str
 
 
 @lru_cache
-def _get_custom_dtypes():
+def _get_custom_dtypes() -> Dict[str, type[QCDType]]:
     # TODO: Custom data types.
-    dtypes = {f'{k._pkg_()}.{k.__name__}': k for k in []}
+    dtypes: Dict[str, type[QCDType]] = {f'{k._pkg_()}.{k.__name__}': k for k in []}  # type: ignore
     return dtypes
 
 
@@ -284,6 +296,8 @@ def eval_qsignature(entries: Sequence[QSignatureEntry]) -> 'qualtran.Signature':
 def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtran.Bloq':
     """Evaluate an extern node by loading in the bloq using Python."""
     logger.info("Linking qdef extern %s from %s", qdef.bloq_key, qdef.cobject_from)
+    if qdef.cobject_from is None:
+        raise ValueError("The `from` clause is required for an extern qdef.")
     try:
         bloq = eval_cvalue_node(qdef.cobject_from, safe=safe)
     except (ValueError, ImportError, AttributeError, TypeError) as e:
@@ -294,7 +308,7 @@ def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtr
 def eval_bloq_maybe_aliased(
     key: BloqKey,
     qdefs: Dict[BloqKey, QDefNode],
-    qlocals: Dict[BloqKey, Union[BloqKey, 'SoquetT']],
+    qlocals: Mapping[BloqKey, Union[BloqKey, 'SoquetT']],
     bloqs: Dict[BloqKey, Bloq],
 ) -> 'qualtran.Bloq':
     """Recursively load bloqs.
@@ -337,17 +351,17 @@ def eval_bloq_maybe_aliased(
     raise TypeError(f"Could not resolve {key}")
 
 
-def eval_qarg_value(val: NestedQArgValue, qlocals: Dict[str, 'qualtran.SoquetT']):
+def eval_qarg_value(val: NestedQArgValue, qlocals: Mapping[str, 'qualtran.SoquetT']):
     if isinstance(val, QArgValueNode):
         if val.idx:
-            return qlocals[val.name][val.idx]
+            return cast(np.ndarray, qlocals[val.name])[val.idx]
         else:
             return qlocals[val.name]
 
     return [eval_qarg_value(v, qlocals) for v in val]
 
 
-def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Dict[str, 'qualtran.SoquetT']):
+def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, 'qualtran.SoquetT']):
     qkwargs = {}
     for qarg in qargs:
         qkwargs[qarg.key] = eval_qarg_value(qarg.value, qlocals)
@@ -378,7 +392,7 @@ def _eval_qdef_impl_node(
     logger.info("Evaluating qdef impl %s", qdef.bloq_key)
 
     signature: Signature = eval_qsignature(qdef.qsignature)
-    qlocals: Dict[str, Union['SoquetT', BloqKey]]
+    qlocals: Mapping[str, Union['SoquetT', BloqKey]]
     bb, qlocals = BloqBuilder.from_signature(signature)
     subbloq_aliases: Dict[Bloq, str] = {}
 
@@ -388,7 +402,7 @@ def _eval_qdef_impl_node(
         logger.debug("STMT: %s", stmt)
 
         if isinstance(stmt, AliasAssignmentNode):
-            qlocals[stmt.alias] = stmt.bloq_key
+            qlocals[stmt.alias] = stmt.bloq_key  # type: ignore[assignment]
             bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs)
             subbloq_aliases[bloq] = stmt.alias
 
@@ -471,6 +485,7 @@ def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bl
             logger.debug("Already loaded %s during recursion", bk)
             continue
 
+        bloq: Bloq
         if isinstance(qdef, QDefImplNode):
             bloq = eval_qdef_impl_node(qdef, qdefs, bloqs, safe=safe)
             bloqs[bk] = bloq

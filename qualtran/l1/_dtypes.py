@@ -51,22 +51,22 @@ def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
         dtype_node = CObjectNode('CBit', [])
     elif isinstance(dtype, (qdt.QAny, qdt.QInt, qdt.QUInt)):
         dtype_node = CObjectNode(
-            dtype.__class__.__name__, cargs=[CArgNode(None, LiteralNode(dtype.bitsize))]
+            dtype.__class__.__name__, cargs=[CArgNode(None, LiteralNode(cast(int, dtype.bitsize)))]
         )
     elif isinstance(dtype, qdt.BQUInt):
         dtype_node = CObjectNode(
             'BQUInt',
             cargs=[
-                CArgNode(None, LiteralNode(dtype.bitsize)),
-                CArgNode(None, LiteralNode(dtype.iteration_length)),
+                CArgNode(None, LiteralNode(cast(int, dtype.bitsize))),
+                CArgNode(None, LiteralNode(cast(int, dtype.iteration_length))),
             ],
         )
     elif isinstance(dtype, qdt.QFxp):
         dtype_node = CObjectNode(
             'QFxp',
             cargs=[
-                CArgNode(None, LiteralNode(dtype.bitsize)),
-                CArgNode(None, LiteralNode(dtype.num_frac)),
+                CArgNode(None, LiteralNode(cast(int, dtype.bitsize))),
+                CArgNode(None, LiteralNode(cast(int, dtype.num_frac))),
                 CArgNode('signed', LiteralNode(dtype.signed)),
             ],
         )
@@ -74,7 +74,9 @@ def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
     else:
         from ._to_cobject_node import to_cobject_node
 
-        dtype_node = to_cobject_node(dtype)
+        cval_node = to_cobject_node(dtype)
+        assert isinstance(cval_node, CObjectNode)
+        dtype_node = cval_node
 
     shape = reg.shape_symbolic if reg.shape_symbolic else None
-    return QDTypeNode(dtype=dtype_node, shape=shape)
+    return QDTypeNode(dtype=dtype_node, shape=shape)  # type: ignore[arg-type]

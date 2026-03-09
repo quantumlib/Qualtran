@@ -26,7 +26,15 @@ from qualtran.l1._parse import (
     Token,
     tokenize,
 )
-from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
+from qualtran.l1.nodes import (
+    CArgNode,
+    CObjectNode,
+    LiteralNode,
+    QArgValueNode,
+    QDefImplNode,
+    QDTypeNode,
+    TupleNode,
+)
 
 
 def test_tokenize():
@@ -272,8 +280,9 @@ qdef OtherBloq() from qualtran.bloqs.OtherBloq() [
     assert module.qdefs[0].bloq_key == "MyBloq"
     assert module.qdefs[0].qsignature[0].name == "q"
     assert module.qdefs[1].bloq_key == "OtherBloq"
-    assert module.qdefs[1].body[0].lvalues == ("q",)
-    assert module.qdefs[1].body[0].bloq_key == "MyBloq"
+    assert isinstance(module.qdefs[1], QDefImplNode)
+    assert module.qdefs[1].body[0].lvalues == ("q",)  # type: ignore
+    assert module.qdefs[1].body[0].bloq_key == "MyBloq"  # type: ignore
 
 
 def test_parse_lvalues_pipe():
@@ -286,9 +295,12 @@ def test_parse_qarg_nested():
     parser = QualtranL1Parser(tokenize("target=[x[0], [y[1], z[2]]] ]"))
     qarg = parser.parse_qarg()
     assert qarg.key == "target"
+    assert isinstance(qarg.value, tuple) or isinstance(qarg.value, list)
     assert len(qarg.value) == 2
+    assert isinstance(qarg.value[0], QArgValueNode)
     assert qarg.value[0].name == "x"
     assert qarg.value[0].idx == (0,)
+    assert isinstance(qarg.value[1], tuple) or isinstance(qarg.value[1], list)
     assert len(qarg.value[1]) == 2
 
 
@@ -302,6 +314,7 @@ def test_parse_signature_types():
     assert qdef.qsignature[2].name == "c"
     assert qdef.qsignature[3].name == "d"
     assert qdef.qsignature[4].name == "e"
+    assert isinstance(qdef.qsignature[4].dtype, QDTypeNode)
     assert qdef.qsignature[4].dtype.shape == [2, 3]
 
 
@@ -325,6 +338,6 @@ def test_parse_empty_brackets():
     code = "qdef Foo() [] { a = MyBloq()[] } qdef Bar() [a: t[]] { c = qualtran.bloqs.Bloq }"
     module = parse_module(code)
     assert module.qdefs[0].qsignature == ()
-    assert module.qdefs[0].body[0].qargs == ()
-    assert module.qdefs[1].qsignature[0].dtype.shape == []
-    assert module.qdefs[1].body[0].alias == "c"
+    assert module.qdefs[0].body[0].qargs == ()  # type: ignore
+    assert module.qdefs[1].qsignature[0].dtype.shape == []  # type: ignore
+    assert module.qdefs[1].body[0].alias == "c"  # type: ignore[attr-defined]

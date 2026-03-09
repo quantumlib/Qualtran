@@ -40,6 +40,7 @@ from ._dtypes import reg_to_qdtype_node
 from ._to_cobject_node import to_cobject_node
 from .nodes import (
     AliasAssignmentNode,
+    CObjectNode,
     L1Module,
     QArgNode,
     QArgValueNode,
@@ -146,11 +147,12 @@ class QDefBuilder:
             self._sig_entries.append(entry)
 
     def finalize_extern(self, reason: str = ''):
+        cobject_from_val = to_cobject_node(self.bloq)
+        assert isinstance(cobject_from_val, CObjectNode)
+        cobject_from = cobject_from_val
         return QDefWithContext(
             qdef=QDefExternNode(
-                bloq_key=self.bloq_key,
-                qsignature=self._sig_entries,
-                cobject_from=to_cobject_node(self.bloq),
+                bloq_key=self.bloq_key, qsignature=self._sig_entries, cobject_from=cobject_from
             ),
             bloq=self.bloq,
             implemented=False,
@@ -170,11 +172,11 @@ class QDefBuilder:
 
         # Should we make an 'alias' or just use the original name?
         # If it's longer than 20 characters, make an alias.
-        alias = len(bloq_key) > 20
-        if alias:
+        should_alias = len(bloq_key) > 20
+        if should_alias:
             prefix = _guess_good_alias_prefix(bloq)
-            alias = self.qlocals.assign_bloq(bloq, prefix=prefix)
-            self._stmnts.append(AliasAssignmentNode(alias=alias, bloq_key=bloq_key))
+            alias_str = self.qlocals.assign_bloq(bloq, prefix=prefix)
+            self._stmnts.append(AliasAssignmentNode(alias=alias_str, bloq_key=bloq_key))
         else:
             self.qlocals.bloqvars[bloq] = bloq_key
 
@@ -198,6 +200,8 @@ class QDefBuilder:
                     self.qlocals.soqvars[suc.left] = v
             return
 
+        kwargs: List[QArgNode] = []
+
         # Case: this bloqnection represents an output from self.bloq to the outside world.
         if binst is qlt.RightDangle:
             assert len(succs) == 0
@@ -207,7 +211,6 @@ class QDefBuilder:
                 get_me=lambda cxn: cxn.right,
                 get_assign=lambda cxn: cxn.left,
             )
-            kwargs: List[QArgNode] = []
             for reg in self.bloq.signature.rights():
                 regname = reg.name
                 soqs = finsoqs[regname]
@@ -230,7 +233,6 @@ class QDefBuilder:
             get_me=lambda cxn: cxn.right,
             get_assign=lambda cxn: cxn.left,
         )
-        kwargs: List[QArgNode] = []
         for reg in binst.bloq.signature.lefts():
             regname = reg.name
             soqs = inpsoqs[regname]
@@ -276,7 +278,9 @@ class QDefBuilder:
         elif isinstance(self.bloq, qlt.CompositeBloq):
             cobject_from = None
         else:
-            cobject_from = to_cobject_node(self.bloq)
+            cobject_from_val = to_cobject_node(self.bloq)
+            assert isinstance(cobject_from_val, CObjectNode)
+            cobject_from = cobject_from_val
 
         return QDefWithContext(
             qdef=QDefImplNode(
@@ -409,14 +413,17 @@ class L1ModuleBuilder:
         return self.qglobals[root]
 
     def finalize(self) -> L1Module:
-        return L1Module(qdefs=[qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs])
+        return L1Module(qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs))
 
     def pretty_print_qdef(self, bloq_or_bloq_key: Union[qlt.Bloq, BloqKey], f=None) -> None:
         from qualtran.l1 import L1ASTPrinter
 
         bloq_key: BloqKey
-        if bloq_or_bloq_key in self.qglobals:
-            bloq_key = bloq_or_bloq_key
+        if isinstance(bloq_or_bloq_key, qlt.Bloq):
+            if bloq_or_bloq_key in self.qglobals:
+                bloq_key = self.qglobals[bloq_or_bloq_key]
+            else:
+                raise KeyError(f"Unknown bloq key {bloq_or_bloq_key!r}")
         else:
             bloq_key = bloq_or_bloq_key
 

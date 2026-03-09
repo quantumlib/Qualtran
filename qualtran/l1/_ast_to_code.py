@@ -14,7 +14,7 @@
 import functools
 from typing import Any
 
-from qualtran.symbolics import SymbolicInt
+import sympy
 
 from ._ast_visitor_base import L1VisitorBase
 from .nodes import (
@@ -101,7 +101,7 @@ class L1ASTPrinter(L1VisitorBase):
         r = super().visit(node)
 
         if 'shape' in r:
-            if not all(isinstance(x, SymbolicInt) for x in r['shape']):
+            if not all(isinstance(x, (int, sympy.Expr)) for x in r['shape']):
                 raise ValueError(f"Invalid shape in QDTypeNode {node}")
             shape_str = ', '.join(repr(x) for x in r['shape'])
             return f"{r['dtype']}[{shape_str}]"
