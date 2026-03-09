@@ -74,7 +74,7 @@ class QDefWithContext:
 class Locals:
     """Handles assigning variable names for our variable *objects*, i.e. soquets and bloqs."""
 
-    soqvars: Dict['qlt.Soquet', QArgValueNode] = attrs.field(factory=dict)
+    soqvars: Dict['qlt.SoquetT', QArgValueNode] = attrs.field(factory=dict)
     bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
     varnames: Set[str] = attrs.field(factory=set)
 
