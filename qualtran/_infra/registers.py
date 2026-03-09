@@ -430,12 +430,10 @@ class Signature:
         return f'Signature({repr(self._registers)})'
 
     @overload
-    def __getitem__(self, key: int) -> Register:
-        pass
+    def __getitem__(self, key: int) -> Register: ...
 
     @overload
-    def __getitem__(self, key: slice) -> Tuple[Register, ...]:
-        pass
+    def __getitem__(self, key: slice) -> Tuple[Register, ...]: ...
 
     def __getitem__(self, key):
         return self._registers[key]

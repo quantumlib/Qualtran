@@ -312,3 +312,55 @@ def test_is_symbolic():
     assert is_symbolic(r)
     r = Register("my_reg", QAny(2), shape=sympy.symbols("x y"))
     assert is_symbolic(r)
+
+
+def test_register_pkg():
+    assert Register._pkg_() == 'qualtran'
+
+
+def test_register_shape_error():
+    with pytest.raises(ValueError, match="use either a shaped dtype.*or an explicit shape"):
+        Register("my_reg", QBit()[2], shape=(2,))
+
+
+def test_register_invalid_dtype():
+    with pytest.raises(ValueError, match="dtype must be a QCDType"):
+        Register("my_reg", 5)  # type: ignore
+
+
+def test_register_adjoint_side():
+    r2 = Register("my_reg", QBit(), side=Side.RIGHT)
+    assert r2.adjoint().side == Side.LEFT
+
+    r3 = Register("my_reg", QBit(), side=Side.LEFT)
+    assert r3.adjoint().side == Side.RIGHT
+
+
+def test_signature_build_positional_errors():
+    with pytest.raises(ValueError, match="Unknown type for positional argument"):
+        Signature.build("not_a_register_or_signature")
+
+
+def test_signature_build_tuple_error():
+    with pytest.raises(ValueError, match="you must specify a tuple of length 2"):
+        Signature.build(a=(QBit(),))
+
+
+def test_signature_thru_registers_only():
+    sig = Signature.build(a=1)
+    assert sig.thru_registers_only
+    sig2 = Signature([Register('a', QBit(), side=Side.LEFT)])
+    assert not sig2.thru_registers_only
+
+
+def test_signature_get_left_right():
+    sig = Signature([Register('a', QBit(), side=Side.LEFT), Register('b', QBit(), side=Side.RIGHT)])
+    assert sig.get_left('a').name == 'a'
+    assert sig.get_right('b').name == 'b'
+
+
+def test_signature_contains_and_hash():
+    r = Register('a', QBit())
+    sig = Signature([r])
+    assert r in sig
+    assert hash(sig) == hash(Signature([Register('a', QBit())]))
