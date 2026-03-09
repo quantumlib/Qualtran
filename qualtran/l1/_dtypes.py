@@ -15,8 +15,10 @@
 from functools import lru_cache
 from typing import cast, Dict, Tuple, Type, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import qualtran.dtype as qdt
+import qualtran as qlt
+import qualtran.dtype as qdt
+
+from .nodes import CArgNode, CObjectNode, LiteralNode, QDTypeNode
 
 
 @lru_cache
@@ -33,3 +35,46 @@ def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
 @lru_cache
 def get_builtin_qdtypes() -> Tuple[Type['qdt.QCDType'], ...]:
     return tuple(get_builtin_qdtype_mapping().values())
+
+
+def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
+    """Extract the shaped dtype from a register and return it as an AST node.
+
+    This includes special casing for 'builtin' datatypes. Otherwise, it uses
+    the generic `object_to_cobject_node` for the data type object, which may not load if
+    `safe=True`.
+    """
+    dtype = reg.dtype
+    if dtype == qdt.QBit():
+        dtype_node = CObjectNode('QBit', [])
+    elif dtype == qdt.CBit():
+        dtype_node = CObjectNode('CBit', [])
+    elif isinstance(dtype, (qdt.QAny, qdt.QInt, qdt.QUInt)):
+        dtype_node = CObjectNode(
+            dtype.__class__.__name__, cargs=[CArgNode(None, LiteralNode(dtype.bitsize))]
+        )
+    elif isinstance(dtype, qdt.BQUInt):
+        dtype_node = CObjectNode(
+            'BQUInt',
+            cargs=[
+                CArgNode(None, LiteralNode(dtype.bitsize)),
+                CArgNode(None, LiteralNode(dtype.iteration_length)),
+            ],
+        )
+    elif isinstance(dtype, qdt.QFxp):
+        dtype_node = CObjectNode(
+            'QFxp',
+            cargs=[
+                CArgNode(None, LiteralNode(dtype.bitsize)),
+                CArgNode(None, LiteralNode(dtype.num_frac)),
+                CArgNode('signed', LiteralNode(dtype.signed)),
+            ],
+        )
+
+    else:
+        from ._to_cobject_node import to_cobject_node
+
+        dtype_node = to_cobject_node(dtype)
+
+    shape = reg.shape_symbolic if reg.shape_symbolic else None
+    return QDTypeNode(dtype=dtype_node, shape=shape)
