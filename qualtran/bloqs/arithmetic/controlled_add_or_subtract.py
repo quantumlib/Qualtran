@@ -32,8 +32,10 @@ class ControlledAddOrSubtract(Bloq):
     Applies the transformation
 
     $$
+    \begin{aligned}
         |1\rangle |a\rangle |b\rangle \mapsto |1\rangle |a\rangle |b + a\rangle \\
         |0\rangle |a\rangle |b\rangle \mapsto |0\rangle |a\rangle |b - a\rangle
+    \end{aligned}
     $$
 
     Given two numbers `a`, `b` and a control bit `ctrl`, this bloq computes:
