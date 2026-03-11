@@ -362,6 +362,76 @@ class CBit(CDType[int]):
 
 
 @attrs.frozen
+class _Any(BitEncoding[int]):
+    """Bag of Qubits of a given bitsize.
+
+    Here (and throughout Qualtran), we use a big-endian bit convention. The most significant
+    bit is at index 0.
+    """
+
+    bitsize: SymbolicInt
+
+    def get_domain(self) -> Iterable[int]:
+        raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
+
+    def to_bits(self, x: int) -> List[int]:
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
+        if x == 0:
+            return [0] * int(self.bitsize)
+
+        raise TypeError(
+            f"Ambiguous encoding for {self} when encoding non zero value {x=}. Please use a more specific type."
+        )
+
+    def to_bits_array(self, x_array: NDArray[np.integer]) -> NDArray[np.uint8]:
+        if is_symbolic(self.bitsize):
+            raise ValueError(f"Cannot compute bits for symbolic {self.bitsize=}")
+
+        values = np.atleast_1d(x_array)
+        if values.size == 0:
+            return np.zeros((values.shape[0], int(self.bitsize)), dtype=np.uint8)
+
+        if not np.all(values == 0):
+            raise TypeError(
+                f"Ambiguous encoding for {self} when encoding non zero values {values=}. Please use a more specific type."
+            )
+
+        return np.zeros((values.shape[0], int(self.bitsize)), dtype=np.uint8)
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        if all(x == 0 for x in bits):
+            return 0
+
+        raise TypeError(
+            f"Ambiguous value for {self} when bits ({bits}) are non zero. Please use a more specific type."
+        )
+
+    def from_bits_array(self, bits_array: NDArray[np.uint8]) -> NDArray[np.uint64]:
+        bitstrings = np.atleast_2d(bits_array)
+        if bitstrings.shape[1] != self.bitsize:
+            raise ValueError(f"Input bitsize {bitstrings.shape[1]} does not match {self.bitsize=}")
+
+        if bitstrings.size == 0:
+            return np.zeros(bitstrings.shape[0], dtype=np.uint64)
+
+        if not np.all(bitstrings == 0):
+            raise TypeError(
+                f"Ambiguous value for {self} when bits are non zero ({bits_array}). Please use a more specific type."
+            )
+
+        return np.zeros(bitstrings.shape[0], dtype=np.uint64)
+
+    def assert_valid_val(self, val: int, debug_str: str = 'val') -> None:
+        pass
+
+    def assert_valid_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ) -> None:
+        pass
+
+
+@attrs.frozen
 class QAny(QDType[Any]):
     """Opaque bag-of-qubits type."""
 
@@ -369,7 +439,7 @@ class QAny(QDType[Any]):
 
     @property
     def _bit_encoding(self) -> BitEncoding[Any]:
-        return _UInt(self.bitsize)
+        return _Any(self.bitsize)
 
     def __attrs_post_init__(self):
         if is_symbolic(self.bitsize):
@@ -377,15 +447,6 @@ class QAny(QDType[Any]):
 
         if not isinstance(self.bitsize, int):
             raise ValueError(f"Bad bitsize for QAny: {self.bitsize}")
-
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
-
-    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
-        pass
-
-    def assert_valid_classical_val_array(self, val_array: NDArray, debug_str: str = 'val'):
-        pass
 
 
 @attrs.frozen

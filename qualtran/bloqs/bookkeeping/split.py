@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import warnings
 from functools import cached_property
 from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
@@ -26,6 +27,7 @@ from qualtran import (
     CompositeBloq,
     ConnectionT,
     DecomposeTypeError,
+    QAny,
     QBit,
     QDType,
     QUInt,
@@ -34,6 +36,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -92,6 +95,13 @@ class Split(_BookkeepingBloq):
         return None
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        if isinstance(self.dtype, QAny):
+            warnings.warn(
+                "Doing classical operations with QAny is ambiguous, returning a QUInt for legacy purposes",
+                category=LegacyPartitionWarning,
+            )
+            return {'reg': np.asarray(QUInt(self.dtype.bitsize).to_bits(reg))}
+
         return {'reg': np.asarray(self.dtype.to_bits(reg))}
 
     def my_tensors(
