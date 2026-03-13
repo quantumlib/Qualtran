@@ -31,7 +31,7 @@ class SparseLineManager(LineManager):
         self._join_to_split_id = self._build_join_to_split_map()
         self._split_to_join_id = self._build_split_to_join_map()
 
-    def _find_dual_on_line(self, line: int, start: int, dual_cls):
+    def _find_dual_on_line(self, line: int, start: int, dual_cls: Bloq):
         dual_candidates = [
             (rpos.seq_x, soq.binst.i)  # type: ignore[union-attr]
             for soq, rpos in self.soq_assign.items()
@@ -102,19 +102,11 @@ def composite_bloq_to_quirk(
     circuit = [col for col in sparse_circuit if col != empty_col]
     if circuit == []:
         raise ValueError(f"{cbloq} is an empty circuit")
-    nb_deleted_lines = 0
-    for i in range(
-        msd.max_y + 1
-    ):  # deleting lines of the circuit which are not used (happens with partition)
-        ind = i - nb_deleted_lines
-        for col in circuit:
-            line_is_useless = col[ind] == '1'
-            if not line_is_useless:
-                break
-        if line_is_useless:
-            for col in circuit:
-                col.pop(ind)
-            nb_deleted_lines += 1
+    # deleting lines of the circuit which are not used (happens with partition)
+    if circuit:
+        num_lines = len(circuit[0])
+        lines_to_keep = [i for i in range(num_lines) if any(col[i] != '1' for col in circuit)]
+        circuit = [[col[i] for i in lines_to_keep] for col in circuit]
 
     quirk_url = "https://algassert.com/quirk"
     start = '#circuit={"cols":['
