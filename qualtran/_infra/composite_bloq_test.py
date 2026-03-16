@@ -205,7 +205,18 @@ def test_bloq_builder():
     signature = Signature.build(x=1, y=1)
     x_reg, y_reg = signature
     bb, initial_soqs = BloqBuilder.from_signature(signature)
-    assert initial_soqs == {'x': Soquet(LeftDangle, x_reg), 'y': Soquet(LeftDangle, y_reg)}
+
+    # Using deprecated Soquet constructor (to be removed)
+    assert initial_soqs == {
+        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),
+        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),
+    }
+
+    # Using private constructor
+    assert initial_soqs == {
+        'x': _QVar(_Soquet(LeftDangle, x_reg), bb=bb),
+        'y': _QVar(_Soquet(LeftDangle, y_reg), bb=bb),
+    }
 
     x = initial_soqs['x']
     y = initial_soqs['y']
@@ -302,7 +313,7 @@ def test_finalize_missing_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqError, match=r"During finalization, we expected a value for 'x'\."):
+    with pytest.raises(BloqError, match=r"During Finalizing, we expected a value for 'x'\."):
         bb.finalize(y=y2)
 
 
@@ -311,7 +322,7 @@ def test_finalize_strict_too_many_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqError, match=r'finalization does not accept Soquets.*z.*'):
+    with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
         bb.finalize(x=x2, y=y2, z=_Soquet(RightDangle, Register('asdf', QBit())))
 
 

@@ -211,6 +211,7 @@ class _QVar:
             raise NotImplementedError()
         return arr
 
+
 LeftDangle = DanglingT("LeftDangle")
 RightDangle = DanglingT("RightDangle")
 

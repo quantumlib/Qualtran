@@ -1206,9 +1206,7 @@ class BloqBuilder:
 
     @classmethod
     def from_signature(
-        cls,
-        signature: Signature,
-        add_registers_allowed: bool = False,
+        cls, signature: Signature, add_registers_allowed: bool = False
     ) -> Tuple['BloqBuilder', Dict[str, QVarT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
@@ -1345,7 +1343,7 @@ class BloqBuilder:
         except KeyError:
             bloq = binst if isinstance(binst, DanglingT) else binst.bloq
             raise BloqError(
-                f"During construction of {self._bloq_key}, a quantum variable was re-used.\n"
+                f"During construction of the bloq, a quantum variable was re-used.\n"
                 f"  When calling: {bloq}\n"
                 f"  Register name: {reg.name}\n"
                 f"  Re-used soquet details: {idxed_soq.soquet}"
@@ -1577,7 +1575,6 @@ class BloqBuilder:
                 dtype, shape = _infer_shaped_dtype(np.asarray(soq))
                 self._regs.append(Register(name=name, dtype=dtype, shape=shape, side=Side.RIGHT))
 
-
         return self._finalize_strict(**final_soqs)
 
     def _finalize_strict(self, **final_soqs: SoquetInT) -> CompositeBloq:
@@ -1602,9 +1599,7 @@ class BloqBuilder:
             ) from None
 
         return CompositeBloq(
-            connections=self._cxns,
-            signature=signature,
-            bloq_instances=self._binsts
+            connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
     def allocate(
