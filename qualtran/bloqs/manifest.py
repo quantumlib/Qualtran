@@ -73,6 +73,7 @@ BLOQ_CLASS_NAMES = [
     "qualtran.bloqs.arithmetic.trigonometric.ArcTan",
     "qualtran.bloqs.basic_gates.CHadamard",
     "qualtran.bloqs.basic_gates.CNOT",
+    "qualtran.bloqs.basic_gates.CRy",
     "qualtran.bloqs.basic_gates.CRz",
     "qualtran.bloqs.basic_gates.CSwap",
     "qualtran.bloqs.basic_gates.CYGate",
@@ -377,9 +378,9 @@ BLOQ_EXAMPLE_OBJECTSTRINGS = [
     ('clineardepthgreaterthan_example','qualtran.bloqs.arithmetic.CLinearDepthGreaterThan(QInt(5), 1)'),
     ('comparator',                   'qualtran.bloqs.arithmetic.Comparator(3)'),
     ('comparator_symb',              "qualtran.bloqs.arithmetic.Comparator(Symbol('n'))"),
-    # ('ctrl_add_or_sub_signed',     'qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QInt(8), QInt(8), True)'),
-    # ('ctrl_add_or_sub_signed_symb',"qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QInt(Symbol('n')), QInt(Symbol('n')), True)"),
-    # ('ctrl_add_or_sub_unsigned',   'qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QUInt(8), QUInt(8), True)'),
+    ('ctrl_add_or_sub_signed',       'qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QInt(8), QInt(8), True)'),
+    ('ctrl_add_or_sub_signed_symb',  "qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QInt(Symbol('n')), QInt(Symbol('n')), True)"),
+    ('ctrl_add_or_sub_unsigned',     'qualtran.bloqs.arithmetic.ControlledAddOrSubtract(QUInt(8), QUInt(8), True)'),
     ('equals',                       'qualtran.bloqs.arithmetic.Equals(QUInt(4))'),
     ('eq_k',                         'qualtran.bloqs.arithmetic.EqualsAConstant(4, 13)'),
     ('greater_than',                 'qualtran.bloqs.arithmetic.GreaterThan(4, 4)'),
@@ -710,9 +711,9 @@ BLOQ_EXAMPLE_OBJECTSTRINGS = [
     # ('walk_op_chem_sparse',        'qualtran.bloqs.qubitization.QubitizationWalkOperator(qualtran.bloqs.block_encoding.SelectBlockEncoding(qualtran.bloqs.c...
     # ('thc_walk_op',                "qualtran.bloqs.qubitization.QubitizationWalkOperator(qualtran.bloqs.block_encoding.SelectBlockEncoding(qualtran.bloqs.c...
     # ('walk_op',                    "qualtran.bloqs.qubitization.QubitizationWalkOperator(qualtran.bloqs.block_encoding.SelectBlockEncoding(qualtran.bloqs.m...
-    # ('prepare_identity',           "qualtran.bloqs.reflections.PrepareIdentity((qualtran.Register('reg0_', QAny(10), (), Side('THRU')), qualtran.Register('reg1_', QAny(4), (), Side('THRU')), qualtran.Register('reg2_', QAny(1), (), Side('THRU'))))"),
-    # ('refl_around_zero',           "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.reflections.PrepareIdentity((qualtran.Register('reg0_', QAny(1), (), Side('THRU')), qualtran.Register('reg1_', QAny(2), (), Side('THRU')), qualtran.Register('reg2_', QAny(3), (), Side('THRU')))), 1, -1, 1e-11)"),
-    # ('refl_using_prep',            "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.state_preparation.StatePreparationAliasSampling((qualtran.Register('selection', BQUInt(3, 5), (), Side('THRU')),), NDArr(shape=(5,), data=(0, 1, 2, 3, 4)), NDArr(shape=(5,), data=(0, 0, 0, 0, 0)), 7, 5), None, 1, 1e-11)"),
+    ('prepare_identity',             "qualtran.bloqs.reflections.PrepareIdentity((qualtran.Register('reg0_', QAny(10), (), Side('THRU')), qualtran.Register('reg1_', QAny(4), (), Side('THRU')), qualtran.Register('reg2_', QAny(1), (), Side('THRU'))))"),
+    ('refl_around_zero',             "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.reflections.PrepareIdentity((qualtran.Register('reg0_', QAny(1), (), Side('THRU')), qualtran.Register('reg1_', QAny(2), (), Side('THRU')), qualtran.Register('reg2_', QAny(3), (), Side('THRU')))), 1, -1, 1e-11)"),
+    ('refl_using_prep',              "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.state_preparation.StatePreparationAliasSampling((qualtran.Register('selection', BQUInt(3, 5), (), Side('THRU')),), NDArr(shape=(5,), data=(0, 1, 2, 3, 4)), NDArr(shape=(5,), data=(0, 0, 0, 0, 0)), 7, 5), None, 1, 1e-11)"),
     ('add_into_phase_grad',          'qualtran.bloqs.rotations.AddIntoPhaseGrad(4, 4, 0, 1, None)'),
     ('add_scaled_val_into_phase_reg','qualtran.bloqs.rotations.AddScaledValIntoPhaseReg(QFxp(2, 2, False), 2, 2, QFxp(2, 2, False))'),
     ('hamming_weight_phasing',       'qualtran.bloqs.rotations.HammingWeightPhasing(4, 1.5707963267948966, 1e-10)'),
