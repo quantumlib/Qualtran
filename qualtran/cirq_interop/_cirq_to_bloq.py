@@ -565,8 +565,8 @@ def cirq_optree_to_cbloq(
                 for q in quregs.flatten():
                     _ = qreg_to_qvar.pop(q)
             else:
-                assert quregs.shape == np.array(qvars_out[reg.name]).shape
-                qreg_to_qvar |= zip(quregs.flatten(), np.array(qvars_out[reg.name]).flatten())
+                assert quregs.shape == np.asarray(qvars_out[reg.name]).shape
+                qreg_to_qvar |= zip(quregs.flatten(), np.asarray(qvars_out[reg.name]).flatten())
 
     # 4. Combine Soquets to match the right signature.
     final_soqs_dict = _gather_input_soqs(
