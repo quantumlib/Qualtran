@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict
+from typing import Any, cast, Dict
 
 import attrs
 import networkx as nx
@@ -207,8 +207,8 @@ def test_bloq_builder():
 
     # Using deprecated Soquet constructor (to be removed)
     assert initial_soqs == {
-        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),
-        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),
+        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore
+        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore
     }
 
     # Using private constructor
@@ -469,7 +469,7 @@ def _copy_bad_init(cbloq):
     from qualtran._infra.composite_bloq import _map_soqs
 
     bb, _ = BloqBuilder.from_signature(cbloq.signature)
-    soq_map = []  # !!!
+    soq_map: Any = []  # !!!
 
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
         mapped_in_soqs = _map_soqs(in_soqs, soq_map)

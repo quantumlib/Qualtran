@@ -15,7 +15,7 @@
 """Plumbing for bloq-to-bloq `Connection`s."""
 import warnings
 from functools import cached_property
-from typing import Any, Optional, Protocol, Tuple, TYPE_CHECKING, Union
+from typing import Optional, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -132,25 +132,6 @@ class _Soquet:
 
     def __str__(self) -> str:
         return f'{self.binst}.{self.pretty()}'
-
-
-class QVar(Protocol):
-    """The duck-typing protocol for a quantum variable."""
-
-    @property
-    def bb(self) -> 'BloqBuilder': ...
-
-    @property
-    def dtype(self) -> 'QCDType': ...
-
-    @property
-    def shape(self) -> Tuple[int, ...]: ...
-
-    def item(self, *args) -> '_QVar': ...
-
-    def __getitem__(self, item) -> Any: ...
-
-    def __len__(self) -> int: ...
 
 
 @attrs.mutable
