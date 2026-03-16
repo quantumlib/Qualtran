@@ -33,7 +33,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits

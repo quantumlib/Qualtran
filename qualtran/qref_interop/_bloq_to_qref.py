@@ -33,7 +33,7 @@ from qref.schema_v1 import PortV1, RoutineV1, SchemaV1
 
 from qualtran import Bloq, BloqInstance, CompositeBloq
 from qualtran import Connection as QualtranConnection
-from qualtran import DecomposeNotImplementedError, DecomposeTypeError, Register, Side, Soquet
+from qualtran import DecomposeNotImplementedError, DecomposeTypeError, Register, Side
 from qualtran._infra.quantum_graph import _Soquet
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.symbolics import is_symbolic

@@ -33,7 +33,6 @@ from qualtran import (
     RightDangle,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran._infra.quantum_graph import _Soquet
 

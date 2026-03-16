@@ -47,7 +47,6 @@ from qualtran import (
     Register,
     RightDangle,
     Signature,
-    Soquet,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns, _get_soquet
 from qualtran._infra.quantum_graph import _Soquet

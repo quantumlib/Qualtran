@@ -27,7 +27,6 @@ from qualtran import (
     QBit,
     Register,
     RightDangle,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _cxns_to_cxn_dict, BloqBuilder

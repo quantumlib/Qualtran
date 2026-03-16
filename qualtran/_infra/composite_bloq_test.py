@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Tuple
+from typing import cast, Dict
 
 import attrs
 import networkx as nx
@@ -44,7 +44,6 @@ from qualtran._infra.composite_bloq import (
     _create_binst_graph,
     _get_dangling_soquets,
     _get_soquet,
-    _reg_to_soq,
     _SoquetT,
 )
 from qualtran._infra.data_types import BQUInt, QAny, QBit, QFxp, QUInt

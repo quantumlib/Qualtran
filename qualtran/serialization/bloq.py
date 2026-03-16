@@ -35,7 +35,6 @@ from qualtran import (
     Register,
     RightDangle,
     Signature,
-    Soquet,
 )
 from qualtran._infra.quantum_graph import _Soquet
 from qualtran.bloqs.cryptography.ecc import ECPoint

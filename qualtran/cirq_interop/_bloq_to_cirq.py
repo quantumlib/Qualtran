@@ -31,7 +31,6 @@ from qualtran import (
     RightDangle,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns

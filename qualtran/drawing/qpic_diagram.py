@@ -27,7 +27,7 @@ import tempfile
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
-from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side, Soquet
+from qualtran import DanglingT, LeftDangle, QBit, RightDangle, Side
 from qualtran._infra.quantum_graph import _Soquet
 from qualtran.drawing.musical_score import (
     _soq_to_symb,

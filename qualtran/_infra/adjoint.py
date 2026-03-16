@@ -28,13 +28,13 @@ from .composite_bloq import (
     QVarT,
 )
 from .gate_with_registers import GateWithRegisters
-from .quantum_graph import _QVar, LeftDangle, RightDangle
+from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
 
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
+    from qualtran import Bloq, CompositeBloq, Register, Signature
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
