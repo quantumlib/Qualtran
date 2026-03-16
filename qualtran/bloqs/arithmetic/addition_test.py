@@ -449,3 +449,8 @@ def test_controlled_add_from_add():
     assert ctrl == 0
     assert a == 5
     assert b == 15
+
+
+def test_add_k_str():
+    add_k = AddK(QUInt(5), k=3)
+    assert str(add_k) == "AddK(k=3)"

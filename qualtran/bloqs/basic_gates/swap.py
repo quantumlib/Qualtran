@@ -393,9 +393,9 @@ class CSwap(GateWithRegisters):
         if reg is None:
             return Text('')
         if reg.name == 'x':
-            return TextBox('×(x)')
+            return TextBox('×')
         elif reg.name == 'y':
-            return TextBox('×(y)')
+            return TextBox('×')
         else:
             return Circle(filled=True)
 
