@@ -46,8 +46,10 @@ from ._infra.composite_bloq import (
     CompositeBloq,
     BloqBuilder,
     DidNotFlattenAnythingError,
+    Soquet,
     SoquetT,
     ConnectionT,
+    QVarT,
 )
 
 from ._infra.data_types import (
@@ -84,14 +86,7 @@ from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
-from ._infra.quantum_graph import (
-    BloqInstance,
-    Connection,
-    DanglingT,
-    LeftDangle,
-    RightDangle,
-    Soquet,
-)
+from ._infra.quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, QVar
 
 from ._infra.gate_with_registers import GateWithRegisters
 

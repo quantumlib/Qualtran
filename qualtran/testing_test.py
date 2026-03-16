@@ -37,6 +37,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.quantum_graph import _Soquet
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestTwoBitOp
@@ -65,12 +66,12 @@ def _manually_make_test_cbloq_cxns():
     binst2 = BloqInstance(tcn, 2)
     assert binst1 != binst2
     return [
-        Connection(Soquet(LeftDangle, q1), Soquet(binst1, control)),
-        Connection(Soquet(LeftDangle, q2), Soquet(binst1, target)),
-        Connection(Soquet(binst1, control), Soquet(binst2, target)),
-        Connection(Soquet(binst1, target), Soquet(binst2, control)),
-        Connection(Soquet(binst2, control), Soquet(RightDangle, q1)),
-        Connection(Soquet(binst2, target), Soquet(RightDangle, q2)),
+        Connection(_Soquet(LeftDangle, q1), _Soquet(binst1, control)),
+        Connection(_Soquet(LeftDangle, q2), _Soquet(binst1, target)),
+        Connection(_Soquet(binst1, control), _Soquet(binst2, target)),
+        Connection(_Soquet(binst1, target), _Soquet(binst2, control)),
+        Connection(_Soquet(binst2, control), _Soquet(RightDangle, q1)),
+        Connection(_Soquet(binst2, target), _Soquet(RightDangle, q2)),
     ], signature
 
 
@@ -83,12 +84,12 @@ def _manually_make_test_cbloq_typed_cxns(dtype_a: QDType, dtype_b: QDType):
     binst2 = BloqInstance(add, 2)
     assert binst1 != binst2
     return [
-        Connection(Soquet(LeftDangle, q1), Soquet(binst1, a)),
-        Connection(Soquet(LeftDangle, q2), Soquet(binst1, b)),
-        Connection(Soquet(binst1, a), Soquet(binst2, b)),
-        Connection(Soquet(binst1, b), Soquet(binst2, a)),
-        Connection(Soquet(binst2, a), Soquet(RightDangle, q1)),
-        Connection(Soquet(binst2, b), Soquet(RightDangle, q2)),
+        Connection(_Soquet(LeftDangle, q1), _Soquet(binst1, a)),
+        Connection(_Soquet(LeftDangle, q2), _Soquet(binst1, b)),
+        Connection(_Soquet(binst1, a), _Soquet(binst2, b)),
+        Connection(_Soquet(binst1, b), _Soquet(binst2, a)),
+        Connection(_Soquet(binst2, a), _Soquet(RightDangle, q1)),
+        Connection(_Soquet(binst2, b), _Soquet(RightDangle, q2)),
     ], signature
 
 
@@ -132,7 +133,7 @@ def test_assert_soquets_used_exactly_once():
     binst2 = BloqInstance(TestTwoBitOp(), 2)
     control, target = TestTwoBitOp().signature
 
-    cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
+    cxns.append(Connection(_Soquet(binst1, target), _Soquet(binst2, control)))
     cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)

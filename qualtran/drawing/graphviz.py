@@ -35,10 +35,11 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.quantum_graph import _Soquet
 
 
 def _assign_ids_to_bloqs_and_soqs(
-    bloq_instances: Iterable[BloqInstance], all_soquets: Iterable[Soquet]
+    bloq_instances: Iterable[BloqInstance], all_soquets: Iterable[_Soquet]
 ) -> Dict[Any, str]:
     """Assign unique identifiers to bloq instances, soquets, and register groups.
 
@@ -86,7 +87,7 @@ def _assign_ids_to_bloqs_and_soqs(
 
 def _parition_registers_in_a_group(
     regs: Iterable[Register], binst: BloqInstance
-) -> Tuple[List[Soquet], List[Soquet], List[Soquet]]:
+) -> Tuple[List[_Soquet], List[_Soquet], List[_Soquet]]:
     """Construct and sort the expected Soquets for a given register group.
 
     Since we expect the input registers to be in a group, we assert that
@@ -99,7 +100,7 @@ def _parition_registers_in_a_group(
     thrus = []
     for reg in regs:
         for idx in reg.all_idxs():
-            soq = Soquet(binst, reg, idx)
+            soq = _Soquet(binst, reg, idx)
             if reg.side is Side.LEFT:
                 lefts.append(soq)
             elif reg.side is Side.RIGHT:
@@ -149,7 +150,7 @@ class GraphDrawer:
 
         self.ids = _assign_ids_to_bloqs_and_soqs(self._binsts, self._soquets)
 
-    def get_dangle_node(self, soq: Soquet) -> pydot.Node:
+    def get_dangle_node(self, soq: _Soquet) -> pydot.Node:
         """Overridable method to create a Node representing dangling Soquets."""
         return pydot.Node(self.ids[soq], label=soq.pretty(), shape='plaintext')
 
@@ -170,15 +171,15 @@ class GraphDrawer:
         subg = pydot.Subgraph(rank='same')
         for reg in regs:
             for idx in reg.all_idxs():
-                subg.add_node(self.get_dangle_node(Soquet(dangle, reg, idx=idx)))
+                subg.add_node(self.get_dangle_node(_Soquet(dangle, reg, idx=idx)))
         graph.add_subgraph(subg)
         return graph
 
-    def soq_label(self, soq: Soquet) -> str:
+    def soq_label(self, soq: _Soquet) -> str:
         """Overridable method for getting label text for a Soquet."""
         return soq.pretty()
 
-    def get_thru_register(self, thru: Soquet) -> str:
+    def get_thru_register(self, thru: _Soquet) -> str:
         """Overridable method for generating a <TR> representing a THRU soquet.
 
         This should have a `colspan="2"` to make sure there aren't separate left and right
@@ -189,7 +190,7 @@ class GraphDrawer:
             f'{html.escape(self.soq_label(thru))}</TD></TR>\n'
         )
 
-    def _register_td(self, soq: Optional[Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
+    def _register_td(self, soq: Optional[_Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
 
         This includes some factored-out complexity which aims to correctly pad cells that
@@ -218,8 +219,8 @@ class GraphDrawer:
 
     def _get_register_tr(
         self,
-        left: Optional[Soquet],
-        right: Optional[Soquet],
+        left: Optional[_Soquet],
+        right: Optional[_Soquet],
         *,
         with_empty_td: bool = True,
         left_rowspan: int = 1,
@@ -380,7 +381,7 @@ class PrettyGraphDrawer(GraphDrawer):
             return ''
         return f'<font point-size="10">{html.escape(str(binst.bloq))}</font>'
 
-    def soq_label(self, soq: Soquet):
+    def soq_label(self, soq: _Soquet):
         from qualtran.bloqs.bookkeeping import Join, Split
 
         if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, (Split, Join)):
