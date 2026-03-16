@@ -18,6 +18,7 @@ References:
     [Quartic quantum speedups for planted inference](https://arxiv.org/abs/2406.19378v1)
     Section 4.4.1, Theorem 4.15.
 """
+
 from functools import cached_property
 
 from attrs import evolve, field, frozen

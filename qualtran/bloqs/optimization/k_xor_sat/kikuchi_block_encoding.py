@@ -20,6 +20,7 @@ References:
     [Quartic quantum speedups for planted inference](https://arxiv.org/abs/2406.19378v1)
     Section 4.4.2 for algorithm. Section 2.4 for definitions and notation.
 """
+
 from functools import cached_property
 
 import sympy

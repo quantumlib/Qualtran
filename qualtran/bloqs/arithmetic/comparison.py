@@ -111,7 +111,10 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         return NotImplemented  # pragma: no cover
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         """Decomposes the gate into N And & And† operations for a T complexity of 4N.
 

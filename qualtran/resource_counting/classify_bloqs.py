@@ -16,6 +16,7 @@
 Common categories relevant for resource esimtation include classifications
 like whether the bloq is a Clifford operation, whether it's a rotation, etc.
 """
+
 from collections import abc, defaultdict
 from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 

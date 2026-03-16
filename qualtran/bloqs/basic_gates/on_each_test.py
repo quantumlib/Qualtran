@@ -59,3 +59,8 @@ def test_call_graph():
     c1 = x_on_each.bloq_counts(generalizer=ignore_split_join)
     c2 = x_on_each.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
     assert c1 == c2
+
+
+def test_on_each_str():
+    on_each = OnEach(10, XGate())
+    assert str(on_each) == "X(oneach=10)"

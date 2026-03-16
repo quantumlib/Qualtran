@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""Bloqs implementing Trotter steps for the 1D Ising model under periodic boundary conditions. 
+r"""Bloqs implementing Trotter steps for the 1D Ising model under periodic boundary conditions.
 
 The Ising model is given as
 $$

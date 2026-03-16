@@ -175,7 +175,10 @@ class Add(Bloq):
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
@@ -476,6 +479,9 @@ class AddK(Bloq):
         counts[self._load_k_bloq.adjoint()] += 1
 
         return counts
+
+    def __str__(self):
+        return f'AddK(k={self.k})'
 
 
 @bloq_example(generalizer=ignore_split_join)

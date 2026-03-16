@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
+# ruff: noqa: E402
 import ast
 import warnings
 from collections import defaultdict
@@ -76,7 +78,12 @@ MINIMAL_SKIP_CANONPATHS = [
 ]
 MINIMAL = True
 
-DEFINED_IN_CONTAINER_EXCEPTIONS = ['qualtran.dtype', 'qualtran.exception', 'qualtran.cirq_interop']
+DEFINED_IN_CONTAINER_EXCEPTIONS = [
+    'qualtran.dtype',
+    'qualtran.exception',
+    'qualtran.cirq_interop',
+    'qualtran.l1.nodes',
+]
 
 
 def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> Set[str]:

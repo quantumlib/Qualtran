@@ -82,7 +82,10 @@ class TestQvrPhaseGradient(GateWithRegisters):
         return QvrPhaseGradient(self.cost_reg, self.gamma, self.eps)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         x = quregs[self.cost_reg.name]
         phase_grad = context.qubit_manager.qalloc(int(self.qvr.b_grad))

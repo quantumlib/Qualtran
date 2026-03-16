@@ -77,3 +77,8 @@ def test_t_complexity():
 
 def test_global_phase(bloq_autotester):
     bloq_autotester(_global_phase)
+
+
+def test_global_phase_str():
+    bloq = GlobalPhase(exponent=0.5)
+    assert str(bloq) == "GPhase(0.5)"

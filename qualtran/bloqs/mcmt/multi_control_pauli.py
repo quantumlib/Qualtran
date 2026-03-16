@@ -203,6 +203,9 @@ class MultiControlX(MultiControlPauliBase):
     def adjoint(self) -> 'Bloq':
         return self
 
+    def __str__(self):
+        return f'MultiControlX({self.n_ctrls})'
+
 
 @bloq_example
 def _ccpauli() -> MultiControlX:
@@ -246,3 +249,6 @@ class MultiControlZ(MultiControlPauliBase):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    def __str__(self):
+        return f'MultiControlZ({self.n_ctrls})'

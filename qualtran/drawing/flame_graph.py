@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for drawing bloqs with FlameGraph. This relies on third party flamegraph.pl"""
+
 import functools
 import pathlib
 import subprocess

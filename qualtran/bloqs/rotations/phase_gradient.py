@@ -110,7 +110,10 @@ class PhaseGradientUnitary(GateWithRegisters):
         return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
@@ -215,7 +218,7 @@ class PhaseGradientState(GateWithRegisters):
 # pylint:  disable=unused-import
 @bloq_example
 def _phase_gradient_state() -> PhaseGradientState:
-    from qualtran import QFxp
+    from qualtran import QFxp  # noqa: F401
 
     phase_gradient_state = PhaseGradientState(4)
     return phase_gradient_state

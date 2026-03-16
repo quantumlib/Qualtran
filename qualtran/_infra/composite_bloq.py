@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+
 from collections.abc import Hashable
 from functools import cached_property
 from typing import (
@@ -26,10 +27,12 @@ from typing import (
     Mapping,
     Optional,
     overload,
+    Protocol,
     Sequence,
     Set,
     Tuple,
     TYPE_CHECKING,
+    TypeGuard,
     TypeVar,
     Union,
 )
@@ -51,17 +54,35 @@ if TYPE_CHECKING:
 
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.symbolics import SymbolicInt
 
-# NDArrays must be bound to np.generic
-_SoquetType = TypeVar('_SoquetType', bound=np.generic)
 
-SoquetT = Union[Soquet, NDArray[_SoquetType]]
-"""A `Soquet` or array of soquets."""
+class SoquetT(Protocol):
+    """Either a Soquet or an array thereof.
 
-SoquetInT = Union[Soquet, NDArray[_SoquetType], Sequence[Soquet]]
+    To narrow objects of this type, use `BloqBuilder.is_single(soq)` and/or
+    `BloqBuilder.is_ndarray(soqs)`.
+
+    Example:
+        >>> soq_or_soqs: SoquetT
+        ... if BloqBuilder.is_ndarray(soq_or_soqs):
+        ...     first_soq = soq_or_soqs.reshape(-1).item(0)
+        ... else:
+        ...     # Note: `.item()` raises if not a single item.
+        ...     first_soq = soq_or_soqs.item()
+
+    """
+
+    @property
+    def shape(self) -> Tuple[int, ...]: ...
+
+    def item(self, *args) -> Soquet: ...
+
+
+SoquetInT = Union[SoquetT, Sequence[SoquetT]]
 """A soquet or array-like of soquets.
 
 This type alias is used for input argument to parts of the library that are more
@@ -121,11 +142,19 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
         bloq_instances: Optionally specify the unique bloq instances. Otherwise, deduce them from
             the connections.
+        decomposed_from: Optionally include a reference to the bloq from whence this
+            `CompositeBloq` was decomposed. This can be used for debugging and error
+            reporting, but is never used for deriving any properties.
+        bloq_key: An optional string key for this bloq. This can be used for debugging and
+            error reporting, but is never used for deriving any properties.
     """
 
     connections: Tuple[Connection, ...] = attrs.field(converter=_to_tuple)
     signature: Signature
     bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
+
+    decomposed_from: Optional[Bloq] = attrs.field(default=None, kw_only=True)
+    bloq_key: Optional[str] = attrs.field(default=None, kw_only=True)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
@@ -504,7 +533,23 @@ class CompositeBloq(Bloq):
         delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
         return delimited_gens
 
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        from qualtran.drawing import Text
+
+        if reg is None:
+            if self.decomposed_from is not None:
+                return self.decomposed_from.wire_symbol(None)
+            if self.bloq_key is not None:
+                return Text(self.bloq_key)
+            return Text('cbloq')
+
+        return super().wire_symbol(reg, idx)
+
     def __str__(self):
+        if self.bloq_key is not None:
+            return self.bloq_key
         return f'CompositeBloq([{len(self.bloq_instances)} subbloqs...])'
 
 
@@ -534,6 +579,9 @@ def _binst_to_cxns(
     binst: Union[BloqInstance, DanglingT], binst_graph: nx.DiGraph
 ) -> Tuple[List[Connection], List[Connection]]:
     """Helper method to extract all predecessor and successor Connections for a binst."""
+    if binst not in binst_graph.nodes:
+        return [], []
+
     pred_cxns: List[Connection] = []
     for pred in binst_graph.pred[binst]:
         pred_cxns.extend(binst_graph.edges[pred, binst]['cxns'])
@@ -692,9 +740,10 @@ def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
     """
     soqvals = []
     for soq_or_arr in vals:
-        if isinstance(soq_or_arr, Soquet):
-            soqvals.append(soq_or_arr)
+        if BloqBuilder.is_single(soq_or_arr):
+            soqvals.append(soq_or_arr.item())
         else:
+            assert BloqBuilder.is_ndarray(soq_or_arr)
             soqvals.extend(soq_or_arr.reshape(-1))
     return soqvals
 
@@ -801,13 +850,10 @@ def _process_soquets(
         unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
 
         for li in reg.all_idxs():
-            idxed_soq = in_soq[li]
-            assert isinstance(idxed_soq, Soquet), idxed_soq
+            idxed_soq = in_soq[li].item()
             func(idxed_soq, reg, li)
-            if not check_dtypes_consistent(idxed_soq.reg.dtype, reg.dtype):
-                extra_str = (
-                    f"{idxed_soq.reg.name}: {idxed_soq.reg.dtype} vs {reg.name}: {reg.dtype}"
-                )
+            if not check_dtypes_consistent(idxed_soq.dtype, reg.dtype):
+                extra_str = f"{idxed_soq.reg.name}: {idxed_soq.dtype} vs {reg.name}: {reg.dtype}"
                 raise BloqError(
                     f"{debug_str} register dtypes are not consistent {extra_str}."
                 ) from None
@@ -837,9 +883,9 @@ def _map_soqs(
     # First: flatten out any numpy arrays
     flat_soq_map: Dict[Soquet, Soquet] = {}
     for old_soqs, new_soqs in soq_map:
-        if isinstance(old_soqs, Soquet):
-            assert isinstance(new_soqs, Soquet), new_soqs
-            flat_soq_map[old_soqs] = new_soqs
+        if BloqBuilder.is_single(old_soqs):
+            assert BloqBuilder.is_single(new_soqs), new_soqs
+            flat_soq_map[old_soqs] = new_soqs.item()
             continue
 
         assert isinstance(old_soqs, np.ndarray), old_soqs
@@ -857,9 +903,9 @@ def _map_soqs(
     vmap = np.vectorize(_map_soq, otypes=[object])
 
     def _map_soqs(soqs: SoquetT) -> SoquetT:
-        if isinstance(soqs, Soquet):
-            return _map_soq(soqs)
-        return vmap(soqs)
+        if BloqBuilder.is_ndarray(soqs):
+            return vmap(soqs)
+        return _map_soq(soqs.item())
 
     return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
 
@@ -1098,6 +1144,24 @@ class BloqBuilder:
         return bb, initial_soqs
 
     @staticmethod
+    def is_single(x: 'SoquetT') -> TypeGuard['Soquet']:
+        """Returns True if `x` is a single soquet (not an ndarray of them).
+
+        This doesn't use stringent runtime type checking; it uses the SoquetT protocol
+        for "duck typing".
+        """
+        return x.shape == ()
+
+    @staticmethod
+    def is_ndarray(x: 'SoquetT') -> TypeGuard['NDArray']:
+        """Returns True if `x` is an ndarray of soquets (not a single one).
+
+        This doesn't use stringent runtime type checking; it uses the SoquetT protocol
+        for "duck typing".
+        """
+        return x.shape != ()
+
+    @staticmethod
     def map_soqs(
         soqs: Dict[str, SoquetT], soq_map: Iterable[Tuple[SoquetT, SoquetT]]
     ) -> Dict[str, SoquetT]:
@@ -1301,8 +1365,7 @@ class BloqBuilder:
             cbloq = bloq.decompose_bloq()
 
         for k, v in in_soqs.items():
-            if not isinstance(v, Soquet):
-                in_soqs[k] = np.asarray(v)
+            in_soqs[k] = np.asarray(v)
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
@@ -1342,12 +1405,13 @@ class BloqBuilder:
 
         def _infer_reg(name: str, soq: SoquetT) -> Register:
             """Go from Soquet -> register, but use a specific name for the register."""
-            if isinstance(soq, Soquet):
-                return Register(name=name, dtype=soq.reg.dtype, side=Side.RIGHT)
+            if BloqBuilder.is_single(soq):
+                return Register(name=name, dtype=soq.dtype, side=Side.RIGHT)
+            assert BloqBuilder.is_ndarray(soq)
 
             # Get info from 0th soquet in an ndarray.
             return Register(
-                name=name, dtype=soq.reshape(-1)[0].reg.dtype, shape=soq.shape, side=Side.RIGHT
+                name=name, dtype=soq.reshape(-1).item(0).dtype, shape=soq.shape, side=Side.RIGHT
             )
 
         right_reg_names = [reg.name for reg in self._regs if reg.side & Side.RIGHT]
@@ -1394,10 +1458,10 @@ class BloqBuilder:
     def free(self, soq: Soquet, dirty: bool = False) -> None:
         from qualtran.bloqs.bookkeeping import Free
 
-        if not isinstance(soq, Soquet):
+        if not BloqBuilder.is_single(soq):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        qdtype = soq.reg.dtype
+        qdtype = soq.dtype
         if not isinstance(qdtype, QDType):
             raise ValueError("`free` can only free quantum registers.")
 
@@ -1407,10 +1471,10 @@ class BloqBuilder:
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.bookkeeping import Split
 
-        if not isinstance(soq, Soquet):
+        if not BloqBuilder.is_single(soq):  # type: ignore[arg-type]
             raise ValueError("`split` expects a single Soquet to split.")
 
-        qdtype = soq.reg.dtype
+        qdtype = soq.dtype
         if not isinstance(qdtype, QDType):
             raise ValueError("`split` can only split quantum registers.")
 

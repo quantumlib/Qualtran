@@ -167,7 +167,10 @@ class SwapWithZero(GateWithRegisters):
         return tuple(ret[::-1] if self.uncompute else ret)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', targets: NDArray['Soquet'], **sel: 'Soquet'  # type: ignore[type-var]
+        self,
+        bb: 'BloqBuilder',
+        targets: NDArray['Soquet'],  # type: ignore[type-var]
+        **sel: 'Soquet',
     ) -> Dict[str, 'SoquetT']:
         sel_soqs = [bb.split(sel[reg.name]) for reg in self.selection_registers]
         for i, sel_idx_small, idx_one, idx_two in self._swap_sequence:

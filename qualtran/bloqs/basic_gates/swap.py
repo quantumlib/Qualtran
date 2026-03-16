@@ -80,7 +80,10 @@ class TwoBitSwap(Bloq):
         raise DecomposeTypeError(f"{self} is atomic.")
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'  # type: ignore[type-var]
+        self,
+        qubit_manager: 'cirq.QubitManager',
+        x: 'CirqQuregT',
+        y: 'CirqQuregT',  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
@@ -390,9 +393,9 @@ class CSwap(GateWithRegisters):
         if reg is None:
             return Text('')
         if reg.name == 'x':
-            return TextBox('×(x)')
+            return TextBox('×')
         elif reg.name == 'y':
-            return TextBox('×(y)')
+            return TextBox('×')
         else:
             return Circle(filled=True)
 

@@ -30,7 +30,6 @@ from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 class Channel(abc.ABC):
-
     @abc.abstractmethod
     def expected_num_ts(self, config: mc.MathConfig) -> rst.Real: ...
 

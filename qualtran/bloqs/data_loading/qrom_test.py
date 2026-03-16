@@ -86,7 +86,6 @@ def test_qrom_1d_full(data, num_controls: int):
     controls = {'control': 2**num_controls - 1} if num_controls else {}
     zero_targets = {f'target{i}_': 0 for i in range(len(data))}
     for selection_integer in range(len(data[0])):
-
         out = qrom.call_classically(**controls, selection=selection_integer, **zero_targets)
         for i in range(len(data)):
             assert out[-i - 1] == data[-i - 1][selection_integer]

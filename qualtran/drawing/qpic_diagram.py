@@ -17,6 +17,7 @@
 QPIC is not a dependency of Qualtran and must be manually installed by users via
 `pip install qpic`.
 """
+
 import os
 import pathlib
 import re
