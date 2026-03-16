@@ -1498,7 +1498,7 @@ class BloqBuilder:
         ]
         return soq_map
 
-    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT):
+    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple['QVarT', ...]:
         """Add all the sub-bloqs from `bloq` to the compute graph.
 
         This is useful for adding multiple bloq instances at once in a "flat" or "unrolled" way.
@@ -1513,7 +1513,7 @@ class BloqBuilder:
                 `Soquet`s or an array thereof.
 
         Returns:
-            out_soqs: A `SoquetT` for each right (output) register ordered
+            out_soqs: A `QVarT` for each right (output) register ordered
                 according to `bloq.signature`. The ordering is according
                 to `bloq.signature` and irrespective of the order of `**in_soqs`.
         """
