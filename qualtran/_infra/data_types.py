@@ -26,6 +26,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -155,6 +156,14 @@ class _BitEncodingShim(BitEncoding[T]):
             self.qdtype.assert_valid_classical_val(val)
 
 
+@attrs.frozen
+class ShapedQCDType:
+    qcdtype: 'QCDType'
+    shape: Tuple[int, ...] = attrs.field(
+        default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
+    )
+
+
 class QCDType(Generic[T], metaclass=abc.ABCMeta):
     """The abstract interface for quantum/classical quantum computing data types."""
 
@@ -244,6 +253,10 @@ class QCDType(Generic[T], metaclass=abc.ABCMeta):
         """
         # TODO: remove https://github.com/quantumlib/Qualtran/issues/1716
         return getattr(self, 'iteration_length', 0)
+
+    def __getitem__(self, shape):
+        """QInt(8)[20] returns a size-20 array of QInt(8)"""
+        return ShapedQCDType(qcdtype=self, shape=shape)
 
     @classmethod
     def _pkg_(cls):

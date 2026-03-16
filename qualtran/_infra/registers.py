@@ -21,12 +21,11 @@ from functools import cached_property
 from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
-import sympy
 from attrs import field, frozen
 
 from qualtran.symbolics import is_symbolic, prod, smax, ssum, SymbolicInt
 
-from .data_types import QAny, QBit, QCDType
+from .data_types import QAny, QBit, QCDType, ShapedQCDType
 
 
 class Side(enum.Flag):
@@ -53,6 +52,12 @@ class Side(enum.Flag):
         return f'{self.__class__.__name__}.{self._name_}'
 
 
+def _consume_register_dtype(dtype: Union[QCDType, ShapedQCDType]) -> QCDType:
+    # In __attrs_post_init__, we actually handle the ShapedQCDType case, which isn't accounted
+    # for in attrs type checking.
+    return cast(QCDType, dtype)
+
+
 @frozen
 class Register:
     """A register serves as the input/output quantum data specifications in a bloq's `Signature`.
@@ -72,7 +77,7 @@ class Register:
     """
 
     name: str
-    dtype: QCDType
+    dtype: QCDType = field(converter=_consume_register_dtype)
     _shape: Tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
@@ -86,6 +91,15 @@ class Register:
         return f'Register({self.name!r}, dtype={self.dtype!r}, shape={self._shape!r}, side={self.side!r})'
 
     def __attrs_post_init__(self):
+        if isinstance(self.dtype, ShapedQCDType):
+            if self._shape != ():
+                raise ValueError(
+                    f"for Register {self.name}, use either a shaped dtype {self.dtype} "
+                    f"or an explicit shape argument {self._shape}, not both."
+                )
+            object.__setattr__(self, '_shape', self.dtype.shape)
+            object.__setattr__(self, 'dtype', self.dtype.qcdtype)
+
         if not isinstance(self.dtype, QCDType):
             raise ValueError(f'dtype must be a QCDType: found {type(self.dtype)}')
 
@@ -193,13 +207,15 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, **registers: Union[int, sympy.Expr]) -> 'Signature':
-        """Construct a Signature comprised of untyped thru registers of the given bitsizes.
+    def build(cls, *args, **kwargs) -> 'Signature':
+        """Construct a Signature using a more natural syntax.
 
-        For rapid prorotyping or simple gates, this syntactic sugar can be used.
+        This builder constructs a `Signature` flexibly from a mix of types, positional elements,
+        and named keyword arguments. For rapid prototyping or simple gates, you can quickly define
+        registers without manually instantiating `Register` objects.
 
         Examples:
-            The following constructors are equivalent
+            The following constructors are equivalent:
 
             >>> sig1 = Signature.build(a=32, b=1)
             >>> sig2 = Signature([
@@ -209,13 +225,104 @@ class Signature:
             >>> sig1 == sig2
             True
 
+            We can also build signatures with fully instantiated `QCDType` arguments, including
+            shaped multidimensional registers:
+
+            >>> from qualtran import QBit, QUInt
+            >>> sig = Signature.build(ctrl=QBit()[5, 5], system=QUInt(32))
+            >>> sig == Signature([
+            ...     Register('ctrl', QBit(), shape=(5, 5)),
+            ...     Register('system', QUInt(32))
+            ... ])
+            True
+
+            Left and Right registers can be specified with a 2-tuple `(LEFT, RIGHT)`.
+            Here, we allocate `b` as a right register.
+
+            >>> sig = Signature.build(a=(QBit(), QBit()), b=(None, QBit()))
+            >>> sig == Signature([
+            ...     Register('a', QBit(), side=Side.THRU),
+            ...     Register('b', QBit(), side=Side.RIGHT)
+            ... ])
+            True
+
+            Positional arguments can be used to join previously defined components:
+
+            >>> sig1 = Signature.build(a=1)
+            >>> extra = [Register('c', QAny(5))]
+            >>> sig2 = Signature.build(sig1, extra)
+
         Args:
-            **registers: Keyword arguments mapping register names to bitsizes. All registers
-                will be 0-dimensional, THRU, and of type QAny/QBit.
+            *args: Positional arguments must be instances of `Register`, `Signature`, or iterables
+                thereof, which will be concatenated in order of layout.
+            **kwargs: Keyword arguments mapping register names to data types or sizes.
+                Values can be integer bitsizes (where 1 maps to `QBit` and n to `QAny(n)`),
+                `QCDType` instances, `ShapedQCDType` instances, or 2-tuples of
+                `(left_dtype, right_dtype)` to explicitly specify sides.
         """
-        return cls(
-            Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items() if v
-        )
+        if args and kwargs:
+            raise ValueError(
+                f"When using `Signature.build`, you must either specify a mapping "
+                f"from register names to data types or positional Signature and "
+                f"Register arguments, not both. Found positional {args} and keyword {kwargs}"
+            )
+
+        registers = []
+
+        def _flat_add(arg):
+            # add positional Signature, Register, or iterables thereof.
+            nonlocal registers
+            if isinstance(arg, Register):
+                registers.append(arg)
+            elif isinstance(arg, Signature):
+                registers.extend(arg)
+            elif isinstance(arg, Iterable) and not isinstance(arg, str):
+                for a2 in arg:
+                    _flat_add(a2)
+            else:
+                raise ValueError(
+                    f"Unknown type for positional argument to Signature.build: {arg!r}"
+                )
+
+        if args:
+            for arg in args:
+                _flat_add(arg)
+            return cls(registers)
+
+        for k, v in kwargs.items():
+            if not v:
+                continue
+
+            if isinstance(v, (QCDType, ShapedQCDType)):
+                registers.append(Register(name=k, dtype=v))
+            elif isinstance(v, tuple):
+                if len(v) != 2:
+                    raise ValueError(
+                        f"When using Signature.build with a tuple of data types, "
+                        f"you must specify a tuple of length 2. For LEFT registers, "
+                        f"the tuple is (dtype, None). For RIGHT registers, "
+                        f"the tuple is (None, dtype). You provided {v}"
+                    )
+                ldt, rdt = v
+                if ldt is not None:
+                    registers.append(Register(name=k, dtype=ldt, side=Side.LEFT))
+                if rdt is not None:
+                    registers.append(Register(name=k, dtype=rdt, side=Side.RIGHT))
+
+            elif isinstance(v, (Register, Signature)):
+                # mild defensiveness against common errors, but duck typing in the `else` clause.
+                raise ValueError(
+                    f"Invalid data type for Signature.build keyword argument '{k}': {v}"
+                )
+            else:
+                dt: QCDType
+                if v == 1:
+                    dt = QBit()
+                else:
+                    dt = QAny(v)
+                registers.append(Register(name=k, dtype=dt))
+
+        return cls(registers)
 
     @classmethod
     def build_from_dtypes(cls, **registers: QCDType) -> 'Signature':
@@ -323,12 +430,10 @@ class Signature:
         return f'Signature({repr(self._registers)})'
 
     @overload
-    def __getitem__(self, key: int) -> Register:
-        pass
+    def __getitem__(self, key: int) -> Register: ...
 
     @overload
-    def __getitem__(self, key: slice) -> Tuple[Register, ...]:
-        pass
+    def __getitem__(self, key: slice) -> Tuple[Register, ...]: ...
 
     def __getitem__(self, key):
         return self._registers[key]
