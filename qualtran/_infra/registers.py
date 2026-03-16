@@ -270,15 +270,15 @@ class Signature:
         registers = []
 
         def _flat_add(arg):
-            # add positional Signature, Register, or lists thereof.
+            # add positional Signature, Register, or iterables thereof.
             nonlocal registers
-            if isinstance(arg, list):
-                for a2 in arg:
-                    _flat_add(a2)
-            elif isinstance(arg, Register):
+            if isinstance(arg, Register):
                 registers.append(arg)
             elif isinstance(arg, Signature):
                 registers.extend(arg)
+            elif isinstance(arg, Iterable) and not isinstance(arg, str):
+                for a2 in arg:
+                    _flat_add(a2)
             else:
                 raise ValueError(
                     f"Unknown type for positional argument to Signature.build: {arg!r}"
