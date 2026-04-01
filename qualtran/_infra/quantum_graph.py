@@ -13,14 +13,16 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
-
+import warnings
 from functools import cached_property
-from typing import Tuple, TYPE_CHECKING, Union
+from typing import Optional, Tuple, TYPE_CHECKING, Union
 
+import attrs
+import numpy as np
 from attrs import field, frozen
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, BloqBuilder, QCDType, Register
+    from qualtran import Bloq, BloqBuilder, QCDType, QVarT, Register
 
 
 @frozen
@@ -76,10 +78,10 @@ def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
 
 
 @frozen
-class Soquet:
+class _Soquet:
     """One half of a connection.
 
-    Users should not construct these directly. They should be marshalled
+    Users should not construct these directly. They should be marshaled
     by a `BloqBuilder`.
 
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
@@ -117,7 +119,7 @@ class Soquet:
     def shape(self) -> Tuple[int, ...]:
         return ()
 
-    def item(self, *args) -> 'Soquet':
+    def item(self, *args) -> '_Soquet':
         if args:
             raise ValueError("Tried to index into a single soquet.")
         return self
@@ -130,6 +132,65 @@ class Soquet:
 
     def __str__(self) -> str:
         return f'{self.binst}.{self.pretty()}'
+
+
+@attrs.mutable
+class _QVar:
+    """A handle to a quantum variable used during bloq building.
+
+    Do not construct these objects directly. Please use the `QVar` `typing.Protocol` for
+    type annotations.
+    """
+
+    soquet: _Soquet
+    bb: 'BloqBuilder' = field(kw_only=True)
+    _split_components: Optional['QVarT'] = field(default=None)
+    ssa_name: Optional[str] = field(default=None, kw_only=True)
+
+    @property
+    def dtype(self) -> 'QCDType':
+        return self.soquet.dtype
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return ()
+
+    def item(self, *args):
+        if args and args != ((),):
+            raise ValueError(f"Tried to index {args!r} into a single soquet.")
+        return self
+
+    @property
+    def reg(self) -> 'Register':
+        warnings.warn(
+            "Accessing the register property of a quantum variable is highly discouraged "
+            "and will be dis-allowed in the future.",
+            DeprecationWarning,
+        )
+        return self.soquet.reg
+
+    def __hash__(self):
+        raise TypeError("QVar objects during bloq building are *not* hashable.")
+
+    def __getitem__(self, item):
+        if self._split_components is None:
+            self._split_components = self.bb.split(self)
+
+        return self._split_components[item]
+
+    def __len__(self):
+        return self.dtype.num_bits
+
+    def __array__(self, dtype=None, copy=None):
+        # This method is super important --
+        # throughout the library, we use np.asarray(soqs)
+        arr = np.empty(shape=(), dtype=object)
+        arr[()] = self
+        if copy is None:
+            return arr
+        if copy:
+            raise NotImplementedError()
+        return arr
 
 
 LeftDangle = DanglingT("LeftDangle")
@@ -151,8 +212,8 @@ class Connection:
     is directed.
     """
 
-    left: Soquet
-    right: Soquet
+    left: _Soquet
+    right: _Soquet
 
     @cached_property
     def num_qubits(self) -> int:

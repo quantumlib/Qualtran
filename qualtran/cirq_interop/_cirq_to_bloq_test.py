@@ -33,7 +33,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
@@ -53,8 +52,8 @@ class TestCNOT(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         ctrl, target = soqs['control'], soqs['target']
-        assert isinstance(ctrl, Soquet)
-        assert isinstance(target, Soquet)
+        assert BloqBuilder.is_single(ctrl)
+        assert BloqBuilder.is_single(target)
         ctrl, target = bb.add(CirqGateAsBloq(cirq.CNOT), q=[ctrl, target])
         return {'control': ctrl, 'target': target}
 

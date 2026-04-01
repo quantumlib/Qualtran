@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Tuple
+from typing import Any, cast, Dict
 
 import attrs
 import networkx as nx
@@ -40,8 +40,14 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets, _get_soquet
+from qualtran._infra.composite_bloq import (
+    _create_binst_graph,
+    _get_dangling_soquets,
+    _get_soquet,
+    _SoquetT,
+)
 from qualtran._infra.data_types import BQUInt, QAny, QBit, QFxp, QUInt
+from qualtran._infra.quantum_graph import _QVar, _Soquet
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.bookkeeping import Join
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
@@ -59,12 +65,12 @@ def _manually_make_test_cbloq_cxns():
     binst2 = BloqInstance(tcn, 2)
     assert binst1 != binst2
     return [
-        Connection(Soquet(LeftDangle, q1), Soquet(binst1, control)),
-        Connection(Soquet(LeftDangle, q2), Soquet(binst1, target)),
-        Connection(Soquet(binst1, control), Soquet(binst2, target)),
-        Connection(Soquet(binst1, target), Soquet(binst2, control)),
-        Connection(Soquet(binst2, control), Soquet(RightDangle, q1)),
-        Connection(Soquet(binst2, target), Soquet(RightDangle, q2)),
+        Connection(_Soquet(LeftDangle, q1), _Soquet(binst1, control)),
+        Connection(_Soquet(LeftDangle, q2), _Soquet(binst1, target)),
+        Connection(_Soquet(binst1, control), _Soquet(binst2, target)),
+        Connection(_Soquet(binst1, target), _Soquet(binst2, control)),
+        Connection(_Soquet(binst2, control), _Soquet(RightDangle, q1)),
+        Connection(_Soquet(binst2, target), _Soquet(RightDangle, q2)),
     ], signature
 
 
@@ -139,27 +145,31 @@ def test_map_soqs():
     bb, _ = BloqBuilder.from_signature(cbloq.signature)
     bb._i = 100  # pylint: disable=protected-access
 
-    soq_map: List[Tuple[SoquetT, SoquetT]] = []
+    soq_map = bb.initial_soq_map(cbloq.signature.lefts())
+
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
         if binst.i == 0:
-            assert in_soqs == bb.map_soqs(in_soqs, soq_map)
+            assert bb.map_soqs(in_soqs, soq_map) == {
+                'ctrl': _QVar(in_soqs['ctrl'].item(), bb=bb),
+                'target': _QVar(in_soqs['target'].item(), bb=bb),
+            }
         elif binst.i == 1:
             for k, val in bb.map_soqs(in_soqs, soq_map).items():
-                assert isinstance(val, Soquet)
-                assert isinstance(val.binst, BloqInstance)
-                assert val.binst.i >= 100
+                assert isinstance(val, _QVar)
+                assert isinstance(val.soquet.binst, BloqInstance)
+                assert val.soquet.binst.i >= 100
         else:
             raise AssertionError()
 
-        in_soqs = bb.map_soqs(in_soqs, soq_map)
-        new_out_soqs = bb.add_t(binst.bloq, **in_soqs)
+        mapped_in_soqs = bb.map_soqs(in_soqs, soq_map)
+        new_out_soqs = bb.add_t(binst.bloq, **mapped_in_soqs)
         soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
     fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
     for k, val in fsoqs.items():
-        assert isinstance(val, Soquet)
-        assert isinstance(val.binst, BloqInstance)
-        assert val.binst.i >= 100
+        assert isinstance(val, _QVar)
+        assert isinstance(val.soquet.binst, BloqInstance)
+        assert val.soquet.binst.i >= 100
     cbloq = bb.finalize(**fsoqs)
     assert isinstance(cbloq, CompositeBloq)
 
@@ -194,7 +204,18 @@ def test_bloq_builder():
     signature = Signature.build(x=1, y=1)
     x_reg, y_reg = signature
     bb, initial_soqs = BloqBuilder.from_signature(signature)
-    assert initial_soqs == {'x': Soquet(LeftDangle, x_reg), 'y': Soquet(LeftDangle, y_reg)}
+
+    # Using deprecated Soquet constructor (to be removed)
+    assert initial_soqs == {
+        'x': _QVar(Soquet(LeftDangle, x_reg), bb=bb),  # type: ignore
+        'y': _QVar(Soquet(LeftDangle, y_reg), bb=bb),  # type: ignore
+    }
+
+    # Using private constructor
+    assert initial_soqs == {
+        'x': _QVar(_Soquet(LeftDangle, x_reg), bb=bb),
+        'y': _QVar(_Soquet(LeftDangle, y_reg), bb=bb),
+    }
 
     x = initial_soqs['x']
     y = initial_soqs['y']
@@ -219,17 +240,17 @@ def _get_bb():
 def test_wrong_soquet():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*target.*'):
-        bad_target_arg = Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2)))
+    with pytest.raises(BloqError):
+        bad_target_arg = bb._make_qvar(
+            BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2))
+        )
         bb.add(TestTwoBitOp(), ctrl=x, target=bad_target_arg)
 
 
 def test_double_use_1():
     bb, x, y = _get_bb()
 
-    with pytest.raises(
-        BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp.*target`.*'
-    ):
+    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
         bb.add(TestTwoBitOp(), ctrl=x, target=x)
 
 
@@ -238,14 +259,16 @@ def test_double_use_2():
 
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `TestTwoBitOp\.ctrl`\.'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
         x3, y3 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
 
 def test_missing_args():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqError, match=r'.*requires a Soquet named `ctrl`.'):
+    with pytest.raises(
+        BloqError, match=r"During a call to TestTwoBitOp, we expected a value for 'ctrl'\."
+    ):
         bb.add(TestTwoBitOp(), target=y)
 
 
@@ -262,15 +285,17 @@ def test_finalize_wrong_soquet():
     assert x != x2
     assert y != y2
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2))))
+    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
+        bb.finalize(
+            x=x2, y=bb._make_qvar(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2)))
+        )
 
 
 def test_finalize_double_use_1():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
         bb.finalize(x=x2, y=x2)
 
 
@@ -278,7 +303,7 @@ def test_finalize_double_use_2():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `RightDangle\.x`\.'):
+    with pytest.raises(BloqError, match=r'.*quantum variable was re\-used.*'):
         bb.finalize(x=x, y=y2)
 
 
@@ -286,7 +311,8 @@ def test_finalize_missing_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'Finalizing requires a Soquet named `x`.'):
+    bb.add_register_allowed = False
+    with pytest.raises(BloqError, match=r"During Finalizing, we expected a value for 'x'\."):
         bb.finalize(y=y2)
 
 
@@ -296,15 +322,15 @@ def test_finalize_strict_too_many_args():
 
     bb.add_register_allowed = False
     with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', QBit())))
+        bb.finalize(x=x2, y=y2, z=_Soquet(RightDangle, Register('asdf', QBit())))
 
 
 def test_finalize_bad_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
-    with pytest.raises(BloqError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', QBit())))
+    with pytest.raises(BloqError):
+        bb.finalize(x=x2, y=y2, z=bb._make_qvar(RightDangle, Register('asdf', QBit())))
 
 
 def test_finalize_alloc():
@@ -320,7 +346,7 @@ def test_get_soquets():
     soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=True)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
-    assert isinstance(soq, Soquet)
+    assert isinstance(soq, _Soquet)
     assert soq.binst == RightDangle
     assert soq.reg.bitsize == 10
 
@@ -436,6 +462,28 @@ def test_copy(cls):
     assert cbloq is not cbloq2
     assert cbloq == cbloq2
     assert cbloq.debug_text() == cbloq2.debug_text()
+
+
+def _copy_bad_init(cbloq):
+    # Test backwards-compatibility shim where we don't use `bb.initial_soq_map`.
+    from qualtran._infra.composite_bloq import _map_soqs
+
+    bb, _ = BloqBuilder.from_signature(cbloq.signature)
+    soq_map: Any = []  # !!!
+
+    for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
+        mapped_in_soqs = _map_soqs(in_soqs, soq_map)
+        new_out_soqs = bb.add_t(binst.bloq, **mapped_in_soqs)
+        soq_map.extend(zip(old_out_soqs, new_out_soqs))
+
+    fsoqs = _map_soqs(cbloq.final_soqs(), soq_map)
+    return bb.finalize(**fsoqs)
+
+
+def test_old_copy():
+    cbloq = TestParallelCombo().decompose_bloq()
+    new_cbloq = _copy_bad_init(cbloq)
+    assert new_cbloq.debug_text() == cbloq.debug_text()
 
 
 @pytest.mark.parametrize('call_decompose', [False, True])
@@ -648,14 +696,14 @@ def test_get_soquet():
 
 
 def test_can_tell_individual_from_ndsoquet():
-    s1 = Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(0,))
-    s2 = Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(1,))
-    s3 = Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(2,))
-    s4 = Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(3,))
+    s1 = _Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(0,))
+    s2 = _Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(1,))
+    s3 = _Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(2,))
+    s4 = _Soquet(cast(BloqInstance, None), Register('test', QBit(), shape=(4,)), idx=(3,))
 
     # A ndarray of soquet objects should be SoquetT and we can tell by checking its shape.
-    ndsoq: SoquetT = np.array([s1, s2, s3, s4])
-    assert_type(ndsoq, SoquetT)
+    ndsoq: _SoquetT = np.array([s1, s2, s3, s4])
+    assert_type(ndsoq, _SoquetT)
     assert ndsoq.shape
     assert ndsoq.shape == (4,)
     assert ndsoq.item(2) == s3
@@ -663,22 +711,24 @@ def test_can_tell_individual_from_ndsoquet():
         _ = ndsoq.item()
 
     # A single soquet is still a valid SoquetT, and it has a false-y shape.
-    single_soq: SoquetT = s1
-    assert_type(single_soq, SoquetT)
+    single_soq: _SoquetT = s1
+    assert_type(single_soq, _SoquetT)
     assert not single_soq.shape
     assert single_soq.shape == ()
     single_soq_unwarp = single_soq.item()
     assert single_soq_unwarp == s1
 
     # A single soquet wrapped in a 0-dim ndarray is ok if you call `item()`.
-    single_soq2: SoquetT = np.asarray(s1)
-    assert_type(single_soq2, SoquetT)
+    single_soq2: _SoquetT = np.asarray(s1)
+    assert_type(single_soq2, _SoquetT)
     assert not single_soq2.shape
     assert single_soq2.shape == ()
     single_soq2_unwrap = single_soq2.item()
     assert hash(single_soq2_unwrap) == hash(s1)
     assert single_soq2_unwrap == s1
-    assert isinstance(single_soq2_unwrap, Soquet)
+    with pytest.warns(DeprecationWarning, match=r'deprecated'):
+        assert isinstance(single_soq2_unwrap, Soquet)  # type: ignore[misc]
+    assert isinstance(single_soq2_unwrap, _Soquet)
 
 
 @pytest.mark.notebook
