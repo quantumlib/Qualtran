@@ -642,10 +642,10 @@ class Controlled(_ControlledBase):
             cbloq = self.subbloq.decompose_bloq()
 
         ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
+        soq_map = bb.initial_soq_map(cbloq.signature.lefts())
 
-        soq_map: List[Tuple[SoquetT, SoquetT]] = []
-        for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
-            in_soqs = bb.map_soqs(in_soqs, soq_map)
+        for binst, _in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
+            in_soqs = bb.map_soqs(_in_soqs, soq_map)
             new_bloq, adder = binst.bloq.get_ctrl_system(self.ctrl_spec)
             adder_output = adder(bb, ctrl_soqs=ctrl_soqs, in_soqs=in_soqs)
             ctrl_soqs = list(adder_output[0])
