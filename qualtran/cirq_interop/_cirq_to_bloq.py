@@ -18,7 +18,18 @@ import abc
 import itertools
 import warnings
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 import cirq
 import numpy as np
@@ -320,7 +331,7 @@ def _ensure_in_reg_exists(
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             # Cast single QBit registers to the appropriate single-bit register dtype.
-            err_msg = "Found non-QBit type register which shouldn't happen: " f"{soq}"
+            err_msg = f"Found non-QBit type register which shouldn't happen: {soq}"
             assert isinstance(soq.dtype, QBit), err_msg
             if not isinstance(in_reg.dtype, QBit):
                 qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
@@ -468,6 +479,7 @@ def cirq_optree_to_cbloq(
     signature: Optional[Signature] = None,
     in_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
     out_quregs: Optional[Dict[str, 'CirqQuregT']] = None,
+    op_conversion_method: Optional[Callable[[cirq.Operation], Bloq]] = None,
 ) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
@@ -498,6 +510,17 @@ def cirq_optree_to_cbloq(
 
     Any qubit in `optree` which is not part of `in_quregs` and `out_quregs` is considered to be
     allocated & deallocated inside the CompositeBloq and does not show up in it's signature.
+
+    Args:
+        optree: A Cirq OP_TREE (e.g. a circuit or list of operations).
+        signature: The signature of the resulting CompositeBloq. If not provided, a default
+            signature with one thru-register named "qubits" is used.
+        in_quregs: Mapping from register names to arrays of cirq qubits for LEFT registers.
+        out_quregs: Mapping from register names to arrays of cirq qubits for RIGHT registers.
+        op_conversion_method: An optional callable that takes a ``cirq.Operation`` and returns
+            a ``Bloq``. If provided, this is used instead of the default ``_extract_bloq_from_op``
+            to convert each operation. This allows callers to attach custom metadata (e.g.
+            routing costs) to bloqs during conversion.
     """
     circuit = cirq.Circuit(optree)
     if signature is None:
@@ -536,7 +559,10 @@ def cirq_optree_to_cbloq(
 
     # 2. Add each operation to the composite Bloq.
     for op in circuit.all_operations():
-        bloq = _extract_bloq_from_op(op)
+        if op_conversion_method is not None:
+            bloq = op_conversion_method(op)
+        else:
+            bloq = _extract_bloq_from_op(op)
         if bloq.signature == Signature([]):
             bb.add(bloq)
             continue

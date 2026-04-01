@@ -287,3 +287,33 @@ def test_cirq_gate_cost_via_decomp():
 
     gc_swappow = get_cost_value(swappow_bloq, QECGatesCost())
     assert gc_swappow == GateCounts(clifford=5, rotation=1, and_bloq=1, measurement=1)
+
+
+def test_cirq_optree_to_cbloq_op_conversion_method():
+    """Test the op_conversion_method parameter of cirq_optree_to_cbloq.
+
+    When provided, op_conversion_method should be called for each operation
+    instead of the default _extract_bloq_from_op.
+    """
+    qubits = cirq.LineQubit.range(3)
+    circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CNOT(qubits[0], qubits[1]), cirq.T(qubits[2]))
+
+    # Track which operations were converted
+    converted_ops: list[cirq.Operation] = []
+
+    def custom_converter(op: cirq.Operation) -> Bloq:
+        converted_ops.append(op)
+        # Fall back to the default behavior.
+        from qualtran.cirq_interop._cirq_to_bloq import _extract_bloq_from_op
+
+        return _extract_bloq_from_op(op)
+
+    cbloq = cirq_optree_to_cbloq(circuit, op_conversion_method=custom_converter)
+
+    # Verify the custom converter was called for each operation.
+    assert len(converted_ops) == 3
+
+    # The resulting CompositeBloq should still produce the correct unitary.
+    bloq_unitary = cbloq.tensor_contract()
+    cirq_unitary = circuit.unitary(qubits)
+    np.testing.assert_allclose(cirq_unitary, bloq_unitary, atol=1e-8)
