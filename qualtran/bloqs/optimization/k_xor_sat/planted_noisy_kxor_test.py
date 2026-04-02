@@ -13,7 +13,6 @@
 #  limitations under the License.
 import numpy as np
 import pytest
-import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.optimization.k_xor_sat.kxor_instance import KXorInstance
