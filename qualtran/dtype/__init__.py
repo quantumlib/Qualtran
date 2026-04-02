@@ -15,52 +15,28 @@
 
 """Data type objects for your quantum programs."""
 
-from qualtran._infra.data_types import (
-    QCDType,
-    CDType,
-    QDType,
-    QAny,
-    QBit,
-    CBit,
-    QInt,
-    CInt,
-    QIntOnesComp,
-    CIntOnesComp,
-    QUInt,
-    CUInt,
-    BQUInt,
-    BCUInt,
-    QFxp,
-    CFxp,
-    QMontgomeryUInt,
-    CMontgomeryUInt,
-    QGF,
-    CGF,
-    QGFPoly,
-    CGFPoly,
-)
+from ._base import QCDType, CDType, QDType, ShapedQCDType, BitEncoding
 
-__all__ = [
-    'QCDType',
-    'CDType',
-    'QDType',
-    'QAny',
-    'QBit',
-    'CBit',
-    'QInt',
-    'CInt',
-    'QIntOnesComp',
-    'CIntOnesComp',
-    'QUInt',
-    'CUInt',
-    'BQUInt',
-    'BCUInt',
-    'QFxp',
-    'CFxp',
-    'QMontgomeryUInt',
-    'CMontgomeryUInt',
-    'QGF',
-    'CGF',
-    'QGFPoly',
-    'CGFPoly',
-]
+from ._any import QAny
+
+from ._bit import QBit, CBit
+
+from ._uint import QUInt, CUInt
+
+from ._int import QInt, CInt
+
+from ._int_ones_complement import QIntOnesComp, CIntOnesComp
+
+from ._buint import BQUInt, BCUInt
+
+from ._fxp import QFxp, CFxp
+
+from ._montgomery_uint import QMontgomeryUInt, CMontgomeryUInt
+
+from .gf import QGF, CGF, QGFPoly, CGFPoly
+
+from .testing import (
+    check_dtypes_consistent,
+    QDTypeCheckingSeverity,
+    assert_to_and_from_bits_array_consistent,
+)
