@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import warnings
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -35,7 +36,7 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.bookkeeping.partition import Partition
+from qualtran.bloqs.bookkeeping.partition import LegacyPartitionWarning, Partition
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -125,9 +126,18 @@ class CtrlSpecAnd(Bloq):
             return HasLength(self.n_ctrl_qubits)
 
         flat_cvs: list[int] = []
-        for reg, cv in zip(self.control_registers, self.ctrl_spec.cvs):
-            assert isinstance(cv, np.ndarray)
-            flat_cvs.extend(reg.dtype.to_bits_array(cv.ravel()).ravel())
+        for reg, cvs in zip(self.control_registers, self.ctrl_spec.cvs):
+            assert isinstance(cvs, np.ndarray)
+
+            if isinstance(reg.dtype, QAny) and not np.all(cvs == 0):
+                warnings.warn(
+                    f"Asking for a non zero controll value ({cvs}) for a QAny ({reg=}) is ambiguous, "
+                    "transforming QAny in QUInt for legacy purposes",
+                    category=LegacyPartitionWarning,
+                )
+                reg = evolve(reg, dtype=QUInt(reg.dtype.bitsize))
+
+            flat_cvs.extend(reg.dtype.to_bits_array(cvs.ravel()).ravel())
         return tuple(flat_cvs)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
