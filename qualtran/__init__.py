@@ -53,7 +53,7 @@ from ._infra.composite_bloq import (
     QVarT,
 )
 
-from ._infra.data_types import (
+from .dtype import (
     QCDType,
     CDType,
     QDType,
