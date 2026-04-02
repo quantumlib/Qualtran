@@ -64,6 +64,8 @@ from .dtype import (
     CInt,
     QIntOnesComp,
     CIntOnesComp,
+    QIntSignMag,
+    CIntSignMag,
     QUInt,
     CUInt,
     BQUInt,
