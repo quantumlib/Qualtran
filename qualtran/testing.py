@@ -298,21 +298,25 @@ def execute_notebook(name: str):
 
     # Execute in a temporary directory to avoid writing any files into the source tree.
     # This prevents accidental module shadowing.
-    with tempfile.TemporaryDirectory() as tmpdir:
-        exec_globals: dict = {"__name__": "__main__", "__file__": str(notebook_path)}
-        old_cwd = os.getcwd()
-        old_path = sys.path[:]
-        os.chdir(tmpdir)
-        # Add the notebook's directory to sys.path so imports from the same package work
-        # (matching the Jupyter kernel behavior of setting cwd to the notebook directory).
-        sys.path.insert(0, str(notebook_path.parent))
-        try:
-            exec(
-                compile(script, str(notebook_path), "exec"), exec_globals
-            )  # pylint: disable=exec-used
-        finally:
-            os.chdir(old_cwd)
-            sys.path[:] = old_path
+    old_cwd = os.getcwd()
+    old_path = sys.path[:]
+    old_modules = sys.modules.copy()
+    os.chdir(notebook_path.parent)
+    sys.path.insert(0, str(notebook_path.parent))
+    exec_globals: dict = {
+        "__name__": "__main__",
+        "__file__": str(notebook_path),
+        "get_ipython": lambda: None,  # Mock to avoid NameError on magics
+    }
+    try:
+        exec(compile(script, str(notebook_path), "exec"), exec_globals)  # pylint: disable=exec-used
+    finally:
+        os.chdir(old_cwd)
+        sys.path[:] = old_path
+        # Clean up sys.modules to prevent cross-test pollution
+        for m in list(sys.modules):
+            if m not in old_modules:
+                del sys.modules[m]
 
 
 class BloqCheckResult(Enum):
