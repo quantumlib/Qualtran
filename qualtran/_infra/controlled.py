@@ -441,9 +441,10 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
             rets = self.subbloq.on_classical_vals(**other_vals)
             if rets is NotImplemented:
                 return NotImplemented
+            rets = dict(rets)
             rets |= {
                 reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
-            }  # type: ignore[operator]
+            }
             return rets
 
         return vals
