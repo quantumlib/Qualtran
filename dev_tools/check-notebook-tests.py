@@ -40,7 +40,7 @@ def get_committed_notebooks(reporoot: Path) -> Dict[str, Path]:
     not user-facing documentation.
     """
     result = subprocess.run(
-        ['git', 'ls-files', '*.ipynb'], capture_output=True, text=True, check=True, cwd=reporoot
+        ['git', 'ls-files', '--', '**/*.ipynb'], capture_output=True, text=True, check=True, cwd=reporoot
     )
     return {
         Path(f).stem: Path(f)
