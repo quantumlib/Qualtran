@@ -79,6 +79,7 @@ test = [
     "pytest-xdist",
 
     # test executing notebooks
+    "jupytext",
     "ipykernel",
     "filelock",
 

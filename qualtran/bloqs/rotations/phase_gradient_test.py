@@ -17,6 +17,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QFxp
 from qualtran.bloqs.rotations.phase_gradient import (
     _phase_gradient_unitary_symbolic,
@@ -199,3 +200,8 @@ def test_add_scaled_val_into_phase_reg_t_complexity(bloq):
 
 def test_phase_gradient_unitary_symbolic_auto(bloq_autotester):
     bloq_autotester(_phase_gradient_unitary_symbolic)
+
+
+@pytest.mark.notebook
+def test_phase_gradient_notebook():
+    qlt_testing.execute_notebook('phase_gradient')

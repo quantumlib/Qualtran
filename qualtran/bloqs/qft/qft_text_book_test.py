@@ -77,3 +77,8 @@ def test_qft_text_book_auto(bloq_autotester):
 
 def test_symbolic_qft_auto(bloq_autotester):
     bloq_autotester(_symbolic_qft)
+
+
+@pytest.mark.notebook
+def test_qft_text_book_notebook():
+    qlt_testing.execute_notebook('qft_text_book')

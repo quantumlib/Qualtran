@@ -109,3 +109,8 @@ def test_interim_lp2s_interim_prep_t_complexity(bitsize: int):
     assert t_complexity(LPRSInterimPrep(bitsize)) == TComplexity(
         rotations=crz_rots + 1, clifford=2 + crz_cliff + h_cliff
     )
+
+
+@pytest.mark.notebook
+def test_lp_resource_state_notebook():
+    qlt_testing.execute_notebook('lp_resource_state')

@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from qualtran import Controlled, CtrlSpec, QInt, QUInt
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.mcmt.controlled_via_and import (
@@ -78,3 +79,8 @@ def test_nested_controlled_x():
         ctrl_bloq.tensor_contract(),
         XGate().controlled(CtrlSpec(cvs=[1, 1, 1, 1])).tensor_contract(),
     )
+
+
+@pytest.mark.notebook
+def test_controlled_via_and_notebook():
+    qlt_testing.execute_notebook('controlled_via_and')

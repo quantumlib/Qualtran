@@ -16,6 +16,7 @@ import pytest
 import sympy
 from galois import GF
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.gf_arithmetic.gf2_square import _gf2_square_symbolic, _gf16_square, GF2Square
 from qualtran.resource_counting import get_cost_value, QECGatesCost
 from qualtran.testing import assert_consistent_classical_action
@@ -51,3 +52,8 @@ def test_gf2_square_classical_sim(m):
     bloq = GF2Square(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements)
+
+
+@pytest.mark.notebook
+def test_gf2_square_notebook():
+    qlt_testing.execute_notebook('gf2_square')

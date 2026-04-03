@@ -15,6 +15,7 @@ import itertools
 
 import cirq
 import numpy as np
+import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QBit, Register, Signature
@@ -138,3 +139,8 @@ def test_toffoli_controlled_2():
     assert c0t.signature == Signature(
         [Register('ctrl1', QBit()), Register('ctrl2', QBit(), shape=(2,)), Register('q', QBit())]
     )
+
+
+@pytest.mark.notebook
+def test_toffoli_notebook():
+    qlt_testing.execute_notebook('toffoli')

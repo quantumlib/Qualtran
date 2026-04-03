@@ -273,19 +273,46 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 
 def execute_notebook(name: str):
     """Execute a jupyter notebook in the caller's directory.
 
+    Uses jupytext to convert the notebook to a Python script in-memory,
+    then executes it directly — no Jupyter kernel required. This is much
+    faster than the kernel-based approach and avoids flaky parallel kernel issues.
+
+    Note: No .py files are written to disk. This is critical because most
+    notebooks share their basename with a Python module (e.g. addition.ipynb
+    and addition.py coexist), so writing a .py file would shadow the module.
+
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
-    from nbconvert.preprocessors import ExecutePreprocessor
+    import os
+    import sys
+    import tempfile
+
+    import jupytext
 
     # Assumes that the notebook is in the same path from where the function was called,
     # which may be different from `__file__`.
     notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
+    nb = jupytext.read(notebook_path)
+    script = jupytext.writes(nb, fmt="py:percent")
+
+    # Execute in a temporary directory to avoid writing any files into the source tree.
+    # This prevents accidental module shadowing.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        exec_globals: dict = {"__name__": "__main__", "__file__": str(notebook_path)}
+        old_cwd = os.getcwd()
+        old_path = sys.path[:]
+        os.chdir(tmpdir)
+        # Add the notebook's directory to sys.path so imports from the same package work
+        # (matching the Jupyter kernel behavior of setting cwd to the notebook directory).
+        sys.path.insert(0, str(notebook_path.parent))
+        try:
+            exec(
+                compile(script, str(notebook_path), "exec"), exec_globals
+            )  # pylint: disable=exec-used
+        finally:
+            os.chdir(old_cwd)
+            sys.path[:] = old_path
 
 
 class BloqCheckResult(Enum):

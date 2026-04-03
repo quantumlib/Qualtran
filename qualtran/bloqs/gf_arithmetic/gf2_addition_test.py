@@ -15,6 +15,7 @@
 import pytest
 from galois import GF
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.gf_arithmetic.gf2_addition import (
     _gf2_addition_symbolic,
     _gf16_addition,
@@ -51,3 +52,8 @@ def test_gf2_addition_classical_sim(m):
     bloq = GF2Addition(m)
     GFM = GF(2**m)
     assert_consistent_classical_action(bloq, x=GFM.elements, y=GFM.elements)
+
+
+@pytest.mark.notebook
+def test_gf2_addition_notebook():
+    qlt_testing.execute_notebook('gf2_addition')
