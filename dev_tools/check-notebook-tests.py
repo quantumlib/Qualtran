@@ -26,7 +26,7 @@ import ast
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import cast, Dict, Tuple
 
 from qualtran_dev_tools.git_tools import get_git_root
 
@@ -40,7 +40,11 @@ def get_committed_notebooks(reporoot: Path) -> Dict[str, Path]:
     not user-facing documentation.
     """
     result = subprocess.run(
-        ['git', 'ls-files', '--', '**/*.ipynb'], capture_output=True, text=True, check=True, cwd=reporoot
+        ['git', 'ls-files', '--', '**/*.ipynb'],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=reporoot,
     )
     return {
         Path(f).stem: Path(f)
@@ -83,7 +87,7 @@ def find_notebook_tests(reporoot: Path) -> Dict[str, Tuple[Path, bool]]:
                     and child.args
                     and isinstance(child.args[0], ast.Constant)
                 ):
-                    nb_name = child.args[0].value
+                    nb_name: str = cast(str, child.args[0].value)
                     # Check for @pytest.mark.notebook decorator
                     has_marker = any(_is_notebook_marker(dec) for dec in node.decorator_list)
                     results[nb_name] = (test_file.relative_to(reporoot), has_marker)
