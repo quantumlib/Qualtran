@@ -286,7 +286,6 @@ def execute_notebook(name: str):
     """
     import os
     import sys
-    import tempfile
 
     import jupytext
 
