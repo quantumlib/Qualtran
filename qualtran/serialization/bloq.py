@@ -53,7 +53,7 @@ from qualtran.serialization import (
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, int):
-        return bloq_pb2.BloqArg(name=name, int_val=val)
+        return bloq_pb2.BloqArg(name=name, int_val=int(val))
     if isinstance(val, float):
         return bloq_pb2.BloqArg(name=name, float_val=val)
     if isinstance(val, str):
