@@ -27,6 +27,8 @@ from ._int import QInt, CInt
 
 from ._int_ones_complement import QIntOnesComp, CIntOnesComp
 
+from ._int_signmag import QIntSignMag, CIntSignMag
+
 from ._buint import BQUInt, BCUInt
 
 from ._fxp import QFxp, CFxp
