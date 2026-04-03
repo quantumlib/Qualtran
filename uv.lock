@@ -3647,6 +3647,7 @@ format = [
 lint = [
     { name = "filelock" },
     { name = "griffe" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "openfermion", extra = ["resources"] },
     { name = "pylint" },
@@ -3754,6 +3755,7 @@ format = [
 lint = [
     { name = "filelock" },
     { name = "griffe" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "openfermion", extras = ["resources"] },
     { name = "pylint", specifier = "~=3.3.1" },
