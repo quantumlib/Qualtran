@@ -2619,7 +2619,7 @@ wheels = [
 
 [[package]]
 name = "openfermion"
-version = "1.7.1"
+version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cirq-core" },
@@ -2632,9 +2632,9 @@ dependencies = [
     { name = "scipy" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/10/86/5ab524a132b93e70c55215dfb91d2ce8012801a82f55ad6643616717575b/openfermion-1.7.1.tar.gz", hash = "sha256:717f4b969a1fd1df24f11bd462b485d317f257bdd91cef32ced23d276cc83f70", size = 44495108, upload-time = "2025-06-06T04:10:45.536Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/cb/479729416a560a51ab5ed9c02d5576e639c13512f013e7fc80bca6e6db4e/openfermion-1.6.1.tar.gz", hash = "sha256:d7f1df4cf98feaa577a070cb432e3d05863c73a4f3bc1f7d112914cf2a3c9bcb", size = 965802, upload-time = "2024-02-09T00:16:08.256Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/39/28f89ae6516fe327e22ea2f8162c0f83f6d580a8ca00a47447b4473571e3/openfermion-1.7.1-py3-none-any.whl", hash = "sha256:2f3745786d9aa1913bb3281b5151eae3a5082d90aeacd6b964e813b9fa8a3e46", size = 44717798, upload-time = "2025-06-06T04:10:29.073Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/a8/3d6942f7c25ec9f0b58c5d7864743c43d6a7a65052795b343be46019cf85/openfermion-1.6.1-py3-none-any.whl", hash = "sha256:9cc65558ac4915ab25a3366f71b80acf22b16116c9f6132c08990fd2f59b557e", size = 1208991, upload-time = "2024-02-09T00:16:06.166Z" },
 ]
 
 [package.optional-dependencies]
@@ -3793,7 +3793,7 @@ wheels = [
 
 [[package]]
 name = "requests"
-version = "2.32.5"
+version = "2.33.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -3801,9 +3801,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/64/8860370b167a9721e8956ae116825caff829224fbca0ca6e7bf8ddef8430/requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652", size = 134232, upload-time = "2026-03-25T15:10:41.586Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+    { url = "https://files.pythonhosted.org/packages/56/5d/c814546c2333ceea4ba42262d8c4d55763003e767fa169adc693bd524478/requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b", size = 65017, upload-time = "2026-03-25T15:10:40.382Z" },
 ]
 
 [[package]]
