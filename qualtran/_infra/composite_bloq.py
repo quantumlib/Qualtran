@@ -62,6 +62,8 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
+    import qualtran as qlt
+    import qualtran.dtype as qdt
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -467,7 +469,7 @@ class CompositeBloq(Bloq):
 
     def copy(self) -> 'CompositeBloq':
         """Create a copy of this composite bloq by re-building it."""
-        bb, _ = BloqBuilder.from_signature(self.signature)
+        bb, _ = BloqBuilder.from_signature(self.signature, bloq_key=self.bloq_key)
         soq_map = bb.initial_soq_map(self.signature.lefts())
 
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
@@ -639,6 +641,11 @@ class CompositeBloq(Bloq):
     def __str__(self):
         if self.bloq_key is not None:
             return self.bloq_key
+        return f'CompositeBloq([{len(self.bloq_instances)} subbloqs...])'
+
+    def __repr__(self):
+        if self.bloq_key is not None:
+            return f'CompositeBloq(..., bloq_key={self.bloq_key!r})'
         return f'CompositeBloq([{len(self.bloq_instances)} subbloqs...])'
 
 
@@ -1098,7 +1105,7 @@ class BloqBuilder:
             by the framework or by the `BloqBuilder.from_signature(s)` factory method.
     """
 
-    def __init__(self, add_registers_allowed: bool = True):
+    def __init__(self, add_registers_allowed: bool = True, *, bloq_key: Optional[str] = None):
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[Register] = []
@@ -1112,6 +1119,8 @@ class BloqBuilder:
 
         # Whether we can call `add_register` and do non-strict `finalize()`.
         self.add_register_allowed = add_registers_allowed
+
+        self._bloq_key = bloq_key
 
     def add_register_from_dtype(
         self, reg: Union[str, Register], dtype: Optional[QCDType] = None
@@ -1135,7 +1144,7 @@ class BloqBuilder:
         from qualtran.symbolics import is_symbolic
 
         if not self.add_register_allowed:
-            raise ValueError(
+            raise BloqError(
                 "This BloqBuilder was constructed from pre-specified registers. "
                 "Ad hoc addition of more registers is not allowed."
             )
@@ -1208,7 +1217,11 @@ class BloqBuilder:
 
     @classmethod
     def from_signature(
-        cls, signature: Signature, add_registers_allowed: bool = False
+        cls,
+        signature: Signature,
+        add_registers_allowed: bool = False,
+        *,
+        bloq_key: Optional[str] = None,
     ) -> Tuple['BloqBuilder', Dict[str, QVarT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
@@ -1216,7 +1229,7 @@ class BloqBuilder:
         to match. This constructor is used by `Bloq.decompose_bloq()`.
         """
         # Initial construction: allow register addition for the following loop.
-        bb = cls(add_registers_allowed=True)
+        bb = cls(add_registers_allowed=True, bloq_key=bloq_key)
 
         initial_soqs: Dict[str, QVarT] = {}
         for reg in signature:
@@ -1454,7 +1467,12 @@ class BloqBuilder:
                 be unpacked with tuple unpacking. In this final case, the ordering is according
                 to `bloq.signature` and irrespective of the order of `**in_soqs`.
         """
-        outs = self.add_t(bloq, **in_soqs)
+        try:
+            outs = self.add_t(bloq, **in_soqs)
+        except BloqError as be:
+            # Error source shown as `bb.add(...)`
+            raise BloqError(*be.args) from None
+
         if len(outs) == 0:
             return None
         if len(outs) == 1:
@@ -1539,6 +1557,38 @@ class BloqBuilder:
         fsoqs = _map_soqs(cbloq.final_soqs(), soq_map)
         return tuple(fsoqs[reg.name] for reg in cbloq.signature.rights())
 
+    def _change_THRU_to_LEFT(self, reg_name: str):
+        """Used during loose `finalize` to force LEFT registers."""
+        for reg_i, reg in enumerate(self._regs):
+            if reg.name == reg_name:
+                break
+        else:
+            raise AssertionError(f"{reg_name} doesn't exist in the registers.")
+
+        if reg.side != Side.THRU:
+            raise ValueError(f"{reg} is supposed to be a THRU register.")
+
+        new_reg = attrs.evolve(reg, side=Side.LEFT)
+
+        # Replace in `self._available`
+        soqs_to_replace = []
+        for soq in self._available:
+            if soq.binst is LeftDangle and soq.reg == reg:
+                soqs_to_replace.append(soq)
+        for soq in soqs_to_replace:
+            self._available.remove(soq)
+            self._available.add(attrs.evolve(soq, reg=new_reg))
+
+        # Replace in `self._cxns`
+        for j in range(len(self._cxns)):
+            cxn = self._cxns[j]
+            if cxn.left.reg == reg:
+                new_cxn = attrs.evolve(cxn, left=attrs.evolve(cxn.left, reg=new_reg))
+                self._cxns[j] = new_cxn
+
+        # Replace in `self._regs`
+        self._regs[reg_i] = new_reg
+
     def finalize(self, **final_soqs: SoquetInT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
@@ -1546,10 +1596,14 @@ class BloqBuilder:
         it configures the final "dangling" soquets that serve as the outputs for
         the composite bloq as a whole.
 
-        If `self.add_registers_allowed` is set to `True`, additional register
-        names passed to this function will be added as RIGHT registers. Otherwise,
-        this method validates the provided `final_soqs` against our list of RIGHT
-        (and THRU) registers.
+        If `self.add_registers_allowed` is set to `False`, the kwqargs to this method must
+        exactly match the signature configured for this bloq builder.
+        Otherwise:
+         - surplus arguments (with register names not in our signature) will be interpreted as
+           output quantum variables and we'll add a corresponding RIGHT register.
+         - missing arguments (i.e. a register name was introduced somewhere but
+           no quantum variable was provided for it), we will set that register to be a
+           LEFT register.
 
         Args:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
@@ -1577,6 +1631,12 @@ class BloqBuilder:
                 dtype, shape = _infer_shaped_dtype(np.asarray(soq))
                 self._regs.append(Register(name=name, dtype=dtype, shape=shape, side=Side.RIGHT))
 
+        # If a soquet is missing, we're charitable and consider it de-allocated, see docstring.
+        deletable_right_reg_names = [reg.name for reg in self._regs if reg.side == Side.THRU]
+        for name in deletable_right_reg_names:
+            if name not in final_soqs:
+                self._change_THRU_to_LEFT(reg_name=name)
+
         return self._finalize_strict(**final_soqs)
 
     def _finalize_strict(self, **final_soqs: SoquetInT) -> CompositeBloq:
@@ -1592,16 +1652,25 @@ class BloqBuilder:
             # close over `RightDangle`
             return self._add_cxn(RightDangle, idxed_soq, reg, idx)
 
+        if self._bloq_key:
+            debug_str = f'finalization of {self._bloq_key}'
+        else:
+            debug_str = 'finalization'
         _process_soquets(
-            registers=signature.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
+            registers=signature.rights(), debug_str=debug_str, in_soqs=final_soqs, func=_fin
         )
         if self._available:
-            raise BloqError(
-                f"During finalization, {self._available} Soquets were not used."
-            ) from None
+            if self._bloq_key is None:
+                ctx = ''
+            else:
+                ctx = f' of {self._bloq_key}'
+            raise BloqError(f"During finalization{ctx}, {self._available} Soquets were not used.")
 
         return CompositeBloq(
-            connections=self._cxns, signature=signature, bloq_instances=self._binsts
+            connections=self._cxns,
+            signature=signature,
+            bloq_instances=self._binsts,
+            bloq_key=self._bloq_key,
         )
 
     def allocate(
@@ -1653,3 +1722,6 @@ class BloqBuilder:
             dtype = QAny(n)
 
         return self.add(Join(dtype=dtype), reg=soqs)
+
+    def in_register(self, name: str, dtype: QCDType, shape=()) -> Union[None, QVarT]:
+        return self.add_register_from_dtype(Register(name=name, dtype=dtype, shape=shape))
