@@ -63,6 +63,7 @@ dependencies = [
     "frozendict",
     "pandas >= 2.0",
     "seaborn",
+    "joblib",
 ]
 
 [tool.hatch.version]
