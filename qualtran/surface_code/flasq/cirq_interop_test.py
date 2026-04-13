@@ -16,16 +16,16 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.cirq_interop import cirq_optree_to_cbloq
 
-from qualtran_flasq.span_counting import (
+from qualtran.surface_code.flasq.span_counting import (
     BloqWithSpanInfo,
     GateSpan,
     TotalSpanCost,
 )
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )
-from qualtran_flasq.cirq_interop import (
+from qualtran.surface_code.flasq.cirq_interop import (
     _get_coords_from_op,
     cirq_op_to_bloq_with_span,
     convert_circuit_for_flasq_analysis,
@@ -348,7 +348,7 @@ def test_no_unknown_bloqs_for_fsim_circuit():
 # Phase 1: Characterization tests for untested cirq_interop branches
 # =============================================================================
 
-from qualtran_flasq.cirq_interop import (
+from qualtran.surface_code.flasq.cirq_interop import (
     cirq_op_to_bloq_tolerate_classical_controls,
     flasq_decompose_keep,
 )

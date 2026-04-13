@@ -1,14 +1,14 @@
 import sympy
 import pytest
 from frozendict import frozendict
-from qualtran_flasq.flasq_model import FLASQCostModel, apply_flasq_cost_model
-from qualtran_flasq.volume_counting import FLASQGateCounts
-from qualtran_flasq.span_counting import GateSpan
-from qualtran_flasq.measurement_depth import MeasurementDepth
-from qualtran_flasq.symbols import ROTATION_ERROR, V_CULT_FACTOR, T_REACT
-from qualtran_flasq.utils import substitute_until_fixed_point
-from qualtran_flasq.optimization import generate_circuit_specific_configs
-from qualtran_flasq.examples.hwp import build_parallel_rz_circuit
+from qualtran.surface_code.flasq.flasq_model import FLASQCostModel, apply_flasq_cost_model
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
+from qualtran.surface_code.flasq.span_counting import GateSpan
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, V_CULT_FACTOR, T_REACT
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
+from qualtran.surface_code.flasq.optimization import generate_circuit_specific_configs
+from qualtran.surface_code.flasq.examples.hwp import build_parallel_rz_circuit
 
 def test_apply_flasq_cost_model_zero_fluid_ancilla():
     """Verify apply_flasq_cost_model handles n_fluid_ancilla=0 without producing zoo."""

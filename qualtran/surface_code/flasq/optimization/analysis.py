@@ -5,20 +5,20 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 import sympy
 from frozendict import frozendict
 from qualtran.resource_counting import QubitCount, get_cost_value
-from qualtran_flasq import cultivation_analysis
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran_flasq.flasq_model import (
+from qualtran.surface_code.flasq import cultivation_analysis
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.flasq_model import (
     FLASQCostModel,
     FLASQSummary,
     apply_flasq_cost_model,
     get_rotation_depth,
 )
-from qualtran_flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
-from qualtran_flasq.optimization.configs import CoreParametersConfig, ErrorBudget
-from qualtran_flasq.span_counting import GateSpan, TotalSpanCost
-from qualtran_flasq.symbols import MIXED_FALLBACK_T_COUNT, ROTATION_ERROR
-from qualtran_flasq.utils import substitute_until_fixed_point
-from qualtran_flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
+from qualtran.surface_code.flasq.optimization.configs import CoreParametersConfig, ErrorBudget
+from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.symbols import MIXED_FALLBACK_T_COUNT, ROTATION_ERROR
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 @lru_cache(maxsize=None)

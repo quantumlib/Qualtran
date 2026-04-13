@@ -5,12 +5,12 @@ import cirq
 import pytest
 
 from qualtran.resource_counting import get_cost_value
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran_flasq.examples.gf2_multiplier import (
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.examples.gf2_multiplier import (
     build_karatsuba_mult_circuit,
     build_quadratic_mult_circuit,
 )
-from qualtran_flasq.span_counting import TotalSpanCost
+from qualtran.surface_code.flasq.span_counting import TotalSpanCost
 
 
 def test_build_quadratic_mult_circuit_layout():

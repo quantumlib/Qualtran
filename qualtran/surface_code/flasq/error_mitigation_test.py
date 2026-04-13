@@ -3,8 +3,8 @@ import sympy
 from unittest.mock import MagicMock
 
 # (Assuming standard imports for FLASQSummary, etc.)
-from qualtran_flasq.flasq_model import FLASQSummary
-from qualtran_flasq.error_mitigation import (
+from qualtran.surface_code.flasq.flasq_model import FLASQSummary
+from qualtran.surface_code.flasq.error_mitigation import (
     calculate_failure_probabilities,
     ERROR_PER_CYCLE_PREFACTOR,
 )
@@ -112,7 +112,7 @@ class TestErrorMitigationMetrics:
 
     def test_calculate_metrics_basic_concrete(self):
         """Hand-verified concrete calculation of error mitigation metrics."""
-        from qualtran_flasq.error_mitigation import calculate_error_mitigation_metrics
+        from qualtran.surface_code.flasq.error_mitigation import calculate_error_mitigation_metrics
 
         summary = self._mock_summary_for_metrics(
             total_spacetime_volume=1000.0,
@@ -165,7 +165,7 @@ class TestErrorMitigationMetrics:
 
     def test_calculate_metrics_zero_t_count(self):
         """When there are no T gates, cultivation-related overhead should be minimal."""
-        from qualtran_flasq.error_mitigation import calculate_error_mitigation_metrics
+        from qualtran.surface_code.flasq.error_mitigation import calculate_error_mitigation_metrics
 
         summary = self._mock_summary_for_metrics(
             total_spacetime_volume=500.0,
@@ -191,7 +191,7 @@ class TestErrorMitigationMetrics:
 
     def test_calculate_metrics_returns_three_values(self):
         """Verify the function returns exactly 3 values."""
-        from qualtran_flasq.error_mitigation import calculate_error_mitigation_metrics
+        from qualtran.surface_code.flasq.error_mitigation import calculate_error_mitigation_metrics
 
         summary = self._mock_summary_for_metrics(
             total_spacetime_volume=100.0,

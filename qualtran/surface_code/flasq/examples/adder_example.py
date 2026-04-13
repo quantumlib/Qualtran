@@ -11,9 +11,9 @@ from qualtran import QUInt, Signature
 import qualtran.bloqs.mcmt
 from qualtran.resource_counting import get_cost_value
 from qualtran.cirq_interop import cirq_optree_to_cbloq
-from qualtran_flasq.cirq_interop import cirq_op_to_bloq_with_span
-from qualtran_flasq.span_counting import GateSpan, TotalSpanCost
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.cirq_interop import cirq_op_to_bloq_with_span
+from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )

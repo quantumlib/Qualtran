@@ -6,8 +6,8 @@ from qualtran.bloqs.rotations import HammingWeightPhasing
 import numpy as np
 from typing import List, Set  # CHANGED: Added for backward-compatible types
 
-from qualtran_flasq.naive_grid_qubit_manager import NaiveGridQubitManager
-from qualtran_flasq.cirq_interop import (
+from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
+from qualtran.surface_code.flasq.cirq_interop import (
     flasq_intercepting_decomposer,
     flasq_decompose_keep,
 )

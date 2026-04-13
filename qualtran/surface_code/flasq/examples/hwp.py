@@ -5,7 +5,7 @@ import cirq
 import numpy as np
 
 from qualtran.bloqs.rotations import HammingWeightPhasing
-from qualtran_flasq.naive_grid_qubit_manager import NaiveGridQubitManager
+from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 
 
 def build_hwp_circuit(

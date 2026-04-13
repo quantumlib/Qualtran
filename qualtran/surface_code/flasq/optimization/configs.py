@@ -2,7 +2,7 @@ import itertools
 from typing import Any, Iterable, List, NamedTuple, Optional, Union
 
 from frozendict import frozendict
-from qualtran_flasq import cultivation_analysis
+from qualtran.surface_code.flasq import cultivation_analysis
 
 
 class CoreParametersConfig(NamedTuple):

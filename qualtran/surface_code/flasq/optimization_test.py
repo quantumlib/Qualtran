@@ -10,17 +10,17 @@ from frozendict import frozendict
 
 from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, Ry, ZPowGate, Hadamard, TGate
-from qualtran_flasq.span_counting import (
+from qualtran.surface_code.flasq.span_counting import (
     GateSpan,
     BloqWithSpanInfo,
     TotalSpanCost,
 )
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )
-from qualtran_flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
-from qualtran_flasq.flasq_model import (
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
+from qualtran.surface_code.flasq.flasq_model import (
     FLASQSummary,
     ROTATION_ERROR,
     V_CULT_FACTOR,
@@ -28,10 +28,10 @@ from qualtran_flasq.flasq_model import (
     optimistic_FLASQ_costs,
     apply_flasq_cost_model,
 )
-from qualtran_flasq.symbols import (
+from qualtran.surface_code.flasq.symbols import (
     T_REACT,
 )
-from qualtran_flasq.optimization import (
+from qualtran.surface_code.flasq.optimization import (
     analyze_logical_circuit,
     generate_configs_from_cultivation_data,
     generate_configs_for_specific_cultivation_assumptions,
@@ -45,8 +45,8 @@ from qualtran_flasq.optimization import (
     ErrorBudget,
     generate_configs_for_constrained_qec,
 )
-from qualtran_flasq.examples.ising import build_ising_circuit  # For integration test
-from qualtran_flasq import cultivation_analysis  # For the new test
+from qualtran.surface_code.flasq.examples.ising import build_ising_circuit  # For integration test
+from qualtran.surface_code.flasq import cultivation_analysis  # For the new test
 
 # Define a simple frozen Bloq for testing unknown cases (should be hashable)
 # This mimics how CirqGateAsBloq or other custom Bloqs might appear in unknown lists
@@ -473,7 +473,7 @@ class TestOptimizationFunctions:
 
         # Mock convert_circuit_for_flasq_analysis to check its arguments
         with patch(
-            "qualtran_flasq.optimization.analysis.convert_circuit_for_flasq_analysis"
+            "qualtran.surface_code.flasq.optimization.analysis.convert_circuit_for_flasq_analysis"
         ) as mock_convert:
             # Set a valid return value for the mock
             from qualtran.bloqs.basic_gates import TGate
@@ -943,11 +943,11 @@ class TestConstrainedQECOptimization:
 
     # --- Tests for generate_configs_for_constrained_qec ---
 
-    @patch("qualtran_flasq.optimization.analysis.analyze_logical_circuit")
+    @patch("qualtran.surface_code.flasq.optimization.analysis.analyze_logical_circuit")
     @patch(
-        "qualtran_flasq.optimization.cultivation_analysis.find_best_cultivation_parameters"
+        "qualtran.surface_code.flasq.optimization.cultivation_analysis.find_best_cultivation_parameters"
     )
-    @patch("qualtran_flasq.optimization.cultivation_analysis.round_error_rate_up")
+    @patch("qualtran.surface_code.flasq.optimization.cultivation_analysis.round_error_rate_up")
     def test_generate_configs_constrained_qec_feasible(
         self, mock_round_up, mock_find_best, mock_analyze
     ):
@@ -1062,7 +1062,7 @@ class TestConstrainedQECOptimization:
 
         return result
 
-    @patch("qualtran_flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
     def test_post_process_failure_budget_filtering(self, mock_calc_failures):
         """Test Case 1: Filtering Logic (Pass/Fail)."""
 
@@ -1103,7 +1103,7 @@ class TestConstrainedQECOptimization:
         assert df.iloc[0]["P_fail_T (P_dis)"] == 0.005
         assert df.iloc[0]["Sum of Failure Probabilities (P_log + P_dis)"] == 0.01
 
-    @patch("qualtran_flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
     def test_post_process_failure_budget_time_calc(self, mock_calc_failures):
         """Test Case 2: Wall Clock Time Calculation."""
 
@@ -1130,7 +1130,7 @@ class TestConstrainedQECOptimization:
         assert len(df) == 1
         assert pytest.approx(df.iloc[0]["Wall Clock Time (s)"]) == 0.03
 
-    @patch("qualtran_flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
     def test_post_process_failure_budget_mismatch(self, mock_calc_failures):
         """Test Case 3: Synthesis Budget Mismatch."""
 

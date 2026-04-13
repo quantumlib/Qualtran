@@ -11,33 +11,33 @@ from qualtran.bloqs.basic_gates import CNOT, Hadamard, Ry, Rz, SGate, Toffoli
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import get_cost_value, QubitCount
 
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran_flasq.span_counting import (
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.span_counting import (
     GateSpan,
     BloqWithSpanInfo,
     TotalSpanCost,
 )
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )
-from qualtran_flasq.flasq_model import (
+from qualtran.surface_code.flasq.flasq_model import (
     FLASQCostModel,
     apply_flasq_cost_model,
     FLASQSummary,  # Import the new summary dataclass
     conservative_FLASQ_costs,  # Import the new instance
     optimistic_FLASQ_costs,  # Import the new instance
 )
-from qualtran_flasq.symbols import (
+from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
     V_CULT_FACTOR,
     T_REACT,
 )
-from qualtran_flasq.utils import (
+from qualtran.surface_code.flasq.utils import (
     substitute_until_fixed_point,
 )  # Needed for the method implementation
-from qualtran_flasq.measurement_depth import (
+from qualtran.surface_code.flasq.measurement_depth import (
     MeasurementDepth,
     TotalMeasurementDepth,
 )  # Import MeasurementDepth
@@ -1062,9 +1062,9 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
 # =============================================================================
 
 import warnings as warnings_module
-from qualtran_flasq.measurement_depth import MeasurementDepth
-from qualtran_flasq.flasq_model import get_rotation_depth
-from qualtran_flasq.symbols import ROTATION_ERROR, MIXED_FALLBACK_T_COUNT
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth
+from qualtran.surface_code.flasq.flasq_model import get_rotation_depth
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, MIXED_FALLBACK_T_COUNT
 
 
 class TestApplyFlasqCostModelWarnings:

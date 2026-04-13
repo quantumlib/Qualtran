@@ -17,7 +17,7 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.mcmt import And
 
-from qualtran_flasq.span_counting import (
+from qualtran.surface_code.flasq.span_counting import (
     BloqWithSpanInfo,
     GateSpan,
     TotalSpanCost,
