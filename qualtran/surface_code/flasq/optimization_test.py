@@ -403,7 +403,7 @@ def test_frozendict_hashable():
     assert hash(custom_bloq_dict1) != hash(custom_bloq_dict3)  # Probabilistic
 
 
-class TestOptimizationFunctions:
+class OptimizationFunctionsTestSuite:
     def test_analyze_logical_circuit(self):
         kwargs = frozendict({"num_qubits": 2, "add_rotation": True})
         total_rot_error = 0.01
@@ -691,7 +691,7 @@ def test_sweep_with_cultivation_data_derived_params():
         )
 
 
-class TestHelperFunctionsForSweep:
+class HelperFunctionsForSweepTestSuite:
     def test_generate_configs_for_specific_cultivation_assumptions(self):
         configs = generate_configs_for_specific_cultivation_assumptions(
             code_distance_list=[7, 9],
@@ -834,7 +834,7 @@ class TestHelperFunctionsForSweep:
             )
 
 
-class TestNewSweepPipeline:
+class NewSweepPipelineTestSuite:
     def test_run_sweep_single_point(self):
         """Test the new `run_sweep` function with a single parameter set."""
         circuit_kwargs = frozendict({"num_qubits": 2, "add_rotation": True})
@@ -934,7 +934,7 @@ class TestNewSweepPipeline:
         assert all(df["Code Distance"] == 7)
 
 
-class TestConstrainedQECOptimization:
+class ConstrainedQECOptimizationTestSuite:
     # --- Tests for ErrorBudget ---
     def test_error_budget_class(self):
         budget = ErrorBudget(logical=0.001, cultivation=0.002, synthesis=0.003)

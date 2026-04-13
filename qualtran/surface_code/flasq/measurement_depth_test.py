@@ -290,7 +290,7 @@ def test_total_measurement_depth_with_rotation_depth():
 from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect
 
 
-class TestTotalMeasurementDepthBaseCases:
+class TotalMeasurementDepthBaseCasesTestSuite:
     """Characterization tests for base cases in TotalMeasurementDepth.compute."""
 
     def test_state_or_effect_depth_zero(self):
@@ -301,7 +301,7 @@ class TestTotalMeasurementDepthBaseCases:
         assert get_cost_value(ZeroEffect(), cost_key) == MeasurementDepth(depth=0)
 
 
-class TestTotalMeasurementDepthEdgeCases:
+class TotalMeasurementDepthEdgeCasesTestSuite:
     """Characterization tests for TotalMeasurementDepth edge cases."""
 
     def test_validate_val_wrong_type_raises(self):

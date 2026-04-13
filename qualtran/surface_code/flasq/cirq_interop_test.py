@@ -355,7 +355,7 @@ from qualtran.surface_code.flasq.cirq_interop import (
 from qualtran.bloqs.mcmt import And
 
 
-class TestTolerateClassicalControls:
+class TolerateClassicalControlsTestSuite:
     """Characterization tests for cirq_op_to_bloq_tolerate_classical_controls (L51-57)."""
 
     def test_strips_classical_control(self):
@@ -373,7 +373,7 @@ class TestTolerateClassicalControls:
         assert bloq == Hadamard()
 
 
-class TestCirqOpToBloqWithSpanEdgeCases:
+class CirqOpToBloqWithSpanEdgeCasesTestSuite:
     """Characterization tests for edge cases in cirq_op_to_bloq_with_span."""
 
     def test_no_gate_raises_without_tolerate(self):
@@ -405,7 +405,7 @@ class TestCirqOpToBloqWithSpanEdgeCases:
         assert not isinstance(bloq, BloqWithSpanInfo)
 
 
-class TestGetCoordsEdgeCases:
+class GetCoordsEdgeCasesTestSuite:
     """Characterization tests for _get_coords_from_op edge cases."""
 
     def test_empty_qubits_returns_empty(self):
@@ -416,7 +416,7 @@ class TestGetCoordsEdgeCases:
         assert result == []
 
 
-class TestFlasqDecomposeKeep:
+class FlasqDecomposeKeepTestSuite:
     """Characterization tests for flasq_decompose_keep."""
 
     def test_and_gate_kept(self):

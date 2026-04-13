@@ -147,7 +147,7 @@ def test_calculate_spans_swap_rule():
 # =============================================================================
 
 
-class TestGateSpanArithmetic:
+class GateSpanArithmeticTestSuite:
     """Characterization tests for GateSpan __add__, __radd__, __mul__ edge cases."""
 
     def test_add_zero_returns_self(self):
@@ -194,7 +194,7 @@ class TestGateSpanArithmetic:
         assert result.compute_span == 3 * x
 
 
-class TestGateSpanStringAndDict:
+class GateSpanStringAndDictTestSuite:
     """Characterization tests for GateSpan __str__ and asdict."""
 
     def test_str_empty_is_dash(self):
@@ -226,7 +226,7 @@ class TestGateSpanStringAndDict:
         assert d["uncounted_bloqs"] == {CNOT(): 1}
 
 
-class TestTotalSpanCostValidation:
+class TotalSpanCostValidationTestSuite:
     """Characterization tests for TotalSpanCost edge cases."""
 
     def test_validate_val_wrong_type_raises(self):

@@ -18,7 +18,7 @@ from qualtran.surface_code.flasq.symbols import (
 )
 
 
-class TestSymbolDefinitions:
+class SymbolDefinitionsTestSuite:
     """Verify that the symbolic constants are correctly defined."""
 
     def test_symbols_are_sympy_symbols(self):
@@ -41,7 +41,7 @@ class TestSymbolDefinitions:
         assert ROTATION_ERROR in MIXED_FALLBACK_T_COUNT.free_symbols
 
 
-class TestMixedFallbackTCount:
+class MixedFallbackTCountTestSuite:
     """Verify MIXED_FALLBACK_T_COUNT against the paper formula.
 
     The formula is: 4.86 + 0.53 * log2(1/epsilon)
