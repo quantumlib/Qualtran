@@ -1470,8 +1470,7 @@ class BloqBuilder:
         try:
             outs = self.add_t(bloq, **in_soqs)
         except BloqError as be:
-            # Error source shown as `bb.add(...)`
-            raise BloqError(*be.args) from None
+            raise BloqError(*be.args) from be
 
         if len(outs) == 0:
             return None
