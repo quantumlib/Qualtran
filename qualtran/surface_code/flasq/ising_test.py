@@ -119,6 +119,7 @@ def test_ising_x_layer_structure():
         assert np.isclose(op.gate._rads, expected_theta)
 
 
+@pytest.mark.slow
 def test_build_ising_circuit_basic():
     """Tests if the circuit builder returns a Circuit object for 2x2."""
     # Changed test case to 2x2 to match the zz_layer test update
@@ -148,6 +149,7 @@ def test_build_ising_circuit_basic():
     assert len(list(circuit.all_operations())) == expected_ops
 
 
+@pytest.mark.slow
 def test_build_ising_circuit_basic_odd():
     """Tests if the circuit builder returns a Circuit object for 2x2."""
     rows, cols = 5, 5
@@ -173,6 +175,7 @@ def test_build_ising_circuit_basic_odd():
     assert len(list(circuit.all_operations())) == expected_ops
 
 
+@pytest.mark.slow
 def test_build_ising_circuit_qubit_count():
     """Tests that the circuit is built on the correct number of qubits."""
     rows, cols = 3, 4
@@ -289,6 +292,7 @@ def test_build_ising_circuit_invalid_order():
         )
 
 
+@pytest.mark.slow
 def test_both_counts_from_ising_model_circuit():
     rows, cols = 4, 6
     n_steps = 2  # Keep small for test speed
@@ -732,6 +736,7 @@ def test_ising_zz_layer_moment_structure(rows, cols):
     assert len(circuit.moments) == expected_depth
 
 
+@pytest.mark.slow
 def test_build_ising_circuit_4th_order_gate_counts():
     """Tests gate counts for the 4th-order Trotter implementation."""
     rows, cols = 10, 10
@@ -775,6 +780,7 @@ def test_build_ising_circuit_4th_order_gate_counts():
     assert rx_count == expected_rx
 
 
+@pytest.mark.slow
 def test_build_ising_circuit_4th_order_measurement_depth():
     """Tests measurement depth for the 4th-order Trotter implementation."""
     rows, cols = 4, 4
@@ -822,6 +828,7 @@ def test_ising_zz_layer_open_boundary_counts(rows, cols):
     assert len(ops) == expected_total_ops
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("rows, cols", [(4, 4), (5, 5)])
 def test_build_ising_circuit_open_boundary_counts(rows, cols):
     """Tests the full circuit builder with open boundary conditions."""

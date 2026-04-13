@@ -554,6 +554,7 @@ class OptimizationFunctionsTestSuite:
         )
         assert summary_none is None
 
+    @pytest.mark.slow
     def test_ising_optimization_pipeline_integration(self):
         """Integration test for the full pipeline with a 4x4 Ising model."""
         # Fixed parameters for a single data point
@@ -634,6 +635,7 @@ class OptimizationFunctionsTestSuite:
         assert final_data["Code Distance"] == 13
 
 
+@pytest.mark.slow
 def test_sweep_with_cultivation_data_derived_params():
     """
     Integration test using cultivation data to derive cultivation parameters
@@ -922,6 +924,7 @@ class NewSweepPipelineTestSuite:
         assert row["FLASQ Model"] == "Conservative"
         assert row["circuit_arg_num_qubits"] == 2
 
+    @pytest.mark.slow
     def test_full_new_pipeline(self):
         """Test `run_sweep` followed by `post_process_for_pec_runtime`."""
         results = run_sweep(
