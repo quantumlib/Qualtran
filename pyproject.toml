@@ -58,6 +58,11 @@ dependencies = [
 
     # rotation_synthesis
     "mpmath",
+
+    # flasq integration
+    "frozendict",
+    "pandas >= 2.0",
+    "seaborn",
 ]
 
 [tool.hatch.version]
