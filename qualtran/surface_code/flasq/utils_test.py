@@ -2,7 +2,7 @@ import sympy
 import pytest
 
 from frozendict import frozendict  # type: ignore[import-untyped]
-from qualtran_flasq.utils import (
+from qualtran.surface_code.flasq.utils import (
     substitute_until_fixed_point,
 )
 
@@ -150,7 +150,7 @@ def test_substitute_until_fixed_point_caching():
 
 def test_substitute_lambdify_path_numeric():
     """Test the lambdify fast path for direct numeric substitution."""
-    from qualtran_flasq.utils import _get_cached_lambdified_evaluator
+    from qualtran.surface_code.flasq.utils import _get_cached_lambdified_evaluator
 
     _get_cached_lambdified_evaluator.cache_clear()
     substitute_until_fixed_point.cache_clear()
@@ -194,7 +194,7 @@ def test_substitute_lambdify_path_numeric():
 
 def test_substitute_fallback_path_symbolic_value_in_resolver():
     """Test fallback to subs if resolver contains symbolic values."""
-    from qualtran_flasq.utils import _get_cached_lambdified_evaluator
+    from qualtran.surface_code.flasq.utils import _get_cached_lambdified_evaluator
 
     _get_cached_lambdified_evaluator.cache_clear()
     substitute_until_fixed_point.cache_clear()
@@ -217,7 +217,7 @@ def test_substitute_fallback_path_symbolic_value_in_resolver():
 
 def test_substitute_fallback_path_incomplete_resolver():
     """Test fallback to subs if resolver doesn't cover all free symbols."""
-    from qualtran_flasq.utils import _get_cached_lambdified_evaluator
+    from qualtran.surface_code.flasq.utils import _get_cached_lambdified_evaluator
 
     _get_cached_lambdified_evaluator.cache_clear()
     substitute_until_fixed_point.cache_clear()

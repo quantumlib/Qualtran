@@ -15,8 +15,8 @@ from qualtran.bloqs.basic_gates import (
 from qualtran.cirq_interop import CirqGateAsBloq
 
 
-from qualtran_flasq.span_counting import BloqWithSpanInfo
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )

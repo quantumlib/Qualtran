@@ -6,24 +6,24 @@ import pytest
 from frozendict import frozendict
 
 from qualtran.resource_counting import get_cost_value, QubitCount
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran_flasq.examples.hwp import (
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.examples.hwp import (
     build_hwp_circuit,
     build_parallel_rz_circuit,
 )
-from qualtran_flasq.flasq_model import (
+from qualtran.surface_code.flasq.flasq_model import (
     apply_flasq_cost_model,
     conservative_FLASQ_costs,
     get_rotation_depth,
 )
-from qualtran_flasq.measurement_depth import TotalMeasurementDepth
-from qualtran_flasq.naive_grid_qubit_manager import NaiveGridQubitManager
-from qualtran_flasq.span_counting import TotalSpanCost
-from qualtran_flasq.symbols import (
+from qualtran.surface_code.flasq.measurement_depth import TotalMeasurementDepth
+from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
+from qualtran.surface_code.flasq.span_counting import TotalSpanCost
+from qualtran.surface_code.flasq.symbols import (
     ROTATION_ERROR,
     V_CULT_FACTOR,
 )
-from qualtran_flasq.volume_counting import FLASQGateTotals
+from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals
 
 
 def _hamming_weight(n):

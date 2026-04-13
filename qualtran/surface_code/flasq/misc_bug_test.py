@@ -19,9 +19,9 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Side
 from qualtran.bloqs.rotations import HammingWeightPhasing
 from qualtran.bloqs.mcmt import And
-from qualtran_flasq.examples.hwp import build_hwp_circuit
-from qualtran_flasq.naive_grid_qubit_manager import NaiveGridQubitManager
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.examples.hwp import build_hwp_circuit
+from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 
 
 @frozen

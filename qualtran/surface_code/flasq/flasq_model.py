@@ -17,16 +17,16 @@ from frozendict import frozendict
 
 
 from qualtran.symbolics import SymbolicFloat, SymbolicInt
-from qualtran_flasq.measurement_depth import MeasurementDepth
-from qualtran_flasq.span_counting import GateSpan
-from qualtran_flasq.symbols import (
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth
+from qualtran.surface_code.flasq.span_counting import GateSpan
+from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
     V_CULT_FACTOR,
     T_REACT,
 )
-from qualtran_flasq.utils import substitute_until_fixed_point
-from qualtran_flasq.volume_counting import FLASQGateCounts
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
 
 # Initialize logger
 logger = logging.getLogger(__name__)

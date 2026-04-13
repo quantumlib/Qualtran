@@ -26,9 +26,9 @@ from functools import lru_cache
 def get_cultivation_data() -> pd.DataFrame:
     """Loads the cultivation simulation summary data from the CSV file."""
     # Use importlib.resources to get a path to the data file
-    # This assumes your package is named 'qualtran_flasq' and the data
+    # This assumes your package is named 'qualtran.surface_code.flasq' and the data
     # is in a 'data' subdirectory within that package.
-    data_file_path = importlib.resources.files("qualtran_flasq.data").joinpath(
+    data_file_path = importlib.resources.files("qualtran.surface_code.flasq.data").joinpath(
         "cultivation_simulation_summary.csv"
     )
     columns_to_drop = ["Unnamed: 0", "Unnamed: 0.1"]

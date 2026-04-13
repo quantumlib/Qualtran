@@ -1,5 +1,5 @@
 # symbols_test.py
-# Phase 1 characterization tests for qualtran_flasq/symbols.py
+# Phase 1 characterization tests for qualtran.surface_code.flasq/symbols.py
 #
 # Verifies that the symbolic constants (especially MIXED_FALLBACK_T_COUNT)
 # match the published formulas from Kliuchnikov et al. (2023) as referenced
@@ -10,7 +10,7 @@ import math
 import pytest
 import sympy
 
-from qualtran_flasq.symbols import (
+from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
     T_REACT,

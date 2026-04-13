@@ -5,7 +5,7 @@ import attrs
 from frozendict import frozendict
 
 # Imports from the module being tested
-from qualtran_flasq.measurement_depth import (
+from qualtran.surface_code.flasq.measurement_depth import (
     MeasurementDepth,
     TotalMeasurementDepth,
 )

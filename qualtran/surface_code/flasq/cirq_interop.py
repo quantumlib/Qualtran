@@ -9,7 +9,7 @@ from qualtran import Bloq, Signature, CompositeBloq
 from qualtran.cirq_interop import cirq_gate_to_bloq, cirq_optree_to_cbloq
 from qualtran.bloqs.mcmt import And
 
-from qualtran_flasq.span_counting import BloqWithSpanInfo, calculate_spans
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, calculate_spans
 
 
 def _get_coords_from_op(op: cirq.Operation) -> List[Tuple[int, ...]]:

@@ -4,13 +4,13 @@ from typing import Callable, Iterable, List, Tuple, Union
 import attrs
 import numpy as np
 from frozendict import frozendict
-from qualtran_flasq.flasq_model import FLASQCostModel, FLASQSummary
-from qualtran_flasq.optimization.analysis import (
+from qualtran.surface_code.flasq.flasq_model import FLASQCostModel, FLASQSummary
+from qualtran.surface_code.flasq.optimization.analysis import (
     analyze_logical_circuit,
     calculate_single_flasq_summary,
 )
-from qualtran_flasq.optimization.configs import CoreParametersConfig, _ensure_iterable
-from qualtran_flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
+from qualtran.surface_code.flasq.optimization.configs import CoreParametersConfig, _ensure_iterable
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
 from tqdm.auto import tqdm
 
 

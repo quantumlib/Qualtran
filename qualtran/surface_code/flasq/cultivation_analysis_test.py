@@ -3,7 +3,7 @@ import numpy as np
 import itertools
 import pytest
 
-from qualtran_flasq import cultivation_analysis
+from qualtran.surface_code.flasq import cultivation_analysis
 
 
 def test_get_cultivation_data():

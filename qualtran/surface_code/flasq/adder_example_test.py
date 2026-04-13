@@ -3,14 +3,14 @@ import cirq
 
 
 # Import functions/classes to be tested or used in tests
-from qualtran_flasq.adder_example import (
+from qualtran.surface_code.flasq.examples.adder_example import (
     analyze_adder_costs,
     create_adder_circuit_and_decorations,
 )
 from qualtran.resource_counting import get_cost_value
-from qualtran_flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran_flasq.span_counting import GateSpan, TotalSpanCost
-from qualtran_flasq.volume_counting import (
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateTotals,
     FLASQGateCounts,
 )

@@ -6,15 +6,15 @@ from frozendict import frozendict
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
 
-from qualtran_flasq.optimization.sweep import SweepResult
-from qualtran_flasq.optimization.configs import ErrorBudget
-from qualtran_flasq.utils import substitute_until_fixed_point
-from qualtran_flasq.error_mitigation import (
+from qualtran.surface_code.flasq.optimization.sweep import SweepResult
+from qualtran.surface_code.flasq.optimization.configs import ErrorBudget
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
+from qualtran.surface_code.flasq.error_mitigation import (
     calculate_error_mitigation_metrics,
     calculate_failure_probabilities,
     ERROR_PER_CYCLE_PREFACTOR,
 )
-from qualtran_flasq.symbols import ROTATION_ERROR, V_CULT_FACTOR, T_REACT
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, V_CULT_FACTOR, T_REACT
 
 
 def _process_single_result_for_logical_depth(r: SweepResult) -> dict:
