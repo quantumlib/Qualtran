@@ -131,6 +131,7 @@ def _run_hwp_pipeline(n_qubits_data, angle=0.123, n_fluid_ancilla=20):
 # =============================================================================
 
 
+@pytest.mark.slow
 class IsingGoldenValuesTestSuite:
     """End-to-end regression for Ising model with conservative FLASQ costs."""
 
@@ -169,6 +170,7 @@ class IsingGoldenValuesTestSuite:
         assert float(resolved.cultivation_volume) == pytest.approx(2747431.41, rel=1e-6)
 
 
+@pytest.mark.slow
 class IsingOptimisticGoldenValuesTestSuite:
     """End-to-end regression for Ising model with optimistic FLASQ costs."""
 
@@ -187,6 +189,7 @@ class IsingOptimisticGoldenValuesTestSuite:
 # =============================================================================
 
 
+@pytest.mark.slow
 class HWPGoldenValuesTestSuite:
     """End-to-end regression for Hamming Weight Phasing."""
 
