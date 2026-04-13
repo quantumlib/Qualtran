@@ -23,7 +23,7 @@ def _mock_summary_for_failures(
     return summary
 
 
-class TestFailureProbabilities:
+class FailureProbabilitiesTestSuite:
     def test_calculate_failure_probabilities_basic(self):
         """Test Case 1: Basic calculation with hand-verified numbers."""
         # Setup:
@@ -88,7 +88,7 @@ class TestFailureProbabilities:
         assert sympy.simplify(P_t - expected_P_t) == 0
 
 
-class TestErrorMitigationMetrics:
+class ErrorMitigationMetricsTestSuite:
     """Characterization tests for calculate_error_mitigation_metrics.
 
     This function was previously tested only indirectly (through ising_test.py

@@ -154,7 +154,7 @@ from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect
 from qualtran.bloqs.mcmt import And
 
 
-class TestFLASQGateTotalsBaseCases:
+class FLASQGateTotalsBaseCasesTestSuite:
     """Characterization tests for each branch in FLASQGateTotals.compute."""
 
     # --- Pauli gates are free ---
@@ -276,7 +276,7 @@ class TestFLASQGateTotalsBaseCases:
         assert get_cost_value(bloq, FLASQGateTotals()) == FLASQGateCounts()
 
 
-class TestFLASQGateCountsArithmetic:
+class FLASQGateCountsArithmeticTestSuite:
     """Characterization tests for FLASQGateCounts arithmetic error handling."""
 
     def test_add_wrong_type_raises(self):

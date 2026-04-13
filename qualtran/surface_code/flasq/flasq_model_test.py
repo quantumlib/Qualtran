@@ -1067,7 +1067,7 @@ from qualtran.surface_code.flasq.flasq_model import get_rotation_depth
 from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, MIXED_FALLBACK_T_COUNT
 
 
-class TestApplyFlasqCostModelWarnings:
+class ApplyFlasqCostModelWarningsTestSuite:
     """Characterization tests for warning paths in apply_flasq_cost_model (L446-460)."""
 
     def test_warns_on_unknown_gate_counts(self):
@@ -1158,7 +1158,7 @@ class TestApplyFlasqCostModelWarnings:
         assert isinstance(float(summary.total_t_count), float)
 
 
-class TestGetRotationDepth:
+class GetRotationDepthTestSuite:
     """Characterization tests for get_rotation_depth function."""
 
     def test_returns_symbolic_without_error(self):
