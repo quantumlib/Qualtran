@@ -478,7 +478,7 @@ def _gf2_multiply_by_constant() -> GF2MulK:
     from qualtran import QGF
 
     mx = galois.Poly.Degrees([0, 1, 3])  # x^3 + x + 1
-    gf = galois.GF(2, 3, irreducible_poly=mx)
+    # gf = galois.GF(2, 3, irreducible_poly=mx)
     const = 5  # x^2 + 1
     gf2_multiply_by_constant = GF2MulK(QGF(2, 3, mx), const)
     return gf2_multiply_by_constant

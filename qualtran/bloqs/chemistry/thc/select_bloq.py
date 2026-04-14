@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
+
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING
 

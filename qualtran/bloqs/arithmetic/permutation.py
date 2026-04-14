@@ -49,8 +49,6 @@ from qualtran.linalg.permutation import (
 from qualtran.symbolics import bit_length, is_symbolic, Shaped, slen, SymbolicInt
 
 if TYPE_CHECKING:
-    import sympy
-
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
 
@@ -136,6 +134,11 @@ class PermutationCycle(Bloq):
             }
 
         return super().build_call_graph(ssa)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # This isn't re-exported
+        return '.'.join(cls.__module__.split('.')[:])
 
 
 @bloq_example
@@ -282,6 +285,11 @@ class Permutation(Bloq):
             return {PermutationCycle(self.N, cycle, self.bitsize): 1}
 
         return super().build_call_graph(ssa)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # This isn't re-exported
+        return '.'.join(cls.__module__.split('.')[:])
 
 
 @bloq_example

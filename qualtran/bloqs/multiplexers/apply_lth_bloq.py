@@ -127,6 +127,14 @@ class ApplyLthBloq(UnaryIterationGate, SelectOracle):  # type: ignore[misc]
             get_ctrl_bloq_and_ctrl_reg_name=lambda cv: (evolve(self, control_val=cv), 'control'),
         )
 
+    def adjoint(self) -> 'Bloq':
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            AdjointWithSpecializedCtrl,
+            SpecializeOnCtrlBit,
+        )
+
+        return AdjointWithSpecializedCtrl(self, SpecializeOnCtrlBit.BOTH)
+
 
 @bloq_example
 def _apply_lth_bloq() -> ApplyLthBloq:

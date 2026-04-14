@@ -90,3 +90,42 @@ def test_power_circuit_diagram():
 @pytest.mark.slow
 def test_no_circular_import():
     subprocess.check_call(['python', '-c', 'from qualtran.bloqs.basic_gates import power'])
+
+
+def test_power_wire_symbol():
+    from qualtran import Signature
+    from qualtran.drawing import LarrowTextBox, RarrowTextBox, Text, TextBox
+
+    class MockBloq(GateWithRegisters):
+        @property
+        def signature(self):
+            return Signature([])
+
+        def wire_symbol(self, reg, idx=tuple()):
+            if reg is None:
+                return Text("Mock")
+            if reg.name == 'a':
+                return Text("A")
+            if reg.name == 'b':
+                return TextBox("B")
+            if reg.name == 'c':
+                return LarrowTextBox("C")
+            if reg.name == 'd':
+                return RarrowTextBox("D")
+
+    bloq = MockBloq()
+    power_bloq = Power(bloq, 3)
+
+    assert power_bloq.wire_symbol(None) == Text("Mock**3")
+
+    from qualtran import QUInt, Register
+
+    reg_a = Register('a', QUInt(1))
+    reg_b = Register('b', QUInt(1))
+    reg_c = Register('c', QUInt(1))
+    reg_d = Register('d', QUInt(1))
+
+    assert power_bloq.wire_symbol(reg_a) == Text("A**3")
+    assert power_bloq.wire_symbol(reg_b) == TextBox("B**3")
+    assert power_bloq.wire_symbol(reg_c) == LarrowTextBox("C**3")
+    assert power_bloq.wire_symbol(reg_d) == RarrowTextBox("D**3")

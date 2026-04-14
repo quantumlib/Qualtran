@@ -29,6 +29,10 @@ def test_value(x: rings.ZSqrt2):
     assert float(x) == pytest.approx(x.a + _SQRT_2 * x.b)
 
 
+def test_hash():
+    assert hash(rings.ZSqrt2(3, 4)) == hash(rings.ZSqrt2(3, 4))
+
+
 @pytest.mark.parametrize("p", range(10))
 @pytest.mark.parametrize("x", [rings.ZSqrt2(*p) for p in itertools.product(range(-2, 2), repeat=2)])
 def test_power(p: int, x: rings.ZSqrt2):
@@ -82,7 +86,7 @@ def test_factor_prime(p):
     r = rings.ZSqrt2(1, 0)
     for ideal, exponent in rings.ZSqrt2.factor_prime(p).items():
         r = r * ideal**exponent
-    assert r == p, f"{p%8}"
+    assert r == p, f"{p % 8}"
 
 
 @pytest.mark.parametrize("x", [rings.ZSqrt2(*p) for p in itertools.product(range(-2, 2), repeat=2)])

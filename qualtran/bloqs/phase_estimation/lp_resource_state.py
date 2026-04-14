@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
+
 from collections import Counter
 from functools import cached_property
 from typing import Dict, Optional, Tuple, TYPE_CHECKING

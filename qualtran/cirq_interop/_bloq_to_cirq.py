@@ -31,7 +31,6 @@ from qualtran import (
     RightDangle,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns
@@ -40,6 +39,7 @@ from qualtran._infra.gate_with_registers import (
     merge_qubits,
     split_qubits,
 )
+from qualtran._infra.quantum_graph import _Soquet
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.drawing import Circle, LarrowTextBox, ModPlus, RarrowTextBox, TextBox, WireSymbol
@@ -95,7 +95,10 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager  # type: ignore[type-var]
+        cls,
+        bloq: Bloq,
+        cirq_quregs: Dict[str, 'CirqQuregT'],
+        qubit_manager: cirq.QubitManager,  # type: ignore[type-var]
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
@@ -183,7 +186,7 @@ class BloqAsCirqGate(cirq.Gate):
         return f'BloqAsCirqGate({self.bloq})'
 
 
-def _track_soq_name_changes(cxns: Iterable[Connection], qvar_to_qreg: Dict[Soquet, _QReg]):
+def _track_soq_name_changes(cxns: Iterable[Connection], qvar_to_qreg: Dict[_Soquet, _QReg]):
     """Track inter-Bloq name changes across the two ends of a connection."""
     for cxn in cxns:
         qvar_to_qreg[cxn.right] = qvar_to_qreg[cxn.left]
@@ -194,7 +197,7 @@ def _bloq_to_cirq_op(
     bloq: Bloq,
     pred_cxns: Iterable[Connection],
     succ_cxns: Iterable[Connection],
-    qvar_to_qreg: Dict[Soquet, _QReg],
+    qvar_to_qreg: Dict[_Soquet, _QReg],
     qubit_manager: cirq.QubitManager,
 ) -> Optional[cirq.Operation]:
     _track_soq_name_changes(pred_cxns, qvar_to_qreg)
@@ -246,8 +249,8 @@ def _cbloq_to_cirq_circuit(
         k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore
         for k, v in cirq_quregs.items()
     }
-    qvar_to_qreg: Dict[Soquet, _QReg] = {
-        Soquet(LeftDangle, idx=idx, reg=reg): np.asarray(cirq_quregs[reg.name])[idx]
+    qvar_to_qreg: Dict[_Soquet, _QReg] = {
+        _Soquet(LeftDangle, idx=idx, reg=reg): np.asarray(cirq_quregs[reg.name]).item(idx)
         for reg in signature.lefts()
         for idx in reg.all_idxs()
     }
@@ -268,7 +271,7 @@ def _cbloq_to_cirq_circuit(
     def _f_quregs(reg: Register) -> CirqQuregT:
         ret = np.empty(reg.shape + (reg.bitsize,), dtype=object)
         for idx in reg.all_idxs():
-            soq = Soquet(RightDangle, idx=idx, reg=reg)
+            soq = _Soquet(RightDangle, idx=idx, reg=reg)
             ret[idx] = qvar_to_qreg[soq].qubits
         return ret
 

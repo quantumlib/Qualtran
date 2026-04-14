@@ -164,6 +164,23 @@ def test_linear_combination5(lambd):
     run_gate_test([TGate(), Hadamard(), XGate(), ZGate(), Ry(angle=np.pi / 4.0)], lambd)
 
 
+@pytest.mark.parametrize('lambd', exact3)
+def test_linear_combinaison_hermician_when_bloqs_hermician(lambd):
+    gates = [Hadamard().controlled(), CNOT(), Swap(1)]
+    bloq = LinearCombination(tuple(Unitary(g) for g in gates), lambd, lambd_bits=1)
+    np.testing.assert_allclose(bloq.tensor_contract(), bloq.adjoint().tensor_contract(), atol=1e-16)
+
+
+@pytest.mark.parametrize('lambd', exact3)
+def test_linear_combinaison_not_hermician_when_bloqs_not_hermician(lambd):
+    gates = [TGate().controlled(), CNOT(), Swap(1)]
+    bloq = LinearCombination(tuple(Unitary(g) for g in gates), lambd, lambd_bits=1)
+    with pytest.raises(AssertionError):
+        np.testing.assert_allclose(
+            bloq.tensor_contract(), bloq.adjoint().tensor_contract(), atol=1e-16
+        )
+
+
 # coefficients are not multiples of small negative powers of 2 after normalization
 approx2 = [
     [1 / 3, 2 / 3],

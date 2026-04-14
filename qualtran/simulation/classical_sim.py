@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
+
 import abc
 import itertools
 from typing import (
@@ -46,9 +47,9 @@ from qualtran import (
     Register,
     RightDangle,
     Signature,
-    Soquet,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns, _get_soquet
+from qualtran._infra.quantum_graph import _Soquet
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq, QCDType
@@ -97,15 +98,15 @@ def _empty_ndarray_from_reg(reg: Register) -> np.ndarray:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
+    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[_Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
-        return soq_assign[Soquet(binst, reg)]
+        return soq_assign[_Soquet(binst, reg)]
 
     arg = _empty_ndarray_from_reg(reg)
     for idx in reg.all_idxs():
-        soq = Soquet(binst, reg, idx=idx)
+        soq = _Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
     return arg
@@ -171,8 +172,7 @@ class _BannedClassicalValHandler(_ClassicalValHandler):
 
     def get(self, binst: 'BloqInstance', distribution: ClassicalValDistribution) -> Any:
         raise ValueError(
-            f"{binst} has non-deterministic classical action."
-            "Cannot simulate with classical values."
+            f"{binst} has non-deterministic classical action.Cannot simulate with classical values."
         )
 
 
@@ -235,7 +235,7 @@ class ClassicalSimState:
         self._random_handler = random_handler
 
         # Keep track of each soquet's bit array. Initialize with LeftDangle
-        self.soq_assign: Dict[Soquet, ClassicalValT] = {}
+        self.soq_assign: Dict[_Soquet, ClassicalValT] = {}
         self._update_assign_from_vals(self._signature.lefts(), LeftDangle, dict(vals))
 
         self.last_binst: Optional['BloqInstance'] = None
@@ -281,18 +281,17 @@ class ClassicalSimState:
                 val = np.asanyarray(val)
                 if val.shape != reg.shape:
                     raise ValueError(
-                        f"Incorrect shape {val.shape} received for {debug_str}. "
-                        f"Want {reg.shape}."
+                        f"Incorrect shape {val.shape} received for {debug_str}. Want {reg.shape}."
                     )
                 reg.dtype.assert_valid_classical_val_array(val, debug_str)
 
                 for idx in reg.all_idxs():
-                    soq = Soquet(binst, reg, idx=idx)
+                    soq = _Soquet(binst, reg, idx=idx)
                     self.soq_assign[soq] = val[idx]
 
             elif isinstance(val, sympy.Expr):
                 # `val` is symbolic
-                soq = Soquet(binst, reg)
+                soq = _Soquet(binst, reg)
                 self.soq_assign[soq] = val  # type: ignore[assignment]
 
             else:
@@ -301,7 +300,7 @@ class ClassicalSimState:
                     val = self._random_handler.get(binst, val)
 
                 reg.dtype.assert_valid_classical_val(val, debug_str)
-                soq = Soquet(binst, reg)
+                soq = _Soquet(binst, reg)
                 self.soq_assign[soq] = val
 
     def _recurse_impl(self, cbloq: 'CompositeBloq', in_vals):
@@ -327,8 +326,7 @@ class ClassicalSimState:
             raise NotImplementedError(f"{bloq} is not classically simulable.") from e
         except DecomposeNotImplementedError as e:
             raise NotImplementedError(
-                f"{bloq} has no decomposition and does not "
-                f"support classical simulation directly"
+                f"{bloq} has no decomposition and does not support classical simulation directly"
             ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{bloq} does not support classical simulation: {e}") from e
@@ -555,7 +553,7 @@ def call_cbloq_classically(
     random_handler: '_ClassicalValHandler' = _RandomClassicalValHandler(
         rng=np.random.default_rng()
     ),
-) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
+) -> Tuple[Dict[str, ClassicalValT], Dict[_Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
     While we're handling the plumbing, we also do error checking on the arguments; see

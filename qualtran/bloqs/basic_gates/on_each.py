@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes to apply single qubit bloq to multiple qubits."""
+
 from functools import cached_property
 from typing import Dict, Optional, Tuple
 
@@ -95,4 +96,4 @@ class OnEach(Bloq):
         return super().wire_symbol(reg, idx)
 
     def __str__(self):
-        return f'{self.gate}⨂{self.n}'
+        return f'{self.gate}(oneach={self.n})'

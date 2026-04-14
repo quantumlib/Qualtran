@@ -231,6 +231,9 @@ class BitwiseNot(Bloq):
             x %= 2**self.dtype.bitsize
         return {'x': x}
 
+    def __str__(self):
+        return f'BitwiseNot({self.dtype.num_bits})'
+
 
 @bloq_example
 def _bitwise_not() -> BitwiseNot:

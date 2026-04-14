@@ -55,7 +55,6 @@ def test_multidim_register():
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
 def test_selection_registers_indexing(n, N, m, M):
     dtypes = [BQUInt(n, N), BQUInt(m, M)]
-    regs = [Register(sym, dtype) for sym, dtype in zip(['x', 'y'], dtypes)]
     for x in range(int(dtypes[0].iteration_length)):
         for y in range(int(dtypes[1].iteration_length)):
             assert np.ravel_multi_index((x, y), (N, M)) == x * M + y
@@ -156,10 +155,87 @@ def test_signature_build():
     sig1 = Signature([Register("r1", QAny(5)), Register("r2", QAny(2))])
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
-    assert sig1.n_qubits() == 7
+    assert sig2.n_qubits() == 7
+
+
+def test_signature_build_drops_falsey():
+    should_be = Signature([Register('x', QBit())])
+    assert Signature.build(x=1, y=0) == should_be
+    assert Signature.build(x=1, y=None) == should_be
+
+
+def test_signature_build_dtypes():
+    should_be = Signature([Register('system', QUInt(8))])
+    assert Signature.build(system=QUInt(8)) == should_be
+
+
+def test_signature_build_shaped():
+    should_be = Signature([Register('qubits', QBit(), shape=(5, 5))])
+    assert Signature.build(qubits=QBit()[5, 5]) == should_be
+
+    should_be = Signature([Register('ctrl', QBit()), Register('ints', QInt(8), shape=(5,))])
+    assert Signature.build(ctrl=1, ints=QInt(8)[5]) == should_be
+
+
+def test_signature_build_sided():
+    should_be = Signature(
+        [Register('x_in', QAny(3), side=Side.LEFT), Register('x_out', QAny(3), side=Side.RIGHT)]
+    )
+    assert Signature.build(x_in=(QAny(3), None), x_out=(None, QAny(3))) == should_be
+
+
+def test_signature_build_grouped_sided():
+    should_be = Signature(
+        [Register('x', QAny(3), side=Side.LEFT), Register('x', QBit(), shape=(3,), side=Side.RIGHT)]
+    )
+    assert Signature.build(x=(QAny(3), QBit()[3])) == should_be
+
+
+def test_signature_build_signature():
+    should_be = Signature(
+        [Register('x', QAny(3), side=Side.LEFT), Register('x', QBit(), shape=(3,), side=Side.RIGHT)]
+    )
+    assert Signature.build(should_be) == should_be
+
+
+def test_signature_build_registers():
+    should_be = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    assert Signature.build(Register('ctrl', QBit()), Register('system', QAny(5))) == should_be
+
+
+def test_signature_build_signature_registers():
+    should_be = Signature(
+        [
+            Register('ctrl', QBit()),
+            Register('system', QAny(5)),
+            Register('x_in', QAny(3), side=Side.LEFT),
+            Register('x_out', QAny(3), side=Side.RIGHT),
+            Register('x', QBit()),
+        ]
+    )
+
+    first_signature = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    regs = [Register('x_in', QAny(3), side=Side.LEFT), Register('x_out', QAny(3), side=Side.RIGHT)]
+    last_signature = Signature([Register('x', QBit())])
+    assert Signature.build(first_signature, regs, last_signature) == should_be
+
+
+def test_signature_build_mixed_args_kwargs():
+    first_signature = Signature([Register('ctrl', QBit()), Register('system', QAny(5))])
+    with pytest.raises(ValueError, match=r'either.*not both.*'):
+        Signature.build(first_signature, y=QBit())
+
+
+def test_signature_build_kwregs():
+    with pytest.raises(ValueError, match=r"Invalid data type.*'x'.*"):
+        Signature.build(x=Register('x', QBit()))
+
+
+def test_signature_build_from_dtypes():
     sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
     assert sig1 == sig2
+
     sig1 = Signature([Register("r1", QInt(7))])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QAny(0))
     assert sig1 == sig2
@@ -236,3 +312,55 @@ def test_is_symbolic():
     assert is_symbolic(r)
     r = Register("my_reg", QAny(2), shape=sympy.symbols("x y"))
     assert is_symbolic(r)
+
+
+def test_register_pkg():
+    assert Register._pkg_() == 'qualtran'
+
+
+def test_register_shape_error():
+    with pytest.raises(ValueError, match="use either a shaped dtype.*or an explicit shape"):
+        Register("my_reg", QBit()[2], shape=(2,))
+
+
+def test_register_invalid_dtype():
+    with pytest.raises(ValueError, match="dtype must be a QCDType"):
+        Register("my_reg", 5)  # type: ignore
+
+
+def test_register_adjoint_side():
+    r2 = Register("my_reg", QBit(), side=Side.RIGHT)
+    assert r2.adjoint().side == Side.LEFT
+
+    r3 = Register("my_reg", QBit(), side=Side.LEFT)
+    assert r3.adjoint().side == Side.RIGHT
+
+
+def test_signature_build_positional_errors():
+    with pytest.raises(ValueError, match="Unknown type for positional argument"):
+        Signature.build("not_a_register_or_signature")
+
+
+def test_signature_build_tuple_error():
+    with pytest.raises(ValueError, match="you must specify a tuple of length 2"):
+        Signature.build(a=(QBit(),))
+
+
+def test_signature_thru_registers_only():
+    sig = Signature.build(a=1)
+    assert sig.thru_registers_only
+    sig2 = Signature([Register('a', QBit(), side=Side.LEFT)])
+    assert not sig2.thru_registers_only
+
+
+def test_signature_get_left_right():
+    sig = Signature([Register('a', QBit(), side=Side.LEFT), Register('b', QBit(), side=Side.RIGHT)])
+    assert sig.get_left('a').name == 'a'
+    assert sig.get_right('b').name == 'b'
+
+
+def test_signature_contains_and_hash():
+    r = Register('a', QBit())
+    sig = Signature([r])
+    assert r in sig
+    assert hash(sig) == hash(Signature([Register('a', QBit())]))

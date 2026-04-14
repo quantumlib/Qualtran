@@ -110,7 +110,10 @@ class PhaseGradientUnitary(GateWithRegisters):
         return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
@@ -200,7 +203,7 @@ class PhaseGradientState(GateWithRegisters):
         return QFxp(self.bitsize, self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
@@ -215,7 +218,7 @@ class PhaseGradientState(GateWithRegisters):
 # pylint:  disable=unused-import
 @bloq_example
 def _phase_gradient_state() -> PhaseGradientState:
-    from qualtran import QFxp
+    from qualtran import QFxp  # noqa: F401
 
     phase_gradient_state = PhaseGradientState(4)
     return phase_gradient_state
@@ -383,7 +386,7 @@ def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
     for i, bit in enumerate(gamma_fxp.bin()):
         if bit == '0':
             continue
-        shift = gamma_fxp.n_int - i - 1
+        shift = gamma_fxp.n_int - i - 1  # type: ignore[operator]
         # Left/Right shift by `shift` bits.
         res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
     return res
@@ -479,7 +482,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         return int(np.floor(result.astype(float) * 2**self.phase_dtype.bitsize) * sign)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs
     ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.gamma, sympy.Expr):
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
@@ -488,7 +491,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         for i, bit in enumerate(self.gamma_fxp.bin()):
             if bit == '0':
                 continue
-            shift = self.gamma_fxp.n_int - i - 1
+            shift = self.gamma_dtype.num_int - i - 1
             if 0 <= shift < self.x_dtype.num_frac:
                 # Left shift by `shift` bits / multiply by 2**shift
                 yield AddIntoPhaseGrad(
@@ -524,7 +527,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             for i, bit in enumerate(self.gamma_fxp.bin()):
                 if bit == '0':
                     continue
-                shift = self.gamma_fxp.n_int - i - 1
+                shift = self.gamma_dtype.num_int - i - 1
                 if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)

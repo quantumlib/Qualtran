@@ -56,7 +56,7 @@ class CliffordTRelativeNormSolver:
     r"""A relative norm solver for the Clifford+T Gateset.
 
     The class implements the relative norm solver described in section Algorithm 2 in
-    https://arxiv.org/abs/2203.10064. For Clifford+T, $O_K = \mathbb{Z}[\zsqrt{2}]$ and
+    https://arxiv.org/abs/2203.10064. For Clifford+T, $O_K = \mathbb{Z}[\sqrt{2}]$ and
     $O_L = \mathbb{Z}[e^{i pi/4}]$.
     """
 

@@ -56,7 +56,7 @@ class GridOperatorAction:
 class SelingerState:
     r"""A state is a region in space defined by two ellipses (A, B).
 
-    A point $p$ belongs to the region iff $p \in A$ and $p^\bullet in B$. Where
+    A point $p$ belongs to the region iff $p \in A$ and $p^\bullet \in B$. Where
     $p^\bullet$ is the sqrt2-conjugate of $p$.
 
     Attributes:
@@ -143,17 +143,16 @@ class SelingerState:
                 name = "K*"
             else:
                 raise ValueError("Shouldn't be here.")
+        elif -0.8 <= e1.z <= 0.8 and -0.8 <= e2.z <= 0.8:
+            g = go.RSqrt2
+            name = "R"
+        elif e1.z >= -0.2 and e2.z >= -0.2:
+            c = min(e1.z, e2.z)  # type: ignore[type-var]
+            n = max(1, config.floor(l_value**c / config.sqrt2))
+            g = go.BSqrt2**n
+            name = f"B^{n}"
         else:
-            if -0.8 <= e1.z <= 0.8 and -0.8 <= e2.z <= 0.8:
-                g = go.RSqrt2
-                name = "R"
-            elif e1.z >= -0.2 and e2.z >= -0.2:
-                c = min(e1.z, e2.z)  # type: ignore[type-var]
-                n = max(1, config.floor(l_value**c / config.sqrt2))
-                g = go.BSqrt2**n
-                name = f"B^{n}"
-            else:
-                raise ValueError("Shouldn't be here.")
+            raise ValueError("Shouldn't be here.")
         return GridOperatorAction(g, (name,))
 
     def apply(
