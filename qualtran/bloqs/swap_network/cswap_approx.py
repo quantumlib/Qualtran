@@ -68,7 +68,10 @@ class CSwapApprox(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 

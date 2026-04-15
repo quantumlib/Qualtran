@@ -37,9 +37,9 @@ from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, Text, TextBox
 from qualtran.symbolics import ceil, is_symbolic, log2, prod, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, BloqBuilder, SoquetT, QDType
+    from qualtran import Bloq, BloqBuilder, QDType, SoquetT
+    from qualtran.resource_counting import BloqCountDictT, CostKey, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator, CostKey
 
 from qualtran.bloqs.data_loading.select_swap_qrom import _alloc_anc_for_reg, SelectSwapQROM
 
@@ -520,8 +520,8 @@ class QROAMClean(SelectSwapQROM):
         # Construct and return dictionary of final soquets.
         soqs |= {reg.name: soq for reg, soq in zip(self.control_registers, ctrl)}
         soqs |= {reg.name: soq for reg, soq in zip(self.selection_registers, selection)}
-        soqs |= {reg.name: soq.flat[1:] for reg, soq in zip(self.junk_registers, qrom_targets)}  # type: ignore[union-attr]
-        soqs |= {reg.name: soq.flat[0] for reg, soq in zip(self.target_registers, qrom_targets)}  # type: ignore[union-attr]
+        soqs |= {reg.name: soq.flat[1:] for reg, soq in zip(self.junk_registers, qrom_targets)}  # type: ignore[attr-defined]
+        soqs |= {reg.name: soq.flat[0] for reg, soq in zip(self.target_registers, qrom_targets)}  # type: ignore[attr-defined]
         return soqs
 
     def on_classical_vals(

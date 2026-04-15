@@ -60,9 +60,47 @@ def test_to_xz_seq(g: _su2_ct.SU2CliffordT):
 
 
 @pytest.mark.parametrize("g", _make_random_su(50, 5, random_cliffords=True, seed=0))
-def test_to_cirq(g):
-    circuit = cirq.Circuit(ctr.to_cirq(g, 'xyz'))
+@pytest.mark.parametrize("fmt", ('xyz', 'xz', 't'))
+def test_to_cirq(g: _su2_ct.SU2CliffordT, fmt: str):
+    g = g.rescale()
+    circuit = cirq.Circuit(ctr.to_cirq(g, fmt))
     unitary = cirq.unitary(circuit)
     u = g.matrix.astype(complex)
     u = u / np.linalg.det(u) ** 0.5
     assert cirq.protocols.equal_up_to_global_phase(u, unitary)
+
+
+@pytest.mark.parametrize(
+    ["g", "fmt", "expected"],
+    [
+        [_su2_ct.HSqrt2, "t", ('"Z^½"', '"X"', '"Z^½"', '"X"', '"H"')],
+        [_su2_ct.SSqrt2, "t", ('{"id":"Rzft","arg":"pi/2"}',)],
+        [_su2_ct.Tz, "t", ('{"id":"Rzft","arg":"pi/4"}',)],
+    ],
+)
+def test_to_quirk(g: _su2_ct.SU2CliffordT, fmt: str, expected: tuple[str, ...]):
+    assert ctr.to_quirk(g, fmt) == expected
+
+
+@pytest.mark.parametrize("g", _make_random_su(50, 10, random_cliffords=True, seed=0))
+def test_to_matsumoto_amano_seq(g: _su2_ct.SU2CliffordT):
+    g = g.rescale()
+    seq = ctr.to_sequence(g, 't')
+    prev_t = -1
+    # Check that the reversed list matches the regular expression $(T|\eps)(HT|SHT)^*C$.
+    seq_r = list(reversed(seq))
+    for i in range(len(seq_r)):
+        assert seq_r[i] in ('T', 'H', 'S', 'Z', 'X')
+        if i == 0 and seq_r[0] == 'T':
+            prev_t = 0
+            continue
+        if seq_r[i] == 'T':
+            # Check that this is one of HT, SHT syllabes
+            assert prev_t in (i - 2, i - 3)
+            if prev_t == i - 2:
+                assert seq_r[i - 1] == 'H'
+            else:
+                assert seq_r[i - 2] + seq_r[i - 1] == 'SH'
+            prev_t = i
+    got = _su2_ct.SU2CliffordT.from_sequence(seq)
+    assert got == g

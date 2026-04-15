@@ -114,3 +114,13 @@ def test_classical_multi_control_x(cvs, x, ctrls, result):
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('multi_control_multi_target_pauli')
+
+
+def test_multi_control_pauli_str():
+    from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlX, MultiControlZ
+
+    mcx = MultiControlX(cvs=(1, 0, 1))
+    assert str(mcx) == "MultiControlX(3)"
+
+    mcz = MultiControlZ(cvs=(1, 1))
+    assert str(mcz) == "MultiControlZ(2)"

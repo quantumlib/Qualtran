@@ -30,7 +30,6 @@ from qualtran.rotation_synthesis.rings import _zsqrt2
 
 
 class Channel(abc.ABC):
-
     @abc.abstractmethod
     def expected_num_ts(self, config: mc.MathConfig) -> rst.Real: ...
 
@@ -44,6 +43,7 @@ class UnitaryChannel(Channel):
     r"""A Unitary operation.
 
     The unitary matrix of an $SU(2)$ matrix is defined with two complex numbers $u, v$ as
+
     $$
     \begin{bmatrix}
     u & -v^*\\
@@ -51,6 +51,7 @@ class UnitaryChannel(Channel):
     \end{bmatrix}
     $$
     for clifford+T unitarys the matrix can be written as
+
     $$
     \frac{1}{\sqrt{2(2+\sqrt{2})^n}}
     \begin{bmatrix}
@@ -203,11 +204,13 @@ class ProjectiveChannel(Channel):
     This channel applies the following circuit where $V$ is the `rotation` channel and $C$ is the
     correction channel.
 
+    ```
     q: ─────────@───V───@───────Y───C───
                 │       │       ║   ║
     ancilla: ───X───────X───M───╫───╫───
                             ║   ║   ║
     m: ═════════════════════@═══^═══^═══
+    ```
 
     Attributes:
         rotation: This first half of the channel (i.e. $V$).

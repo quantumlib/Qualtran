@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 r"""PREPARE for the first quantized chemistry Hamiltonian."""
+
 from functools import cached_property
 from typing import TYPE_CHECKING
 

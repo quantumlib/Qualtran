@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
+
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING
 

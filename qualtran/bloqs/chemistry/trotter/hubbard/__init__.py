@@ -20,9 +20,9 @@ $$
 H = H_h + H_I
 $$
 
-where the hopping hamiltonian is given as 
+where the hopping hamiltonian is given as
 $$
-H_h = -\tau \sum_{\langle p, q\rangle, \sigma} 
+H_h = -\tau \sum_{\langle p, q\rangle, \sigma}
     \left(a_{p\sigma}^{\dagger} a_{q\sigma} + \mathrm{h.c.} \right)
 $$
 where the sum is over nearest neighbour lattice sites (under periodic boundary conditions).

@@ -16,6 +16,10 @@ from typing import Any, cast, Dict, Union
 
 import sympy
 import sympy.codegen.cfunctions
+import sympy.functions.elementary.exponential
+import sympy.functions.elementary.integers
+import sympy.functions.elementary.miscellaneous
+import sympy.functions.elementary.trigonometric
 
 from qualtran.protos import sympy_pb2
 

@@ -11,28 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import no_type_check
 
 import pytest
 
 from qualtran import BloqInstance, DanglingT, LeftDangle, QAny, Register, RightDangle, Side, Soquet
+from qualtran._infra.quantum_graph import _Soquet
 from qualtran.bloqs.for_testing import TestAtom, TestTwoBitOp
 
 
 def test_dangling():
-    assert LeftDangle is LeftDangle
-    assert RightDangle is RightDangle
+    assert LeftDangle is LeftDangle  # noqa: PLR0124
+    assert RightDangle is RightDangle  # noqa: PLR0124
     assert LeftDangle is not RightDangle
     assert RightDangle is not LeftDangle
 
     assert isinstance(LeftDangle, DanglingT)
     assert isinstance(RightDangle, DanglingT)
 
-    assert LeftDangle == LeftDangle
-    assert RightDangle == RightDangle
+    assert LeftDangle == LeftDangle  # noqa: PLR0124
+    assert RightDangle == RightDangle  # noqa: PLR0124
     assert LeftDangle != RightDangle
 
     with pytest.raises(ValueError, match='Do not instantiate.*'):
-        my_new_dangle = DanglingT('hi mom')
+        _ = DanglingT('hi mom')
 
 
 def test_dangling_hash():
@@ -43,10 +45,25 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', QAny(10)))
+    soq = _Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', QAny(10)))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'
+
+    assert soq.item() == soq
+    assert soq.dtype == QAny(10)
+
+
+@no_type_check
+def test_old_construct_soquet():
+    with pytest.warns(DeprecationWarning, match=r'deprecated.*'):
+        soq = Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', QAny(10)))
+    assert soq.reg.side is Side.THRU
+    assert soq.idx == ()
+    assert soq.pretty() == 'x'
+
+    assert soq.item() == soq
+    assert soq.dtype == QAny(10)
 
 
 def test_soquet_idxed():
@@ -54,16 +71,16 @@ def test_soquet_idxed():
     reg = Register('y', QAny(10), shape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
-        _ = Soquet(binst, reg)
+        _ = _Soquet(binst, reg)
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
-        _ = Soquet(binst, reg, idx=(5,))
+        _ = _Soquet(binst, reg, idx=(5,))
 
-    soq = Soquet(binst, reg, idx=(5, 0))
+    soq = _Soquet(binst, reg, idx=(5, 0))
     assert soq.pretty() == 'y[5, 0]'
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
-        _ = Soquet(binst, reg, idx=(5,))
+        _ = _Soquet(binst, reg, idx=(5,))
 
 
 def test_bloq_instance():

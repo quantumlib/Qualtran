@@ -44,9 +44,9 @@ from qualtran import (
     RightDangle,
     Side,
     Signature,
-    Soquet,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.quantum_graph import _Soquet
 
 
 @frozen
@@ -196,7 +196,7 @@ class LineManager:
         self,
         binst: Union[DanglingT, BloqInstance],
         reg: Register,
-        arr: Union[RegPosition, NDArray[RegPosition]],
+        arr: Union[RegPosition, NDArray[RegPosition]],  # type: ignore[type-var]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -220,15 +220,15 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, RegPosition]
-) -> Union[RegPosition, NDArray[RegPosition]]:
+    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[_Soquet, RegPosition]
+) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
-        return soq_assign[Soquet(binst, reg)]
+        return soq_assign[_Soquet(binst, reg)]
 
     arg = np.empty(reg.shape, dtype=object)
     for idx in reg.all_idxs():
-        soq = Soquet(binst, reg, idx=idx)
+        soq = _Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
     return arg
@@ -238,7 +238,7 @@ def _update_assign_from_vals(
     regs: Iterable[Register],
     binst: Union[DanglingT, BloqInstance],
     vals: Dict[str, RegPosition],
-    soq_assign: Dict[Soquet, RegPosition],
+    soq_assign: Dict[_Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -250,7 +250,7 @@ def _update_assign_from_vals(
     """
     for reg in regs:
         try:
-            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]
+            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]  # type: ignore[type-var]
         except KeyError:
             arr = manager.new(
                 binst=cast(BloqInstance, binst), reg=reg, seq_x=seq_x, topo_gen=topo_gen
@@ -265,10 +265,10 @@ def _update_assign_from_vals(
                 )
 
             for idx in reg.all_idxs():
-                soq = Soquet(binst, reg, idx=idx)
+                soq = _Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = attrs.evolve(arr[idx], seq_x=seq_x, topo_gen=topo_gen)
         else:
-            soq = Soquet(binst, reg)
+            soq = _Soquet(binst, reg)
             assert isinstance(arr, RegPosition)
             soq_assign[soq] = attrs.evolve(arr, seq_x=seq_x, topo_gen=topo_gen)
 
@@ -276,7 +276,7 @@ def _update_assign_from_vals(
 def _binst_assign_line(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
-    soq_assign: Dict[Soquet, RegPosition],
+    soq_assign: Dict[_Soquet, RegPosition],
     seq_x: int,
     topo_gen: int,
     manager: LineManager,
@@ -326,7 +326,7 @@ def _binst_assign_line(
 
 def _cbloq_musical_score(
     signature: Signature, binst_graph: nx.DiGraph, manager: Optional[LineManager] = None
-) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
+) -> Tuple[Dict[str, RegPosition], Dict[_Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
     Args:
@@ -343,7 +343,7 @@ def _cbloq_musical_score(
 
     # Keep track of each soquet's position. Initialize by implicitly allocating new positions.
     # We introduce the convention that `LeftDangle`s are a seq_x=-1 and topo_gen=0
-    soq_assign: Dict[Soquet, RegPosition] = {}
+    soq_assign: Dict[_Soquet, RegPosition] = {}
     topo_gen = 0
     _update_assign_from_vals(
         signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
@@ -519,7 +519,7 @@ def directional_text_box(text: str, side: Side) -> WireSymbol:
     raise ValueError(f"Unknown side: {side}")
 
 
-def _soq_to_symb(soq: Soquet) -> WireSymbol:
+def _soq_to_symb(soq: _Soquet) -> WireSymbol:
     """Return a pleasing symbol for the given soquet."""
 
     # Use text (with no box) for dangling register identifiers.
@@ -582,7 +582,7 @@ class MusicalScoreData:
         return attrs.asdict(self, recurse=False)
 
 
-def _make_ident(binst: BloqInstance, me: Soquet):
+def _make_ident(binst: BloqInstance, me: _Soquet):
     """Make a unique string identifier key for a soquet."""
     soqi = f'{me.reg.name},{me.reg.side},{me.idx}'
     if isinstance(binst, DanglingT):
