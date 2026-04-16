@@ -166,7 +166,6 @@ def convert_circuit_for_flasq_analysis(
 ) -> Tuple[CompositeBloq, cirq.Circuit]:
     """Uses a special set of decomposition rules for FLASQ analysis."""
 
-    # op_tree = cirq.decompose(circuit, intercepting_decomposer=flasq_intercepting_decomposer)
     if qubit_manager is not None:
         context = cirq.DecompositionContext(qubit_manager=qubit_manager)
     else:
