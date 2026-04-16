@@ -176,7 +176,7 @@ def _cbloq_measurement_depth(
                 node_cost = get_callee_cost(bloq)
                 node_depth = node_cost.depth
                 node_unknowns = node_cost.bloqs_with_unknown_depth
-            except Exception as e:
+            except (ValueError, TypeError, NotImplementedError, AttributeError) as e:
                 # If cost calculation fails for a sub-bloq, log error,
                 # assign 0 depth, and mark the sub-bloq as unknown.
                 logger.error(
@@ -292,7 +292,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
             except (DecomposeNotImplementedError, DecomposeTypeError):
                 # Decomposition failed or not implemented, proceed to fallback
                 logger.debug("Decomposition failed for %s, using fallback.", bloq)
-            except Exception as e:  # pragma: no cover
+            except (ValueError, TypeError, NotImplementedError, AttributeError) as e:  # pragma: no cover
                 # Catch unexpected errors during decomposition itself
                 logger.error("Unexpected error during decomposition of %s: %s", bloq, e, exc_info=True)
 
