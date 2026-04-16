@@ -1014,6 +1014,7 @@ def test_end_to_end_summary_from_custom_circuit():
     assert np.isclose(summary_resolved.total_spacetime_volume, 436.86, atol=0.1)
 
 
+@pytest.mark.slow
 def test_end_to_end_summary_from_hwp_circuit_repr():
     """An end-to-end example using a complex circuit stored as a `repr` string.
 

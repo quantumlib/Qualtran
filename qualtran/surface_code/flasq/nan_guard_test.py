@@ -94,6 +94,7 @@ def test_substitute_until_fixed_point_with_zoo():
     # We don't care about the exact result — just that it doesn't crash
     assert result is not None
 
+@pytest.mark.slow
 def test_generate_circuit_specific_configs_does_not_crash():
     """Integration test: generate_circuit_specific_configs should work end-to-end."""
     build_rz = lambda **kwargs: build_parallel_rz_circuit(**kwargs)[0]
