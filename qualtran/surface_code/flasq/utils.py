@@ -113,10 +113,12 @@ def substitute_until_fixed_point(
             else:
                 return float(expression)
 
+    resolver_list = [(sympy.Symbol(k) if isinstance(k, str) else k, v) for k, v in resolver.items()]
+
     try:
         old = expression
         # Perform at least one substitution initially
-        new = expression.subs(resolver, simultaneous=True)
+        new = expression.subs(resolver_list, simultaneous=True)
 
         if isinstance(new, (int, float)):
             return new
@@ -130,7 +132,7 @@ def substitute_until_fixed_point(
 
         while old != new:
             old = new
-            new = old.subs(resolver, simultaneous=True)
+            new = old.subs(resolver_list, simultaneous=True)
     except (ValueError, TypeError):
         return expression
 
