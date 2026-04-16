@@ -14,7 +14,10 @@
 
 # --- Consolidated Imports ---
 import time
-from typing import Dict, Tuple
+from typing import Dict, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qualtran.cirq_interop import CirqQuregT
 
 import cirq
 import numpy as np

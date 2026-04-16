@@ -13,7 +13,10 @@
 #  limitations under the License.
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
-from typing import Dict, Tuple, Union, cast, List, Optional
+from typing import Dict, Tuple, Union, cast, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qualtran.cirq_interop import CirqQuregT
 import warnings
 import qualtran.cirq_interop
 import cirq
