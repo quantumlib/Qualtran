@@ -68,7 +68,7 @@ from attrs import frozen
 
 
 @frozen
-class TestHashableUnknownBloq(Bloq):
+class _HashableUnknownBloq(Bloq):
     name: str
 
     @property
@@ -109,8 +109,8 @@ def test_flasq_gate_counts_hashable():
 
     # Case 3: With unknown bloqs (using custom hashable Bloqs)
     unknown_bloqs2: Dict[Bloq, int] = {
-        TestHashableUnknownBloq("custom1"): 3,
-        TestHashableUnknownBloq("custom2"): 1,
+        _HashableUnknownBloq("custom1"): 3,
+        _HashableUnknownBloq("custom2"): 1,
     }
     counts3 = FLASQGateCounts(cnot=7, bloqs_with_unknown_cost=unknown_bloqs2)
     assert hash(counts3) is not None
@@ -144,8 +144,8 @@ def test_gate_span_hashable():
 
     # Case 3: With uncounted bloqs (using custom hashable Bloqs)
     uncounted_bloqs2: Dict[Bloq, int] = {
-        TestHashableUnknownBloq("span_unknown1"): 2,
-        TestHashableUnknownBloq("span_unknown2"): 4,
+        _HashableUnknownBloq("span_unknown1"): 2,
+        _HashableUnknownBloq("span_unknown2"): 4,
     }
     span3 = GateSpan(
         connect_span=50, compute_span=100, uncounted_bloqs=uncounted_bloqs2
@@ -189,8 +189,8 @@ def test_measurement_depth_hashable():
 
     # Case 3: With unknown bloqs (using custom hashable Bloqs)
     unknown_bloqs2: Dict[Bloq, int] = {
-        TestHashableUnknownBloq("depth_unknown1"): 5,
-        TestHashableUnknownBloq("depth_unknown2"): 3,
+        _HashableUnknownBloq("depth_unknown1"): 5,
+        _HashableUnknownBloq("depth_unknown2"): 3,
     }
     depth3 = MeasurementDepth(depth=20, bloqs_with_unknown_depth=unknown_bloqs2)
     assert hash(depth3) is not None
@@ -401,13 +401,13 @@ def test_frozendict_hashable():
 
     # Test frozendict with custom hashable Bloq keys
     custom_bloq_dict1 = frozendict(
-        {TestHashableUnknownBloq("A"): 1, TestHashableUnknownBloq("B"): 2}
+        {_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 2}
     )
     custom_bloq_dict2 = frozendict(
-        {TestHashableUnknownBloq("B"): 2, TestHashableUnknownBloq("A"): 1}
+        {_HashableUnknownBloq("B"): 2, _HashableUnknownBloq("A"): 1}
     )
     custom_bloq_dict3 = frozendict(
-        {TestHashableUnknownBloq("A"): 1, TestHashableUnknownBloq("B"): 3}
+        {_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 3}
     )
 
     assert hash(custom_bloq_dict1) is not None

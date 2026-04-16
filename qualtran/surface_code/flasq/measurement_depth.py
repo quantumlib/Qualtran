@@ -73,7 +73,7 @@ class MeasurementDepth:
 
     depth: SymbolicFloat = 0
     # Use frozendict for immutability and hashability.
-    # Input can be a dict, but it's converted in __attrs_post_init__.
+    # Input can be a dict; it is converted by the attrs converter.
     bloqs_with_unknown_depth: Mapping[Bloq, SymbolicInt] = attrs.field(
         converter=frozendict, default=frozendict()
     )
