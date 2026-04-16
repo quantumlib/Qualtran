@@ -19,7 +19,7 @@ import numpy as np
 
 # test_naive_grid_qubit_manager.py
 import pytest
-from cirq import GridQubit, LineQubit
+from cirq import GridQubit, LineQubit, Qid
 
 from qualtran.bloqs.rotations import HammingWeightPhasing
 from qualtran.surface_code.flasq.cirq_interop import (
@@ -136,7 +136,7 @@ def test_qfree_single_qubit(negative):
     assert len(q) == 3
     q_to_free = q[1]  # GridQubit(-1, 1) or (0, 1)
     manager.qfree([q_to_free])
-    expected_allocated = {q[0], q[2]}
+    expected_allocated: Set[Qid] = {q[0], q[2]}
     expected_free = [q_to_free]
     _check_internal_state(manager, expected_allocated, expected_free, 3)
 

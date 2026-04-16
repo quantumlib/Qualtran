@@ -163,16 +163,17 @@ class FLASQGateCounts:
         items_dict = self.asdict()
         if "bloqs_with_unknown_cost" in items_dict:
             unknown_dict = items_dict["bloqs_with_unknown_cost"]
-            # Ensure consistent string representation for dict field
-            unknown_str = (
-                "{"
-                + ", ".join(
-                    f"{k!s}: {v!s}"
-                    for k, v in sorted(unknown_dict.items(), key=lambda item: str(item[0]))
+            if isinstance(unknown_dict, Mapping):
+                # Ensure consistent string representation for dict field
+                unknown_str = (
+                    "{"
+                    + ", ".join(
+                        f"{k!s}: {v!s}"
+                        for k, v in sorted(unknown_dict.items(), key=lambda item: str(item[0]))
+                    )
+                    + "}"
                 )
-                + "}"
-            )
-            items_dict["bloqs_with_unknown_cost"] = unknown_str
+                items_dict["bloqs_with_unknown_cost"] = unknown_str
 
         # Sort items by key for consistent output
         strs = [f"{k}: {v}" for k, v in sorted(items_dict.items())]

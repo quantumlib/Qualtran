@@ -132,7 +132,7 @@ def flasq_intercepting_decomposer(op: cirq.Operation) -> List[cirq.Operation]:
         exponent = gate.exponent
         return [
             cirq.CNOT.on(a, b),
-            cirq.ZPowGate(exponent=op.gate.exponent).on(b),
+            cirq.ZPowGate(exponent=exponent).on(b),
             cirq.CNOT.on(a, b),
         ]
 
