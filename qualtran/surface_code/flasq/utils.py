@@ -16,6 +16,7 @@
 from typing import Union, Any
 
 import numpy as np
+import pandas as pd
 import sympy
 from functools import lru_cache
 from frozendict import frozendict  # type: ignore[import-untyped]
@@ -151,5 +152,29 @@ def substitute_until_fixed_point(
         return expanded_expr
     except (ValueError, TypeError):
         return new
+
+
+def convert_sympy_exprs_in_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Converts fully evaluated SymPy numbers in a DataFrame to Python types.
+
+    Scans the DataFrame columns and converts any SymPy expressions that are
+    pure numbers into standard Python `int` or `float` objects.
+
+    Args:
+        df: The pandas DataFrame to process.
+
+    Returns:
+        The processed DataFrame with SymPy numbers converted.
+    """
+    for col in df.columns:
+        if df[col].apply(lambda x: isinstance(x, sympy.Expr)).any():
+            df[col] = df[col].apply(
+                lambda x: (
+                    float(x)
+                    if isinstance(x, sympy.Expr) and x.is_number and not x.is_integer
+                    else int(x) if isinstance(x, sympy.Expr) and x.is_integer else x
+                )
+            )
+    return df
 
 

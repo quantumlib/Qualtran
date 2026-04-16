@@ -22,7 +22,7 @@ from joblib import Parallel, delayed
 
 from qualtran.surface_code.flasq.optimization.sweep import SweepResult
 from qualtran.surface_code.flasq.optimization.configs import ErrorBudget
-from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point, convert_sympy_exprs_in_df
 from qualtran.surface_code.flasq.error_mitigation import (
     calculate_error_mitigation_metrics,
     calculate_failure_probabilities,
@@ -182,15 +182,7 @@ def post_process_for_pec_runtime(
     )
     processed_results = list(tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing PEC results"))
     df = pd.DataFrame(processed_results)
-    for col in df.columns:
-        if df[col].apply(lambda x: isinstance(x, sympy.Expr)).any():
-            df[col] = df[col].apply(
-                lambda x: (
-                    float(x)
-                    if isinstance(x, sympy.Expr) and x.is_number and not x.is_integer
-                    else int(x) if isinstance(x, sympy.Expr) and x.is_integer else x
-                )
-            )
+    df = convert_sympy_exprs_in_df(df)
     return df
 
 
@@ -299,14 +291,6 @@ def post_process_for_failure_budget(
 
     df = pd.DataFrame(processed_results)
 
-    for col in df.columns:
-        if df[col].apply(lambda x: isinstance(x, sympy.Expr)).any():
-            df[col] = df[col].apply(
-                lambda x: (
-                    float(x)
-                    if isinstance(x, sympy.Expr) and x.is_number and not x.is_integer
-                    else int(x) if isinstance(x, sympy.Expr) and x.is_integer else x
-                )
-            )
+    df = convert_sympy_exprs_in_df(df)
 
     return df
