@@ -72,7 +72,7 @@ def build_quadratic_mult_circuit(bitsize: int) -> CircuitAndData:
 
     # Map the temporary ancillas to the target GridQubits.
     anc_qubits = sorted(q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit))
-    qubit_map = {anc_qubits[i]: t[i] for i in range(num_anc)}
+    qubit_map: dict[cirq.Qid, cirq.Qid] = {anc_qubits[i]: t[i] for i in range(num_anc)}
     circuit = circuit.transform_qubits(qubit_map)
 
     return CircuitAndData(
@@ -119,7 +119,7 @@ def build_karatsuba_mult_circuit(bitsize: int) -> CircuitAndData:
     # The ancilla register in the decomposed bloq is named 'anc'.
     anc_qubits = sorted(q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit))
     assert len(anc_qubits) == num_anc
-    qubit_map = {anc_qubits[i]: t[i] for i in range(num_anc)}
+    qubit_map: dict[cirq.Qid, cirq.Qid] = {anc_qubits[i]: t[i] for i in range(num_anc)}
     circuit = circuit.transform_qubits(qubit_map)
 
     return CircuitAndData(

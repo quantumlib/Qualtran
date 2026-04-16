@@ -21,7 +21,7 @@ compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
 
 import logging
-from typing import Callable, Dict, List, Mapping, Tuple, Union
+from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
 
 import attrs
 import sympy
@@ -120,7 +120,7 @@ class GateSpan:
         return self.__add__(other)
 
     def __mul__(self, other):
-        if not isinstance(other, (int, SymbolicInt, sympy.Expr)):
+        if not isinstance(other, (int, float, sympy.Expr)):
             raise TypeError(
                 f"Can only multiply by int, SymbolicInt or sympy Expr, not {type(other)}: {other}"
             )
@@ -140,9 +140,9 @@ class GateSpan:
 
     def __str__(self):
         parts = []
-        if not is_zero(self.connect_span):
+        if not is_zero(self.connect_span):  # type: ignore[arg-type]
             parts.append(f"connect_span: {self.connect_span}")
-        if not is_zero(self.compute_span):
+        if not is_zero(self.compute_span):  # type: ignore[arg-type]
             parts.append(f"compute_span: {self.compute_span}")
         if self.uncounted_bloqs:
             uncounted_str = (
@@ -168,7 +168,7 @@ class GateSpan:
         return d
 
 
-def _calculate_spanning_distance(coords: List[Tuple[int, ...]]) -> SymbolicInt:
+def _calculate_spanning_distance(coords: Sequence[Tuple[int, ...]]) -> SymbolicInt:
     """Calculates the rectilinear spanning distance for a set of coordinates.
 
     - 2 qubits: Manhattan distance.

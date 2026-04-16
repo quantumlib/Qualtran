@@ -86,7 +86,7 @@ def substitute_until_fixed_point(
             sorted_relevant_symbols = tuple(sorted(list(relevant_symbols), key=str))
 
             for s in sorted_relevant_symbols:
-                val = resolver.get(s, resolver.get(str(s)))  # Check for Symbol then str key
+                val = resolver.get(s, resolver.get(str(s)))  # type: ignore[call-overload]
                 if isinstance(val, (int, float)):
                     numeric_values.append(val)
                 else:

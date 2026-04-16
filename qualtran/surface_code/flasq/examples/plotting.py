@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
-import seaborn as sns
+import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib.colors import LogNorm
 
 
