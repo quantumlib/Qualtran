@@ -56,9 +56,10 @@ class _TestTwoIn(Bloq):
 
 
 def test_hierarchical_bloq_flatten_error_is_caught():
-    """
-    This test demonstrates an error when flattening a CompositeBloq that
-    contains another CompositeBloq as one of its sub-bloqs.
+    """Verifies that flattening a CompositeBloq containing another CompositeBloq works.
+    
+    This historically failed because the flatten logic tried to call `decompose_bloq()`
+    on a CompositeBloq, which was not allowed.
     """
 
     bb_inner = BloqBuilder()
@@ -77,8 +78,7 @@ def test_hierarchical_bloq_flatten_error_is_caught():
     c_final = bb_outer.add(inner_cbloq, a=a_start, b=b_start)
     outer_cbloq = bb_outer.finalize(c=c_final)
 
-    # This should fail because the flatten logic tries to call `decompose_bloq()`
-    # on `inner_cbloq`, which is a CompositeBloq and thus not allowed.
+    # This now succeeds as the flatten logic has been improved.
     outer_cbloq.flatten()
 
 
@@ -111,14 +111,11 @@ def test_cbloq_to_qasm_output_fails_from_as_cirq_op():
     str(circuit._to_qasm_output())
 
 
-@pytest.mark.xfail(
-    raises=ValueError,
-    reason="Cirq's QASM output does not support classically controlled operations from measurements.",
-)
 def test_decomposed_circuit_to_qasm_fails_from_as_cirq_op():
-    """Reproduces ValueError from to_qasm() on a circuit decomposed from as_cirq_op.
+    """Verifies that a circuit decomposed from as_cirq_op can be converted to QASM.
 
-    This test is currently failing but probably not because of code in qualtran-flasq.
+    This historically failed with a ValueError because Cirq's QASM output did not
+    support classically controlled operations from measurements.
     """
     ancilla_qubit_manager = NaiveGridQubitManager(max_cols=10, negative=True)
     _, hwp_circuit, _ = build_hwp_circuit(
@@ -160,16 +157,12 @@ def test_and_then_uncompute_to_qasm():
     _ = circuit.to_qasm()
 
 
-@pytest.mark.xfail(
-    raises=ValueError,
-    reason="Cirq's QASM output does not support classically controlled operations from measurements.",
-)
 def test_and_then_uncompute_to_qasm_after_decomposition():
-    """Checks that measurement-based uncomputation of an AND gate fails QASM conversion.
+    """Checks that measurement-based uncomputation of an AND gate can be converted to QASM.
 
-    This test verifies that the `And(uncompute=True)` bloq, which uses a measurement-based
-    decomposition in Cirq, cannot be converted to QASM. This is because Cirq's QASM
-    serializer does not support circuits containing measurement gates.
+    This test verifies that the `And(uncompute=True)` bloq can be converted to QASM
+    after decomposition. This historically failed because Cirq's QASM serializer did
+    not support circuits containing measurement gates in this context.
     """
     bb = BloqBuilder()
     # The signature for And is ctrl: QAny(2), target: QBit().
