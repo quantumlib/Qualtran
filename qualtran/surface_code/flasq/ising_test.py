@@ -629,6 +629,7 @@ def _find_min_time_config_and_summary(
     return min_effective_time, summary_for_min_time
 
 
+@pytest.mark.slow
 def test_ising_volume_limited_depth_comparison_5x5_vs_6x6():
     """
     Compares the volume_limited_depth for 5x5 vs 6x6 Ising models.
