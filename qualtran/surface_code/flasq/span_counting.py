@@ -26,6 +26,7 @@ from typing import Callable, Dict, List, Mapping, Tuple, Union
 import attrs
 import sympy
 from attrs import frozen
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 from qualtran import Bloq, Signature
@@ -92,7 +93,7 @@ class GateSpan:
     connect_span: SymbolicFloat = 0
     compute_span: SymbolicFloat = 0
     uncounted_bloqs: Mapping[Bloq, SymbolicInt] = attrs.field(
-        converter=frozendict, default=frozendict()
+        converter=_to_frozendict, default=frozendict()
     )
 
     def __add__(self, other):

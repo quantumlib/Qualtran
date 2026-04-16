@@ -15,12 +15,16 @@
 """Utilities for resolving symbolic expressions in FLASQ cost formulas."""
 
 from functools import lru_cache
-from typing import Any, Union
+from typing import Any, Mapping, TypeVar, Union
 
 import numpy as np
 import pandas as pd
 import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
+
+def _to_frozendict(val: Mapping[Any, Any]) -> frozendict:
+    """Helper to convert mappings to frozendict while satisfying mypy."""
+    return frozendict(val)  # type: ignore[arg-type]
 
 
 @lru_cache(maxsize=None)
