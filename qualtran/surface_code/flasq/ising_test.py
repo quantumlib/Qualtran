@@ -15,7 +15,7 @@
 # test_ising_example.py
 # Tests for the ising_example.py script.
 
-from typing import Optional, Tuple
+from typing import cast, Optional, Tuple, Union
 
 import cirq
 import numpy as np
@@ -109,6 +109,7 @@ def test_ising_x_layer_structure():
     for op in moment.operations:
         assert isinstance(op.gate, cirq.Rx)
         # Use the public 'rads' attribute
+        assert isinstance(op.gate._rads, float)
         assert np.isclose(op.gate._rads, expected_theta)
 
 
@@ -180,8 +181,8 @@ def test_build_ising_circuit_qubit_count():
     # Optional: Check if they are GridQubits as expected
     assert all(isinstance(q, cirq.GridQubit) for q in circuit_qubits)
     # Optional: Check if the grid dimensions match
-    max_row = max(q.row for q in circuit_qubits)
-    max_col = max(q.col for q in circuit_qubits)
+    max_row = max(cast(cirq.GridQubit, q).row for q in circuit_qubits)
+    max_col = max(cast(cirq.GridQubit, q).col for q in circuit_qubits)
     assert max_row == rows - 1
     assert max_col == cols - 1
 
@@ -372,24 +373,29 @@ def test_both_counts_from_ising_model_circuit():
         )
         + cost_model_default.calculate_non_clifford_lattice_surgery_volume(flasq_cost_val)
     )
-    
+
     assert cost_model_default.rz_clifford_volume is not None
     assert cost_model_default.rx_clifford_volume is not None
-    expected_algo_clifford_volume = sympy.simplify(
+
+    val = (
         total_cnots * cost_model_default.cnot_base_volume
         + total_rz * cost_model_default.rz_clifford_volume
         + total_rx * cost_model_default.rx_clifford_volume
         + total_expected_connect_span * cost_model_default.connect_span_volume
         + total_expected_compute_span * cost_model_default.compute_span_volume
     )
+    expected_algo_clifford_volume = sympy.simplify(val) if isinstance(val, sympy.Expr) else val
 
     assumptions = {ROTATION_ERROR: 1e-3, T_REACT: 1.0}
 
+    val1 = substitute_until_fixed_point(total_algo_clifford_volume, frozendict(assumptions))
+    val2 = substitute_until_fixed_point(expected_algo_clifford_volume, frozendict(assumptions))
+
+    assert isinstance(val1, (int, float))
+    assert isinstance(val2, (int, float))
+
     # Check against the default costs stored in the model instance
-    np.testing.assert_almost_equal(
-        substitute_until_fixed_point(total_algo_clifford_volume, frozendict(assumptions)),
-        substitute_until_fixed_point(expected_algo_clifford_volume, frozendict(assumptions)),
-    )
+    np.testing.assert_almost_equal(val1, val2)
 
 
 # --- Tests for Measurement Depth ---
@@ -484,7 +490,7 @@ def _find_min_time_config_and_summary(
     phys_error_rate: float,
     n_total_physical_qubits_available: int,
     time_per_surface_code_cycle: float,
-) -> Tuple[float, FLASQSummary]:
+) -> Tuple[Union[float, sympy.Expr], FLASQSummary]:
     """
     Helper function to find the configuration (code_distance) that yields the
     minimum effective_time_per_noiseless_sample for an Ising model simulation.
@@ -509,7 +515,7 @@ def _find_min_time_config_and_summary(
         # Avoid division by zero if there are no rotations
         individual_allowable_rotation_error = total_allowable_rotation_error
         # If no rotations, rotation_depth doesn't strictly matter but set to 0 for clarity
-        rotation_depth_val = 0.0
+        rotation_depth_val: Union[float, sympy.Expr] = 0.0
     else:
         individual_allowable_rotation_error = (
             total_allowable_rotation_error / flasq_counts.total_rotations
@@ -520,7 +526,7 @@ def _find_min_time_config_and_summary(
         cbloq, TotalMeasurementDepth(rotation_depth=rotation_depth_val)
     )
 
-    min_effective_time = np.inf
+    min_effective_time: Union[float, sympy.Expr] = np.inf
     lambda_val = 1e-2 / phys_error_rate
 
     summary_for_min_time: Optional[FLASQSummary] = None

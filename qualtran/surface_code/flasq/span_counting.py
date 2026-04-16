@@ -26,7 +26,6 @@ from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
 import attrs
 import sympy
 from attrs import frozen
-from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 from qualtran import Bloq, Signature
@@ -38,6 +37,7 @@ from qualtran.bloqs.basic_gates.z_basis import MeasureZ
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey, get_bloq_callee_counts
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from qualtran.symbolics import is_zero
 from qualtran.symbolics.types import SymbolicFloat, SymbolicInt
 

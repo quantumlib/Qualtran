@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import sympy
 from frozendict import frozendict
-from joblib import Parallel, delayed  # type: ignore[import-untyped]
+from joblib import delayed, Parallel  # type: ignore[import-untyped]
 from tqdm.auto import tqdm
 
 from qualtran.surface_code.flasq.error_mitigation import (

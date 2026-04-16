@@ -27,7 +27,6 @@ import attrs
 import networkx as nx
 import sympy
 from attrs import frozen
-from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 # Qualtran Imports
@@ -53,6 +52,7 @@ from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey
 from qualtran.resource_counting.classify_bloqs import bloq_is_clifford, bloq_is_state_or_effect
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from qualtran.symbolics import is_zero, SymbolicFloat, SymbolicInt
 
 logger = logging.getLogger(__name__)
@@ -115,14 +115,15 @@ class MeasurementDepth:
             str_items.append(f"depth: {items['depth']}")
         if "bloqs_with_unknown_depth" in items:
             unknown_dict = items["bloqs_with_unknown_depth"]
-            try:
-                # Sort unknown bloqs by string representation for consistent output
-                sorted_unknown = sorted(unknown_dict.items(), key=lambda item: str(item[0]))
-            except TypeError:  # pragma: no cover
-                # Fallback if keys somehow aren't comparable via string
-                sorted_unknown = unknown_dict.items()
-            unknown_str = "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
-            str_items.append(f"bloqs_with_unknown_depth: {unknown_str}")
+            if isinstance(unknown_dict, Mapping):
+                try:
+                    # Sort unknown bloqs by string representation for consistent output
+                    sorted_unknown = sorted(unknown_dict.items(), key=lambda item: str(item[0]))
+                except TypeError:  # pragma: no cover
+                    # Fallback if keys somehow aren't comparable via string
+                    sorted_unknown = list(unknown_dict.items())  # type: ignore[assignment]
+                unknown_str = "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
+                str_items.append(f"bloqs_with_unknown_depth: {unknown_str}")
 
         return f"MeasurementDepth({', '.join(sorted(str_items))})"
 

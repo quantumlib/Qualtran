@@ -194,6 +194,7 @@ def generate_circuit_specific_configs(
         circuit_builder_kwargs=circuit_builder_kwargs,
         total_allowable_rotation_error=total_synthesis_error,
     )
+    assert logical_analysis is not None, "Circuit builder failed to return a valid circuit."
     individual_allowable_rotation_error = logical_analysis["individual_allowable_rotation_error"]
     summary = apply_flasq_cost_model(
         model=FLASQCostModel(),

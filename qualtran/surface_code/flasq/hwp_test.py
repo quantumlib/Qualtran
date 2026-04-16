@@ -50,6 +50,7 @@ def test_build_hwp_circuit():
 
     # Check qubit locations
     for q in data_qubits:
+        assert isinstance(q, cirq.GridQubit)
         assert q.row >= 0
 
 

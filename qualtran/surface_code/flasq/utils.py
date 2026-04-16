@@ -22,6 +22,7 @@ import pandas as pd
 import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
 
+
 def _to_frozendict(val: Mapping[Any, Any]) -> frozendict:
     """Helper to convert mappings to frozendict while satisfying mypy."""
     return frozendict(val)  # type: ignore[arg-type]

@@ -56,6 +56,7 @@ def test_apply_flasq_cost_model_zero_fluid_ancilla():
     assert summary.n_fluid_ancilla == 0
     assert summary.volume_limited_depth == sympy.oo
     # The summary should not contain zoo anywhere
+    assert isinstance(summary.total_depth, sympy.Expr)
     assert sympy.zoo not in summary.total_depth.atoms()
 
 

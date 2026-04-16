@@ -234,7 +234,9 @@ class FLASQCostModel:
                 print(f"  Compute Span volume: {term_compute_span}")
             total_volume += term_compute_span
 
-        return sympy.simplify(total_volume) if isinstance(total_volume, sympy.Expr) else total_volume
+        return (
+            sympy.simplify(total_volume) if isinstance(total_volume, sympy.Expr) else total_volume
+        )
 
     def calculate_non_clifford_lattice_surgery_volume(
         self, counts: FLASQGateCounts, verbose: bool = False
@@ -272,7 +274,9 @@ class FLASQCostModel:
                     print(f"  {print_name} volume: {term}")
                 total_volume += term
 
-        return sympy.simplify(total_volume) if isinstance(total_volume, sympy.Expr) else total_volume
+        return (
+            sympy.simplify(total_volume) if isinstance(total_volume, sympy.Expr) else total_volume
+        )
 
     def calculate_volume_required_for_cultivation(
         self, counts: FLASQGateCounts, verbose: bool = False

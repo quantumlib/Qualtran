@@ -32,8 +32,8 @@ from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitM
 # Helper function to check internal state
 def _check_internal_state(
     manager: NaiveGridQubitManager,
-    expected_allocated: Set[GridQubit],  # CHANGED: set -> Set
-    expected_free: List[GridQubit],  # CHANGED: list -> List
+    expected_allocated: Set[cirq.Qid],
+    expected_free: List[cirq.Qid],
     expected_generated: int,
 ):
     assert manager._allocated_qubits == expected_allocated
@@ -147,7 +147,7 @@ def test_qfree_all_qubits(negative):
     manager = NaiveGridQubitManager(max_cols=3, negative=negative)
     q = manager.qalloc(3)
     manager.qfree(q)
-    expected_allocated = set()
+    expected_allocated: Set[cirq.Qid] = set()
     expected_free = q
     _check_internal_state(manager, expected_allocated, expected_free, 3)
 

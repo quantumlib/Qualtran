@@ -308,7 +308,7 @@ class TotalMeasurementDepthEdgeCasesTestSuite:
         """validate_val should raise TypeError for non-MeasurementDepth values (L310-312)."""
         cost_key = TotalMeasurementDepth()
         with pytest.raises(TypeError, match="MeasurementDepth"):
-            cost_key.validate_val("not_a_measurement_depth")
+            cost_key.validate_val("not_a_measurement_depth")  # type: ignore[arg-type]
 
     def test_str(self):
         """TotalMeasurementDepth string representation (L316-317)."""
@@ -318,7 +318,7 @@ class TotalMeasurementDepthEdgeCasesTestSuite:
         """MeasurementDepth.__radd__ with non-zero non-MeasurementDepth delegates to __add__ (L95-96)."""
         md = MeasurementDepth(depth=5)
         # __add__ returns NotImplemented for non-MeasurementDepth, non-zero
-        result = md.__add__("bad")
+        result = md.__add__("bad")  # type: ignore[operator]
         assert result is NotImplemented
 
 
