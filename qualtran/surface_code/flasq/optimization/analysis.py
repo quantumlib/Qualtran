@@ -18,13 +18,14 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import sympy
 from frozendict import frozendict
-from qualtran.resource_counting import QubitCount, get_cost_value
+
+from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.surface_code.flasq import cultivation_analysis
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 from qualtran.surface_code.flasq.flasq_model import (
+    apply_flasq_cost_model,
     FLASQCostModel,
     FLASQSummary,
-    apply_flasq_cost_model,
     get_rotation_depth,
 )
 from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth

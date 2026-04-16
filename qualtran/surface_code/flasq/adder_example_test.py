@@ -15,21 +15,19 @@
 # test_adder_example.py
 import cirq
 
+from qualtran.resource_counting import get_cost_value
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 
 # Import functions/classes to be tested or used in tests
 from qualtran.surface_code.flasq.examples.adder_example import (
     analyze_adder_costs,
     create_adder_circuit_and_decorations,
 )
-from qualtran.resource_counting import get_cost_value
-from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateTotals,
     FLASQGateCounts,
+    FLASQGateTotals,
 )
-
-
 
 TEST_BITSIZE = 4
 
@@ -79,13 +77,14 @@ def test_decomposed_adder_flasq_and_span_costs():
     assert len(list(decomposed_circuit.all_operations())) > 0
 
 
+import cirq
+import numpy as np
+
 from qualtran import QUInt
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq
-from qualtran._infra.gate_with_registers import get_named_qubits
-import numpy as np
-import cirq
 
 
 def test_self_contained_adder_issue():

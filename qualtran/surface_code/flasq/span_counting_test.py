@@ -15,28 +15,27 @@
 # tests/span_counting_test.py
 import pytest
 import sympy
-from qualtran import Signature
 
+from qualtran import Signature
 from qualtran._infra.composite_bloq import (
-    BloqBuilder,
     Bloq,
+    BloqBuilder,
     CompositeBloq,
 )
-from qualtran.resource_counting._costing import get_cost_value
 from qualtran.bloqs.basic_gates import (
     CNOT,
     Hadamard,
-    Toffoli,
     Swap,
+    Toffoli,
 )
 from qualtran.bloqs.mcmt import And
-
+from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.span_counting import (
+    _calculate_spanning_distance,
     BloqWithSpanInfo,
+    calculate_spans,
     GateSpan,
     TotalSpanCost,
-    _calculate_spanning_distance,
-    calculate_spans,
 )
 
 

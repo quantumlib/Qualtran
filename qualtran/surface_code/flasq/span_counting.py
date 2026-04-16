@@ -19,25 +19,25 @@ Computes the Manhattan distance (or rectilinear Steiner tree distance for
 costs. These distances are later scaled by connect_span_volume and
 compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
-from frozendict import frozendict
-from attrs import frozen
-from typing import Dict, Callable, Tuple, Union, List, Mapping
 import logging
+from typing import Callable, Dict, List, Mapping, Tuple, Union
 
 import attrs
 import sympy
+from attrs import frozen
+from frozendict import frozendict
 
 from qualtran import Bloq, Signature
-from qualtran.symbolics.types import SymbolicInt, SymbolicFloat
-from qualtran.resource_counting import CostKey, get_bloq_callee_counts
-from qualtran.bloqs.basic_gates.z_basis import MeasureZ
-from qualtran.bloqs.basic_gates.x_basis import MeasureX
-from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
-from qualtran.bloqs.basic_gates.identity import Identity
-from qualtran.symbolics import is_zero
-from qualtran.bloqs.mcmt import And
 from qualtran.bloqs.basic_gates import Swap
+from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+from qualtran.bloqs.basic_gates.identity import Identity
+from qualtran.bloqs.basic_gates.x_basis import MeasureX
+from qualtran.bloqs.basic_gates.z_basis import MeasureZ
+from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.mcmt import And
+from qualtran.resource_counting import CostKey, get_bloq_callee_counts
+from qualtran.symbolics import is_zero
+from qualtran.symbolics.types import SymbolicFloat, SymbolicInt
 
 logger = logging.getLogger(__name__)
 

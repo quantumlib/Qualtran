@@ -12,30 +12,29 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import cirq
+
 # test_combined_counting.py
 import numpy as np
-from qualtran import Signature
+from attrs import frozen
 
+from qualtran import Signature
 from qualtran._infra.composite_bloq import (
-    BloqBuilder,
     Bloq,
+    BloqBuilder,
 )
-from qualtran.resource_counting._costing import get_cost_value
 from qualtran.bloqs.basic_gates import (
     CNOT,
     Hadamard,
     Toffoli,
 )
 from qualtran.cirq_interop import CirqGateAsBloq
-
-
+from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo
 from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )
-from attrs import frozen
-import cirq
 
 
 def test_flasq_count_basic():
@@ -148,23 +147,26 @@ def test_flasq_counts_str_with_pow_gates():
 # =============================================================================
 
 import pytest
+
 from qualtran.bloqs.basic_gates import (
-    SGate,
     CZ,
+    OneState,
+    Rx,
+    Rz,
+    SGate,
     XGate,
+    XPowGate,
     YGate,
+    YPowGate,
+    ZeroEffect,
+    ZeroState,
     ZGate,
     ZPowGate,
-    XPowGate,
-    YPowGate,
-    Rz,
-    Rx,
 )
-from qualtran.bloqs.basic_gates.z_basis import MeasureZ
-from qualtran.bloqs.basic_gates.x_basis import MeasureX
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 from qualtran.bloqs.basic_gates.identity import Identity
-from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect
+from qualtran.bloqs.basic_gates.x_basis import MeasureX
+from qualtran.bloqs.basic_gates.z_basis import MeasureZ
 from qualtran.bloqs.mcmt import And
 
 

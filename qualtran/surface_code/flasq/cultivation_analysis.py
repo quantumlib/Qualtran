@@ -29,11 +29,12 @@ Key CSV columns and paper terminology:
         results.
 """
 
-import pandas as pd
-import numpy as np
 import importlib.resources
-from typing import Optional
 from functools import lru_cache
+from typing import Optional
+
+import numpy as np
+import pandas as pd
 
 
 @lru_cache(maxsize=1)

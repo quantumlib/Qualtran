@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 """Utilities for resolving symbolic expressions in FLASQ cost formulas."""
-from typing import Union, Any
+from functools import lru_cache
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
 import sympy
-from functools import lru_cache
 from frozendict import frozendict  # type: ignore[import-untyped]
 
 

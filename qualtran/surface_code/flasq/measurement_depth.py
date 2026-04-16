@@ -20,39 +20,40 @@ DAG, where each node is weighted by its measurement depth contribution.
 Also called 'reaction depth' in the paper.
 """
 
+import logging
+from typing import Any, Callable, Dict, Mapping, Optional, Union
+
 import attrs
+import networkx as nx
+import sympy
 from attrs import frozen
 from frozendict import frozendict
-import sympy
-from typing import Dict, Any, Union, Callable, Optional, Mapping
-import logging
-import networkx as nx
 
 # Qualtran Imports
 from qualtran import (
     Bloq,
+    BloqInstance,
     CompositeBloq,
     DanglingT,
     DecomposeNotImplementedError,
     DecomposeTypeError,
-    BloqInstance,
 )
 from qualtran.bloqs.basic_gates import (
-    TGate,
-    Toffoli,
     GlobalPhase,
     Identity,
     Rx,
-    XPowGate,
     Rz,
+    TGate,
+    Toffoli,
+    XPowGate,
     ZPowGate,
 )
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey
 from qualtran.resource_counting.classify_bloqs import (
-    bloq_is_state_or_effect,
     bloq_is_clifford,
+    bloq_is_state_or_effect,
 )
 from qualtran.symbolics import is_zero, SymbolicFloat, SymbolicInt
 

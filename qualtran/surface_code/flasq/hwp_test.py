@@ -35,8 +35,8 @@ from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitM
 from qualtran.surface_code.flasq.span_counting import TotalSpanCost
 from qualtran.surface_code.flasq.symbols import (
     ROTATION_ERROR,
-    V_CULT_FACTOR,
     T_REACT,
+    V_CULT_FACTOR,
 )
 from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals
 

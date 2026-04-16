@@ -26,21 +26,20 @@ from functools import lru_cache
 from typing import Mapping, Optional
 
 import sympy
-from attrs import field, frozen, fields
+from attrs import field, fields, frozen
 from frozendict import frozendict
 
-
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
 from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth
 from qualtran.surface_code.flasq.span_counting import GateSpan
 from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
-    V_CULT_FACTOR,
     T_REACT,
+    V_CULT_FACTOR,
 )
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 # Initialize logger
 logger = logging.getLogger(__name__)

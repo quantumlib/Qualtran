@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Dict, Tuple
 
 import cirq
+
 from qualtran import QGF, Signature
 from qualtran.bloqs.gf_arithmetic import GF2Multiplication, GF2MulViaKaratsuba
 from qualtran.cirq_interop import CirqQuregT

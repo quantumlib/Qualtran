@@ -13,58 +13,59 @@
 #  limitations under the License.
 
 from typing import Any, Dict, Tuple, Union
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import cirq
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 import sympy
-from sympy import Symbol
+
+# Define a simple frozen Bloq for testing unknown cases (should be hashable)
+# This mimics how CirqGateAsBloq or other custom Bloqs might appear in unknown lists
+from attrs import frozen
 from frozendict import frozendict
+from sympy import Symbol
 
 from qualtran import Bloq, Signature
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, Ry, ZPowGate, Hadamard, TGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Ry, TGate, Toffoli, ZPowGate
+from qualtran.surface_code.flasq import cultivation_analysis  # For the new test
+from qualtran.surface_code.flasq.examples.ising import build_ising_circuit  # For integration test
+from qualtran.surface_code.flasq.flasq_model import (
+    apply_flasq_cost_model,
+    conservative_FLASQ_costs,
+    FLASQSummary,
+    optimistic_FLASQ_costs,
+    ROTATION_ERROR,
+    V_CULT_FACTOR,
+)
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
+from qualtran.surface_code.flasq.optimization import (
+    analyze_logical_circuit,
+    calculate_single_flasq_summary,
+    CoreParametersConfig,
+    ErrorBudget,
+    generate_configs_for_constrained_qec,
+    generate_configs_for_specific_cultivation_assumptions,
+    generate_configs_from_cultivation_data,
+    post_process_for_failure_budget,
+    post_process_for_logical_depth,
+    post_process_for_pec_runtime,
+    run_sweep,
+    SweepResult,
+)
 from qualtran.surface_code.flasq.span_counting import (
-    GateSpan,
     BloqWithSpanInfo,
+    GateSpan,
     TotalSpanCost,
+)
+from qualtran.surface_code.flasq.symbols import (
+    T_REACT,
 )
 from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
 )
-from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
-from qualtran.surface_code.flasq.flasq_model import (
-    FLASQSummary,
-    ROTATION_ERROR,
-    V_CULT_FACTOR,
-    conservative_FLASQ_costs,
-    optimistic_FLASQ_costs,
-    apply_flasq_cost_model,
-)
-from qualtran.surface_code.flasq.symbols import (
-    T_REACT,
-)
-from qualtran.surface_code.flasq.optimization import (
-    analyze_logical_circuit,
-    generate_configs_from_cultivation_data,
-    generate_configs_for_specific_cultivation_assumptions,
-    post_process_for_pec_runtime,
-    post_process_for_logical_depth,
-    post_process_for_failure_budget,
-    calculate_single_flasq_summary,
-    run_sweep,
-    CoreParametersConfig,
-    SweepResult,
-    ErrorBudget,
-    generate_configs_for_constrained_qec,
-)
-from qualtran.surface_code.flasq.examples.ising import build_ising_circuit  # For integration test
-from qualtran.surface_code.flasq import cultivation_analysis  # For the new test
-
-# Define a simple frozen Bloq for testing unknown cases (should be hashable)
-# This mimics how CirqGateAsBloq or other custom Bloqs might appear in unknown lists
-from attrs import frozen
 
 
 @frozen

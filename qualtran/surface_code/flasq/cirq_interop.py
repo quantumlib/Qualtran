@@ -13,19 +13,20 @@
 #  limitations under the License.
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
-from typing import Dict, Tuple, Union, cast, List, Optional, TYPE_CHECKING
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
+
 import warnings
-import qualtran.cirq_interop
+
 import cirq
 import numpy as np
 
-from qualtran import Bloq, Signature, CompositeBloq
-from qualtran.cirq_interop import cirq_gate_to_bloq, cirq_optree_to_cbloq
+import qualtran.cirq_interop
+from qualtran import Bloq, CompositeBloq, Signature
 from qualtran.bloqs.mcmt import And
-
+from qualtran.cirq_interop import cirq_gate_to_bloq, cirq_optree_to_cbloq
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, calculate_spans
 
 

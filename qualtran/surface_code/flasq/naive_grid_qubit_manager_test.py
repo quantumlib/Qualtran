@@ -12,19 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# test_naive_grid_qubit_manager.py
-import pytest
-import cirq
-from cirq import GridQubit, LineQubit
-from qualtran.bloqs.rotations import HammingWeightPhasing
-import numpy as np
 from typing import List, Set  # CHANGED: Added for backward-compatible types
 
-from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
+import cirq
+import numpy as np
+
+# test_naive_grid_qubit_manager.py
+import pytest
+from cirq import GridQubit, LineQubit
+
+from qualtran.bloqs.rotations import HammingWeightPhasing
 from qualtran.surface_code.flasq.cirq_interop import (
-    flasq_intercepting_decomposer,
     flasq_decompose_keep,
+    flasq_intercepting_decomposer,
 )
+from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 
 
 # Helper function to check internal state

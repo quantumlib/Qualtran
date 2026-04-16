@@ -12,16 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# tests/cirq_interop_test.py
-import pytest
 import cirq
 import numpy as np
-from qualtran import Signature
 
+# tests/cirq_interop_test.py
+import pytest
+
+from qualtran import Signature
 from qualtran._infra.composite_bloq import (
     CompositeBloq,
 )
-from qualtran.resource_counting._costing import get_cost_value
 from qualtran.bloqs.basic_gates import (
     CNOT,
     Hadamard,
@@ -29,7 +29,12 @@ from qualtran.bloqs.basic_gates import (
     ZPowGate,
 )
 from qualtran.cirq_interop import cirq_optree_to_cbloq
-
+from qualtran.resource_counting._costing import get_cost_value
+from qualtran.surface_code.flasq.cirq_interop import (
+    _get_coords_from_op,
+    cirq_op_to_bloq_with_span,
+    convert_circuit_for_flasq_analysis,
+)
 from qualtran.surface_code.flasq.span_counting import (
     BloqWithSpanInfo,
     GateSpan,
@@ -38,11 +43,6 @@ from qualtran.surface_code.flasq.span_counting import (
 from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,
     FLASQGateTotals,
-)
-from qualtran.surface_code.flasq.cirq_interop import (
-    _get_coords_from_op,
-    cirq_op_to_bloq_with_span,
-    convert_circuit_for_flasq_analysis,
 )
 
 
@@ -352,11 +352,11 @@ def test_no_unknown_bloqs_for_fsim_circuit():
 # Phase 1: Characterization tests for untested cirq_interop branches
 # =============================================================================
 
+from qualtran.bloqs.mcmt import And
 from qualtran.surface_code.flasq.cirq_interop import (
     cirq_op_to_bloq_tolerate_classical_controls,
     flasq_decompose_keep,
 )
-from qualtran.bloqs.mcmt import And
 
 
 class TolerateClassicalControlsTestSuite:

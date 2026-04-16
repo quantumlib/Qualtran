@@ -12,33 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import attrs
+
 # test_measurement_depth.py
 import pytest
 import sympy
-import attrs
 from frozendict import frozendict
+
+# Imports from Qualtran for test setup
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    CompositeBloq,
+    DecomposeNotImplementedError,
+    QUInt,
+    Signature,
+)
+from qualtran.bloqs.arithmetic import Add, HammingWeightCompute
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
+from qualtran.bloqs.mcmt import And
+from qualtran.resource_counting import CostKey, get_cost_value
 
 # Imports from the module being tested
 from qualtran.surface_code.flasq.measurement_depth import (
     MeasurementDepth,
     TotalMeasurementDepth,
 )
-
-# Imports from Qualtran for test setup
-from qualtran import (
-    Bloq,
-    CompositeBloq,
-    BloqBuilder,
-    Signature,
-    QUInt,
-    DecomposeNotImplementedError,
-)
-from qualtran.resource_counting import CostKey, get_cost_value
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
-from qualtran.bloqs.mcmt import And
-from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.arithmetic import HammingWeightCompute
-
 
 # --- Helper Bloqs for Testing ---
 
@@ -252,7 +251,7 @@ def test_total_measurement_depth_with_rotation_depth():
     cost_key = TotalMeasurementDepth(rotation_depth=custom_rotation_depth)
 
     # Test individual rotation gates
-    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate # type: ignore[attr-defined]
+    from qualtran.bloqs.basic_gates import Rx, Rz, XPowGate, ZPowGate  # type: ignore[attr-defined]
 
     rx_bloq = Rx(angle=sympy.Symbol("theta_rx"))
     rz_bloq = Rz(angle=sympy.Symbol("theta_rz"))
@@ -300,7 +299,7 @@ def test_total_measurement_depth_with_rotation_depth():
 # Phase 1: Characterization tests for untested measurement_depth branches
 # =============================================================================
 
-from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect
+from qualtran.bloqs.basic_gates import OneState, ZeroEffect, ZeroState
 
 
 class TotalMeasurementDepthBaseCasesTestSuite:

@@ -18,48 +18,48 @@ Walks a Qualtran bloq decomposition tree and tallies primitive gates into
 FLASQGateCounts. Distance-dependent costs (span) are handled separately
 by span_counting.py.
 """
-from frozendict import frozendict
-from attrs import frozen
-from typing import Dict, Callable, Tuple, Union, Optional, Mapping
 import logging
+from typing import Callable, Dict, Mapping, Optional, Tuple, Union
+
 import attrs
-import sympy
 import cirq
 import numpy as np
+import sympy
+from attrs import frozen
+from frozendict import frozendict
 
 from qualtran import Bloq
-from qualtran.symbolics.types import SymbolicInt
-from qualtran.resource_counting import CostKey, get_bloq_callee_counts
-from qualtran.bloqs.basic_gates.z_basis import MeasureZ
-from qualtran.bloqs.basic_gates.x_basis import MeasureX
+from qualtran.bloqs.basic_gates import (
+    CNOT,
+    CZ,
+    Hadamard,
+    Rx,
+    Rz,
+    SGate,
+    Toffoli,
+    XGate,
+    XPowGate,
+    YGate,
+    YPowGate,
+    ZGate,
+    ZPowGate,
+)
 from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.basic_gates.identity import Identity
-from qualtran.symbolics import is_zero, SymbolicFloat
+from qualtran.bloqs.basic_gates.x_basis import MeasureX
+from qualtran.bloqs.basic_gates.z_basis import MeasureZ
+from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+from qualtran.bloqs.mcmt import And
+from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.resource_counting import CostKey, get_bloq_callee_counts
 from qualtran.resource_counting.classify_bloqs import (
-    bloq_is_t_like,
+    bloq_is_clifford,
     bloq_is_rotation,
     bloq_is_state_or_effect,
-    bloq_is_clifford,
+    bloq_is_t_like,
 )
-from qualtran.bloqs.basic_gates import (
-    Hadamard,
-    SGate,
-    CNOT,
-    Rz,
-    Rx,
-    XGate,
-    YGate,
-    ZGate,
-    Toffoli,
-    CZ,
-    ZPowGate,
-    XPowGate,
-    YPowGate,
-)
-from qualtran.bloqs.mcmt import And
-
-from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.symbolics import is_zero, SymbolicFloat
+from qualtran.symbolics.types import SymbolicInt
 
 logger = logging.getLogger(__name__)
 

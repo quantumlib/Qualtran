@@ -14,8 +14,11 @@
 """Tests for FLASQ example notebooks."""
 import os
 import tempfile
+
 import pytest
+
 from qualtran.testing import execute_notebook
+
 
 @pytest.fixture(autouse=True)
 def _notebook_env(monkeypatch):

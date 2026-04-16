@@ -12,6 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.surface_code.flasq import cultivation_analysis
+
+# Re-export these for backward compatibility and tests
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.error_mitigation import calculate_failure_probabilities
 from qualtran.surface_code.flasq.optimization.analysis import (
     analyze_logical_circuit,
     calculate_single_flasq_summary,
@@ -29,12 +34,7 @@ from qualtran.surface_code.flasq.optimization.postprocessing import (
     post_process_for_logical_depth,
     post_process_for_pec_runtime,
 )
-from qualtran.surface_code.flasq.optimization.sweep import SweepResult, run_sweep
-
-# Re-export these for backward compatibility and tests
-from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran.surface_code.flasq.error_mitigation import calculate_failure_probabilities
-from qualtran.surface_code.flasq import cultivation_analysis
+from qualtran.surface_code.flasq.optimization.sweep import run_sweep, SweepResult
 
 __all__ = [
     "CoreParametersConfig",

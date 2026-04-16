@@ -15,36 +15,34 @@
 # test_ising_example.py
 # Tests for the ising_example.py script.
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
-import pytest
 import cirq
 import numpy as np
-from frozendict import frozendict
+import pytest
 import sympy
+from frozendict import frozendict
+
+from qualtran.resource_counting import get_cost_value, QubitCount
+from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
+from qualtran.surface_code.flasq.error_mitigation import calculate_error_mitigation_metrics
 
 # Import functions from the script to be tested
 from qualtran.surface_code.flasq.examples.ising import (
     build_ising_circuit,
-    ising_zz_layer,
     ising_x_layer,
+    ising_zz_layer,
 )
-
-from qualtran.surface_code.flasq.symbols import V_CULT_FACTOR, T_REACT, ROTATION_ERROR
-
-from qualtran.resource_counting import get_cost_value
-from qualtran.resource_counting import QubitCount
 from qualtran.surface_code.flasq.flasq_model import (
+    apply_flasq_cost_model,
     FLASQCostModel,
     FLASQSummary,
-    optimistic_FLASQ_costs,
-    apply_flasq_cost_model,
     get_rotation_depth,
+    optimistic_FLASQ_costs,
 )
-from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran.surface_code.flasq.error_mitigation import calculate_error_mitigation_metrics
 from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 from qualtran.surface_code.flasq.volume_counting import (
     FLASQGateCounts,

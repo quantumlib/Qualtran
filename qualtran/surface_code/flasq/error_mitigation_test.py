@@ -12,16 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import pytest
-import sympy
 from unittest.mock import MagicMock
 
-# (Assuming standard imports for FLASQSummary, etc.)
-from qualtran.surface_code.flasq.flasq_model import FLASQSummary
+import pytest
+import sympy
+
 from qualtran.surface_code.flasq.error_mitigation import (
     calculate_failure_probabilities,
     ERROR_PER_CYCLE_PREFACTOR,
 )
+
+# (Assuming standard imports for FLASQSummary, etc.)
+from qualtran.surface_code.flasq.flasq_model import FLASQSummary
 
 
 # Helper to create a mock FLASQSummary for failure calculation tests

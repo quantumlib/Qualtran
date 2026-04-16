@@ -12,10 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import sympy
 import pytest
-
+import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
+
 from qualtran.surface_code.flasq.utils import (
     substitute_until_fixed_point,
 )
