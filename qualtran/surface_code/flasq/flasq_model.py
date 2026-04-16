@@ -445,7 +445,7 @@ class FLASQSummary:
             resolved_val = substitute_until_fixed_point(val, assumptions, try_make_number=True)
             resolved_fields[field_to_process.name] = resolved_val
 
-        return FLASQSummary(**resolved_fields)
+        return FLASQSummary(**resolved_fields)  # type: ignore[arg-type]
 
 
 def apply_flasq_cost_model(
@@ -523,6 +523,7 @@ def apply_flasq_cost_model(
     # Calculate limiting depth
     # Guard against division by zero when n_fluid_ancilla is zero (or negative),
     # which produces zoo and leads to NaN errors during substitution/simplification.
+    volume_limited_depth: SymbolicFloat
     if n_fluid_ancilla <= 0:
         volume_limited_depth = sympy.oo
     else:
