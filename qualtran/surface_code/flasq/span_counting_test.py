@@ -184,7 +184,7 @@ class GateSpanArithmeticTestSuite:
         """Multiplying by a non-numeric type should raise TypeError (L105-107)."""
         gs = GateSpan(connect_span=1, compute_span=1)
         with pytest.raises(TypeError, match="Can only multiply"):
-            gs * "bad"
+            _ = gs * "bad"
 
     def test_mul_by_sympy_expr(self):
         """Multiplying by a sympy expression should work."""
