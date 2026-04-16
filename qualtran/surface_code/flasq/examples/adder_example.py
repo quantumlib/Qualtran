@@ -48,7 +48,7 @@ def analyze_adder_costs(bitsize: int):
         register_type = QUInt(bitsize)
         adder_bloq = Add(a_dtype=register_type, b_dtype=register_type)
         print(f"Instantiated Bloq: {adder_bloq}")
-    except Exception as e:
+    except (ValueError, TypeError, NotImplementedError) as e:
         print(f"An unexpected error occurred during bloq instantiation: {e}")
         return
 
@@ -56,14 +56,14 @@ def analyze_adder_costs(bitsize: int):
         flasq_costs: FLASQGateCounts = get_cost_value(adder_bloq, FLASQGateTotals())
         print(f"\nFLASQ Gate Counts (Abstract):")
         print(flasq_costs)
-    except Exception as e:
+    except (ValueError, TypeError, NotImplementedError) as e:
         print(f"\nError calculating FLASQ costs: {e}")
 
     try:
         span_costs: GateSpan = get_cost_value(adder_bloq, TotalSpanCost())
         print("\nTotal Span Cost (Abstract):")
         print(span_costs)
-    except Exception as e:
+    except (ValueError, TypeError, NotImplementedError) as e:
         print(f"\nError calculating Span costs: {e}")
 
     print("-" * (30 + len(str(bitsize))))
@@ -182,5 +182,5 @@ if __name__ == "__main__":
         if flasq_costs.bloqs_with_unknown_cost:
             print("Warning: Bloqs with unknown cost found in FLASQ calculation!")
 
-    except Exception as e:
+    except (ValueError, TypeError, NotImplementedError) as e:
         print(f"\nAn error occurred during the process: {e}")

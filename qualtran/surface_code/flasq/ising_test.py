@@ -247,7 +247,7 @@ def test_ising_simulation(rows, cols):
     try:
         result = simulator.simulate(ising_circuit, initial_state=initial_state)
         final_state_vector = result.final_state_vector
-    except Exception as e:
+    except (ValueError, TypeError, RuntimeError) as e:
         pytest.fail(f"Simulation failed for {rows}x{cols} lattice: {e}")
 
     # Basic checks on the result

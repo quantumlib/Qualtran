@@ -357,7 +357,7 @@ def test_edge_case_qfree_empty():
     q_initial = manager.qalloc(2)
     try:
         manager.qfree([])
-    except Exception as e:
+    except (ValueError, TypeError) as e:
         pytest.fail(f"qfree([]) raised an exception: {e}")
     _check_internal_state(manager, set(q_initial), [], 2)
 
