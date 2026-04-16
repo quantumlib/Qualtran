@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 # symbols_test.py
+# pylint: disable=assignment-from-no-return
 # Phase 1 characterization tests for qualtran.surface_code.flasq/symbols.py
 #
 # Verifies that the symbolic constants (especially MIXED_FALLBACK_T_COUNT)

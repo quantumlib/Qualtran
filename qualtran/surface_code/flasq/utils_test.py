@@ -15,6 +15,8 @@
 import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
 
+# pylint: disable=no-value-for-parameter
+
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 
 
