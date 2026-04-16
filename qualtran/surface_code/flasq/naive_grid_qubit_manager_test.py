@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+# pylint: disable=unbalanced-tuple-unpacking
+
 from typing import List, Set  # CHANGED: Added for backward-compatible types
 
 import cirq
