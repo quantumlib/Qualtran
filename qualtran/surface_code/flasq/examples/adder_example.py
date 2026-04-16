@@ -54,7 +54,7 @@ def analyze_adder_costs(bitsize: int):
 
     try:
         flasq_costs: FLASQGateCounts = get_cost_value(adder_bloq, FLASQGateTotals())
-        print(f"\nFLASQ Gate Counts (Abstract):")
+        print("\nFLASQ Gate Counts (Abstract):")
         print(flasq_costs)
     except (ValueError, TypeError, NotImplementedError) as e:
         print(f"\nError calculating FLASQ costs: {e}")
