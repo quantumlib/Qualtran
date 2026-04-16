@@ -17,6 +17,11 @@ import tempfile
 import pytest
 from qualtran.testing import execute_notebook
 
+@pytest.fixture(autouse=True)
+def _notebook_env(monkeypatch):
+    monkeypatch.setenv('FLASQ_FAST_MODE_OVERRIDE', 'True')
+    monkeypatch.setenv('MPLBACKEND', 'Agg')
+
 def _execute_notebook_in_temp_dir(name: str):
     with tempfile.TemporaryDirectory() as tmpdir:
         old_cwd = os.getcwd()
@@ -28,18 +33,12 @@ def _execute_notebook_in_temp_dir(name: str):
 
 @pytest.mark.notebook
 def test_ising_notebook():
-    os.environ['FLASQ_FAST_MODE_OVERRIDE'] = 'True'
-    os.environ['MPLBACKEND'] = 'Agg'
     _execute_notebook_in_temp_dir('ising_notebook')
 
 @pytest.mark.notebook
 def test_hwp_notebook():
-    os.environ['FLASQ_FAST_MODE_OVERRIDE'] = 'True'
-    os.environ['MPLBACKEND'] = 'Agg'
     _execute_notebook_in_temp_dir('hwp_notebook')
 
 @pytest.mark.notebook
 def test_gf2_multiplier_notebook():
-    os.environ['FLASQ_FAST_MODE_OVERRIDE'] = 'True'
-    os.environ['MPLBACKEND'] = 'Agg'
     _execute_notebook_in_temp_dir('gf2_multiplier_example_notebook')
