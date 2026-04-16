@@ -198,7 +198,7 @@ def _calculate_spanning_distance(coords: Sequence[Tuple[int, ...]]) -> SymbolicI
 
 
 def calculate_spans(
-    coords: List[Tuple[int, ...]], bloq: Bloq
+    coords: Sequence[Tuple[int, ...]], bloq: Bloq
 ) -> Tuple[SymbolicFloat, SymbolicFloat]:
     """Calculates connect_span and compute_span for a bloq given qubit coordinates.
 
