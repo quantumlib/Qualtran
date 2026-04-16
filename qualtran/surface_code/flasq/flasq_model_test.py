@@ -548,7 +548,6 @@ def test_regular_spacetime_volume_property():
 
 
 # --- Basic Test for apply_flasq_cost_model ---
-# TODO: Add a test for apply_flasq_cost_model with symbolic inputs.
 
 
 def test_apply_flasq_cost_model_basic():
@@ -981,7 +980,6 @@ def test_end_to_end_summary_from_custom_circuit():
     flasq_counts = get_cost_value(cbloq, FLASQGateTotals())
     span_info = get_cost_value(cbloq, TotalSpanCost())
     qubit_counts = get_cost_value(cbloq, QubitCount())
-    # TODO: consider removing this assertion or the comment.
     assert qubit_counts == n_algorithmic_qubits
 
     # We must provide a rotation_error to get a concrete measurement depth.
@@ -1044,7 +1042,6 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
     flasq_counts = get_cost_value(cbloq, FLASQGateTotals())
     span_info = get_cost_value(cbloq, TotalSpanCost())
     qubit_counts = get_cost_value(cbloq, QubitCount())
-    # TODO: consider removing this assertion or the comment.
     assert qubit_counts == n_algorithmic_qubits
 
     summary = apply_flasq_cost_model(
