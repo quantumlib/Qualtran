@@ -235,7 +235,6 @@ def test_total_measurement_depth_compute_adder():
     adder_bloq = Add(QUInt(bitsize))
 
     calculated_depth = get_cost_value(adder_bloq, TotalMeasurementDepth())
-    print(f"Calculated Adder Depth ({bitsize}-bit): {calculated_depth}")
 
     # Check structure of the result
     assert isinstance(calculated_depth, MeasurementDepth)

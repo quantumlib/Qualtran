@@ -222,10 +222,6 @@ def test_ising_simulation(rows, cols):
     time_step = 0.05  # Smaller step for potentially larger systems
     num_trotter_steps = 2
 
-    print(f"\nTesting simulation for {rows}x{cols} lattice...")
-    print(
-        f"Parameters: J={j_coupling_strength}, h={h_field_strength}, dt={time_step}, steps={num_trotter_steps}"
-    )
 
     # Build the circuit
     ising_circuit = build_ising_circuit(
@@ -237,7 +233,6 @@ def test_ising_simulation(rows, cols):
         n_steps=num_trotter_steps,
     )
 
-    print(f"Circuit built with {len(list(ising_circuit.all_operations()))} operations.")
     # Check qubit count here as well
     assert len(ising_circuit.all_qubits()) == rows * cols
 
@@ -265,7 +260,6 @@ def test_ising_simulation(rows, cols):
     try:
         result = simulator.simulate(ising_circuit, initial_state=initial_state)
         final_state_vector = result.final_state_vector
-        print(f"Simulation successful for {rows}x{cols}.")
     except Exception as e:
         pytest.fail(f"Simulation failed for {rows}x{cols} lattice: {e}")
 
@@ -388,9 +382,6 @@ def test_both_counts_from_ising_model_circuit():
             flasq_cost_val
         )
     )
-    print(
-        f"Ising Model ({rows}x{cols}, {n_steps} steps) - Estimated Clifford Volume: {total_algo_cost}"
-    )
     # Check if calculation runs without error
     assert (
         total_algo_cost
@@ -412,7 +403,6 @@ def test_both_counts_from_ising_model_circuit():
         )
     )
 
-    print(total_algo_clifford_volume)
 
     expected_algo_clifford_volume = sympy.simplify(
         total_cnots * cost_model_default.cnot_base_volume
@@ -422,7 +412,6 @@ def test_both_counts_from_ising_model_circuit():
         + total_expected_compute_span * cost_model_default.compute_span_volume
     )
 
-    print(expected_algo_clifford_volume)
 
     assumptions = {ROTATION_ERROR: 1e-3, T_REACT: 1.0}
 
@@ -673,9 +662,6 @@ def test_ising_volume_limited_depth_comparison_5x5_vs_6x6():
         n_total_physical_qubits_available=n_total_physical_qubits_available,
         time_per_surface_code_cycle=time_per_surface_code_cycle,
     )
-    print(
-        f"For 5x5: Min effective time = {min_time_5x5}, Volume-Limited Depth = {summary_5x5.volume_limited_depth}"
-    )
 
     # Find the configuration that minimizes effective time for 6x6, and get its summary
     min_time_6x6, summary_6x6 = _find_min_time_config_and_summary(
@@ -687,9 +673,6 @@ def test_ising_volume_limited_depth_comparison_5x5_vs_6x6():
         phys_error_rate=phys_error_rate,
         n_total_physical_qubits_available=n_total_physical_qubits_available,
         time_per_surface_code_cycle=time_per_surface_code_cycle,
-    )
-    print(
-        f"For 6x6: Min effective time = {min_time_6x6}, Volume-Limited Depth = {summary_6x6.volume_limited_depth}"
     )
 
     # Assert that the volume_limited_depth for the 5x5 case is less than that of the 6x6 case.

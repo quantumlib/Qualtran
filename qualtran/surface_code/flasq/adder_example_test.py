@@ -54,7 +54,6 @@ def test_decomposed_adder_flasq_and_span_costs():
     original_circuit, signature, in_quregs, out_quregs = (
         create_adder_circuit_and_decorations(TEST_BITSIZE)
     )
-    print(original_circuit)
     cbloq, decomposed_circuit = convert_circuit_for_flasq_analysis(
         original_circuit,
         signature=signature,
@@ -65,14 +64,12 @@ def test_decomposed_adder_flasq_and_span_costs():
     assert decomposed_circuit is not None  # Ensure decomposed circuit is returned
 
     flasq_costs = get_cost_value(cbloq, FLASQGateTotals())
-    print(f"FLASQ Costs: {flasq_costs}")
     assert isinstance(flasq_costs, FLASQGateCounts)
     assert not flasq_costs.bloqs_with_unknown_cost
     # Check that some expected gates were counted (Add decomposes to Toffoli/CNOT)
     assert flasq_costs.toffoli > 0 or flasq_costs.cnot > 0
     # 4. Calculate Span costs
     span_info = get_cost_value(cbloq, TotalSpanCost())
-    print(f"Span info: {span_info}")
     assert isinstance(span_info, GateSpan)
     assert not span_info.uncounted_bloqs
     # Check that some span was counted (multi-qubit gates exist)

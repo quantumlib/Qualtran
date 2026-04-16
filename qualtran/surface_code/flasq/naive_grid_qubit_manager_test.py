@@ -403,7 +403,6 @@ def test_hamming_weight_phasing_with_manager():
         )
     )
 
-    print(decomposed_circuit)
 
     assert len(list(decomposed_circuit.all_operations())) > 1
     assert len(decomposed_circuit.all_qubits()) == 5 + (5 - 1) + 2

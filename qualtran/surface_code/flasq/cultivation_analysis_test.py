@@ -169,12 +169,9 @@ def test_regularized_filtered_data_monotonicity_and_structure():  # Renamed for 
             uncertainty_cutoff=cutoff_val,
         )
 
-        print(regularized_df.columns)
 
         sorted_df = regularized_df.sort_values("gap")
 
-        print(sorted_df)
-        print(sorted_df.columns)
         assert len(sorted_df) > 40
 
         assert np.all(

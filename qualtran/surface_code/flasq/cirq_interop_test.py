@@ -63,7 +63,6 @@ def test_cirq_op_given_bloq_with_span():
     # Q(0,0) to Q(1,2) -> dist = |1-0|+|2-0| = 3
     op_cnot = cirq.CNOT.on(qubits[0], qubits[1 * 5 + 2])
     bloq_cnot = cirq_op_to_bloq_with_span(op_cnot)
-    print(bloq_cnot)
     assert isinstance(bloq_cnot, BloqWithSpanInfo)
     assert bloq_cnot.wrapped_bloq == CNOT()
     # CNOT rule: connect_span = compute_span = distance
@@ -110,7 +109,6 @@ def test_span_counting_for_op_tree():
     cbloq = cirq_optree_to_cbloq(optree, op_conversion_method=cirq_op_to_bloq_with_span)
 
     cost_val = get_cost_value(cbloq, TotalSpanCost())
-    print(cost_val)
 
     # Should sum the spans from the BloqWithSpanInfo instances created during conversion
     assert cost_val == GateSpan(
@@ -163,7 +161,6 @@ def test_convert_circuit_zzpow_interception():
     assert len(cbloq.bloq_instances) == 3
 
     callees = [inst.bloq for inst in cbloq.bloq_instances]
-    print(f"Decomposed callees: {callees}")
 
     expected_z_pow_bloq = ZPowGate(exponent=exponent)
     expected_cnot_bloq = BloqWithSpanInfo(
@@ -237,9 +234,6 @@ def test_convert_circuit_cnot_keep():
     # Decompose without our special keep to see what cirq.decompose would do
     # This is just for understanding, not part of the main test logic for convert_circuit
     decomposed_circuit_cirq_default = cirq.Circuit(cirq.decompose(original_circuit))
-    print(
-        "Circuit decomposed by cirq.decompose default:", decomposed_circuit_cirq_default
-    )
 
     cbloq, decomposed_circuit_flasq = convert_circuit_for_flasq_analysis(
         original_circuit
@@ -257,7 +251,6 @@ def test_convert_circuit_cnot_keep():
             break
     assert found_cnot_wrapped, "CNOT should have been kept and wrapped"
 
-    print(cbloq.bloq_counts())
 
     flasq_cost = get_cost_value(cbloq, FLASQGateTotals())
     span_cost = get_cost_value(cbloq, TotalSpanCost())
@@ -351,9 +344,6 @@ def test_no_unknown_bloqs_for_fsim_circuit():
     cbloq, circuit = convert_circuit_for_flasq_analysis(example_circuit)
     flasq_counts = get_cost_value(cbloq, FLASQGateTotals())
 
-    print(cbloq)
-    print(circuit)
-    print(flasq_counts)
 
     assert not flasq_counts.bloqs_with_unknown_cost
 

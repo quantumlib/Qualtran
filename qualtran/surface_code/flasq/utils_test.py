@@ -45,7 +45,6 @@ def test_string_keys_in_resolver():
     resolver = frozendict({"x": 5})  # Use string key
     result = substitute_until_fixed_point(expr, resolver)
     assert result == 6
-    print(type(result))
     assert isinstance(result, int)
 
 
