@@ -117,16 +117,10 @@ def get_filtered_cultivation_data(
     df = get_cultivation_data()
     # Round the 'error_rate' column in the DataFrame for comparison
     # and create a boolean Series for the error rate condition
-    error_condition = np.isclose(
-        df["error_rate"],
-        error_rate,
-        atol=10 ** (-decimal_precision - 1),
-    )
+    error_condition = np.isclose(df["error_rate"], error_rate, atol=10 ** (-decimal_precision - 1))
 
     # Create a boolean Series for the cultivation distance condition
-    distance_condition = (
-        df["cultivation_distance"] == cultivation_distance
-    )
+    distance_condition = df["cultivation_distance"] == cultivation_distance
 
     # Combine the conditions
     combined_condition = error_condition & distance_condition
@@ -169,9 +163,7 @@ def get_regularized_filtered_cultivation_data(
         A pandas DataFrame containing the regularized and filtered data.
     """
     df = get_cultivation_data()
-    filtered_df = get_filtered_cultivation_data(
-        error_rate, cultivation_distance, decimal_precision
-    )
+    filtered_df = get_filtered_cultivation_data(error_rate, cultivation_distance, decimal_precision)
 
     if filtered_df.empty:
         return filtered_df  # Returns an empty view/copy from the original
@@ -180,9 +172,7 @@ def get_regularized_filtered_cultivation_data(
 
     # 1. Filter out zero t_gate_cultivation_error_rate
     # Accessing the original dataframe with current_indices to check the condition
-    condition_non_zero_t_error = (
-        df.loc[current_indices, "t_gate_cultivation_error_rate"] != 0
-    )
+    condition_non_zero_t_error = df.loc[current_indices, "t_gate_cultivation_error_rate"] != 0
     current_indices = current_indices[condition_non_zero_t_error]
 
     if not current_indices.any():  # Check if Index is empty
@@ -198,10 +188,7 @@ def get_regularized_filtered_cultivation_data(
         with np.errstate(
             divide="ignore", invalid="ignore"
         ):  # Suppress division by zero warnings for this block
-            ratio = (
-                data_for_uncertainty_check["high_10"]
-                / data_for_uncertainty_check["low_10"]
-            )
+            ratio = data_for_uncertainty_check["high_10"] / data_for_uncertainty_check["low_10"]
 
         # Keep rows where ratio is less than or equal to cutoff
         # np.nan <= cutoff is False, np.inf <= cutoff is False (unless cutoff is inf)
@@ -231,9 +218,7 @@ def get_regularized_filtered_cultivation_data(
 
 @lru_cache(maxsize=None)
 def get_regularized_filtered_combined_cultivation_data(
-    error_rate: float,
-    decimal_precision: int = 8,
-    uncertainty_cutoff: Optional[float] = 100,
+    error_rate: float, decimal_precision: int = 8, uncertainty_cutoff: Optional[float] = 100
 ) -> pd.DataFrame:
     """
     Retrieves and combines regularized cultivation data for distances 3 and 5.
@@ -295,9 +280,7 @@ def find_best_cultivation_parameters(
 
     # Find the smallest rate in unique_error_rates that is >= physical_error_rate.
     # This effectively "rounds up" physical_error_rate to the nearest available unique rate.
-    suitable_rates = current_unique_error_rates[
-        current_unique_error_rates >= physical_error_rate
-    ]
+    suitable_rates = current_unique_error_rates[current_unique_error_rates >= physical_error_rate]
     if suitable_rates.size == 0:
         # No unique rate is >= physical_error_rate
         return pd.Series(dtype=float)
@@ -344,10 +327,7 @@ def find_best_cultivation_parameters(
         best_row_dist3_series = pd.Series(best_row_dist3)  # Ensure it's a Series
         best_row_dist5_series = pd.Series(best_row_dist5)  # Ensure it's a Series
 
-        if (
-            best_row_dist3_series["expected_volume"]
-            <= best_row_dist5_series["expected_volume"]
-        ):
+        if best_row_dist3_series["expected_volume"] <= best_row_dist5_series["expected_volume"]:
             return best_row_dist3_series
         else:
             return best_row_dist5_series

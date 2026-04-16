@@ -51,10 +51,7 @@ from qualtran.bloqs.basic_gates import (
 from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey
-from qualtran.resource_counting.classify_bloqs import (
-    bloq_is_clifford,
-    bloq_is_state_or_effect,
-)
+from qualtran.resource_counting.classify_bloqs import bloq_is_clifford, bloq_is_state_or_effect
 from qualtran.symbolics import is_zero, SymbolicFloat, SymbolicInt
 
 logger = logging.getLogger(__name__)
@@ -98,9 +95,7 @@ class MeasurementDepth:
             merged_unknowns[bloq] = merged_unknowns.get(bloq, 0) + count
 
         # The constructor handles converting the merged dict back to frozendict
-        return MeasurementDepth(
-            depth=new_depth, bloqs_with_unknown_depth=merged_unknowns
-        )
+        return MeasurementDepth(depth=new_depth, bloqs_with_unknown_depth=merged_unknowns)
 
     def __radd__(self, other):
         """Handles reversed addition, e.g., sum([MeasurementDepth(...)])"""
@@ -121,15 +116,11 @@ class MeasurementDepth:
             unknown_dict = items["bloqs_with_unknown_depth"]
             try:
                 # Sort unknown bloqs by string representation for consistent output
-                sorted_unknown = sorted(
-                    unknown_dict.items(), key=lambda item: str(item[0])
-                )
+                sorted_unknown = sorted(unknown_dict.items(), key=lambda item: str(item[0]))
             except TypeError:  # pragma: no cover
                 # Fallback if keys somehow aren't comparable via string
                 sorted_unknown = unknown_dict.items()
-            unknown_str = (
-                "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
-            )
+            unknown_str = "{" + ", ".join(f"{k!s}: {v!s}" for k, v in sorted_unknown) + "}"
             str_items.append(f"bloqs_with_unknown_depth: {unknown_str}")
 
         return f"MeasurementDepth({', '.join(sorted(str_items))})"
@@ -225,8 +216,7 @@ def _cbloq_measurement_depth(
     )
 
     return MeasurementDepth(
-        depth=longest_path_length,
-        bloqs_with_unknown_depth=frozendict(total_unknown_bloqs_mut),
+        depth=longest_path_length, bloqs_with_unknown_depth=frozendict(total_unknown_bloqs_mut)
     )
 
 
@@ -289,9 +279,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
         cbloq: Optional[CompositeBloq] = None
         if isinstance(bloq, CompositeBloq):
             # If it's already a CompositeBloq, analyze its graph directly
-            logger.debug(
-                "Computing %s using provided CompositeBloq graph for %s", self, bloq
-            )
+            logger.debug("Computing %s using provided CompositeBloq graph for %s", self, bloq)
             cbloq = bloq
         else:
             # Otherwise, try to decompose the bloq
@@ -303,10 +291,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
                 logger.debug("Decomposition failed for %s, using fallback.", bloq)
             except Exception as e:  # pragma: no cover
                 # Catch unexpected errors during decomposition itself
-                logger.error(
-                    f"Unexpected error during decomposition of {bloq}: {e}",
-                    exc_info=True,
-                )
+                logger.error(f"Unexpected error during decomposition of {bloq}: {e}", exc_info=True)
 
         if isinstance(cbloq, CompositeBloq):
             return _cbloq_measurement_depth(cbloq, get_callee_cost)

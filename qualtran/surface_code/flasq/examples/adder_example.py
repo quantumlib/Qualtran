@@ -31,10 +31,7 @@ from qualtran.cirq_interop import cirq_optree_to_cbloq
 from qualtran.resource_counting import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import cirq_op_to_bloq_with_span
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 def analyze_adder_costs(bitsize: int):
@@ -137,9 +134,7 @@ def create_adder_circuit_and_decorations(
     qubit_map = {}
     for i in range(bitsize):
         j = (bitsize - i - 1) * 3 - 1
-        qubit_map[cirq.ops.CleanQubit(i, prefix="_decompose_protocol")] = (
-            cirq.LineQubit(j)
-        )
+        qubit_map[cirq.ops.CleanQubit(i, prefix="_decompose_protocol")] = cirq.LineQubit(j)
 
     circuit = circuit.transform_qubits(qubit_map=qubit_map)
 
@@ -161,8 +156,7 @@ if __name__ == "__main__":
         print("\nConverting decomposed circuit back to Bloq for costing...")
         start_time = time.time()
         cbloq = cirq_optree_to_cbloq(
-            adder_circuit.all_operations(),
-            op_conversion_method=cirq_op_to_bloq_with_span,
+            adder_circuit.all_operations(), op_conversion_method=cirq_op_to_bloq_with_span
         )
         convert_time = time.time() - start_time
         print(f"Conversion complete in {convert_time:.2f} seconds.")

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Hamming Weight Phasing (HWP) circuit builder for FLASQ analysis examples."""
+
 from typing import List, Optional, Tuple
 
 import cirq
@@ -58,9 +59,7 @@ def build_hwp_circuit(
 
     # Get the bloq as a Cirq operation. The qubit manager is stored with the
     # operation and will be used to allocate ancillas during decomposition.
-    op, _ = hamming_bloq.as_cirq_op(
-        qubit_manager=ancilla_qubit_manager, x=np.array(data_qubits)
-    )
+    op, _ = hamming_bloq.as_cirq_op(qubit_manager=ancilla_qubit_manager, x=np.array(data_qubits))
 
     # Wrap the single, large operation into a circuit.
     circuit = cirq.Circuit(op)
@@ -69,10 +68,7 @@ def build_hwp_circuit(
 
 
 def build_parallel_rz_circuit(
-    n_qubits_data: int,
-    angle: float,
-    *,
-    data_qubit_manager: Optional[cirq.QubitManager] = None,
+    n_qubits_data: int, angle: float, *, data_qubit_manager: Optional[cirq.QubitManager] = None
 ) -> Tuple[cirq.Circuit, List[cirq.GridQubit]]:
     """Builds a circuit for applying Rz gates to many qubits in parallel.
 

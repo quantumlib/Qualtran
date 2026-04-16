@@ -21,10 +21,7 @@ from frozendict import frozendict
 
 from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
-from qualtran.surface_code.flasq.examples.hwp import (
-    build_hwp_circuit,
-    build_parallel_rz_circuit,
-)
+from qualtran.surface_code.flasq.examples.hwp import build_hwp_circuit, build_parallel_rz_circuit
 from qualtran.surface_code.flasq.flasq_model import (
     apply_flasq_cost_model,
     conservative_FLASQ_costs,
@@ -33,11 +30,7 @@ from qualtran.surface_code.flasq.flasq_model import (
 from qualtran.surface_code.flasq.measurement_depth import TotalMeasurementDepth
 from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 from qualtran.surface_code.flasq.span_counting import TotalSpanCost
-from qualtran.surface_code.flasq.symbols import (
-    ROTATION_ERROR,
-    T_REACT,
-    V_CULT_FACTOR,
-)
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
 from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals
 
 
@@ -50,10 +43,7 @@ def test_build_hwp_circuit():
     n_qubits_data = 7
     angle = 0.123
 
-    _, circuit, data_qubits = build_hwp_circuit(
-        n_qubits_data=n_qubits_data, angle=angle
-    )
-
+    _, circuit, data_qubits = build_hwp_circuit(n_qubits_data=n_qubits_data, angle=angle)
 
     assert len(circuit) > 0
     assert len(data_qubits) == n_qubits_data
@@ -90,7 +80,6 @@ def test_convert_hwp_circuit_for_flasq():
         out_quregs=in_quregs,
     )
 
-
     # 3. Verify the conversion
     assert cbloq is not None
     assert decomposed_circuit is not None
@@ -116,9 +105,7 @@ def test_build_parallel_rz_circuit():
     n_qubits_data = 16
     angle = 0.456
 
-    circuit, data_qubits = build_parallel_rz_circuit(
-        n_qubits_data=n_qubits_data, angle=angle
-    )
+    circuit, data_qubits = build_parallel_rz_circuit(n_qubits_data=n_qubits_data, angle=angle)
 
     assert len(data_qubits) == n_qubits_data
     assert len(circuit) == 1  # Should be a single moment
@@ -149,11 +136,7 @@ def test_hwp_vs_parallel_rz_spacetime_volume():
     vcult_factor = 6.0
 
     assumptions = frozendict(
-        {
-            ROTATION_ERROR: rotation_error,
-            V_CULT_FACTOR: vcult_factor,
-            T_REACT: 1.0,
-        }
+        {ROTATION_ERROR: rotation_error, V_CULT_FACTOR: vcult_factor, T_REACT: 1.0}
     )
 
     # --- 2. Analyze Method 1: Hamming Weight Phasing ---
@@ -176,8 +159,7 @@ def test_hwp_vs_parallel_rz_spacetime_volume():
     hwp_counts = get_cost_value(hwp_cbloq, FLASQGateTotals())
     hwp_span = get_cost_value(hwp_cbloq, TotalSpanCost())
     hwp_depth = get_cost_value(
-        hwp_cbloq,
-        TotalMeasurementDepth(rotation_depth=get_rotation_depth(rotation_error)),
+        hwp_cbloq, TotalMeasurementDepth(rotation_depth=get_rotation_depth(rotation_error))
     )
     hwp_qubit_counts = get_cost_value(hwp_cbloq, QubitCount())
     # Qualtran's QubitCount calculates peak simultaneous usage (12),
@@ -196,15 +178,12 @@ def test_hwp_vs_parallel_rz_spacetime_volume():
     hwp_summary = hwp_summary_symbolic.resolve_symbols(assumptions=assumptions)
 
     # --- 3. Analyze Method 2: Parallel Rz ---
-    parallel_rz_circuit, _ = build_parallel_rz_circuit(
-        n_qubits_data=n_qubits_data, angle=angle
-    )
+    parallel_rz_circuit, _ = build_parallel_rz_circuit(n_qubits_data=n_qubits_data, angle=angle)
     parallel_rz_cbloq, _ = convert_circuit_for_flasq_analysis(parallel_rz_circuit)
     parallel_rz_counts = get_cost_value(parallel_rz_cbloq, FLASQGateTotals())
     parallel_rz_span = get_cost_value(parallel_rz_cbloq, TotalSpanCost())
     parallel_rz_depth = get_cost_value(
-        parallel_rz_cbloq,
-        TotalMeasurementDepth(rotation_depth=get_rotation_depth(rotation_error)),
+        parallel_rz_cbloq, TotalMeasurementDepth(rotation_depth=get_rotation_depth(rotation_error))
     )
     rz_qubit_counts = get_cost_value(parallel_rz_cbloq, QubitCount())
     assert rz_qubit_counts == 7
@@ -217,16 +196,12 @@ def test_hwp_vs_parallel_rz_spacetime_volume():
         parallel_rz_depth,
         logical_timesteps_per_measurement=logical_timesteps_per_measurement,
     )
-    parallel_rz_summary = parallel_rz_summary_symbolic.resolve_symbols(
-        assumptions=assumptions
-    )
+    parallel_rz_summary = parallel_rz_summary_symbolic.resolve_symbols(assumptions=assumptions)
 
     # --- 4. Assertions ---
     assert hwp_summary.is_volume_limited
     assert parallel_rz_summary.is_volume_limited
-    assert (
-        parallel_rz_summary.total_spacetime_volume < hwp_summary.total_spacetime_volume
-    )
+    assert parallel_rz_summary.total_spacetime_volume < hwp_summary.total_spacetime_volume
 
 
 @pytest.mark.slow

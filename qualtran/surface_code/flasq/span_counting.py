@@ -19,6 +19,7 @@ Computes the Manhattan distance (or rectilinear Steiner tree distance for
 costs. These distances are later scaled by connect_span_volume and
 compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
+
 import logging
 from typing import Callable, Dict, List, Mapping, Tuple, Union
 
@@ -47,12 +48,8 @@ class BloqWithSpanInfo(Bloq):
     """An extension of Bloq that has information about the span of the Bloq."""
 
     wrapped_bloq: Bloq
-    connect_span: (
-        SymbolicFloat  # The calculated span for the wrapped_bloq based on qubit layout.
-    )
-    compute_span: (
-        SymbolicFloat  # The calculated span for the wrapped_bloq based on qubit layout.
-    )
+    connect_span: SymbolicFloat  # The calculated span for the wrapped_bloq based on qubit layout.
+    compute_span: SymbolicFloat  # The calculated span for the wrapped_bloq based on qubit layout.
 
     @property
     def signature(self) -> Signature:
@@ -68,12 +65,9 @@ class BloqWithSpanInfo(Bloq):
     def my_static_costs(self, cost_key):
         """Provide the stored span for TotalSpanCost."""
         if isinstance(cost_key, TotalSpanCost):
-            return GateSpan(
-                connect_span=self.connect_span, compute_span=self.compute_span
-            )
+            return GateSpan(connect_span=self.connect_span, compute_span=self.compute_span)
 
         return NotImplemented
-
 
 
 @frozen(kw_only=True)
@@ -130,9 +124,7 @@ class GateSpan:
                 f"Can only multiply by int, SymbolicInt or sympy Expr, not {type(other)}: {other}"
             )
 
-        multiplied_uncounted = {
-            bloq: count * other for bloq, count in self.uncounted_bloqs.items()
-        }
+        multiplied_uncounted = {bloq: count * other for bloq, count in self.uncounted_bloqs.items()}
 
         new_connect_span = self.connect_span * other
         new_compute_span = self.compute_span * other
@@ -156,9 +148,7 @@ class GateSpan:
                 "{"
                 + ", ".join(
                     f"{k!s}: {v!s}"
-                    for k, v in sorted(
-                        self.uncounted_bloqs.items(), key=lambda item: str(item[0])
-                    )
+                    for k, v in sorted(self.uncounted_bloqs.items(), key=lambda item: str(item[0]))
                 )
                 + "}"
             )
@@ -170,9 +160,7 @@ class GateSpan:
     def asdict(self) -> Dict[str, Union[SymbolicInt, Dict["Bloq", SymbolicInt]]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
-            self,
-            recurse=False,
-            filter=lambda a, v: not is_zero(v) and v != frozendict(),
+            self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()
         )
         if "uncounted_bloqs" in d and isinstance(d["uncounted_bloqs"], frozendict):
             d["uncounted_bloqs"] = dict(d["uncounted_bloqs"])
@@ -268,10 +256,7 @@ class TotalSpanCost(CostKey[GateSpan]):
     without span info or decomposition are recorded in ``uncounted_bloqs``.
     """
 
-    def compute(
-        self, bloq: Bloq, get_callee_cost: Callable[[Bloq], GateSpan]
-    ) -> GateSpan:
-
+    def compute(self, bloq: Bloq, get_callee_cost: Callable[[Bloq], GateSpan]) -> GateSpan:
 
         # Base case: Span is zero for single-qubit bloqs or specific types
         if bloq_is_not_multiqubit(bloq):
@@ -286,9 +271,7 @@ class TotalSpanCost(CostKey[GateSpan]):
 
         if not callees:
             # If no decomposition and not handled above, mark as uncounted.
-            logger.debug(
-                "No decomposition or static cost for multi-qubit bloq %s", bloq
-            )
+            logger.debug("No decomposition or static cost for multi-qubit bloq %s", bloq)
             return GateSpan(uncounted_bloqs={bloq: 1})
 
         # Decompose and sum costs recursively.
@@ -304,9 +287,7 @@ class TotalSpanCost(CostKey[GateSpan]):
 
     def validate_val(self, val: GateSpan):
         if not isinstance(val, GateSpan):
-            raise TypeError(
-                f"{self} values should be `GateSpan`, got {type(val)}: {val}"
-            )
+            raise TypeError(f"{self} values should be `GateSpan`, got {type(val)}: {val}")
 
     def __str__(self):
         return "total span cost"

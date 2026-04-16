@@ -17,17 +17,8 @@ import pytest
 import sympy
 
 from qualtran import Signature
-from qualtran._infra.composite_bloq import (
-    Bloq,
-    BloqBuilder,
-    CompositeBloq,
-)
-from qualtran.bloqs.basic_gates import (
-    CNOT,
-    Hadamard,
-    Swap,
-    Toffoli,
-)
+from qualtran._infra.composite_bloq import Bloq, BloqBuilder, CompositeBloq
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Swap, Toffoli
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.span_counting import (
@@ -49,9 +40,7 @@ def test_bloq_with_span_basic():
 
 def test_span_count_simple():
     bloq = BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=3, compute_span=3)
-    assert get_cost_value(bloq, TotalSpanCost()) == GateSpan(
-        connect_span=3, compute_span=3
-    )
+    assert get_cost_value(bloq, TotalSpanCost()) == GateSpan(connect_span=3, compute_span=3)
 
     # Test decomposition cost calculation
     bb = BloqBuilder()

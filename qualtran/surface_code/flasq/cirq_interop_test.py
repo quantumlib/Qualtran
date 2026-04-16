@@ -19,15 +19,8 @@ import numpy as np
 import pytest
 
 from qualtran import Signature
-from qualtran._infra.composite_bloq import (
-    CompositeBloq,
-)
-from qualtran.bloqs.basic_gates import (
-    CNOT,
-    Hadamard,
-    Toffoli,
-    ZPowGate,
-)
+from qualtran._infra.composite_bloq import CompositeBloq
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli, ZPowGate
 from qualtran.cirq_interop import cirq_optree_to_cbloq
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import (
@@ -35,22 +28,16 @@ from qualtran.surface_code.flasq.cirq_interop import (
     cirq_op_to_bloq_with_span,
     convert_circuit_for_flasq_analysis,
 )
-from qualtran.surface_code.flasq.span_counting import (
-    BloqWithSpanInfo,
-    GateSpan,
-    TotalSpanCost,
-)
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 def test_get_coords_from_op():
     assert _get_coords_from_op(cirq.H(cirq.LineQubit(5))) == [(5, 0)]
-    assert _get_coords_from_op(
-        cirq.CNOT(cirq.GridQubit(1, 2), cirq.GridQubit(3, 4))
-    ) == [(1, 2), (3, 4)]
+    assert _get_coords_from_op(cirq.CNOT(cirq.GridQubit(1, 2), cirq.GridQubit(3, 4))) == [
+        (1, 2),
+        (3, 4),
+    ]
     with pytest.raises(ValueError):
         _get_coords_from_op(cirq.CNOT(cirq.LineQubit(1), cirq.GridQubit(1, 1)))
     with pytest.raises(TypeError):
@@ -133,15 +120,11 @@ def test_convert_circuit_basic():
     callees = {inst.bloq for inst in cbloq.bloq_instances}
     assert Hadamard() in callees
     # CNOT should be wrapped due to span calculation
-    assert (
-        BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=1, compute_span=1) in callees
-    )
+    assert BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=1, compute_span=1) in callees
     flasq_cost = get_cost_value(cbloq, FLASQGateTotals())
     span_cost = get_cost_value(cbloq, TotalSpanCost())
     assert flasq_cost == FLASQGateCounts(hadamard=1, cnot=1)
-    assert span_cost == GateSpan(
-        connect_span=1, compute_span=1
-    )  # Span from CNOT(q0, q1)
+    assert span_cost == GateSpan(connect_span=1, compute_span=1)  # Span from CNOT(q0, q1)
     # Check that the decomposed circuit is not empty and has the expected number of ops
     assert len(list(decomposed_circuit.all_operations())) == 2
 
@@ -150,9 +133,7 @@ def test_convert_circuit_zzpow_interception():
     """Tests that ZZPowGate is intercepted and decomposed."""
     q0, q1 = cirq.GridQubit.rect(1, 2)
     exponent = 0.2391
-    original_circuit = cirq.Circuit(
-        cirq.ZZPowGate(exponent=exponent, global_shift=-0.5).on(q0, q1)
-    )
+    original_circuit = cirq.Circuit(cirq.ZZPowGate(exponent=exponent, global_shift=-0.5).on(q0, q1))
     cbloq, decomposed_circuit = convert_circuit_for_flasq_analysis(original_circuit)
 
     # Check cbloq properties
@@ -163,9 +144,7 @@ def test_convert_circuit_zzpow_interception():
     callees = [inst.bloq for inst in cbloq.bloq_instances]
 
     expected_z_pow_bloq = ZPowGate(exponent=exponent)
-    expected_cnot_bloq = BloqWithSpanInfo(
-        wrapped_bloq=CNOT(), connect_span=1, compute_span=1
-    )
+    expected_cnot_bloq = BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=1, compute_span=1)
 
     cnot_count = 0
     z_pow_count = 0
@@ -206,16 +185,9 @@ def test_convert_circuit_zzpow_interception():
     ]
     # Note: The exact qubit for ZPowGate might depend on the interceptor's implementation details.
     # For now, we check the types and count.
+    assert sum(1 for op in decomposed_circuit.all_operations() if op.gate == cirq.CNOT) == 2
     assert (
-        sum(1 for op in decomposed_circuit.all_operations() if op.gate == cirq.CNOT)
-        == 2
-    )
-    assert (
-        sum(
-            1
-            for op in decomposed_circuit.all_operations()
-            if isinstance(op.gate, cirq.ZPowGate)
-        )
+        sum(1 for op in decomposed_circuit.all_operations() if isinstance(op.gate, cirq.ZPowGate))
         == 1
     )
 
@@ -225,9 +197,7 @@ def test_convert_circuit_cnot_keep():
     q0, q1 = cirq.LineQubit.range(2)
     original_circuit = cirq.Circuit(
         cirq.H(q1),
-        cirq.CZ(
-            q0, q1
-        ),  # CZ is kept by default by cirq.decompose if no specific keep is given
+        cirq.CZ(q0, q1),  # CZ is kept by default by cirq.decompose if no specific keep is given
         cirq.H(q1),
         cirq.CNOT(q0, q1),  # CNOT is explicitly kept by flasq_decompose_keep
     )
@@ -235,22 +205,17 @@ def test_convert_circuit_cnot_keep():
     # This is just for understanding, not part of the main test logic for convert_circuit
     decomposed_circuit_cirq_default = cirq.Circuit(cirq.decompose(original_circuit))
 
-    cbloq, decomposed_circuit_flasq = convert_circuit_for_flasq_analysis(
-        original_circuit
-    )
+    cbloq, decomposed_circuit_flasq = convert_circuit_for_flasq_analysis(original_circuit)
     assert isinstance(cbloq, CompositeBloq)
 
     # Check that CNOT BloqWithSpanInfo is present among the callees
     found_cnot_wrapped = False
-    expected_cnot_bloq = BloqWithSpanInfo(
-        wrapped_bloq=CNOT(), connect_span=1, compute_span=1
-    )
+    expected_cnot_bloq = BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=1, compute_span=1)
     for inst in cbloq.bloq_instances:
         if inst.bloq == expected_cnot_bloq:
             found_cnot_wrapped = True
             break
     assert found_cnot_wrapped, "CNOT should have been kept and wrapped"
-
 
     flasq_cost = get_cost_value(cbloq, FLASQGateTotals())
     span_cost = get_cost_value(cbloq, TotalSpanCost())
@@ -343,7 +308,6 @@ def test_no_unknown_bloqs_for_fsim_circuit():
 
     cbloq, circuit = convert_circuit_for_flasq_analysis(example_circuit)
     flasq_counts = get_cost_value(cbloq, FLASQGateTotals())
-
 
     assert not flasq_counts.bloqs_with_unknown_cost
 

@@ -44,10 +44,7 @@ from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, Tota
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 def test_ising_zz_layer_structure():
@@ -58,9 +55,7 @@ def test_ising_zz_layer_structure():
     j_coupling = 1.0
     dt_layer = 0.1  # Represents dt/2 in the Trotter step
 
-    ops = list(
-        cirq.flatten_op_tree(ising_zz_layer(qubits, rows, cols, j_coupling, dt_layer))
-    )
+    ops = list(cirq.flatten_op_tree(ising_zz_layer(qubits, rows, cols, j_coupling, dt_layer)))
 
     # --- Analysis for 2x2 lattice ---
     # Total qubits = 4
@@ -140,9 +135,7 @@ def test_build_ising_circuit_basic():
 
     # Total ops = (n_steps * 12 moments * (avg ops/moment)) + ((n_steps+1) * 1 moment * (n_qubits ops/moment))
     # Ops per ZZ layer = 2 * rows * cols * 3 = 24
-    expected_ops = (n_steps * (rows * cols + rows * cols) * 3) + (
-        (n_steps + 1) * n_qubits
-    )
+    expected_ops = (n_steps * (rows * cols + rows * cols) * 3) + ((n_steps + 1) * n_qubits)
 
     assert len(list(circuit.all_operations())) == expected_ops
 
@@ -166,9 +159,7 @@ def test_build_ising_circuit_basic_odd():
     assert len(circuit.moments) == expected_moments
 
     # Ops per ZZ layer = 2 * rows * cols * 3
-    expected_ops = (n_steps * (rows * cols + rows * cols) * 3) + (
-        (n_steps + 1) * n_qubits
-    )
+    expected_ops = (n_steps * (rows * cols + rows * cols) * 3) + ((n_steps + 1) * n_qubits)
 
     assert len(list(circuit.all_operations())) == expected_ops
 
@@ -207,9 +198,7 @@ def test_build_ising_circuit_zero_steps():
     # (containing Identity gates in the current implementation)
     assert len(circuit.all_qubits()) == expected_num_qubits
     # Check operations count specifically for n_steps=0
-    assert (
-        len(list(circuit.all_operations())) == expected_num_qubits
-    )  # One Identity per qubit
+    assert len(list(circuit.all_operations())) == expected_num_qubits  # One Identity per qubit
 
 
 @pytest.mark.parametrize("rows, cols", [(2, 2), (3, 3)])
@@ -219,7 +208,6 @@ def test_ising_simulation(rows, cols):
     h_field_strength = 0.5
     time_step = 0.05  # Smaller step for potentially larger systems
     num_trotter_steps = 2
-
 
     # Build the circuit
     ising_circuit = build_ising_circuit(
@@ -279,9 +267,7 @@ def test_invalid_inputs():
 
 def test_build_ising_circuit_invalid_order():
     with pytest.raises(ValueError, match="Trotter order must be 2 or 4"):
-        build_ising_circuit(
-            rows=2, cols=2, j_coupling=1, h_field=1, dt=0.1, n_steps=1, order=3
-        )
+        build_ising_circuit(rows=2, cols=2, j_coupling=1, h_field=1, dt=0.1, n_steps=1, order=3)
 
 
 @pytest.mark.slow
@@ -319,12 +305,7 @@ def test_both_counts_from_ising_model_circuit():
     total_expected_connect_span = (
         2
         * n_steps
-        * (
-            rows * (cols - 1)
-            + rows * (cols - 1)
-            + cols * (rows - 1)
-            + cols * (rows - 1)
-        )
+        * (rows * (cols - 1) + rows * (cols - 1) + cols * (rows - 1) + cols * (rows - 1))
     )
     total_expected_compute_span = total_expected_connect_span
 
@@ -349,9 +330,7 @@ def test_both_counts_from_ising_model_circuit():
 
     # FLASQ counts based on the updated ising_example.py structure
     n_qubits = rows * cols
-    n_zz_interactions_per_layer = (
-        rows * cols + rows * cols
-    )  # horizontal + vertical unique pairs
+    n_zz_interactions_per_layer = rows * cols + rows * cols  # horizontal + vertical unique pairs
     n_cnot_per_zz_layer = n_zz_interactions_per_layer * 2  # CNOT-Rz-CNOT
     n_rz_per_zz_layer = n_zz_interactions_per_layer * 1
 
@@ -372,14 +351,9 @@ def test_both_counts_from_ising_model_circuit():
         connect_span_volume=1.0,
         compute_span_volume=1.0,
     )
-    total_algo_cost = (
-        cost_model_concrete.calculate_volume_required_for_clifford_computation(
-            flasq_cost_val, span_cost_val
-        )
-        + cost_model_concrete.calculate_non_clifford_lattice_surgery_volume(
-            flasq_cost_val
-        )
-    )
+    total_algo_cost = cost_model_concrete.calculate_volume_required_for_clifford_computation(
+        flasq_cost_val, span_cost_val
+    ) + cost_model_concrete.calculate_non_clifford_lattice_surgery_volume(flasq_cost_val)
     # Check if calculation runs without error
     assert (
         total_algo_cost
@@ -396,11 +370,8 @@ def test_both_counts_from_ising_model_circuit():
         cost_model_default.calculate_volume_required_for_clifford_computation(
             flasq_cost_val, span_cost_val
         )
-        + cost_model_default.calculate_non_clifford_lattice_surgery_volume(
-            flasq_cost_val
-        )
+        + cost_model_default.calculate_non_clifford_lattice_surgery_volume(flasq_cost_val)
     )
-
 
     expected_algo_clifford_volume = sympy.simplify(
         total_cnots * cost_model_default.cnot_base_volume
@@ -410,17 +381,12 @@ def test_both_counts_from_ising_model_circuit():
         + total_expected_compute_span * cost_model_default.compute_span_volume
     )
 
-
     assumptions = {ROTATION_ERROR: 1e-3, T_REACT: 1.0}
 
     # Check against the default costs stored in the model instance
     np.testing.assert_almost_equal(
-        substitute_until_fixed_point(
-            total_algo_clifford_volume, frozendict(assumptions)
-        ),
-        substitute_until_fixed_point(
-            expected_algo_clifford_volume, frozendict(assumptions)
-        ),
+        substitute_until_fixed_point(total_algo_clifford_volume, frozendict(assumptions)),
+        substitute_until_fixed_point(expected_algo_clifford_volume, frozendict(assumptions)),
     )
 
 
@@ -436,9 +402,7 @@ def test_ising_x_layer_measurement_depth():
 
     # The function now returns a generator of moments
     original_x_circuit = cirq.Circuit(ising_x_layer(qubits, h_field, dt))
-    cbloq_x_layer, decomposed_x_circuit = convert_circuit_for_flasq_analysis(
-        original_x_circuit
-    )
+    cbloq_x_layer, decomposed_x_circuit = convert_circuit_for_flasq_analysis(original_x_circuit)
 
     cost_key = TotalMeasurementDepth(rotation_depth=1.0)
     depth_result = get_cost_value(cbloq_x_layer, cost_key)
@@ -455,12 +419,8 @@ def test_ising_zz_layer_measurement_depth():
     j_coupling = 1.0
     dt_layer = 0.1
 
-    original_zz_circuit = cirq.Circuit(
-        ising_zz_layer(qubits, rows, cols, j_coupling, dt_layer)
-    )
-    cbloq_zz_layer, decomposed_zz_circuit = convert_circuit_for_flasq_analysis(
-        original_zz_circuit
-    )
+    original_zz_circuit = cirq.Circuit(ising_zz_layer(qubits, rows, cols, j_coupling, dt_layer))
+    cbloq_zz_layer, decomposed_zz_circuit = convert_circuit_for_flasq_analysis(original_zz_circuit)
 
     cost_key = TotalMeasurementDepth(rotation_depth=1.0)
     depth_result = get_cost_value(cbloq_zz_layer, cost_key)
@@ -469,10 +429,7 @@ def test_ising_zz_layer_measurement_depth():
     # The Rz gates are non-Clifford. There are 4 layers of them.
     assert depth_result == MeasurementDepth(depth=4.0)
     # Total ops = (rows * cols + rows * cols) * 3
-    assert (
-        len(list(decomposed_zz_circuit.all_operations()))
-        == (rows * cols + rows * cols) * 3
-    )
+    assert len(list(decomposed_zz_circuit.all_operations())) == (rows * cols + rows * cols) * 3
 
 
 @pytest.mark.parametrize(
@@ -491,12 +448,7 @@ def test_full_ising_circuit_measurement_depth(n_steps, dt_param, expected_depth_
     # For n_steps = 0, if dt_param is 0, Rx angles will be 0, making them identities.
     # TotalMeasurementDepth should recognize Rx(0) as Clifford and assign depth 0.
     original_circuit = build_ising_circuit(
-        rows=rows,
-        cols=cols,
-        j_coupling=j_coupling,
-        h_field=h_field,
-        dt=dt_param,
-        n_steps=n_steps,
+        rows=rows, cols=cols, j_coupling=j_coupling, h_field=h_field, dt=dt_param, n_steps=n_steps
     )
     cbloq_full_circuit, decomposed_full_circuit = convert_circuit_for_flasq_analysis(
         original_circuit
@@ -517,9 +469,7 @@ def test_full_ising_circuit_measurement_depth(n_steps, dt_param, expected_depth_
         # Depth of X layer = 1.0, Depth of ZZ layer = 4.0 (from Rz gates)
         calculated_expected_depth = (n_steps + 1) * 1.0 + n_steps * 4.0
         assert depth_result == MeasurementDepth(depth=calculated_expected_depth)
-        assert (
-            calculated_expected_depth == expected_depth_val
-        )  # Sanity check parameterization
+        assert calculated_expected_depth == expected_depth_val  # Sanity check parameterization
     assert len(list(decomposed_full_circuit.all_operations())) == expected_ops_full
 
 
@@ -562,9 +512,7 @@ def _find_min_time_config_and_summary(
         individual_allowable_rotation_error = (
             total_allowable_rotation_error / flasq_counts.total_rotations
         )
-        rotation_depth_val = get_rotation_depth(
-            rotation_error=individual_allowable_rotation_error
-        )
+        rotation_depth_val = get_rotation_depth(rotation_error=individual_allowable_rotation_error)
 
     measurement_depth = get_cost_value(
         cbloq, TotalMeasurementDepth(rotation_depth=rotation_depth_val)
@@ -620,9 +568,7 @@ def _find_min_time_config_and_summary(
                 summary_for_min_time = flasq_summary_resolved
 
     if summary_for_min_time is None:
-        raise ValueError(
-            f"Could not find a valid configuration for {rows}x{cols} Ising model."
-        )
+        raise ValueError(f"Could not find a valid configuration for {rows}x{cols} Ising model.")
 
     return min_effective_time, summary_for_min_time
 
@@ -681,9 +627,7 @@ def test_ising_volume_limited_depth_comparison_5x5_vs_6x6():
     )
 
 
-@pytest.mark.parametrize(
-    "rows, cols", [(4, 4), (5, 5), (5, 4), (4, 5), (7, 7), (8, 8), (10, 10)]
-)
+@pytest.mark.parametrize("rows, cols", [(4, 4), (5, 5), (5, 4), (4, 5), (7, 7), (8, 8), (10, 10)])
 def test_ising_zz_layer_moment_structure(rows, cols):
     """Phase 1: Verify that the ZZ layer is parallelized correctly.
 
@@ -726,13 +670,7 @@ def test_build_ising_circuit_4th_order_gate_counts():
     n_qubits = rows * cols
 
     circuit = build_ising_circuit(
-        rows=rows,
-        cols=cols,
-        j_coupling=1.0,
-        h_field=0.5,
-        dt=0.1,
-        n_steps=n_steps,
-        order=4,
+        rows=rows, cols=cols, j_coupling=1.0, h_field=0.5, dt=0.1, n_steps=n_steps, order=4
     )
 
     # Expected counts for 10x10 (N=100), T=20 steps:
@@ -768,13 +706,7 @@ def test_build_ising_circuit_4th_order_measurement_depth():
     rows, cols = 4, 4
     n_steps = 2
     circuit = build_ising_circuit(
-        rows=rows,
-        cols=cols,
-        j_coupling=1.0,
-        h_field=0.5,
-        dt=0.1,
-        n_steps=n_steps,
-        order=4,
+        rows=rows, cols=cols, j_coupling=1.0, h_field=0.5, dt=0.1, n_steps=n_steps, order=4
     )
     cbloq, _ = convert_circuit_for_flasq_analysis(circuit)
     depth_result = get_cost_value(cbloq, TotalMeasurementDepth(rotation_depth=1.0))
@@ -793,9 +725,7 @@ def test_ising_zz_layer_open_boundary_counts(rows, cols):
     dt_layer = 0.1
 
     circuit = cirq.Circuit(
-        ising_zz_layer(
-            qubits, rows, cols, j_coupling, dt_layer, periodic_boundary=False
-        )
+        ising_zz_layer(qubits, rows, cols, j_coupling, dt_layer, periodic_boundary=False)
     )
     ops = list(circuit.all_operations())
 
@@ -834,6 +764,4 @@ def test_build_ising_circuit_open_boundary_counts(rows, cols):
     ops_per_x_layer = rows * cols
     total_x_ops = (n_steps + 1) * ops_per_x_layer
 
-    assert (
-        len(list(circuit.all_operations())) == n_steps * ops_per_zz_layer + total_x_ops
-    )
+    assert len(list(circuit.all_operations())) == n_steps * ops_per_zz_layer + total_x_ops

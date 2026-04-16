@@ -27,7 +27,6 @@ class SymbolDefinitionsTestSuite:
         assert isinstance(V_CULT_FACTOR, sympy.Symbol)
         assert isinstance(T_REACT, sympy.Symbol)
 
-
     def test_symbol_names(self):
         """Verify the string names of each symbol."""
         assert str(ROTATION_ERROR) == "ROTATION_ERROR"
@@ -59,22 +58,18 @@ class MixedFallbackTCountTestSuite:
             (1e-10, 4.86 + 0.53 * math.log2(1 / 1e-10)),
         ],
     )
-    def test_mixed_fallback_t_count_concrete_values(
-        self, rotation_error, expected_raw
-    ):
+    def test_mixed_fallback_t_count_concrete_values(self, rotation_error, expected_raw):
         """Substituting concrete ROTATION_ERROR values should match the formula."""
         result = MIXED_FALLBACK_T_COUNT.subs(ROTATION_ERROR, rotation_error)
         result_float = float(result)
-        assert result_float == pytest.approx(expected_raw, rel=1e-10), (
-            f"For eps={rotation_error}: got {result_float}, expected {expected_raw}"
-        )
+        assert result_float == pytest.approx(
+            expected_raw, rel=1e-10
+        ), f"For eps={rotation_error}: got {result_float}, expected {expected_raw}"
 
     def test_mixed_fallback_monotonically_increasing(self):
         """Smaller rotation error should require more T gates."""
         errors = [1e-2, 1e-4, 1e-8, 1e-12]
-        t_counts = [
-            float(MIXED_FALLBACK_T_COUNT.subs(ROTATION_ERROR, e)) for e in errors
-        ]
+        t_counts = [float(MIXED_FALLBACK_T_COUNT.subs(ROTATION_ERROR, e)) for e in errors]
         for i in range(len(t_counts) - 1):
             assert t_counts[i] <= t_counts[i + 1], (
                 f"T count should increase as error decreases: "

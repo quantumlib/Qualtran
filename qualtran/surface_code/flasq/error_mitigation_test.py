@@ -28,9 +28,7 @@ from qualtran.surface_code.flasq.flasq_model import FLASQSummary
 
 # Helper to create a mock FLASQSummary for failure calculation tests
 # We use MagicMock here as FLASQSummary is complex to instantiate fully if only a few fields are needed.
-def _mock_summary_for_failures(
-    total_spacetime_volume, total_t_count, cultivation_volume=0
-):
+def _mock_summary_for_failures(total_spacetime_volume, total_t_count, cultivation_volume=0):
     summary = MagicMock(spec=FLASQSummary)
     summary.total_spacetime_volume = total_spacetime_volume
     summary.total_t_count = total_t_count
@@ -47,9 +45,7 @@ class FailureProbabilitiesTestSuite:
         # Spacetime volume=1000. r=9. Total cycles = 9000.
         # M=500. p_mag=1e-8.
 
-        summary = _mock_summary_for_failures(
-            total_spacetime_volume=1000, total_t_count=500
-        )
+        summary = _mock_summary_for_failures(total_spacetime_volume=1000, total_t_count=500)
         d = 9
         lambda_val = 10
         p_mag = 1e-8
@@ -81,9 +77,7 @@ class FailureProbabilitiesTestSuite:
         P_mag_sym = sympy.Symbol("P_mag")
 
         # For this test, cultivation_volume is implicitly 0 in the mock
-        summary = _mock_summary_for_failures(
-            total_spacetime_volume=C_sym, total_t_count=M_sym
-        )
+        summary = _mock_summary_for_failures(total_spacetime_volume=C_sym, total_t_count=M_sym)
 
         P_cliff, P_t = calculate_failure_probabilities(
             flasq_summary=summary,
@@ -113,10 +107,7 @@ class ErrorMitigationMetricsTestSuite:
 
     @staticmethod
     def _mock_summary_for_metrics(
-        total_spacetime_volume,
-        total_t_count,
-        cultivation_volume,
-        total_depth,
+        total_spacetime_volume, total_t_count, cultivation_volume, total_depth
     ):
         summary = MagicMock(spec=FLASQSummary)
         summary.total_spacetime_volume = total_spacetime_volume
@@ -165,10 +156,7 @@ class ErrorMitigationMetricsTestSuite:
         import math
 
         regular_cycles = (1000.0 - 100.0) * 9
-        log_gamma = (
-            math.log(gamma_per_cycle) * regular_cycles
-            + math.log(gamma_per_t) * 200.0
-        )
+        log_gamma = math.log(gamma_per_cycle) * regular_cycles + math.log(gamma_per_t) * 200.0
         gamma_circuit = math.exp(log_gamma)
         sampling_overhead = gamma_circuit**2
         expected_eff_time = expected_wall_time * sampling_overhead
@@ -224,4 +212,3 @@ class ErrorMitigationMetricsTestSuite:
             cultivation_error_rate=1e-6,
         )
         assert len(result) == 3
-

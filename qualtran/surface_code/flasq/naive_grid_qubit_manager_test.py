@@ -78,11 +78,7 @@ def test_qalloc_fill_first_row(negative):
     manager = NaiveGridQubitManager(max_cols=3, negative=negative)
     q = manager.qalloc(3)
     start_row = -1 if negative else 0
-    expected_q = [
-        GridQubit(start_row, 0),
-        GridQubit(start_row, 1),
-        GridQubit(start_row, 2),
-    ]
+    expected_q = [GridQubit(start_row, 0), GridQubit(start_row, 1), GridQubit(start_row, 2)]
     assert q == expected_q
     _check_internal_state(manager, set(expected_q), [], 3)
 
@@ -165,8 +161,7 @@ def test_qfree_unmanaged_qubit():
     # CHANGED: Re-formatted the error string to be backward-compatible.
     escaped_qubit_str = str(unmanaged_qubit).replace("(", r"\(").replace(")", r"\)")
     expected_error_msg = (
-        f"Qubit {escaped_qubit_str}"
-        + r" is not managed by this manager \(wrong row sign\)."
+        f"Qubit {escaped_qubit_str}" + r" is not managed by this manager \(wrong row sign\)."
     )
     with pytest.raises(ValueError, match=expected_error_msg):
         manager.qfree([unmanaged_qubit])
@@ -176,12 +171,9 @@ def test_qfree_unmanaged_qubit():
     unmanaged_qubit_neg_row = GridQubit(-1, 0)
 
     # CHANGED: Re-formatted the error string.
-    escaped_qubit_str_neg = (
-        str(unmanaged_qubit_neg_row).replace("(", r"\(").replace(")", r"\)")
-    )
+    escaped_qubit_str_neg = str(unmanaged_qubit_neg_row).replace("(", r"\(").replace(")", r"\)")
     expected_error_msg_neg = (
-        f"Qubit {escaped_qubit_str_neg}"
-        + r" is not managed by this manager \(wrong row sign\)."
+        f"Qubit {escaped_qubit_str_neg}" + r" is not managed by this manager \(wrong row sign\)."
     )
     with pytest.raises(ValueError, match=expected_error_msg_neg):
         manager_pos.qfree([unmanaged_qubit_neg_row])
@@ -235,8 +227,7 @@ def test_qfree_not_allocated_qubit(negative):
     # CHANGED: Re-formatted the error string.
     escaped_qubit_str = str(q1).replace("(", r"\(").replace(")", r"\)")
     expected_error_msg = (
-        f"Qubit {escaped_qubit_str}"
-        + r" was not allocated by this manager or is invalid."
+        f"Qubit {escaped_qubit_str}" + r" was not allocated by this manager or is invalid."
     )
     with pytest.raises(ValueError, match=expected_error_msg):
         manager.qfree([q1])
@@ -346,11 +337,7 @@ def test_edge_case_max_cols_one(negative):
     row1 = -1 if negative else 0
     row2 = -2 if negative else 1
     row3 = -3 if negative else 2
-    expected_q = [
-        GridQubit(row1, 0),
-        GridQubit(row2, 0),
-        GridQubit(row3, 0),
-    ]
+    expected_q = [GridQubit(row1, 0), GridQubit(row2, 0), GridQubit(row3, 0)]
     assert q == expected_q
     _check_internal_state(manager, set(expected_q), [], 3)
 
@@ -404,7 +391,6 @@ def test_hamming_weight_phasing_with_manager():
             context=cirq.DecompositionContext(qubit_manager=decomp_manager),
         )
     )
-
 
     assert len(list(decomposed_circuit.all_operations())) > 1
     assert len(decomposed_circuit.all_qubits()) == 5 + (5 - 1) + 2

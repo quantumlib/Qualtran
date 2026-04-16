@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Utilities for resolving symbolic expressions in FLASQ cost formulas."""
+
 from functools import lru_cache
 from typing import Any, Union
 
@@ -67,21 +68,13 @@ def substitute_until_fixed_point(
         return expression
 
     # Fast path for direct numeric substitution using lambdify
-    if (
-        isinstance(expression, sympy.Expr)
-        and expression.free_symbols
-        and try_make_number
-    ):
+    if isinstance(expression, sympy.Expr) and expression.free_symbols and try_make_number:
         resolver_keys_as_symbols = {
             (sympy.Symbol(k) if isinstance(k, str) else k) for k in resolver.keys()
         }
-        relevant_symbols = expression.free_symbols.intersection(
-            resolver_keys_as_symbols
-        )
+        relevant_symbols = expression.free_symbols.intersection(resolver_keys_as_symbols)
 
-        if (
-            relevant_symbols == expression.free_symbols
-        ):  # All free symbols are in resolver
+        if relevant_symbols == expression.free_symbols:  # All free symbols are in resolver
             # Check if all relevant resolver values are numeric
             numeric_values = []
             all_numeric = True
@@ -89,9 +82,7 @@ def substitute_until_fixed_point(
             sorted_relevant_symbols = tuple(sorted(list(relevant_symbols), key=str))
 
             for s in sorted_relevant_symbols:
-                val = resolver.get(
-                    s, resolver.get(str(s))
-                )  # Check for Symbol then str key
+                val = resolver.get(s, resolver.get(str(s)))  # Check for Symbol then str key
                 if isinstance(val, (int, float)):
                     numeric_values.append(val)
                 else:
@@ -176,5 +167,3 @@ def convert_sympy_exprs_in_df(df: pd.DataFrame) -> pd.DataFrame:
                 )
             )
     return df
-
-

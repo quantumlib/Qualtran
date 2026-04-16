@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Grid qubit allocation strategy for constructing circuits on a 2D layout."""
+
 from typing import Iterable, List, Set, Tuple
 
 import cirq
@@ -112,9 +113,7 @@ class NaiveGridQubitManager(QubitManager):
             ValueError: If dim is not 2.
         """
         if dim != 2:
-            raise ValueError(
-                "Only qubits (dim=2) are supported by NaiveGridQubitManager."
-            )
+            raise ValueError("Only qubits (dim=2) are supported by NaiveGridQubitManager.")
         if n < 0:
             raise ValueError("Cannot allocate a negative number of qubits.")
         if n == 0:
@@ -148,9 +147,7 @@ class NaiveGridQubitManager(QubitManager):
 
     def qborrow(self, n: int, dim: int = 2) -> List["cirq.Qid"]:
         """Not implemented for NaiveGridQubitManager."""
-        raise NotImplementedError(
-            "qborrow is not implemented for NaiveGridQubitManager."
-        )
+        raise NotImplementedError("qborrow is not implemented for NaiveGridQubitManager.")
 
     def qfree(self, qubits: Iterable["cirq.Qid"]) -> None:
         """Frees the given qubits, making them available for future qalloc calls.
@@ -165,9 +162,7 @@ class NaiveGridQubitManager(QubitManager):
         """
         for q in qubits:
             if not isinstance(q, cirq.GridQubit):
-                raise ValueError(
-                    f"Can only manage cirq.GridQubit, but got {type(q)} ({q})."
-                )
+                raise ValueError(f"Can only manage cirq.GridQubit, but got {type(q)} ({q}).")
 
             if q not in self._allocated_qubits:
                 # Check if it was perhaps already freed
@@ -175,16 +170,10 @@ class NaiveGridQubitManager(QubitManager):
                     raise ValueError(f"Qubit {q} is already free.")
                 # Otherwise, it was never allocated or is invalid
                 # Check if it's invalid because it's in the wrong row-index space
-                if (self._negative and q.row >= 0) or (
-                    not self._negative and q.row < 0
-                ):
-                    raise ValueError(
-                        f"Qubit {q} is not managed by this manager (wrong row sign)."
-                    )
+                if (self._negative and q.row >= 0) or (not self._negative and q.row < 0):
+                    raise ValueError(f"Qubit {q} is not managed by this manager (wrong row sign).")
                 # Otherwise, it's just not currently allocated
-                raise ValueError(
-                    f"Qubit {q} was not allocated by this manager or is invalid."
-                )
+                raise ValueError(f"Qubit {q} was not allocated by this manager or is invalid.")
 
             # Mark as free
             self._allocated_qubits.remove(q)

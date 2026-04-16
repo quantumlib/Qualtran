@@ -39,14 +39,12 @@ def _process_single_result_for_logical_depth(r: SweepResult) -> dict:
     resolved_summary = r.flasq_summary.resolve_symbols(r.get_assumptions())
     cost_model = r.flasq_model_config[0]
     t_cultivation_volume = substitute_until_fixed_point(
-        cost_model.t_cultivation_volume,
-        frozendict({V_CULT_FACTOR: r.core_config.vcult_factor}),
+        cost_model.t_cultivation_volume, frozendict({V_CULT_FACTOR: r.core_config.vcult_factor})
     )
 
     data = {
         "Depth (Logical Timesteps)": resolved_summary.total_depth,
-        "Number of Logical Qubits": r.n_phys_qubits
-        // (2 * (r.core_config.code_distance + 1) ** 2),
+        "Number of Logical Qubits": r.n_phys_qubits // (2 * (r.core_config.code_distance + 1) ** 2),
         "Total Computational Volume": resolved_summary.total_computational_volume,
         "T-Count": resolved_summary.total_t_count,
         "Total Rotation Count": resolved_summary.total_rotation_count,
@@ -65,17 +63,13 @@ def _process_single_result_for_logical_depth(r: SweepResult) -> dict:
         "Scaled Measurement Depth": resolved_summary.scaled_measurement_depth,
         "T Cultivation Volume": t_cultivation_volume,
     }
-    problem_specific_params = {
-        f"circuit_arg_{k}": v for k, v in r.circuit_builder_kwargs.items()
-    }
+    problem_specific_params = {f"circuit_arg_{k}": v for k, v in r.circuit_builder_kwargs.items()}
     data.update(problem_specific_params)
     return data
 
 
 def post_process_for_logical_depth(
-    sweep_results: List[SweepResult],
-    *,
-    n_jobs: int = -1,
+    sweep_results: List[SweepResult], *, n_jobs: int = -1
 ) -> pd.DataFrame:
     """
     Post-processes `run_sweep` output to extract logical resource costs.
@@ -96,10 +90,11 @@ def post_process_for_logical_depth(
         A pandas DataFrame containing the logical resource costs for each sweep point.
     """
     parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
-        delayed(_process_single_result_for_logical_depth)(r)
-        for r in sweep_results
+        delayed(_process_single_result_for_logical_depth)(r) for r in sweep_results
     )
-    processed_results = list(tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing Logical Depth"))
+    processed_results = list(
+        tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing Logical Depth")
+    )
     return pd.DataFrame(processed_results)
 
 
@@ -109,9 +104,7 @@ def _process_single_result_for_pec(r: SweepResult, time_per_surface_code_cycle: 
 
     assumptions = frozendict(
         {
-            ROTATION_ERROR: r.logical_circuit_analysis[
-                "individual_allowable_rotation_error"
-            ],
+            ROTATION_ERROR: r.logical_circuit_analysis["individual_allowable_rotation_error"],
             V_CULT_FACTOR: r.core_config.vcult_factor,
             T_REACT: t_react_val,
         }
@@ -131,7 +124,7 @@ def _process_single_result_for_pec(r: SweepResult, time_per_surface_code_cycle: 
         {f"circuit_arg_{k}": v for k, v in r.circuit_builder_kwargs.items()}
         | (
             {
-                "circuit_arg_cultivation_data_source_distance": r.core_config.cultivation_data_source_distance,
+                "circuit_arg_cultivation_data_source_distance": r.core_config.cultivation_data_source_distance
             }
             if r.core_config.cultivation_data_source_distance is not None
             else {}
@@ -156,10 +149,7 @@ def _process_single_result_for_pec(r: SweepResult, time_per_surface_code_cycle: 
 
 
 def post_process_for_pec_runtime(
-    sweep_results: List[SweepResult],
-    *,
-    time_per_surface_code_cycle: float = 1e-6,
-    n_jobs: int = -1,
+    sweep_results: List[SweepResult], *, time_per_surface_code_cycle: float = 1e-6, n_jobs: int = -1
 ) -> pd.DataFrame:
     """
     Post-processes `run_sweep` output to calculate PEC runtime metrics.
@@ -184,7 +174,9 @@ def post_process_for_pec_runtime(
         delayed(_process_single_result_for_pec)(r, time_per_surface_code_cycle)
         for r in sweep_results
     )
-    processed_results = list(tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing PEC results"))
+    processed_results = list(
+        tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing PEC results")
+    )
     df = pd.DataFrame(processed_results)
     df = convert_sympy_exprs_in_df(df)
     return df
@@ -223,9 +215,7 @@ def post_process_for_failure_budget(
 
         assumptions = frozendict(
             {
-                ROTATION_ERROR: r.logical_circuit_analysis[
-                    "individual_allowable_rotation_error"
-                ],
+                ROTATION_ERROR: r.logical_circuit_analysis["individual_allowable_rotation_error"],
                 V_CULT_FACTOR: r.core_config.vcult_factor,
                 T_REACT: t_react_val,
             }
@@ -247,10 +237,7 @@ def post_process_for_failure_budget(
         except TypeError:
             continue
 
-        if (
-            P_fail_Clifford > error_budget.logical
-            or P_fail_T > error_budget.cultivation
-        ):
+        if P_fail_Clifford > error_budget.logical or P_fail_T > error_budget.cultivation:
             continue
 
         try:
@@ -266,7 +253,7 @@ def post_process_for_failure_budget(
             {f"circuit_arg_{k}": v for k, v in r.circuit_builder_kwargs.items()}
             | (
                 {
-                    "circuit_arg_cultivation_data_source_distance": r.core_config.cultivation_data_source_distance,
+                    "circuit_arg_cultivation_data_source_distance": r.core_config.cultivation_data_source_distance
                 }
                 if r.core_config.cultivation_data_source_distance is not None
                 else {}
