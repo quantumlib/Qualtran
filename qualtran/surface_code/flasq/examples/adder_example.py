@@ -188,5 +188,3 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"\nAn error occurred during the process: {e}")
-        # import traceback
-        # traceback.print_exc()
