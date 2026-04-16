@@ -53,8 +53,6 @@ def test_build_hwp_circuit():
         n_qubits_data=n_qubits_data, angle=angle
     )
 
-    print("Original HWP Circuit:")
-    print(repr(circuit))
 
     assert len(circuit) > 0
     assert len(data_qubits) == n_qubits_data
@@ -91,8 +89,6 @@ def test_convert_hwp_circuit_for_flasq():
         out_quregs=in_quregs,
     )
 
-    print("\nDecomposed Circuit for FLASQ analysis:")
-    print(repr(decomposed_circuit))
 
     # 3. Verify the conversion
     assert cbloq is not None
@@ -272,9 +268,4 @@ def test_hwp_qubit_count_logic(n_qubits_data):
     actual_peak_qubit_count = get_cost_value(hwp_cbloq, QubitCount())
 
     # 4. Print diagnostics and assert for analysis.
-    print(
-        f"\nFor n_qubits_data={n_qubits_data}:\n"
-        f"  - Manual 'expected' total unique qubits: {expected_total_unique_qubits}\n"
-        f"  - Qualtran 'actual' peak qubit count:    {actual_peak_qubit_count}"
-    )
     assert actual_peak_qubit_count == expected_total_unique_qubits
