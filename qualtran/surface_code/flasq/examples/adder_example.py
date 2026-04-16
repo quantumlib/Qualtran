@@ -61,7 +61,7 @@ def analyze_adder_costs(bitsize: int):
 
     try:
         span_costs: GateSpan = get_cost_value(adder_bloq, TotalSpanCost())
-        print(f"\nTotal Span Cost (Abstract):")
+        print("\nTotal Span Cost (Abstract):")
         print(span_costs)
     except Exception as e:
         print(f"\nError calculating Span costs: {e}")
