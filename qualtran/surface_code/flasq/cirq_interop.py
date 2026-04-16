@@ -63,12 +63,14 @@ def cirq_op_to_bloq_tolerate_classical_controls(op: cirq.Operation) -> Bloq:
     it will not always be correct.
     """
     if isinstance(op, cirq.ClassicallyControlledOperation):
-        return qualtran.cirq_interop._cirq_to_bloq._extract_bloq_from_op(
-            op.without_classical_controls()
-        )
-
+        uncontrolled_op = op.without_classical_controls()
+        if uncontrolled_op.gate is None:
+            raise ValueError(f"Operation {uncontrolled_op} has no gate.")
+        return cirq_gate_to_bloq(uncontrolled_op.gate)
     else:
-        return qualtran.cirq_interop._cirq_to_bloq._extract_bloq_from_op(op)
+        if op.gate is None:
+            raise ValueError(f"Operation {op} has no gate.")
+        return cirq_gate_to_bloq(op.gate)
 
 
 def cirq_op_to_bloq_with_span(
