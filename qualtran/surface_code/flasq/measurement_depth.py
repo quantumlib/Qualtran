@@ -199,8 +199,10 @@ def _cbloq_measurement_depth(
         else:  # pragma: no cover
             # This case should ideally not be reached with valid CompositeBloqs
             logger.warning(
-                f"Unexpected node type {type(node)} found in binst_graph for {cbloq}. "
-                "Assigning 0 depth."
+                "Unexpected node type %s found in binst_graph for %s. "
+                "Assigning 0 depth.",
+                type(node),
+                cbloq,
             )
             node_depth = 0
 
@@ -292,7 +294,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
                 logger.debug("Decomposition failed for %s, using fallback.", bloq)
             except Exception as e:  # pragma: no cover
                 # Catch unexpected errors during decomposition itself
-                logger.error(f"Unexpected error during decomposition of {bloq}: {e}", exc_info=True)
+                logger.error("Unexpected error during decomposition of %s: %s", bloq, e, exc_info=True)
 
         if isinstance(cbloq, CompositeBloq):
             return _cbloq_measurement_depth(cbloq, get_callee_cost)
@@ -321,4 +323,6 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
 
     def __str__(self):
         """Return a descriptive string for this cost key."""
+        return "total measurement depth"
+ string for this cost key."""
         return "total measurement depth"
