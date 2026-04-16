@@ -201,8 +201,7 @@ def _cbloq_measurement_depth(
         else:  # pragma: no cover
             # This case should ideally not be reached with valid CompositeBloqs
             logger.warning(
-                "Unexpected node type %s found in binst_graph for %s. "
-                "Assigning 0 depth.",
+                "Unexpected node type %s found in binst_graph for %s. " "Assigning 0 depth.",
                 type(node),
                 cbloq,
             )
@@ -294,9 +293,16 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
             except (DecomposeNotImplementedError, DecomposeTypeError):
                 # Decomposition failed or not implemented, proceed to fallback
                 logger.debug("Decomposition failed for %s, using fallback.", bloq)
-            except (ValueError, TypeError, NotImplementedError, AttributeError) as e:  # pragma: no cover
+            except (
+                ValueError,
+                TypeError,
+                NotImplementedError,
+                AttributeError,
+            ) as e:  # pragma: no cover
                 # Catch unexpected errors during decomposition itself
-                logger.error("Unexpected error during decomposition of %s: %s", bloq, e, exc_info=True)
+                logger.error(
+                    "Unexpected error during decomposition of %s: %s", bloq, e, exc_info=True
+                )
 
         if isinstance(cbloq, CompositeBloq):
             return _cbloq_measurement_depth(cbloq, get_callee_cost)
