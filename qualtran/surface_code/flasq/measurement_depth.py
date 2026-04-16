@@ -75,18 +75,8 @@ class MeasurementDepth:
     # Use frozendict for immutability and hashability.
     # Input can be a dict, but it's converted in __attrs_post_init__.
     bloqs_with_unknown_depth: Mapping[Bloq, SymbolicInt] = attrs.field(
-        factory=frozendict
+        converter=frozendict, default=frozendict()
     )
-
-    def __attrs_post_init__(self):
-        """Ensure bloqs_with_unknown_depth is always a frozendict."""
-        if not isinstance(self.bloqs_with_unknown_depth, frozendict):
-            # Use object.__setattr__ because the class is frozen
-            object.__setattr__(
-                self,
-                "bloqs_with_unknown_depth",
-                frozendict(self.bloqs_with_unknown_depth),
-            )
 
     def __add__(self, other: "MeasurementDepth") -> "MeasurementDepth":
         """Adds two MeasurementDepth objects.
