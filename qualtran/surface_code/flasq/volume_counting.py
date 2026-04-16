@@ -59,7 +59,7 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.mcmt import And
 
-from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+from qualtran.cirq_interop import CirqGateAsBloq
 
 logger = logging.getLogger(__name__)
 
