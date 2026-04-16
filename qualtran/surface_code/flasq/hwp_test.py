@@ -207,7 +207,6 @@ def test_hwp_vs_parallel_rz_spacetime_volume():
         TotalMeasurementDepth(rotation_depth=get_rotation_depth(rotation_error)),
     )
     rz_qubit_counts = get_cost_value(parallel_rz_cbloq, QubitCount())
-    # TODO: consider removing this assertion or the comment.
     assert rz_qubit_counts == 7
     parallel_rz_summary_symbolic = apply_flasq_cost_model(
         cost_model,
