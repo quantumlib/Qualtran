@@ -42,7 +42,7 @@ def analyze_logical_circuit(
     circuit_builder_func: Callable,
     circuit_builder_kwargs: frozendict,
     total_allowable_rotation_error: float,
-) -> frozendict:
+) -> Optional[frozendict]:
     """Builds the logical quantum circuit and analyzes its abstract properties.
 
     This function is cached based on its arguments. It calls the provided
@@ -85,7 +85,7 @@ def analyze_logical_circuit(
 
     flasq_counts: FLASQGateCounts = get_cost_value(cbloq, FLASQGateTotals())
     total_span: GateSpan = get_cost_value(cbloq, TotalSpanCost())
-    qubit_counts: int = get_cost_value(cbloq, QubitCount())
+    qubit_counts = get_cost_value(cbloq, QubitCount())
 
     if total_allowable_rotation_error == 0:
         if flasq_counts.total_rotations != 0:
@@ -96,7 +96,7 @@ def analyze_logical_circuit(
 
     if flasq_counts.total_rotations == 0:
         ind_rot_err = 1.0
-        rotation_depth_val = 0.0
+        rotation_depth_val: Union[float, sympy.Expr] = 0.0
     else:
         ind_rot_err = total_allowable_rotation_error / flasq_counts.total_rotations
         rotation_depth_val = get_rotation_depth(rotation_error=ind_rot_err)
