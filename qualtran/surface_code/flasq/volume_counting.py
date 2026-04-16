@@ -37,7 +37,7 @@ from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
 from qualtran.bloqs.basic_gates.identity import Identity
 from qualtran.symbolics import is_zero, SymbolicFloat
 from qualtran.resource_counting.classify_bloqs import (
-    bloq_is_t_like,  # type: ignore[attr-defined]
+    bloq_is_t_like,
     bloq_is_rotation,
     bloq_is_state_or_effect,
     bloq_is_clifford,
