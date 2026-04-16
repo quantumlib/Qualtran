@@ -235,7 +235,7 @@ class TotalSpanCostValidationTestSuite:
         """validate_val should raise TypeError for non-GateSpan values (L286-288)."""
         cost_key = TotalSpanCost()
         with pytest.raises(TypeError, match="GateSpan"):
-            cost_key.validate_val("not_a_gate_span")
+            cost_key.validate_val("not_a_gate_span")  # type: ignore[arg-type]
 
     def test_str(self):
         """TotalSpanCost string representation (L291-292)."""
