@@ -180,8 +180,10 @@ def _cbloq_measurement_depth(
                 # If cost calculation fails for a sub-bloq, log error,
                 # assign 0 depth, and mark the sub-bloq as unknown.
                 logger.error(
-                    f"Error getting measurement depth cost for sub-bloq {bloq} "
-                    f"within {cbloq}: {e}",
+                    "Error getting measurement depth cost for sub-bloq %s within %s: %s",
+                    bloq,
+                    cbloq,
+                    e,
                     exc_info=True,
                 )
                 node_depth = 0
@@ -323,6 +325,4 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
 
     def __str__(self):
         """Return a descriptive string for this cost key."""
-        return "total measurement depth"
- string for this cost key."""
         return "total measurement depth"
