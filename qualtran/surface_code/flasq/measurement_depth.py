@@ -27,6 +27,7 @@ import attrs
 import networkx as nx
 import sympy
 from attrs import frozen
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 # Qualtran Imports
@@ -73,7 +74,7 @@ class MeasurementDepth:
     # Use frozendict for immutability and hashability.
     # Input can be a dict; it is converted by the attrs converter.
     bloqs_with_unknown_depth: Mapping[Bloq, SymbolicInt] = attrs.field(
-        converter=frozendict, default=frozendict()
+        converter=_to_frozendict, default=frozendict()
     )
 
     def __add__(self, other: "MeasurementDepth") -> "MeasurementDepth":

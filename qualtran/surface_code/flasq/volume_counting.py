@@ -27,6 +27,7 @@ import cirq
 import numpy as np
 import sympy
 from attrs import frozen
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 from qualtran import Bloq
@@ -99,7 +100,7 @@ class FLASQGateCounts:
     and_gate: SymbolicFloat = 0
     and_dagger_gate: SymbolicFloat = 0
     bloqs_with_unknown_cost: Mapping[Bloq, SymbolicInt] = attrs.field(
-        converter=frozendict, default=frozendict()
+        converter=_to_frozendict, default=frozendict()
     )
 
     def __add__(self, other):
