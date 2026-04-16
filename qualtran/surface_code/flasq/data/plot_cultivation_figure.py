@@ -44,6 +44,7 @@ import pandas as pd
 # Data loading
 # ---------------------------------------------------------------------------
 
+
 def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
     """Load the cultivation simulation summary and apply standard filters.
 
@@ -70,9 +71,7 @@ def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
 
     # Compute the block cost used for filtering.  A distance-15 logical
     # block has volume 2 * (d+1)^2 * d = 2 * 16^2 * 15 = 7680 qubit-rounds.
-    df["expected_block_cost_at_d_15"] = df["expected_volume"] / (
-        2 * (15 + 1) ** 2 * 15
-    )
+    df["expected_block_cost_at_d_15"] = df["expected_volume"] / (2 * (15 + 1) ** 2 * 15)
 
     filtered = df[df["errors"] >= 0].copy()
     filtered = filtered[filtered["expected_block_cost_at_d_15"] <= 100]
@@ -86,10 +85,9 @@ def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
 # Search: find the optimal cultivation configuration for given constraints
 # ---------------------------------------------------------------------------
 
+
 def search_dataframe(
-    df: pd.DataFrame,
-    physical_error_rate: float,
-    target_logical_error_rate: float,
+    df: pd.DataFrame, physical_error_rate: float, target_logical_error_rate: float
 ) -> Optional[pd.DataFrame]:
     """Find the row minimizing expected_volume for given error constraints.
 
@@ -138,6 +136,7 @@ def search_dataframe(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _log_edges(points: np.ndarray) -> np.ndarray:
     """Compute cell boundary edges for pcolormesh from log-spaced centers.
 
@@ -164,9 +163,7 @@ def _configure_axes(ax: plt.Axes) -> None:
     """
     x_ticks = sorted([4e-3, 2e-3, 1e-3, 5e-4, 2.5e-4, 1.25e-4])
     ax.xaxis.set_major_locator(mticker.FixedLocator(x_ticks))
-    ax.xaxis.set_major_formatter(
-        mticker.FixedFormatter([f"{v:.2e}" for v in x_ticks])
-    )
+    ax.xaxis.set_major_formatter(mticker.FixedFormatter([f"{v:.2e}" for v in x_ticks]))
     ax.xaxis.set_minor_locator(mticker.NullLocator())
 
     ax.yaxis.set_major_locator(mticker.LogLocator(base=10.0, subs=(1.0,)))
@@ -175,18 +172,16 @@ def _configure_axes(ax: plt.Axes) -> None:
 
     ax.grid(True, which="major", axis="x", ls=":", lw=0.7, alpha=0.7)
     ax.grid(True, which="major", axis="y", ls=":", lw=0.5, alpha=0.7)
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-             rotation_mode="anchor")
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
 
 
 # ---------------------------------------------------------------------------
 # The figure
 # ---------------------------------------------------------------------------
 
+
 def plot_cultivation_heatmap(
-    filtered_df: pd.DataFrame,
-    output_path: Optional[pathlib.Path] = None,
-    grid_res: int = 400,
+    filtered_df: pd.DataFrame, output_path: Optional[pathlib.Path] = None, grid_res: int = 400
 ) -> None:
     """Generate the paper's cultivation spacetime volume heatmap.
 
@@ -209,9 +204,7 @@ def plot_cultivation_heatmap(
     """
     # Define the evaluation grid (log-spaced on both axes).
     x_pts = np.logspace(np.log10(1.25e-4), np.log10(2e-3), num=grid_res)
-    y_pts = np.sort(
-        np.logspace(np.log10(1e-9), np.log10(1e-4), num=grid_res)
-    )
+    y_pts = np.sort(np.logspace(np.log10(1e-9), np.log10(1e-4), num=grid_res))
 
     # For each grid point, find the optimal expected volume.
     # NaN indicates no configuration achieves the target error rate
@@ -239,10 +232,7 @@ def plot_cultivation_heatmap(
     if pos.size > 0 and pos.min() > 0 and pos.max() > pos.min():
         norm = mcolors.LogNorm(vmin=pos.min(), vmax=pos.max())
 
-    mesh = ax.pcolormesh(
-        x_edges, y_edges, color_matrix,
-        norm=norm, cmap="viridis", shading="flat",
-    )
+    mesh = ax.pcolormesh(x_edges, y_edges, color_matrix, norm=norm, cmap="viridis", shading="flat")
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -269,20 +259,21 @@ def plot_cultivation_heatmap(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "-i", "--input",
+        "-i",
+        "--input",
         type=pathlib.Path,
-        default=pathlib.Path(__file__).resolve().parent
-        / "cultivation_simulation_summary.csv",
+        default=pathlib.Path(__file__).resolve().parent / "cultivation_simulation_summary.csv",
         help="Path to cultivation simulation CSV (default: co-located CSV)",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         type=pathlib.Path,
         default=None,
         help="Output image path (default: display interactively)",

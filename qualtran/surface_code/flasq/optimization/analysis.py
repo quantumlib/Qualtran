@@ -194,9 +194,7 @@ def generate_circuit_specific_configs(
         circuit_builder_kwargs=circuit_builder_kwargs,
         total_allowable_rotation_error=total_synthesis_error,
     )
-    individual_allowable_rotation_error = logical_analysis[
-        "individual_allowable_rotation_error"
-    ]
+    individual_allowable_rotation_error = logical_analysis["individual_allowable_rotation_error"]
     summary = apply_flasq_cost_model(
         model=FLASQCostModel(),
         n_total_logical_qubits=logical_analysis["qubit_counts"],
@@ -272,8 +270,7 @@ def generate_configs_for_constrained_qec(
         phys_err_for_cult_lookup = p_phys
         if round_error_rate_up_to_simulated_cultivation_data:
             rounded_err = cultivation_analysis.round_error_rate_up(
-                p_phys,
-                cultivation_data_decimal_precision,
+                p_phys, cultivation_data_decimal_precision
             )
             if rounded_err is None:
                 continue

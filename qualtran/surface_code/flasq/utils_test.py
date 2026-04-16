@@ -16,9 +16,7 @@ import pytest
 import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
 
-from qualtran.surface_code.flasq.utils import (
-    substitute_until_fixed_point,
-)
+from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 
 
 def test_basic_substitution():
@@ -185,13 +183,9 @@ def test_substitute_lambdify_path_numeric():
     resolver2 = frozendict({x: 2, y: 3})
     result2 = substitute_until_fixed_point(expr, resolver2)
     assert result2 == 7.0  # (2*3) + (2/2) = 6 + 1 = 7
-    assert (
-        _get_cached_lambdified_evaluator.cache_info().misses == 1
-    )  # No new miss for lambdify
+    assert _get_cached_lambdified_evaluator.cache_info().misses == 1  # No new miss for lambdify
     assert _get_cached_lambdified_evaluator.cache_info().hits == 1  # Hit for lambdify
-    assert (
-        substitute_until_fixed_point.cache_info().misses == 2
-    )  # New miss for main function
+    assert substitute_until_fixed_point.cache_info().misses == 2  # New miss for main function
 
     # Third call, same as first - should hit both caches
     result3 = substitute_until_fixed_point(expr, resolver)
@@ -220,9 +214,7 @@ def test_substitute_fallback_path_symbolic_value_in_resolver():
     assert result == 1 + z * 2
     assert isinstance(result, sympy.Expr)
     assert _get_cached_lambdified_evaluator.cache_info().hits == 0
-    assert (
-        _get_cached_lambdified_evaluator.cache_info().misses == 0
-    )  # Lambdify path not taken
+    assert _get_cached_lambdified_evaluator.cache_info().misses == 0  # Lambdify path not taken
 
     _get_cached_lambdified_evaluator.cache_clear()
     substitute_until_fixed_point.cache_clear()
@@ -243,11 +235,7 @@ def test_substitute_fallback_path_incomplete_resolver():
     assert result == 1 + y
     assert isinstance(result, sympy.Expr)
     assert _get_cached_lambdified_evaluator.cache_info().hits == 0
-    assert (
-        _get_cached_lambdified_evaluator.cache_info().misses == 0
-    )  # Lambdify path not taken
+    assert _get_cached_lambdified_evaluator.cache_info().misses == 0  # Lambdify path not taken
 
     _get_cached_lambdified_evaluator.cache_clear()
     substitute_until_fixed_point.cache_clear()
-
-

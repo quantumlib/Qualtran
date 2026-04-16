@@ -43,18 +43,15 @@ from qualtran.surface_code.flasq.span_counting import TotalSpanCost
 from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
 from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
-STANDARD_ASSUMPTIONS = frozendict({
-    ROTATION_ERROR: 1e-3,
-    V_CULT_FACTOR: 6.0,
-    T_REACT: 1.0,
-})
+STANDARD_ASSUMPTIONS = frozendict({ROTATION_ERROR: 1e-3, V_CULT_FACTOR: 6.0, T_REACT: 1.0})
 
 
-def _run_ising_pipeline(rows, cols, n_steps, order=2, n_fluid_ancilla=100, model=conservative_FLASQ_costs):
+def _run_ising_pipeline(
+    rows, cols, n_steps, order=2, n_fluid_ancilla=100, model=conservative_FLASQ_costs
+):
     """Helper: run full FLASQ pipeline for an Ising model and return resolved summary."""
     circuit = build_ising_circuit(
-        rows=rows, cols=cols, j_coupling=1.0, h_field=3.04438, dt=0.04,
-        n_steps=n_steps, order=order,
+        rows=rows, cols=cols, j_coupling=1.0, h_field=3.04438, dt=0.04, n_steps=n_steps, order=order
     )
     cbloq, _ = convert_circuit_for_flasq_analysis(circuit)
 
@@ -63,9 +60,7 @@ def _run_ising_pipeline(rows, cols, n_steps, order=2, n_fluid_ancilla=100, model
     qubit_counts = get_cost_value(cbloq, QubitCount())
 
     individual_rotation_error = (
-        0.005 / flasq_counts.total_rotations
-        if flasq_counts.total_rotations > 0
-        else 0.005
+        0.005 / flasq_counts.total_rotations if flasq_counts.total_rotations > 0 else 0.005
     )
     rotation_depth_val = get_rotation_depth(rotation_error=individual_rotation_error)
     measurement_depth = get_cost_value(
@@ -94,15 +89,18 @@ def _run_hwp_pipeline(n_qubits_data, angle=0.123, n_fluid_ancilla=20):
     data_manager = NaiveGridQubitManager(max_cols=10, negative=False)
     ancilla_manager = NaiveGridQubitManager(max_cols=20, negative=True)
     hwp_bloq, hwp_circuit, hwp_data_qubits = build_hwp_circuit(
-        n_qubits_data=n_qubits_data, angle=angle,
+        n_qubits_data=n_qubits_data,
+        angle=angle,
         data_qubit_manager=data_manager,
         ancilla_qubit_manager=ancilla_manager,
     )
     in_quregs = {"x": np.asarray(hwp_data_qubits)}
     cbloq, _ = convert_circuit_for_flasq_analysis(
-        hwp_circuit, signature=hwp_bloq.signature,
+        hwp_circuit,
+        signature=hwp_bloq.signature,
         qubit_manager=ancilla_manager,
-        in_quregs=in_quregs, out_quregs=in_quregs,
+        in_quregs=in_quregs,
+        out_quregs=in_quregs,
     )
 
     flasq_counts = get_cost_value(cbloq, FLASQGateTotals())
@@ -194,11 +192,7 @@ class HWPGoldenValuesTestSuite:
 
     @pytest.mark.parametrize(
         "n_qubits, expected_qubit_count, expected_and, expected_cnot, expected_z_rot",
-        [
-            (7, 12, 4, 46, 3),
-            (15, 27, 11, 118, 4),
-            (43, 85, 39, 398, 6),
-        ],
+        [(7, 12, 4, 46, 3), (15, 27, 11, 118, 4), (43, 85, 39, 398, 6)],
     )
     def test_hwp_gate_counts(
         self, n_qubits, expected_qubit_count, expected_and, expected_cnot, expected_z_rot

@@ -18,6 +18,7 @@ Walks a Qualtran bloq decomposition tree and tallies primitive gates into
 FLASQGateCounts. Distance-dependent costs (span) are handled separately
 by span_counting.py.
 """
+
 import logging
 from typing import Callable, Dict, Mapping, Optional, Tuple, Union
 
@@ -166,9 +167,7 @@ class FLASQGateCounts:
                 "{"
                 + ", ".join(
                     f"{k!s}: {v!s}"
-                    for k, v in sorted(
-                        unknown_dict.items(), key=lambda item: str(item[0])
-                    )
+                    for k, v in sorted(unknown_dict.items(), key=lambda item: str(item[0]))
                 )
                 + "}"
             )
@@ -183,13 +182,9 @@ class FLASQGateCounts:
     def asdict(self) -> Dict[str, Union[SymbolicInt, Dict["Bloq", SymbolicInt]]]:
         # Filter out zero counts and empty dicts
         d = attrs.asdict(
-            self,
-            recurse=False,
-            filter=lambda a, v: not is_zero(v) and v != frozendict(),
+            self, recurse=False, filter=lambda a, v: not is_zero(v) and v != frozendict()
         )
-        if "bloqs_with_unknown_cost" in d and isinstance(
-            d["bloqs_with_unknown_cost"], frozendict
-        ):
+        if "bloqs_with_unknown_cost" in d and isinstance(d["bloqs_with_unknown_cost"], frozendict):
             d["bloqs_with_unknown_cost"] = dict(d["bloqs_with_unknown_cost"])
         return d
 
@@ -257,8 +252,7 @@ class FLASQGateTotals(CostKey[FLASQGateCounts]):
         # 5. And gates
         if isinstance(bloq, And):
             return FLASQGateCounts(
-                and_dagger_gate=1 if bloq.uncompute else 0,
-                and_gate=0 if bloq.uncompute else 1,
+                and_dagger_gate=1 if bloq.uncompute else 0, and_gate=0 if bloq.uncompute else 1
             )
 
         # 6. CirqGateAsBloq special cases
@@ -271,7 +265,7 @@ class FLASQGateTotals(CostKey[FLASQGateCounts]):
         # 7. States/effects are free
         if bloq_is_state_or_effect(bloq):
             # Note: MeasureX, PrepX, MeasureZ, PrepZ are free in the surface code.
-            # The FLASQ paper (Appendix C.10) bounds Y-basis operation costs at 0.5 blocks 
+            # The FLASQ paper (Appendix C.10) bounds Y-basis operation costs at 0.5 blocks
             # (optimistic) or 1 block (conservative), citing Gidney, C. Quantum 8, 1310 (2024).
             # Decomposing Y-basis operations into an S gate and a Z/X measurement costs at least 1 block.
             # This exceeds the paper's bound, where costs coincide at 0.5 blocks for 'in motion' S gates.
@@ -312,7 +306,7 @@ class FLASQGateTotals(CostKey[FLASQGateCounts]):
         if not callees:
             logger.debug("No decomposition or base case for FLASQ counts: %s", bloq)
             return FLASQGateCounts(bloqs_with_unknown_cost={bloq: 1})
-        
+
         totals = self.zero()
         logger.info("Computing %s for %s from %d callee(s)", self, bloq, len(callees))
         for callee, n_times_called in callees:
@@ -325,9 +319,7 @@ class FLASQGateTotals(CostKey[FLASQGateCounts]):
 
     def validate_val(self, val: FLASQGateCounts):
         if not isinstance(val, FLASQGateCounts):
-            raise TypeError(
-                f"{self} values should be `FLASQGateCounts`, got {type(val)}: {val}"
-            )
+            raise TypeError(f"{self} values should be `FLASQGateCounts`, got {type(val)}: {val}")
 
     def __str__(self):
         return "FLASQ gate totals"

@@ -24,10 +24,7 @@ from qualtran.surface_code.flasq.examples.adder_example import (
     create_adder_circuit_and_decorations,
 )
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 TEST_BITSIZE = 4
 
@@ -49,14 +46,11 @@ def test_decomposed_adder_flasq_and_span_costs():
     Tests applying FLASQ and Span costing to the decomposed adder circuit.
     Verifies that costs are calculated and no unknown/uncounted bloqs remain.
     """
-    original_circuit, signature, in_quregs, out_quregs = (
-        create_adder_circuit_and_decorations(TEST_BITSIZE)
+    original_circuit, signature, in_quregs, out_quregs = create_adder_circuit_and_decorations(
+        TEST_BITSIZE
     )
     cbloq, decomposed_circuit = convert_circuit_for_flasq_analysis(
-        original_circuit,
-        signature=signature,
-        in_quregs=in_quregs,
-        out_quregs=out_quregs,
+        original_circuit, signature=signature, in_quregs=in_quregs, out_quregs=out_quregs
     )
     assert cbloq is not None  # Ensure conversion succeeded
     assert decomposed_circuit is not None  # Ensure decomposed circuit is returned

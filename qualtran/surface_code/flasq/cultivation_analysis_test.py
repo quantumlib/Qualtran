@@ -52,9 +52,7 @@ def test_get_unique_error_rates():
 def test_round_error_rate_up():
     """Tests the round_error_rate_up helper function."""
     # Use default precision for these tests
-    unique_rates = (
-        cultivation_analysis.get_unique_error_rates()
-    )  # Default precision = 8
+    unique_rates = cultivation_analysis.get_unique_error_rates()  # Default precision = 8
 
     # Case 1: physical_error_rate is below the smallest unique rate
     test_rate_below = unique_rates[0] - 1e-9  # Slightly below the first unique rate
@@ -66,10 +64,7 @@ def test_round_error_rate_up():
     # Case 3: physical_error_rate is between two unique rates
     if len(unique_rates) > 1:
         test_rate_between = (unique_rates[0] + unique_rates[1]) / 2
-        assert (
-            cultivation_analysis.round_error_rate_up(test_rate_between)
-            == unique_rates[1]
-        )
+        assert cultivation_analysis.round_error_rate_up(test_rate_between) == unique_rates[1]
 
     # Case 4: physical_error_rate is above all unique rates
     test_rate_above = unique_rates[-1] + 1e-5
@@ -82,9 +77,7 @@ def test_round_error_rate_up():
     # This is a bit harder to make robust without knowing data details,
     # but we can check it runs and returns something plausible or None.
     # For example, if precision 5 makes unique_rates[0] different or disappear.
-    unique_rates_prec5 = cultivation_analysis.get_unique_error_rates(
-        decimal_precision=5
-    )
+    unique_rates_prec5 = cultivation_analysis.get_unique_error_rates(decimal_precision=5)
     if unique_rates_prec5.size > 0:
         res_prec5 = cultivation_analysis.round_error_rate_up(
             unique_rates_prec5[0] - 1e-7, decimal_precision=5
@@ -95,9 +88,7 @@ def test_round_error_rate_up():
         )
         assert res_above_prec5 is None
     else:  # If precision 5 yields no unique rates (unlikely for this dataset)
-        assert (
-            cultivation_analysis.round_error_rate_up(0.001, decimal_precision=5) is None
-        )
+        assert cultivation_analysis.round_error_rate_up(0.001, decimal_precision=5) is None
 
 
 def test_get_filtered_cultivation_data():
@@ -164,12 +155,8 @@ def test_regularized_filtered_data_monotonicity_and_structure():  # Renamed for 
     ):
 
         regularized_df = cultivation_analysis.get_regularized_filtered_cultivation_data(
-            error_rate_val,
-            distance_val,
-            decimal_precision=8,
-            uncertainty_cutoff=cutoff_val,
+            error_rate_val, distance_val, decimal_precision=8, uncertainty_cutoff=cutoff_val
         )
-
 
         sorted_df = regularized_df.sort_values("gap")
 
@@ -204,10 +191,8 @@ def test_get_regularized_filtered_combined_cultivation_data_structure_and_conten
     uncertainty_cutoff_test = 50.0  # A specific cutoff for testing
 
     # 1. Call the combined function
-    combined_df = (
-        cultivation_analysis.get_regularized_filtered_combined_cultivation_data(
-            error_rate_to_test, decimal_precision_test, uncertainty_cutoff_test
-        )
+    combined_df = cultivation_analysis.get_regularized_filtered_combined_cultivation_data(
+        error_rate_to_test, decimal_precision_test, uncertainty_cutoff_test
     )
 
     # 2. Call individual functions for comparison
@@ -268,9 +253,7 @@ def test_find_best_cultivation_parameters():
     # Test case 1: Known good parameters
     phys_err = 1e-3
     log_err_target = 1e-7
-    result = cultivation_analysis.find_best_cultivation_parameters(
-        phys_err, log_err_target
-    )
+    result = cultivation_analysis.find_best_cultivation_parameters(phys_err, log_err_target)
     assert isinstance(result, pd.Series)
     assert (
         not result.empty
@@ -313,9 +296,7 @@ def test_find_best_cultivation_parameters():
     log_err_target_for_cutoff_test = 1e-6
 
     result_default_cutoff = cultivation_analysis.find_best_cultivation_parameters(
-        phys_err_for_cutoff_test,
-        log_err_target_for_cutoff_test,
-        uncertainty_cutoff=100.0,
+        phys_err_for_cutoff_test, log_err_target_for_cutoff_test, uncertainty_cutoff=100.0
     )
     result_strict_cutoff = cultivation_analysis.find_best_cultivation_parameters(
         phys_err_for_cutoff_test, log_err_target_for_cutoff_test, uncertainty_cutoff=1.1
@@ -351,9 +332,7 @@ def test_find_best_cultivation_parameters():
 
     # Test case 6: Scenario where only distance 5 might be better or available
     # Low physical error rate, very low target logical error rate
-    phys_err_favor_d5 = cultivation_analysis.get_unique_error_rates()[
-        0
-    ]  # Lowest physical error
+    phys_err_favor_d5 = cultivation_analysis.get_unique_error_rates()[0]  # Lowest physical error
     log_err_target_favor_d5 = 1e-9
 
     result_favor_d5 = cultivation_analysis.find_best_cultivation_parameters(

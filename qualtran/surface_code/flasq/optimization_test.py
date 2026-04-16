@@ -54,18 +54,9 @@ from qualtran.surface_code.flasq.optimization import (
     run_sweep,
     SweepResult,
 )
-from qualtran.surface_code.flasq.span_counting import (
-    BloqWithSpanInfo,
-    GateSpan,
-    TotalSpanCost,
-)
-from qualtran.surface_code.flasq.symbols import (
-    T_REACT,
-)
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.symbols import T_REACT
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 @frozen
@@ -121,10 +112,7 @@ def test_flasq_gate_counts_hashable():
     assert counts1 == counts4
     assert hash(counts1) == hash(counts4)
 
-    unknown_bloqs3: Dict[Bloq, sympy.Symbol] = {
-        CNOT(): 2,
-        Toffoli(): 1,
-    }  # Same as unknown_bloqs1
+    unknown_bloqs3: Dict[Bloq, sympy.Symbol] = {CNOT(): 2, Toffoli(): 1}  # Same as unknown_bloqs1
     counts5 = FLASQGateCounts(t=10, bloqs_with_unknown_cost=unknown_bloqs3)
     assert counts2 == counts5
     assert hash(counts2) == hash(counts5)
@@ -138,9 +126,7 @@ def test_gate_span_hashable():
 
     # Case 2: With uncounted bloqs (using standard hashable Bloqs)
     uncounted_bloqs1: Dict[Bloq, sympy.Symbol] = {Hadamard(): 10, CNOT(): 5}
-    span2 = GateSpan(
-        connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs1
-    )
+    span2 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs1)
     assert hash(span2) is not None
 
     # Case 3: With uncounted bloqs (using custom hashable Bloqs)
@@ -148,9 +134,7 @@ def test_gate_span_hashable():
         _HashableUnknownBloq("span_unknown1"): 2,
         _HashableUnknownBloq("span_unknown2"): 4,
     }
-    span3 = GateSpan(
-        connect_span=50, compute_span=100, uncounted_bloqs=uncounted_bloqs2
-    )
+    span3 = GateSpan(connect_span=50, compute_span=100, uncounted_bloqs=uncounted_bloqs2)
     assert hash(span3) is not None
 
     # Case 4: Equality implies same hash
@@ -162,9 +146,7 @@ def test_gate_span_hashable():
         Hadamard(): 10,
         CNOT(): 5,
     }  # Same as uncounted_bloqs1
-    span5 = GateSpan(
-        connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs3
-    )
+    span5 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs3)
     assert span2 == span5
     assert hash(span2) == hash(span5)
 
@@ -181,10 +163,7 @@ def test_measurement_depth_hashable():
     assert hash(depth1) is not None
 
     # Case 2: With unknown bloqs (using standard hashable Bloqs)
-    unknown_bloqs1: Dict[Bloq, sympy.Symbol] = {
-        Ry(Symbol("theta")): 1,
-        ZPowGate(exponent=0.1): 2,
-    }
+    unknown_bloqs1: Dict[Bloq, sympy.Symbol] = {Ry(Symbol("theta")): 1, ZPowGate(exponent=0.1): 2}
     depth2 = MeasurementDepth(depth=10.5, bloqs_with_unknown_depth=unknown_bloqs1)
     assert hash(depth2) is not None
 
@@ -336,11 +315,7 @@ def test_flasq_summary_resolved_hashable():
         total_spacetime_volume=N * 8 + M * 4 + V_CULT_FACTOR + N * (N / 5),
     )
 
-    assumptions: Dict[Union[sympy.Symbol, str], Any] = {
-        N: 100,
-        M: 50,
-        V_CULT_FACTOR: 6.0,
-    }
+    assumptions: Dict[Union[sympy.Symbol, str], Any] = {N: 100, M: 50, V_CULT_FACTOR: 6.0}
 
     resolved_summary = symbolic_summary.resolve_symbols(frozendict(assumptions))
 
@@ -366,9 +341,7 @@ def test_flasq_summary_resolved_hashable():
         cultivation_volume=M * 4 + V_CULT_FACTOR,
         total_spacetime_volume=N * 8 + M * 4 + V_CULT_FACTOR + N * (N / 5),
     )
-    resolved_summary_copy = symbolic_summary_copy.resolve_symbols(
-        frozendict(assumptions)
-    )
+    resolved_summary_copy = symbolic_summary_copy.resolve_symbols(frozendict(assumptions))
 
     assert resolved_summary == resolved_summary_copy
     assert hash(resolved_summary) == hash(resolved_summary_copy)
@@ -385,9 +358,7 @@ def test_frozendict_hashable():
     assert hash(d1) == hash(d2)
     assert d1 != d3
     # Hashes might collide, but for distinct objects they should ideally be different
-    assert hash(d1) != hash(
-        d3
-    )  # This is probabilistic, but usually holds for simple cases
+    assert hash(d1) != hash(d3)  # This is probabilistic, but usually holds for simple cases
 
     # Test frozendict with Bloq keys
     bloq_dict1 = frozendict({CNOT(): 1, Hadamard(): 2})
@@ -401,15 +372,9 @@ def test_frozendict_hashable():
     assert hash(bloq_dict1) != hash(bloq_dict3)
 
     # Test frozendict with custom hashable Bloq keys
-    custom_bloq_dict1 = frozendict(
-        {_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 2}
-    )
-    custom_bloq_dict2 = frozendict(
-        {_HashableUnknownBloq("B"): 2, _HashableUnknownBloq("A"): 1}
-    )
-    custom_bloq_dict3 = frozendict(
-        {_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 3}
-    )
+    custom_bloq_dict1 = frozendict({_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 2})
+    custom_bloq_dict2 = frozendict({_HashableUnknownBloq("B"): 2, _HashableUnknownBloq("A"): 1})
+    custom_bloq_dict3 = frozendict({_HashableUnknownBloq("A"): 1, _HashableUnknownBloq("B"): 3})
 
     assert hash(custom_bloq_dict1) is not None
     assert custom_bloq_dict1 == custom_bloq_dict2
@@ -464,15 +429,12 @@ class OptimizationFunctionsTestSuite:
             total_allowable_rotation_error=total_rot_error,
         )
         assert res_no_rot["flasq_counts"].total_rotations == 0
-        assert (
-            res_no_rot["individual_allowable_rotation_error"] == 1.0
-        )  # Default for no rotations
+        assert res_no_rot["individual_allowable_rotation_error"] == 1.0  # Default for no rotations
 
         # Test zero rotation error with rotations (should raise ValueError)
         kwargs_with_rot = frozendict({"num_qubits": 1, "add_rotation": True})
         with pytest.raises(
-            ValueError,
-            match="total_allowable_rotation_error cannot be 0 if there are rotations",
+            ValueError, match="total_allowable_rotation_error cannot be 0 if there are rotations"
         ):
             analyze_logical_circuit(
                 circuit_builder_func=_simple_circuit_builder,
@@ -560,14 +522,7 @@ class OptimizationFunctionsTestSuite:
         """Integration test for the full pipeline with a 4x4 Ising model."""
         # Fixed parameters for a single data point
         ising_params = frozendict(
-            {
-                "rows": 4,
-                "cols": 4,
-                "j_coupling": 1.0,
-                "h_field": 3.0,
-                "dt": 0.04,
-                "n_steps": 2,
-            }
+            {"rows": 4, "cols": 4, "j_coupling": 1.0, "h_field": 3.0, "dt": 0.04, "n_steps": 2}
         )
         total_rot_err = 0.005
 
@@ -577,10 +532,7 @@ class OptimizationFunctionsTestSuite:
             total_allowable_rotation_error=total_rot_err,
         )
         assert isinstance(logical_analysis["flasq_counts"], FLASQGateCounts)
-        assert (
-            logical_analysis["qubit_counts"]
-            == ising_params["rows"] * ising_params["cols"]
-        )
+        assert logical_analysis["qubit_counts"] == ising_params["rows"] * ising_params["cols"]
 
         flasq_summary_conservative = calculate_single_flasq_summary(
             logical_circuit_analysis=logical_analysis,
@@ -594,9 +546,7 @@ class OptimizationFunctionsTestSuite:
         resolved_flasq_summary = flasq_summary_conservative.resolve_symbols(
             frozendict(
                 {
-                    ROTATION_ERROR: logical_analysis[
-                        "individual_allowable_rotation_error"
-                    ],
+                    ROTATION_ERROR: logical_analysis["individual_allowable_rotation_error"],
                     V_CULT_FACTOR: 6.0,  # Added for completeness
                     T_REACT: 10.0 / 13,  # reaction_time_in_cycles / code_distance
                 }
@@ -621,9 +571,7 @@ class OptimizationFunctionsTestSuite:
             # flasq_conversion_kwargs is part of logical_analysis
             flasq_summary=flasq_summary_conservative,
         )
-        df = post_process_for_pec_runtime(
-            [sweep_result], time_per_surface_code_cycle=1e-6
-        )
+        df = post_process_for_pec_runtime([sweep_result], time_per_surface_code_cycle=1e-6)
         final_data = df.iloc[0]
 
         assert "Effective Time per Sample (s)" in final_data
@@ -644,14 +592,7 @@ def test_sweep_with_cultivation_data_derived_params():
     """
     # 1. Fixed Parameters for the sweep
     ising_circuit_kwargs = frozendict(
-        {
-            "rows": 6,
-            "cols": 6,
-            "j_coupling": 1.0,
-            "h_field": 3.04438,
-            "dt": 0.04,
-            "n_steps": 2,
-        }
+        {"rows": 6, "cols": 6, "j_coupling": 1.0, "h_field": 3.04438, "dt": 0.04, "n_steps": 2}
     )
     code_distance_val = 15  # Single code distance for this test
 
@@ -696,10 +637,7 @@ def test_sweep_with_cultivation_data_derived_params():
         assert res["circuit_arg_rows"] == ising_circuit_kwargs["rows"]
         assert res["Physical Error Rate"] == core_configs[i].phys_error_rate
         assert res["Code Distance"] == core_configs[i].code_distance
-        assert np.isclose(
-            res["Cultivation Error Rate"],
-            core_configs[i].cultivation_error_rate,
-        )
+        assert np.isclose(res["Cultivation Error Rate"], core_configs[i].cultivation_error_rate)
         assert np.isclose(res["V_CULT Factor"], core_configs[i].vcult_factor)
         assert "Effective Time per Sample (s)" in res
         assert (
@@ -732,7 +670,7 @@ class HelperFunctionsForSweepTestSuite:
                 "t_gate_cultivation_error_rate": [5e-9, 4e-9],
                 "expected_volume": [1000.0, 1200.0],
                 "cultivation_distance": [3, 3],  # For verification
-            },
+            }
         )
         mock_cult_data_dist5 = pd.DataFrame(
             {
@@ -753,9 +691,7 @@ class HelperFunctionsForSweepTestSuite:
             return mock_cult_data_empty
 
         monkeypatch.setattr(
-            cultivation_analysis,
-            "get_regularized_filtered_cultivation_data",
-            mock_get_cult_data,
+            cultivation_analysis, "get_regularized_filtered_cultivation_data", mock_get_cult_data
         )
 
         # Test case 1: cultivation_data_sampling_frequency = None (take all)
@@ -856,10 +792,7 @@ class NewSweepPipelineTestSuite:
         """Test the new `run_sweep` function with a single parameter set."""
         circuit_kwargs = frozendict({"num_qubits": 2, "add_rotation": True})
         core_config = CoreParametersConfig(
-            code_distance=7,
-            phys_error_rate=1e-3,
-            cultivation_error_rate=1e-8,
-            vcult_factor=6.0,
+            code_distance=7, phys_error_rate=1e-3, cultivation_error_rate=1e-8, vcult_factor=6.0
         )
         results = run_sweep(
             circuit_builder_func=_simple_circuit_builder,
@@ -930,14 +863,9 @@ class NewSweepPipelineTestSuite:
         """Test `run_sweep` followed by `post_process_for_pec_runtime`."""
         results = run_sweep(
             circuit_builder_func=_simple_circuit_builder,
-            circuit_builder_kwargs_list=frozendict(
-                {"num_qubits": 2, "add_rotation": True}
-            ),
+            circuit_builder_kwargs_list=frozendict({"num_qubits": 2, "add_rotation": True}),
             core_configs_list=CoreParametersConfig(
-                code_distance=7,
-                phys_error_rate=1e-3,
-                cultivation_error_rate=1e-8,
-                vcult_factor=6.0,
+                code_distance=7, phys_error_rate=1e-3, cultivation_error_rate=1e-8, vcult_factor=6.0
             ),
             total_allowable_rotation_error_list=0.01,
             reaction_time_in_cycles_list=10.0,
@@ -1011,10 +939,7 @@ class ConstrainedQECOptimizationTestSuite:
 
         # Check mock calls
         mock_analyze.assert_called_once()
-        assert (
-            mock_analyze.call_args.kwargs["total_allowable_rotation_error"]
-            == budget.synthesis
-        )
+        assert mock_analyze.call_args.kwargs["total_allowable_rotation_error"] == budget.synthesis
 
         # Check cultivation optimization call (required_p_mag = 0.1 / 1000 = 1e-4)
         mock_find_best.assert_called_once_with(
@@ -1067,9 +992,7 @@ class ConstrainedQECOptimizationTestSuite:
         core_config.vcult_factor = 5.0
         core_config.cultivation_data_source_distance = None
         result.core_config = core_config
-        result.core_config.code_distance = (
-            code_distance  # Needed for T_REACT calculation
-        )
+        result.core_config.code_distance = code_distance  # Needed for T_REACT calculation
 
         result.n_phys_qubits = 50000
         result.circuit_builder_kwargs = frozendict({"circuit": name})
@@ -1080,7 +1003,9 @@ class ConstrainedQECOptimizationTestSuite:
 
         return result
 
-    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch(
+        "qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities"
+    )
     def test_post_process_failure_budget_filtering(self, mock_calc_failures):
         """Test Case 1: Filtering Logic (Pass/Fail)."""
 
@@ -1094,10 +1019,7 @@ class ConstrainedQECOptimizationTestSuite:
         def mock_probabilities_side_effect(flasq_summary, **kwargs):
             if flasq_summary == res_pass.flasq_summary.resolve_symbols.return_value:
                 return (0.005, 0.005)  # Pass (P_fail_Clifford, P_fail_T)
-            if (
-                flasq_summary
-                == res_fail_cliff.flasq_summary.resolve_symbols.return_value
-            ):
+            if flasq_summary == res_fail_cliff.flasq_summary.resolve_symbols.return_value:
                 return (0.02, 0.005)  # Fail Clifford (P_fail_Clifford > budget.logical)
             if flasq_summary == res_fail_t.flasq_summary.resolve_symbols.return_value:
                 return (0.005, 0.02)  # Fail T (P_fail_T > budget.cultivation)
@@ -1114,14 +1036,14 @@ class ConstrainedQECOptimizationTestSuite:
 
         # Assertions
         assert len(df) == 1
-        assert (
-            df.iloc[0]["FLASQ Model"] == "Pass"
-        )  # Only the 'Pass' result should remain
+        assert df.iloc[0]["FLASQ Model"] == "Pass"  # Only the 'Pass' result should remain
         assert df.iloc[0]["P_fail_Clifford (P_log)"] == 0.005
         assert df.iloc[0]["P_fail_T (P_dis)"] == 0.005
         assert df.iloc[0]["Sum of Failure Probabilities (P_log + P_dis)"] == 0.01
 
-    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch(
+        "qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities"
+    )
     def test_post_process_failure_budget_time_calc(self, mock_calc_failures):
         """Test Case 2: Wall Clock Time Calculation."""
 
@@ -1138,9 +1060,7 @@ class ConstrainedQECOptimizationTestSuite:
         # Execute
         t_cyc = 400e-9  # 400 ns
         df = post_process_for_failure_budget(
-            sweep_results=[result],
-            error_budget=budget,
-            time_per_surface_code_cycle=t_cyc,
+            sweep_results=[result], error_budget=budget, time_per_surface_code_cycle=t_cyc
         )
 
         # Assertion: Time = t_cyc * d * L
@@ -1148,22 +1068,19 @@ class ConstrainedQECOptimizationTestSuite:
         assert len(df) == 1
         assert pytest.approx(df.iloc[0]["Wall Clock Time (s)"]) == 0.03
 
-    @patch("qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities")
+    @patch(
+        "qualtran.surface_code.flasq.optimization.postprocessing.calculate_failure_probabilities"
+    )
     def test_post_process_failure_budget_mismatch(self, mock_calc_failures):
         """Test Case 3: Synthesis Budget Mismatch."""
 
         budget = ErrorBudget(logical=0.01, cultivation=0.01, synthesis=0.01)
 
         # Setup mock result with mismatching synthesis budget
-        result = self._create_mock_sweep_result(
-            "Mismatch", synthesis_budget=0.05
-        )  # Mismatch!
+        result = self._create_mock_sweep_result("Mismatch", synthesis_budget=0.05)  # Mismatch!
 
         # Execute
-        df = post_process_for_failure_budget(
-            sweep_results=[result],
-            error_budget=budget,
-        )
+        df = post_process_for_failure_budget(sweep_results=[result], error_budget=budget)
 
         # Assertion
         assert len(df) == 0

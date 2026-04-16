@@ -121,13 +121,9 @@ class FLASQCostModel:
         """Calculate and set default values for derived cost parameters."""
         # Use object.__setattr__ to modify fields in a frozen attrs class
         if self.toffoli_cultivation_volume is None:
-            object.__setattr__(
-                self, "toffoli_cultivation_volume", 4 * self.t_cultivation_volume
-            )
+            object.__setattr__(self, "toffoli_cultivation_volume", 4 * self.t_cultivation_volume)
         if self.and_cultivation_volume is None:
-            object.__setattr__(
-                self, "and_cultivation_volume", 4 * self.t_cultivation_volume
-            )
+            object.__setattr__(self, "and_cultivation_volume", 4 * self.t_cultivation_volume)
 
         # Rotation costs (Simplified approach based on user request)
 
@@ -144,13 +140,9 @@ class FLASQCostModel:
         )
 
         if self.rz_cultivation_volume is None:
-            object.__setattr__(
-                self, "rz_cultivation_volume", rotation_cultivation_volume
-            )
+            object.__setattr__(self, "rz_cultivation_volume", rotation_cultivation_volume)
         if self.rx_cultivation_volume is None:
-            object.__setattr__(
-                self, "rx_cultivation_volume", rotation_cultivation_volume
-            )
+            object.__setattr__(self, "rx_cultivation_volume", rotation_cultivation_volume)
         if self.rz_clifford_volume is None:
             object.__setattr__(self, "rz_clifford_volume", rotation_clifford_volume)
         if self.rx_clifford_volume is None:
@@ -270,10 +262,7 @@ class FLASQCostModel:
             print("\n--- Non-Clifford Lattice Surgery Volume Breakdown ---")
 
         total_volume: SymbolicFloat = 0
-        for (
-            count_name,
-            vol_name,
-        ) in self._NON_CLIFFORD_LATTICE_SURGERY_VOLUME_MAP.items():
+        for count_name, vol_name in self._NON_CLIFFORD_LATTICE_SURGERY_VOLUME_MAP.items():
             count = getattr(counts, count_name)
             volume_per_gate = getattr(self, vol_name)
             term = count * volume_per_gate
@@ -449,9 +438,7 @@ class FLASQSummary:
         resolved_fields = {}
         for field_to_process in fields(FLASQSummary):
             val = getattr(self, field_to_process.name)
-            resolved_val = substitute_until_fixed_point(
-                val, assumptions, try_make_number=True
-            )
+            resolved_val = substitute_until_fixed_point(val, assumptions, try_make_number=True)
             resolved_fields[field_to_process.name] = resolved_val
 
         return FLASQSummary(**resolved_fields)
@@ -513,23 +500,17 @@ def apply_flasq_cost_model(
 
     # Calculate component volumes.
     # This is where we implement the plan to split the volume calculations.
-    clifford_computational_vol = (
-        model.calculate_volume_required_for_clifford_computation(
-            counts, span_info, verbose=(verbosity >= 2)
-        )
+    clifford_computational_vol = model.calculate_volume_required_for_clifford_computation(
+        counts, span_info, verbose=(verbosity >= 2)
     )
-    non_clifford_lattice_surgery_vol = (
-        model.calculate_non_clifford_lattice_surgery_volume(
-            counts, verbose=(verbosity >= 2)
-        )
+    non_clifford_lattice_surgery_vol = model.calculate_non_clifford_lattice_surgery_volume(
+        counts, verbose=(verbosity >= 2)
     )
     cultivation_volume = model.calculate_volume_required_for_cultivation(
         counts, verbose=(verbosity >= 2)
     )
     total_computational_volume = (
-        clifford_computational_vol
-        + non_clifford_lattice_surgery_vol
-        + cultivation_volume
+        clifford_computational_vol + non_clifford_lattice_surgery_vol + cultivation_volume
     )
 
     # Scale the raw measurement depth
@@ -614,9 +595,7 @@ def get_rotation_depth(rotation_error: Optional[SymbolicFloat] = None) -> Symbol
 
     if rotation_error is not None:
         depth_val = substitute_until_fixed_point(
-            depth_val,
-            frozendict({ROTATION_ERROR: rotation_error}),
-            try_make_number=True,
+            depth_val, frozendict({ROTATION_ERROR: rotation_error}), try_make_number=True
         )
 
     return depth_val
@@ -638,7 +617,6 @@ optimistic_FLASQ_costs = FLASQCostModel(
     cz_base_volume=0.0,
     connect_span_volume=1.0,
     compute_span_volume=1.0,
-
     toffoli_clifford_volume=5 * T_REACT + 39.0,
     and_clifford_volume=2 * T_REACT + 36.0,
     and_dagger_clifford_volume=0.0,

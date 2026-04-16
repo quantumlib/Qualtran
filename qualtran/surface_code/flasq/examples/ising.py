@@ -65,9 +65,7 @@ def ising_zz_layer(
         index = r * cols + c
         return qubits[index]
 
-    def yield_interaction_set(
-        interactions: List[Tuple[cirq.GridQubit, cirq.GridQubit]],
-    ):
+    def yield_interaction_set(interactions: List[Tuple[cirq.GridQubit, cirq.GridQubit]]):
         """Helper function to generate the 3 moments for a specific set of interactions."""
         if not interactions:
             return
@@ -226,9 +224,7 @@ def build_ising_circuit(
                 circuit.append(ising_x_layer(qubits, h_field, dt / 2.0))
 
             # Full ZZ layer
-            circuit.append(
-                ising_zz_layer(qubits, rows, cols, j_coupling, dt, periodic_boundary)
-            )
+            circuit.append(ising_zz_layer(qubits, rows, cols, j_coupling, dt, periodic_boundary))
 
             # --- X Layer (End/Merge) ---
             if i < n_steps - 1:
@@ -259,9 +255,7 @@ def build_ising_circuit(
 
                 # Full ZZ layer of the U2 step
                 circuit.append(
-                    ising_zz_layer(
-                        qubits, rows, cols, j_coupling, current_dt, periodic_boundary
-                    )
+                    ising_zz_layer(qubits, rows, cols, j_coupling, current_dt, periodic_boundary)
                 )
 
         # Final half X layer from the last U2 step of the last U4 step

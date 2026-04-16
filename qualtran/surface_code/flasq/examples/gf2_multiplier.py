@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """GF(2) multiplication circuit builder for FLASQ analysis examples."""
+
 from dataclasses import dataclass
 from typing import Dict, Tuple
 
@@ -57,9 +58,7 @@ def build_quadratic_mult_circuit(bitsize: int) -> CircuitAndData:
 
     # Decompose the bloq into a circuit with temporary `CleanQubit` ancillas.
     # We flatten the bloq to decompose it all the way to And and CNOT gates.
-    frozen_circuit = (
-        bloq.decompose_bloq().flatten().to_cirq_circuit(cirq_quregs=in_quregs)
-    )
+    frozen_circuit = bloq.decompose_bloq().flatten().to_cirq_circuit(cirq_quregs=in_quregs)
     circuit = frozen_circuit.unfreeze()
 
     # Define the target layout for the ancilla qubits.
@@ -72,17 +71,12 @@ def build_quadratic_mult_circuit(bitsize: int) -> CircuitAndData:
     ]
 
     # Map the temporary ancillas to the target GridQubits.
-    anc_qubits = sorted(
-        q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit)
-    )
+    anc_qubits = sorted(q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit))
     qubit_map = {anc_qubits[i]: t[i] for i in range(num_anc)}
     circuit = circuit.transform_qubits(qubit_map)
 
     return CircuitAndData(
-        circuit=circuit,
-        signature=bloq.signature,
-        in_quregs=in_quregs,
-        out_quregs=out_quregs,
+        circuit=circuit, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
     )
 
 
@@ -123,16 +117,11 @@ def build_karatsuba_mult_circuit(bitsize: int) -> CircuitAndData:
 
     # Map the temporary ancillas to the target GridQubits.
     # The ancilla register in the decomposed bloq is named 'anc'.
-    anc_qubits = sorted(
-        q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit)
-    )
+    anc_qubits = sorted(q for q in circuit.all_qubits() if isinstance(q, cirq.ops.CleanQubit))
     assert len(anc_qubits) == num_anc
     qubit_map = {anc_qubits[i]: t[i] for i in range(num_anc)}
     circuit = circuit.transform_qubits(qubit_map)
 
     return CircuitAndData(
-        circuit=circuit,
-        signature=bloq.signature,
-        in_quregs=in_quregs,
-        out_quregs=out_quregs,
+        circuit=circuit, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
     )

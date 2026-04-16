@@ -59,7 +59,7 @@ class _TestTwoIn(Bloq):
 
 def test_hierarchical_bloq_flatten_error_is_caught():
     """Verifies that flattening a CompositeBloq containing another CompositeBloq works.
-    
+
     This historically failed because the flatten logic tried to call `decompose_bloq()`
     on a CompositeBloq, which was not allowed.
     """
@@ -85,8 +85,7 @@ def test_hierarchical_bloq_flatten_error_is_caught():
 
 
 @pytest.mark.xfail(
-    raises=KeyError,
-    reason="Cirq's QASM output fails on measurement keys from decomposed bloqs.",
+    raises=KeyError, reason="Cirq's QASM output fails on measurement keys from decomposed bloqs."
 )
 def test_cbloq_to_qasm_output_fails_from_as_cirq_op():
     """Reproduces KeyError from _to_qasm_output on a bloq derived via as_cirq_op.
@@ -95,9 +94,7 @@ def test_cbloq_to_qasm_output_fails_from_as_cirq_op():
     """
     ancilla_qubit_manager = NaiveGridQubitManager(max_cols=10, negative=True)
     hwp_bloq, hwp_circuit, hwp_data_qubits = build_hwp_circuit(
-        n_qubits_data=5,
-        angle=0.123,
-        ancilla_qubit_manager=ancilla_qubit_manager,
+        n_qubits_data=5, angle=0.123, ancilla_qubit_manager=ancilla_qubit_manager
     )
 
     # This conversion is part of the flow that leads to the error.
@@ -121,9 +118,7 @@ def test_decomposed_circuit_to_qasm_fails_from_as_cirq_op():
     """
     ancilla_qubit_manager = NaiveGridQubitManager(max_cols=10, negative=True)
     _, hwp_circuit, _ = build_hwp_circuit(
-        n_qubits_data=5,
-        angle=0.123,
-        ancilla_qubit_manager=ancilla_qubit_manager,
+        n_qubits_data=5, angle=0.123, ancilla_qubit_manager=ancilla_qubit_manager
     )
 
     context = cirq.DecompositionContext(qubit_manager=ancilla_qubit_manager)
@@ -133,8 +128,7 @@ def test_decomposed_circuit_to_qasm_fails_from_as_cirq_op():
 
 
 @pytest.mark.xfail(
-    raises=KeyError,
-    reason="Cirq's QASM output fails on measurement keys from decomposed bloqs.",
+    raises=KeyError, reason="Cirq's QASM output fails on measurement keys from decomposed bloqs."
 )
 def test_and_then_uncompute_to_qasm():
     """Checks that measurement-based uncomputation of an AND gate fails QASM conversion.

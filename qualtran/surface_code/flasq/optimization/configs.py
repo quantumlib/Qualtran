@@ -71,9 +71,7 @@ class CoreParametersConfig(NamedTuple):
             target_logical_error_rate=target_individual_t_gate_error,
         )
         if best_cult_params.empty:
-            raise ValueError(
-                "No suitable cultivation parameters found for the given inputs."
-            )
+            raise ValueError("No suitable cultivation parameters found for the given inputs.")
 
         vcult_factor = best_cult_params["expected_volume"] / (
             2 * (reference_code_distance + 1) ** 2 * reference_code_distance
@@ -89,9 +87,7 @@ class CoreParametersConfig(NamedTuple):
         )
 
 
-def _ensure_iterable(
-    value: Any, treat_frozendict_as_single_item: bool = False
-) -> Iterable[Any]:
+def _ensure_iterable(value: Any, treat_frozendict_as_single_item: bool = False) -> Iterable[Any]:
     """Converts a single value to a single-element list if it's not already iterable.
 
     Special handling for strings and optionally for frozendict.
@@ -245,9 +241,7 @@ def generate_configs_from_cultivation_data(
             derived_cult_error_rate = row["t_gate_cultivation_error_rate"]
             expected_volume = row["expected_volume"]
 
-            derived_vcult_factor = expected_volume / (
-                2 * (current_d + 1) ** 2 * current_d
-            )
+            derived_vcult_factor = expected_volume / (2 * (current_d + 1) ** 2 * current_d)
             configs.append(
                 CoreParametersConfig(
                     code_distance=current_d,

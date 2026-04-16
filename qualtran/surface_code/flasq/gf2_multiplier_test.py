@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 
-
 import cirq
 import pytest
 
@@ -65,12 +64,8 @@ def test_build_karatsuba_mult_circuit_layout():
     expected_qubits.update({cirq.GridQubit(1, i) for i in range(bitsize)})
     # Ancilla qubits
     num_anc = bitsize
-    expected_qubits.update(
-        {cirq.GridQubit(0, bitsize + i) for i in range(num_anc // 2)}
-    )
-    expected_qubits.update(
-        {cirq.GridQubit(1, bitsize + i) for i in range(num_anc // 2)}
-    )
+    expected_qubits.update({cirq.GridQubit(0, bitsize + i) for i in range(num_anc // 2)})
+    expected_qubits.update({cirq.GridQubit(1, bitsize + i) for i in range(num_anc // 2)})
 
     assert qubits == expected_qubits
 

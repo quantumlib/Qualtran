@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Visualization utilities for FLASQ analysis results."""
+
 from typing import Callable, Optional, Tuple
 
 import matplotlib.colors as mcolors
@@ -39,11 +40,7 @@ def _scientific_formatter(x: float, pos: int) -> str:
     return f"{x:.1e}"
 
 
-def enrich_sweep_df(
-    df: pd.DataFrame,
-    *,
-    target_std_dev: float,
-) -> pd.DataFrame:
+def enrich_sweep_df(df: pd.DataFrame, *, target_std_dev: float) -> pd.DataFrame:
     """Adds 'Time to Solution (hr)' and 'Lambda' columns to a sweep DataFrame.
 
     Args:
@@ -97,8 +94,7 @@ def find_optimal_heatmap_configs(
     if regularization_col:
         opt_metric_name = f"__regularized_{value_col_to_optimize}"
         df_copy[opt_metric_name] = (
-            df_copy[value_col_to_optimize]
-            + regularization_strength * df_copy[regularization_col]
+            df_copy[value_col_to_optimize] + regularization_strength * df_copy[regularization_col]
         )
         metric_to_min = opt_metric_name
 
@@ -220,19 +216,13 @@ def plot_flasq_heatmap(
 
     ax.set_xticks(xticks)
     ax.set_xticklabels(
-        [
-            label if i % tick_frequency == 0 else ""
-            for i, label in enumerate(formatted_x_labels)
-        ],
+        [label if i % tick_frequency == 0 else "" for i, label in enumerate(formatted_x_labels)],
         rotation=45,
         ha="right",
     )
     ax.set_yticks(yticks)
     ax.set_yticklabels(
-        [
-            label if i % tick_frequency == 0 else ""
-            for i, label in enumerate(formatted_y_labels)
-        ],
+        [label if i % tick_frequency == 0 else "" for i, label in enumerate(formatted_y_labels)],
         rotation=0,
         va="center",
     )
@@ -241,24 +231,10 @@ def plot_flasq_heatmap(
     ax.grid(False)
     for i, pos in enumerate(xticks):
         if i % tick_frequency == 0:
-            ax.axvline(
-                pos,
-                color="gray",
-                linestyle="--",
-                linewidth=0.5,
-                alpha=0.7,
-                zorder=0,
-            )
+            ax.axvline(pos, color="gray", linestyle="--", linewidth=0.5, alpha=0.7, zorder=0)
     for i, pos in enumerate(yticks):
         if i % tick_frequency == 0:
-            ax.axhline(
-                pos,
-                color="gray",
-                linestyle="--",
-                linewidth=0.5,
-                alpha=0.7,
-                zorder=0,
-            )
+            ax.axhline(pos, color="gray", linestyle="--", linewidth=0.5, alpha=0.7, zorder=0)
 
     ax.tick_params(top=False, right=False, length=5, width=1)
     if invert_yaxis:
@@ -269,8 +245,6 @@ def plot_flasq_heatmap(
     ax.set_ylabel(y_axis_col)
 
     cbar = ax.collections[0].colorbar
-    cbar.set_label(
-        cbar_label if cbar_label is not None else value_col_to_plot,
-    )
+    cbar.set_label(cbar_label if cbar_label is not None else value_col_to_plot)
 
     return fig, ax

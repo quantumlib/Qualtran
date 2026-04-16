@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
+
 from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -114,9 +115,7 @@ def cirq_op_to_bloq_with_span(
             coords = _get_coords_from_op(op)
             connect_span, compute_span = calculate_spans(coords, base_bloq)
             return BloqWithSpanInfo(
-                wrapped_bloq=base_bloq,
-                connect_span=connect_span,
-                compute_span=compute_span,
+                wrapped_bloq=base_bloq, connect_span=connect_span, compute_span=compute_span
             )
         except (TypeError, ValueError, NotImplementedError) as e:
             warnings.warn(

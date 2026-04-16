@@ -29,9 +29,16 @@ from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
 def test_apply_flasq_cost_model_zero_fluid_ancilla():
     """Verify apply_flasq_cost_model handles n_fluid_ancilla=0 without producing zoo."""
     counts = FLASQGateCounts(
-        t=0, toffoli=0, and_gate=0, and_dagger_gate=0,
-        hadamard=10, s_gate=5, cnot=20, cz=0,
-        z_rotation=100, x_rotation=0,
+        t=0,
+        toffoli=0,
+        and_gate=0,
+        and_dagger_gate=0,
+        hadamard=10,
+        s_gate=5,
+        cnot=20,
+        cz=0,
+        z_rotation=100,
+        x_rotation=0,
     )
     span = GateSpan(connect_span=50, compute_span=30)
     meas_depth = MeasurementDepth(depth=200)
@@ -51,12 +58,20 @@ def test_apply_flasq_cost_model_zero_fluid_ancilla():
     # The summary should not contain zoo anywhere
     assert sympy.zoo not in summary.total_depth.atoms()
 
+
 def test_resolve_symbols_with_zero_fluid_ancilla():
     """Verify resolve_symbols doesn't crash on a summary with n_fluid_ancilla=0."""
     counts = FLASQGateCounts(
-        t=0, toffoli=0, and_gate=0, and_dagger_gate=0,
-        hadamard=10, s_gate=5, cnot=20, cz=0,
-        z_rotation=100, x_rotation=0,
+        t=0,
+        toffoli=0,
+        and_gate=0,
+        and_dagger_gate=0,
+        hadamard=10,
+        s_gate=5,
+        cnot=20,
+        cz=0,
+        z_rotation=100,
+        x_rotation=0,
     )
     span = GateSpan(connect_span=50, compute_span=30)
     meas_depth = MeasurementDepth(depth=200)
@@ -72,9 +87,7 @@ def test_resolve_symbols_with_zero_fluid_ancilla():
     )
 
     # Partial resolution (only ROTATION_ERROR) should not crash
-    resolved = summary.resolve_symbols(
-        frozendict({ROTATION_ERROR: 1e-7})
-    )
+    resolved = summary.resolve_symbols(frozendict({ROTATION_ERROR: 1e-7}))
     # total_t_count should be a number
     assert isinstance(resolved.total_t_count, (int, float))
 
@@ -84,17 +97,17 @@ def test_resolve_symbols_with_zero_fluid_ancilla():
     )
     assert isinstance(resolved_full.total_t_count, (int, float))
 
+
 def test_substitute_until_fixed_point_with_zoo():
     """Verify substitute_until_fixed_point doesn't crash on zoo-containing expressions."""
     x = sympy.Symbol('x')
     expr = sympy.Max(0, sympy.zoo * x)
 
     # Should not raise ValueError
-    result = substitute_until_fixed_point(
-        expr, frozendict({x: 1.0}), try_make_number=True
-    )
+    result = substitute_until_fixed_point(expr, frozendict({x: 1.0}), try_make_number=True)
     # We don't care about the exact result — just that it doesn't crash
     assert result is not None
+
 
 @pytest.mark.slow
 def test_generate_circuit_specific_configs_does_not_crash():

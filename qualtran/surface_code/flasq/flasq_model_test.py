@@ -32,19 +32,12 @@ from qualtran.surface_code.flasq.flasq_model import FLASQSummary  # Import the n
 from qualtran.surface_code.flasq.flasq_model import (
     optimistic_FLASQ_costs,  # Import the new instance
 )
-from qualtran.surface_code.flasq.flasq_model import (
-    apply_flasq_cost_model,
-    FLASQCostModel,
-)
+from qualtran.surface_code.flasq.flasq_model import apply_flasq_cost_model, FLASQCostModel
 from qualtran.surface_code.flasq.measurement_depth import (  # Import MeasurementDepth
     MeasurementDepth,
     TotalMeasurementDepth,
 )
-from qualtran.surface_code.flasq.span_counting import (
-    BloqWithSpanInfo,
-    GateSpan,
-    TotalSpanCost,
-)
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
@@ -54,10 +47,7 @@ from qualtran.surface_code.flasq.symbols import (
 from qualtran.surface_code.flasq.utils import (  # Needed for the method implementation
     substitute_until_fixed_point,
 )
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 def test_flasq_cost_model_defaults():
@@ -103,7 +93,6 @@ def test_flasq_cost_model_concrete():
         cz_base_volume=1.0,
         connect_span_volume=0.5,
         compute_span_volume=1.5,
-
         extra_cost_per_t_gate_in_rotation=1.0,
         extra_cost_per_rotation=10.0,
     )
@@ -147,9 +136,7 @@ def test_calculate_clifford_volume_symbolic():
         + compute_s_total * model.compute_span_volume
     )
 
-    total_volume = model.calculate_volume_required_for_clifford_computation(
-        counts, span_info
-    )
+    total_volume = model.calculate_volume_required_for_clifford_computation(counts, span_info)
     assert total_volume == expected_volume
 
 
@@ -173,7 +160,6 @@ def test_calculate_volumes_concrete():
         cz_base_volume=1.0,  # Use correct attribute name
         connect_span_volume=2.0,
         compute_span_volume=1.0,
-
         extra_cost_per_t_gate_in_rotation=1.0,
         extra_cost_per_rotation=10.0,
     )
@@ -183,9 +169,7 @@ def test_calculate_volumes_concrete():
     span_info = GateSpan(connect_span=15, compute_span=10)
 
     # Test pure clifford volume
-    clifford_volume = model.calculate_volume_required_for_clifford_computation(
-        counts, span_info
-    )
+    clifford_volume = model.calculate_volume_required_for_clifford_computation(counts, span_info)
     # Expected: 20*cnot + 5*h + 2*cz + 1*and_dagger_clifford + 15*connect_span + 10*compute_span
     #         = 20*1 + 5*0 + 2*1 + 1*1 + 15*2 + 10*1 = 20 + 0 + 2 + 1 + 30 + 10 = 63
     assert clifford_volume == pytest.approx(63)
@@ -218,29 +202,19 @@ def test_calculate_clifford_volume_mixed():
     _conservative_cnot_base_volume = 0.0  # Value from the default constructor
 
     expected_volume = 20 * _conservative_cnot_base_volume + 15 * 2 + 10 * 1
-    total_volume = model.calculate_volume_required_for_clifford_computation(
-        counts, span_info
-    )
+    total_volume = model.calculate_volume_required_for_clifford_computation(counts, span_info)
     assert total_volume == pytest.approx(expected_volume)
 
 
 def test_calculate_volumes_with_unknowns():
     """Test that warnings are issued for volume calculations when unknowns are present."""
     # Use a model with some concrete values, but t_cultivation_volume will be default
-    model = FLASQCostModel(
-        t_clifford_volume=4, connect_span_volume=2, compute_span_volume=1
-    )
-    counts_unknown = FLASQGateCounts(
-        t=10, bloqs_with_unknown_cost={Ry(sympy.Symbol("theta")): 1}
-    )
-    span_unknown = GateSpan(
-        connect_span=15, compute_span=10, uncounted_bloqs={CNOT(): 1}
-    )
+    model = FLASQCostModel(t_clifford_volume=4, connect_span_volume=2, compute_span_volume=1)
+    counts_unknown = FLASQGateCounts(t=10, bloqs_with_unknown_cost={Ry(sympy.Symbol("theta")): 1})
+    span_unknown = GateSpan(connect_span=15, compute_span=10, uncounted_bloqs={CNOT(): 1})
 
     # Test with unknown counts
-    with pytest.warns(
-        UserWarning, match="pure Clifford volume with unknown FLASQ counts"
-    ):
+    with pytest.warns(UserWarning, match="pure Clifford volume with unknown FLASQ counts"):
         vol1 = model.calculate_volume_required_for_clifford_computation(
             counts_unknown, GateSpan(connect_span=5, compute_span=5)
         )
@@ -258,15 +232,11 @@ def test_calculate_volumes_with_unknowns():
 
     # Test non-clifford volume warning
     with pytest.warns(UserWarning, match="non-Clifford lattice surgery volume"):
-        vol_non_cliff = model.calculate_non_clifford_lattice_surgery_volume(
-            counts_unknown
-        )
+        vol_non_cliff = model.calculate_non_clifford_lattice_surgery_volume(counts_unknown)
     assert sympy.simplify(vol_non_cliff - 10 * 4) == 0
 
     # Test cultivation volume warning
-    with pytest.warns(
-        UserWarning, match="cultivation volume with unknown FLASQ counts"
-    ):
+    with pytest.warns(UserWarning, match="cultivation volume with unknown FLASQ counts"):
         # Value from the default constructor
         _conservative_t_cultivation_volume = 1.5 * V_CULT_FACTOR
         vol_cult = model.calculate_volume_required_for_cultivation(counts_unknown)
@@ -296,9 +266,7 @@ def test_calculate_volumes_from_circuit_example():
     q0 = bb.add(Hadamard(), q=q0)
     # Wrap CNOT to give it span info for this test
     q0, q1 = bb.add(
-        BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=5, compute_span=5),
-        ctrl=q0,
-        target=q1,
+        BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=5, compute_span=5), ctrl=q0, target=q1
     )
     q1 = bb.add(Hadamard(), q=q1)
     cbloq = bb.finalize(q0=q0, q1=q1)
@@ -327,7 +295,6 @@ def test_calculate_volumes_from_circuit_example():
         cz_base_volume=1.0,  # Use correct attribute name
         connect_span_volume=2.0,
         compute_span_volume=1.0,
-
         extra_cost_per_t_gate_in_rotation=1.0,
         extra_cost_per_rotation=10.0,
     )
@@ -394,21 +361,10 @@ def test_resolve_symbols_basic():
         non_clifford_lattice_surgery_volume=P,
         cultivation_volume=P + M + V_CULT_FACTOR * 1.5,  # Added V_CULT_FACTOR term
         # This is wrong, but the test is about resolution, not correctness of this value.
-        total_spacetime_volume=N * 2
-        + M
-        + P
-        + P
-        + M
-        + V_CULT_FACTOR * 1.5
-        + N * (N / 5.0),
+        total_spacetime_volume=N * 2 + M + P + P + M + V_CULT_FACTOR * 1.5 + N * (N / 5.0),
     )
 
-    assumptions = {
-        N: 100,
-        P: 50,
-        err_sym: 0.01,
-        V_CULT_FACTOR: 6,
-    }  # M is left unresolved
+    assumptions = {N: 100, P: 50, err_sym: 0.01, V_CULT_FACTOR: 6}  # M is left unresolved
 
     resolved_summary = symbolic_summary.resolve_symbols(frozendict(assumptions))
 
@@ -528,6 +484,7 @@ def test_resolve_symbols_no_symbols():
     assert resolved_concrete == concrete_summary
     assert resolved_concrete is not concrete_summary  # Ensure it's a new instance
 
+
 def test_regular_spacetime_volume_property():
     """Test the regular_spacetime_volume property of FLASQSummary."""
     summary = FLASQSummary(
@@ -573,7 +530,6 @@ def test_apply_flasq_cost_model_basic():
         cz_base_volume=2.0,
         connect_span_volume=1.0,
         compute_span_volume=1.0,
-
         extra_cost_per_t_gate_in_rotation=1.0,
         extra_cost_per_rotation=10.0,
     )
@@ -641,16 +597,12 @@ def test_apply_flasq_cost_model_basic():
         + expected_cultivation_volume
     )
     n_fluid_ancilla_val = n_total_logical_qubits_val - n_algorithmic_qubits_val
-    expected_volume_limited_depth = (
-        expected_total_computational_volume / n_fluid_ancilla_val
-    )
+    expected_volume_limited_depth = expected_total_computational_volume / n_fluid_ancilla_val
     expected_total_depth = sympy.Max(
         measurement_depth_val_obj.depth * 1.0, expected_volume_limited_depth
     )
     expected_idling_volume = n_algorithmic_qubits_val * expected_total_depth
-    expected_total_clifford_volume = (
-        expected_pure_clifford_volume + expected_idling_volume
-    )
+    expected_total_clifford_volume = expected_pure_clifford_volume + expected_idling_volume
 
     expected_total_t_val = (
         counts_val.t
@@ -659,37 +611,25 @@ def test_apply_flasq_cost_model_basic():
         + MIXED_FALLBACK_T_COUNT * (counts_val.z_rotation + counts_val.x_rotation)
     )
     expected_total_rotation_val = counts_val.x_rotation + counts_val.z_rotation
-    expected_total_spacetime_volume = (
-        expected_total_computational_volume + expected_idling_volume
-    )
+    expected_total_spacetime_volume = expected_total_computational_volume + expected_idling_volume
 
     # 5. Assert all fields in the summary
-    assert summary.clifford_computational_volume == pytest.approx(
-        expected_pure_clifford_volume
-    )
+    assert summary.clifford_computational_volume == pytest.approx(expected_pure_clifford_volume)
     assert summary.non_clifford_lattice_surgery_volume == pytest.approx(
         expected_non_clifford_lattice_surgery_vol
     )
     assert summary.cultivation_volume == pytest.approx(expected_cultivation_volume)
-    assert summary.measurement_depth_val == pytest.approx(
-        measurement_depth_val_obj.depth
-    )
-    assert summary.total_computational_volume == pytest.approx(
-        expected_total_computational_volume
-    )
+    assert summary.measurement_depth_val == pytest.approx(measurement_depth_val_obj.depth)
+    assert summary.total_computational_volume == pytest.approx(expected_total_computational_volume)
     assert summary.volume_limited_depth == pytest.approx(expected_volume_limited_depth)
     assert summary.idling_volume == pytest.approx(expected_idling_volume)
-    assert summary.total_clifford_volume == pytest.approx(
-        expected_total_clifford_volume
-    )
+    assert summary.total_clifford_volume == pytest.approx(expected_total_clifford_volume)
     assert summary.total_depth == pytest.approx(expected_total_depth)
     assert summary.n_algorithmic_qubits == n_algorithmic_qubits_val
     assert summary.n_fluid_ancilla == n_fluid_ancilla_val
     assert summary.total_t_count == pytest.approx(expected_total_t_val)
     assert summary.total_rotation_count == expected_total_rotation_val
-    assert summary.total_spacetime_volume == pytest.approx(
-        expected_total_spacetime_volume
-    )
+    assert summary.total_spacetime_volume == pytest.approx(expected_total_spacetime_volume)
 
 
 def test_apply_flasq_cost_model_invariants():
@@ -712,7 +652,6 @@ def test_apply_flasq_cost_model_invariants():
         cz_base_volume=2.0,
         connect_span_volume=1.0,
         compute_span_volume=1.0,
-
         extra_cost_per_t_gate_in_rotation=1.0,
         extra_cost_per_rotation=10.0,
     )
@@ -720,9 +659,7 @@ def test_apply_flasq_cost_model_invariants():
     # 2. Define concrete inputs
     n_algorithmic_qubits_val = 10
     n_total_logical_qubits_val = 110  # Ensure non-zero fluid ancillas
-    counts_val = FLASQGateCounts(
-        t=5, toffoli=2, z_rotation=3, x_rotation=1, hadamard=4, cnot=6
-    )
+    counts_val = FLASQGateCounts(t=5, toffoli=2, z_rotation=3, x_rotation=1, hadamard=4, cnot=6)
     span_info_val = GateSpan(connect_span=20, compute_span=10)
     measurement_depth_obj = MeasurementDepth(depth=50)
 
@@ -783,8 +720,7 @@ def test_resolve_symbols_empty_assumptions():
         # New fields with symbolic values
         measurement_depth_val=N / 10.0,
         scaled_measurement_depth=N / 10.0,
-        volume_limited_depth=(N * 8 + N * 4)
-        / (N + 1.0),  # (cliff_comp + cult) / fluid_ancilla
+        volume_limited_depth=(N * 8 + N * 4) / (N + 1.0),  # (cliff_comp + cult) / fluid_ancilla
         total_computational_volume=N * 8 + N * 4,  # cliff_comp + cult
         idling_volume=N * (N / 5),  # data_qubits * total_depth
         clifford_computational_volume=N * 8,
@@ -877,13 +813,7 @@ def test_apply_flasq_cost_model_with_defaults_and_resolution():
     assert T_REACT in summary_symbolic.total_spacetime_volume.free_symbols
 
     resolved_summary = summary_symbolic.resolve_symbols(
-        frozendict(
-            {
-                V_CULT_FACTOR: 6.0,
-                ROTATION_ERROR: 1e-3,
-                T_REACT: 1.0,
-            }
-        )
+        frozendict({V_CULT_FACTOR: 6.0, ROTATION_ERROR: 1e-3, T_REACT: 1.0})
     )
 
     # Instead of recalculating all by hand, check a few key ones are now numbers
@@ -919,27 +849,19 @@ def test_flasq_summary_is_limited_properties_on_symbolic():
         total_spacetime_volume=0,
     )
 
-    with pytest.raises(
-        ValueError, match="Cannot determine if summary is volume-limited"
-    ):
+    with pytest.raises(ValueError, match="Cannot determine if summary is volume-limited"):
         _ = symbolic_summary.is_volume_limited
 
-    with pytest.raises(
-        ValueError, match="Cannot determine if summary is reaction-limited"
-    ):
+    with pytest.raises(ValueError, match="Cannot determine if summary is reaction-limited"):
         _ = symbolic_summary.is_reaction_limited
 
     # Test with one symbolic, one concrete
     concrete_summary = attrs.evolve(symbolic_summary, scaled_measurement_depth=100.0)
 
-    with pytest.raises(
-        ValueError, match="Cannot determine if summary is volume-limited"
-    ):
+    with pytest.raises(ValueError, match="Cannot determine if summary is volume-limited"):
         _ = concrete_summary.is_volume_limited
 
-    with pytest.raises(
-        ValueError, match="Cannot determine if summary is reaction-limited"
-    ):
+    with pytest.raises(ValueError, match="Cannot determine if summary is reaction-limited"):
         _ = concrete_summary.is_reaction_limited
 
     # Test with concrete values - should not raise
@@ -1028,8 +950,6 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
     hwp_circuit_repr = "cirq.Circuit([cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 5)), cirq.H(cirq.GridQubit(-1, 0)), cirq.H(cirq.GridQubit(-1, 1)), cirq.H(cirq.GridQubit(-1, 2)), cirq.H(cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 4)), cirq.T(cirq.GridQubit(-1, 0)), cirq.T(cirq.GridQubit(-1, 1)), cirq.T(cirq.GridQubit(-1, 2)), cirq.T(cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 5), cirq.GridQubit(-1, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(-1, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(0, 5))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(0, 4)), (cirq.T**-1).on(cirq.GridQubit(0, 5))]), cirq.Moment([(cirq.T**-1).on(cirq.GridQubit(0, 4)), cirq.T(cirq.GridQubit(-1, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(0, 5))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(0, 4)), cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 5))]), cirq.Moment([cirq.H(cirq.GridQubit(-1, 0)), cirq.CNOT(cirq.GridQubit(0, 5), cirq.GridQubit(0, 4))]), cirq.Moment([cirq.S(cirq.GridQubit(-1, 0)), cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(-1, 0)), cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 2)), cirq.CNOT(cirq.GridQubit(0, 3), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(0, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(0, 2)), (cirq.T**-1).on(cirq.GridQubit(0, 3))]), cirq.Moment([(cirq.T**-1).on(cirq.GridQubit(0, 2)), cirq.T(cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(0, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(0, 2)), cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 3))]), cirq.Moment([cirq.H(cirq.GridQubit(-1, 1)), cirq.CNOT(cirq.GridQubit(0, 3), cirq.GridQubit(0, 2))]), cirq.Moment([cirq.S(cirq.GridQubit(-1, 1)), cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(-1, 1)), cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0)), cirq.CNOT(cirq.GridQubit(0, 1), cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 0), cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(0, 1)), cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(0, 0)), (cirq.T**-1).on(cirq.GridQubit(0, 1))]), cirq.Moment([(cirq.T**-1).on(cirq.GridQubit(0, 0)), cirq.T(cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(0, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(0, 0)), cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 1))]), cirq.Moment([cirq.H(cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(0, 1), cirq.GridQubit(0, 0))]), cirq.Moment([cirq.S(cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(0, 0), cirq.GridQubit(-1, 6))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(-1, 2)), (cirq.Z**0.03915211600060625).on(cirq.GridQubit(-1, 6))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(0, 0), cirq.GridQubit(-1, 6))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(-1, 3)), cirq.CNOT(cirq.GridQubit(0, 1), cirq.GridQubit(0, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 2)), (cirq.T**-1).on(cirq.GridQubit(-1, 1))]), cirq.Moment([(cirq.T**-1).on(cirq.GridQubit(-1, 2)), cirq.T(cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.H(cirq.GridQubit(-1, 3)), cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.S(cirq.GridQubit(-1, 3)), cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(-1, 5))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 3)), (cirq.Z**0.0783042320012125).on(cirq.GridQubit(-1, 5))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 4)), cirq.CNOT(cirq.GridQubit(-1, 2), cirq.GridQubit(-1, 5))]), cirq.Moment([(cirq.Z**0.156608464002425).on(cirq.GridQubit(-1, 4)), cirq.CNOT(cirq.GridQubit(-1, 1), cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 3), cirq.GridQubit(-1, 4))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 1))]), cirq.Moment([And(cv1=1, cv2=1, uncompute=True).on(cirq.GridQubit(-1, 1), cirq.GridQubit(-1, 2), cirq.GridQubit(-1, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(-1, 2)), cirq.CNOT(cirq.GridQubit(-1, 0), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 1)), cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(-1, 1)), cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(-1, 0))]), cirq.Moment([And(cv1=1, cv2=1, uncompute=True).on(cirq.GridQubit(0, 1), cirq.GridQubit(0, 0), cirq.GridQubit(-1, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 2), cirq.GridQubit(0, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 3), cirq.GridQubit(0, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 3))]), cirq.Moment([And(cv1=1, cv2=1, uncompute=True).on(cirq.GridQubit(0, 3), cirq.GridQubit(0, 2), cirq.GridQubit(-1, 1))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 2))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 4), cirq.GridQubit(0, 3))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 5), cirq.GridQubit(0, 4))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 5))]), cirq.Moment([And(cv1=1, cv2=1, uncompute=True).on(cirq.GridQubit(0, 5), cirq.GridQubit(0, 4), cirq.GridQubit(-1, 0))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 4))]), cirq.Moment([cirq.CNOT(cirq.GridQubit(0, 6), cirq.GridQubit(0, 5))])])"
     circuit = eval(hwp_circuit_repr)
 
-
-
     # 2. Use the default conservative model.
     model = conservative_FLASQ_costs
 
@@ -1060,9 +980,7 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
 
     # Resolve symbols: V_CULT_FACTOR, ROTATION_ERROR, and T_REACT.
     summary = summary.resolve_symbols(
-        frozendict(
-            {V_CULT_FACTOR: 6.0, ROTATION_ERROR: 1e-3, T_REACT: 1.0}
-        )
+        frozendict({V_CULT_FACTOR: 6.0, ROTATION_ERROR: 1e-3, T_REACT: 1.0})
     )
 
     # 5. Verify the results.
@@ -1088,10 +1006,7 @@ class ApplyFlasqCostModelWarningsTestSuite:
 
     def test_warns_on_unknown_gate_counts(self):
         """Should warn when counts have bloqs_with_unknown_cost (L446-450)."""
-        counts = FLASQGateCounts(
-            cnot=10,
-            bloqs_with_unknown_cost=frozendict({Hadamard(): 5}),
-        )
+        counts = FLASQGateCounts(cnot=10, bloqs_with_unknown_cost=frozendict({Hadamard(): 5}))
         span = GateSpan(connect_span=10, compute_span=10)
         md = MeasurementDepth(depth=5)
 
@@ -1109,11 +1024,7 @@ class ApplyFlasqCostModelWarningsTestSuite:
     def test_warns_on_uncounted_spans(self):
         """Should warn when span_info has uncounted_bloqs (L451-455)."""
         counts = FLASQGateCounts(cnot=10)
-        span = GateSpan(
-            connect_span=10,
-            compute_span=10,
-            uncounted_bloqs={CNOT(): 3},
-        )
+        span = GateSpan(connect_span=10, compute_span=10, uncounted_bloqs={CNOT(): 3})
         md = MeasurementDepth(depth=5)
 
         with pytest.warns(UserWarning, match="uncounted span bloqs"):
@@ -1131,10 +1042,7 @@ class ApplyFlasqCostModelWarningsTestSuite:
         """Should warn when measurement_depth has unknown bloqs (L456-460)."""
         counts = FLASQGateCounts(cnot=10)
         span = GateSpan(connect_span=10, compute_span=10)
-        md = MeasurementDepth(
-            depth=5,
-            bloqs_with_unknown_depth={Hadamard(): 2},
-        )
+        md = MeasurementDepth(depth=5, bloqs_with_unknown_depth={Hadamard(): 2})
 
         with pytest.warns(UserWarning, match="unknown measurement depth"):
             apply_flasq_cost_model(
@@ -1153,11 +1061,7 @@ class ApplyFlasqCostModelWarningsTestSuite:
         span = GateSpan(connect_span=5, compute_span=5)
         md = MeasurementDepth(depth=3)
 
-        assumptions = frozendict({
-            ROTATION_ERROR: 1e-3,
-            V_CULT_FACTOR: 6.0,
-            T_REACT: 1.0,
-        })
+        assumptions = frozendict({ROTATION_ERROR: 1e-3, V_CULT_FACTOR: 6.0, T_REACT: 1.0})
 
         summary = apply_flasq_cost_model(
             model=conservative_FLASQ_costs,
@@ -1191,8 +1095,8 @@ class GetRotationDepthTestSuite:
     def test_consistent_with_symbols_test(self):
         """Result should match direct substitution of MIXED_FALLBACK_T_COUNT."""
         import math
+
         eps = 1e-6
         result = float(get_rotation_depth(rotation_error=eps))
         expected = 4.86 + 0.53 * math.log2(1 / eps)
         assert result == pytest.approx(expected, rel=1e-10)
-

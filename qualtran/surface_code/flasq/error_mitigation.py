@@ -27,7 +27,9 @@ import sympy
 from qualtran.surface_code.flasq.flasq_model import FLASQSummary
 from qualtran.symbolics import SymbolicFloat
 
-ERROR_PER_CYCLE_PREFACTOR = 0.03  # c_cyc in the paper. Empirical prefactor for surface code logical error rate.
+ERROR_PER_CYCLE_PREFACTOR = (
+    0.03  # c_cyc in the paper. Empirical prefactor for surface code logical error rate.
+)
 
 
 @lru_cache(maxsize=None)
@@ -75,16 +77,12 @@ def calculate_error_mitigation_metrics(
     # Gamma factor for T gates
     # ERROR_PER_T_GATE in the formula corresponds to cultivation_error_rate
     error_per_t_gate = cultivation_error_rate
-    gamma_per_t_gate = (
-        1 - 2 * error_per_t_gate
-    ) ** -1  # The factor of 2 might be model-specific
+    gamma_per_t_gate = (1 - 2 * error_per_t_gate) ** -1  # The factor of 2 might be model-specific
 
     # Gamma factor per logical block (logical timestep)
     # CYCLES_PER_LOGICAL_TIMESTEP in the formula corresponds to code_distance
 
-    total_regular_spacetime_cycles = (
-        flasq_summary.regular_spacetime_volume
-    ) * code_distance
+    total_regular_spacetime_cycles = (flasq_summary.regular_spacetime_volume) * code_distance
 
     log_gamma_per_circuit = (
         sympy.log(gamma_per_cycle) * total_regular_spacetime_cycles
@@ -144,9 +142,7 @@ def calculate_failure_probabilities(
     # memory/logical errors and the cultivation errors are handled separately.
     # Total cycles = r * affected volume (where r=code_distance)
 
-    total_regular_spacetime_cycles = (
-        flasq_summary.regular_spacetime_volume
-    ) * code_distance
+    total_regular_spacetime_cycles = (flasq_summary.regular_spacetime_volume) * code_distance
     P_fail_Clifford = 1 - (1 - p_cyc) ** total_regular_spacetime_cycles
 
     # 3. Calculate P_fail_T (Probability of at least one T-gate failure)

@@ -19,22 +19,12 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Signature
-from qualtran._infra.composite_bloq import (
-    Bloq,
-    BloqBuilder,
-)
-from qualtran.bloqs.basic_gates import (
-    CNOT,
-    Hadamard,
-    Toffoli,
-)
+from qualtran._infra.composite_bloq import Bloq, BloqBuilder
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo
-from qualtran.surface_code.flasq.volume_counting import (
-    FLASQGateCounts,
-    FLASQGateTotals,
-)
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 
 def test_flasq_count_basic():
@@ -56,9 +46,7 @@ def test_flasq_count_wrapped_bloq():
     bloq = BloqWithSpanInfo(wrapped_bloq=CNOT(), connect_span=3, compute_span=3)
     cost_val = get_cost_value(bloq, FLASQGateTotals())
     assert cost_val == FLASQGateCounts(cnot=1)
-    bloq_h_wrapped = BloqWithSpanInfo(
-        wrapped_bloq=Hadamard(), connect_span=0, compute_span=0
-    )
+    bloq_h_wrapped = BloqWithSpanInfo(wrapped_bloq=Hadamard(), connect_span=0, compute_span=0)
     cost_val_h = get_cost_value(bloq_h_wrapped, FLASQGateTotals())
     assert cost_val_h == FLASQGateCounts(hadamard=1)
 
@@ -109,13 +97,7 @@ def test_flasq_counts_str_with_pow_gates():
     yy_bloq = CirqGateAsBloq(yy_gate)
     zz_bloq = CirqGateAsBloq(zz_gate)
     counts_with_unknown = FLASQGateCounts(
-        t=10,
-        cnot=5,
-        bloqs_with_unknown_cost={
-            xx_bloq: 8,
-            yy_bloq: 8,
-            zz_bloq: 8,
-        },
+        t=10, cnot=5, bloqs_with_unknown_cost={xx_bloq: 8, yy_bloq: 8, zz_bloq: 8}
     )
     # 1. Test calling str() - this triggers the error reported in the traceback
     counts_str = str(counts_with_unknown)
@@ -212,7 +194,9 @@ class FLASQGateTotalsBaseCasesTestSuite:
         assert get_cost_value(And(), FLASQGateTotals()) == FLASQGateCounts(and_gate=1)
 
     def test_and_gate_uncompute(self):
-        assert get_cost_value(And(uncompute=True), FLASQGateTotals()) == FLASQGateCounts(and_dagger_gate=1)
+        assert get_cost_value(And(uncompute=True), FLASQGateTotals()) == FLASQGateCounts(
+            and_dagger_gate=1
+        )
 
     # --- Measurements are free ---
 
@@ -245,16 +229,24 @@ class FLASQGateTotalsBaseCasesTestSuite:
 
     def test_zpow_half_is_s(self):
         """ZPowGate(0.5) = sqrt(Z) = S gate."""
-        assert get_cost_value(ZPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(s_gate=1)
-        assert get_cost_value(ZPowGate(exponent=-0.5), FLASQGateTotals()) == FLASQGateCounts(s_gate=1)
+        assert get_cost_value(ZPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(
+            s_gate=1
+        )
+        assert get_cost_value(ZPowGate(exponent=-0.5), FLASQGateTotals()) == FLASQGateCounts(
+            s_gate=1
+        )
 
     def test_xpow_half_is_hsh(self):
         """XPowGate(0.5) = sqrt(X) = H S H."""
-        assert get_cost_value(XPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(hadamard=2, s_gate=1)
+        assert get_cost_value(XPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(
+            hadamard=2, s_gate=1
+        )
 
     def test_ypow_half_is_h(self):
         """YPowGate(0.5) = sqrt(Y), proportional to XH."""
-        assert get_cost_value(YPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(hadamard=1)
+        assert get_cost_value(YPowGate(exponent=0.5), FLASQGateTotals()) == FLASQGateCounts(
+            hadamard=1
+        )
 
     # --- Arbitrary rotations ---
 
@@ -316,4 +308,3 @@ class FLASQGateCountsArithmeticTestSuite:
     def test_total_rotations_property(self):
         counts = FLASQGateCounts(x_rotation=3, z_rotation=7)
         assert counts.total_rotations == 10
-

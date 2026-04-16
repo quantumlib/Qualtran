@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Tests for FLASQ example notebooks."""
+
 import os
 import tempfile
 
@@ -25,6 +26,7 @@ def _notebook_env(monkeypatch):
     monkeypatch.setenv('FLASQ_FAST_MODE_OVERRIDE', 'True')
     monkeypatch.setenv('MPLBACKEND', 'Agg')
 
+
 def _execute_notebook_in_temp_dir(name: str):
     with tempfile.TemporaryDirectory() as tmpdir:
         old_cwd = os.getcwd()
@@ -34,13 +36,16 @@ def _execute_notebook_in_temp_dir(name: str):
         finally:
             os.chdir(old_cwd)
 
+
 @pytest.mark.notebook
 def test_ising_notebook():
     _execute_notebook_in_temp_dir('ising_notebook')
 
+
 @pytest.mark.notebook
 def test_hwp_notebook():
     _execute_notebook_in_temp_dir('hwp_notebook')
+
 
 @pytest.mark.notebook
 def test_gf2_multiplier_notebook():

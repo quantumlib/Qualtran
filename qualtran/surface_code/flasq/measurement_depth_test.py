@@ -34,10 +34,7 @@ from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey, get_cost_value
 
 # Imports from the module being tested
-from qualtran.surface_code.flasq.measurement_depth import (
-    MeasurementDepth,
-    TotalMeasurementDepth,
-)
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
 
 # --- Helper Bloqs for Testing ---
 
@@ -94,9 +91,7 @@ def test_measurement_depth_init():
 
 def test_measurement_depth_add():
     md1 = MeasurementDepth(depth=3, bloqs_with_unknown_depth={TGate(): 1, CNOT(): 1})
-    md2 = MeasurementDepth(
-        depth=5, bloqs_with_unknown_depth={TGate(): 2, Hadamard(): 3}
-    )
+    md2 = MeasurementDepth(depth=5, bloqs_with_unknown_depth={TGate(): 2, Hadamard(): 3})
     md_sum = md1 + md2
     assert md_sum.depth == 8
     assert md_sum.bloqs_with_unknown_depth == {TGate(): 3, CNOT(): 1, Hadamard(): 3}
@@ -125,10 +120,7 @@ def test_measurement_depth_str():
         depth=sympy.Symbol("d"), bloqs_with_unknown_depth={CNOT(): 1, TGate(): 2}
     )
     # Keys should be sorted alphabetically by string representation in the output
-    assert (
-        str(md3)
-        == "MeasurementDepth(bloqs_with_unknown_depth: {CNOT: 1, T: 2}, depth: d)"
-    )
+    assert str(md3) == "MeasurementDepth(bloqs_with_unknown_depth: {CNOT: 1, T: 2}, depth: d)"
 
 
 def test_measurement_depth_asdict():
@@ -170,9 +162,7 @@ def test_total_measurement_depth_compute_static():
     """Test retrieving cost directly via my_static_costs."""
     cost_key = TotalMeasurementDepth()
     static_cost = MeasurementDepth(depth=5)
-    bloq = BloqWithStaticMeasurementDepth(
-        wrapped_bloq=TGate(), measurement_depth_cost=static_cost
-    )
+    bloq = BloqWithStaticMeasurementDepth(wrapped_bloq=TGate(), measurement_depth_cost=static_cost)
     assert get_cost_value(bloq, cost_key) == static_cost
 
 
@@ -238,9 +228,7 @@ def test_total_measurement_depth_compute_adder():
     # Check structure of the result
     assert isinstance(calculated_depth, MeasurementDepth)
     assert isinstance(calculated_depth.bloqs_with_unknown_depth, frozendict)
-    assert (
-        not calculated_depth.bloqs_with_unknown_depth
-    )  # Expect Add to decompose fully
+    assert not calculated_depth.bloqs_with_unknown_depth  # Expect Add to decompose fully
 
     assert calculated_depth.depth == 8  # Checked by inspection of the reference paper.
 

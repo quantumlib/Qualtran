@@ -122,9 +122,7 @@ def run_sweep(
     sweep_results = []
 
     param_iterables = [
-        _ensure_iterable(
-            circuit_builder_kwargs_list, treat_frozendict_as_single_item=True
-        ),
+        _ensure_iterable(circuit_builder_kwargs_list, treat_frozendict_as_single_item=True),
         _ensure_iterable(core_configs_list),
         _ensure_iterable(total_allowable_rotation_error_list),
         _ensure_iterable(reaction_time_in_cycles_list),
@@ -166,9 +164,7 @@ def run_sweep(
             continue
 
         flasq_model_obj, _ = flasq_model_config
-        logical_timesteps_per_measurement = (
-            reaction_time / core_config.code_distance
-        )
+        logical_timesteps_per_measurement = reaction_time / core_config.code_distance
 
         summary = calculate_single_flasq_summary(
             logical_circuit_analysis=logical_analysis,
