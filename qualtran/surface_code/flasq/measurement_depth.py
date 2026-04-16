@@ -201,7 +201,7 @@ def _cbloq_measurement_depth(
         else:  # pragma: no cover
             # This case should ideally not be reached with valid CompositeBloqs
             logger.warning(
-                "Unexpected node type %s found in binst_graph for %s. " "Assigning 0 depth.",
+                "Unexpected node type %s found in binst_graph for %s. Assigning 0 depth.",
                 type(node),
                 cbloq,
             )
