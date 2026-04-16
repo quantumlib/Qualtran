@@ -160,7 +160,9 @@ def plot_flasq_heatmap(
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
-        fig = ax.get_figure()
+        fig_obj = ax.get_figure()
+        assert isinstance(fig_obj, plt.Figure)
+        fig = fig_obj
 
     heatmap_data = processed_df.pivot_table(
         values=value_col_to_plot, index=y_axis_col, columns=x_axis_col
@@ -245,6 +247,7 @@ def plot_flasq_heatmap(
     ax.set_ylabel(y_axis_col)
 
     cbar = ax.collections[0].colorbar
+    assert cbar is not None
     cbar.set_label(cbar_label if cbar_label is not None else value_col_to_plot)
 
     return fig, ax
