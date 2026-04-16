@@ -372,7 +372,9 @@ def test_both_counts_from_ising_model_circuit():
         )
         + cost_model_default.calculate_non_clifford_lattice_surgery_volume(flasq_cost_val)
     )
-
+    
+    assert cost_model_default.rz_clifford_volume is not None
+    assert cost_model_default.rx_clifford_volume is not None
     expected_algo_clifford_volume = sympy.simplify(
         total_cnots * cost_model_default.cnot_base_volume
         + total_rz * cost_model_default.rz_clifford_volume

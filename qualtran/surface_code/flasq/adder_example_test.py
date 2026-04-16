@@ -90,6 +90,7 @@ def test_self_contained_adder_issue():
     adder_op, _ = adder_bloq.as_cirq_op(
         qubit_manager=cirq.SimpleQubitManager(), a=b_qubits, b=a_qubits
     )
+    assert adder_op is not None
     circuit = cirq.Circuit(adder_op)
 
     def is_and_or_short(op):

@@ -123,6 +123,7 @@ def create_adder_circuit_and_decorations(
     adder_op, _ = adder_bloq.as_cirq_op(
         qubit_manager=cirq.SimpleQubitManager(), a=b_qubits, b=a_qubits
     )
+    assert adder_op is not None
     circuit = cirq.Circuit(adder_op)
 
     print("Initial circuit created (with potentially large BloqAsCirqGate or similar).")

@@ -249,7 +249,7 @@ class TotalMeasurementDepth(CostKey[MeasurementDepth]):
             bloqs are flagged as unknown.
     """
 
-    rotation_depth: Optional[float] = None
+    rotation_depth: Optional[SymbolicFloat] = None
 
     def compute(
         self, bloq: Bloq, get_callee_cost: Callable[[Bloq], MeasurementDepth]
