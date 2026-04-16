@@ -134,7 +134,7 @@ class FLASQGateCounts:
         return self.__add__(other)
 
     def __mul__(self, other: SymbolicInt):
-        if not isinstance(other, (int, SymbolicInt, sympy.Expr)):
+        if not isinstance(other, (int, sympy.Expr)):
             raise TypeError(
                 f"Can only multiply by int, SymbolicInt or sympy Expr, not {type(other)}: {other}"
             )
@@ -161,6 +161,7 @@ class FLASQGateCounts:
 
     def __str__(self):
         items_dict = self.asdict()
+        display_dict: dict[str, object] = dict(items_dict)  # widen type for display
         if "bloqs_with_unknown_cost" in items_dict:
             unknown_dict = items_dict["bloqs_with_unknown_cost"]
             if isinstance(unknown_dict, Mapping):
@@ -173,10 +174,10 @@ class FLASQGateCounts:
                     )
                     + "}"
                 )
-                items_dict["bloqs_with_unknown_cost"] = unknown_str
+                display_dict["bloqs_with_unknown_cost"] = unknown_str
 
         # Sort items by key for consistent output
-        strs = [f"{k}: {v}" for k, v in sorted(items_dict.items())]
+        strs = [f"{k}: {v}" for k, v in sorted(display_dict.items())]
         if strs:
             return ", ".join(strs)
         return "-"
