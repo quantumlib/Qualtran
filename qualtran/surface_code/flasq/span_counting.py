@@ -271,11 +271,7 @@ class TotalSpanCost(CostKey[GateSpan]):
     def compute(
         self, bloq: Bloq, get_callee_cost: Callable[[Bloq], GateSpan]
     ) -> GateSpan:
-        # Base case: Use my_static_costs if available (e.g., from BloqWithSpanInfo)
-        static_cost = bloq.my_static_costs(self)
-        if static_cost is not NotImplemented:
-            logger.debug("Using static cost %s for %s", static_cost, bloq)
-            return static_cost
+
 
         # Base case: Span is zero for single-qubit bloqs or specific types
         if bloq_is_not_multiqubit(bloq):
