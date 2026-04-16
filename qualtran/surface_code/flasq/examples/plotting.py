@@ -16,10 +16,7 @@
 
 from typing import Callable, Optional, Tuple
 
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-import numpy as np
 import pandas as pd
 import seaborn as sns  # type: ignore[import-untyped]
 from matplotlib.colors import LogNorm

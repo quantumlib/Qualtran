@@ -21,7 +21,7 @@ compute_span_volume in FLASQCostModel to produce ancilla volumes.
 """
 
 import logging
-from typing import Callable, Dict, List, Mapping, Sequence, Tuple, Union
+from typing import Callable, Dict, Mapping, Sequence, Tuple, Union
 
 import attrs
 import sympy

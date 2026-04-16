@@ -16,7 +16,6 @@ import itertools
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from qualtran.surface_code.flasq import cultivation_analysis
 

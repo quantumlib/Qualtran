@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 import pandas as pd
-import sympy
 from frozendict import frozendict
 from joblib import delayed, Parallel  # type: ignore[import-untyped]
 from tqdm.auto import tqdm

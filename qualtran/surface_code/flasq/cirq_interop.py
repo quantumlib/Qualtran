@@ -14,7 +14,7 @@
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
 
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
@@ -22,9 +22,7 @@ if TYPE_CHECKING:
 import warnings
 
 import cirq
-import numpy as np
 
-import qualtran.cirq_interop
 from qualtran import Bloq, CompositeBloq, Signature
 from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_gate_to_bloq, cirq_optree_to_cbloq

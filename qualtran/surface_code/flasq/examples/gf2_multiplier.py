@@ -15,7 +15,7 @@
 """GF(2) multiplication circuit builder for FLASQ analysis examples."""
 
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict
 
 import cirq
 import numpy as np

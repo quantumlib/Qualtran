@@ -21,7 +21,6 @@
 #
 # Parameters are drawn from the FLASQ paper (Table 1, demo notebooks).
 
-import math
 
 import numpy as np
 import pytest
@@ -41,7 +40,7 @@ from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, Tota
 from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 from qualtran.surface_code.flasq.span_counting import TotalSpanCost
 from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
-from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
+from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals
 
 STANDARD_ASSUMPTIONS = frozendict({ROTATION_ERROR: 1e-3, V_CULT_FACTOR: 6.0, T_REACT: 1.0})
 

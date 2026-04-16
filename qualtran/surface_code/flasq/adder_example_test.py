@@ -75,7 +75,6 @@ import cirq
 import numpy as np
 
 from qualtran import QUInt
-from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq

@@ -16,8 +16,7 @@
 import pytest
 import sympy
 
-from qualtran import Signature
-from qualtran._infra.composite_bloq import Bloq, BloqBuilder, CompositeBloq
+from qualtran._infra.composite_bloq import BloqBuilder
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, Swap, Toffoli
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting._costing import get_cost_value

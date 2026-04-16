@@ -28,7 +28,7 @@ from qualtran import (
     QUInt,
     Signature,
 )
-from qualtran.bloqs.arithmetic import Add, HammingWeightCompute
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey, get_cost_value
@@ -324,7 +324,7 @@ class TotalMeasurementDepthEdgeCasesTestSuite:
 
 # NOTE: The HammingWeightCompute test was previously commented out with placeholder
 # expected values (222). The correct expected depths depend on the specific
-# decomposition of HammingWeightCompute, which may vary across Qualtran versions.
+# decomposition of which may vary across Qualtran versions.
 # Rather than guessing values, this is deferred to Phase 3 where we can verify
 # against the paper's expectations. The commented-out code has been removed as
 # part of Phase 1 cleanup.
