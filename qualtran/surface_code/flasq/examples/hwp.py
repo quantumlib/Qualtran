@@ -61,6 +61,7 @@ def build_hwp_circuit(
     # operation and will be used to allocate ancillas during decomposition.
     op, _ = hamming_bloq.as_cirq_op(qubit_manager=ancilla_qubit_manager, x=np.array(data_qubits))
 
+    assert op is not None
     # Wrap the single, large operation into a circuit.
     circuit = cirq.Circuit(op)
 

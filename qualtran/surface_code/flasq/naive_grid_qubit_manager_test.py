@@ -381,6 +381,7 @@ def test_hamming_weight_phasing_with_manager():
     bloq = HammingWeightPhasing(bitsize=bitsize, exponent=exponent)
     op, out_quregs = bloq.as_cirq_op(qubit_manager=decomp_manager, x=target_quregs_arr)
 
+    assert op is not None
     circuit = cirq.Circuit(op)
     decomposed_circuit = cirq.Circuit(
         cirq.decompose(

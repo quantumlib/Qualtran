@@ -573,6 +573,14 @@ def test_apply_flasq_cost_model_basic():
         + span_info_val.compute_span * model.compute_span_volume
     )  # 4*1+2*1+6*2+1*2+1*0+20*1+10*1 = 4+2+12+2+0+20+10 = 50.0
 
+    # Mypy checks for initialized optional fields
+    assert model.rz_clifford_volume is not None
+    assert model.rx_clifford_volume is not None
+    assert model.toffoli_cultivation_volume is not None
+    assert model.and_cultivation_volume is not None
+    assert model.rz_cultivation_volume is not None
+    assert model.rx_cultivation_volume is not None
+
     expected_non_clifford_lattice_surgery_vol = (
         counts_val.t * model.t_clifford_volume
         + counts_val.toffoli * model.toffoli_clifford_volume
@@ -804,6 +812,9 @@ def test_apply_flasq_cost_model_with_defaults_and_resolution():
     )
 
     # Check some symbolic fields before resolution
+    assert isinstance(summary_symbolic.cultivation_volume, sympy.Expr)
+    assert isinstance(summary_symbolic.total_spacetime_volume, sympy.Expr)
+    assert isinstance(summary_symbolic.non_clifford_lattice_surgery_volume, sympy.Expr)
     assert V_CULT_FACTOR in summary_symbolic.cultivation_volume.free_symbols
     assert V_CULT_FACTOR in summary_symbolic.total_spacetime_volume.free_symbols
     assert ROTATION_ERROR in summary_symbolic.total_spacetime_volume.free_symbols

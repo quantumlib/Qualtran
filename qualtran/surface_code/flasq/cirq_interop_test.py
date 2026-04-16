@@ -163,7 +163,7 @@ def test_convert_circuit_zzpow_interception():
     assert z_pow_count == 1, f"Expected 1 ZPowGate, found {z_pow_count}"
     assert found_z_pow_exponent is not None, "ZPowGate gate not found"
     assert np.isclose(
-        found_z_pow_exponent, expected_z_pow_bloq.exponent
+        float(found_z_pow_exponent), float(expected_z_pow_bloq.exponent)
     ), f"ZPowGate exponent mismatch: expected {expected_z_pow_bloq.exponent}, found {found_z_pow_exponent}"
 
     flasq_cost = get_cost_value(cbloq, FLASQGateTotals())

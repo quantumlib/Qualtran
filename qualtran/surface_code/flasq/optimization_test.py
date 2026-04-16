@@ -95,7 +95,7 @@ def test_flasq_gate_counts_hashable():
     assert hash(counts1) is not None
 
     # Case 2: With unknown bloqs (using standard hashable Bloqs)
-    unknown_bloqs1: Dict[Bloq, sympy.Symbol] = {CNOT(): 2, Toffoli(): 1}
+    unknown_bloqs1: Dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}
     counts2 = FLASQGateCounts(t=10, bloqs_with_unknown_cost=unknown_bloqs1)
     assert hash(counts2) is not None
 
@@ -112,7 +112,7 @@ def test_flasq_gate_counts_hashable():
     assert counts1 == counts4
     assert hash(counts1) == hash(counts4)
 
-    unknown_bloqs3: Dict[Bloq, sympy.Symbol] = {CNOT(): 2, Toffoli(): 1}  # Same as unknown_bloqs1
+    unknown_bloqs3: Dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}  # Same as unknown_bloqs1
     counts5 = FLASQGateCounts(t=10, bloqs_with_unknown_cost=unknown_bloqs3)
     assert counts2 == counts5
     assert hash(counts2) == hash(counts5)
@@ -125,7 +125,7 @@ def test_gate_span_hashable():
     assert hash(span1) is not None
 
     # Case 2: With uncounted bloqs (using standard hashable Bloqs)
-    uncounted_bloqs1: Dict[Bloq, sympy.Symbol] = {Hadamard(): 10, CNOT(): 5}
+    uncounted_bloqs1: Dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}
     span2 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs1)
     assert hash(span2) is not None
 
@@ -142,7 +142,7 @@ def test_gate_span_hashable():
     assert span1 == span4
     assert hash(span1) == hash(span4)
 
-    uncounted_bloqs3: Dict[Bloq, sympy.Symbol] = {
+    uncounted_bloqs3: Dict[Bloq, int] = {
         Hadamard(): 10,
         CNOT(): 5,
     }  # Same as uncounted_bloqs1
@@ -163,7 +163,7 @@ def test_measurement_depth_hashable():
     assert hash(depth1) is not None
 
     # Case 2: With unknown bloqs (using standard hashable Bloqs)
-    unknown_bloqs1: Dict[Bloq, sympy.Symbol] = {Ry(Symbol("theta")): 1, ZPowGate(exponent=0.1): 2}
+    unknown_bloqs1: Dict[Bloq, int] = {Ry(Symbol("theta")): 1, ZPowGate(exponent=0.1): 2}
     depth2 = MeasurementDepth(depth=10.5, bloqs_with_unknown_depth=unknown_bloqs1)
     assert hash(depth2) is not None
 
@@ -180,7 +180,7 @@ def test_measurement_depth_hashable():
     assert depth1 == depth4
     assert hash(depth1) == hash(depth4)
 
-    unknown_bloqs3: Dict[Bloq, sympy.Symbol] = {
+    unknown_bloqs3: Dict[Bloq, int] = {
         Ry(Symbol("theta")): 1,
         ZPowGate(exponent=0.1): 2,
     }  # Same as unknown_bloqs1
@@ -393,6 +393,7 @@ class OptimizationFunctionsTestSuite:
             circuit_builder_kwargs=kwargs,
             total_allowable_rotation_error=total_rot_error,
         )
+        assert res1 is not None
 
         assert isinstance(res1, frozendict)
         assert "flasq_counts" in res1
@@ -428,6 +429,7 @@ class OptimizationFunctionsTestSuite:
             circuit_builder_kwargs=kwargs_no_rot,
             total_allowable_rotation_error=total_rot_error,
         )
+        assert res_no_rot is not None
         assert res_no_rot["flasq_counts"].total_rotations == 0
         assert res_no_rot["individual_allowable_rotation_error"] == 1.0  # Default for no rotations
 
@@ -531,6 +533,7 @@ class OptimizationFunctionsTestSuite:
             circuit_builder_kwargs=ising_params,
             total_allowable_rotation_error=total_rot_err,
         )
+        assert logical_analysis is not None
         assert isinstance(logical_analysis["flasq_counts"], FLASQGateCounts)
         assert logical_analysis["qubit_counts"] == ising_params["rows"] * ising_params["cols"]
 
@@ -835,6 +838,8 @@ class NewSweepPipelineTestSuite:
             vcult_factor=6.0,
             cultivation_data_source_distance=None,
         )
+        assert flasq_summary is not None
+        assert logical_analysis is not None
         raw_result = SweepResult(
             circuit_builder_kwargs=frozendict({"num_qubits": 2, "add_rotation": True}),
             core_config=core_config,
