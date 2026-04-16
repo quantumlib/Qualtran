@@ -26,13 +26,12 @@ from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import get_cost_value, QubitCount
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 from qualtran.surface_code.flasq.flasq_model import (
-    conservative_FLASQ_costs,  # Import the new instance
+    apply_flasq_cost_model,
+    conservative_FLASQ_costs,
+    FLASQCostModel,
+    FLASQSummary,
+    optimistic_FLASQ_costs,
 )
-from qualtran.surface_code.flasq.flasq_model import FLASQSummary  # Import the new summary dataclass
-from qualtran.surface_code.flasq.flasq_model import (
-    optimistic_FLASQ_costs,  # Import the new instance
-)
-from qualtran.surface_code.flasq.flasq_model import apply_flasq_cost_model, FLASQCostModel
 from qualtran.surface_code.flasq.measurement_depth import (  # Import MeasurementDepth
     MeasurementDepth,
     TotalMeasurementDepth,
