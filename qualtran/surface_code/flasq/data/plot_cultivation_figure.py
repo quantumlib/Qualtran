@@ -40,7 +40,6 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 
-
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------

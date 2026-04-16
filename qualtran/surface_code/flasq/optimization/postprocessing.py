@@ -13,22 +13,26 @@
 #  limitations under the License.
 
 from typing import Dict, List
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import sympy
 from frozendict import frozendict
+from joblib import delayed, Parallel
 from tqdm.auto import tqdm
-from joblib import Parallel, delayed
 
-from qualtran.surface_code.flasq.optimization.sweep import SweepResult
-from qualtran.surface_code.flasq.optimization.configs import ErrorBudget
-from qualtran.surface_code.flasq.utils import substitute_until_fixed_point, convert_sympy_exprs_in_df
 from qualtran.surface_code.flasq.error_mitigation import (
     calculate_error_mitigation_metrics,
     calculate_failure_probabilities,
     ERROR_PER_CYCLE_PREFACTOR,
 )
-from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, V_CULT_FACTOR, T_REACT
+from qualtran.surface_code.flasq.optimization.configs import ErrorBudget
+from qualtran.surface_code.flasq.optimization.sweep import SweepResult
+from qualtran.surface_code.flasq.symbols import ROTATION_ERROR, T_REACT, V_CULT_FACTOR
+from qualtran.surface_code.flasq.utils import (
+    convert_sympy_exprs_in_df,
+    substitute_until_fixed_point,
+)
 
 
 def _process_single_result_for_logical_depth(r: SweepResult) -> dict:

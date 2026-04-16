@@ -19,14 +19,13 @@ wall-clock time per effective noiseless sample for a given FLASQ summary
 and physical error parameters.
 """
 
-from typing import Tuple
 from functools import lru_cache
+from typing import Tuple
 
 import sympy
 
-from qualtran.symbolics import SymbolicFloat
-
 from qualtran.surface_code.flasq.flasq_model import FLASQSummary
+from qualtran.symbolics import SymbolicFloat
 
 ERROR_PER_CYCLE_PREFACTOR = 0.03  # c_cyc in the paper. Empirical prefactor for surface code logical error rate.
 

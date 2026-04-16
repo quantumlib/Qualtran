@@ -15,8 +15,8 @@
 """Visualization utilities for FLASQ analysis results."""
 from typing import Callable, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd

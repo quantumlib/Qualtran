@@ -15,9 +15,9 @@
 """Ising model Trotter circuit builder for FLASQ analysis examples."""
 
 from functools import lru_cache
+from typing import Generator, List, Tuple
 
 import cirq
-from typing import Generator, List, Tuple
 
 
 def ising_zz_layer(

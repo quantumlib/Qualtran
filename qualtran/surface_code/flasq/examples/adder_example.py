@@ -21,13 +21,14 @@ if TYPE_CHECKING:
 
 import cirq
 import numpy as np
+
 import qualtran
 import qualtran.bloqs
-from qualtran.bloqs.arithmetic.addition import Add
-from qualtran import QUInt, Signature
 import qualtran.bloqs.mcmt
-from qualtran.resource_counting import get_cost_value
+from qualtran import QUInt, Signature
+from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.cirq_interop import cirq_optree_to_cbloq
+from qualtran.resource_counting import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import cirq_op_to_bloq_with_span
 from qualtran.surface_code.flasq.span_counting import GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.volume_counting import (

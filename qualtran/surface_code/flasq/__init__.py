@@ -14,20 +14,21 @@
 
 """qualtran.surface_code.flasq: FLASQ cost model for fault-tolerant quantum resource estimation."""
 
+from qualtran.surface_code.flasq import cultivation_analysis  # noqa: F401 — imported as module
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 from qualtran.surface_code.flasq.error_mitigation import (
     calculate_error_mitigation_metrics,
     calculate_failure_probabilities,
 )
 from qualtran.surface_code.flasq.flasq_model import (
-    FLASQCostModel,
-    FLASQSummary,
     apply_flasq_cost_model,
     conservative_FLASQ_costs,
+    FLASQCostModel,
+    FLASQSummary,
     get_rotation_depth,
     optimistic_FLASQ_costs,
 )
-from qualtran.surface_code.flasq.measurement_depth import TotalMeasurementDepth, MeasurementDepth
+from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth, TotalMeasurementDepth
 from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 from qualtran.surface_code.flasq.optimization import (
     ErrorBudget,
@@ -39,7 +40,7 @@ from qualtran.surface_code.flasq.optimization import (
     post_process_for_pec_runtime,
     run_sweep,
 )
-from qualtran.surface_code.flasq.span_counting import TotalSpanCost, GateSpan, BloqWithSpanInfo
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
@@ -47,8 +48,7 @@ from qualtran.surface_code.flasq.symbols import (
     V_CULT_FACTOR,
 )
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
-from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals, FLASQGateCounts
-from qualtran.surface_code.flasq import cultivation_analysis  # noqa: F401 — imported as module
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
 
 __all__ = [
     "FLASQCostModel",
