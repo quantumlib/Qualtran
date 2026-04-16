@@ -20,7 +20,7 @@ by span_counting.py.
 """
 
 import logging
-from typing import Callable, Dict, Mapping, Optional, Tuple, Union
+from typing import Callable, Dict, Mapping, Union
 
 import attrs
 import cirq

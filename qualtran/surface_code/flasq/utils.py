@@ -15,7 +15,7 @@
 """Utilities for resolving symbolic expressions in FLASQ cost formulas."""
 
 from functools import lru_cache
-from typing import Any, Mapping, TypeVar, Union
+from typing import Any, Mapping, Union
 
 import numpy as np
 import pandas as pd

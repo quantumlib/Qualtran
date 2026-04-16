@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import warnings
 
 import cirq
 import numpy as np
@@ -20,7 +19,6 @@ from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, Register, Side, Signature
 from qualtran.bloqs.mcmt import And
-from qualtran.bloqs.rotations import HammingWeightPhasing
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 from qualtran.surface_code.flasq.examples.hwp import build_hwp_circuit
 from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager

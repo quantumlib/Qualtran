@@ -21,11 +21,10 @@ Also called 'reaction depth' in the paper.
 """
 
 import logging
-from typing import Any, Callable, Dict, Mapping, Optional, Union
+from typing import Callable, Dict, Mapping, Optional, Union
 
 import attrs
 import networkx as nx
-import sympy
 from attrs import frozen
 from frozendict import frozendict
 

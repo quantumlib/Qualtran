@@ -28,14 +28,12 @@ from frozendict import frozendict
 from sympy import Symbol
 
 from qualtran import Bloq, Signature
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, Ry, TGate, Toffoli, ZPowGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Ry, Toffoli, ZPowGate
 from qualtran.surface_code.flasq import cultivation_analysis  # For the new test
 from qualtran.surface_code.flasq.examples.ising import build_ising_circuit  # For integration test
 from qualtran.surface_code.flasq.flasq_model import (
-    apply_flasq_cost_model,
     conservative_FLASQ_costs,
     FLASQSummary,
-    optimistic_FLASQ_costs,
     ROTATION_ERROR,
     V_CULT_FACTOR,
 )
@@ -49,14 +47,13 @@ from qualtran.surface_code.flasq.optimization import (
     generate_configs_for_specific_cultivation_assumptions,
     generate_configs_from_cultivation_data,
     post_process_for_failure_budget,
-    post_process_for_logical_depth,
     post_process_for_pec_runtime,
     run_sweep,
     SweepResult,
 )
-from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
+from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan
 from qualtran.surface_code.flasq.symbols import T_REACT
-from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
+from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
 
 
 @frozen
