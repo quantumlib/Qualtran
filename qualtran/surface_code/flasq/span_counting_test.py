@@ -165,9 +165,9 @@ class GateSpanArithmeticTestSuite:
         """Adding a non-GateSpan, non-zero value should raise TypeError (L85-86)."""
         gs = GateSpan(connect_span=1, compute_span=1)
         with pytest.raises(TypeError, match="Can only add"):
-            gs + "not_a_span"
+            _ = gs + "not_a_span"
 
-    def test_mul_by_int(self):
+    def test_mul_by_zero(self):
         """GateSpan * int should scale spans and uncounted bloqs (L104-120)."""
         gs = GateSpan(connect_span=3, compute_span=5, uncounted_bloqs={CNOT(): 2})
         result = gs * 4

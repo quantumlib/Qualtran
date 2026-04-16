@@ -289,11 +289,11 @@ class FLASQGateCountsArithmeticTestSuite:
 
     def test_add_wrong_type_raises(self):
         with pytest.raises(TypeError, match="Can only add"):
-            FLASQGateCounts(t=1) + "not_a_count"
+            _ = FLASQGateCounts(t=1) + "not_a_count"
 
     def test_mul_wrong_type_raises(self):
         with pytest.raises(TypeError, match="Can only multiply"):
-            FLASQGateCounts(t=1) * "not_a_number"  # type: ignore[operator]
+            _ = FLASQGateCounts(t=1) * "not_a_number"  # type: ignore[operator]
 
     def test_add_zero_returns_self(self):
         counts = FLASQGateCounts(t=5, cnot=3)
