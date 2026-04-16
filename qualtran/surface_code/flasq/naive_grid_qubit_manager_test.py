@@ -124,7 +124,7 @@ def test_qalloc_multiple_rows_zig_zag(negative):
 def test_qalloc_invalid_dimension():
     """Verify qalloc raises ValueError for dim != 2."""
     manager = NaiveGridQubitManager(max_cols=3)
-    with pytest.raises(ValueError, match="Only qubits \(dim=2\) are supported"):
+    with pytest.raises(ValueError, match=r"Only qubits \(dim=2\) are supported"):
         manager.qalloc(1, dim=3)
 
 
