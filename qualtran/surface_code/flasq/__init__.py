@@ -27,7 +27,7 @@ from qualtran.surface_code.flasq.flasq_model import (
     get_rotation_depth,
     optimistic_FLASQ_costs,
 )
-from qualtran.surface_code.flasq.measurement_depth import TotalMeasurementDepth
+from qualtran.surface_code.flasq.measurement_depth import TotalMeasurementDepth, MeasurementDepth
 from qualtran.surface_code.flasq.naive_grid_qubit_manager import NaiveGridQubitManager
 from qualtran.surface_code.flasq.optimization import (
     ErrorBudget,
@@ -39,7 +39,7 @@ from qualtran.surface_code.flasq.optimization import (
     post_process_for_pec_runtime,
     run_sweep,
 )
-from qualtran.surface_code.flasq.span_counting import TotalSpanCost
+from qualtran.surface_code.flasq.span_counting import TotalSpanCost, GateSpan, BloqWithSpanInfo
 from qualtran.surface_code.flasq.symbols import (
     MIXED_FALLBACK_T_COUNT,
     ROTATION_ERROR,
@@ -47,7 +47,7 @@ from qualtran.surface_code.flasq.symbols import (
     V_CULT_FACTOR,
 )
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
-from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals
+from qualtran.surface_code.flasq.volume_counting import FLASQGateTotals, FLASQGateCounts
 from qualtran.surface_code.flasq import cultivation_analysis  # noqa: F401 — imported as module
 
 __all__ = [
@@ -78,4 +78,8 @@ __all__ = [
     "T_REACT",
     "substitute_until_fixed_point",
     "cultivation_analysis",
+    "FLASQGateCounts",
+    "GateSpan",
+    "MeasurementDepth",
+    "BloqWithSpanInfo",
 ]
