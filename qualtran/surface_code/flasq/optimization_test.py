@@ -142,10 +142,7 @@ def test_gate_span_hashable():
     assert span1 == span4
     assert hash(span1) == hash(span4)
 
-    uncounted_bloqs3: Dict[Bloq, int] = {
-        Hadamard(): 10,
-        CNOT(): 5,
-    }  # Same as uncounted_bloqs1
+    uncounted_bloqs3: Dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}  # Same as uncounted_bloqs1
     span5 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs3)
     assert span2 == span5
     assert hash(span2) == hash(span5)

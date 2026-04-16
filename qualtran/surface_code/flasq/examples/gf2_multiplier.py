@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Dict, Tuple
 
 import cirq
+import numpy as np
 
 from qualtran import QGF, Signature
 from qualtran.bloqs.gf_arithmetic import GF2Multiplication, GF2MulViaKaratsuba
@@ -53,8 +54,8 @@ def build_quadratic_mult_circuit(bitsize: int) -> CircuitAndData:
     # Define the data qubit layout.
     x = [cirq.GridQubit(0, i) for i in range(bitsize)]
     y = [cirq.GridQubit(1, i) for i in range(bitsize)]
-    in_quregs = {"x": x, "y": y}
-    out_quregs = {"x": x, "y": y}
+    in_quregs = {"x": np.array(x), "y": np.array(y)}
+    out_quregs = {"x": np.array(x), "y": np.array(y)}
 
     # Decompose the bloq into a circuit with temporary `CleanQubit` ancillas.
     # We flatten the bloq to decompose it all the way to And and CNOT gates.
@@ -99,8 +100,8 @@ def build_karatsuba_mult_circuit(bitsize: int) -> CircuitAndData:
     # Define the data qubit layout.
     x = [cirq.GridQubit(0, i) for i in range(bitsize)]
     y = [cirq.GridQubit(1, i) for i in range(bitsize)]
-    in_quregs = {"x": x, "y": y}
-    out_quregs = {"x": x, "y": y}
+    in_quregs = {"x": np.array(x), "y": np.array(y)}
+    out_quregs = {"x": np.array(x), "y": np.array(y)}
 
     # Decompose the bloq into a circuit with temporary `CleanQubit` ancillas.
     # The implementation of Karatsuba has an explicit ancilla register.

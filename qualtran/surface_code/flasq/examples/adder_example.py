@@ -132,7 +132,7 @@ def create_adder_circuit_and_decorations(
     print("Circuit decomposed using 'is_succinct'.")
 
     # The decomposition might create qubits like `cirq.ops.CleanQubit(i, prefix='_decompose_protocol')`
-    qubit_map = {}
+    qubit_map: dict[cirq.Qid, cirq.Qid] = {}
     for i in range(bitsize):
         j = (bitsize - i - 1) * 3 - 1
         qubit_map[cirq.ops.CleanQubit(i, prefix="_decompose_protocol")] = cirq.LineQubit(j)

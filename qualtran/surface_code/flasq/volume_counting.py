@@ -27,7 +27,6 @@ import cirq
 import numpy as np
 import sympy
 from attrs import frozen
-from qualtran.surface_code.flasq.utils import _to_frozendict
 from frozendict import frozendict
 
 from qualtran import Bloq
@@ -60,6 +59,7 @@ from qualtran.resource_counting.classify_bloqs import (
     bloq_is_state_or_effect,
     bloq_is_t_like,
 )
+from qualtran.surface_code.flasq.utils import _to_frozendict
 from qualtran.symbolics import is_zero, SymbolicFloat
 from qualtran.symbolics.types import SymbolicInt
 

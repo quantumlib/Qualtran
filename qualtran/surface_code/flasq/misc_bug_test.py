@@ -68,6 +68,8 @@ def test_hierarchical_bloq_flatten_error_is_caught():
     a_in = bb_inner.add_register(Register("a", QAny(2), side=Side.LEFT))
     b_in = bb_inner.add_register(Register("b", QAny(3), side=Side.LEFT))
     bb_inner.add_register(Register("c", QAny(5), side=Side.RIGHT))
+    assert a_in is not None
+    assert b_in is not None
     a_thru = bb_inner.add(_TestThru(2), q=a_in)
     b_thru = bb_inner.add(_TestThru(3), q=b_in)
     c_out = bb_inner.add(_TestTwoIn(2, 3), a=a_thru, b=b_thru)
@@ -77,6 +79,8 @@ def test_hierarchical_bloq_flatten_error_is_caught():
     a_start = bb_outer.add_register(Register("a", QAny(2), side=Side.LEFT))
     b_start = bb_outer.add_register(Register("b", QAny(3), side=Side.LEFT))
     bb_outer.add_register(Register("c", QAny(5), side=Side.RIGHT))
+    assert a_start is not None
+    assert b_start is not None
     c_final = bb_outer.add(inner_cbloq, a=a_start, b=b_start)
     outer_cbloq = bb_outer.finalize(c=c_final)
 

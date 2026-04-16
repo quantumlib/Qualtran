@@ -219,7 +219,11 @@ def test_calculate_volumes_with_unknowns():
         )
     # Test for mathematical equivalence, not exact symbolic form.
     # Should be 0 since T is not a pure clifford.
-    assert sympy.simplify(vol1 - (5 * 2 + 5 * 1)) == 0
+    diff1 = vol1 - (5 * 2 + 5 * 1)
+    if isinstance(diff1, sympy.Expr):
+        assert sympy.simplify(diff1) == 0
+    else:
+        assert diff1 == 0
 
     # Test with uncounted span
     with pytest.warns(UserWarning, match="Clifford volume with uncounted span bloqs"):
@@ -227,12 +231,20 @@ def test_calculate_volumes_with_unknowns():
             FLASQGateCounts(t=10), span_unknown
         )
     # Test for mathematical equivalence, not exact symbolic form.
-    assert sympy.simplify(vol2 - (15 * 2 + 10 * 1)) == 0
+    diff2 = vol2 - (15 * 2 + 10 * 1)
+    if isinstance(diff2, sympy.Expr):
+        assert sympy.simplify(diff2) == 0
+    else:
+        assert diff2 == 0
 
     # Test non-clifford volume warning
     with pytest.warns(UserWarning, match="non-Clifford lattice surgery volume"):
         vol_non_cliff = model.calculate_non_clifford_lattice_surgery_volume(counts_unknown)
-    assert sympy.simplify(vol_non_cliff - 10 * 4) == 0
+    diff_non_cliff = vol_non_cliff - 10 * 4
+    if isinstance(diff_non_cliff, sympy.Expr):
+        assert sympy.simplify(diff_non_cliff) == 0
+    else:
+        assert diff_non_cliff == 0
 
     # Test cultivation volume warning
     with pytest.warns(UserWarning, match="cultivation volume with unknown FLASQ counts"):
@@ -249,7 +261,11 @@ def test_calculate_volumes_with_unknowns():
             counts_unknown, span_unknown
         )
     # Test for mathematical equivalence, not exact symbolic form.
-    assert sympy.simplify(vol3 - (15 * 2 + 10 * 1)) == 0
+    diff3 = vol3 - (15 * 2 + 10 * 1)
+    if isinstance(diff3, sympy.Expr):
+        assert sympy.simplify(diff3) == 0
+    else:
+        assert diff3 == 0
     # Check that two warnings were issued by this specific call
     assert len(record) == 2
     assert "pure Clifford volume with unknown FLASQ counts" in str(record[0].message)
@@ -944,6 +960,7 @@ def test_end_to_end_summary_from_custom_circuit():
     # See the detailed calculation in the PR description or commit message that
     # updated this value. The T-count formula for rotations was updated, leading
     # to this new value.
+    assert isinstance(summary_resolved.total_spacetime_volume, (int, float))
     assert np.isclose(summary_resolved.total_spacetime_volume, 436.86, atol=0.1)
 
 

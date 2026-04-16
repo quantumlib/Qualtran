@@ -130,11 +130,7 @@ def flasq_intercepting_decomposer(op: cirq.Operation) -> List[cirq.Operation]:
     if isinstance(gate, cirq.ZZPowGate):
         a, b = op.qubits
         exponent = gate.exponent
-        return [
-            cirq.CNOT.on(a, b),
-            cirq.ZPowGate(exponent=exponent).on(b),
-            cirq.CNOT.on(a, b),
-        ]
+        return [cirq.CNOT.on(a, b), cirq.ZPowGate(exponent=exponent).on(b), cirq.CNOT.on(a, b)]
 
     return NotImplemented
 
