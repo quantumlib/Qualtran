@@ -46,7 +46,7 @@ def analyze_adder_costs(bitsize: int):
 
     try:
         register_type = QUInt(bitsize)
-        adder_bloq = Add(dtype=register_type)
+        adder_bloq = Add(a_dtype=register_type, b_dtype=register_type)
         print(f"Instantiated Bloq: {adder_bloq}")
     except Exception as e:
         print(f"An unexpected error occurred during bloq instantiation: {e}")
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     num_bits = 5
 
     try:
-        adder_circuit, _, _, _ = create_adder_circuit_and_decorations(num_bits)
+        adder_circuit, _sig, _in_q, _out_q = create_adder_circuit_and_decorations(num_bits)
         print(f"\nFinal Decomposed Adder Circuit ({num_bits} bits):")
         print(
             f"(Circuit has {len(adder_circuit)} moments, {len(list(adder_circuit.all_operations()))} ops)"
