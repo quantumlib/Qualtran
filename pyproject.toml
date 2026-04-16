@@ -82,6 +82,7 @@ dependencies = [
     "pandas >= 2.0",
     "seaborn",
     "joblib",
+    "tqdm",
 ]
 
 [tool.hatch.version]
