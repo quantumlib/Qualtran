@@ -39,7 +39,7 @@ from qualtran.surface_code.flasq.symbols import (
 )
 from qualtran.surface_code.flasq.utils import substitute_until_fixed_point
 from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
-from qualtran.symbolics import SymbolicFloat, SymbolicInt
+from qualtran.symbolics import is_symbolic, SymbolicFloat, SymbolicInt
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -524,7 +524,7 @@ def apply_flasq_cost_model(
     # Guard against division by zero when n_fluid_ancilla is zero (or negative),
     # which produces zoo and leads to NaN errors during substitution/simplification.
     volume_limited_depth: SymbolicFloat
-    if n_fluid_ancilla <= 0:
+    if not is_symbolic(n_fluid_ancilla) and n_fluid_ancilla <= 0:
         volume_limited_depth = sympy.oo
     else:
         volume_limited_depth = total_computational_volume / n_fluid_ancilla  # type: ignore[operator]
