@@ -15,8 +15,8 @@
 import pytest
 from galois import GF
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.gf_arithmetic.gf2_add_k import _gf2_add_k_symbolic, _gf16_add_k, GF2AddK
-from qualtran.testing import assert_consistent_classical_action
 
 
 def test_gf16_add_k(bloq_autotester):
@@ -32,7 +32,7 @@ def test_gf2_add_k_classical_sim_quick():
     GFM = GF(2**m)
     for k in GFM.elements:
         bloq = GF2AddK(m, int(k))
-        assert_consistent_classical_action(bloq, x=GFM.elements)
+        qlt_testing.assert_consistent_classical_action(bloq, x=GFM.elements)
 
 
 @pytest.mark.slow
@@ -41,4 +41,9 @@ def test_gf2_add_k_classical_sim(m):
     GFM = GF(2**m)
     for k in GFM.elements:
         bloq = GF2AddK(m, int(k))
-        assert_consistent_classical_action(bloq, x=GFM.elements)
+        qlt_testing.assert_consistent_classical_action(bloq, x=GFM.elements)
+
+
+@pytest.mark.notebook
+def test_gf2_add_k_notebook():
+    qlt_testing.execute_notebook('gf2_add_k')

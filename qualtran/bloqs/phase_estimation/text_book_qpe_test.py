@@ -124,3 +124,8 @@ def test_qpe_of_gqsp():
     hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
     textbook_qpe_w_gqsp = TextbookQPE(hubbard_time_evolution_by_gqsp, RectangularWindowState(3))
     qlt_testing.assert_valid_bloq_decomposition(textbook_qpe_w_gqsp)
+
+
+@pytest.mark.notebook
+def test_text_book_qpe_notebook():
+    qlt_testing.execute_notebook('text_book_qpe')

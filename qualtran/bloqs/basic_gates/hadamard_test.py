@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import Hadamard, OneEffect, OneState
 from qualtran.bloqs.basic_gates.hadamard import _hadamard, CHadamard
 from qualtran.cirq_interop import cirq_gate_to_bloq
@@ -103,3 +104,8 @@ def test_chadamard_adjoint():
     cbloq = bb.finalize(ctrl=ctrl, q=q)
 
     np.testing.assert_allclose(np.eye(4), cbloq.tensor_contract(), atol=1e-12)
+
+
+@pytest.mark.notebook
+def test_hadamard_notebook():
+    qlt_testing.execute_notebook('hadamard')

@@ -14,6 +14,7 @@
 import pytest
 
 from qualtran import QInt, QUInt
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.arithmetic.negate import _negate, _negate_symb, Negate
 
 
@@ -42,3 +43,8 @@ def test_negate_classical_sim(bitsize: int):
         else:
             # all other values
             assert neg_x == -x
+
+
+@pytest.mark.notebook
+def test_negate_notebook():
+    qlt_testing.execute_notebook('negate')

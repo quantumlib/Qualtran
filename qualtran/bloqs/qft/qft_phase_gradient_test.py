@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.qft.qft_phase_gradient import _qft_phase_gradient_small, QFTPhaseGradient
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
@@ -74,3 +75,8 @@ def test_qft_phase_gradient_t_complexity(n: int):
 
 def test_qft_phase_gradient_small_auto(bloq_autotester):
     bloq_autotester(_qft_phase_gradient_small)
+
+
+@pytest.mark.notebook
+def test_qft_phase_gradient_notebook():
+    qlt_testing.execute_notebook('qft_phase_gradient')

@@ -269,3 +269,8 @@ def test_cswap_symb(bloq_autotester):
     if bloq_autotester.check_name == 'serialize':
         pytest.skip("Sympy equality with assumptions.")
     bloq_autotester(_cswap)
+
+
+@pytest.mark.notebook
+def test_swap_notebook():
+    qlt_testing.execute_notebook('swap')

@@ -16,8 +16,10 @@ from typing import Dict
 
 import cirq
 import numpy as np
+import pytest
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, TGate
 from qualtran.bloqs.basic_gates.t_gate import _t_gate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -93,3 +95,8 @@ def test_test_t_state_tensor_adjoint():
     unitary = TestTStateMaker().tensor_contract()
     adj_unitary = TestTStateMaker().adjoint().tensor_contract()
     np.testing.assert_allclose(unitary.conj().T, adj_unitary)
+
+
+@pytest.mark.notebook
+def test_t_gate_notebook():
+    qlt_testing.execute_notebook('t_gate')

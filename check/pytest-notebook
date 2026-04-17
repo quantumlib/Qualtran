@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Runs notebook tests via jupytext-based execution.
+################################################################################
+
+# Get the working directory to the repo root.
+thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
+topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
+cd "${topdir}" || exit $?
+
+set -e
+
+python dev_tools/check-notebook-tests.py
+
+# Use non-interactive backend so plt.show() doesn't open GUI windows.
+export MPLBACKEND=agg
+
+pytest -v qualtran/ tutorials/ \
+  -m notebook

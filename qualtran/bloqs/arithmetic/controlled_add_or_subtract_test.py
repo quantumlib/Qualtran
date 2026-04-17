@@ -29,6 +29,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.arithmetic import Add, Negate, Subtract
 from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
     _ctrl_add_or_sub_signed,
@@ -130,3 +131,8 @@ def test_controlled_t_complexity():
 
     _ = bloq.controlled().adjoint().t_complexity()
     _ = bloq.adjoint().controlled().t_complexity()
+
+
+@pytest.mark.notebook
+def test_controlled_add_or_subtract_notebook():
+    qlt_testing.execute_notebook('controlled_add_or_subtract')

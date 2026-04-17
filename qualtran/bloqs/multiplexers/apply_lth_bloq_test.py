@@ -17,6 +17,7 @@ from typing import cast
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, BQUInt, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import (
     CHadamard,
@@ -166,3 +167,8 @@ def test_ndim(i, j, ctrl):
     )().tensor_contract()
     from_tensors = bloq.tensor_contract()
     np.testing.assert_allclose(from_gate, from_tensors)
+
+
+@pytest.mark.notebook
+def test_apply_lth_bloq_notebook():
+    qlt_testing.execute_notebook('apply_lth_bloq')

@@ -79,6 +79,7 @@ test = [
     "pytest-xdist",
 
     # test executing notebooks
+    "jupytext",
     "ipykernel",
     "filelock",
 
@@ -99,6 +100,7 @@ lint = [
     # for checking _test.py files
     "pytest",
     "openfermion[resources]",
+    "jupytext",
 
     # dev tools
     "tensorflow-docs",

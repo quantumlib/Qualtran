@@ -16,6 +16,7 @@ import pytest
 import sympy
 from galois import GF
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.gf_arithmetic.gf2_inverse import (
     _gf2_inverse_symbolic,
     _gf16_inverse,
@@ -64,3 +65,8 @@ def test_gf2_inverse_classical_sim(m):
 def test_gf2_equivalent_bloq_counts(m):
     bloq = GF2Inverse(m)
     assert_equivalent_bloq_counts(bloq, generalizer=[ignore_split_join, ignore_alloc_free])
+
+
+@pytest.mark.notebook
+def test_gf2_inverse_notebook():
+    qlt_testing.execute_notebook('gf2_inverse')

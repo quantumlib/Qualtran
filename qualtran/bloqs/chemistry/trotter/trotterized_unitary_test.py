@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran import Bloq, Signature
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
 from qualtran.bloqs.chemistry.trotter.trotterized_unitary import _trott_unitary, TrotterizedUnitary
 
@@ -129,3 +130,8 @@ def test_trotterized_unitary_tensor_contract_suzuki_4(nsites):
     suzuki = TrotterizedUnitary(bloqs=bloqs, indices=indices, coeffs=coeffs, timestep=dt)
     bloq_step = suzuki.tensor_contract()
     np.testing.assert_allclose(bloq_step, ref_step)
+
+
+@pytest.mark.notebook
+def test_trotterized_unitary_notebook():
+    qlt_testing.execute_notebook('trotterized_unitary')
