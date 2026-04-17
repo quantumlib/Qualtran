@@ -79,6 +79,7 @@ jobs:
           python dev_tools/execute-notebooks.py --n-workers=8
         env:
           NUMBA_NUM_THREADS: 4
+          FLASQ_FAST_MODE_OVERRIDE: 'True'
 
   format:
     runs-on: ubuntu-24.04
