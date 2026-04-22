@@ -78,7 +78,12 @@ MINIMAL_SKIP_CANONPATHS = [
 ]
 MINIMAL = True
 
-DEFINED_IN_CONTAINER_EXCEPTIONS = ['qualtran.dtype', 'qualtran.exception', 'qualtran.cirq_interop']
+DEFINED_IN_CONTAINER_EXCEPTIONS = [
+    'qualtran.dtype',
+    'qualtran.exception',
+    'qualtran.cirq_interop',
+    'qualtran.l1.nodes',
+]
 
 
 def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> Set[str]:

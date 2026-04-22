@@ -163,6 +163,7 @@ Bloqs Library
     optimization/k_xor_sat/kikuchi_adjacency_list.ipynb
     optimization/k_xor_sat/kikuchi_adjacency_matrix.ipynb
     optimization/k_xor_sat/kikuchi_block_encoding.ipynb
+    optimization/k_xor_sat/planted_noisy_kxor.ipynb
 
 .. toctree::
     :maxdepth: 2

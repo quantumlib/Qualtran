@@ -480,6 +480,9 @@ class AddK(Bloq):
 
         return counts
 
+    def __str__(self):
+        return f'AddK(k={self.k})'
+
 
 @bloq_example(generalizer=ignore_split_join)
 def _add_k() -> AddK:

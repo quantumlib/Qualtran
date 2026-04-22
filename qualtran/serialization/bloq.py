@@ -35,8 +35,8 @@ from qualtran import (
     Register,
     RightDangle,
     Signature,
-    Soquet,
 )
+from qualtran._infra.quantum_graph import _Soquet
 from qualtran.bloqs.cryptography.ecc import ECPoint
 from qualtran.protos import bloq_pb2
 from qualtran.serialization import (
@@ -53,7 +53,7 @@ from qualtran.serialization import (
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, int):
-        return bloq_pb2.BloqArg(name=name, int_val=val)
+        return bloq_pb2.BloqArg(name=name, int_val=int(val))
     if isinstance(val, float):
         return bloq_pb2.BloqArg(name=name, float_val=val)
     if isinstance(val, str):
@@ -155,7 +155,7 @@ class _BloqLibDeserializer:
             left=self._soquet_from_proto(cxn.left), right=self._soquet_from_proto(cxn.right)
         )
 
-    def _soquet_from_proto(self, soq: bloq_pb2.Soquet) -> Soquet:
+    def _soquet_from_proto(self, soq: bloq_pb2.Soquet) -> _Soquet:
         binst: Union[BloqInstance, DanglingT] = (
             self.dangling_to_singleton[soq.dangling_t]
             if soq.HasField('dangling_t')
@@ -164,7 +164,7 @@ class _BloqLibDeserializer:
                 bloq=self.bloq_id_to_bloq(soq.bloq_instance.bloq_id),
             )
         )
-        return Soquet(
+        return _Soquet(
             binst=binst, reg=registers.register_from_proto(soq.register), idx=tuple(soq.index)
         )
 
@@ -273,7 +273,7 @@ def _connection_to_proto(cxn: Connection, bloq_to_id: Dict[Bloq, int]):
     )
 
 
-def _soquet_to_proto(soq: Soquet, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.Soquet:
+def _soquet_to_proto(soq: _Soquet, bloq_to_id: Dict[Bloq, int]) -> bloq_pb2.Soquet:
     if isinstance(soq.binst, DanglingT):
         return bloq_pb2.Soquet(
             dangling_t=repr(soq.binst), register=registers.register_to_proto(soq.reg), index=soq.idx

@@ -33,7 +33,7 @@ from qualtran.bloqs.basic_gates import (
     ZGate,
     ZPowGate,
 )
-from qualtran.bloqs.basic_gates.rotation import _crz, _cz_pow, _rx, _ry, _rz, _z_pow, CRz
+from qualtran.bloqs.basic_gates.rotation import _crz, _cz_pow, _rx, _ry, _rz, _z_pow, CRy, CRz
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost
 from qualtran.resource_counting.classify_bloqs import bloq_is_rotation, bloq_is_t_like
 
@@ -156,6 +156,7 @@ def test_t_like_rotation_gates():
     assert not bloq_is_rotation(Rx(angle))
     assert not bloq_is_rotation(Ry(angle))
     assert not bloq_is_rotation(Rz(angle))
+    assert not bloq_is_rotation(CRy(angle))
     assert bloq_is_t_like(Rx(angle))
     assert bloq_is_t_like(Ry(angle))
     assert bloq_is_t_like(Rz(angle))
@@ -257,15 +258,17 @@ def test_pl_interop():
 
 
 def test_str():
-    assert str(ZPowGate()) == "Z**1.0"
-    assert str(XPowGate()) == "X**1.0"
-    assert str(YPowGate()) == "Y**1.0"
+    assert str(ZPowGate()) == "Z(pow=1.0)"
+    assert str(XPowGate()) == "X(pow=1.0)"
+    assert str(YPowGate()) == "Y(pow=1.0)"
     assert str(_ry()) == "Ry(0.7853981633974483)"
     assert str(_rx()) == "Rx(0.7853981633974483)"
     assert str(_rz()) == "Rz(a)"
 
-    assert str(CZPowGate(1.0)) == 'CZ**1.0'
-    assert str(CZPowGate(0.9)) == 'CZ**0.9'
+    assert str(CZPowGate(1.0)) == 'CZ(pow=1.0)'
+    assert str(CZPowGate(0.9)) == 'CZ(pow=0.9)'
+
+    assert str(CRz(1.0)) == 'CRz(1.0)'
 
 
 def test_rx(bloq_autotester):
@@ -278,3 +281,27 @@ def test_ry(bloq_autotester):
 
 def test_rz(bloq_autotester):
     bloq_autotester(_rz)
+
+
+def test_cry():
+    from qualtran.bloqs.basic_gates.rotation import CRy
+
+    rs = np.random.RandomState(52)
+    angle = rs.uniform(0, 2 * np.pi)
+
+    u1 = CRy(angle=angle).tensor_contract()
+    u2 = cirq.unitary(cirq.Ry(rads=angle).controlled())
+    u3 = Controlled(Ry(angle=angle), CtrlSpec()).tensor_contract()
+    np.testing.assert_allclose(u1, u2, atol=1e-8)
+    np.testing.assert_allclose(u1, u3, atol=1e-8)
+
+    ry = Ry(angle=angle)
+    assert ry.controlled() == CRy(angle=angle)
+
+    ctrl_bloq = Controlled(ry.as_composite_bloq(), CtrlSpec()).decompose_bloq()
+    (cry_inst,) = list(ctrl_bloq.bloq_instances)
+    assert cry_inst.bloq == CRy(angle=angle)
+
+    # testing the specialized ctrl
+    ctrl, bloq_with_ctrl = ry.get_ctrl_system(CtrlSpec())
+    assert ctrl == CRy(angle=angle)
