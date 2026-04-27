@@ -44,15 +44,15 @@ def test_classical_sim():
     cbloq = bb.finalize(y=y)
 
     ret, assign = call_cbloq_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
-    assert assign[x] == 0
+    assert assign[x.soquet] == 0  # type: ignore[attr-defined]
 
-    assert assign[xs[0]] == 0
-    assert assign[xs_1_orig] == 0
-    assert assign[xs[2]] == 0
-    assert assign[xs[3]] == 0
+    assert assign[xs[0].soquet] == 0
+    assert assign[xs_1_orig.soquet] == 0
+    assert assign[xs[2].soquet] == 0
+    assert assign[xs[3].soquet] == 0
 
-    assert assign[xs[1]] == 1
-    assert assign[y] == 4
+    assert assign[xs[1].soquet] == 1
+    assert assign[y.soquet] == 4  # type: ignore[attr-defined]
 
     assert ret == {'y': 4}
 

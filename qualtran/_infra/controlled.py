@@ -311,6 +311,10 @@ class CtrlSpec:
 
         return int(control_bit)
 
+    @classmethod
+    def _pkg_(cls):
+        return 'qualtran'
+
 
 class AddControlledT(Protocol):
     """The signature for the `add_controlled` callback part of `ctrl_system`.
@@ -437,9 +441,10 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
             rets = self.subbloq.on_classical_vals(**other_vals)
             if rets is NotImplemented:
                 return NotImplemented
+            rets = dict(rets)
             rets |= {
                 reg_name: ctrl_val for reg_name, ctrl_val in zip(self.ctrl_reg_names, ctrl_vals)
-            }  # type: ignore[operator]
+            }
             return rets
 
         return vals
@@ -638,10 +643,10 @@ class Controlled(_ControlledBase):
             cbloq = self.subbloq.decompose_bloq()
 
         ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
+        soq_map = bb.initial_soq_map(cbloq.signature.lefts())
 
-        soq_map: List[Tuple[SoquetT, SoquetT]] = []
-        for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
-            in_soqs = bb.map_soqs(in_soqs, soq_map)
+        for binst, _in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
+            in_soqs = bb.map_soqs(_in_soqs, soq_map)
             new_bloq, adder = binst.bloq.get_ctrl_system(self.ctrl_spec)
             adder_output = adder(bb, ctrl_soqs=ctrl_soqs, in_soqs=in_soqs)
             ctrl_soqs = list(adder_output[0])
@@ -673,6 +678,10 @@ class Controlled(_ControlledBase):
 
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        return 'qualtran'
 
 
 def make_ctrl_system_with_correct_metabloq(

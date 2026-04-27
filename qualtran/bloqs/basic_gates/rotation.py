@@ -43,7 +43,7 @@ with different costs.
 """
 
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Optional, Sequence, Tuple, Type, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -163,7 +163,7 @@ class ZPowGate(CirqGateAsBloqBase):
         return TextBox(f'Z^{self.exponent}')
 
     def __str__(self):
-        return f'Z**{self.exponent}'
+        return f'Z(pow={self.exponent})'
 
 
 @bloq_example
@@ -219,8 +219,7 @@ class CZPowGate(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
-        q1, q2 = q  # type: ignore
-        (q1, q2), anc = bb.add(And(), ctrl=[q1, q2])
+        (q1, q2), anc = bb.add(And(), ctrl=q)
         anc = bb.add(ZPowGate(self.exponent, eps=self.eps), q=anc)
         (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
@@ -232,7 +231,7 @@ class CZPowGate(Bloq):
         return attrs.evolve(self, exponent=-self.exponent)
 
     def __str__(self):
-        return f'CZ**{self.exponent}'
+        return f'CZ(pow={self.exponent})'
 
 
 @bloq_example
@@ -307,7 +306,7 @@ class XPowGate(CirqGateAsBloqBase):
         return TextBox(f'X^{self.exponent}')
 
     def __str__(self):
-        return f'X**{self.exponent}'
+        return f'X(pow={self.exponent})'
 
 
 @bloq_example
@@ -382,7 +381,7 @@ class YPowGate(CirqGateAsBloqBase):
         return TextBox(f'Y^{self.exponent}')
 
     def __str__(self):
-        return f'Y**{self.exponent}'
+        return f'Y(pow={self.exponent})'
 
 
 @bloq_example
@@ -488,6 +487,29 @@ def _rz() -> Rz:
 
 _RZ_DOC = BloqDocSpec(bloq_cls=Rz, examples=[_rz], call_graph_example=None)
 
+_PowClsT = Union[Type[XPowGate], Type[YPowGate], Type[ZPowGate]]
+
+
+def _controlled_rp_circuit(
+    bb: 'BloqBuilder',
+    /,
+    *,
+    single_q_pow_cls: _PowClsT,
+    angle: SymbolicFloat,
+    eps: SymbolicFloat,
+    ctrl: 'Soquet',
+    q: 'Soquet',
+) -> Dict[str, 'SoquetT']:
+    from qualtran.bloqs.basic_gates import CNOT
+
+    t = angle / np.pi
+    q = bb.add(single_q_pow_cls(t / 2, eps=eps / 2), q=q)
+    ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
+    q = bb.add(single_q_pow_cls(-t / 2, eps=eps / 2), q=q)
+    ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
+
+    return {'ctrl': ctrl, 'q': q}
+
 
 @frozen
 class CRz(Bloq):
@@ -533,15 +555,9 @@ class CRz(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
-        from qualtran.bloqs.basic_gates import CNOT
-
-        t = self.angle / np.pi
-        q = bb.add(ZPowGate(t / 2, eps=self.eps / 2), q=q)
-        ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
-        q = bb.add(ZPowGate(-t / 2, eps=self.eps / 2), q=q)
-        ctrl, q = bb.add(CNOT(), ctrl=ctrl, target=q)
-
-        return {'ctrl': ctrl, 'q': q}
+        return _controlled_rp_circuit(
+            bb, single_q_pow_cls=ZPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
+        )
 
     def __str__(self):
         return f'CRz({self.angle})'
@@ -678,6 +694,20 @@ class Ry(CirqGateAsBloqBase):
     def adjoint(self) -> 'Ry':
         return attrs.evolve(self, angle=-self.angle)
 
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec != CtrlSpec():
+            return super().get_ctrl_system(ctrl_spec)
+
+        from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
+
+        return get_ctrl_system_1bit_cv_from_bloqs(
+            bloq=self,
+            ctrl_spec=ctrl_spec,
+            current_ctrl_bit=None,
+            bloq_with_ctrl=CRy(self.angle, eps=self.eps),
+            ctrl_reg_name='ctrl',
+        )
+
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -697,3 +727,36 @@ def _rx() -> Rx:
 def _ry() -> Ry:
     ry = Ry(angle=np.pi / 4.0)
     return ry
+
+
+@frozen
+class CRy(Bloq):
+    r"""A controlled Ry rotation.
+
+    Args:
+        angle: The rotation angle in radians.
+        eps: The precision of the rotation. This parameter is for bookkeeping and does
+            not affect e.g. the tensor representation of this gate. When synthesizing
+            a rotation from a discrete gate set, you must fix a precision `eps`.
+
+    Registers:
+        ctrl: Whether the rotation is active.
+        q: The qubit on which we optionally perform the rotation.
+    """
+
+    angle: SymbolicFloat
+    eps: SymbolicFloat = 1e-11
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(ctrl=1, q=1)
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        return _controlled_rp_circuit(
+            bb, single_q_pow_cls=YPowGate, angle=self.angle, eps=self.eps, ctrl=ctrl, q=q
+        )
+
+    def __str__(self):
+        return f'CRy({self.angle})'

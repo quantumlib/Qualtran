@@ -18,7 +18,15 @@ from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-from .composite_bloq import _binst_to_cxns, _cxns_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
+from .composite_bloq import (
+    _binst_to_cxns,
+    _cxns_to_soq_dict,
+    _map_soqs,
+    _reg_to_soq,
+    _SoquetT,
+    BloqBuilder,
+    QVarT,
+)
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
@@ -26,12 +34,12 @@ from .registers import Signature
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran import Bloq, CompositeBloq, Register, Signature, SoquetT
+    from qualtran import Bloq, CompositeBloq, Register, Signature
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, 'SoquetT']:
+def _adjoint_final_soqs(cbloq: 'CompositeBloq', new_signature: Signature) -> Dict[str, '_SoquetT']:
     """`CompositeBloq.final_soqs()` but backwards."""
     if LeftDangle not in cbloq._binst_graph:
         return {}
@@ -57,15 +65,15 @@ def _adjoint_cbloq(cbloq: 'CompositeBloq') -> 'CompositeBloq':
     # First, we reverse the registers to initialize the BloqBuilder.
     old_signature = cbloq.signature
     new_signature = cbloq.signature.adjoint()
-    old_i_soqs = [_reg_to_soq(RightDangle, reg) for reg in old_signature.rights()]
-    new_i_soqs = [_reg_to_soq(LeftDangle, reg) for reg in new_signature.lefts()]
-    soq_map: List[Tuple[SoquetT, SoquetT]] = list(zip(old_i_soqs, new_i_soqs))
 
     # Then we reverse the order of subbloqs
     bloqnections = reversed(list(cbloq.iter_bloqnections()))
 
     # And add subbloq.adjoint() back in for each subbloq.
     bb, _ = BloqBuilder.from_signature(new_signature)
+    old_i_soqs = [_reg_to_soq(RightDangle, reg) for reg in old_signature.rights()]
+    new_i_soqs = [bb._reg_to_qvar(LeftDangle, reg) for reg in new_signature.lefts()]
+    soq_map: List[Tuple[_SoquetT, QVarT]] = list(zip(old_i_soqs, new_i_soqs))
     for binst, preds, succs in bloqnections:
         # Instead of get_me returning the right element of a predecessor connection,
         # it's the left element of a successor connection.
@@ -173,6 +181,10 @@ class Adjoint(GateWithRegisters):
     def __str__(self) -> str:
         """Delegate to subbloq's `__str__` method."""
         return f'{str(self.subbloq)}†'
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        return 'qualtran'
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()

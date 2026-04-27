@@ -29,6 +29,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     LinearDepthHalfLessThanEqual,
     SingleQubitCompare,
 )
+from qualtran.bloqs.arithmetic.controlled_add_or_subtract import ControlledAddOrSubtract
 from qualtran.bloqs.arithmetic.controlled_addition import CAdd
 from qualtran.bloqs.arithmetic.conversions import (
     SignedIntegerToTwosComplement,

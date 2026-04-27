@@ -96,4 +96,4 @@ class OnEach(Bloq):
         return super().wire_symbol(reg, idx)
 
     def __str__(self):
-        return f'{self.gate}⨂{self.n}'
+        return f'{self.gate}(oneach={self.n})'
