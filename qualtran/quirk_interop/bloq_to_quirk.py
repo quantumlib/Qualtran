@@ -18,8 +18,8 @@ class SparseLineManager(LineManager):
     """
     LineManager which keeps partitioned line slots reserved for them until they need it again
 
-    # DIDN'TDO: only handles partition patterns of the type (QAny(n)/QUInt(n)/... -> QBit((n,))
-    # or QBit((n,)) -> QAny(n))
+    This implementation only supports partitions between an n-bit data type
+    such as QAny(n) or QUInt(n) and an equivalent length-n QBit register.
     """
 
     def __init__(self, cbloq: CompositeBloq, max_n_lines: int = 100):
