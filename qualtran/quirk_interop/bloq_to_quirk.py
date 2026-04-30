@@ -1,15 +1,15 @@
 import subprocess
 from typing import Optional
 
-from qualtran import Bloq, DecomposeTypeError, CompositeBloq
+from qualtran import Bloq, CompositeBloq, DecomposeTypeError
 from qualtran.bloqs.bookkeeping import Join, Split
 from qualtran.drawing import (
-    ModPlus,
     Circle,
-    LarrowTextBox,
-    RarrowTextBox,
-    LineManager,
     get_musical_score_data,
+    LarrowTextBox,
+    LineManager,
+    ModPlus,
+    RarrowTextBox,
 )
 from qualtran.drawing.musical_score import _cbloq_musical_score
 
@@ -31,7 +31,7 @@ class SparseLineManager(LineManager):
         self._join_to_split_id = self._build_join_to_split_map()
         self._split_to_join_id = self._build_split_to_join_map()
 
-    def _find_dual_on_line(self, line: int, start: int, dual_cls: Bloq):
+    def _find_dual_on_line(self, line: int, start: int, dual_cls: type[Join] | type[Split]):
         dual_candidates = [
             (rpos.seq_x, soq.binst.i)  # type: ignore[union-attr]
             for soq, rpos in self.soq_assign.items()

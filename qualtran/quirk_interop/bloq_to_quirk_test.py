@@ -4,9 +4,9 @@ from qualtran import BloqBuilder, QAny
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.bookkeeping import Allocate, Join, Split
 from qualtran.quirk_interop.bloq_to_quirk import (
-    SparseLineManager,
     bloq_to_quirk,
     composite_bloq_to_quirk,
+    SparseLineManager,
 )
 
 
