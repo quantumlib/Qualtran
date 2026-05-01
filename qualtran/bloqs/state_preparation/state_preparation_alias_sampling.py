@@ -461,7 +461,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             precision: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
                 See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
-                with `unnormalized_probabilities` for more information.
+                for more information.
         """
         mu = sub_bit_prec_from_epsilon(n_coeff, precision)
         selection_bitsize = bit_length(n_coeff - 1)
