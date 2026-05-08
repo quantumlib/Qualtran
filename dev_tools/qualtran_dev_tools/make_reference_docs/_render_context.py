@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import attrs
 
@@ -52,16 +52,16 @@ class RenderContext:
     refdoc_relpath: Path
     """Relative subdirectory of where the reference docs go (opposed to the other docs)"""
 
-    sections: List[str]
+    sections: list[str]
     """Ordered list of section names (to organize pages)"""
 
-    aliases_d: Dict[str, str]
+    aliases_d: dict[str, str]
     """Returned by `get_pages`, see `_PackageWalker.aliases_d`"""
 
-    link_d: Dict[str, Tuple[Page, Optional[str]]]
+    link_d: dict[str, tuple[Page, Optional[str]]]
     """Returned by `get_pages`, see `_PackageWalker.link_d`"""
 
-    linkable_to_prefpath: Dict[str, str]
+    linkable_to_prefpath: dict[str, str]
     """Similar to aliases_d, but can have arbitrary keys that map to preferred dotpaths."""
 
     def get_linking_writer(self, f: Writable) -> LinkingWriter:

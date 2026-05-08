@@ -16,8 +16,9 @@
 import ast
 import warnings
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, cast, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, cast, Optional, Union
 
 import attrs
 import griffe
@@ -86,7 +87,7 @@ DEFINED_IN_CONTAINER_EXCEPTIONS = [
 ]
 
 
-def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> Set[str]:
+def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> set[str]:
     """Get all the valid aliases for `obj`."""
 
     # First, try to use the aliases griffe has found
@@ -125,7 +126,7 @@ def _get_all_aliases(obj: Union[griffe.Object, griffe.Alias]) -> Set[str]:
     return valid_aliases
 
 
-def _get_preferred_dotpath(all_aliases: Set[str]):
+def _get_preferred_dotpath(all_aliases: set[str]):
     """From a list of candidates, select the best "dotpath".
 
     A "dotpath" is a string path of the form "foo.bar.X", i.e. with dots. It is in contrast
@@ -146,18 +147,18 @@ class _PackageWalker:
     The public entry point is via the function `get_pages`.
     """
 
-    seen: Set[str] = attrs.field(factory=set, kw_only=True)
+    seen: set[str] = attrs.field(factory=set, kw_only=True)
     """A set of seen canonical dotpaths. Griffe uses canonical dotpaths to uniquely
     identify things, so we do too for `seen`. Afterwards, the doc system will use only our
     preferred path."""
 
-    pages_d: Dict[str, Page] = attrs.field(factory=lambda: defaultdict(ModulePage), kw_only=True)
+    pages_d: dict[str, Page] = attrs.field(factory=lambda: defaultdict(ModulePage), kw_only=True)
     """Mapping of preferred dotpath to `Page`."""
 
-    aliases_d: Dict[str, str] = attrs.field(factory=dict, kw_only=True)
+    aliases_d: dict[str, str] = attrs.field(factory=dict, kw_only=True)
     """Mapping from each alias to the preferred dotpath (many-to-one)."""
 
-    link_d: Dict[str, Tuple[Page, Optional[str]]] = attrs.field(factory=dict, kw_only=True)
+    link_d: dict[str, tuple[Page, Optional[str]]] = attrs.field(factory=dict, kw_only=True)
     """Mapping from preferred dotpath to a doc location."""
 
     def _walk_table_of_contents(self, obj: Union[griffe.Alias, griffe.Object]):
@@ -251,7 +252,7 @@ class _PackageWalker:
 
 def get_pages(
     root_mod: griffe.Module,
-) -> Tuple[List[Page], Dict[str, str], Dict[str, Tuple[Page, Optional[str]]]]:
+) -> tuple[list[Page], dict[str, str], dict[str, tuple[Page, Optional[str]]]]:
     """Walk down from `root_mod`."""
     assert root_mod.is_module
     assert root_mod.is_init_module
@@ -276,8 +277,8 @@ def walk_and_configure(
     refdoc_relpath: Path,
     top_sections: Sequence[str],
     fake_sections: Sequence[str],
-    addtl_linkable: Dict[str, str],
-) -> Tuple[List[Page], RenderContext]:
+    addtl_linkable: dict[str, str],
+) -> tuple[list[Page], RenderContext]:
     """Organize things or whatever."""
 
     # Incantation to get `griffe` set up.

@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import cast, Dict, Sequence
+from typing import cast
 
 import griffe
 from griffe import Kind
@@ -69,7 +70,7 @@ def write_module(
     obj: griffe.Module,
     pref_path: str,
     members: Sequence[ModulePageMember],
-    aliases_d: Dict[str, str],
+    aliases_d: dict[str, str],
 ):
     # Title
     title_dotpath = '.'.join(pref_path.split('.')[-2:])

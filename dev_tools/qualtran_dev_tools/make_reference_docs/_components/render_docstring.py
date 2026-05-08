@@ -13,7 +13,7 @@
 #  limitations under the License.
 import re
 import warnings
-from typing import List, Literal, Tuple, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 
 from griffe import (
     DocstringSection,
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 PARSER: Literal['google'] = 'google'
 
 
-def split_docstring(obj: 'griffe.Object') -> Tuple[str, List[DocstringSection]]:
+def split_docstring(obj: 'griffe.Object') -> tuple[str, list[DocstringSection]]:
     """Extract the first, summary line of a docstring from an object.
 
     Returns:
@@ -47,7 +47,7 @@ def split_docstring(obj: 'griffe.Object') -> Tuple[str, List[DocstringSection]]:
 
     if obj.docstring is None:
         first_line = ""
-        rest: List[DocstringSection] = []
+        rest: list[DocstringSection] = []
         return first_line, rest
 
     dp0, *dparts = obj.docstring.parse(PARSER)
@@ -193,7 +193,7 @@ _DISPATCH = {
 }
 
 
-def write_docstring_parts(f, parts: List[DocstringSection], level: int):
+def write_docstring_parts(f, parts: list[DocstringSection], level: int):
     for part in parts:
         _write = _DISPATCH.get(part.kind, _write_unknown)
         _write(f, part, level)  # type: ignore

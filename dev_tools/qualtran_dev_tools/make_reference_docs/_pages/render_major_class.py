@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
-from typing import cast, Dict, TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 import griffe
 from griffe import Kind
@@ -56,7 +56,7 @@ def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Obje
 
 
 def write_major_class(
-    f: LinkingWriter, obj: griffe.Class, pref_dotpath: str, aliases_d: Dict[str, str]
+    f: LinkingWriter, obj: griffe.Class, pref_dotpath: str, aliases_d: dict[str, str]
 ):
     # Title
     f.write(f"# {obj.name}\n\n")

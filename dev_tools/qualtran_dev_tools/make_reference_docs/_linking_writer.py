@@ -13,14 +13,15 @@
 #  limitations under the License.
 import re
 from collections import defaultdict
+from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Dict, MutableMapping, Optional, Protocol, Set, Tuple
+from typing import Optional, Protocol
 
 from mdit_py_plugins.anchors.index import slugify
 
 from ._page import Page
 
-_CACHE: MutableMapping[str, Dict[str, Optional[str]]] = defaultdict(dict)
+_CACHE: MutableMapping[str, dict[str, Optional[str]]] = defaultdict(dict)
 
 
 class Writable(Protocol):
@@ -43,12 +44,12 @@ class LinkingWriter:
         self,
         f: Writable,
         *,
-        link_aliases: Dict[str, str],
-        link_d: Dict[str, Tuple[Page, Optional[str]]],
+        link_aliases: dict[str, str],
+        link_d: dict[str, tuple[Page, Optional[str]]],
         refdoc_relpath: Path,
     ):
         self._f: Writable = f
-        self._linked: Set[str] = set()
+        self._linked: set[str] = set()
         self._link_aliases = link_aliases
         self._link_d = link_d
         self._reference_relpath = refdoc_relpath
