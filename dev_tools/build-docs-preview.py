@@ -92,7 +92,7 @@ def main():
             try:
                 if not webbrowser.open(url):
                     print("Warning: Failed to open browser.", file=sys.stderr)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 print(f"Failed to open browser: {e}", file=sys.stderr)
         else:
             print(f"Warning: Documentation index file not found at {index_file}", file=sys.stderr)
