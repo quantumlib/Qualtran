@@ -30,6 +30,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
    resource_counting/qubit_counts.ipynb
    Adjoint.ipynb
    Controlled.ipynb
+   how_to_test_bloqs.md
 
 .. toctree::
    :maxdepth: 1
