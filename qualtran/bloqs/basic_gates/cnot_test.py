@@ -18,6 +18,7 @@ import pennylane as qml
 import pytest
 
 from qualtran import BloqBuilder, Signature
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.bloqs.basic_gates.cnot import _cnot
 from qualtran.drawing import get_musical_score_data
@@ -130,3 +131,8 @@ Toffoli<0>
   ctrl[1] -> RightDangle.ctrl
   target -> RightDangle.target"""
     )
+
+
+@pytest.mark.notebook
+def test_cnot_notebook():
+    qlt_testing.execute_notebook('cnot')

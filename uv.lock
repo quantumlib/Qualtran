@@ -1817,6 +1817,22 @@ wheels = [
 ]
 
 [[package]]
+name = "jupytext"
+version = "1.19.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+    { name = "mdit-py-plugins" },
+    { name = "nbformat" },
+    { name = "packaging" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/a5/80c02f307c8ce863cb33e27daf049315e9d96979e14eead700923b5ec9cc/jupytext-1.19.1.tar.gz", hash = "sha256:82587c07e299173c70ed5e8ec7e75183edf1be289ed518bab49ad0d4e3d5f433", size = 4307829, upload-time = "2026-01-25T21:35:13.276Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/5a/736dd2f4535dbf3bf26523f9158c011389ef88dd06ec2eef67fd744f1c7b/jupytext-1.19.1-py3-none-any.whl", hash = "sha256:d8975035155d034bdfde5c0c37891425314b7ea8d3a6c4b5d18c294348714cd9", size = 170478, upload-time = "2026-01-25T21:35:11.17Z" },
+]
+
+[[package]]
 name = "kiwisolver"
 version = "1.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3589,6 +3605,7 @@ dev = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "isort" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "mypy" },
     { name = "mypy-protobuf" },
@@ -3630,6 +3647,7 @@ format = [
 lint = [
     { name = "filelock" },
     { name = "griffe" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "openfermion", extra = ["resources"] },
     { name = "pylint" },
@@ -3642,6 +3660,7 @@ lint = [
 test = [
     { name = "filelock" },
     { name = "ipykernel" },
+    { name = "jupytext" },
     { name = "openfermion", extra = ["resources"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -3695,6 +3714,7 @@ dev = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "isort", specifier = "~=5.10.1" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "mypy", specifier = "~=1.14" },
     { name = "mypy-protobuf" },
@@ -3735,6 +3755,7 @@ format = [
 lint = [
     { name = "filelock" },
     { name = "griffe" },
+    { name = "jupytext" },
     { name = "mdit-py-plugins" },
     { name = "openfermion", extras = ["resources"] },
     { name = "pylint", specifier = "~=3.3.1" },
@@ -3746,6 +3767,7 @@ lint = [
 test = [
     { name = "filelock" },
     { name = "ipykernel" },
+    { name = "jupytext" },
     { name = "openfermion", extras = ["resources"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },

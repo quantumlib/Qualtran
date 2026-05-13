@@ -18,6 +18,7 @@ import sympy
 from galois import Poly
 
 from qualtran import QGF, QGFPoly
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
     _gf_poly_join,
     _gf_poly_split,
@@ -55,3 +56,8 @@ def test_tensor_sim():
     bloq = GFPolySplit(QGFPoly(2, QGF(2, 2)))
     assert np.all(bloq.tensor_contract() == np.eye(2 ** (3 * 2)))
     assert np.all(bloq.adjoint().tensor_contract() == np.eye(2 ** (3 * 2)))
+
+
+@pytest.mark.notebook
+def test_gf_poly_split_and_join_notebook():
+    qlt_testing.execute_notebook('gf_poly_split_and_join')

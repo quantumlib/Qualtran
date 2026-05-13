@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran._infra.data_types import QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
 from qualtran.bloqs.data_loading import QROM
@@ -30,7 +31,6 @@ from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexit
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting import GateCounts, get_cost_value, QECGatesCost, QubitCount
 from qualtran.symbolics import ceil, log2
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @pytest.mark.parametrize(
@@ -49,7 +49,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 )
 def test_select_swap_qrom(data, block_size):
     qrom = SelectSwapQROM.build_from_data(*data, log_block_sizes=block_size)
-    assert_valid_bloq_decomposition(qrom)
+    qlt_testing.assert_valid_bloq_decomposition(qrom)
 
     qubit_regs = get_named_qubits(qrom.signature)
     selection = qubit_regs.get("selection", ())
@@ -259,3 +259,8 @@ def test_select_swap_block_sizes():
 
     qroam = SelectSwapQROM.build_from_data(data, use_dirty_ancilla=False)
     assert qroam.block_sizes == (8,)
+
+
+@pytest.mark.notebook
+def test_select_swap_qrom_notebook():
+    qlt_testing.execute_notebook('select_swap_qrom')

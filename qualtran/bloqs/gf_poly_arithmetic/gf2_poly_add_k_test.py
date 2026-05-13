@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import numpy as np
+import pytest
 from galois import Poly
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import (
     _gf2_poly_4_8_add_k,
     _gf2_poly_add_k_symbolic,
@@ -56,3 +58,8 @@ def test_gf2_poly_add_k_classical_sim():
         ]
     )
     assert_consistent_classical_action(bloq, f_x=f_x_range)
+
+
+@pytest.mark.notebook
+def test_gf2_poly_add_k_notebook():
+    qlt_testing.execute_notebook('gf2_poly_add_k')

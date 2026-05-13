@@ -274,19 +274,49 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 
 def execute_notebook(name: str):
     """Execute a jupyter notebook in the caller's directory.
 
+    Uses jupytext to convert the notebook to a Python script in-memory,
+    then executes it directly — no Jupyter kernel required. This is much
+    faster than the kernel-based approach and avoids flaky parallel kernel issues.
+
+    Note: No .py files are written to disk. This is critical because most
+    notebooks share their basename with a Python module (e.g. addition.ipynb
+    and addition.py coexist), so writing a .py file would shadow the module.
+
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
-    from nbconvert.preprocessors import ExecutePreprocessor
+    import os
+    import sys
+
+    import jupytext
 
     # Assumes that the notebook is in the same path from where the function was called,
     # which may be different from `__file__`.
     notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
+    nb = jupytext.read(notebook_path)
+    script = jupytext.writes(nb, fmt="py:percent")
+
+    # Execute in a temporary directory to avoid writing any files into the source tree.
+    # This prevents accidental module shadowing.
+    old_cwd = os.getcwd()
+    old_path = sys.path[:]
+    old_modules = sys.modules.copy()
+    os.chdir(notebook_path.parent)
+    sys.path.insert(0, str(notebook_path.parent))
+    exec_globals: dict = {
+        "__name__": "__main__",
+        "__file__": str(notebook_path),
+        "get_ipython": lambda: None,  # Mock to avoid NameError on magics
+    }
+    try:
+        exec(compile(script, str(notebook_path), "exec"), exec_globals)  # pylint: disable=exec-used
+    finally:
+        os.chdir(old_cwd)
+        sys.path[:] = old_path
+        # Clean up sys.modules to prevent cross-test pollution
+        for m in list(sys.modules):
+            if m not in old_modules:
+                del sys.modules[m]
 
 
 class BloqCheckResult(Enum):

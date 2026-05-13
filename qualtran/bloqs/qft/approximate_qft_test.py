@@ -122,3 +122,8 @@ def test_approximate_qft_t_complexity(n: int, with_reverse: bool):
     b = math.ceil(math.log2(n))
     assert qft_t_complexity.t == f(n, b) <= 8 * n * (math.log2(n))
     assert qft_t_complexity.rotations == 0
+
+
+@pytest.mark.notebook
+def test_approximate_qft_notebook():
+    qlt_testing.execute_notebook('approximate_qft')

@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
+import qualtran.testing as qlt_testing
 from qualtran import QUInt, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
@@ -153,3 +154,8 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
 def test_programmable_rotation_gate_array_consistent():
     with pytest.raises(ValueError, match='must be of same length'):
         _ = CustomProgrammableRotationGateArray([1, 2], [1], kappa=1, rotation_gate=cirq.X)
+
+
+@pytest.mark.notebook
+def test_programmable_rotation_gate_array_notebook():
+    qlt_testing.execute_notebook('programmable_rotation_gate_array')

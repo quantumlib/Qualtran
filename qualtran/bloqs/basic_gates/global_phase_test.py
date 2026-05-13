@@ -18,6 +18,7 @@ import pennylane as qml
 import pytest
 
 from qualtran import CtrlSpec
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
 from qualtran.cirq_interop import cirq_gate_to_bloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -82,3 +83,8 @@ def test_global_phase(bloq_autotester):
 def test_global_phase_str():
     bloq = GlobalPhase(exponent=0.5)
     assert str(bloq) == "GPhase(0.5)"
+
+
+@pytest.mark.notebook
+def test_global_phase_notebook():
+    qlt_testing.execute_notebook('global_phase')

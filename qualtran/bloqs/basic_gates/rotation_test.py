@@ -18,6 +18,7 @@ import pytest
 from cirq.ops import SimpleQubitManager
 
 from qualtran import BloqBuilder, Controlled, CtrlSpec
+from qualtran import testing as qlt_testing
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
     CZ,
@@ -305,3 +306,8 @@ def test_cry():
     # testing the specialized ctrl
     ctrl, bloq_with_ctrl = ry.get_ctrl_system(CtrlSpec())
     assert ctrl == CRy(angle=angle)
+
+
+@pytest.mark.notebook
+def test_rotation_notebook():
+    qlt_testing.execute_notebook('rotation')

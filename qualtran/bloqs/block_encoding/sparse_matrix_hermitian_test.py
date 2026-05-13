@@ -14,6 +14,7 @@
 from typing import cast
 
 import numpy as np
+import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
@@ -116,3 +117,8 @@ def test_counts():
     qlt_testing.assert_equivalent_bloq_counts(
         _sparse_matrix_hermitian_block_encoding().controlled(), generalizer=ignore_split_join
     )
+
+
+@pytest.mark.notebook
+def test_sparse_matrix_hermitian_notebook():
+    qlt_testing.execute_notebook('sparse_matrix_hermitian')

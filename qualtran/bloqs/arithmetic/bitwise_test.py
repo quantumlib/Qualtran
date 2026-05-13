@@ -189,3 +189,8 @@ def test_bitwisenot_classical_action(dtype, bitsize):
 def test_bitwise_not_str():
     bloq = BitwiseNot(QUInt(5))
     assert str(bloq) == "BitwiseNot(5)"
+
+
+@pytest.mark.notebook
+def test_bitwise_notebook():
+    qlt_testing.execute_notebook('bitwise')

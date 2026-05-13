@@ -164,3 +164,8 @@ def test_permutation_symbolic_call_graph():
         And(): (N + 1) * (logN - 1),
         CNOT(): N * logN + N + 1,
     }
+
+
+@pytest.mark.notebook
+def test_permutation_notebook():
+    qlt_testing.execute_notebook('permutation')

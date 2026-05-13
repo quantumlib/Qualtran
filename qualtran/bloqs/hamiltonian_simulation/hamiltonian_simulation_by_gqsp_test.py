@@ -19,6 +19,7 @@ import scipy
 import sympy
 from numpy.typing import NDArray
 
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
 from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
@@ -130,3 +131,8 @@ def test_symbolic_t_cost():
 def test_ctrl_ham_sim_cost():
     bloq = _hubbard_time_evolution_by_gqsp().controlled()
     _ = get_cost_value(bloq, QECGatesCost())
+
+
+@pytest.mark.notebook
+def test_hamiltonian_simulation_by_gqsp_notebook():
+    qlt_testing.execute_notebook('hamiltonian_simulation_by_gqsp')

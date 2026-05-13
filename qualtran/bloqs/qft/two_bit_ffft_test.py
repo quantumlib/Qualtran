@@ -17,6 +17,7 @@ import cirq
 import pytest
 
 from qualtran import Bloq
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.qft.two_bit_ffft import _fkn_matrix, _two_bit_ffft, TwoBitFFFT
 
@@ -42,3 +43,8 @@ def test_tensors(k, n):
     # Eq. E11 in https://arxiv.org/pdf/2012.09238.pdf
     from_decomp = TwoBitFFFT(k, n).decompose_bloq().tensor_contract()
     cirq.testing.assert_allclose_up_to_global_phase(from_decomp, _fkn_matrix(k, n), atol=1e-12)
+
+
+@pytest.mark.notebook
+def test_two_bit_ffft_notebook():
+    qlt_testing.execute_notebook('two_bit_ffft')

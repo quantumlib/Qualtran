@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 import sympy
 
+from qualtran import testing as qlt_testing
 from qualtran._infra.data_types import QAny
 from qualtran._infra.registers import Register
 from qualtran.bloqs.data_loading.qroam_clean import (
@@ -227,3 +228,8 @@ def test_qroam_clean_small_bloq_counts():
         qroam_clean=qroam_clean, log_block_sizes=(0,)
     )
     assert qroam_clean_adj_wrapper.t_complexity().t == 0
+
+
+@pytest.mark.notebook
+def test_qroam_clean_notebook():
+    qlt_testing.execute_notebook('qroam_clean')

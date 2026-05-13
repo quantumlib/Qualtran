@@ -142,3 +142,8 @@ def test_hubbard_spin_up_z_classical():
 
         # The only place a phase should be applied is at our chosen coordinate.
         assert negative_phases == [(the_x, the_y)]
+
+
+@pytest.mark.notebook
+def test_select_hubbard_notebook():
+    qlt_testing.execute_notebook('select_hubbard')

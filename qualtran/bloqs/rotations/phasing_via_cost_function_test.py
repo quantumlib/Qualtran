@@ -18,6 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, BloqError, GateWithRegisters, Register, Signature, SoquetT
 from qualtran._infra.data_types import QFxp
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
@@ -207,3 +208,8 @@ def test_square_phasing_via_phase_gradient(
             pytest.xfail("https://github.com/quantumlib/Qualtran/issues/1069")
         hw_final_state = flat_cbloq.tensor_contract()
         np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)
+
+
+@pytest.mark.notebook
+def test_phasing_via_cost_function_notebook():
+    qlt_testing.execute_notebook('phasing_via_cost_function')

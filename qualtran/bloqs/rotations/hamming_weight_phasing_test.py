@@ -137,3 +137,8 @@ def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: f
     naive_total_t = naive_hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
 
     assert total_t < naive_total_t
+
+
+@pytest.mark.notebook
+def test_hamming_weight_phasing_notebook():
+    qlt_testing.execute_notebook('hamming_weight_phasing')

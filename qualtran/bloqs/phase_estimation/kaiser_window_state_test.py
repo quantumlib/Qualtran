@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
+
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.phase_estimation.kaiser_window_state import (
     _kaiser_window_state_small,
     _kaiser_window_state_symbolic,
@@ -21,3 +24,8 @@ from qualtran.bloqs.phase_estimation.kaiser_window_state import (
 def test_kaiser_window_state_auto(bloq_autotester):
     bloq_autotester(_kaiser_window_state_small)
     bloq_autotester(_kaiser_window_state_symbolic)
+
+
+@pytest.mark.notebook
+def test_kaiser_window_state_notebook():
+    qlt_testing.execute_notebook('kaiser_window_state')

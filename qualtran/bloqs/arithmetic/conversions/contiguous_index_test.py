@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
+
 from qualtran import BloqBuilder
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.arithmetic.conversions.contiguous_index import (
     _to_contg_index,
     ToContiguousIndex,
@@ -31,3 +34,8 @@ def test_to_contiguous_index_t_complexity():
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
     assert cbloq.t_complexity().t == 4 * 29
+
+
+@pytest.mark.notebook
+def test_contiguous_index_notebook():
+    qlt_testing.execute_notebook('contiguous_index')

@@ -21,6 +21,7 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, Register, Signature
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
 from qualtran.bloqs.rotations.quantum_variable_rotation import (
@@ -206,3 +207,8 @@ def test_qvr_phase_gradient_t_complexity(
     qvr = QvrPhaseGradient(cost_reg, gamma, eps)
     assert qvr.b_grad < n
     assert qvr.t_complexity().t == 4 * expected_additions * (qvr.b_grad - 2)
+
+
+@pytest.mark.notebook
+def test_quantum_variable_rotation_notebook():
+    qlt_testing.execute_notebook('quantum_variable_rotation')

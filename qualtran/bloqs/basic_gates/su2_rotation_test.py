@@ -13,9 +13,11 @@
 #  limitations under the License.
 import cirq
 import numpy as np
+import pytest
 import sympy
 
 from qualtran import Bloq
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import GlobalPhase, Hadamard, Rx, Rz, TGate, XGate, YGate, ZGate
 
 from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
@@ -86,3 +88,8 @@ def test_call_graph():
         Rz(-lambd + pi / 2, eps=eps / 3): 1,
         Rx(2 * theta, eps / 3): 1,
     }
+
+
+@pytest.mark.notebook
+def test_su2_rotation_notebook():
+    qlt_testing.execute_notebook('su2_rotation')

@@ -13,8 +13,10 @@
 #  limitations under the License.
 import cirq
 import numpy as np
+import pytest
 
 from qualtran import BloqBuilder
+from qualtran import testing as qlt_testing
 from qualtran.bloqs.basic_gates import MinusState, OneEffect, OneState, PlusState, YGate
 from qualtran.bloqs.basic_gates.y_gate import _cy_gate, _y_gate, CYGate
 from qualtran.cirq_interop import cirq_gate_to_bloq
@@ -108,3 +110,8 @@ def test_cy_adjoint():
 
 def test_cy_t_complexity():
     assert t_complexity(CYGate()) == TComplexity(clifford=1)
+
+
+@pytest.mark.notebook
+def test_y_gate_notebook():
+    qlt_testing.execute_notebook('y_gate')

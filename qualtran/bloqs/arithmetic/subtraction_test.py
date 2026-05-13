@@ -169,3 +169,8 @@ def test_subtractfrom_classical_action(bitsize):
     qlt_testing.assert_consistent_classical_action(
         blq, a=tuple(dtype.get_classical_domain()), b=tuple(dtype.get_classical_domain())
     )
+
+
+@pytest.mark.notebook
+def test_subtraction_notebook():
+    qlt_testing.execute_notebook('subtraction')
