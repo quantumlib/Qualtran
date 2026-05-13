@@ -51,55 +51,50 @@ def main():
     print(f"Repo root: {repo_root}")
     print(f"Docs directory: {docs_dir}")
 
-    try:
-        if args.clean:
-            print("Starting clean build...")
-            # 1. Run git clean -fdX in the docs/ directory
-            run_command(["git", "clean", "-fdX"], cwd=docs_dir)
+    if args.clean:
+        print("Starting clean build...")
+        # 1. Run git clean -fdX in the docs/ directory
+        run_command(["git", "clean", "-fdX"], cwd=docs_dir)
 
-            # 2. Run python execute-notebooks.py --no-only-out-of-date in dev_tools/
-            run_command(
-                [sys.executable, "execute-notebooks.py", "--no-only-out-of-date"],
-                cwd=script_dir,
-            )
+        # 2. Run python execute-notebooks.py --no-only-out-of-date in dev_tools/
+        run_command(
+            [sys.executable, "execute-notebooks.py", "--no-only-out-of-date"],
+            cwd=script_dir,
+        )
 
-            # 3. Run python build-reference-docs-2.py in dev_tools/
-            run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
+        # 3. Run python build-reference-docs-2.py in dev_tools/
+        run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
 
-            # 4. Run make clean and make html in docs/
-            run_command(["make", "clean"], cwd=docs_dir)
-            run_command(["make", "html"], cwd=docs_dir)
+        # 4. Run make clean and make html in docs/
+        run_command(["make", "clean"], cwd=docs_dir)
+        run_command(["make", "html"], cwd=docs_dir)
+    else:
+        print("Starting default build...")
+        # 1. Skip cleaning the docs/ directory
+
+        # 2. Run python execute-notebooks.py in dev_tools/
+        run_command([sys.executable, "execute-notebooks.py"], cwd=script_dir)
+
+        # 3. Run python build-reference-docs-2.py in dev_tools/
+        run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
+
+        # 4. Run make html in docs/
+        run_command(["make", "html"], cwd=docs_dir)
+
+    print("Doc build completed successfully.")
+
+    if not args.no_open:
+        index_file = docs_dir / "_build" / "html" / "index.html"
+        if index_file.exists():
+            url = index_file.resolve().as_uri()
+            print(f"Opening documentation in browser: {url}")
+            try:
+                if not webbrowser.open(url):
+                    print("Warning: Failed to open browser.", file=sys.stderr)
+            except Exception as e:
+                print(f"Failed to open browser: {e}", file=sys.stderr)
         else:
-            print("Starting default build...")
-            # 1. Skip cleaning the docs/ directory
-
-            # 2. Run python execute-notebooks.py in dev_tools/
-            run_command([sys.executable, "execute-notebooks.py"], cwd=script_dir)
-
-            # 3. Run python build-reference-docs-2.py in dev_tools/
-            run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
-
-            # 4. Run make html in docs/
-            run_command(["make", "html"], cwd=docs_dir)
-
-        print("Doc build completed successfully.")
-
-        if not args.no_open:
-            index_file = docs_dir / "_build" / "html" / "index.html"
-            if index_file.exists():
-                url = index_file.resolve().as_uri()
-                print(f"Opening documentation in browser: {url}")
-                try:
-                    if not webbrowser.open(url):
-                        print("Warning: Failed to open browser.", file=sys.stderr)
-                except Exception as e:
-                    print(f"Failed to open browser: {e}", file=sys.stderr)
-            else:
-                print(f"Warning: Documentation index file not found at {index_file}", file=sys.stderr)
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error during build process: {e}", file=sys.stderr)
-        sys.exit(1)
+            print(f"Warning: Documentation index file not found at {index_file}", file=sys.stderr)
 
 
 if __name__ == "__main__":
