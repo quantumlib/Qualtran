@@ -42,4 +42,4 @@ jobs:
         run: |
           uv sync --frozen --no-dev --group test
       - run: |
-          uv run check/pytest-full --durations=10 -v -n=0
+          uv run --no-sync check/pytest-full --durations=10 -v -n=0

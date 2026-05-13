@@ -40,7 +40,7 @@ jobs:
         run: |
           uv sync --frozen --no-dev --group test
       - run: |
-          uv run check/pytest-quick
+          uv run --no-sync check/pytest-quick
 
   dev-tools:
     runs-on: ubuntu-24.04
@@ -56,8 +56,8 @@ jobs:
         run: |
           uv sync --frozen
       - run: |
-          uv run check/pytest-dev-tools
-          uv run check/mypy-dev-tools
+          uv run --no-sync check/pytest-dev-tools
+          uv run --no-sync check/mypy-dev-tools
 
   notebooks:
     runs-on: ubuntu-24.04
@@ -73,7 +73,7 @@ jobs:
         run: |
           uv sync --frozen --no-dev --group test
       - run: |
-          uv run python dev_tools/execute-notebooks.py --n-workers=8
+          uv run --no-sync python dev_tools/execute-notebooks.py --n-workers=8
         env:
           NUMBA_NUM_THREADS: 4
 
@@ -94,7 +94,7 @@ jobs:
       - name: Set up problem matcher for Black output
         run: echo '::add-matcher::.github/problem-matchers/black.json'
       - run: |
-          uv run check/format-incremental
+          uv run --no-sync check/format-incremental
 
   pylint:
     runs-on: ubuntu-24.04
@@ -113,7 +113,7 @@ jobs:
       - name: Set up problem matcher for Pylint output
         run: echo '::add-matcher::.github/problem-matchers/pylint.json'
       - run: |
-          uv run check/pylint
+          uv run --no-sync check/pylint
 
   mypy:
     runs-on: ubuntu-24.04
@@ -132,7 +132,7 @@ jobs:
       - name: Set up problem matcher for Mypy output
         run: echo '::add-matcher::.github/problem-matchers/mypy.json'
       - run: |
-          uv run check/mypy
+          uv run --no-sync check/mypy
 
   autogenerate-notebooks:
     runs-on: ubuntu-24.04
@@ -148,4 +148,4 @@ jobs:
         run: |
           uv sync --frozen --no-dev --group doc
       - run: |
-          uv run check/autogenerate-notebooks
+          uv run --no-sync check/autogenerate-notebooks
