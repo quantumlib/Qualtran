@@ -51,6 +51,8 @@ def main():
     print(f"Repo root: {repo_root}")
     print(f"Docs directory: {docs_dir}")
 
+    make_cmd = "make.bat" if sys.platform == "win32" else "make"
+
     if args.clean:
         print("Starting clean build...")
         # 1. Run git clean -fdX in the docs/ directory
@@ -66,8 +68,8 @@ def main():
         run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
 
         # 4. Run make clean and make html in docs/
-        run_command(["make", "clean"], cwd=docs_dir)
-        run_command(["make", "html"], cwd=docs_dir)
+        run_command([make_cmd, "clean"], cwd=docs_dir)
+        run_command([make_cmd, "html"], cwd=docs_dir)
     else:
         print("Starting default build...")
         # 1. Skip cleaning the docs/ directory
@@ -79,7 +81,7 @@ def main():
         run_command([sys.executable, "build-reference-docs-2.py"], cwd=script_dir)
 
         # 4. Run make html in docs/
-        run_command(["make", "html"], cwd=docs_dir)
+        run_command([make_cmd, "html"], cwd=docs_dir)
 
     print("Doc build completed successfully.")
 
