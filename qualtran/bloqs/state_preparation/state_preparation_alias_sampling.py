@@ -460,7 +460,7 @@ class SparseStatePreparationAliasSampling(PrepareOracle):
             sum_of_terms: Sum of absolute values of the input probabilities.
             precision: The desired accuracy to represent each probability
                 (which sets mu size and keep/alt integers).
-                See `qualtran.linalg.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+                See `qualtran.linalg.lcu_util.preprocess_probabilities_for_reversible_sampling`
                 for more information.
         """
         mu = sub_bit_prec_from_epsilon(n_coeff, precision)

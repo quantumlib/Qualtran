@@ -312,7 +312,7 @@ def test_finalize_missing_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqError, match=r"During Finalizing, we expected a value for 'x'\."):
+    with pytest.raises(BloqError, match=r"During finalization, we expected a value for 'x'\."):
         bb.finalize(y=y2)
 
 
@@ -321,7 +321,7 @@ def test_finalize_strict_too_many_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
+    with pytest.raises(BloqError, match=r'finalization does not accept Soquets.*z.*'):
         bb.finalize(x=x2, y=y2, z=_Soquet(RightDangle, Register('asdf', QBit())))
 
 

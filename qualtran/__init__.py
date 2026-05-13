@@ -105,4 +105,6 @@ from ._infra.controlled import (
 
 from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
 
+from .bloqify_syntax import bloqify
+
 # --------------------------------------------------------------------------------------------------
