@@ -60,8 +60,7 @@ def main():
 
         # 2. Run python execute-notebooks.py --no-only-out-of-date in dev_tools/
         run_command(
-            [sys.executable, "execute-notebooks.py", "--no-only-out-of-date"],
-            cwd=script_dir,
+            [sys.executable, "execute-notebooks.py", "--no-only-out-of-date"], cwd=script_dir
         )
 
         # 3. Run python build-reference-docs-2.py in dev_tools/
