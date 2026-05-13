@@ -5,7 +5,7 @@ _build/
 reference/autotoc.rst.inc
 
 # All the generated reference pages
-**/*.md
+reference/**/*.md
 
 # All the generated notebooks
 **/*.ipynb
