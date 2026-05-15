@@ -14,9 +14,9 @@
 import re
 from typing import Optional
 
-from .._linking_writer import LinkingWriter
-
 from griffe import Function, Object, Parameter, ParameterKind
+
+from .._linking_writer import LinkingWriter
 
 BESPOKE_OBJECT_NAMES_FOR_CLASSES = {'BloqBuilder': 'bb', 'CompositeBloq': 'cbloq'}
 
