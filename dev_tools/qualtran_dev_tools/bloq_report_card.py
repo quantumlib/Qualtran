@@ -37,7 +37,7 @@ def _get_package(bloq_cls: type[Bloq]) -> str:
     return '.'.join(bloq_cls.__module__.split('.')[:-1])
 
 
-def color_status(v: BloqCheckResult):
+def color_status(v: BloqCheckResult) -> str:
     """Used to style the dataframe."""
     if v is BloqCheckResult.PASS:
         return 'background-color:lightgreen'
@@ -51,7 +51,7 @@ def color_status(v: BloqCheckResult):
     return 'background-color:red'
 
 
-def format_status(v: BloqCheckResult):
+def format_status(v: BloqCheckResult) -> str:
     """Used to format the dataframe."""
     return v.name.lower()
 
