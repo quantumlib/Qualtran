@@ -29,6 +29,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 1
 cd ./dev_tools/requirements/
 uvoptions=(--project ../../ export --format requirements-txt --frozen --no-hashes)
 
+mkdir -p ./envs
 uv "${uvoptions[@]}"                         -o ./envs/dev.env.txt
 uv "${uvoptions[@]}" --no-dev                -o ./envs/runtime.env.txt
 uv "${uvoptions[@]}" --no-dev --group doc    -o ./envs/docs.env.txt
