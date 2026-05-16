@@ -14,6 +14,10 @@
 from qualtran_dev_tools.bloq_finder import get_bloq_classes
 
 from qualtran import Bloq
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT
 
 
 def _call_graph(bc: type[Bloq]):
