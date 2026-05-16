@@ -13,8 +13,8 @@
 #  limitations under the License.
 from qualtran_dev_tools.bloq_finder import get_bloq_classes
 
-from qualtran import Bloq
 from typing import TYPE_CHECKING
+from qualtran import Bloq
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT
