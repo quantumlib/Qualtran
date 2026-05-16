@@ -12,11 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import re
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from griffe import Function, Object, Parameter, ParameterKind
 
-from .._linking_writer import LinkingWriter
+if TYPE_CHECKING:
+    from .._linking_writer import LinkingWriter
 
 BESPOKE_OBJECT_NAMES_FOR_CLASSES = {'BloqBuilder': 'bb', 'CompositeBloq': 'cbloq'}
 
@@ -103,7 +104,7 @@ def write_generic_method_signature(
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_function_signature(f: LinkingWriter, obj2: Function) -> None:
+def write_function_signature(f: 'LinkingWriter', obj2: Function) -> None:
     # Strip `self` or `cls` argument.
     parameters = list(obj2.parameters)
 
@@ -122,7 +123,7 @@ def write_function_signature(f: LinkingWriter, obj2: Function) -> None:
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_method_signature(f: LinkingWriter, obj: Object, obj2: Function) -> None:
+def write_method_signature(f: 'LinkingWriter', obj: Object, obj2: Function) -> None:
     if obj2.overloads:
         # Assume the full documentation is in the defined function, not the overrides.
         return
