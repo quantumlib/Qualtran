@@ -68,7 +68,7 @@ class FastComplementaryQSPHelper:
 
     @staticmethod
     def conv_by_flip_conj(poly: NDArray) -> NDArray:
-        return np.convolve(poly, np.flip(poly, axis=[0]), mode="full")
+        return np.convolve(poly, np.flip(poly, axis=0), mode="full")
 
     @staticmethod
     def complex_conv_by_flip_conj(real_part: NDArray, imag_part: NDArray):
@@ -79,8 +79,8 @@ class FastComplementaryQSPHelper:
         calculation. Due to a limitation of the scipy optimizer, the
         input array must be split into its real and imaginary components first.
         """
-        real_flip = np.flip(real_part, axis=[0])
-        imag_flip = np.flip(-1 * imag_part, axis=[0])
+        real_flip = np.flip(real_part, axis=0)
+        imag_flip = np.flip(-1 * imag_part, axis=0)
 
         conv_real_part = np.convolve(real_part, real_flip, mode="full")
         conv_imag_part = np.convolve(imag_part, imag_flip, mode="full")

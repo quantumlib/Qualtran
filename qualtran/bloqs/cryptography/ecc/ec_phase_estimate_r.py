@@ -100,7 +100,7 @@ class ECPhaseEstimateR(Bloq):
                     x=x,
                     y=y,
                 )
-            ctrl = np.concatenate(ctrls, axis=None)
+            ctrl = np.concatenate(ctrls, axis=None).tolist()
 
         bb.add(MeasureQFT(n=self.n), x=ctrl)
         return {'x': x, 'y': y}

@@ -27,10 +27,10 @@ from qualtran import (
     QBit,
     Register,
     RightDangle,
-    Soquet,
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _cxns_to_cxn_dict, BloqBuilder
+from qualtran._infra.quantum_graph import _Soquet
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ def _get_placeholder_tensors(cxn):
     RightDangle sentinel values.
     """
     for j in range(cxn.left.reg.bitsize):
-        placeholder = Soquet(None, Register('simulation_placeholder', QBit()))  # type: ignore
+        placeholder = _Soquet(None, Register('simulation_placeholder', QBit()))  # type: ignore
         Connection(cxn.left, placeholder)
         yield qtn.Tensor(
             data=np.eye(2),

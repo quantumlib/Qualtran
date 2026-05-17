@@ -386,7 +386,7 @@ def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
     for i, bit in enumerate(gamma_fxp.bin()):
         if bit == '0':
             continue
-        shift = gamma_fxp.n_int - i - 1
+        shift = gamma_fxp.n_int - i - 1  # type: ignore[operator]
         # Left/Right shift by `shift` bits.
         res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
     return res
@@ -491,7 +491,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         for i, bit in enumerate(self.gamma_fxp.bin()):
             if bit == '0':
                 continue
-            shift = self.gamma_fxp.n_int - i - 1
+            shift = self.gamma_dtype.num_int - i - 1
             if 0 <= shift < self.x_dtype.num_frac:
                 # Left shift by `shift` bits / multiply by 2**shift
                 yield AddIntoPhaseGrad(
@@ -527,7 +527,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
             for i, bit in enumerate(self.gamma_fxp.bin()):
                 if bit == '0':
                     continue
-                shift = self.gamma_fxp.n_int - i - 1
+                shift = self.gamma_dtype.num_int - i - 1
                 if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
                     num_additions_naive += 1
             num_additions = min(num_additions_naive, num_additions)

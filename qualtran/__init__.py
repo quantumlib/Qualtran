@@ -46,11 +46,14 @@ from ._infra.composite_bloq import (
     CompositeBloq,
     BloqBuilder,
     DidNotFlattenAnythingError,
+    Soquet,
     SoquetT,
     ConnectionT,
+    QVar,
+    QVarT,
 )
 
-from ._infra.data_types import (
+from .dtype import (
     QCDType,
     CDType,
     QDType,
@@ -61,6 +64,8 @@ from ._infra.data_types import (
     CInt,
     QIntOnesComp,
     CIntOnesComp,
+    QIntSignMag,
+    CIntSignMag,
     QUInt,
     CUInt,
     BQUInt,
@@ -84,14 +89,7 @@ from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
-from ._infra.quantum_graph import (
-    BloqInstance,
-    Connection,
-    DanglingT,
-    LeftDangle,
-    RightDangle,
-    Soquet,
-)
+from ._infra.quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle
 
 from ._infra.gate_with_registers import GateWithRegisters
 
@@ -106,5 +104,7 @@ from ._infra.controlled import (
 )
 
 from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
+
+from .bloqify_syntax import bloqify
 
 # --------------------------------------------------------------------------------------------------

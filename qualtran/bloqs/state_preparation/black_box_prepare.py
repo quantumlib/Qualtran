@@ -29,8 +29,7 @@ from qualtran import (
 )
 from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition
 from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
-from qualtran.symbolics import ssum, SymbolicFloat, SymbolicInt
-from qualtran.symbolics.types import is_symbolic
+from qualtran.symbolics import is_zero, ssum, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -75,12 +74,12 @@ class BlackBoxPrepare(Bloq):
         return Signature.build(selection=self.selection_bitsize, junk=self.junk_bitsize)
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
-        if self.selection_bitsize == 0:
+        if is_zero(self.selection_bitsize):
             return soqs
         partitions = [
             (self.selection_registers[0], [r.name for r in self.prepare.selection_registers])
         ]
-        if is_symbolic(self.junk_bitsize) or self.junk_bitsize > 0:
+        if not is_zero(self.junk_bitsize):
             partitions.append(
                 (self.junk_registers[0], [r.name for r in self.prepare.junk_registers])
             )

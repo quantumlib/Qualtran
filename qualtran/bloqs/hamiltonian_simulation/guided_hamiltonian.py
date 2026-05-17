@@ -25,7 +25,7 @@ from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 from qualtran.bloqs.reflections.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
 from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
-from qualtran.symbolics import ceil, ln, log2, pi, SymbolicFloat, SymbolicInt
+from qualtran.symbolics import ceil, is_zero, ln, log2, pi, SymbolicFloat, SymbolicInt
 
 
 @frozen
@@ -244,7 +244,8 @@ class GuidedHamiltonian(Bloq):
         counts[self.qpe_bloq] += 1
 
         # reflect about the ancilla being all 0
-        counts[self._refl_guide_ancilla] += self.n_rounds_amplification
+        if not is_zero(self.guiding_state.junk_bitsize):
+            counts[self._refl_guide_ancilla] += self.n_rounds_amplification
 
         # reflect about the prepared state
         counts[self.qpe_bloq.adjoint()] += self.n_rounds_amplification

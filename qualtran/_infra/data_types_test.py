@@ -37,7 +37,8 @@ from qualtran import (
     QMontgomeryUInt,
     QUInt,
 )
-from qualtran._infra.data_types import _Fxp, _QAnyInt
+from qualtran.dtype._fxp import _Fxp
+from qualtran.dtype.testing import _QAnyInt
 from qualtran.symbolics import ceil, is_symbolic, log2
 
 

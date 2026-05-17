@@ -36,6 +36,7 @@ import qualtran as qlt
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns, _cxns_to_soq_dict
 
+from .._infra.quantum_graph import _Soquet
 from ._dtypes import reg_to_qdtype_node
 from ._to_cobject_node import to_cobject_node
 from .nodes import (
@@ -74,7 +75,7 @@ class QDefWithContext:
 class Locals:
     """Handles assigning variable names for our variable *objects*, i.e. soquets and bloqs."""
 
-    soqvars: Dict['qlt.SoquetT', QArgValueNode] = attrs.field(factory=dict)
+    soqvars: Dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
     bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
     varnames: Set[str] = attrs.field(factory=set)
 
@@ -95,7 +96,7 @@ class Locals:
             raise ValueError(f"Cannot register {name}, it already exists!")
         self.varnames.add(name)
 
-    def assign_soq(self, soq: 'qlt.Soquet', prefix: str) -> str:
+    def assign_soq(self, soq: _Soquet, prefix: str) -> str:
         name = self.get_unique_name(prefix)
         self.soqvars[soq] = QArgValueNode(name, ())
         return name
@@ -214,13 +215,13 @@ class QDefBuilder:
             for reg in self.bloq.signature.rights():
                 regname = reg.name
                 soqs = finsoqs[regname]
-                if isinstance(soqs, np.ndarray):
+                if qlt.BloqBuilder.is_ndarray(soqs):
                     arr = np.empty(soqs.shape, dtype=object)
                     for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
-                        arr[idx] = self.qlocals.soqvars[cast(qlt.Soquet, soqs[idx])]
+                        arr[idx] = self.qlocals.soqvars[soqs[idx]]
                     kwargs.append(QArgNode(regname, arr.tolist()))
                 else:
-                    kwargs.append(QArgNode(regname, self.qlocals.soqvars[soqs]))
+                    kwargs.append(QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)]))
 
             self._stmnts.append(QReturnNode(ret_mapping=kwargs))
             return
@@ -236,13 +237,13 @@ class QDefBuilder:
         for reg in binst.bloq.signature.lefts():
             regname = reg.name
             soqs = inpsoqs[regname]
-            if isinstance(soqs, np.ndarray):
+            if qlt.BloqBuilder.is_ndarray(soqs):
                 arr = np.empty(soqs.shape, dtype=object)
                 for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
-                    arr[idx] = self.qlocals.soqvars[cast(qlt.Soquet, soqs[idx])]
+                    arr[idx] = self.qlocals.soqvars[soqs[idx]]
                 kwargs.append(QArgNode(regname, arr.tolist()))
             else:
-                kwargs.append(QArgNode(regname, self.qlocals.soqvars[soqs]))
+                kwargs.append(QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)]))
 
         # B: Handle output variables from the subbloq
         retsoqs = _cxns_to_soq_dict(
@@ -257,14 +258,14 @@ class QDefBuilder:
             soqs = retsoqs[regname]
             basename = self.qlocals.get_unique_name(regname)
 
-            if isinstance(soqs, np.ndarray):
+            if qlt.BloqBuilder.is_ndarray(soqs):
                 for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
                     # Track indexed soquets as independent local variables
-                    self.qlocals.soqvars[cast(qlt.Soquet, soqs[idx])] = QArgValueNode(basename, idx)
+                    self.qlocals.soqvars[soqs[idx]] = QArgValueNode(basename, idx)
                 # But syntactically, we assign to an indexless basename.
                 rets.append(basename)
             else:
-                self.qlocals.soqvars[soqs] = QArgValueNode(basename, ())
+                self.qlocals.soqvars[cast(_Soquet, soqs)] = QArgValueNode(basename, ())
                 rets.append(basename)
 
         # C. Record the call itself to `binst.bloq`.
