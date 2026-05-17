@@ -88,10 +88,10 @@ class QROMBase(metaclass=abc.ABCMeta):
     symbolic bloqs). The shape of the dataset is a union of the selection shape and target shape,
     s.t.
     $$
-        \mathrm{data[i].shape} = \mathrm{selection_shape} + \mathrm{target_shape[i]}
+        \mathrm{data[i].shape} = \mathrm{selection\_shape} + \mathrm{target\_shape[i]}
     $$
 
-    Note that the $\mathrm{selection_shape}$ should be same across all classical datasets to be
+    Note that the $\mathrm{selection\_shape}$ should be same across all classical datasets to be
     loaded and correspond to a tuple of iteration lengths of selection indices (i.e. $(N, M)$
     in the example above).
 
@@ -101,30 +101,30 @@ class QROMBase(metaclass=abc.ABCMeta):
     ### Number of selection registers and their iteration lengths
     As describe in the previous section, the number of selection registers and their iteration
     lengths can be inferred from the shape of the classical dataset. All classical datasets
-    to be loaded must have the same $\mathrm{selection_shape}$, which is a tuple of iteration
+    to be loaded must have the same $\mathrm{selection\_shape}$, which is a tuple of iteration
     lengths over each dimension of the dataset (i.e. the range for each nested for-loop).
 
-    In order to load a data set with $\mathrm{selection_shape} == (P, Q, R, S)$ the QROM bloq
+    In order to load a data set with $\mathrm{selection\_shape} == (P, Q, R, S)$ the QROM bloq
     needs four selection registers with bitsizes $(p, q, r, s)$ where each of
     $p,q,r,s \geq \log_2{P}, \log_2{Q}, \log_2{R}, \log_2{S}$.
 
     In general, to load $K$ dimensional data, we use $K$ named selection registers
     $(\mathrm{selection}_0, \mathrm{selection}_1, ..., \mathrm{selection}_k)$ to index and
     load the data. For the $i$'th selection register, its size is configured using
-    attribute $\mathrm{selection_bitsizes[i]}$ and the iteration range is configued
-    using $\mathrm{data_or_shape[0].shape[i]}$.
+    attribute $\mathrm{selection\_bitsizes[i]}$ and the iteration range is configued
+    using $\mathrm{data\_or\_shape[0].shape[i]}$.
 
     ### Number of target registers, their quantum datatype and shape
     QROM bloq uses one target register for each entry corresponding to classical dataset in the
     tuple `data_or_shape`. Thus, to load $L$ classical datsets, we use $L$ names target registers
     $(\mathrm{target}_0, \mathrm{target}_1, ..., \mathrm{target}_L)$
 
-    Each named target register has a bitsize $b_{i}=\mathrm{target_bitsizes[i]}$ that represents
+    Each named target register has a bitsize $b_{i}=\mathrm{target\_bitsizes[i]}$ that represents
     the size of the register and depends upon the maximum value of individual elements in the
     $i$'th classical dataset.
 
     Each named target register has a shape that can be configured using attribute
-    $\mathrm{target_shape[i]}$ that represents the number of target registers if the output to load
+    $\mathrm{target\_shape[i]}$ that represents the number of target registers if the output to load
     is multidimensional.
 
     Args:
@@ -139,7 +139,7 @@ class QROMBase(metaclass=abc.ABCMeta):
         selection_bitsizes: The number of bits used to represent each selection register
             corresponding to the size of each dimension of the selection_shape
             $(S_1, S_2, ..., S_K)$. Should be the same length as the selection shape of
-            each of the datasets and $2**\mathrm{selection_bitsizes[i]} >= S_i$
+            each of the datasets and $2**\mathrm{selection\_bitsizes[i]} >= S_i$
         target_shapes: Shape of target registers for each classical dataset to be loaded.
             Must be consistent with `data_or_shape` s.t. `len(data_or_shape) == len(target_shapes)`
             and `data_or_shape[-len(target_shapes[i]):] == target_shapes[i]`.
