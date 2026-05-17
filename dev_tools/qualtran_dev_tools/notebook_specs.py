@@ -98,6 +98,7 @@ import qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join
 import qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.approx_multi_toffoli
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mcmt.multi_control_pauli
@@ -260,6 +261,17 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='Multi control bloq via single control bloq and `And` ladder',
         module=qualtran.bloqs.mcmt.controlled_via_and,
         bloq_specs=[qualtran.bloqs.mcmt.controlled_via_and._CONTROLLED_VIA_AND_DOC],
+    ),
+    NotebookSpecV2(
+        title='Approximate Multi-Qubit Toffoli',
+        module=qualtran.bloqs.mcmt.approx_multi_toffoli,
+        directory=f'{SOURCE_DIR}/bloqs/mcmt/',
+        path_stem='approx_multi_toffoli_reference',
+        bloq_specs=[
+            qualtran.bloqs.mcmt.approx_multi_toffoli._MULTI_AND_LOG_DEPTH_DOC,
+            qualtran.bloqs.mcmt.approx_multi_toffoli._PARITY_MASK_DOC,
+            qualtran.bloqs.mcmt.approx_multi_toffoli._APPROX_MULTI_TOFFOLI_DOC,
+        ],
     ),
 ]
 

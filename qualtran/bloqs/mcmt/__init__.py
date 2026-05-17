@@ -17,3 +17,6 @@ from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
 from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlX, MultiControlZ
 from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
+from qualtran.bloqs.mcmt.approx_multi_toffoli import ApproxMultiToffoli
+from qualtran.bloqs.mcmt.approx_multi_toffoli import MultiAndLogDepth
+from qualtran.bloqs.mcmt.approx_multi_toffoli import ParityMask

@@ -113,6 +113,7 @@ import qualtran.bloqs.for_testing.with_decomposition
 import qualtran.bloqs.hamiltonian_simulation.guided_hamiltonian
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.approx_multi_toffoli
 import qualtran.bloqs.mcmt.controlled_via_and
 import qualtran.bloqs.mcmt.ctrl_spec_and
 import qualtran.bloqs.mcmt.multi_control_pauli
@@ -405,6 +406,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ": qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard.HubbardSpinUpZ,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
     "qualtran.bloqs.mcmt.and_bloq.MultiAnd": qualtran.bloqs.mcmt.and_bloq.MultiAnd,
+    "qualtran.bloqs.mcmt.approx_multi_toffoli.MultiAndLogDepth": qualtran.bloqs.mcmt.approx_multi_toffoli.MultiAndLogDepth,
+    "qualtran.bloqs.mcmt.approx_multi_toffoli.ParityMask": qualtran.bloqs.mcmt.approx_multi_toffoli.ParityMask,
+    "qualtran.bloqs.mcmt.approx_multi_toffoli.ApproxMultiToffoli": qualtran.bloqs.mcmt.approx_multi_toffoli.ApproxMultiToffoli,
     "qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd": qualtran.bloqs.mcmt.ctrl_spec_and.CtrlSpecAnd,
     "qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd": qualtran.bloqs.mcmt.controlled_via_and.ControlledViaAnd,
     "qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli": qualtran.bloqs.mcmt.multi_control_pauli.MultiControlPauli,
