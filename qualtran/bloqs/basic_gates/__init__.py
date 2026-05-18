@@ -36,6 +36,7 @@ from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MeasureX, MinusEffect, MinusState, PlusEffect, PlusState, XGate
 from .y_gate import CYGate, YGate
+from .qconst import QIntEffect, QIntState, QUIntEffect, QUIntState
 from .z_basis import (
     CZ,
     IntEffect,

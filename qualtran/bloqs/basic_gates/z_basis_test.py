@@ -76,7 +76,7 @@ def test_int_effect(bloq_autotester):
 
 def test_zero_state_manual():
     bloq = ZeroState()
-    assert str(bloq) == '|0>'
+    assert str(bloq) == 'ZeroState'
     assert not bloq.bit
     vector = bloq.tensor_contract()
     should_be = np.array([1, 0])
@@ -86,13 +86,6 @@ def test_zero_state_manual():
     assert x == 0
 
     assert get_cost_value(bloq, QECGatesCost()) == GateCounts()
-
-
-def test_multiq_zero_state():
-    # Verifying the attrs trickery that I can plumb through *some*
-    # of the attributes but pre-specify others.
-    with pytest.raises(NotImplementedError):
-        _ = ZeroState(n=10)
 
 
 def test_one_state_manual():
@@ -167,21 +160,21 @@ def test_zero_state_effect(bit):
 
 def test_int_state_manual():
     k = IntState(255, bitsize=8)
-    assert str(k) == '|255>'
+    assert str(k) == 'IntState(255)'
     (val,) = k.call_classically()
     assert val == 255
 
     with pytest.raises(ValueError):
-        _ = IntState(255, bitsize=7)
+        IntState(255, bitsize=7).call_classically()
     with pytest.raises(ValueError):
-        _ = IntState(-1, bitsize=8)
+        _ = IntState(-1, bitsize=8).call_classically()
 
     np.testing.assert_allclose(k.tensor_contract(), k.decompose_bloq().tensor_contract())
 
 
 def test_int_effect_manual():
     k = IntEffect(255, bitsize=8)
-    assert str(k) == '<255|'
+    assert str(k) == 'IntEffect(255)'
     ret = k.call_classically(val=255)
     assert ret == ()
 
@@ -236,6 +229,11 @@ def test_zgate_manual():
 
     assert bloq_is_clifford(z)
     assert t_complexity(z) == TComplexity(clifford=1)
+
+
+def test_z_isnt_classical():
+    with pytest.raises(ValueError, match=r'imparts a phase.*'):
+        ZGate().call_classically(q=1)
 
 
 def test_cz_manual():
