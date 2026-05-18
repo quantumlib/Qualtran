@@ -39,6 +39,7 @@ import qualtran.bloqs.basic_gates.s_gate
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.basic_gates.t_gate
 import qualtran.bloqs.basic_gates.toffoli
+import qualtran.bloqs.basic_gates.qconst
 import qualtran.bloqs.basic_gates.x_basis
 import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis
@@ -253,6 +254,10 @@ RESOLVER_DICT = {
     "qualtran.bloqs.basic_gates.x_basis.XGate": qualtran.bloqs.basic_gates.x_basis.XGate,
     "qualtran.bloqs.basic_gates.y_gate.YGate": qualtran.bloqs.basic_gates.y_gate.YGate,
     "qualtran.bloqs.basic_gates.y_gate.CYGate": qualtran.bloqs.basic_gates.y_gate.CYGate,
+    "qualtran.bloqs.basic_gates.qconst.QIntEffect": qualtran.bloqs.basic_gates.qconst.QIntEffect,
+    "qualtran.bloqs.basic_gates.qconst.QIntState": qualtran.bloqs.basic_gates.qconst.QIntState,
+    "qualtran.bloqs.basic_gates.qconst.QUIntEffect": qualtran.bloqs.basic_gates.qconst.QUIntEffect,
+    "qualtran.bloqs.basic_gates.qconst.QUIntState": qualtran.bloqs.basic_gates.qconst.QUIntState,
     "qualtran.bloqs.basic_gates.z_basis.IntEffect": qualtran.bloqs.basic_gates.z_basis.IntEffect,
     "qualtran.bloqs.basic_gates.z_basis.IntState": qualtran.bloqs.basic_gates.z_basis.IntState,
     "qualtran.bloqs.basic_gates.z_basis.OneEffect": qualtran.bloqs.basic_gates.z_basis.OneEffect,
