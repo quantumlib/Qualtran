@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QUInt
+from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates.qconst import (
     _qint_effect,
     _qint_state,

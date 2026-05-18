@@ -34,12 +34,12 @@ import qualtran.bloqs.basic_gates.cnot
 import qualtran.bloqs.basic_gates.hadamard
 import qualtran.bloqs.basic_gates.identity
 import qualtran.bloqs.basic_gates.on_each
+import qualtran.bloqs.basic_gates.qconst
 import qualtran.bloqs.basic_gates.rotation
 import qualtran.bloqs.basic_gates.s_gate
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.basic_gates.t_gate
 import qualtran.bloqs.basic_gates.toffoli
-import qualtran.bloqs.basic_gates.qconst
 import qualtran.bloqs.basic_gates.x_basis
 import qualtran.bloqs.basic_gates.y_gate
 import qualtran.bloqs.basic_gates.z_basis

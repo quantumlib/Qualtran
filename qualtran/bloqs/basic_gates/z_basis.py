@@ -14,7 +14,6 @@
 import abc
 from functools import cached_property
 from typing import (
-    cast,
     Dict,
     Iterable,
     List,
@@ -30,7 +29,6 @@ from typing import (
 import numpy as np
 import sympy
 from attrs import frozen
-from numpy.typing import NDArray
 
 from qualtran import (
     AddControlledT,
@@ -44,19 +42,14 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     QBit,
-    QDType,
-    QInt,
     QUInt,
-    QVar,
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
-from qualtran.symbolics import is_symbolic, SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -154,7 +147,6 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
             return Text('')
         s = '1' if self.bit else '0'
         return directional_text_box(s, side=reg.side)
-
 
 
 @frozen

@@ -30,7 +30,6 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     QBit,
-    QVar,
     Register,
     Side,
     Signature,
@@ -125,7 +124,6 @@ class _XVector(metaclass=abc.ABCMeta):
             return Text('')
         s = '-' if self.bit else '+'
         return directional_text_box(s, side=reg.side)
-
 
 
 @frozen

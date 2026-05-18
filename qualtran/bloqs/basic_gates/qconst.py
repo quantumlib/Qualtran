@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, Iterable, List, Mapping, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Mapping, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
