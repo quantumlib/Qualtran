@@ -56,7 +56,7 @@ _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
 _PAULIX = np.array([[0, 1], [1, 0]], dtype=np.complex128)
 
 
-class _XVector(metaclass=abc.ABCMeta):
+class _XVector(Bloq, metaclass=abc.ABCMeta):
     """The |+> or |-> state or effect.
 
     Please use the explicitly named subclasses instead of the boolean arguments.
@@ -127,7 +127,7 @@ class _XVector(metaclass=abc.ABCMeta):
 
 
 @frozen
-class PlusState(_XVector, Bloq):
+class PlusState(_XVector):
     """The state |+>"""
 
     @property
@@ -155,7 +155,7 @@ _PLUS_STATE_DOC = BloqDocSpec(bloq_cls=PlusState, examples=[_plus_state])
 
 
 @frozen
-class PlusEffect(_XVector, Bloq):
+class PlusEffect(_XVector):
     """The effect <+|"""
 
     @property
@@ -183,7 +183,7 @@ _PLUS_EFFECT_DOC = BloqDocSpec(bloq_cls=PlusEffect, examples=[_plus_effect])
 
 
 @frozen
-class MinusState(_XVector, Bloq):
+class MinusState(_XVector):
     """The state |->"""
 
     @property
@@ -211,7 +211,7 @@ _MINUS_STATE_DOC = BloqDocSpec(bloq_cls=MinusState, examples=[_minus_state])
 
 
 @frozen
-class MinusEffect(_XVector, Bloq):
+class MinusEffect(_XVector):
     """The effect <-|"""
 
     @property
