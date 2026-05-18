@@ -140,3 +140,7 @@ def test_state_effect_composition():
     cbloq = bb.finalize()
     val = cbloq.tensor_contract()
     np.testing.assert_allclose(val, 1.0)
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('qconst')
