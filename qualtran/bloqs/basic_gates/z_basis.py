@@ -535,8 +535,8 @@ class IntState(Bloq):
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
-    def __str__(self):
-        return f'IntState({self.val})'
+    def __str__(self) -> str:
+        return f'|{self.val}>'
 
 
 @bloq_example
@@ -603,8 +603,8 @@ class IntEffect(Bloq):
     ) -> 'WireSymbol':
         return self._impl.wire_symbol(reg, idx)
 
-    def __str__(self):
-        return f'IntEffect({self.val})'
+    def __str__(self) -> str:
+        return f'<{self.val}|'
 
 
 @bloq_example
