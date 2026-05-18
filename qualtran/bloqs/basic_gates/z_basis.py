@@ -524,6 +524,7 @@ class IntState(Bloq):
     @cached_property
     def _impl(self):
         from qualtran.bloqs.basic_gates.qconst import _QConst
+
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=True)
 
     @property
@@ -591,6 +592,7 @@ class IntEffect(Bloq):
     @cached_property
     def _impl(self):
         from qualtran.bloqs.basic_gates.qconst import _QConst
+
         return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=False)
 
     @property

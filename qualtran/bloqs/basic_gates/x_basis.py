@@ -256,7 +256,6 @@ class XGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 

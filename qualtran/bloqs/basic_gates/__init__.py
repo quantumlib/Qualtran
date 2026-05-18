@@ -28,6 +28,7 @@ from .hadamard import CHadamard, Hadamard
 from .identity import Identity
 from .on_each import OnEach
 from .power import Power
+from .qconst import QIntEffect, QIntState, QUIntEffect, QUIntState
 from .rotation import CRy, CRz, CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from .s_gate import SGate
 from .su2_rotation import SU2RotationGate
@@ -36,7 +37,6 @@ from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MeasureX, MinusEffect, MinusState, PlusEffect, PlusState, XGate
 from .y_gate import CYGate, YGate
-from .qconst import QIntEffect, QIntState, QUIntEffect, QUIntState
 from .z_basis import (
     CZ,
     IntEffect,

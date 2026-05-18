@@ -18,14 +18,14 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QInt, QUInt
 from qualtran.bloqs.basic_gates.qconst import (
-    QIntState,
-    QIntEffect,
-    QUIntState,
-    QUIntEffect,
-    _qint_state,
     _qint_effect,
-    _quint_state,
+    _qint_state,
     _quint_effect,
+    _quint_state,
+    QIntEffect,
+    QIntState,
+    QUIntEffect,
+    QUIntState,
 )
 
 
@@ -140,6 +140,7 @@ def test_state_effect_composition():
     cbloq = bb.finalize()
     val = cbloq.tensor_contract()
     np.testing.assert_allclose(val, 1.0)
+
 
 @pytest.mark.notebook
 def test_notebook():

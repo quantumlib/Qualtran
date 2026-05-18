@@ -221,7 +221,7 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.basic_gates.qconst._QUINT_EFFECT_DOC,
             qualtran.bloqs.basic_gates.qconst._QINT_STATE_DOC,
             qualtran.bloqs.basic_gates.qconst._QINT_EFFECT_DOC,
-        ]
+        ],
     ),
     NotebookSpecV2(
         title='Measurement',

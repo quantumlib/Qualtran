@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple, TYPE_CHECKING, Union, cast
+from typing import cast, Dict, Iterable, List, Mapping, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -74,7 +74,8 @@ class _QConst(Bloq):
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
-        from qualtran.bloqs.basic_gates.z_basis import ZeroState, OneState
+        from qualtran.bloqs.basic_gates.z_basis import OneState, ZeroState
+
         states = [ZeroState(), OneState()]
         xs = []
         for bit in bits:
@@ -88,7 +89,8 @@ class _QConst(Bloq):
     def _build_composite_effect(
         bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
     ) -> Dict[str, 'SoquetT']:
-        from qualtran.bloqs.basic_gates.z_basis import ZeroEffect, OneEffect
+        from qualtran.bloqs.basic_gates.z_basis import OneEffect, ZeroEffect
+
         xs = bb.split(val)
         effects = [ZeroEffect(), OneEffect()]
         for i, bit in enumerate(bits):
