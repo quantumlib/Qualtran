@@ -127,12 +127,6 @@ class _XVector(metaclass=abc.ABCMeta):
         return directional_text_box(s, side=reg.side)
 
 
-def _hide_base_fields(cls, fields):
-    # for use in attrs `field_trasnformer`.
-    return [
-        field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
-    ]
-
 
 @frozen
 class PlusState(_XVector, Bloq):
@@ -162,7 +156,7 @@ def _plus_state() -> PlusState:
 _PLUS_STATE_DOC = BloqDocSpec(bloq_cls=PlusState, examples=[_plus_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class PlusEffect(_XVector, Bloq):
     """The effect <+|"""
 
@@ -190,6 +184,7 @@ def _plus_effect() -> PlusEffect:
 _PLUS_EFFECT_DOC = BloqDocSpec(bloq_cls=PlusEffect, examples=[_plus_effect])
 
 
+@frozen
 class MinusState(_XVector, Bloq):
     """The state |->"""
 
@@ -217,7 +212,7 @@ def _minus_state() -> MinusState:
 _MINUS_STATE_DOC = BloqDocSpec(bloq_cls=MinusState, examples=[_minus_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class MinusEffect(_XVector, Bloq):
     """The effect <-|"""
 

@@ -156,12 +156,6 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         return directional_text_box(s, side=reg.side)
 
 
-def _hide_base_fields(cls, fields):
-    # for use in attrs `field_transformer`.
-    return [
-        field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
-    ]
-
 
 @frozen
 class ZeroState(_ZVector):
@@ -219,7 +213,7 @@ def _zero_effect() -> ZeroEffect:
 _ZERO_EFFECT_DOC = BloqDocSpec(bloq_cls=ZeroEffect, examples=[_zero_effect])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class OneState(_ZVector):
     """The state |1>"""
 
@@ -247,7 +241,7 @@ def _one_state() -> OneState:
 _ONE_STATE_DOC = BloqDocSpec(bloq_cls=OneState, examples=[_one_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class OneEffect(_ZVector):
     """The effect <1|"""
 
