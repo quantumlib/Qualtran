@@ -98,8 +98,8 @@ class _QConst(Bloq):
         return {}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
-        if is_symbolic(self.qdtype):
-            raise DecomposeTypeError(f'Symbolic qdtype {self.qdtype} not supported')
+        if is_symbolic(self.qdtype) or is_symbolic(self.val):
+            raise DecomposeTypeError(f'Symbolic qdtype {self.qdtype} or val {self.val} not supported')
         bits = np.asarray(self.qdtype.to_bits(self.val))
         if self.state:
             assert not val
