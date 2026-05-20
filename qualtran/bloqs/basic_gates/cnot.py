@@ -29,7 +29,6 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
-    QVar,
     Register,
     Signature,
     SoquetT,

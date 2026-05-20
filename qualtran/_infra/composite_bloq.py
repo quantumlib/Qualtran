@@ -1748,16 +1748,6 @@ class BloqBuilder:
             return self.add(OneEffect(), q=q)
         raise ValueError(f"Bad qubit value: {k}")
 
-    def destructure(self, x: 'QVar'):
-        from qualtran.bloqs.bookkeeping import Destructure
-
-        return Destructure.qcall(x)
-
-    def restructure(self, xs: Sequence['QVarT'], dt: 'qdt.QStruct'):
-        from qualtran.bloqs.bookkeeping import Restructure
-
-        return Restructure.qcall(xs, dt=dt)
-
     def X(self, q: 'QVar'):
         from qualtran.bloqs.basic_gates import XGate
 

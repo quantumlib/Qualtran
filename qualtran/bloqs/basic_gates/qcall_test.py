@@ -13,29 +13,19 @@
 #  limitations under the License.
 
 import numpy as np
-import pytest
 
-from qualtran import BloqBuilder, QBit, QUInt
+from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CRy,
     CRz,
     CSwap,
     CYGate,
-    CZPowGate,
     Discard,
-    DiscardQ,
     Identity,
-    IntEffect,
     MeasureX,
     MeasureZ,
-    MinusEffect,
     OnEach,
-    OneEffect,
-    PlusEffect,
-    Power,
-    QIntEffect,
-    QUIntEffect,
     Rx,
     Ry,
     Rz,
@@ -49,7 +39,6 @@ from qualtran.bloqs.basic_gates import (
     XPowGate,
     YGate,
     YPowGate,
-    ZeroEffect,
     ZeroState,
     ZPowGate,
 )
