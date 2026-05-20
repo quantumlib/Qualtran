@@ -19,7 +19,7 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, ConnectionT, QVar, Register, Signature
 from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class SGate(Bloq):
     $$
     \begin{bmatrix}
         1 & 0 \\
-        0 & i 
+        0 & i
     \end{bmatrix}
     $$
 
@@ -57,6 +57,10 @@ class SGate(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+    @classmethod
+    def qcall(cls, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+        return q.bb.add(cls(is_adjoint=is_adjoint), q=q)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
