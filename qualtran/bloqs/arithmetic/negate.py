@@ -12,19 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Mapping, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from attrs import frozen
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqDocSpec,
-    QInt,
-    QMontgomeryUInt,
-    QUInt,
-    Signature,
-)
+from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QMontgomeryUInt, QUInt, Signature
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 

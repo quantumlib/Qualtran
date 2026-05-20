@@ -694,7 +694,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return directional_text_box(text=pretty_str, side=reg.side)
 
-    def draw(self, type: str = 'graph'):
+    def draw(self, type: str = 'graph'):  # pylint: disable=redefined-builtin
         from qualtran.drawing import show_bloq
 
         return show_bloq(self, type=type)
@@ -710,7 +710,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def _class_name_in_pkg_(cls) -> str:
         """The bloq class's name with its package.
 
-        The Qualtran standard library contains a heirarchy of packages under
+        The Qualtran standard library contains a hierarchy of packages under
         `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
         "*.py" file) and re-exported one level up.
         """

@@ -14,7 +14,6 @@
 
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
-# TODO: move to _infra and export to top level
 import os
 from typing import Dict, Optional, overload, Sequence, TYPE_CHECKING, Union
 
