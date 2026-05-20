@@ -73,8 +73,8 @@ class SGate(Bloq):
         ]
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type:ignore[type-var]
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type:ignore[type-var]
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (q,) = q

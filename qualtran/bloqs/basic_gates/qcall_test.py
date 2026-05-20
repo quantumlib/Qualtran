@@ -138,10 +138,10 @@ def test_bloq_builder_qcall_helpers():
     q0 = bb.su2_rotation(q0, theta=0.1, phi=0.2, lambd=0.3)
 
     # 3. Power Gate Helpers
-    q0 = bb.ZPow(q0, exponent=0.5)
-    q0, q1 = bb.CZPow(q0, q1, exponent=0.25)
-    q1 = bb.XPow(q1, exponent=0.125)
-    q2 = bb.YPow(q2, exponent=0.0625)
+    q0 = bb.z_pow(q0, exponent=0.5)
+    q0, q1 = bb.cz_pow(q0, q1, exponent=0.25)
+    q1 = bb.x_pow(q1, exponent=0.125)
+    q2 = bb.y_pow(q2, exponent=0.0625)
 
     # 4. Multi-qubit Register Swaps
     qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]

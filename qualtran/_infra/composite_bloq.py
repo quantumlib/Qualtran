@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Classes for building and manipulating `CompositeBloq`."""
+
 import warnings
 from collections.abc import Hashable
 from functools import cached_property
@@ -1895,7 +1896,7 @@ class BloqBuilder:
             q=q, theta=theta, phi=phi, lambd=lambd, global_shift=global_shift, eps=eps
         )
 
-    def ZPow(
+    def z_pow(
         self, q: 'QVar', *, exponent: 'SymbolicFloat' = 1.0, eps: 'SymbolicFloat' = 1e-11
     ) -> 'QVar':
         """Applies the ZPowGate bloq."""
@@ -1903,7 +1904,7 @@ class BloqBuilder:
 
         return ZPowGate.qcall(q=q, exponent=exponent, eps=eps)
 
-    def CZPow(
+    def cz_pow(
         self,
         ctrl: 'QVar',
         target: 'QVar',
@@ -1914,9 +1915,9 @@ class BloqBuilder:
         """Applies the CZPowGate bloq."""
         from qualtran.bloqs.basic_gates import CZPowGate
 
-        return self.add(CZPowGate(exponent=exponent, eps=eps), q=np.array([ctrl, target]))
+        return CZPowGate.qcall(np.array([ctrl, target]), exponent=exponent, eps=eps)
 
-    def XPow(
+    def x_pow(
         self,
         q: 'QVar',
         *,
@@ -1929,7 +1930,7 @@ class BloqBuilder:
 
         return XPowGate.qcall(q=q, exponent=exponent, global_shift=global_shift, eps=eps)
 
-    def YPow(
+    def y_pow(
         self,
         q: 'QVar',
         *,

@@ -227,14 +227,15 @@ class CZPowGate(Bloq):
     def qcall(
         cls, q: 'QVar', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
     ) -> 'QVar':
-        return q.bb.add(cls(exponent=exponent, eps=eps), q=q)
+        bb = np.asarray(q).reshape(-1)[0].bb
+        return bb.add(cls(exponent=exponent, eps=eps), q=q)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
         (q1, q2), anc = bb.add(And(), ctrl=q)
         anc = bb.add(ZPowGate(self.exponent, eps=self.eps), q=anc)
-        (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
+        q1, q2 = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
 
     def __pow__(self, power):
