@@ -28,6 +28,7 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
+    QVar,
     Register,
     Signature,
     SoquetT,
@@ -64,6 +65,10 @@ class YGate(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> 'QVar':
+        return q.bb.add(cls(), q=q)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -139,6 +144,10 @@ class CYGate(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', target: 'QVar'):
+        return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

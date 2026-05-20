@@ -58,3 +58,4 @@ types (``Register``), and algorithms (``CompositeBloq``).
    simulation/xcheck_classical_quimb.ipynb
    l1/L1-Objectstring.ipynb
    Autodoc.ipynb
+   qcall.md

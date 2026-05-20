@@ -29,6 +29,7 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
+    QVar,
     Register,
     Signature,
     SoquetT,
@@ -64,6 +65,10 @@ class CNOT(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, target=1)
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', target: 'QVar') -> Tuple['QVar', 'QVar']:
+        return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

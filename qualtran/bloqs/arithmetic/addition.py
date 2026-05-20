@@ -34,6 +34,7 @@ from qualtran import (
     QInt,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Side,
     Signature,
@@ -111,6 +112,12 @@ class Add(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    @classmethod
+    def qcall(cls, a: 'QVar', b: 'QVar'):
+        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)  # type: ignore[arg-type]
+        bb = a.bb
+        return bb.add(bloq, a=a, b=b)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -429,6 +436,12 @@ class AddK(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    @classmethod
+    def qcall(cls, x: 'QVar', *, k: 'SymbolicInt') -> 'QVar':
+        bb = x.bb
+        dtype = x.dtype
+        return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'

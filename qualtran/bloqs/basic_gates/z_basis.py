@@ -43,6 +43,7 @@ from qualtran import (
     DecomposeTypeError,
     QBit,
     QUInt,
+    QVar,
     Register,
     Side,
     Signature,
@@ -275,6 +276,10 @@ class ZGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
+    @classmethod
+    def qcall(cls, q: 'QVar'):
+        return q.bb.add(cls(), q=q)
+
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
@@ -357,6 +362,11 @@ class CZ(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q1=1, q2=1)
+
+    @classmethod
+    def qcall(cls, q1: "QVar", q2: "QVar"):
+        bb = q1.bb
+        return bb.add(cls(), q1=q1, q2=q2)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -441,6 +451,10 @@ class MeasureZ(Bloq):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic.")
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> 'QVar':
+        return q.bb.add(cls(), q=q)
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']

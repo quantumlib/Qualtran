@@ -13,12 +13,14 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
+
 import warnings
 from functools import cached_property
 from typing import Optional, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
+import sympy
 from attrs import field, frozen
 
 if TYPE_CHECKING:
@@ -191,6 +193,31 @@ class _QVar:
         if copy:
             raise NotImplementedError()
         return arr
+
+    def __invert__(self):
+        import qualtran.dtype as qdt
+        from qualtran.bloqs.arithmetic import BitwiseNot
+        from qualtran.bloqs.basic_gates import XGate
+
+        if self.dtype == qdt.QBit():
+            return XGate.qcall(self)
+
+        return BitwiseNot.qcall(self)
+
+    def __add__(self, other):
+        from qualtran.bloqs.arithmetic import Add
+
+        if isinstance(other, _QVar):
+            return Add.qcall(self, other)
+
+        return NotImplemented
+
+    def __iadd__(self, other):
+        if isinstance(other, (int, sympy.Expr)):
+            from qualtran.bloqs.arithmetic import AddK
+
+            return AddK.qcall(k=other, x=self)
+        return NotImplemented
 
 
 LeftDangle = DanglingT("LeftDangle")

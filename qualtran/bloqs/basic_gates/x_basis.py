@@ -30,6 +30,7 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     QBit,
+    QVar,
     Register,
     Side,
     Signature,
@@ -249,6 +250,10 @@ class XGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    @classmethod
+    def qcall(cls, q: 'QVar') -> QVar:
+        return q.bb.add(cls(), q=q)
+
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
@@ -329,6 +334,10 @@ class MeasureX(Bloq):
         return Signature(
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> 'QVar':
+        return q.bb.add(cls(), q=q)
 
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValRetT']:
         if q not in [0, 1]:
