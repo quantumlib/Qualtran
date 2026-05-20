@@ -192,6 +192,31 @@ class _QVar:
             raise NotImplementedError()
         return arr
 
+    def __invert__(self) -> 'QVar':
+        import qualtran.dtype as qdt
+        from qualtran.bloqs.arithmetic import BitwiseNot
+        from qualtran.bloqs.basic_gates import XGate
+
+        if self.dtype == qdt.QBit():
+            return XGate.qcall(self)
+
+        return BitwiseNot.qcall(self)
+
+    def __add__(self, other):
+        from qualtran.bloqs.arithmetic import Add
+
+        if isinstance(other, _QVar):
+            return self.bb.add(Add(a_dtype=self.dtype, b_dtype=other.dtype), a=self, b=other)
+
+        return NotImplemented
+
+    def __iadd__(self, other):
+        if isinstance(other, int):
+            from qualtran.bloqs.arithmetic import AddK
+
+            return self.bb.add(AddK(dtype=self.dtype, k=other), x=self)
+        return NotImplemented
+
 
 LeftDangle = DanglingT("LeftDangle")
 RightDangle = DanglingT("RightDangle")
