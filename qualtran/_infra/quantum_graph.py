@@ -174,6 +174,11 @@ class _QVar:
     def __hash__(self):
         raise TypeError("QVar objects during bloq building are *not* hashable.")
 
+    def __str__(self) -> str:
+        if self.ssa_name is not None:
+            return self.ssa_name
+        return str(self.soquet)
+
     def __getitem__(self, item):
         if self._split_components is None:
             self._split_components = self.bb.split(self)

@@ -46,7 +46,7 @@ from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.drawing import directional_text_box, Text
+from qualtran.drawing import directional_text_box, Text, TextBox
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -430,7 +430,7 @@ class AddK(Bloq):
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
             raise NotImplementedError(
-                "Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition."
+                f"Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition, not {self.dtype}"
             )
 
     @cached_property
@@ -492,6 +492,15 @@ class AddK(Bloq):
         counts[self._load_k_bloq.adjoint()] += 1
 
         return counts
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'x':
+            return TextBox(f'+={self.k}')
+        raise ValueError(f"Unknown register {reg}")
 
     def __str__(self):
         return f'AddK(k={self.k})'

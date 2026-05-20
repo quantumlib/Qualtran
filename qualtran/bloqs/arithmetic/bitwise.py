@@ -35,7 +35,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
@@ -108,7 +108,7 @@ class XorK(Bloq):
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox(f"⊕{self.k}")
 
@@ -170,6 +170,9 @@ class Xor(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {CNOT(): self.dtype.num_qubits}
+
+    def adjoint(self) -> 'Xor':
+        return self
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -234,7 +237,7 @@ class BitwiseNot(Bloq):
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox("~x")
 

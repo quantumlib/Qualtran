@@ -65,7 +65,9 @@ if TYPE_CHECKING:
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
 
-    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    bb, initial_soqs = BloqBuilder.from_signature(
+        bloq.signature, add_registers_allowed=False, bloq_key=bloq.__class__.__name__
+    )
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
     if not isinstance(out_soqs, dict):
         raise ValueError(
@@ -691,6 +693,11 @@ class Bloq(metaclass=abc.ABCMeta):
             pretty_str = label
 
         return directional_text_box(text=pretty_str, side=reg.side)
+
+    def draw(self, type: str = 'graph'):
+        from qualtran.drawing import show_bloq
+
+        return show_bloq(self, type=type)
 
     def __str__(self):
         return self.__class__.__name__

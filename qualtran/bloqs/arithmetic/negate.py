@@ -12,11 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import Mapping, TYPE_CHECKING, Union
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QInt, QMontgomeryUInt, QUInt, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    QInt,
+    QMontgomeryUInt,
+    QUInt,
+    Signature,
+)
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 
@@ -28,9 +36,11 @@ if TYPE_CHECKING:
 class Negate(Bloq):
     """Compute the two's complement negation for a integer/fixed-point value.
 
-    This bloq is equivalent to the "Unary minus" [1] C++ operator.
+    This bloq is similar to the "Unary minus" [1] C++ operator.
     - For a signed `x`, the output is `-x`.
     - For an unsigned `x`, the output is `2^n - x` (where `n` is the bitsize).
+
+    On overflow, we use the overflow behavior of the implementation.
 
     This is computed by the bit-fiddling trick `-x = ~x + 1`, as follows:
     1. Flip all the bits (i.e. `x := ~x`)
