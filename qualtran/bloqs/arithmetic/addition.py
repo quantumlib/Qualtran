@@ -438,7 +438,7 @@ class AddK(Bloq):
         return Signature.build_from_dtypes(x=self.dtype)
 
     @classmethod
-    def qcall(cls, k: 'SymbolicInt', x: 'QVar') -> 'QVar':
+    def qcall(cls, x: 'QVar', *, k: 'SymbolicInt') -> 'QVar':
         bb = x.bb
         dtype = x.dtype
         return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]

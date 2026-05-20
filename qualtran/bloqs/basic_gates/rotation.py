@@ -62,6 +62,7 @@ from qualtran import (
     DecomposeTypeError,
     QBit,
     QVar,
+    QVarT,
     Register,
     Signature,
     Soquet,
@@ -225,7 +226,7 @@ class CZPowGate(Bloq):
 
     @classmethod
     def qcall(
-        cls, q: 'QVar', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
+        cls, q: 'QVarT', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
     ) -> 'QVar':
         bb = np.asarray(q).reshape(-1)[0].bb
         return bb.add(cls(exponent=exponent, eps=eps), q=q)
