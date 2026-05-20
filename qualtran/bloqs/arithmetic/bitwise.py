@@ -28,6 +28,7 @@ from qualtran import (
     QDType,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Signature,
     Soquet,
@@ -144,8 +145,16 @@ class Xor(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
-    def adjoint(self) -> 'Xor':
-        return self
+    @classmethod
+    def qcall(cls, x: 'QVar', y: 'QVar'):
+        xdtype = x.dtype
+        ydtype = y.dtype
+        if not xdtype == ydtype:
+            raise ValueError(
+                f"Cannot determine the dtype for Xor from soquets of type {xdtype} and {ydtype}"
+            )
+        assert isinstance(xdtype, QDType), xdtype
+        return x.bb.add(cls(dtype=xdtype), x=x, y=y)
 
     def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
@@ -209,6 +218,10 @@ class BitwiseNot(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    @classmethod
+    def qcall(cls, x: 'QVar') -> 'QVar':
+        return x.bb.add(cls(dtype=x.dtype), x=x)
 
     def adjoint(self) -> 'BitwiseNot':
         return self
