@@ -69,7 +69,7 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.symbolics import SymbolicInt
+    from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 class _NoSoquetIsInstanceMeta(_ProtocolMeta):
@@ -1749,41 +1749,215 @@ class BloqBuilder:
         raise ValueError(f"Bad qubit value: {k}")
 
     def X(self, q: 'QVar'):
+        """Applies the XGate bloq."""
         from qualtran.bloqs.basic_gates import XGate
 
         return XGate.qcall(q=q)
 
     def Z(self, q: 'QVar'):
+        """Applies the ZGate bloq."""
         from qualtran.bloqs.basic_gates import ZGate
 
         return ZGate.qcall(q=q)
 
     def H(self, q: 'QVar'):
+        """Applies the Hadamard bloq."""
         from qualtran.bloqs.basic_gates import Hadamard
 
         return Hadamard.qcall(q=q)
 
     def CZ(self, q1: 'QVar', q2: 'QVar'):
+        """Applies the CZ bloq."""
         from qualtran.bloqs.basic_gates import CZ
 
         return CZ.qcall(q1=q1, q2=q2)
 
     def CNOT(self, ctrl: 'SoquetInT', target: 'SoquetInT'):
+        """Applies the CNOT bloq."""
         from qualtran.bloqs.basic_gates import CNOT
 
         return CNOT.qcall(ctrl=ctrl, target=target)
 
     def And(self, ctrl: 'SoquetInT', *, cv1: int = 1, cv2: int = 1):
+        """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, cv1=cv1, cv2=cv2)
 
     def UnAnd(self, ctrl: 'SoquetInT', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
+        """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, target=target, cv1=cv1, cv2=cv2, uncompute=True)
 
     def Toffoli(self, ctrl1, ctrl2, target):
+        """Applies the Toffoli bloq."""
         from qualtran.bloqs.basic_gates import Toffoli
 
         return Toffoli.qcall(ctrl1, ctrl2, target)
+
+    def Y(self, q: 'QVar') -> 'QVar':
+        """Applies the YGate bloq."""
+        from qualtran.bloqs.basic_gates import YGate
+
+        return YGate.qcall(q=q)
+
+    def CY(self, ctrl: 'QVar', target: 'QVar'):
+        """Applies the CYGate bloq."""
+        from qualtran.bloqs.basic_gates import CYGate
+
+        return CYGate.qcall(ctrl=ctrl, target=target)
+
+    def CH(self, ctrl: 'QVar', target: 'QVar'):
+        """Applies the CHadamard bloq."""
+        from qualtran.bloqs.basic_gates import CHadamard
+
+        return CHadamard.qcall(ctrl=ctrl, target=target)
+
+    def T(self, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+        """Applies the TGate bloq."""
+        from qualtran.bloqs.basic_gates import TGate
+
+        return TGate.qcall(q=q, is_adjoint=is_adjoint)
+
+    def S(self, q: 'QVar', *, is_adjoint: bool = False) -> 'QVar':
+        """Applies the SGate bloq."""
+        from qualtran.bloqs.basic_gates import SGate
+
+        return SGate.qcall(q=q, is_adjoint=is_adjoint)
+
+    def swap(self, x: 'QVar', y: 'QVar') -> Tuple['QVar', 'QVar']:
+        """Applies the Swap bloq."""
+        from qualtran.bloqs.basic_gates import Swap
+
+        return Swap.qcall(x=x, y=y)
+
+    def cswap(self, ctrl: 'QVar', x: 'QVar', y: 'QVar'):
+        """Applies the CSwap bloq."""
+        from qualtran.bloqs.basic_gates import CSwap
+
+        return CSwap.qcall(ctrl=ctrl, x=x, y=y)
+
+    def rx(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+        """Applies the Rx bloq."""
+        from qualtran.bloqs.basic_gates import Rx
+
+        return Rx.qcall(q=q, angle=angle, eps=eps)
+
+    def ry(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+        """Applies the Ry bloq."""
+        from qualtran.bloqs.basic_gates import Ry
+
+        return Ry.qcall(q=q, angle=angle, eps=eps)
+
+    def rz(self, q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11) -> 'QVar':
+        """Applies the Rz bloq."""
+        from qualtran.bloqs.basic_gates import Rz
+
+        return Rz.qcall(q=q, angle=angle, eps=eps)
+
+    def cry(self, ctrl: 'QVar', q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11):
+        """Applies the CRy bloq."""
+        from qualtran.bloqs.basic_gates import CRy
+
+        return CRy.qcall(ctrl=ctrl, q=q, angle=angle, eps=eps)
+
+    def crz(self, ctrl: 'QVar', q: 'QVar', angle: 'SymbolicFloat', *, eps: 'SymbolicFloat' = 1e-11):
+        """Applies the CRz bloq."""
+        from qualtran.bloqs.basic_gates import CRz
+
+        return CRz.qcall(ctrl=ctrl, q=q, angle=angle, eps=eps)
+
+    def su2_rotation(
+        self,
+        q: 'QVar',
+        theta: 'SymbolicFloat',
+        phi: 'SymbolicFloat',
+        lambd: 'SymbolicFloat',
+        *,
+        global_shift: 'SymbolicFloat' = 0.0,
+        eps: 'SymbolicFloat' = 1e-11,
+    ) -> 'QVar':
+        """Applies the SU2RotationGate bloq."""
+        from qualtran.bloqs.basic_gates import SU2RotationGate
+
+        return SU2RotationGate.qcall(
+            q=q, theta=theta, phi=phi, lambd=lambd, global_shift=global_shift, eps=eps
+        )
+
+    def ZPow(
+        self, q: 'QVar', *, exponent: 'SymbolicFloat' = 1.0, eps: 'SymbolicFloat' = 1e-11
+    ) -> 'QVar':
+        """Applies the ZPowGate bloq."""
+        from qualtran.bloqs.basic_gates import ZPowGate
+
+        return ZPowGate.qcall(q=q, exponent=exponent, eps=eps)
+
+    def CZPow(
+        self,
+        ctrl: 'QVar',
+        target: 'QVar',
+        *,
+        exponent: 'SymbolicFloat' = 1.0,
+        eps: 'SymbolicFloat' = 1e-11,
+    ):
+        """Applies the CZPowGate bloq."""
+        from qualtran.bloqs.basic_gates import CZPowGate
+
+        return self.add(CZPowGate(exponent=exponent, eps=eps), q=np.array([ctrl, target]))
+
+    def XPow(
+        self,
+        q: 'QVar',
+        *,
+        exponent: 'SymbolicFloat' = 1.0,
+        global_shift: float = 0.0,
+        eps: 'SymbolicFloat' = 1e-11,
+    ) -> 'QVar':
+        """Applies the XPowGate bloq."""
+        from qualtran.bloqs.basic_gates import XPowGate
+
+        return XPowGate.qcall(q=q, exponent=exponent, global_shift=global_shift, eps=eps)
+
+    def YPow(
+        self,
+        q: 'QVar',
+        *,
+        exponent: 'SymbolicFloat' = 1.0,
+        global_shift: float = 0.0,
+        eps: 'SymbolicFloat' = 1e-11,
+    ) -> 'QVar':
+        """Applies the YPowGate bloq."""
+        from qualtran.bloqs.basic_gates import YPowGate
+
+        return YPowGate.qcall(q=q, exponent=exponent, global_shift=global_shift, eps=eps)
+
+    def measure_x(self, q: 'QVar') -> 'QVar':
+        """Applies the MeasureX bloq."""
+        from qualtran.bloqs.basic_gates import MeasureX
+
+        return MeasureX.qcall(q=q)
+
+    def measure_z(self, q: 'QVar') -> 'QVar':
+        """Applies the MeasureZ bloq."""
+        from qualtran.bloqs.basic_gates import MeasureZ
+
+        return MeasureZ.qcall(q=q)
+
+    def identity(self, q: 'QVar') -> 'QVar':
+        """Applies the Identity bloq."""
+        from qualtran.bloqs.basic_gates import Identity
+
+        return Identity.qcall(q=q)
+
+    def discard(self, c: 'QVar') -> None:
+        """Applies the Discard bloq."""
+        from qualtran.bloqs.basic_gates import Discard
+
+        return Discard.qcall(c=c)
+
+    def discard_q(self, q: 'QVar') -> None:
+        """Applies the DiscardQ bloq."""
+        from qualtran.bloqs.basic_gates import DiscardQ
+
+        return DiscardQ.qcall(q=q)

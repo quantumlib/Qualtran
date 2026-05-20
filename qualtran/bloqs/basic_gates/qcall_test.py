@@ -110,3 +110,51 @@ def test_templated_and_parameterized_qcalls():
     # CSwap needs a control qubit
     ctrl = bb.add(ZeroState())
     ctrl, qvar_x, qvar_y = CSwap.qcall(ctrl, qvar_x, qvar_y)
+
+
+def test_bloq_builder_qcall_helpers():
+    bb = BloqBuilder()
+
+    # Allocate qubits
+    q0 = bb.add(ZeroState())
+    q1 = bb.add(ZeroState())
+    q2 = bb.add(ZeroState())
+
+    # 1. Clifford & Single Qubit Gate Helpers
+    q0 = bb.Y(q0)
+    q0, q1 = bb.CY(q0, q1)
+    q0, q1 = bb.CH(q0, q1)
+    q0 = bb.T(q0)
+    q0 = bb.T(q0, is_adjoint=True)
+    q1 = bb.S(q1)
+    q1 = bb.S(q1, is_adjoint=True)
+
+    # 2. Parametric Rotation Helpers
+    q0 = bb.rx(q0, angle=np.pi / 4)
+    q1 = bb.ry(q1, angle=np.pi / 8)
+    q2 = bb.rz(q2, angle=np.pi / 16)
+    q0, q1 = bb.crz(q0, q1, angle=np.pi / 2)
+    q1, q2 = bb.cry(q1, q2, angle=np.pi / 4)
+    q0 = bb.su2_rotation(q0, theta=0.1, phi=0.2, lambd=0.3)
+
+    # 3. Power Gate Helpers
+    q0 = bb.ZPow(q0, exponent=0.5)
+    q0, q1 = bb.CZPow(q0, q1, exponent=0.25)
+    q1 = bb.XPow(q1, exponent=0.125)
+    q2 = bb.YPow(q2, exponent=0.0625)
+
+    # 4. Multi-qubit Register Swaps
+    qvar_x = bb.add_register("x", bitsize=4)
+    qvar_y = bb.add_register("y", bitsize=4)
+    qvar_x, qvar_y = bb.swap(qvar_x, qvar_y)
+    qvar_x = bb.identity(qvar_x)
+
+    ctrl = bb.add(ZeroState())
+    ctrl, qvar_x, qvar_y = bb.cswap(ctrl, qvar_x, qvar_y)
+
+    # 5. Measurement & Discards
+    c0 = bb.measure_z(q0)
+    c1 = bb.measure_x(q1)
+    bb.discard(c0)
+    bb.discard(c1)
+    bb.discard_q(q2)
