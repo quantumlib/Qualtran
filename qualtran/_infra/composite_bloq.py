@@ -1724,3 +1724,76 @@ class BloqBuilder:
 
     def in_register(self, name: str, dtype: QCDType, shape=()) -> Union[None, QVarT]:
         return self.add_register_from_dtype(Register(name=name, dtype=dtype, shape=shape))
+
+    def alloc_qint(self, k: int, bitsize: int) -> 'QVar':
+        from qualtran.bloqs.basic_gates import IntState
+
+        return self.add(IntState(val=k, bitsize=bitsize))
+
+    def alloc_qbit(self, k: int = 0) -> 'QVar':
+        from qualtran.bloqs.basic_gates import OneState, ZeroState
+
+        if k == 0:
+            return self.add(ZeroState())
+        elif k == 1:
+            return self.add(OneState())
+        raise ValueError(f"Bad qubit value: {k}")
+
+    def free_qbit(self, q: 'QVar', k: int = 0) -> None:
+        from qualtran.bloqs.basic_gates import OneEffect, ZeroEffect
+
+        if k == 0:
+            return self.add(ZeroEffect(), q=q)
+        elif k == 1:
+            return self.add(OneEffect(), q=q)
+        raise ValueError(f"Bad qubit value: {k}")
+
+    def destructure(self, x: 'QVar'):
+        from qualtran.bloqs.bookkeeping import Destructure
+
+        return Destructure.qcall(x)
+
+    def restructure(self, xs: Sequence['QVarT'], dt: 'qdt.QStruct'):
+        from qualtran.bloqs.bookkeeping import Restructure
+
+        return Restructure.qcall(xs, dt=dt)
+
+    def X(self, q: 'QVar'):
+        from qualtran.bloqs.basic_gates import XGate
+
+        return XGate.qcall(q=q)
+
+    def Z(self, q: 'QVar'):
+        from qualtran.bloqs.basic_gates import ZGate
+
+        return ZGate.qcall(q=q)
+
+    def H(self, q: 'QVar'):
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        return Hadamard.qcall(q=q)
+
+    def CZ(self, q1: 'QVar', q2: 'QVar'):
+        from qualtran.bloqs.basic_gates import CZ
+
+        return CZ.qcall(q1=q1, q2=q2)
+
+    def CNOT(self, ctrl: 'SoquetInT', target: 'SoquetInT'):
+        from qualtran.bloqs.basic_gates import CNOT
+
+        return CNOT.qcall(ctrl=ctrl, target=target)
+
+    def And(self, ctrl: 'SoquetInT', *, cv1: int = 1, cv2: int = 1):
+        from qualtran.bloqs.mcmt import And
+
+        return And.qcall(ctrl=ctrl, cv1=cv1, cv2=cv2)
+
+    def UnAnd(self, ctrl: 'SoquetInT', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
+        from qualtran.bloqs.mcmt import And
+
+        return And.qcall(ctrl=ctrl, target=target, cv1=cv1, cv2=cv2, uncompute=True)
+
+    def Toffoli(self, ctrl1, ctrl2, target):
+        from qualtran.bloqs.basic_gates import Toffoli
+
+        return Toffoli.qcall(ctrl1, ctrl2, target)
