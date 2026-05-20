@@ -34,6 +34,7 @@ from qualtran import (
     QInt,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Side,
     Signature,
@@ -111,6 +112,12 @@ class Add(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    @classmethod
+    def qcall(cls, a: 'QVar', b: 'QVar'):
+        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)
+        bb = a.bb
+        return bb.add(bloq, a=a, b=b)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
