@@ -19,7 +19,15 @@ import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    ConnectionT,
+    GateWithRegisters,
+    QVar,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
