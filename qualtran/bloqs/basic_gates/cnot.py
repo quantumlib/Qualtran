@@ -29,10 +29,12 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
+    QVar,
     Register,
     Signature,
     SoquetT,
 )
+from qualtran._infra.composite_bloq import SoquetInT
 from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
@@ -64,6 +66,10 @@ class CNOT(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, target=1)
+
+    @classmethod
+    def qcall(cls, ctrl: 'SoquetInT', target: 'SoquetInT'):
+        return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
