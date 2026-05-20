@@ -221,7 +221,7 @@ class BitwiseNot(Bloq):
 
     @classmethod
     def qcall(cls, x: 'QVar') -> 'QVar':
-        return x.bb.add(cls(dtype=x.dtype), x=x)
+        return x.bb.add(cls(dtype=x.dtype), x=x)  # type: ignore[arg-type]
 
     def adjoint(self) -> 'BitwiseNot':
         return self

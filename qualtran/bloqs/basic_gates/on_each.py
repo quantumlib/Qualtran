@@ -74,7 +74,7 @@ class OnEach(Bloq):
 
     @classmethod
     def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
-        return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)
+        return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):

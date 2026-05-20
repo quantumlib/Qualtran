@@ -115,7 +115,7 @@ class Add(Bloq):
 
     @classmethod
     def qcall(cls, a: 'QVar', b: 'QVar'):
-        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)
+        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)  # type: ignore[arg-type]
         bb = a.bb
         return bb.add(bloq, a=a, b=b)
 
@@ -436,6 +436,12 @@ class AddK(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    @classmethod
+    def qcall(cls, k: 'SymbolicInt', x: 'QVar') -> 'QVar':
+        bb = x.bb
+        dtype = x.dtype
+        return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'

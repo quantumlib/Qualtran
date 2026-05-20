@@ -14,7 +14,7 @@
 
 import numpy as np
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QVar
 from qualtran.bloqs.basic_gates import (
     CHadamard,
     CRy,
@@ -95,8 +95,8 @@ def test_templated_and_parameterized_qcalls():
     bb = BloqBuilder()
 
     # Allocate multi-qubit registers
-    qvar_x = bb.add_register("x", bitsize=4)
-    qvar_y = bb.add_register("y", bitsize=4)
+    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
 
     # 1. Identity
     qvar_x = Identity.qcall(qvar_x)
@@ -144,13 +144,13 @@ def test_bloq_builder_qcall_helpers():
     q2 = bb.YPow(q2, exponent=0.0625)
 
     # 4. Multi-qubit Register Swaps
-    qvar_x = bb.add_register("x", bitsize=4)
-    qvar_y = bb.add_register("y", bitsize=4)
+    qvar_x: 'QVar' = bb.add_register("x", bitsize=4)  # type: ignore[assignment]
+    qvar_y: 'QVar' = bb.add_register("y", bitsize=4)  # type: ignore[assignment]
     qvar_x, qvar_y = bb.swap(qvar_x, qvar_y)
     qvar_x = bb.identity(qvar_x)
 
     ctrl = bb.add(ZeroState())
-    ctrl, qvar_x, qvar_y = bb.cswap(ctrl, qvar_x, qvar_y)
+    _ctrl, _qvar_x, _qvar_y = bb.cswap(ctrl, qvar_x, qvar_y)
 
     # 5. Measurement & Discards
     c0 = bb.measure_z(q0)

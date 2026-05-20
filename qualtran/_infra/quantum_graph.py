@@ -19,6 +19,7 @@ from typing import Optional, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
+import sympy
 from attrs import field, frozen
 
 if TYPE_CHECKING:
@@ -192,7 +193,7 @@ class _QVar:
             raise NotImplementedError()
         return arr
 
-    def __invert__(self) -> 'QVar':
+    def __invert__(self):
         import qualtran.dtype as qdt
         from qualtran.bloqs.arithmetic import BitwiseNot
         from qualtran.bloqs.basic_gates import XGate
@@ -206,15 +207,15 @@ class _QVar:
         from qualtran.bloqs.arithmetic import Add
 
         if isinstance(other, _QVar):
-            return self.bb.add(Add(a_dtype=self.dtype, b_dtype=other.dtype), a=self, b=other)
+            return Add.qcall(self, other)
 
         return NotImplemented
 
     def __iadd__(self, other):
-        if isinstance(other, int):
+        if isinstance(other, (int, sympy.Expr)):
             from qualtran.bloqs.arithmetic import AddK
 
-            return self.bb.add(AddK(dtype=self.dtype, k=other), x=self)
+            return AddK.qcall(k=other, x=self)
         return NotImplemented
 
 

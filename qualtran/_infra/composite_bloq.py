@@ -94,9 +94,14 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     additional helper attributes and methods onto `_QVar` to assist in bloq building.
 
     For backwards compatibility, the `Soquet` name is now assigned to this class: a
-    `typing.Protocol` that encapsulates the duck-typing behavior of `_Soquet` and `_QVar`.
-    Bloqs in the wild should not have to update the type annotations in `build_composite_bloq`
-    with this backwards compatibilty typing shim.
+    `typing.Protocol` that encapsulates the duck-typing behavior of the union of
+    `_Soquet` and `_QVar`, which may result in code that type-checks correctly but raises
+    an error at runtime. Backwards compatibility (i.e. not having to update type annotations
+    for existing bloqs) is prioritized over strict type-checking.
+
+     - Only `_Soquet` objects can be hashed.
+     - Only `_QVar` objects have a `.bb` attribute.
+     - Both `_Soquet.reg` and `_QVar.reg` are deprecated.
 
     `isinstance(..., Soquet)` checks will emit a deprecation warning
     and return True for *either* `_Soquet` or `_QVar`.
@@ -126,12 +131,17 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
     @property
     def dtype(self) -> 'QCDType': ...
 
-    def __hash__(self): ...
+    def __hash__(self):
+        """Note! This is _Soquet only. _QVar is mutable."""
 
     @property
     def reg(self) -> 'Register': ...
 
     def __getitem__(self, item) -> 'QVarT': ...
+
+    @property
+    def bb(self) -> 'BloqBuilder':
+        """Note! This is _QVar only. Not _Soquet."""
 
 
 class _SoquetT(Protocol):
@@ -1772,25 +1782,25 @@ class BloqBuilder:
 
         return CZ.qcall(q1=q1, q2=q2)
 
-    def CNOT(self, ctrl: 'SoquetInT', target: 'SoquetInT'):
+    def CNOT(self, ctrl: 'QVar', target: 'QVar'):
         """Applies the CNOT bloq."""
         from qualtran.bloqs.basic_gates import CNOT
 
         return CNOT.qcall(ctrl=ctrl, target=target)
 
-    def And(self, ctrl: 'SoquetInT', *, cv1: int = 1, cv2: int = 1):
+    def And(self, ctrl: 'QVarT', *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, cv1=cv1, cv2=cv2)
 
-    def UnAnd(self, ctrl: 'SoquetInT', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
+    def UnAnd(self, ctrl: 'QVarT', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, target=target, cv1=cv1, cv2=cv2, uncompute=True)
 
-    def Toffoli(self, ctrl1, ctrl2, target):
+    def Toffoli(self, ctrl1: 'QVar', ctrl2: 'QVar', target: 'QVar'):
         """Applies the Toffoli bloq."""
         from qualtran.bloqs.basic_gates import Toffoli
 
