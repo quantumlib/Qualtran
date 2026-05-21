@@ -28,9 +28,11 @@ if TYPE_CHECKING:
 class Negate(Bloq):
     """Compute the two's complement negation for a integer/fixed-point value.
 
-    This bloq is equivalent to the "Unary minus" [1] C++ operator.
+    This bloq is similar to the "Unary minus" [1] C++ operator.
     - For a signed `x`, the output is `-x`.
     - For an unsigned `x`, the output is `2^n - x` (where `n` is the bitsize).
+
+    On overflow, we use the overflow behavior of the implementation.
 
     This is computed by the bit-fiddling trick `-x = ~x + 1`, as follows:
     1. Flip all the bits (i.e. `x := ~x`)
