@@ -1,4 +1,4 @@
-#  Copyright 2025 Google LLC
+#  Copyright 2026 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 #  limitations under the License.
 import itertools
 from typing import TYPE_CHECKING
+
+import pytest
 
 import qualtran as qlt
 import qualtran.dtype as qdt
@@ -54,9 +56,7 @@ def test_maj_truth_table():
 
     bloq = maj.make(qlt.qsig(ck=1, ik=1, tk=1))
     tt = format_classical_truth_table(*get_classical_truth_table(bloq))
-    assert (
-        tt
-        == """\
+    assert tt == """\
 ck  ik  tk  |  ck  ik  tk  ckp1
 --------------------------------
 0, 0, 0 -> 0, 0, 0, 0
@@ -67,7 +67,6 @@ ck  ik  tk  |  ck  ik  tk  ckp1
 1, 0, 1 -> 1, 1, 0, 1
 1, 1, 0 -> 1, 0, 1, 1
 1, 1, 1 -> 1, 0, 0, 1"""
-    )
 
 
 @qlt.bloqify
@@ -144,3 +143,8 @@ def test_add_logic():
             a_out, apb = bloq.call_classically(a=a, b=b)
             assert apb == (a + b) % (2**n)
     print()
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('bloqify-adder')
