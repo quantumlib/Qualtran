@@ -56,9 +56,7 @@ def test_maj_truth_table():
 
     bloq = maj.make(qlt.qsig(ck=1, ik=1, tk=1))
     tt = format_classical_truth_table(*get_classical_truth_table(bloq))
-    assert (
-        tt
-        == """\
+    assert tt == """\
 ck  ik  tk  |  ck  ik  tk  ckp1
 --------------------------------
 0, 0, 0 -> 0, 0, 0, 0
@@ -69,7 +67,6 @@ ck  ik  tk  |  ck  ik  tk  ckp1
 1, 0, 1 -> 1, 1, 0, 1
 1, 1, 0 -> 1, 0, 1, 1
 1, 1, 1 -> 1, 0, 0, 1"""
-    )
 
 
 @qlt.bloqify

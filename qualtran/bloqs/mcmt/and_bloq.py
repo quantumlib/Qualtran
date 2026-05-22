@@ -22,6 +22,8 @@ The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bi
 to the and of its control registers. `And` will output the result into a fresh register.
 """
 
+from __future__ import annotations
+
 import itertools
 from functools import cached_property
 from typing import (
@@ -109,7 +111,7 @@ class And(GateWithRegisters):
     @classmethod
     def qcall(
         cls,
-        ctrl: 'QVarT | Sequence[QVarT]',
+        ctrl: QVarT | Sequence[QVarT],
         *,
         cv1=1,
         cv2=1,
@@ -274,7 +276,7 @@ _AND_DOC = BloqDocSpec(bloq_cls=And, examples=(_and_bloq,))
 
 
 def _to_tuple_or_has_length(
-    x: Union[HasLength, Iterable[SymbolicInt]]
+    x: Union[HasLength, Iterable[SymbolicInt]],
 ) -> Union[HasLength, Tuple[SymbolicInt, ...]]:
     if isinstance(x, HasLength):
         if is_symbolic(x.n):
