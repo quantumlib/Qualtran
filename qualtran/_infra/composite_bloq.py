@@ -140,6 +140,9 @@ class Soquet(Protocol, metaclass=_NoSoquetIsInstanceMeta):
 
     def __getitem__(self, item) -> 'QVarT': ...
 
+    def __setitem__(self, key, value) -> None:
+        """For protocol compatability with QVarT. Not supported on a single _QVar."""
+
     @property
     def bb(self) -> 'BloqBuilder':
         """Note! This is _QVar only. Not _Soquet."""
@@ -176,6 +179,8 @@ class QVarT(Protocol):
     def item(self, *args) -> _QVar: ...
 
     def __getitem__(self, item) -> 'QVarT': ...
+
+    def __setitem__(self, key, value) -> None: ...
 
 
 # Compatibilities aliases
@@ -1789,13 +1794,13 @@ class BloqBuilder:
 
         return CNOT.qcall(ctrl=ctrl, target=target)
 
-    def And(self, ctrl: 'QVarT', *, cv1: int = 1, cv2: int = 1):
+    def And(self, ctrl: 'QVarT | Sequence[QVarT]', *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 
         return And.qcall(ctrl=ctrl, cv1=cv1, cv2=cv2)
 
-    def UnAnd(self, ctrl: 'QVarT', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
+    def UnAnd(self, ctrl: 'QVarT | Sequence[QVarT]', target: 'QVar', *, cv1: int = 1, cv2: int = 1):
         """Applies the And bloq."""
         from qualtran.bloqs.mcmt import And
 

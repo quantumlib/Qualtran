@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import inspect
 import typing
 from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Type, TypeVar, Union
 
@@ -70,7 +71,7 @@ def _name_from_func_name(func: Callable[[], _BloqType]) -> str:
 
 def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> Type[_BloqType]:
     """Use the function return type annotation as the `BloqExample.bloq_cls` with the decorator."""
-    anno = func.__annotations__
+    anno = inspect.get_annotations(func, eval_str=True)
     if 'return' not in anno:
         raise ValueError(f'{func} must have a return type annotation.')
 
