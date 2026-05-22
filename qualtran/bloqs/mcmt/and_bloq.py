@@ -24,7 +24,18 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import cast, Dict, Iterable, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import (
+    cast,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -96,7 +107,15 @@ class And(GateWithRegisters):
         return attrs.evolve(self, uncompute=not self.uncompute)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVarT', *, cv1=1, cv2=1, uncompute: bool = False, **maybe_target: 'QVar'):
+    def qcall(
+        cls,
+        ctrl: 'QVarT | Sequence[QVarT]',
+        *,
+        cv1=1,
+        cv2=1,
+        uncompute: bool = False,
+        **maybe_target: 'QVar',
+    ):
         ctrl = np.asarray(ctrl)
         bb = ctrl.item(0).bb
         bloq = cls(cv1=cv1, cv2=cv2, uncompute=uncompute)

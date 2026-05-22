@@ -56,7 +56,9 @@ def test_maj_truth_table():
 
     bloq = maj.make(qlt.qsig(ck=1, ik=1, tk=1))
     tt = format_classical_truth_table(*get_classical_truth_table(bloq))
-    assert tt == """\
+    assert (
+        tt
+        == """\
 ck  ik  tk  |  ck  ik  tk  ckp1
 --------------------------------
 0, 0, 0 -> 0, 0, 0, 0
@@ -67,6 +69,7 @@ ck  ik  tk  |  ck  ik  tk  ckp1
 1, 0, 1 -> 1, 1, 0, 1
 1, 1, 0 -> 1, 0, 1, 1
 1, 1, 1 -> 1, 0, 0, 1"""
+    )
 
 
 @qlt.bloqify
@@ -92,7 +95,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
     n = i.shape[0]
 
     # First bit: no input carry
-    [i[0], t[0]], c0 = bb.And([i[0], t[0]])
+    [i[0], t[0]], c0 = bb.And([i[0], t[0]])  # type: ignore
     c = [c0]
 
     # Ripple-carry
@@ -102,7 +105,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
 
     # Last bit: no output carry
     k = n - 1
-    c[k - 1], t[k] = bb.CNOT(c[k - 1], t[k])
+    c[k - 1], t[k] = bb.CNOT(c[k - 1], t[k])  # type: ignore
 
     # Un-ripple-carry
     for k in range(n - 1 - 1, 1 - 1, -1):
@@ -112,7 +115,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
     i[0], t[0] = bb.UnAnd([i[0], t[0]], c[0])
 
     for k in range(n):
-        i[k], t[k] = bb.CNOT(i[k], t[k])
+        i[k], t[k] = bb.CNOT(i[k], t[k])  # type: ignore
 
     return {'i': i, 't': t}
 
@@ -126,7 +129,7 @@ def add(bb: 'BloqBuilder', a: 'QVar', b: 'QVar'):
 
     # Account for endianness!
     i_out, t_out = add_bits.inline(bb, i=i[::-1], t=t[::-1])
-    return {'a': bb.join(i_out[::-1], dtype=a.dtype), 'b': bb.join(t_out[::-1], dtype=b.dtype)}
+    return {'a': bb.join(i_out[::-1], dtype=a.dtype), 'b': bb.join(t_out[::-1], dtype=b.dtype)}  # type: ignore
 
 
 def test_add():

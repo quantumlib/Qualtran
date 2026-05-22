@@ -185,6 +185,9 @@ class _QVar:
 
         return self._split_components[item]
 
+    def __setitem__(self, key, value):
+        raise ValueError("Cannot assign to a component of an individual QVar.")
+
     def __len__(self):
         return self.dtype.num_bits
 
