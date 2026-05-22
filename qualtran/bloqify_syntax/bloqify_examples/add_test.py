@@ -123,6 +123,7 @@ def add_bits(bb: 'BloqBuilder', i: 'QVarT', t: 'QVarT'):
 @qlt.bloqify
 def add(bb: 'BloqBuilder', a: 'QVar', b: 'QVar'):
     assert a.dtype.num_bits == b.dtype.num_bits
+    assert a.dtype.num_bits > 1
 
     i = a[:]  # split
     t = b[:]  # split
@@ -145,7 +146,12 @@ def test_add_logic():
         for b in range(2**n):
             a_out, apb = bloq.call_classically(a=a, b=b)
             assert apb == (a + b) % (2**n)
-    print()
+
+
+def test_add_edge_case():
+    n = 1
+    with pytest.raises(AssertionError):
+        _ = add.make(qlt.qsig(a=qdt.QUInt(n), b=qdt.QUInt(n)))
 
 
 @pytest.mark.notebook
