@@ -11,26 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import abc
 from functools import cached_property
 from typing import (
-    cast,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
     Sequence,
+    Set,
     Tuple,
     TYPE_CHECKING,
     Union,
 )
 
-import attrs
 import numpy as np
 import sympy
 from attrs import frozen
-from numpy.typing import NDArray
 
 from qualtran import (
     AddControlledT,
@@ -43,16 +41,14 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
-    QAny,
     QBit,
-    QDType,
+    QUInt,
+    QVar,
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
-from qualtran.bloqs.bookkeeping import ArbitraryClifford
 from qualtran.drawing import Circle, directional_text_box, Text, TextBox, WireSymbol
 from qualtran.symbolics import SymbolicInt
 
@@ -63,7 +59,7 @@ if TYPE_CHECKING:
     from pennylane.wires import Wires
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -71,8 +67,7 @@ _ONE = np.array([0, 1], dtype=np.complex128)
 _PAULIZ = np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
 
-@frozen
-class _ZVector(Bloq):
+class _ZVector(Bloq, metaclass=abc.ABCMeta):
     """The |0> or |1> state or effect.
 
     Please use the explicitly named subclasses instead of the boolean arguments.
@@ -85,13 +80,13 @@ class _ZVector(Bloq):
 
     """
 
-    bit: bool
-    state: bool = True
-    n: int = 1
+    @property
+    @abc.abstractmethod
+    def bit(self) -> bool: ...
 
-    def __attrs_post_init__(self):
-        if self.n != 1:
-            raise NotImplementedError("Come back later.")
+    @property
+    @abc.abstractmethod
+    def state(self) -> bool: ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -134,7 +129,7 @@ class _ZVector(Bloq):
 
         import cirq
 
-        (q,) = qubit_manager.qalloc(self.n)
+        (q,) = qubit_manager.qalloc(1)
 
         if self.bit:
             op = cirq.X(q)
@@ -155,22 +150,23 @@ class _ZVector(Bloq):
         return directional_text_box(s, side=reg.side)
 
 
-def _hide_base_fields(cls, fields):
-    # for use in attrs `field_transformer`.
-    return [
-        field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
-    ]
-
-
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class ZeroState(_ZVector):
     """The state |0>"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=False, state=True, n=n)
+    @property
+    def bit(self) -> bool:
+        return False
+
+    @property
+    def state(self) -> bool:
+        return True
 
     def adjoint(self) -> 'Bloq':
         return ZeroEffect()
+
+    def __str__(self):
+        return 'ZeroState'
 
 
 @bloq_example
@@ -182,15 +178,23 @@ def _zero_state() -> ZeroState:
 _ZERO_STATE_DOC = BloqDocSpec(bloq_cls=ZeroState, examples=[_zero_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class ZeroEffect(_ZVector):
     """The effect <0|"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=False, state=False, n=n)
+    @property
+    def bit(self) -> bool:
+        return False
+
+    @property
+    def state(self) -> bool:
+        return False
 
     def adjoint(self) -> 'Bloq':
         return ZeroState()
+
+    def __str__(self):
+        return 'ZeroEffect'
 
 
 @bloq_example
@@ -202,15 +206,23 @@ def _zero_effect() -> ZeroEffect:
 _ZERO_EFFECT_DOC = BloqDocSpec(bloq_cls=ZeroEffect, examples=[_zero_effect])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class OneState(_ZVector):
     """The state |1>"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=True, state=True, n=n)
+    @property
+    def bit(self) -> bool:
+        return True
+
+    @property
+    def state(self) -> bool:
+        return True
 
     def adjoint(self) -> 'Bloq':
         return OneEffect()
+
+    def __str__(self):
+        return 'OneState'
 
 
 @bloq_example
@@ -222,15 +234,23 @@ def _one_state() -> OneState:
 _ONE_STATE_DOC = BloqDocSpec(bloq_cls=OneState, examples=[_one_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class OneEffect(_ZVector):
     """The effect <1|"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=True, state=False, n=n)
+    @property
+    def bit(self) -> bool:
+        return True
+
+    @property
+    def state(self) -> bool:
+        return False
 
     def adjoint(self) -> 'Bloq':
         return OneState()
+
+    def __str__(self):
+        return 'OneEffect'
 
 
 @bloq_example
@@ -255,6 +275,10 @@ class ZGate(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    @classmethod
+    def qcall(cls, q: 'QVar'):
+        return q.bb.add(cls(), q=q)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -339,6 +363,11 @@ class CZ(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q1=1, q2=1)
 
+    @classmethod
+    def qcall(cls, q1: "QVar", q2: "QVar"):
+        bb = q1.bb
+        return bb.add(cls(), q1=q1, q2=q2)
+
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
@@ -420,6 +449,13 @@ class MeasureZ(Bloq):
     def on_classical_vals(self, q: int) -> Mapping[str, 'ClassicalValRetT']:
         return {'c': q}
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic.")
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> 'QVar':
+        return q.bb.add(cls(), q=q)
+
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
     ) -> List['qtn.Tensor']:
@@ -439,6 +475,15 @@ class MeasureZ(Bloq):
         )
         return [t, DiscardInd((meas_result, 0))]
 
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+
+        import cirq
+
+        (q,) = cirq_quregs['q']
+        return cirq.measure(q), {}
+
 
 @bloq_example
 def _meas_z() -> MeasureZ:
@@ -450,111 +495,62 @@ _MEASURE_Z_DOC = BloqDocSpec(bloq_cls=MeasureZ, examples=[_meas_z])
 
 
 @frozen
-class _IntVector(Bloq):
-    """Represent a classical non-negative integer vector (state or effect).
+class IntState(Bloq):
+    """The state |val> for non-negative (unsigned) integer val
+
+    Please prefer QUIntState for new code, which makes it clear that the resultant
+    datatype is a `QUInt` unsigned integer.
 
     Args:
         val: the classical value
         bitsize: The bitsize of the register
-        state: True if this is a state; an effect otherwise.
 
     Registers:
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    val: Union[int, sympy.Expr] = attrs.field()
-    bitsize: Union[int, sympy.Expr]
-    state: bool
+    val: SymbolicInt
+    bitsize: SymbolicInt
 
-    @val.validator
-    def check(self, attribute, val):
-        if isinstance(val, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
-            return
+    def __attrs_post_init__(self):
+        import warnings
 
-        if val < 0:
-            raise ValueError("`val` must be positive")
-
-        if val >= 2**self.bitsize:
-            raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
+        warnings.warn(
+            "IntState will be deprecated. Use QUIntState instead.",
+            PendingDeprecationWarning,
+            stacklevel=2,
+        )
 
     @cached_property
-    def dtype(self) -> QDType:
-        if self.bitsize == 1:
-            return QBit()
-        return QAny(self.bitsize)
+    def _impl(self):
+        from qualtran.bloqs.basic_gates.qconst import _QConst
 
-    @cached_property
-    def signature(self) -> Signature:
-        side = Side.RIGHT if self.state else Side.LEFT
-        return Signature([Register('val', self.dtype, side=side)])
+        return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=True)
 
-    @staticmethod
-    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
-        states = [ZeroState(), OneState()]
-        xs = []
-        for bit in bits:
-            x = bb.add(states[bit])
-            xs.append(x)
-        xs = np.array(xs)
+    @property
+    def signature(self) -> 'Signature':
+        return self._impl.signature
 
-        return {'val': bb.join(xs)}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        return self._impl.build_composite_bloq(bb, **soqs)
 
-    @staticmethod
-    def _build_composite_effect(
-        bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
-    ) -> Dict[str, 'SoquetT']:
-        xs = bb.split(val)
-        effects = [ZeroEffect(), OneEffect()]
-        for i, bit in enumerate(bits):
-            bb.add(effects[bit], q=xs[i])
-        return {}
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Mapping[str, 'ClassicalValRetT']:
+        return self._impl.on_classical_vals(**vals)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
-        if isinstance(self.bitsize, sympy.Expr):
-            raise DecomposeTypeError(f'Symbolic bitsize {self.bitsize} not supported')
-        bits = np.asarray(self.dtype.to_bits(self.val))
-        if self.state:
-            assert not val
-            return self._build_composite_state(bb, bits)
-        else:
-            return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        return self._impl.build_call_graph(ssa)
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
-        if self.state:
-            assert val is None
-            return {'val': self.val}
-
-        assert val == self.val, val
-        return {}
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
-        return {ArbitraryClifford(self.bitsize): 1}
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        return self._impl.wire_symbol(reg, idx)
 
     def __str__(self) -> str:
-        s = f'{self.val}'
-        return f'|{s}>' if self.state else f'<{s}|'
-
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        if reg is None:
-            return Text('')
-
-        return directional_text_box(text=f'{self.val}', side=reg.side)
-
-
-@frozen(init=False, field_transformer=_hide_base_fields)
-class IntState(_IntVector):
-    """The state |val> for non-negative integer val
-
-    Args:
-        val: the classical value
-        bitsize: The bitsize of the register
-
-    Registers:
-        val: The register of size `bitsize` which initializes the value `val`.
-    """
-
-    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
-        self.__attrs_init__(val=val, bitsize=bitsize, state=True)
+        return f'|{self.val}>'
 
 
 @bloq_example
@@ -566,9 +562,12 @@ def _int_state() -> IntState:
 _INT_STATE_DOC = BloqDocSpec(bloq_cls=IntState, examples=[_int_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
-class IntEffect(_IntVector):
+@frozen
+class IntEffect(Bloq):
     """The effect <val| for non-negative integer val
+
+    Please prefer QUIntEffect for new code, which makes it clear that the incoming
+    datatype is a `QUInt` unsigned integer.
 
     Args:
         val: the classical value
@@ -578,8 +577,48 @@ class IntEffect(_IntVector):
         val: The register of size `bitsize` which de-allocates the value `val`.
     """
 
-    def __init__(self, val: SymbolicInt, bitsize: SymbolicInt):
-        self.__attrs_init__(val=val, bitsize=bitsize, state=False)
+    val: SymbolicInt
+    bitsize: SymbolicInt
+
+    def __attrs_post_init__(self):
+        import warnings
+
+        warnings.warn(
+            "IntEffect is deprecated. Use QUIntEffect instead.",
+            PendingDeprecationWarning,
+            stacklevel=2,
+        )
+
+    @cached_property
+    def _impl(self):
+        from qualtran.bloqs.basic_gates.qconst import _QConst
+
+        return _QConst(val=self.val, qdtype=QUInt(self.bitsize), state=False)
+
+    @property
+    def signature(self) -> 'Signature':
+        return self._impl.signature
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        return self._impl.build_composite_bloq(bb, **soqs)
+
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Mapping[str, 'ClassicalValRetT']:
+        return self._impl.on_classical_vals(**vals)
+
+    def build_call_graph(
+        self, ssa: 'SympySymbolAllocator'
+    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+        return self._impl.build_call_graph(ssa)
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        return self._impl.wire_symbol(reg, idx)
+
+    def __str__(self) -> str:
+        return f'<{self.val}|'
 
 
 @bloq_example

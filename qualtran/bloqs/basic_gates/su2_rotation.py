@@ -19,7 +19,15 @@ import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, ConnectionT, GateWithRegisters, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    ConnectionT,
+    GateWithRegisters,
+    QVar,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz
 from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, pi, SymbolicFloat
@@ -66,6 +74,21 @@ class SU2RotationGate(GateWithRegisters):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(q=1)
+
+    @classmethod
+    def qcall(
+        cls,
+        q: "QVar",
+        theta: SymbolicFloat,
+        phi: SymbolicFloat,
+        lambd: SymbolicFloat,
+        *,
+        global_shift: SymbolicFloat = 0,
+        eps: SymbolicFloat = 1e-11,
+    ) -> "QVar":
+        return q.bb.add(
+            cls(theta=theta, phi=phi, lambd=lambd, global_shift=global_shift, eps=eps), q=q
+        )
 
     @cached_property
     def rotation_matrix(self) -> NDArray[np.complex128]:

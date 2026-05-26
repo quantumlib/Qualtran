@@ -22,23 +22,35 @@ def test_examples(bloq_autotester):
     bloq_autotester(_negate_symb)
 
 
-@pytest.mark.parametrize("bitsize", [1, 2, 3, 4, 8])
+@pytest.mark.parametrize("bitsize", [1, 3, 8])
 def test_negate_classical_sim(bitsize: int):
-    # TODO use QInt once classical sim is fixed.
-    #      classical sim currently only supports unsigned.
-    def _uint_to_int(val: int) -> int:
-        return QInt(bitsize).from_bits(QUInt(bitsize).to_bits(val))
-
-    dtype = QUInt(bitsize)
-
+    dtype = QInt(bitsize)
     bloq = Negate(dtype)
-    for x_unsigned in dtype.get_classical_domain():
-        (neg_x_unsigned,) = bloq.call_classically(x=x_unsigned)
-        x = _uint_to_int(x_unsigned)
-        neg_x = _uint_to_int(int(neg_x_unsigned))
-        if x == -(2 ** (bitsize - 1)):
+    cbloq = bloq.decompose_bloq()
+
+    if bitsize == 3:
+        assert list(dtype.get_classical_domain()) == [-4, -3, -2, -1, 0, 1, 2, 3]
+
+    for x_in in dtype.get_classical_domain():
+        (x_out,) = cbloq.call_classically(x=x_in)
+
+        if x_in == -(2 ** (bitsize - 1)):
             # twos complement negate(-2**(n - 1)) == -2**(n - 1)
-            assert neg_x == x
+            assert x_out == x_in
         else:
-            # all other values
-            assert neg_x == -x
+            assert x_out == -x_in
+
+
+@pytest.mark.parametrize("bitsize", [1, 3, 8])
+def test_negate_unsigned_classical_sim(bitsize: int):
+    dtype = QUInt(bitsize)
+    bloq = Negate(dtype)
+    cbloq = bloq.decompose_bloq()
+
+    for x_in in dtype.get_classical_domain():
+        (x_out,) = cbloq.call_classically(x=x_in)
+
+        if x_in == 0:
+            assert x_out == 0
+        else:
+            assert x_out == 2**bitsize - x_in

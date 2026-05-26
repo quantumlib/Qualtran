@@ -85,7 +85,7 @@ from .dtype import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, Signature, Side
+from ._infra.registers import Register, Signature, Side, qsig
 
 # Internal imports: none
 # External imports: none
@@ -104,6 +104,8 @@ from ._infra.controlled import (
 )
 
 from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
+
+from .drawing._show_funcs import show_bloq
 
 from .bloqify_syntax import bloqify
 
