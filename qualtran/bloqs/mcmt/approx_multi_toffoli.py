@@ -16,13 +16,9 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate, ZeroState
-from qualtran.drawing import (
-    Circle,
-    Text,
-    WireSymbol,
-    directional_text_box,
-    show_bloq,
-)
+from qualtran.drawing import Circle, directional_text_box, show_bloq, Text, WireSymbol
+from qualtran.simulation.classical_sim import ClassicalValRetT
+
 
 @dataclass(frozen=True)
 class MultiAndLogDepth(Bloq):
@@ -51,7 +47,7 @@ class MultiAndLogDepth(Bloq):
     Registers:
         ctrl: An `n`-bit control register.
         junk [right]: An `n - 2` qubit junk register storing intermediate tree values.
-        target [right]: The output bit.   
+        target [right]: The output bit.
     """
 
     cvs: Tuple[int, ...]
@@ -81,13 +77,7 @@ class MultiAndLogDepth(Bloq):
             ]
         )
 
-    def _build_tree(
-        self,
-        bb: BloqBuilder,
-        ctrls,
-        junk,
-        out,
-    ):
+    def _build_tree(self, bb: BloqBuilder, ctrls, junk, out):
         m = len(ctrls)
 
         if m == 1:
@@ -95,9 +85,7 @@ class MultiAndLogDepth(Bloq):
             return ctrls, junk, out
 
         if m == 2:
-            (ctrls[0], ctrls[1]), out = bb.add(
-                Toffoli(), ctrl=[ctrls[0], ctrls[1]], target=out
-            )
+            (ctrls[0], ctrls[1]), out = bb.add(Toffoli(), ctrl=[ctrls[0], ctrls[1]], target=out)
             return ctrls, junk, out
 
         a = (m + 1) // 2
@@ -110,7 +98,7 @@ class MultiAndLogDepth(Bloq):
         right_need = b - 1 if b > 1 else 0
 
         left_pool = list(junk[:left_need])
-        right_pool = list(junk[left_need:left_need + right_need])
+        right_pool = list(junk[left_need : left_need + right_need])
 
         if a == 1:
             left_out = left_ctrls[0]
@@ -130,9 +118,7 @@ class MultiAndLogDepth(Bloq):
             )
             right_pool = [right_out] + right_internal
 
-        (left_out, right_out), out = bb.add(
-            Toffoli(), ctrl=[left_out, right_out], target=out
-        )
+        (left_out, right_out), out = bb.add(Toffoli(), ctrl=[left_out, right_out], target=out)
 
         if a == 1:
             left_ctrls[0] = left_out
@@ -190,15 +176,11 @@ class MultiAndLogDepth(Bloq):
         junk = [left_out] + left_junk + [right_out] + right_junk
         return junk, out
 
-    def on_classical_vals(self, ctrl: np.ndarray) -> Dict[str, np.ndarray]:
+    def on_classical_vals(self, ctrl: np.ndarray) -> Dict[str, ClassicalValRetT]:
         ctrl = np.asarray(ctrl, dtype=np.uint8)
         effective_ctrl = np.equal(ctrl, np.asarray(self.concrete_cvs)).astype(np.uint8)
         junk, target = self._classical_tree(list(effective_ctrl))
-        return {
-            "ctrl": ctrl,
-            "junk": np.asarray(junk, dtype=np.uint8),
-            "target": np.uint8(target),
-        }
+        return {"ctrl": ctrl, "junk": np.asarray(junk, dtype=np.uint8), "target": np.uint8(target)}
 
     def __pow__(self, power: int):
         if power == 1:
@@ -207,9 +189,7 @@ class MultiAndLogDepth(Bloq):
             return self.adjoint()
         return NotImplemented
 
-    def wire_symbol(
-        self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()
-    ) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
             return Text("")
         if reg.name == "ctrl":
@@ -226,7 +206,7 @@ class MultiAndLogDepth(Bloq):
         return f"MultiAndLogDepth(n={self.n_ctrls})"
 
     def build_call_graph(self, ssa=None):
-        cost = {Toffoli(): self.n_ctrls - 1}
+        cost: Dict[Bloq, int] = {Toffoli(): self.n_ctrls - 1}
         n_neg = sum(int(cv == 0) for cv in self.concrete_cvs)
         if n_neg:
             cost[XGate()] = 2 * n_neg
@@ -239,14 +219,7 @@ def _multi_and_log_depth() -> MultiAndLogDepth:
     return multi_and_log_depth
 
 
-_MULTI_AND_LOG_DEPTH_DOC = BloqDocSpec(
-    bloq_cls=MultiAndLogDepth,
-    examples=(_multi_and_log_depth,),
-)
-
-
-
-
+_MULTI_AND_LOG_DEPTH_DOC = BloqDocSpec(bloq_cls=MultiAndLogDepth, examples=(_multi_and_log_depth,))
 
 
 @dataclass(frozen=True)
@@ -301,10 +274,7 @@ class ParityMask(Bloq):
     @property
     def signature(self) -> Signature:
         regs = [Register("x", QAny(self.n - 1))]
-        regs += [
-            Register(f"x_{i}", QAny(self.n - 1), side=Side.RIGHT)
-            for i in range(self.k)
-        ]
+        regs += [Register(f"x_{i}", QAny(self.n - 1), side=Side.RIGHT) for i in range(self.k)]
         return Signature(regs)
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs) -> Dict[str, AnyType]:
@@ -324,50 +294,31 @@ class ParityMask(Bloq):
 
             for j in range(self.n - 1):
                 if self.sample_strings[i][j]:
-                    x_bits[j], xi_bits[j] = bb.add(
-                        CNOT(), ctrl=x_bits[j], target=xi_bits[j]
-                    )
+                    x_bits[j], xi_bits[j] = bb.add(CNOT(), ctrl=x_bits[j], target=xi_bits[j])
 
             out_regs.append(bb.join(xi_bits))
 
         x = bb.join(x_bits)
 
-        return {
-            "x": x,
-            **{f"x_{i}": out_regs[i] for i in range(self.k)},
-        }
+        return {"x": x, **{f"x_{i}": out_regs[i] for i in range(self.k)}}
 
     def build_call_graph(self, ssa=None):
         cnot_count = sum(sum(int(bit) for bit in row) for row in self.sample_strings)
-        return {
-            ZeroState(): self.k * (self.n - 1),
-            CNOT(): cnot_count,
-        }
+        return {ZeroState(): self.k * (self.n - 1), CNOT(): cnot_count}
+
 
 @bloq_example
 def _parity_mask() -> ParityMask:
-    sample_strings = (
-        (1, 0, 1, 0),
-        (0, 1, 1, 0),
-        (1, 1, 0, 1),
-    )
+    sample_strings = ((1, 0, 1, 0), (0, 1, 1, 0), (1, 1, 0, 1))
     parity_mask = ParityMask(n=5, k=3, sample_strings=sample_strings)
     return parity_mask
 
 
-_PARITY_MASK_DOC = BloqDocSpec(
-    bloq_cls=ParityMask,
-    examples=(_parity_mask,),
-)
-
-
-
-
+_PARITY_MASK_DOC = BloqDocSpec(bloq_cls=ParityMask, examples=(_parity_mask,))
 
 
 @dataclass(frozen=True)
 class ApproxMultiToffoli(Bloq):
-
     """Approximate multi-controlled Toffoli via sampled subset parities.
 
     This bloq implements an approximate `n`-qubit Toffoli / AND construction based on
@@ -510,25 +461,16 @@ class ApproxMultiToffoli(Bloq):
         junk_bits.extend(OR_regs)
         junk_bits.extend(ancilla_bits)
 
-        return {
-            "ctrl": ctrl,
-            "junk": np.asarray(junk_bits, dtype=object),
-            "target": target,
-        }
-
+        return {"ctrl": ctrl, "junk": np.asarray(junk_bits, dtype=object), "target": target}
 
 
 @bloq_example
 def _approx_multi_toffoli() -> ApproxMultiToffoli:
-    sample_strings = (
-        (1, 0),
-        (0, 1),
-    )
+    sample_strings = ((1, 0), (0, 1))
     approx_multi_toffoli = ApproxMultiToffoli(n=3, k=2, sample_strings=sample_strings)
     return approx_multi_toffoli
 
 
 _APPROX_MULTI_TOFFOLI_DOC = BloqDocSpec(
-    bloq_cls=ApproxMultiToffoli,
-    examples=(_approx_multi_toffoli,),
+    bloq_cls=ApproxMultiToffoli, examples=(_approx_multi_toffoli,)
 )
