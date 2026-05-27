@@ -65,7 +65,9 @@ if TYPE_CHECKING:
 def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     from qualtran import BloqBuilder
 
-    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    bb, initial_soqs = BloqBuilder.from_signature(
+        bloq.signature, add_registers_allowed=False, bloq_key=bloq.__class__.__name__
+    )
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
     if not isinstance(out_soqs, dict):
         raise ValueError(
@@ -692,6 +694,11 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return directional_text_box(text=pretty_str, side=reg.side)
 
+    def draw(self, type: str = 'graph'):  # pylint: disable=redefined-builtin
+        from qualtran.drawing import show_bloq
+
+        return show_bloq(self, type=type)
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -703,7 +710,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def _class_name_in_pkg_(cls) -> str:
         """The bloq class's name with its package.
 
-        The Qualtran standard library contains a heirarchy of packages under
+        The Qualtran standard library contains a hierarchy of packages under
         `qualtran.bloqs.*`. Each bloq class is defined in a module (i.e. the
         "*.py" file) and re-exported one level up.
         """

@@ -61,6 +61,8 @@ from qualtran import (
     CtrlSpec,
     DecomposeTypeError,
     QBit,
+    QVar,
+    QVarT,
     Register,
     Signature,
     Soquet,
@@ -130,6 +132,12 @@ class ZPowGate(CirqGateAsBloqBase):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    @classmethod
+    def qcall(
+        cls, q: 'QVar', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
+    ) -> 'QVar':
+        return q.bb.add(cls(exponent=exponent, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -216,12 +224,19 @@ class CZPowGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('q', QBit(), shape=(2,))])
 
+    @classmethod
+    def qcall(
+        cls, q: 'QVarT', *, exponent: SymbolicFloat = 1.0, eps: SymbolicFloat = 1e-11
+    ) -> 'QVar':
+        bb = np.asarray(q).reshape(-1)[0].bb
+        return bb.add(cls(exponent=exponent, eps=eps), q=q)
+
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         from qualtran.bloqs.mcmt import And
 
         (q1, q2), anc = bb.add(And(), ctrl=q)
         anc = bb.add(ZPowGate(self.exponent, eps=self.eps), q=anc)
-        (q1, q2) = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
+        q1, q2 = bb.add(And().adjoint(), ctrl=[q1, q2], target=anc)
         return {'q': np.array([q1, q2])}
 
     def __pow__(self, power):
@@ -292,6 +307,17 @@ class XPowGate(CirqGateAsBloqBase):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    @classmethod
+    def qcall(
+        cls,
+        q: 'QVar',
+        *,
+        exponent: Union[sympy.Expr, float] = 1.0,
+        global_shift: float = 0.0,
+        eps: SymbolicFloat = 1e-11,
+    ) -> 'QVar':
+        return q.bb.add(cls(exponent=exponent, global_shift=global_shift, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -368,6 +394,17 @@ class YPowGate(CirqGateAsBloqBase):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
+    @classmethod
+    def qcall(
+        cls,
+        q: 'QVar',
+        *,
+        exponent: Union[sympy.Expr, float] = 1.0,
+        global_shift: float = 0.0,
+        eps: SymbolicFloat = 1e-11,
+    ) -> 'QVar':
+        return q.bb.add(cls(exponent=exponent, global_shift=global_shift, eps=eps), q=q)
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
@@ -442,6 +479,10 @@ class Rz(CirqGateAsBloqBase):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    @classmethod
+    def qcall(cls, q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11) -> 'QVar':
+        return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -552,6 +593,10 @@ class CRz(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, q=1)
 
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
+        return ctrl.bb.add(cls(angle=angle, eps=eps), ctrl=ctrl, q=q)
+
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
@@ -613,6 +658,12 @@ class Rx(CirqGateAsBloqBase):
 
     angle: Union[sympy.Expr, float]
     eps: SymbolicFloat = 1e-11
+
+    @classmethod
+    def qcall(
+        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
+    ) -> 'QVar':
+        return q.bb.add(cls(angle=angle, eps=eps), q=q)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -682,6 +733,12 @@ class Ry(CirqGateAsBloqBase):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
+    @classmethod
+    def qcall(
+        cls, q: 'QVar', angle: Union[sympy.Expr, float], *, eps: SymbolicFloat = 1e-11
+    ) -> 'QVar':
+        return q.bb.add(cls(angle=angle, eps=eps), q=q)
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
@@ -750,6 +807,10 @@ class CRy(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, q=1)
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', q: 'QVar', angle: SymbolicFloat, *, eps: SymbolicFloat = 1e-11):
+        return ctrl.bb.add(cls(angle=angle, eps=eps), ctrl=ctrl, q=q)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', q: 'Soquet'

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import abc
 from functools import cached_property
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
@@ -25,9 +25,12 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     CBit,
+    CompositeBloq,
     ConnectionT,
     CtrlSpec,
+    DecomposeTypeError,
     QBit,
+    QVar,
     Register,
     Side,
     Signature,
@@ -54,8 +57,7 @@ _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
 _PAULIX = np.array([[0, 1], [1, 0]], dtype=np.complex128)
 
 
-@frozen
-class _XVector(Bloq):
+class _XVector(Bloq, metaclass=abc.ABCMeta):
     """The |+> or |-> state or effect.
 
     Please use the explicitly named subclasses instead of the boolean arguments.
@@ -68,17 +70,20 @@ class _XVector(Bloq):
 
     """
 
-    bit: bool
-    state: bool = True
-    n: int = 1
+    @property
+    @abc.abstractmethod
+    def bit(self) -> bool: ...
 
-    def __attrs_post_init__(self):
-        if self.n != 1:
-            raise NotImplementedError("Come back later.")
+    @property
+    @abc.abstractmethod
+    def state(self) -> bool: ...
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     def my_tensors(
         self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
@@ -100,7 +105,7 @@ class _XVector(Bloq):
 
         import cirq
 
-        (q,) = qubit_manager.qalloc(self.n)
+        (q,) = qubit_manager.qalloc(n=1)
 
         if self.bit:
             op = cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q), cirq.H(q)))
@@ -122,22 +127,23 @@ class _XVector(Bloq):
         return directional_text_box(s, side=reg.side)
 
 
-def _hide_base_fields(cls, fields):
-    # for use in attrs `field_trasnformer`.
-    return [
-        field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
-    ]
-
-
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class PlusState(_XVector):
     """The state |+>"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=False, state=True, n=n)
+    @property
+    def state(self) -> bool:
+        return True
+
+    @property
+    def bit(self) -> bool:
+        return False
 
     def adjoint(self) -> 'Bloq':
         return PlusEffect()
+
+    def __str__(self):
+        return 'PlusState'
 
 
 @bloq_example
@@ -149,15 +155,23 @@ def _plus_state() -> PlusState:
 _PLUS_STATE_DOC = BloqDocSpec(bloq_cls=PlusState, examples=[_plus_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class PlusEffect(_XVector):
     """The effect <+|"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=False, state=False, n=n)
+    @property
+    def state(self) -> bool:
+        return False
+
+    @property
+    def bit(self) -> bool:
+        return False
 
     def adjoint(self) -> 'Bloq':
         return PlusState()
+
+    def __str__(self):
+        return 'PlusEffect'
 
 
 @bloq_example
@@ -169,15 +183,23 @@ def _plus_effect() -> PlusEffect:
 _PLUS_EFFECT_DOC = BloqDocSpec(bloq_cls=PlusEffect, examples=[_plus_effect])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class MinusState(_XVector):
     """The state |->"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=True, state=True, n=n)
+    @property
+    def bit(self) -> bool:
+        return True
+
+    @property
+    def state(self) -> bool:
+        return True
 
     def adjoint(self) -> 'Bloq':
         return MinusEffect()
+
+    def __str__(self):
+        return 'MinusState'
 
 
 @bloq_example
@@ -189,15 +211,23 @@ def _minus_state() -> MinusState:
 _MINUS_STATE_DOC = BloqDocSpec(bloq_cls=MinusState, examples=[_minus_state])
 
 
-@frozen(init=False, field_transformer=_hide_base_fields)
+@frozen
 class MinusEffect(_XVector):
     """The effect <-|"""
 
-    def __init__(self, n: int = 1):
-        self.__attrs_init__(bit=True, state=False, n=n)
+    @property
+    def bit(self) -> bool:
+        return True
+
+    @property
+    def state(self) -> bool:
+        return False
 
     def adjoint(self) -> 'Bloq':
         return MinusState()
+
+    def __str__(self):
+        return 'MinusEffect'
 
 
 @bloq_example
@@ -219,6 +249,13 @@ class XGate(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> QVar:
+        return q.bb.add(cls(), q=q)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -275,7 +312,7 @@ class XGate(Bloq):
         from qualtran.drawing import ModPlus
 
         if reg is None:
-            return Text('X')
+            return Text('')
 
         return ModPlus()
 
@@ -297,6 +334,10 @@ class MeasureX(Bloq):
         return Signature(
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> 'QVar':
+        return q.bb.add(cls(), q=q)
 
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValRetT']:
         if q not in [0, 1]:
