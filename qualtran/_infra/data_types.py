@@ -14,4 +14,4 @@
 """Quantum data type definitions."""
 
 # pylint: disable=wildcard-import,unused-wildcard-import
-from qualtran.dtype import *
+from qualtran.dtype import *  # noqa: F403
