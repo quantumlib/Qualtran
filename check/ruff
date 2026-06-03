@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Runs ruff on the repository using the configuration in pyproject.toml.
+#
+# Usage:
+#     check/ruff [--flags for ruff]
+################################################################################
+
+# Get the working directory to the repo root.
+thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
+topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
+cd "${topdir}" || exit $?
+
+ruff check "$@" qualtran/ dev_tools/

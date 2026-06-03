@@ -21,6 +21,7 @@ import pytest
 from qualtran.l1._parse import (
     dump_ast,
     l1_ast_node_to_json,
+    parse_module,
     parse_objectstring,
     QualtranL1Parser,
     Token,
@@ -250,16 +251,13 @@ def test_parse_too_nested():
     tokens = tokenize(s)
     parser = QualtranL1Parser(tokens)
     with pytest.raises(RecursionError):
-        ast = parser.parse_cvalue()
+        _ast = parser.parse_cvalue()
 
 
 def test_parse_module_empty():
     parser = QualtranL1Parser([Token('EOF', '', 1, 0)])
     module = parser.parse_module()
     assert len(module.qdefs) == 0
-
-
-from qualtran.l1._parse import parse_module
 
 
 def test_parse_module_full():
