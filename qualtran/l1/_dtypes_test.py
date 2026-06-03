@@ -15,7 +15,6 @@ import pytest
 
 import qualtran as qlt
 import qualtran.dtype as qdt
-
 from qualtran.l1._dtypes import get_builtin_qdtype_mapping, reg_to_qdtype_node
 from qualtran.l1._eval import eval_qdtype_node
 
@@ -77,4 +76,3 @@ def test_load_objectstring_safe(objectstring, expected):
 
     obj = load_objectstring(objectstring)
     assert obj == expected
-

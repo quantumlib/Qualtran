@@ -24,11 +24,33 @@ from .nodes import CArgNode, CObjectNode, LiteralNode, QDTypeNode
 @lru_cache
 def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
     """Datatypes that are available without namespacing and with `safe=True`."""
-    from qualtran.dtype import BQUInt, CBit, QAny, QBit, QFxp, QInt, QMontgomeryUInt, QUInt, QIntOnesComp, QIntSignMag
+    from qualtran.dtype import (
+        BQUInt,
+        CBit,
+        QAny,
+        QBit,
+        QFxp,
+        QInt,
+        QIntOnesComp,
+        QIntSignMag,
+        QMontgomeryUInt,
+        QUInt,
+    )
 
     return {
         k.__name__: cast(Type['qdt.QCDType'], k)
-        for k in [BQUInt, QAny, QBit, QInt, QUInt, QFxp, QMontgomeryUInt, CBit, QIntOnesComp, QIntSignMag]
+        for k in [
+            BQUInt,
+            QAny,
+            QBit,
+            QInt,
+            QUInt,
+            QFxp,
+            QMontgomeryUInt,
+            CBit,
+            QIntOnesComp,
+            QIntSignMag,
+        ]
     }
 
 
