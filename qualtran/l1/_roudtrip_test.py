@@ -105,7 +105,7 @@ def check_roundtrip(bloq_objectstring: str, bloq: qlt.Bloq):
     # Manually use L1ModuleBuilder so we have a record of all the true subbloqs
     # we're serializing.
     l1mb = qualtran.l1.L1ModuleBuilder()
-    root_bloq_key = l1mb.add_bloqs(root=bloq, extern_only_from=False)
+    _root_bloq_key = l1mb.add_bloqs(root=bloq, extern_only_from=False)
     original_bloqs = {qdef.qdef.bloq_key: qdef for qdef in l1mb.qdefs}
 
     # Get the textual representation

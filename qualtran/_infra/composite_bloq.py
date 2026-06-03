@@ -63,8 +63,6 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
-    import qualtran as qlt
-    import qualtran.dtype as qdt
     from qualtran.bloqs.bookkeeping.auto_partition import Unused
     from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -840,7 +838,6 @@ def _get_dangling_soquets(signature: Signature, right: bool = True) -> Dict[str,
         dang = LeftDangle
 
     all_soqs: Dict[str, _SoquetT] = {}
-    soqs: _SoquetT
     for reg in regs:
         all_soqs[reg.name] = _reg_to_soq(dang, reg)
     return all_soqs
