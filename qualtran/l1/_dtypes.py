@@ -24,11 +24,11 @@ from .nodes import CArgNode, CObjectNode, LiteralNode, QDTypeNode
 @lru_cache
 def get_builtin_qdtype_mapping() -> Dict[str, Type['qdt.QCDType']]:
     """Datatypes that are available without namespacing and with `safe=True`."""
-    from qualtran.dtype import BQUInt, CBit, QAny, QBit, QFxp, QInt, QMontgomeryUInt, QUInt
+    from qualtran.dtype import BQUInt, CBit, QAny, QBit, QFxp, QInt, QMontgomeryUInt, QUInt, QIntOnesComp, QIntSignMag
 
     return {
         k.__name__: cast(Type['qdt.QCDType'], k)
-        for k in [BQUInt, QAny, QBit, QInt, QUInt, QFxp, QMontgomeryUInt, CBit]
+        for k in [BQUInt, QAny, QBit, QInt, QUInt, QFxp, QMontgomeryUInt, CBit, QIntOnesComp, QIntSignMag]
     }
 
 
@@ -49,7 +49,7 @@ def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
         dtype_node = CObjectNode('QBit', [])
     elif dtype == qdt.CBit():
         dtype_node = CObjectNode('CBit', [])
-    elif isinstance(dtype, (qdt.QAny, qdt.QInt, qdt.QUInt)):
+    elif isinstance(dtype, (qdt.QAny, qdt.QInt, qdt.QUInt, qdt.QIntSignMag, qdt.QIntOnesComp)):
         dtype_node = CObjectNode(
             dtype.__class__.__name__, cargs=[CArgNode(None, LiteralNode(cast(int, dtype.bitsize)))]
         )
