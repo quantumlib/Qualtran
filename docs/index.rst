@@ -78,7 +78,7 @@ Qualtran is a Python package. If you already have a working Python environment,
 will install the library and its dependencies. Qualtran uses `Graphviz <https://graphviz.org/>`_
 to draw diagrams, which can't be installed using the Python package manager ``pip``. Follow
 the `Graphviz installation instructions <https://graphviz.org/download/>`_ to set it up.
-Qualtran requires Python 3.11 or newer.
+Qualtran requires Python 3.12 or newer.
 
 Installing from source
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -118,7 +118,7 @@ and activate an environment for Qualtran:
 
 .. code-block:: sh
 
-    conda create -n my-qualtran-env python=3.11
+    conda create -n my-qualtran-env python=3.12
     conda activate my-qualtran-env
 
 That code snippet will create a new environment with the given name (choose whatever you like)

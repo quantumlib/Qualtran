@@ -9,7 +9,7 @@ author = "Google Quantum AI"
 author_email = "mpharrigan@google.com"
 description = "Software for fault-tolerant quantum algorithms research."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     # core dependencies
@@ -132,11 +132,11 @@ line-length = 100
 skip-string-normalization = true
 skip-magic-trailing-comma = true
 exclude = "qualtran/protos/*"
-target-version = ["py311"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 exclude = [
     "qualtran/protos/*",
     "*_pb2.py",
