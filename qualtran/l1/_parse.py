@@ -13,14 +13,13 @@
 #  limitations under the License.
 
 """A recursive-descent parser for bloq string representation."""
+
 import json
 import logging
 import re
 from typing import List
 
 import attrs
-
-logger = logging.getLogger(__name__)
 
 from .nodes import (
     AliasAssignmentNode,
@@ -43,6 +42,8 @@ from .nodes import (
     StatementNode,
     TupleNode,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @attrs.frozen
