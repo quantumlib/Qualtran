@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import re
 from typing import Optional, TYPE_CHECKING
 
@@ -104,7 +106,7 @@ def write_generic_method_signature(
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_function_signature(f: 'Writable', obj2: Function) -> None:
+def write_function_signature(f: Writable, obj2: Function) -> None:
     # Strip `self` or `cls` argument.
     parameters = list(obj2.parameters)
 
@@ -123,7 +125,7 @@ def write_function_signature(f: 'Writable', obj2: Function) -> None:
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_method_signature(f: 'Writable', obj: Object, obj2: Function) -> None:
+def write_method_signature(f: Writable, obj: Object, obj2: Function) -> None:
     if obj2.overloads:
         # Assume the full documentation is in the defined function, not the overrides.
         return

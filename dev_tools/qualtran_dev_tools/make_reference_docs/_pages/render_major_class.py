@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from pathlib import Path
 from typing import cast, TYPE_CHECKING
 
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
     from .._linking_writer import Writable
 
 
-def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Object) -> None:
+def write_major_class_member(f: Writable, obj: griffe.Class, obj2: griffe.Object) -> None:
     if obj2.is_private:
         return
     if obj2.name == '__init__':
