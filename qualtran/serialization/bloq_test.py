@@ -79,6 +79,7 @@ def test_cbloq_to_proto_two_cnot():
     resolver_dict.add_to_resolver_dict(TestTwoCNOT)
 
     cbloq = TestTwoCNOT().decompose_bloq()
+    cbloq = attrs.evolve(cbloq, bloq_key=None)
     proto_lib = bloq_serialization.bloqs_to_proto(cbloq)
     assert len(proto_lib.table) == 2  # TestTwoCNOT and TestCNOT
     # First one is always the CompositeBloq.
@@ -133,6 +134,7 @@ def test_cbloq_to_proto_test_two_cswap():
     cswap_proto = bloq_serialization.bloqs_to_proto(TestCSwap(100)).table[0].bloq
     assert TestCSwap(100).t_complexity().t == 7 * 100
     cbloq = TestTwoCSwap(100).decompose_bloq()
+    cbloq = attrs.evolve(cbloq, bloq_key=None)
     proto_lib = bloq_serialization.bloqs_to_proto(cbloq, max_depth=100)
     assert len(proto_lib.table) == 2
     assert proto_lib.table[1].bloq == cswap_proto
@@ -177,6 +179,7 @@ def test_meta_bloq_to_proto():
 
     sub_bloq_one = TestTwoCSwap(20)
     sub_bloq_two = TestTwoCSwap(20).decompose_bloq()
+    sub_bloq_two = attrs.evolve(sub_bloq_two, bloq_key=None)
     bloq = TestMetaBloq(sub_bloq_one, sub_bloq_two)
 
     depth_0_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=0)

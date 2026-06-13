@@ -45,6 +45,8 @@ types (``Register``), and algorithms (``CompositeBloq``).
    :maxdepth: 1
    :caption: Advanced Topics:
 
+   bloqify_syntax/bloqify-syntactic-sugar.ipynb
+   bloqify_syntax/bloq-builder-gate-helpers.ipynb
    _infra/Bloqs-Tutorial.ipynb
    _infra/composite_bloq.ipynb
    cirq_interop/cirq_interop.ipynb
@@ -58,3 +60,4 @@ types (``Register``), and algorithms (``CompositeBloq``).
    simulation/xcheck_classical_quimb.ipynb
    l1/L1-Objectstring.ipynb
    Autodoc.ipynb
+   qcall.md

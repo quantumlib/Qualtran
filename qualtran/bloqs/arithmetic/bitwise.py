@@ -28,13 +28,14 @@ from qualtran import (
     QDType,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, OnEach, XGate
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, SymbolicInt
 
@@ -107,7 +108,7 @@ class XorK(Bloq):
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox(f"⊕{self.k}")
 
@@ -144,8 +145,16 @@ class Xor(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=self.dtype, y=self.dtype)
 
-    def adjoint(self) -> 'Xor':
-        return self
+    @classmethod
+    def qcall(cls, x: 'QVar', y: 'QVar'):
+        xdtype = x.dtype
+        ydtype = y.dtype
+        if not xdtype == ydtype:
+            raise ValueError(
+                f"Cannot determine the dtype for Xor from soquets of type {xdtype} and {ydtype}"
+            )
+        assert isinstance(xdtype, QDType), xdtype
+        return x.bb.add(cls(dtype=xdtype), x=x, y=y)
 
     def build_composite_bloq(self, bb: BloqBuilder, x: Soquet, y: Soquet) -> dict[str, SoquetT]:
         if not isinstance(self.dtype.num_qubits, int):
@@ -161,6 +170,9 @@ class Xor(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return {CNOT(): self.dtype.num_qubits}
+
+    def adjoint(self) -> 'Xor':
+        return self
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -210,6 +222,10 @@ class BitwiseNot(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
 
+    @classmethod
+    def qcall(cls, x: 'QVar') -> 'QVar':
+        return x.bb.add(cls(dtype=x.dtype), x=x)  # type: ignore[arg-type]
+
     def adjoint(self) -> 'BitwiseNot':
         return self
 
@@ -221,7 +237,7 @@ class BitwiseNot(Bloq):
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return TextBox("")
+            return Text("")
 
         return TextBox("~x")
 

@@ -212,6 +212,16 @@ BASIC_GATES: list[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Quantum Constants',
+        module=qualtran.bloqs.basic_gates.qconst,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.qconst._QUINT_STATE_DOC,
+            qualtran.bloqs.basic_gates.qconst._QUINT_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.qconst._QINT_STATE_DOC,
+            qualtran.bloqs.basic_gates.qconst._QINT_EFFECT_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Measurement',
         module=qualtran.bloqs.basic_gates.z_basis,
         path_stem='measurement',

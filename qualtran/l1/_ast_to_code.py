@@ -110,7 +110,7 @@ class L1ASTPrinter(L1VisitorBase):
 
     @visit.register
     def _(self, node: AliasAssignmentNode):
-        r = super().visit(node)
+        super().visit(node)
         return f"{node.alias}", f" = {node.bloq_key}"
 
     @visit.register
