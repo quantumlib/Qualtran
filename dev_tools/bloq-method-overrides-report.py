@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Set
 
 from qualtran_dev_tools.bloq_finder import get_bloq_classes
 
@@ -45,7 +45,7 @@ def _call_graph(bc: type[Bloq]):
         )
     if annot['ssa'] != 'SympySymbolAllocator':
         print(f"{bc}.build_call_graph `ssa: 'SympySymbolAllocator'`")
-    if annot['return'] != set['BloqCountT']:  # type: ignore[misc]
+    if annot['return'] != Set['BloqCountT']:  # type: ignore[misc]
         print(f"{bc}.build_call_graph -> 'BloqCountT'")
 
 
