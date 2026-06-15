@@ -181,4 +181,5 @@ jobs:
           uv pip install --python .venv-minimal -r requirements-minimal.txt pytest
       - name: Run minimal-install tests
         run: |
-          uv run --no-sync --python .venv-minimal ./check/pytest-minimal-install
+          source .venv-minimal/bin/activate
+          ./check/pytest-minimal-install
