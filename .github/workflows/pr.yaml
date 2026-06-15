@@ -177,7 +177,6 @@ jobs:
       - name: Install minimal dependencies
         run: |
           uv venv .venv-minimal
-          uv pip install --python .venv-minimal pytest
           uv pip install --python .venv-minimal --no-deps -e .
           uv pip install --python .venv-minimal -r requirements-minimal.txt pytest
       - name: Run minimal-install tests
