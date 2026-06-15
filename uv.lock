@@ -3229,17 +3229,9 @@ name = "qualtran"
 source = { editable = "." }
 dependencies = [
     { name = "attrs" },
+    { name = "bartiq" },
     { name = "cachetools" },
     { name = "cirq-core" },
-    { name = "networkx" },
-    { name = "numpy" },
-    { name = "sympy" },
-    { name = "typing-extensions" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "bartiq" },
     { name = "dash" },
     { name = "fxpmath" },
     { name = "galois" },
@@ -3249,7 +3241,9 @@ all = [
     { name = "mpmath" },
     { name = "nbconvert" },
     { name = "nbformat" },
+    { name = "networkx" },
     { name = "notebook" },
+    { name = "numpy" },
     { name = "pennylane" },
     { name = "plotly" },
     { name = "protobuf" },
@@ -3259,6 +3253,8 @@ all = [
     { name = "qsharp" },
     { name = "qsharp-widgets" },
     { name = "quimb" },
+    { name = "sympy" },
+    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -3283,7 +3279,6 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
-    { name = "qualtran", extra = ["all"] },
     { name = "ruff" },
     { name = "sphinx" },
     { name = "sphinx-autobuild" },
@@ -3336,34 +3331,33 @@ typing = [
 [package.metadata]
 requires-dist = [
     { name = "attrs", specifier = ">=23.2.0" },
-    { name = "bartiq", marker = "extra == 'all'", specifier = "==0.12.1" },
+    { name = "bartiq", specifier = "==0.12.1" },
     { name = "cachetools", specifier = ">=5.3" },
     { name = "cirq-core", specifier = "~=1.4" },
-    { name = "dash", marker = "extra == 'all'" },
-    { name = "fxpmath", marker = "extra == 'all'" },
-    { name = "galois", marker = "extra == 'all'" },
-    { name = "ipython", marker = "extra == 'all'" },
-    { name = "ipywidgets", marker = "extra == 'all'" },
-    { name = "matplotlib", marker = "extra == 'all'" },
-    { name = "mpmath", marker = "extra == 'all'" },
-    { name = "nbconvert", marker = "extra == 'all'" },
-    { name = "nbformat", marker = "extra == 'all'" },
+    { name = "dash" },
+    { name = "fxpmath" },
+    { name = "galois" },
+    { name = "ipython" },
+    { name = "ipywidgets" },
+    { name = "matplotlib" },
+    { name = "mpmath" },
+    { name = "nbconvert" },
+    { name = "nbformat" },
     { name = "networkx" },
-    { name = "notebook", marker = "extra == 'all'" },
+    { name = "notebook" },
     { name = "numpy", specifier = ">=1.26,<3.0" },
-    { name = "pennylane", marker = "extra == 'all'" },
-    { name = "plotly", marker = "extra == 'all'" },
-    { name = "protobuf", marker = "extra == 'all'" },
-    { name = "pydot", marker = "extra == 'all'" },
-    { name = "pyzx", marker = "extra == 'all'" },
-    { name = "qref", marker = "extra == 'all'", specifier = "==0.11.0" },
-    { name = "qsharp", marker = "extra == 'all'" },
-    { name = "qsharp-widgets", marker = "extra == 'all'" },
-    { name = "quimb", marker = "extra == 'all'" },
+    { name = "pennylane" },
+    { name = "plotly" },
+    { name = "protobuf" },
+    { name = "pydot" },
+    { name = "pyzx" },
+    { name = "qref", specifier = "==0.11.0" },
+    { name = "qsharp" },
+    { name = "qsharp-widgets" },
+    { name = "quimb" },
     { name = "sympy" },
     { name = "typing-extensions", specifier = ">=4.10.0" },
 ]
-provides-extras = ["all"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -3388,7 +3382,6 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
-    { name = "qualtran", extras = ["all"] },
     { name = "ruff", specifier = "~=0.15.0" },
     { name = "sphinx" },
     { name = "sphinx-autobuild" },

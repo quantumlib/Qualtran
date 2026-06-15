@@ -59,6 +59,7 @@ def test_validation_errs():
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(-1)
 
+
 def test_validate_arrays():
     rs = np.random.RandomState(52)
     arr = rs.choice([0, 1], size=(23, 4))

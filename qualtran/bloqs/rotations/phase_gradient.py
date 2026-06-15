@@ -371,6 +371,7 @@ def _fxp(x: float, n: 'SymbolicInt') -> 'Fxp':
         digits are simply discarded.
     """
     from fxpmath import Fxp
+
     assert 0 <= x < 1
     return Fxp(
         x,
@@ -457,6 +458,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
     @cached_property
     def gamma_fxp(self) -> 'Fxp':
         from fxpmath import Fxp
+
         return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
 
     @cached_method
@@ -472,6 +474,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
         # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
         # 2**n_frac (in other words, right shifted by n_frac)
         from fxpmath import Fxp
+
         x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_template().dtype)
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp

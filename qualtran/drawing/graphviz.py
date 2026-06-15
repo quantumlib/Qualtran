@@ -160,7 +160,6 @@ class GraphDrawer:
 
         We wrap this in a subgraph to align (rank=same) the 'nodes'
         """
-
         if dangle is LeftDangle:
             regs = signature.lefts()
         elif dangle is RightDangle:

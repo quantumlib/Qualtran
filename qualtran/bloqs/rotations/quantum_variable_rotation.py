@@ -232,6 +232,7 @@ def find_optimal_phase_grad_size(gamma_fxp: 'Fxp', cost_dtype: QFxp, eps: float)
 
     cost_val = (2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)
     from fxpmath import Fxp
+
     cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_template().dtype)
     expected_val = (gamma_fxp.get_val() * cost_val) % 1
 
@@ -459,6 +460,7 @@ class QvrPhaseGradient(QvrInterface):
     @cached_property
     def gamma_fxp(self) -> 'Fxp':
         from fxpmath import Fxp
+
         return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_template().dtype)
 
     @cached_property

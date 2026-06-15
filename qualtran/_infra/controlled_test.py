@@ -236,9 +236,7 @@ def test_ctrl_spec_activation_4():
 def test_controlled_serial():
     bloq = Controlled(subbloq=TestSerialCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 C[TestAtom('atom0')]<0>
   LeftDangle.ctrl -> ctrl
   LeftDangle.reg -> q
@@ -256,15 +254,12 @@ C[TestAtom('atom2')]<2>
   C[TestAtom('atom1')]<1>.q -> q
   ctrl -> RightDangle.ctrl
   q -> RightDangle.reg"""
-    )
 
 
 def test_controlled_parallel():
     bloq = Controlled(subbloq=TestParallelCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 Split<0>
   LeftDangle.reg -> reg
   reg[0] -> C[TestAtom]<1>.q
@@ -294,14 +289,11 @@ Join<4>
   C[TestAtom]<2>.q -> reg[1]
   C[TestAtom]<3>.q -> reg[2]
   reg -> RightDangle.reg"""
-    )
 
 
 def test_doubly_controlled():
     bloq = Controlled(Controlled(TestAtom(), ctrl_spec=CtrlSpec()), ctrl_spec=CtrlSpec())
-    assert (
-        bloq.as_composite_bloq().debug_text()
-        == """\
+    assert bloq.as_composite_bloq().debug_text() == """\
 C[C[TestAtom]]<0>
   LeftDangle.ctrl2 -> ctrl2
   LeftDangle.ctrl -> ctrl
@@ -309,7 +301,6 @@ C[C[TestAtom]]<0>
   ctrl2 -> RightDangle.ctrl2
   ctrl -> RightDangle.ctrl
   q -> RightDangle.q"""
-    )
 
 
 def test_bit_vector_ctrl():
@@ -397,6 +388,7 @@ def test_notebook():
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
     import cirq
+
     pytest.importorskip('quimb')
 
     ctrl_bloq = Controlled(bloq, ctrl_spec)
@@ -433,6 +425,7 @@ def test_controlled_tensor_without_decompose():
     cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
 
     from qualtran.simulation.tensor import cbloq_to_quimb, quimb_to_dense
+
     tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
     tn_dense = quimb_to_dense(tn, ctrl_bloq.signature)
     np.testing.assert_allclose(tn_dense, cirq.unitary(cgate), atol=1e-8)

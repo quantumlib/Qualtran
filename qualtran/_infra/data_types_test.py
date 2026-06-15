@@ -28,7 +28,8 @@ from numpy.typing import NDArray
 
 galois = pytest.importorskip('galois')
 
-from qualtran import (
+# imports must come after importorskip so the module is skipped when galois is missing
+from qualtran import (  # noqa: E402
     BQUInt,
     CBit,
     check_dtypes_consistent,
@@ -43,9 +44,9 @@ from qualtran import (
     QMontgomeryUInt,
     QUInt,
 )
-from qualtran.dtype._fxp import _Fxp
-from qualtran.dtype.testing import _QAnyInt
-from qualtran.symbolics import ceil, is_symbolic, log2
+from qualtran.dtype._fxp import _Fxp  # noqa: E402
+from qualtran.dtype.testing import _QAnyInt  # noqa: E402
+from qualtran.symbolics import ceil, is_symbolic, log2  # noqa: E402
 
 
 def test_bit():
@@ -256,6 +257,7 @@ def test_validation_errs():
     with pytest.raises(ValueError):
         qgf = QGF(2, 3)
         import galois
+
         poly = galois.Poly(qgf.gf_type([1, 2, 3, 4, 5, 6, 7]), field=qgf.gf_type)
         QGFPoly(4, qgf).assert_valid_classical_val(poly)
 
