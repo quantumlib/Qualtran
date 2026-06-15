@@ -17,6 +17,8 @@ import numpy as np
 import pytest
 import sympy
 
+pytest.importorskip('fxpmath')
+
 from qualtran.dtype import assert_to_and_from_bits_array_consistent, QFxp, QUInt
 from qualtran.dtype._fxp import _Fxp
 from qualtran.symbolics import is_symbolic

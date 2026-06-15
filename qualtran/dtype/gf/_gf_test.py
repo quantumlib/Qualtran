@@ -16,6 +16,8 @@ import numpy as np
 import pytest
 import sympy
 
+pytest.importorskip('galois')
+
 from qualtran.dtype import assert_to_and_from_bits_array_consistent, QGF
 from qualtran.symbolics import ceil, is_symbolic, log2
 
@@ -53,3 +55,14 @@ def test_qgf_with_default_poly_is_compatible():
     qgf_two = QGF(2, 4, irreducible_poly=qgf_one.gf_type.irreducible_poly)
 
     assert qgf_one == qgf_two
+
+
+def test_qgf_domain_and_validation_arr():
+    qgf = QGF(2, 8)
+    arr = np.array(list(qgf.get_classical_domain()))
+    qgf.assert_valid_classical_val_array(arr)
+
+
+def test_qgf_validation_errs():
+    with pytest.raises(ValueError):
+        QGF(2, 8).assert_valid_classical_val(2**8)  # type: ignore[arg-type]
