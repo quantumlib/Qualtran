@@ -33,7 +33,6 @@ from qualtran.bloqs.basic_gates import (
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
-from qualtran.simulation.tensor import cbloq_to_quimb, quimb_to_dense
 from qualtran.symbolics import Shaped
 
 if TYPE_CHECKING:
@@ -398,6 +397,7 @@ def test_notebook():
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: 'cirq.Gate'):
     import cirq
+    pytest.importorskip('quimb')
 
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
@@ -426,11 +426,13 @@ def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
 
 def test_controlled_tensor_without_decompose():
     cirq = pytest.importorskip('cirq')
+    pytest.importorskip('quimb')
     ctrl_spec = CtrlSpec()
     bloq = TwoBitCSwap()
     ctrl_bloq = Controlled(bloq, ctrl_spec)
     cgate = cirq.ControlledGate(cirq.CSWAP, control_values=ctrl_spec.to_cirq_cv())
 
+    from qualtran.simulation.tensor import cbloq_to_quimb, quimb_to_dense
     tn = cbloq_to_quimb(ctrl_bloq.as_composite_bloq())
     tn_dense = quimb_to_dense(tn, ctrl_bloq.signature)
     np.testing.assert_allclose(tn_dense, cirq.unitary(cgate), atol=1e-8)
@@ -438,6 +440,7 @@ def test_controlled_tensor_without_decompose():
 
 
 def test_controlled_global_phase_tensor():
+    pytest.importorskip('quimb')
     bloq = GlobalPhase.from_coefficient(1.0j).controlled()
     should_be = np.diag([1, 1.0j])
     np.testing.assert_allclose(bloq.tensor_contract(), should_be)

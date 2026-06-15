@@ -35,7 +35,7 @@ def test_bloq():
 
 
 def test_as_pl_op():
-    import pennylane as qml
+    qml = pytest.importorskip('pennylane')
 
     tb = TestTwoBitOp()
 

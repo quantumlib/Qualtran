@@ -20,6 +20,13 @@ dependencies = [
     "numpy>=1.26,<3.0",
     "sympy",
     "cirq-core~=1.4",
+]
+
+[tool.hatch.version]
+path = "qualtran/_version.py"
+
+[project.optional-dependencies]
+all = [
     "fxpmath",
     "galois",
 
@@ -60,11 +67,9 @@ dependencies = [
     "mpmath",
 ]
 
-[tool.hatch.version]
-path = "qualtran/_version.py"
-
 [dependency-groups]
 dev = [
+    "qualtran[all]",
     { include-group = "test"},
     { include-group = "typing"},
     { include-group = "lint"},
