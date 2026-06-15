@@ -14,7 +14,7 @@
 
 import inspect
 import re
-from typing import List, Type, Union
+from typing import Union
 
 from attrs import frozen
 from sphinx.ext.napoleon import Config, GoogleDocstring
@@ -59,7 +59,7 @@ def parse_reference(ref_text: str) -> ReferenceT:
     return UnparsedReference(ref_text)
 
 
-def parse_references(full_reference_text: str) -> List[ReferenceT]:
+def parse_references(full_reference_text: str) -> list[ReferenceT]:
     reference_texts = re.split(r'\n\n', full_reference_text)
     my_refs = []
     for ref_text in reference_texts:
@@ -72,14 +72,14 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
 
     def __init__(self, *args, **kwargs):
-        self.references: List[ReferenceT] = []
+        self.references: list[ReferenceT] = []
         super().__init__(*args, **kwargs)
 
     def _load_custom_sections(self) -> None:
         super()._load_custom_sections()
         self._sections['registers'] = self._parse_registers_section
 
-    def _parse_parameters_section(self, section: str) -> List[str]:
+    def _parse_parameters_section(self, section: str) -> list[str]:
         """Sphinx method to emit a 'Parameters' section."""
 
         def _template(name, desc_lines):
@@ -92,7 +92,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
             '',
         ]
 
-    def _parse_references_section(self, section: str) -> List[str]:
+    def _parse_references_section(self, section: str) -> list[str]:
         """Sphinx method to emit a 'References' section."""
         lines = self._dedent(self._consume_to_next_section())
 
@@ -101,7 +101,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         self.references.extend(my_refs)
         return ['#### References', '\n'.join(f' - {ref.text}' for ref in my_refs), '']
 
-    def _parse_registers_section(self, section: str) -> List[str]:
+    def _parse_registers_section(self, section: str) -> list[str]:
         def _template(name, desc_lines):
             desc = ' '.join(desc_lines)
             return f' - `{name}`: {desc}'
@@ -113,7 +113,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         ]
 
 
-def get_markdown_docstring(cls: Type) -> List[str]:
+def get_markdown_docstring(cls: type) -> list[str]:
     """From a class `cls`, return its docstring as Markdown lines."""
 
     # 1. Sphinx incantation
@@ -127,7 +127,7 @@ def get_markdown_docstring(cls: Type) -> List[str]:
     return lines
 
 
-def get_markdown_docstring_lines(cls: Type) -> List[str]:
+def get_markdown_docstring_lines(cls: type) -> list[str]:
     """From a class `cls`, return its docstring as Markdown lines with a header."""
 
     # 1. Get documentation lines
@@ -139,7 +139,7 @@ def get_markdown_docstring_lines(cls: Type) -> List[str]:
     return lines
 
 
-def get_references(cls: Type) -> List[ReferenceT]:
+def get_references(cls: type) -> list[ReferenceT]:
     """Get reference information for a class from the References section of its docstring."""
     config = Config()
     docstring = cls.__doc__ if cls.__doc__ else ""

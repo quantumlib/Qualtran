@@ -11,10 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import re
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from griffe import Function, Object, Parameter, ParameterKind
+
+if TYPE_CHECKING:
+    from .._linking_writer import Writable
 
 BESPOKE_OBJECT_NAMES_FOR_CLASSES = {'BloqBuilder': 'bb', 'CompositeBloq': 'cbloq'}
 
@@ -43,14 +48,14 @@ def format_parameter(p: Parameter) -> str:
         raise ValueError(p.kind)
 
 
-def camel_to_snake(name):
+def camel_to_snake(name) -> str:
     # Turn an UpperCamelCaseName into lower_snake_case
     # .. we want to make it look like we're calling methods on instances of the class.
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return s1.lower()
 
 
-def get_obj_instance_name(obj):
+def get_obj_instance_name(obj) -> str:
     # Get prototypical object instance names for a given class.
 
     # First, check if we have a bespoke name
@@ -62,7 +67,7 @@ def get_obj_instance_name(obj):
     return camel_to_snake(obj.name)
 
 
-def write_property_method_signature(f, obj, obj2: Function):
+def write_property_method_signature(f, obj, obj2: Function) -> None:
     assert obj2.returns, obj2
     obj_instance_name = get_obj_instance_name(obj)
     method_signature = f'{obj_instance_name}.{obj2.name} -> {obj2.returns}'
@@ -101,7 +106,7 @@ def write_generic_method_signature(
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_function_signature(f, obj2: Function):
+def write_function_signature(f: Writable, obj2: Function) -> None:
     # Strip `self` or `cls` argument.
     parameters = list(obj2.parameters)
 
@@ -120,7 +125,7 @@ def write_function_signature(f, obj2: Function):
     f.write(f'```python\n{method_signature}\n```\n\n')
 
 
-def write_method_signature(f, obj: Object, obj2: Function) -> None:
+def write_method_signature(f: Writable, obj: Object, obj2: Function) -> None:
     if obj2.overloads:
         # Assume the full documentation is in the defined function, not the overrides.
         return

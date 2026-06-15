@@ -16,7 +16,7 @@
 
 import logging
 import warnings
-from typing import Iterable
+from collections.abc import Iterable
 
 import networkx as nx
 

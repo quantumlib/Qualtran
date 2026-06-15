@@ -14,15 +14,16 @@
 import importlib
 import inspect
 import subprocess
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Callable, Iterable, List, Optional, Tuple, Type
+from typing import Optional
 
 from qualtran import Bloq, BloqDocSpec, BloqExample
 
 from .git_tools import get_git_root
 
 
-def _get_git_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> List[Path]:
+def _get_git_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> list[Path]:
     """Get only git-tracked *.py files based on `filter_func`."""
     cp = subprocess.run(
         ['git', 'ls-files', '*.py'],
@@ -40,7 +41,7 @@ def _get_git_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> Lis
 
 def _get_paths(
     bloqs_root: Path, filter_func: Callable[[Path], bool], committed_only: bool = True
-) -> List[Path]:
+) -> list[Path]:
     """Get *.py files based on `filter_func`."""
     if committed_only:
         return _get_git_paths(bloqs_root, filter_func)
@@ -50,7 +51,7 @@ def _get_paths(
     ]
 
 
-def get_bloq_module_paths(bloqs_root: Path, committed_only: bool = True) -> List[Path]:
+def get_bloq_module_paths(bloqs_root: Path, committed_only: bool = True) -> list[Path]:
     """Get *.py files for non-test, non-init modules under `bloqs_root`."""
 
     def is_module_path(path: Path) -> bool:
@@ -65,7 +66,7 @@ def get_bloq_module_paths(bloqs_root: Path, committed_only: bool = True) -> List
     return _get_paths(bloqs_root, is_module_path, committed_only=committed_only)
 
 
-def get_bloq_test_module_paths(bloqs_root: Path, committed_only: bool = True) -> List[Path]:
+def get_bloq_test_module_paths(bloqs_root: Path, committed_only: bool = True) -> list[Path]:
     """Get *_test.py files under `bloqs_root`."""
 
     def is_test_module_path(path: Path) -> bool:
@@ -82,7 +83,7 @@ def _bloq_modpath_to_modname(path: Path) -> str:
     return 'qualtran.bloqs.' + str(path)[: -len('.py')].replace('/', '.')
 
 
-def modpath_to_bloqs(path: Path) -> Iterable[Type[Bloq]]:
+def modpath_to_bloqs(path: Path) -> Iterable[type[Bloq]]:
     """Given a module path, return all the `Bloq` classes defined within."""
     modname = _bloq_modpath_to_modname(path)
     mod = importlib.import_module(modname)
@@ -100,7 +101,7 @@ def modpath_to_bloqs(path: Path) -> Iterable[Type[Bloq]]:
         yield cls
 
 
-def modpath_to_bloq_exs(path: Path) -> Iterable[Tuple[str, str, BloqExample]]:
+def modpath_to_bloq_exs(path: Path) -> Iterable[tuple[str, str, BloqExample]]:
     """Given a module path, return all the `BloqExample`s defined within."""
     modname = _bloq_modpath_to_modname(path)
     mod = importlib.import_module(modname)
@@ -109,7 +110,7 @@ def modpath_to_bloq_exs(path: Path) -> Iterable[Tuple[str, str, BloqExample]]:
         yield modname, name, obj
 
 
-def modpath_to_bloqdocspecs(path: Path) -> Iterable[Tuple[str, str, BloqDocSpec]]:
+def modpath_to_bloqdocspecs(path: Path) -> Iterable[tuple[str, str, BloqDocSpec]]:
     """Given a module path, return all the `BloqDocSpec`s defined within."""
     modname = _bloq_modpath_to_modname(path)
     mod = importlib.import_module(modname)
@@ -118,20 +119,20 @@ def modpath_to_bloqdocspecs(path: Path) -> Iterable[Tuple[str, str, BloqDocSpec]
         yield modname, name, obj
 
 
-def get_bloq_classes(bloqs_root: Optional[Path] = None) -> List[Type[Bloq]]:
+def get_bloq_classes(bloqs_root: Optional[Path] = None) -> list[type[Bloq]]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()
         bloqs_root = reporoot / 'qualtran/bloqs'
 
     paths = get_bloq_module_paths(bloqs_root, committed_only=committed_only)
-    bloq_clss: List[Type[Bloq]] = []
+    bloq_clss: list[type[Bloq]] = []
     for path in paths:
         bloq_clss.extend(modpath_to_bloqs(path))
     return bloq_clss
 
 
-def get_bloq_examples(bloqs_root: Optional[Path] = None) -> List[BloqExample]:
+def get_bloq_examples(bloqs_root: Optional[Path] = None) -> list[BloqExample]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()
@@ -139,7 +140,7 @@ def get_bloq_examples(bloqs_root: Optional[Path] = None) -> List[BloqExample]:
 
     paths = get_bloq_module_paths(bloqs_root, committed_only=committed_only)
 
-    bexamples: List[BloqExample] = []
+    bexamples: list[BloqExample] = []
     for path in paths:
         for modname, name, be in modpath_to_bloq_exs(path):
             bexamples.append(be)
@@ -147,7 +148,7 @@ def get_bloq_examples(bloqs_root: Optional[Path] = None) -> List[BloqExample]:
     return bexamples
 
 
-def get_bloqdocspecs(bloqs_root: Optional[Path] = None) -> List[BloqDocSpec]:
+def get_bloqdocspecs(bloqs_root: Optional[Path] = None) -> list[BloqDocSpec]:
     committed_only = bloqs_root is None
     if bloqs_root is None:
         reporoot = get_git_root()
@@ -155,7 +156,7 @@ def get_bloqdocspecs(bloqs_root: Optional[Path] = None) -> List[BloqDocSpec]:
 
     paths = get_bloq_module_paths(bloqs_root, committed_only=committed_only)
 
-    bdspecs: List[BloqDocSpec] = []
+    bdspecs: list[BloqDocSpec] = []
     for path in paths:
         for modname, name, bds in modpath_to_bloqdocspecs(path):
             bdspecs.append(bds)
