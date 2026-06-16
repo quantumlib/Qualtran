@@ -65,7 +65,8 @@ def test_gate_with_registers():
     assert op1 == op2
 
     try:
-        import quimb  # noqa: F401
+        import quimb  # noqa: F401  # pylint: disable=unused-import
+
         np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
     except ModuleNotFoundError:
         pass
