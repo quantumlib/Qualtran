@@ -23,7 +23,6 @@ See `qualtran.l1.load_objectstring()` to load bloq objects from these strings.
 """
 
 from functools import cached_property
-from typing import List, Tuple
 
 from attrs import frozen
 from qualtran_dev_tools.bloq_finder import get_bloq_classes, get_bloq_examples
@@ -70,7 +69,7 @@ class BloqExampleListItem:
         """Returns the canonical string representation of the CObjectNode."""
         return self.cobject_node.canonical_str()
 
-    def maybe_commented_out(self, be_column_width: int = 30) -> Tuple[str, str, str]:
+    def maybe_commented_out(self, be_column_width: int = 30) -> tuple[str, str, str]:
         """Generates a string representation for the manifest, potentially commented out.
 
         This method checks if the object string is too long, unparsable, unloadable, or
@@ -121,7 +120,7 @@ def main():
     names = sorted(bc._class_name_in_pkg_() for bc in bcs)
 
     bes = get_bloq_examples()
-    items: List[BloqExampleListItem] = []
+    items: list[BloqExampleListItem] = []
     for be in bes:
         bloq = be.make()
         try:

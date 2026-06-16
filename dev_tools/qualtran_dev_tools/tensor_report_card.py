@@ -13,7 +13,8 @@
 #  limitations under the License.
 import multiprocessing.connection
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any, Optional
 
 from attrs import define
 
@@ -28,7 +29,7 @@ class _Pending:
     p: multiprocessing.Process
     recv: multiprocessing.connection.Connection
     start_time: float
-    kwargs: Dict[str, Any]
+    kwargs: dict[str, Any]
 
 
 class ExecuteWithTimeout:
@@ -42,15 +43,15 @@ class ExecuteWithTimeout:
         self.timeout = timeout
         self.max_workers = max_workers
 
-        self.queued: List[Tuple[Callable, Dict[str, Any]]] = []
-        self.pending: List[_Pending] = []
+        self.queued: list[tuple[Callable, dict[str, Any]]] = []
+        self.pending: list[_Pending] = []
 
     @property
     def work_to_be_done(self) -> int:
         """The number of tasks currently executing or queued."""
         return len(self.queued) + len(self.pending)
 
-    def submit(self, func: Callable, kwargs: Dict[str, Any]) -> None:
+    def submit(self, func: Callable, kwargs: dict[str, Any]) -> None:
         """Add a task to the queue.
 
         `func` must be a callable that can accept `kwargs` in addition to
@@ -92,7 +93,7 @@ class ExecuteWithTimeout:
 
         return None
 
-    def next_result(self) -> Tuple[Dict[str, Any], Optional[Any]]:
+    def next_result(self) -> tuple[dict[str, Any], Optional[Any]]:
         """Get the next available result.
 
         This call is blocking, but should never take longer than `self.timeout`. This should
@@ -131,7 +132,7 @@ def report_on_tensors(name: str, cls_name: str, bloq: Bloq, cxn) -> None:
     This should be used with `ExecuteWithTimeout`. The resultant
     record dictionary is sent over `cxn`.
     """
-    record: Dict[str, Any] = {'name': name, 'cls': cls_name}
+    record: dict[str, Any] = {'name': name, 'cls': cls_name}
 
     try:
         start = time.perf_counter()

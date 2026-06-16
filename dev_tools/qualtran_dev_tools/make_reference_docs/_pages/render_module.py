@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import cast, Dict, Sequence
+from typing import cast
 
 import griffe
 from griffe import Kind
@@ -28,7 +29,7 @@ from .._page import MemberType, ModulePage, ModulePageMember
 from .._render_context import RenderContext
 
 
-def write_module_other_member(f: LinkingWriter, obj, pref_path, aliases_d):
+def write_module_other_member(f: LinkingWriter, obj, pref_path, aliases_d) -> None:
     first_line, rest = split_docstring(obj)
     f.write_nl(f'### `{obj.name}`\n')
     f.write_nl(get_aliases_str(pref_path, aliases_d=aliases_d))
@@ -69,8 +70,8 @@ def write_module(
     obj: griffe.Module,
     pref_path: str,
     members: Sequence[ModulePageMember],
-    aliases_d: Dict[str, str],
-):
+    aliases_d: dict[str, str],
+) -> None:
     # Title
     title_dotpath = '.'.join(pref_path.split('.')[-2:])
     f.write_nl(f'# `{title_dotpath}`\n\n')
@@ -118,7 +119,7 @@ def write_module(
         f.write('\n')
 
 
-def render_module(out_dir: Path, page: ModulePage, render_context: RenderContext):
+def render_module(out_dir: Path, page: ModulePage, render_context: RenderContext) -> None:
     out_path = page.out_path(out_dir=out_dir)
     print(f"Writing {page.pref_path} to {out_path}")
     out_path.parent.mkdir(parents=True, exist_ok=True)

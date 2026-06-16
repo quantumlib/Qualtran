@@ -18,7 +18,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import attrs
 import filelock
@@ -31,7 +31,7 @@ from nbformat import NotebookNode
 from .git_tools import get_git_root
 
 
-def get_nb_rel_paths(sourceroot: Path) -> List[Tuple[Path, Path]]:
+def get_nb_rel_paths(sourceroot: Path) -> list[tuple[Path, Path]]:
     """List all checked-in *.ipynb files within `sourceroot`.
 
     Returns a tuple of the relative path and the path it's relative to (aka sourceroot)
@@ -101,7 +101,7 @@ class _NBInOutPaths:
         return self.md_needs_reexport() or self.nb_needs_reexport()
 
 
-def _make_link_replacements() -> List[Tuple[str, str]]:
+def _make_link_replacements() -> list[tuple[str, str]]:
     """Helper function to make a list of link replacements."""
     top_level = [
         'Bloq',
