@@ -65,9 +65,10 @@ def test_gate_with_registers():
     assert op1 == op2
 
     try:
+        import quimb  # noqa: F401
         np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
     except ModuleNotFoundError:
-        pytest.skip('quimb not installed')
+        pass
 
     # Test GWR.controlled() works correctly with Bloq and Cirq style API
     ctrl = cirq.q('ctrl')
