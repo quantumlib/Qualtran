@@ -43,7 +43,8 @@ except ImportError as _e:
 
     warnings.warn(
         f"Graphviz drawing is unavailable because an optional dependency is missing: {_e}. "
-        f"Install it with: pip install qualtran[all]"
+        f"Install it with: pip install qualtran[all]",
+        stacklevel=2,
     )
 else:
     from .graphviz import GraphDrawer, PrettyGraphDrawer, TypedGraphDrawer
