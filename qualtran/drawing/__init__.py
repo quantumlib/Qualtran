@@ -16,7 +16,6 @@
 
 """Draw and visualize bloqs."""
 
-from .graphviz import GraphDrawer, PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import (
     RegPosition,
     HLine,
@@ -36,9 +35,25 @@ from .musical_score import (
     dump_musical_score,
 )
 
-from .classical_sim_graph import ClassicalSimGraphDrawer
+try:
+    import pydot as _pydot  # noqa: F401
+    import IPython.display as _ipython_display  # noqa: F401
+except ImportError as _e:
+    import warnings
 
-from .bloq_counts_graph import GraphvizCallGraph, format_counts_sigma, format_counts_graph_markdown
+    warnings.warn(
+        f"Graphviz drawing is unavailable because an optional dependency is missing: {_e}. "
+        f"Install it with: pip install qualtran[all]",
+        stacklevel=2,
+    )
+else:
+    from .graphviz import GraphDrawer, PrettyGraphDrawer, TypedGraphDrawer
+    from .classical_sim_graph import ClassicalSimGraphDrawer
+    from .bloq_counts_graph import (
+        GraphvizCallGraph,
+        format_counts_sigma,
+        format_counts_graph_markdown,
+    )
 
 from ._show_funcs import (
     show_bloq,

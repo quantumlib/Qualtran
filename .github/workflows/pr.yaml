@@ -164,3 +164,22 @@ jobs:
           uv sync --frozen --no-dev --group doc
       - run: |
           uv run --no-sync check/autogenerate-notebooks
+
+  pytest-minimal-install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: Install minimal dependencies
+        run: |
+          uv venv .venv-minimal
+          uv pip install --python .venv-minimal --no-deps -e .
+          uv pip install --python .venv-minimal -r requirements-minimal.txt pytest
+      - name: Run minimal-install tests
+        run: |
+          source .venv-minimal/bin/activate
+          ./check/pytest-minimal-install

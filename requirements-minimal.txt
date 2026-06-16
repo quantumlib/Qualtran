@@ -1,0 +1,9 @@
+# Minimal dependencies for qualtran core.
+# Used by dev_tools/pytest-minimal-install.sh to test that the core library
+attrs>=23.2.0
+cachetools>=5.3
+typing_extensions>=4.10.0
+networkx
+numpy>=1.26,<3.0
+sympy
+cirq-core~=1.4

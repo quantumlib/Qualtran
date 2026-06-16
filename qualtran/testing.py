@@ -281,7 +281,10 @@ def execute_notebook(name: str):
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
+    import pytest
+
+    nbformat = pytest.importorskip('nbformat')
+    _nbconvert = pytest.importorskip('nbconvert')
     from nbconvert.preprocessors import ExecutePreprocessor
 
     # Assumes that the notebook is in the same path from where the function was called,
