@@ -79,4 +79,12 @@ during state preparation. The cost of initial state preparation is typically
 ignored.
 """
 
-from .select_and_prepare import PrepareFirstQuantization, SelectFirstQuantization
+from .select_and_prepare import PrepareFirstQuantization, SelectFirstQuantization, MultiplexedCSwap3D, PrepareTUVSuperpositions
+from .prepare import UniformSuperpostionIJFirstQuantization
+from .prepare_nu import FlagZeroAsFailure, PrepareMuUnaryEncodedOneHot, PrepareNuState, PrepareNuSuperPositionState, TestNuInequality, TestNuLessThanMu
+from .prepare_t import PreparePowerTwoState, PrepareTFirstQuantization
+from .prepare_uv import PrepareUVFirstQuantization
+from .prepare_zeta import PrepareZetaState
+from .select_and_prepare import MultiplexedCSwap3D
+from .select_t import SelectTFirstQuantization
+from .select_uv import ApplyNuclearPhase, SelectUVFirstQuantization
