@@ -19,3 +19,4 @@ from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlX, MultiControlZ
 from qualtran.bloqs.mcmt.multi_target_cnot import MultiTargetCNOT
 from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
 from qualtran.bloqs.mcmt.multi_control_pauli import MultiControlPauli, MultiControlPauliBase
+from qualtran.bloqs.mcmt.specialized_ctrl import AdjointWithSpecializedCtrl

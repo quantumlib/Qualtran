@@ -376,3 +376,9 @@ class AdjointWithSpecializedCtrl(Adjoint):
             return [ctrl_soq], soqs
 
         return ctrl_bloq, _adder
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Direct superclass messes this up
+        return '.'.join(cls.__module__.split('.')[:-1])
+
