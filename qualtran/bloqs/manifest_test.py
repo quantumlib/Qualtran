@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import importlib
+from typing import Optional
 
 import pytest
 
@@ -39,7 +40,7 @@ for _pkg, _prefixes in OPTIONAL_DEPS.items():
 _SKIP_PREFIXES_TUPLE = tuple(_SKIP_PREFIXES)  # for str.startswith()
 
 
-def _should_skip(fqn: str) -> str | None:
+def _should_skip(fqn: str) -> Optional[str]:
     """If *fqn* requires a missing optional dep, return a skip reason."""
     for pkg, prefixes in OPTIONAL_DEPS.items():
         if any(fqn.startswith(p) for p in prefixes) and not _is_installed(pkg):
