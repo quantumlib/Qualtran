@@ -26,3 +26,7 @@ from qualtran.bloqs.rotations.programmable_rotation_gate_array import Programmab
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient, QvrZPow
 from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
 from qualtran.bloqs.rotations.zpow_via_phase_gradient import ZPowConstViaPhaseGradient
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
+from qualtran.bloqs.rotations.programmable_ancilla_rotation import ZPowProgrammedAncilla, ZPowUsingProgrammedAncilla
+from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArrayBase
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrInterface
