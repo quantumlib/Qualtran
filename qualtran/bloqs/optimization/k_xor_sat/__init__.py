@@ -23,3 +23,6 @@ from .planted_noisy_kxor import (
     KikuchiAverageDegreeTheorem,
     PlantedNoisyKXOR,
 )
+from .kikuchi_adjacency_list import ColumnOfKthNonZeroEntry, IndexOfNonZeroColumn
+from .kikuchi_block_encoding import BlackBoxKikuchiEntryOracle, BlackBoxKikuchiRowColumnOracle
+from .kikuchi_guiding_state import ProbabilisticUncompute
