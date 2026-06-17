@@ -25,3 +25,4 @@ from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
     MultiplyPolyByOnePlusXk,
 )
 from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
+from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulMBUC, Parity, SynthesizeLRCircuit
