@@ -18,10 +18,7 @@ import pytest
 from qualtran.bloqs.manifest import BLOQ_CLASS_NAMES
 
 OPTIONAL_DEPS: dict[str, list[str]] = {
-    "galois": [
-        "qualtran.bloqs.gf_arithmetic.",
-        "qualtran.bloqs.gf_poly_arithmetic.",
-    ],
+    "galois": ["qualtran.bloqs.gf_arithmetic.", "qualtran.bloqs.gf_poly_arithmetic."]
 }
 
 
