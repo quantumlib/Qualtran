@@ -14,4 +14,4 @@
 """SELECT and PREPARE for the second quantized Tensor Hypercontracted (THC) chemistry Hamtiltonian."""
 
 from .prepare import PrepareTHC, UniformSuperpositionTHC
-from .select_bloq import SelectTHC
+from .select_bloq import SelectTHC, THCRotations
