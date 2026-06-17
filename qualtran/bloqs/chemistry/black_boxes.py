@@ -121,6 +121,12 @@ class QROAM(Bloq):
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
+
+
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
@@ -168,6 +174,12 @@ class QROAMTwoRegs(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
+
 
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
@@ -222,3 +234,9 @@ class ApplyControlledZs(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         # remove this method once https://github.com/quantumlib/Qualtran/issues/528 is resolved.
         return {Toffoli(): len(self.cvs) - 1}
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
+
