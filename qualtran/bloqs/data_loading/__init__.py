@@ -17,3 +17,4 @@
 from qualtran.bloqs.data_loading.qroam_clean import QROAMClean, QROAMCleanAdjoint
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.data_loading.qroam_clean import QROAMCleanAdjointWrapper
