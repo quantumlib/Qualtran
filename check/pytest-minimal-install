@@ -24,4 +24,8 @@ for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     echo "  ✓ $pkg is not installed (expected)"
 done
 
-pytest qualtran/_infra/ qualtran/dtype/ -v "$@"
+pytest                               \
+    qualtran/_infra/                 \
+    qualtran/dtype/                  \
+    qualtran/bloqs/manifest_test.py  \
+    -v "$@"

@@ -197,6 +197,11 @@ class OutputIndexedData(Bloq):
         bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
         return {QROAM(self.num_aux + 1, bo): 1}
 
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])
+
     def __str__(self) -> str:
         return "In_l-data_l"
 

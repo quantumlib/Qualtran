@@ -11,3 +11,5 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
+from qualtran.bloqs.mean_estimation.mean_estimation_operator import MeanEstimationOperator
