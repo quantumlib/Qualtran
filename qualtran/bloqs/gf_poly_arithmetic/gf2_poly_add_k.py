@@ -15,7 +15,6 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
-import galois
 
 from qualtran import (
     Bloq,
@@ -31,6 +30,8 @@ from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolyJoin,
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
+    import galois
+
     from qualtran import BloqBuilder, Soquet
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -61,7 +62,7 @@ class GF2PolyAddK(Bloq):
     """
 
     qgf_poly: QGFPoly
-    g_x: galois.Poly = attrs.field()
+    g_x: 'galois.Poly' = attrs.field()
 
     @cached_property
     def signature(self) -> 'Signature':
