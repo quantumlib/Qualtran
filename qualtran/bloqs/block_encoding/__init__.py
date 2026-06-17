@@ -26,3 +26,5 @@ from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
 from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import SparseMatrixHermitian
 from qualtran.bloqs.block_encoding.tensor_product import TensorProduct
 from qualtran.bloqs.block_encoding.unitary import Unitary
+from qualtran.bloqs.block_encoding.sparse_matrix import EntryOracle, ExplicitEntryOracle, RowColumnOracle, SymmetricBandedRowColumnOracle, TopLeftRowColumnOracle, UniformEntryOracle
+from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import SqrtEntryOracle, UniformSqrtEntryOracle
