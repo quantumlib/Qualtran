@@ -20,13 +20,21 @@ from qualtran.bloqs.rotations.phase_gradient import (
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
     PhaseGradientState,
+    PhaseGradientUnitary,
 )
 from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction
-from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArray
-from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient, QvrZPow
+from qualtran.bloqs.rotations.programmable_ancilla_rotation import (
+    ZPowProgrammedAncilla,
+    ZPowUsingProgrammedAncilla,
+)
+from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
+    ProgrammableRotationGateArray,
+    ProgrammableRotationGateArrayBase,
+)
+from qualtran.bloqs.rotations.quantum_variable_rotation import (
+    QvrInterface,
+    QvrPhaseGradient,
+    QvrZPow,
+)
 from qualtran.bloqs.rotations.rz_via_phase_gradient import RzViaPhaseGradient
 from qualtran.bloqs.rotations.zpow_via_phase_gradient import ZPowConstViaPhaseGradient
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
-from qualtran.bloqs.rotations.programmable_ancilla_rotation import ZPowProgrammedAncilla, ZPowUsingProgrammedAncilla
-from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArrayBase
-from qualtran.bloqs.rotations.quantum_variable_rotation import QvrInterface

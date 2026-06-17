@@ -20,6 +20,7 @@ Unary iteration can be used to implement unitaries of the form
      U = \sum_{l=0}^{2^n-1} U_{l}|l\rangle \langle l|
  $$
 """
+
 from .apply_gate_to_lth_target import ApplyGateToLthQubit
 from .apply_lth_bloq import ApplyLthBloq
 from .black_box_select import BlackBoxSelect

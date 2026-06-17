@@ -47,5 +47,6 @@ e^{i H_h^{x}} = \prod_{k\sigma} e^{i H_h^{x(k,\sigma)}}
 $$
 without further trotter error.
 """
+
 from .hopping import HoppingPlaquette, HoppingTile, HoppingTileHWP
 from .interaction import Interaction, InteractionHWP

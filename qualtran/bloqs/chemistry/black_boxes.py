@@ -126,7 +126,6 @@ class QROAM(Bloq):
         # Local import
         return '.'.join(cls.__module__.split('.')[:])
 
-
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
@@ -179,7 +178,6 @@ class QROAMTwoRegs(Bloq):
     def _pkg_(cls) -> str:
         # Local import
         return '.'.join(cls.__module__.split('.')[:])
-
 
     def __str__(self) -> str:
         dag = '†' if self.is_adjoint else ''
@@ -239,4 +237,3 @@ class ApplyControlledZs(Bloq):
     def _pkg_(cls) -> str:
         # Local import
         return '.'.join(cls.__module__.split('.')[:])
-

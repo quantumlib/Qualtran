@@ -78,4 +78,3 @@ class MeasureQFT(Bloq):
     def _pkg_(cls) -> str:
         # Local import
         return '.'.join(cls.__module__.split('.')[:])
-
