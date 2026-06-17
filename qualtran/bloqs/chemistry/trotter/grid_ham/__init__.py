@@ -15,3 +15,5 @@
 
 from .kinetic import KineticEnergy
 from .potential import PairPotential, PotentialEnergy
+from .inverse_sqrt import NewtonRaphsonApproxInverseSquareRoot, PolynmomialEvaluationInverseSquareRoot
+from .qvr import QuantumVariableRotation
