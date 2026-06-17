@@ -71,3 +71,9 @@ ignored as this is logarithmic in the size of the basis set.
 """
 
 from .select_and_prepare import PrepareFirstQuantizationWithProj, SelectFirstQuantizationWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import PrepareMuUnaryEncodedOneHotWithProj, PrepareNuStateWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import PreparePowerTwoStateWithProj, PrepareTFirstQuantizationWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import PrepareUVFirstQuantizationWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import ControlledMultiplexedCSwap3D, PrepareTUVSuperpositions
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import SelectTFirstQuantizationWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv import SelectUVFirstQuantizationWithProj
