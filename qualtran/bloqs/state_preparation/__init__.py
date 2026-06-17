@@ -22,3 +22,7 @@ from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     StatePreparationViaRotations,
 )
+from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
+from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import SparseStatePreparationViaRotations
+from qualtran.bloqs.state_preparation.state_preparation_via_rotation import PRGAViaPhaseGradient
