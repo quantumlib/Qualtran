@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Run pytest on qualtran's core directories, verifying that only minimal
-# dependencies are present.
+# Run pytest on a subset of qualtran that only requires minimal dependencies.
+#
+# This script runs tests for the entire qualtran package, excluding directories
+# and files that require optional dependencies not in requirements-minimal.txt.
 #
 # Prerequisites: the current Python environment must have qualtran installed
 # (with --no-deps) plus only the packages in requirements-minimal.txt and
-# pytest. See dev_tools/minimal-installs.md for setup instructions.
+# pytest.
 #
 # Usage:
-#   ./dev_tools/pytest-minimal-install
+#   ./check/pytest-minimal-install
 
 set -euo pipefail
 
@@ -24,20 +26,18 @@ for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     echo "  ✓ $pkg is not installed (expected)"
 done
 
-pytest                                                                        \
-    qualtran/_infra/                                                          \
-    qualtran/dtype/                                                           \
-    qualtran/bloqs/manifest_test.py                                           \
-    qualtran/symbolics/                                                       \
-    qualtran/linalg/                                                          \
-    qualtran/bloqify_syntax/                                                  \
-    qualtran/l1/                                                              \
-    qualtran/rotation_synthesis/                                              \
-    qualtran/testing_test.py                                                  \
-    qualtran/resource_counting/                                               \
-    qualtran/surface_code/                                                    \
-    qualtran/cirq_interop/                                                    \
-    qualtran/simulation/classical_sim_test.py                                 \
-    --ignore=qualtran/surface_code/ui_test.py                                 \
-    --ignore=qualtran/cirq_interop/jupyter_tools_test.py                      \
+pytest                                                                      \
+    qualtran/                                                               \
+    qualtran/bloqs/manifest_test.py                                         \
+    --ignore=qualtran/bloqs/                                                \
+    --ignore=qualtran/serialization/                                        \
+    --ignore=qualtran/qref_interop/                                         \
+    --ignore=qualtran/simulation/tensor/                                    \
+    --ignore=qualtran/simulation/xcheck_classical_quimb_test.py             \
+    --ignore=qualtran/surface_code/ui_test.py                               \
+    --ignore=qualtran/cirq_interop/jupyter_tools_test.py                    \
+    --ignore=qualtran/drawing/graphviz_test.py                              \
+    --ignore=qualtran/drawing/bloq_counts_graph_test.py                     \
+    --ignore=qualtran/drawing/classical_sim_graph_test.py                   \
+    --ignore=qualtran/drawing/flame_graph_test.py                           \
     -m 'not slow' -v "$@"
