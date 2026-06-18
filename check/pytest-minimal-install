@@ -15,7 +15,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "=== Verifying optional packages are NOT installed ==="
-OPTIONAL_PACKAGES=(galois fxpmath quimb pydot)
+OPTIONAL_PACKAGES=(galois fxpmath quimb pydot protobuf pennylane IPython dash)
 for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     if python -c "import $pkg" 2>/dev/null; then
         echo "ERROR: '$pkg' is installed. Environment is not minimal."
@@ -24,8 +24,20 @@ for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     echo "  ✓ $pkg is not installed (expected)"
 done
 
-pytest                               \
-    qualtran/_infra/                 \
-    qualtran/dtype/                  \
-    qualtran/bloqs/manifest_test.py  \
-    -v "$@"
+pytest                                                                        \
+    qualtran/_infra/                                                          \
+    qualtran/dtype/                                                           \
+    qualtran/bloqs/manifest_test.py                                           \
+    qualtran/symbolics/                                                       \
+    qualtran/linalg/                                                          \
+    qualtran/bloqify_syntax/                                                  \
+    qualtran/l1/                                                              \
+    qualtran/rotation_synthesis/                                              \
+    qualtran/testing_test.py                                                  \
+    qualtran/resource_counting/                                               \
+    qualtran/surface_code/                                                    \
+    qualtran/cirq_interop/                                                    \
+    qualtran/simulation/classical_sim_test.py                                 \
+    --ignore=qualtran/surface_code/ui_test.py                                 \
+    --ignore=qualtran/cirq_interop/jupyter_tools_test.py                      \
+    -m 'not slow' -v "$@"
