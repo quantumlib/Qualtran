@@ -24,7 +24,6 @@ from qualtran.bloqs.for_testing.with_decomposition import (
     TestIndependentParallelCombo,
     TestSerialCombo,
 )
-
 from qualtran.resource_counting import get_cost_cache, get_cost_value, QubitCount
 from qualtran.resource_counting._qubit_counts import _cbloq_max_width
 from qualtran.resource_counting.generalizers import ignore_split_join

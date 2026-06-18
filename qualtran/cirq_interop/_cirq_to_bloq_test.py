@@ -226,9 +226,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     bloq = CirqGateAsBloq(gate=LeftOnlyGate())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
 
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 CNOT<0>
   LeftDangle.q[0] -> ctrl
   LeftDangle.q[1] -> target
@@ -241,7 +239,6 @@ cirq.reset<1>
 cirq.reset<2>
   CNOT<0>.target -> q
   q -> RightDangle.q[1]"""
-    )
 
 
 def test_gwr_for_left_only_gates():
