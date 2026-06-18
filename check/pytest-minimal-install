@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Run pytest on a subset of qualtran that only requires minimal dependencies.
+# Run pytest on qualtran, verifying that only minimal dependencies are present.
 #
 # This script runs tests for the entire qualtran package, excluding directories
 # and files that require optional dependencies not in requirements-minimal.txt.
 #
 # Prerequisites: the current Python environment must have qualtran installed
 # (with --no-deps) plus only the packages in requirements-minimal.txt and
-# pytest.
+# pytest. See dev_tools/minimal-installs.md for setup instructions.
 #
 # Usage:
 #   ./check/pytest-minimal-install
@@ -28,7 +28,6 @@ done
 
 pytest                                                                      \
     qualtran/                                                               \
-    qualtran/bloqs/manifest_test.py                                         \
     --ignore=qualtran/bloqs/                                                \
     --ignore=qualtran/serialization/                                        \
     --ignore=qualtran/qref_interop/                                         \
@@ -41,3 +40,6 @@ pytest                                                                      \
     --ignore=qualtran/drawing/classical_sim_graph_test.py                   \
     --ignore=qualtran/drawing/flame_graph_test.py                           \
     -m 'not slow' -v "$@"
+
+# Run manifest_test.py separately to verify all bloq classes can be imported.
+pytest qualtran/bloqs/manifest_test.py -v "$@"
