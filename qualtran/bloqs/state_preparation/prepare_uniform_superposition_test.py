@@ -48,7 +48,7 @@ def test_notebook():
     qlt_testing.execute_notebook('prepare_uniform_superposition')
 
 
-@pytest.mark.parametrize("n", [*range(3, 20), 25, 41])
+@pytest.mark.parametrize("n", [*range(3, 20), 25, pytest.param(41, marks=pytest.mark.slow)])
 @pytest.mark.parametrize("num_controls", [0, 1])
 def test_prepare_uniform_superposition(n, num_controls):
     gate = PrepareUniformSuperposition(n, cvs=[1] * num_controls)
