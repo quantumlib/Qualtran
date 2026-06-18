@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import cirq
 import numpy as np
 import pytest
 import scipy
@@ -32,8 +31,8 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.resource_counting import big_O, get_cost_value, QECGatesCost, QubitCount
+from qualtran.simulation.tensor import bloq_to_dense
 from qualtran.symbolics import Shaped
 
 
@@ -79,10 +78,7 @@ def verify_hamiltonian_simulation_by_gqsp(
     N = H.shape[0]
 
     W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
-    # TODO cirq.unitary was 4-5x faster than tensor_contract.
-    #      https://github.com/quantumlib/Qualtran/issues/1336
-    #      TODO: note performance regression
-    result_unitary = cirq.unitary(BloqAsCirqGate(W_e_iHt))
+    result_unitary = bloq_to_dense(W_e_iHt, full_flatten=False)
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N]
@@ -96,8 +92,6 @@ def verify_hamiltonian_simulation_by_gqsp(
 def test_hamiltonian_simulation_by_gqsp(
     select_bitsize: int, target_bitsize: int, t: float, precision: float
 ):
-    # TODO: This test experienced a performance regression due to Cirq compatibility issues:
-    #       https://github.com/quantumlib/Qualtran/issues/1763
     random_state = np.random.RandomState(42)
 
     for _ in range(5):

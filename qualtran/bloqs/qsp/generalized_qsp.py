@@ -342,6 +342,67 @@ class GeneralizedQSP(GateWithRegisters):
             ]
         )
 
+    def my_tensors(self, incoming, outgoing):
+        """Compute tensors via sequential matrix multiplication.
+
+        Instead of decomposing into individual controlled gates and signal rotations,
+        compute the walk operator unitary once and build the full GQSP unitary via
+        a chain of matrix multiplications: R₀ · (C-U · R₁) · (C-U · R₂) · ...
+        """
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor._dense import _order_incoming_outgoing_indices
+
+        if self.is_symbolic():
+            raise ValueError(f'Cannot compute tensors for symbolic {self}')
+
+        # Get the walk operator unitary (computed once and reused)
+        U_mat = self.U.tensor_contract()
+        n_U = U_mat.shape[0]
+        I_U = np.eye(n_U, dtype=np.complex128)
+
+        # Projectors for signal qubit
+        proj0 = np.array([[1, 0], [0, 0]], dtype=np.complex128)  # |0><0|
+        proj1 = np.array([[0, 0], [0, 1]], dtype=np.complex128)  # |1><1|
+
+        # Build controlled operations (signal ⊗ U registers)
+        U_dag = np.conj(U_mat.T)
+        # C-U†: controlled on signal=1, apply U†
+        CUd = np.kron(proj0, I_U) + np.kron(proj1, U_dag)
+        # C[0]-U: controlled on signal=0, apply U
+        C0U = np.kron(proj1, I_U) + np.kron(proj0, U_mat)
+
+        # Build full unitary by sequential multiplication following
+        # the circuit in decompose_from_registers
+        full_dim = 2 * n_U
+        result = np.eye(full_dim, dtype=np.complex128)
+
+        rotations = self.signal_rotations
+        remaining_inverse = int(self.negative_power)
+
+        # Apply R_0
+        result = np.kron(rotations[0].rotation_matrix, I_U) @ result
+
+        # Apply alternating controlled-U and rotations
+        for rot in rotations[1:]:
+            if remaining_inverse > 0:
+                result = CUd @ result
+                remaining_inverse -= 1
+            else:
+                result = C0U @ result
+            result = np.kron(rot.rotation_matrix, I_U) @ result
+
+        # Apply remaining U† if negative_power > degree
+        for _ in range(remaining_inverse):
+            result = np.kron(np.eye(2, dtype=np.complex128), U_dag) @ result
+
+        # Reshape to tensor indices
+        inds = _order_incoming_outgoing_indices(
+            self.signature, incoming=incoming, outgoing=outgoing
+        )
+        data = result.reshape((2,) * len(inds))
+        return [qtn.Tensor(data=data, inds=inds, tags=[str(self)])]
+
     def decompose_from_registers(
         self,
         *,
