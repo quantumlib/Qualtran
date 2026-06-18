@@ -263,6 +263,7 @@ def test_multidimensional_classical_sim_for_large_int():
 
 
 def test_multidimensional_classical_sim_for_gqf():
+    pytest.importorskip('galois')
     dtype = QGF(2, 2)
     x = dtype.gf_type.elements
     bloq = TestMultiDimensionalReg(dtype, len(x), (dtype.gf_type,))
