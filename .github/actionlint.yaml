@@ -17,9 +17,6 @@
 
 self-hosted-runner:
   labels:
-    # Google self-hosted runners defined in TensorFlow org.
-    - linux-x86-n2-32
-
     # Defined in Quantumlib org.
     - ubuntu-22.04-arm64-2-core
     - ubuntu-22.04-arm64-8-core
