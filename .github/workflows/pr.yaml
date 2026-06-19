@@ -17,6 +17,8 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+
 concurrency:
   # Cancel any previously-started but still active runs on the same branch.
   cancel-in-progress: true
@@ -27,7 +29,7 @@ permissions: read-all
 
 jobs:
   pytest:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-x64-8-core
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -43,7 +45,7 @@ jobs:
           uv run --no-sync check/pytest-quick
 
   dev-tools:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -60,7 +62,7 @@ jobs:
           uv run --no-sync check/mypy-dev-tools
 
   notebooks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-x64-8-core
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -78,7 +80,7 @@ jobs:
           NUMBA_NUM_THREADS: 4
 
   format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -116,7 +118,7 @@ jobs:
           uv run --no-sync check/pylint
 
   ruff:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -150,7 +152,7 @@ jobs:
           uv run --no-sync check/mypy
 
   autogenerate-notebooks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-x64-8-core
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
