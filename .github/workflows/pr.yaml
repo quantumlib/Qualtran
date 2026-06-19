@@ -36,8 +36,10 @@ jobs:
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group test
@@ -52,8 +54,10 @@ jobs:
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen
@@ -69,8 +73,10 @@ jobs:
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group test
@@ -88,8 +94,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group format
@@ -107,8 +115,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group lint
@@ -124,8 +134,10 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group lint
@@ -141,8 +153,10 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group typing
@@ -159,8 +173,10 @@ jobs:
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group doc
@@ -174,8 +190,10 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
-          python-version: "3.12"
+          python-version-file: "pyproject.toml"
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
       - name: Install minimal dependencies
         run: |
           uv venv .venv-minimal
