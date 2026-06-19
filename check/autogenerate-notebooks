@@ -15,6 +15,6 @@ if output=$(git status --porcelain) && [ -z "$output" ]; then
   exit 0
 else
   # Uncommitted changes
-  echo $output
+  echo "$output"
   exit 1
 fi
