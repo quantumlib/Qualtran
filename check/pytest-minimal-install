@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Run pytest on qualtran's core directories, verifying that only minimal
-# dependencies are present.
+# Run pytest on qualtran, verifying that only minimal dependencies are present.
+#
+# This script runs tests for the entire qualtran package, excluding directories
+# and files that require optional dependencies not in requirements-minimal.txt.
 #
 # Prerequisites: the current Python environment must have qualtran installed
 # (with --no-deps) plus only the packages in requirements-minimal.txt and
 # pytest. See dev_tools/minimal-installs.md for setup instructions.
 #
 # Usage:
-#   ./dev_tools/pytest-minimal-install
+#   ./check/pytest-minimal-install
 
 set -euo pipefail
 
@@ -15,7 +17,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "=== Verifying optional packages are NOT installed ==="
-OPTIONAL_PACKAGES=(galois fxpmath quimb pydot)
+OPTIONAL_PACKAGES=(galois fxpmath quimb pydot google.protobuf pennylane IPython dash)
 for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     if python -c "import $pkg" 2>/dev/null; then
         echo "ERROR: '$pkg' is installed. Environment is not minimal."
@@ -24,4 +26,20 @@ for pkg in "${OPTIONAL_PACKAGES[@]}"; do
     echo "  ✓ $pkg is not installed (expected)"
 done
 
-pytest qualtran/_infra/ qualtran/dtype/ -v "$@"
+pytest                                                                      \
+    qualtran/                                                               \
+    --ignore=qualtran/bloqs/                                                \
+    --ignore=qualtran/serialization/                                        \
+    --ignore=qualtran/qref_interop/                                         \
+    --ignore=qualtran/simulation/tensor/                                    \
+    --ignore=qualtran/simulation/xcheck_classical_quimb_test.py             \
+    --ignore=qualtran/surface_code/ui_test.py                               \
+    --ignore=qualtran/cirq_interop/jupyter_tools_test.py                    \
+    --ignore=qualtran/drawing/graphviz_test.py                              \
+    --ignore=qualtran/drawing/bloq_counts_graph_test.py                     \
+    --ignore=qualtran/drawing/classical_sim_graph_test.py                   \
+    --ignore=qualtran/drawing/flame_graph_test.py                           \
+    -m 'not slow' -v "$@"
+
+# Run manifest_test.py separately to verify all bloq classes can be imported.
+pytest qualtran/bloqs/manifest_test.py -v "$@"

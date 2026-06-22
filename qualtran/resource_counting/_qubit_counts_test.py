@@ -24,7 +24,6 @@ from qualtran.bloqs.for_testing.with_decomposition import (
     TestIndependentParallelCombo,
     TestSerialCombo,
 )
-from qualtran.drawing import show_bloq
 from qualtran.resource_counting import get_cost_cache, get_cost_value, QubitCount
 from qualtran.resource_counting._qubit_counts import _cbloq_max_width
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -56,7 +55,6 @@ def test_max_width_disconnected_components():
 
 
 def test_max_width_simple():
-    show_bloq(TestSerialCombo().decompose_bloq())
     max_width = _cbloq_max_width(TestSerialCombo().decompose_bloq()._binst_graph)
     assert max_width == 1
 

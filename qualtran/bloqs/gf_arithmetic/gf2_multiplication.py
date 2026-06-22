@@ -15,7 +15,6 @@ from functools import cached_property
 from typing import Dict, Mapping, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
-import galois
 import numpy as np
 import sympy
 from galois import GF, Poly
@@ -38,6 +37,8 @@ from qualtran.bloqs.gf_arithmetic import gf_utils
 from qualtran.symbolics import is_symbolic, log2, Shaped, SymbolicInt
 
 if TYPE_CHECKING:
+    import galois
+
     from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountDictT, BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
@@ -413,7 +414,7 @@ class GF2MulK(Bloq):
         assert is_symbolic(self.const) or isinstance(self.const, int)
 
     @cached_property
-    def m_x(self) -> Poly:
+    def m_x(self) -> 'galois.Poly':
         return self.dtype.gf_type.irreducible_poly
 
     @cached_property
@@ -426,7 +427,7 @@ class GF2MulK(Bloq):
 
     @staticmethod
     def from_polynomials(
-        f_x: Union[Poly, Sequence[int]], m_x: Union[Poly, Sequence[int]]
+        f_x: Union['galois.Poly', Sequence[int]], m_x: Union['galois.Poly', Sequence[int]]
     ) -> 'GF2MulK':
         if not isinstance(m_x, Poly):
             m_x = Poly.Degrees(m_x)
@@ -451,7 +452,7 @@ class GF2MulK(Bloq):
         return Signature([Register('g', self.qgf)])
 
     @cached_property
-    def _const(self) -> galois.FieldArray:
+    def _const(self) -> 'galois.FieldArray':
         return self.galois_field(self.const)
 
     def on_classical_vals(self, g) -> Dict[str, 'ClassicalValT']:

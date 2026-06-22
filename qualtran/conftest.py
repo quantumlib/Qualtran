@@ -77,6 +77,7 @@ def assert_equivalent_bloq_example_counts_for_pytest(bloq_ex: BloqExample):
 
 
 def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
+    pytest.importorskip('google.protobuf')
     if bloq_ex.name in [
         'prep_sparse',
         'thc_prep',
