@@ -17,22 +17,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import collections.abc
-import typing
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
+
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _Function:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _FunctionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Function.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _FunctionEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Function.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     NONE: _Function.ValueType  # 0
     """Each Term has an associated function. A "NONE" function means that the term
     is made up of a single parameter and can not be decomposed further.
@@ -71,14 +77,14 @@ Sin: Function.ValueType  # 10
 Cos: Function.ValueType  # 11
 Tan: Function.ValueType  # 12
 Log2: Function.ValueType  # 13
-global___Function = Function
+Global___Function: _TypeAlias = Function  # noqa: Y015
 
 class _ConstSymbol:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _ConstSymbolEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ConstSymbol.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _ConstSymbolEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ConstSymbol.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     Pi: _ConstSymbol.ValueType  # 0
     E: _ConstSymbol.ValueType  # 1
     EulerGamma: _ConstSymbol.ValueType  # 2
@@ -92,100 +98,115 @@ E: ConstSymbol.ValueType  # 1
 EulerGamma: ConstSymbol.ValueType  # 2
 Infinity: ConstSymbol.ValueType  # 3
 ImaginaryUnit: ConstSymbol.ValueType  # 4
-global___ConstSymbol = ConstSymbol
+Global___ConstSymbol: _TypeAlias = ConstSymbol  # noqa: Y015
 
-@typing.final
-class Rational(google.protobuf.message.Message):
+@_typing.final
+class Rational(_message.Message):
     """Represents a constant, rational number."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    NUMERATOR_FIELD_NUMBER: builtins.int
-    DENOMINATOR_FIELD_NUMBER: builtins.int
-    @property
-    def numerator(self) -> global___Parameter: ...
-    @property
-    def denominator(self) -> global___Parameter: ...
+    NUMERATOR_FIELD_NUMBER: _builtins.int
+    DENOMINATOR_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def numerator(self) -> Global___Parameter: ...
+    @_builtins.property
+    def denominator(self) -> Global___Parameter: ...
     def __init__(
         self,
         *,
-        numerator: global___Parameter | None = ...,
-        denominator: global___Parameter | None = ...,
+        numerator: Global___Parameter | None = ...,
+        denominator: Global___Parameter | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["denominator", b"denominator", "numerator", b"numerator"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["denominator", b"denominator", "numerator", b"numerator"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___Rational = Rational
+Global___Rational: _TypeAlias = Rational  # noqa: Y015
 
-@typing.final
-class Parameter(google.protobuf.message.Message):
+@_typing.final
+class Parameter(_message.Message):
     """A single parameter of a sympy expression."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    CONST_INT_FIELD_NUMBER: builtins.int
-    SYMBOL_FIELD_NUMBER: builtins.int
-    CONST_RAT_FIELD_NUMBER: builtins.int
-    CONST_FLOAT_FIELD_NUMBER: builtins.int
-    CONST_SYMBOL_FIELD_NUMBER: builtins.int
-    const_int: builtins.int
-    symbol: builtins.str
-    const_float: builtins.float
-    const_symbol: global___ConstSymbol.ValueType
-    @property
-    def const_rat(self) -> global___Rational: ...
+    CONST_INT_FIELD_NUMBER: _builtins.int
+    SYMBOL_FIELD_NUMBER: _builtins.int
+    CONST_RAT_FIELD_NUMBER: _builtins.int
+    CONST_FLOAT_FIELD_NUMBER: _builtins.int
+    CONST_SYMBOL_FIELD_NUMBER: _builtins.int
+    const_int: _builtins.int
+    symbol: _builtins.str
+    const_float: _builtins.float
+    const_symbol: Global___ConstSymbol.ValueType
+    @_builtins.property
+    def const_rat(self) -> Global___Rational: ...
     def __init__(
         self,
         *,
-        const_int: builtins.int = ...,
-        symbol: builtins.str = ...,
-        const_rat: global___Rational | None = ...,
-        const_float: builtins.float = ...,
-        const_symbol: global___ConstSymbol.ValueType = ...,
+        const_int: _builtins.int = ...,
+        symbol: _builtins.str = ...,
+        const_rat: Global___Rational | None = ...,
+        const_float: _builtins.float = ...,
+        const_symbol: Global___ConstSymbol.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["parameter", b"parameter"]) -> typing.Literal["const_int", "symbol", "const_rat", "const_float", "const_symbol"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_parameter: _TypeAlias = _typing.Literal["const_int", "symbol", "const_rat", "const_float", "const_symbol"]  # noqa: Y015
+    _WhichOneofArgType_parameter: _TypeAlias = _typing.Literal["parameter", b"parameter"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_parameter) -> _WhichOneofReturnType_parameter | None: ...
 
-global___Parameter = Parameter
+Global___Parameter: _TypeAlias = Parameter  # noqa: Y015
 
-@typing.final
-class Operand(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Operand(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TERM_FIELD_NUMBER: builtins.int
-    PARAMETER_FIELD_NUMBER: builtins.int
-    @property
-    def term(self) -> global___Term: ...
-    @property
-    def parameter(self) -> global___Parameter: ...
+    TERM_FIELD_NUMBER: _builtins.int
+    PARAMETER_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def term(self) -> Global___Term: ...
+    @_builtins.property
+    def parameter(self) -> Global___Parameter: ...
     def __init__(
         self,
         *,
-        term: global___Term | None = ...,
-        parameter: global___Parameter | None = ...,
+        term: Global___Term | None = ...,
+        parameter: Global___Parameter | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["operand", b"operand"]) -> typing.Literal["term", "parameter"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["operand", b"operand", "parameter", b"parameter", "term", b"term"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_operand: _TypeAlias = _typing.Literal["term", "parameter"]  # noqa: Y015
+    _WhichOneofArgType_operand: _TypeAlias = _typing.Literal["operand", b"operand"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_operand) -> _WhichOneofReturnType_operand | None: ...
 
-global___Operand = Operand
+Global___Operand: _TypeAlias = Operand  # noqa: Y015
 
-@typing.final
-class Term(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Term(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    FUNCTION_FIELD_NUMBER: builtins.int
-    OPERANDS_FIELD_NUMBER: builtins.int
-    function: global___Function.ValueType
-    @property
-    def operands(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Operand]: ...
+    FUNCTION_FIELD_NUMBER: _builtins.int
+    OPERANDS_FIELD_NUMBER: _builtins.int
+    function: Global___Function.ValueType
+    @_builtins.property
+    def operands(self) -> _containers.RepeatedCompositeFieldContainer[Global___Operand]: ...
     def __init__(
         self,
         *,
-        function: global___Function.ValueType = ...,
-        operands: collections.abc.Iterable[global___Operand] | None = ...,
+        function: Global___Function.ValueType = ...,
+        operands: _abc.Iterable[Global___Operand] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["function", b"function", "operands", b"operands"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["function", b"function", "operands", b"operands"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___Term = Term
+Global___Term: _TypeAlias = Term  # noqa: Y015
