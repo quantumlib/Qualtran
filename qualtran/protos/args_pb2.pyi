@@ -17,63 +17,81 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import google.protobuf.descriptor
-import google.protobuf.message
-import typing
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-@typing.final
-class IntOrSympy(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-    INT_VAL_FIELD_NUMBER: builtins.int
-    SYMPY_EXPR_FIELD_NUMBER: builtins.int
-    int_val: builtins.int
-    sympy_expr: builtins.str
+@_typing.final
+class IntOrSympy(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    INT_VAL_FIELD_NUMBER: _builtins.int
+    SYMPY_EXPR_FIELD_NUMBER: _builtins.int
+    int_val: _builtins.int
+    sympy_expr: _builtins.str
     def __init__(
         self,
         *,
-        int_val: builtins.int = ...,
-        sympy_expr: builtins.str = ...,
+        int_val: _builtins.int = ...,
+        sympy_expr: _builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["val", b"val"]) -> typing.Literal["int_val", "sympy_expr"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_val: _TypeAlias = _typing.Literal["int_val", "sympy_expr"]  # noqa: Y015
+    _WhichOneofArgType_val: _TypeAlias = _typing.Literal["val", b"val"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_val) -> _WhichOneofReturnType_val | None: ...
 
-global___IntOrSympy = IntOrSympy
+Global___IntOrSympy: _TypeAlias = IntOrSympy  # noqa: Y015
 
-@typing.final
-class NDArray(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class NDArray(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    NDARRAY_FIELD_NUMBER: builtins.int
-    ndarray: builtins.bytes
+    NDARRAY_FIELD_NUMBER: _builtins.int
+    ndarray: _builtins.bytes
     """A Numpy array serialized as bytes using np.save() / np.load()."""
     def __init__(
         self,
         *,
-        ndarray: builtins.bytes = ...,
+        ndarray: _builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["ndarray", b"ndarray"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ndarray", b"ndarray"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___NDArray = NDArray
+Global___NDArray: _TypeAlias = NDArray  # noqa: Y015
 
-@typing.final
-class Complex(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Complex(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REAL_FIELD_NUMBER: builtins.int
-    IMAG_FIELD_NUMBER: builtins.int
-    real: builtins.float
-    imag: builtins.float
+    REAL_FIELD_NUMBER: _builtins.int
+    IMAG_FIELD_NUMBER: _builtins.int
+    real: _builtins.float
+    imag: _builtins.float
     def __init__(
         self,
         *,
-        real: builtins.float = ...,
-        imag: builtins.float = ...,
+        real: _builtins.float = ...,
+        imag: _builtins.float = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["imag", b"imag", "real", b"real"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["imag", b"imag", "real", b"real"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___Complex = Complex
+Global___Complex: _TypeAlias = Complex  # noqa: Y015
