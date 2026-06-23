@@ -17,33 +17,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.message
-import qualtran.protos.args_pb2
-import qualtran.protos.data_types_pb2
-import typing
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from qualtran.protos import args_pb2 as _args_pb2
+from qualtran.protos import data_types_pb2 as _data_types_pb2
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-@typing.final
-class CtrlSpec(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-    QDTYPES_FIELD_NUMBER: builtins.int
-    CVS_FIELD_NUMBER: builtins.int
-    @property
-    def qdtypes(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.data_types_pb2.QDataType]: ...
-    @property
-    def cvs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.NDArray]: ...
+@_typing.final
+class CtrlSpec(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    QDTYPES_FIELD_NUMBER: _builtins.int
+    CVS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def qdtypes(self) -> _containers.RepeatedCompositeFieldContainer[_data_types_pb2.QDataType]: ...
+    @_builtins.property
+    def cvs(self) -> _containers.RepeatedCompositeFieldContainer[_args_pb2.NDArray]: ...
     def __init__(
         self,
         *,
-        qdtypes: collections.abc.Iterable[qualtran.protos.data_types_pb2.QDataType] | None = ...,
-        cvs: collections.abc.Iterable[qualtran.protos.args_pb2.NDArray] | None = ...,
+        qdtypes: _abc.Iterable[_data_types_pb2.QDataType] | None = ...,
+        cvs: _abc.Iterable[_args_pb2.NDArray] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["cvs", b"cvs", "qdtypes", b"qdtypes"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["cvs", b"cvs", "qdtypes", b"qdtypes"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___CtrlSpec = CtrlSpec
+Global___CtrlSpec: _TypeAlias = CtrlSpec  # noqa: Y015

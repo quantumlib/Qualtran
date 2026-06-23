@@ -13,40 +13,51 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import builtins
-import typing
-import google.protobuf.descriptor
-import google.protobuf.message
-import qualtran.protos.args_pb2
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from qualtran.protos import args_pb2 as _args_pb2
+import builtins as _builtins
+import sys
+import typing as _typing
 
-@typing.final
-class ECPoint(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias as _TypeAlias
+else:
+    from typing_extensions import TypeAlias as _TypeAlias
 
-    X_FIELD_NUMBER: builtins.int
-    Y_FIELD_NUMBER: builtins.int
-    MOD_FIELD_NUMBER: builtins.int
-    CURVE_A_FIELD_NUMBER: builtins.int
-    @property
-    def x(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    @property
-    def y(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    @property
-    def mod(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    @property
-    def curve_a(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+DESCRIPTOR: _descriptor.FileDescriptor
+
+@_typing.final
+class ECPoint(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    X_FIELD_NUMBER: _builtins.int
+    Y_FIELD_NUMBER: _builtins.int
+    MOD_FIELD_NUMBER: _builtins.int
+    CURVE_A_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def x(self) -> _args_pb2.IntOrSympy: ...
+    @_builtins.property
+    def y(self) -> _args_pb2.IntOrSympy: ...
+    @_builtins.property
+    def mod(self) -> _args_pb2.IntOrSympy: ...
+    @_builtins.property
+    def curve_a(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        x: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        y: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        mod: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        curve_a: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        x: _args_pb2.IntOrSympy | None = ...,
+        y: _args_pb2.IntOrSympy | None = ...,
+        mod: _args_pb2.IntOrSympy | None = ...,
+        curve_a: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_curve_a", b"_curve_a"]) -> typing.Literal["curve_a"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_curve_a", b"_curve_a", "curve_a", b"curve_a", "mod", b"mod", "x", b"x", "y", b"y"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__curve_a: _TypeAlias = _typing.Literal["curve_a"]  # noqa: Y015
+    _WhichOneofArgType__curve_a: _TypeAlias = _typing.Literal["_curve_a", b"_curve_a"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__curve_a) -> _WhichOneofReturnType__curve_a | None: ...
 
-global___ECPoint = ECPoint
+Global___ECPoint: _TypeAlias = ECPoint  # noqa: Y015

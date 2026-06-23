@@ -17,28 +17,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import collections.abc
-import typing
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
-import qualtran.protos.args_pb2
-import qualtran.protos.data_types_pb2
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+from qualtran.protos import args_pb2 as _args_pb2
+from qualtran.protos import data_types_pb2 as _data_types_pb2
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-@typing.final
-class Register(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
+
+@_typing.final
+class Register(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _Side:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _SideEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Register._Side.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _SideEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[Register._Side.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         UNKNOWN: Register._Side.ValueType  # 0
         LEFT: Register._Side.ValueType  # 1
         RIGHT: Register._Side.ValueType  # 2
@@ -52,43 +58,50 @@ class Register(google.protobuf.message.Message):
     RIGHT: Register.Side.ValueType  # 2
     THRU: Register.Side.ValueType  # 3
 
-    NAME_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
-    SHAPE_FIELD_NUMBER: builtins.int
-    SIDE_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    side: global___Register.Side.ValueType
-    @property
-    def dtype(self) -> qualtran.protos.data_types_pb2.QDataType: ...
-    @property
-    def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.IntOrSympy]: ...
+    NAME_FIELD_NUMBER: _builtins.int
+    DTYPE_FIELD_NUMBER: _builtins.int
+    SHAPE_FIELD_NUMBER: _builtins.int
+    SIDE_FIELD_NUMBER: _builtins.int
+    name: _builtins.str
+    side: Global___Register.Side.ValueType
+    @_builtins.property
+    def dtype(self) -> _data_types_pb2.QDataType: ...
+    @_builtins.property
+    def shape(self) -> _containers.RepeatedCompositeFieldContainer[_args_pb2.IntOrSympy]: ...
     def __init__(
         self,
         *,
-        name: builtins.str = ...,
-        dtype: qualtran.protos.data_types_pb2.QDataType | None = ...,
-        shape: collections.abc.Iterable[qualtran.protos.args_pb2.IntOrSympy] | None = ...,
-        side: global___Register.Side.ValueType = ...,
+        name: _builtins.str = ...,
+        dtype: _data_types_pb2.QDataType | None = ...,
+        shape: _abc.Iterable[_args_pb2.IntOrSympy] | None = ...,
+        side: Global___Register.Side.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["dtype", b"dtype"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["dtype", b"dtype", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["dtype", b"dtype"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["dtype", b"dtype", "name", b"name", "shape", b"shape", "side", b"side"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___Register = Register
+Global___Register: _TypeAlias = Register  # noqa: Y015
 
-@typing.final
-class Registers(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class Registers(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REGISTERS_FIELD_NUMBER: builtins.int
-    @property
-    def registers(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Register]:
+    REGISTERS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def registers(self) -> _containers.RepeatedCompositeFieldContainer[Global___Register]:
         """A collection of Registers."""
 
     def __init__(
         self,
         *,
-        registers: collections.abc.Iterable[global___Register] | None = ...,
+        registers: _abc.Iterable[Global___Register] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["registers", b"registers"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["registers", b"registers"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___Registers = Registers
+Global___Registers: _TypeAlias = Registers  # noqa: Y015
