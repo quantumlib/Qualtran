@@ -14,7 +14,7 @@
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
