@@ -20,7 +20,10 @@ build-backend = "hatchling.build"
 name = 'qualtran'
 dynamic = ["version"]
 authors = [
-    { name = "Google Quantum AI", email = "mpharrigan@google.com" }
+    { name = "The Qualtran Developers", email = "qualtran-dev@googlegroups.com" }
+]
+maintainers = [
+    { name = "Google Quantum AI", email = "quantum-oss-maintainers@google.com" }
 ]
 description = "Software for fault-tolerant quantum algorithms research."
 readme = "README.md"
