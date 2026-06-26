@@ -132,7 +132,7 @@ def _bloq_instance_name(instance: BloqInstance) -> str:
 
 @singledispatch
 def bloq_to_qref(
-    obj: Bloq | CompositeBloq | BloqInstance],
+    obj: Bloq | CompositeBloq | BloqInstance,
     *,
     from_callgraph: bool = False,
     decomposition_rules: Union[bool, Iterable[type[Bloq]]] = False,
