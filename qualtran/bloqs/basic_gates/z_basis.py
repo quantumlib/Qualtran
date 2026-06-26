@@ -14,7 +14,7 @@
 import abc
 from collections.abc import Iterable, Mapping, Sequence
 from functools import cached_property
-from typing import Optional, TYPE_CHECKING, Set, Union
+from typing import Optional, Set, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy

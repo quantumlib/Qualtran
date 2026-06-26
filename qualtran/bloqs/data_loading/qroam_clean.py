@@ -175,7 +175,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         )
 
     def with_log_block_sizes(
-        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
+        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
     ) -> 'QROAMCleanAdjoint':
         if log_block_sizes is None:
             return self
@@ -288,7 +288,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         return self.qroam_clean
 
     def with_log_block_sizes(
-        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
+        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
     ) -> 'QROAMCleanAdjointWrapper':
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 

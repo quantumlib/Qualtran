@@ -32,7 +32,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 class CustomProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
     def interleaved_unitary(
-        self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type:ignore[type-var]
+        self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.Operation:
         two_qubit_ops_factory = [
             cirq.X(*qubit_regs['unrelated_target']).controlled_by(*qubit_regs['rotations_target']),

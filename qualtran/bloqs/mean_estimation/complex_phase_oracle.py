@@ -55,7 +55,7 @@ class ComplexPhaseOracle(GateWithRegisters):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         qm = context.qubit_manager
         target_reg = {

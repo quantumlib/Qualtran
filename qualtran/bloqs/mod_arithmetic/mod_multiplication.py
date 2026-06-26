@@ -510,7 +510,7 @@ class _DirtyOutOfPlaceMontgomeryModMulImpl(Bloq):
         qrom_indices_arr = bb.split(qrom_indices)
 
         for i in range(0, self.bitsize, self.window_size):
-            (x_arr[i : i + self.window_size], y, target_arr, qrom_index) = bb.add(
+            x_arr[i : i + self.window_size], y, target_arr, qrom_index = bb.add(
                 self._window,
                 x=x_arr[i : i + self.window_size],
                 y=y,

@@ -136,7 +136,7 @@ class _RandomClassicalValHandler(_ClassicalValHandler):
         self._gen = rng
 
     def get(self, binst, distribution: ClassicalValDistribution):
-        return self._gen.choice(distribution.a, p=distribution.p)  # type:ignore[arg-type]
+        return self._gen.choice(distribution.a, p=distribution.p)  # type: ignore[arg-type]
 
 
 class _FixedClassicalValHandler(_ClassicalValHandler):

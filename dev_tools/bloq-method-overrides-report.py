@@ -20,6 +20,7 @@ from qualtran import Bloq
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT
 
+
 def _call_graph(bc: type[Bloq]):
     """Check that a bloq class overrides the right call graph methods.
 

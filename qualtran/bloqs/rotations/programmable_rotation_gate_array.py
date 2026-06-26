@@ -106,7 +106,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     @abc.abstractmethod
     def interleaved_unitary(
-        self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type:ignore[type-var]
+        self, index: int, **qubit_regs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.Operation:
         pass
 

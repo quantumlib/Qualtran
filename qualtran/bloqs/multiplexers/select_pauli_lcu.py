@@ -100,7 +100,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):  # type: ignore[misc]
         return (Register('target', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(
-        self, context, **quregs: NDArray[cirq.Qid]  # type:ignore[type-var]
+        self, context, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])

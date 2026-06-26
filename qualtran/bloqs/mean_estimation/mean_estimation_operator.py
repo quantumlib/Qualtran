@@ -107,7 +107,7 @@ class MeanEstimationOperator(GateWithRegisters):
         self,
         *,
         context: 'cirq.DecompositionContext',
-        **quregs: NDArray['cirq.Qid'],  # type:ignore[type-var]
+        **quregs: NDArray['cirq.Qid'],  # type: ignore[type-var]
     ) -> Iterator['cirq.OP_TREE']:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}

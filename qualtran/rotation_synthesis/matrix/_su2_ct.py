@@ -145,7 +145,7 @@ class SU2CliffordT:
 
     @staticmethod
     def from_parametric_form(
-        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2]
+        pf: tuple[_zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2, _zsqrt2.ZSqrt2],
     ) -> "SU2CliffordT":
         res = np.array([_zw.Zero] * 4).reshape((2, 2))
         for a, m in zip(pf, PARAMETRIC_FORM_BASES):

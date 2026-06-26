@@ -207,7 +207,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     def with_log_block_sizes(
         self: SelSwapQROM_T,
-        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None
     ) -> 'SelSwapQROM_T':
         if log_block_sizes is None:
             return self

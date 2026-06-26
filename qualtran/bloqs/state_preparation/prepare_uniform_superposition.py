@@ -107,7 +107,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
         k, l, logL = self.k_l_logL()

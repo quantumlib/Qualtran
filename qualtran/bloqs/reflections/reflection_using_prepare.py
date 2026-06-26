@@ -133,7 +133,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
     def decompose_from_registers(
         self,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         qm = context.qubit_manager
         # 0. Allocate new ancillas, if needed.

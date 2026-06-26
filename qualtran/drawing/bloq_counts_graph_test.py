@@ -25,24 +25,18 @@ from qualtran.resource_counting import get_bloq_call_graph
 def test_format_counts_sigma():
     graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_sigma(sigma)
-    assert (
-        ret
-        == """\
+    assert ret == """
 #### Counts totals:
  - `And`: 5"""
-    )
 
 
 def test_format_counts_graph_markdown():
     graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_graph_markdown(graph)
-    assert (
-        ret
-        == """\
+    assert ret == """\
  - `MultiAnd(n=6)`
    - `And`: $\\displaystyle 5$
 """
-    )
 
 
 def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> list[str]:
