@@ -12,7 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
+import pytest
 import sympy
+
+pytest.importorskip('galois')
+
+import galois
 
 from qualtran.dtype import assert_to_and_from_bits_array_consistent, QGF, QGFPoly
 from qualtran.symbolics import ceil, is_symbolic, log2
@@ -32,3 +38,16 @@ def test_qgf_poly_to_and_from_bits():
     qgf_4 = QGF(2, 2)
     qgf_poly_2_4 = QGFPoly(2, qgf_4)
     assert_to_and_from_bits_array_consistent(qgf_poly_2_4, [*qgf_poly_2_4.get_classical_domain()])
+
+
+def test_qgf_poly_domain_and_validation_arr():
+    qgf_poly = QGFPoly(4, QGF(characteristic=2, degree=2))
+    arr = np.array(list(qgf_poly.get_classical_domain()))
+    qgf_poly.assert_valid_classical_val_array(arr)
+
+
+def test_qgf_poly_validation_errs():
+    qgf = QGF(2, 3)
+    poly = galois.Poly(qgf.gf_type([1, 2, 3, 4, 5, 6, 7]), field=qgf.gf_type)
+    with pytest.raises(ValueError):
+        QGFPoly(4, qgf).assert_valid_classical_val(poly)

@@ -56,15 +56,15 @@ class QROM(QROMBase, UnaryIterationGate):  # type: ignore[misc]
 
     ### T / Toffoli cost
     The T/Toffoli cost of this QROM scales linearly with the product of iteration lengths over
-    all dimensions (i.e. $\mathcal{O}(\mathrm{np.prod(\text{selection\_shape})}$).
+    all dimensions (i.e. $\mathcal{O}(\mathrm{np.prod(\mathrm{selection\_shape})}$).
 
     ### Clifford Cost
     To load a classical dataset into a target register of bitsize $b$ and shape
-    $\text{target\_shape}$, the clifford cost of this QROM scales as
-    $\mathcal{O}(b \cdot \text{np.prod(selection\_shape+target\_shape)})
-    =\mathcal{O}(b \cdot \text{np.prod(data.shape)})$. This is because we need $\mathcal{O}(b)$
+    $\mathrm{target\_shape}$, the clifford cost of this QROM scales as
+    $\mathcal{O}(b \cdot \mathrm{np.prod(selection\_shape+target\_shape)})
+    =\mathcal{O}(b \cdot \mathrm{np.prod(data.shape)})$. This is because we need $\mathcal{O}(b)$
     CNOT gates to load 1 classical data element in the target register and for each of the
-    $\text{np.prod(selection\_shape)}$ selection indices, we have $\text{np.prod(target\_shape)}$
+    $\mathrm{np.prod(selection\_shape)}$ selection indices, we have $\mathrm{np.prod(target\_shape)}$
     such data elements to load.
 
     ### Ancilla cost

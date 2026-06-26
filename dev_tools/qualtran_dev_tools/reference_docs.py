@@ -383,7 +383,7 @@ def generate_ref_toc(reporoot: Path):
     page_paths = output_dir.glob('qualtran/**/*.md')
 
     # Group according to module
-    grouped_paths: dict[Path, list] = defaultdict(list)
+    grouped_paths: dict[Path, list[Path]] = defaultdict(list)
     for path in page_paths:
         grouped_paths[path.parent].append(path)
 

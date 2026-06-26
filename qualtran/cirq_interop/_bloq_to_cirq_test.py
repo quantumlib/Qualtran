@@ -107,6 +107,7 @@ class SwapTestWithOnlyTensorData(Bloq):
 
 @pytest.mark.parametrize('n', [1, 2, 3, 4])
 def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
+    pytest.importorskip('quimb')
     unitary_one = cirq.unitary(BloqAsCirqGate(SwapTest(n)))
     unitary_two = cirq.unitary(BloqAsCirqGate(SwapTestWithOnlyTensorData(n)))
     np.testing.assert_allclose(unitary_one, unitary_two)
@@ -324,6 +325,7 @@ class ComputeUncompute(Bloq):
 
 
 def test_compute_uncompute_simulation():
+    pytest.importorskip('quimb')
     # From https://github.com/quantumlib/Qualtran/issues/1488
     u1 = ComputeUncompute().tensor_contract()
     u2 = cirq.unitary(BloqAsCirqGate(ComputeUncompute()))

@@ -114,7 +114,9 @@ class Register:
     @property
     def shape(self) -> tuple[int, ...]:
         if is_symbolic(*self._shape):
-            raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
+            raise ValueError(
+                f"{self.name}'s shape {self._shape} is symbolic. Cannot get real-valued shape."
+            )
         return cast(tuple[int, ...], self._shape)
 
     @property
@@ -453,3 +455,7 @@ class Signature:
 
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
+
+
+def qsig(*args, **kwargs) -> Signature:
+    return Signature.build(*args, **kwargs)

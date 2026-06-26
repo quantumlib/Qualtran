@@ -65,7 +65,12 @@ def test_gate_with_registers():
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
     assert op1 == op2
 
-    np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+    try:
+        import quimb  # noqa: F401  # pylint: disable=unused-import
+
+        np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+    except ModuleNotFoundError:
+        pass
 
     # Test GWR.controlled() works correctly with Bloq and Cirq style API
     ctrl = cirq.q('ctrl')
@@ -109,6 +114,7 @@ class _TestGateAtomic(GateWithRegisters):
 
 
 def test_gate_with_registers_uses_unitary_for_tensor_contraction():
+    pytest.importorskip('quimb')
     tg = _TestGateAtomic()
     np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
 

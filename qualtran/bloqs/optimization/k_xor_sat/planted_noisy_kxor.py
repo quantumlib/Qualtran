@@ -355,7 +355,6 @@ class PlantedNoisyKXOR(Bloq):
         eigenvalue_threshold = 0.995 * self.rho * self.sparsity
 
         kappa = 0.99 * self.rho
-        eps = 0.005
 
         # Thm 4.18 proof para 3
         # kappa' <= (1 - alpha) lambda

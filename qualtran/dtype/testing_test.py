@@ -79,4 +79,7 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QAny(1), QBit())
     assert check_dtypes_consistent(BQUInt(1), QBit())
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
-    assert check_dtypes_consistent(QGF(characteristic=2, degree=1), QBit())
+    try:
+        assert check_dtypes_consistent(QGF(characteristic=2, degree=1), QBit())
+    except ModuleNotFoundError:
+        pytest.skip('galois not installed')

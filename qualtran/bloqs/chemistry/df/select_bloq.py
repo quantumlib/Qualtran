@@ -80,3 +80,8 @@ class ProgRotGateArray(Bloq):
             Toffoli(): (cost_a + cost_c),
             QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2): 1,
         }
+
+    @classmethod
+    def _pkg_(cls) -> str:
+        # Local import
+        return '.'.join(cls.__module__.split('.')[:])

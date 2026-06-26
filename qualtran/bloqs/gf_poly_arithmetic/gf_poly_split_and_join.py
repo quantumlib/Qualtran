@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import cast, Optional, TYPE_CHECKING
 
-import galois
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -37,6 +36,7 @@ from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
+    import galois
     import quimb.tensor as qtn
     from pennylane.operation import Operation
     from pennylane.wires import Wires
@@ -104,7 +104,7 @@ class GFPolySplit(_BookkeepingBloq):
     def as_pl_op(self, wires: 'Wires') -> 'Operation':
         return None
 
-    def on_classical_vals(self, reg: galois.Poly) -> dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: 'galois.Poly') -> dict[str, 'ClassicalValT']:
         return {'reg': self.dtype.to_gf_coefficients(reg)}
 
     def my_tensors(
@@ -230,7 +230,7 @@ class GFPolyJoin(_BookkeepingBloq):
             for i in range(int(self.dtype.num_qubits))
         ]
 
-    def on_classical_vals(self, reg: 'galois.Array') -> dict[str, galois.Poly]:
+    def on_classical_vals(self, reg: 'galois.Array') -> dict[str, 'galois.Poly']:
         return {'reg': self.dtype.from_gf_coefficients(reg)}
 
     def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':

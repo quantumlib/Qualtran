@@ -88,13 +88,13 @@ class LinkingWriter:
     def linkify(self, s: str) -> str:
         return re.sub(r'`([\w\.]+)`', self.repl, s)
 
-    def write(self, s: str):
+    def write(self, s: str) -> None:
         self._f.write(self.linkify(s))
 
-    def write_nl(self, s: str):
+    def write_nl(self, s: str) -> None:
         self._f.write(s)
 
-    def write_link_targets(self):
+    def write_link_targets(self) -> None:
         self._f.write('\n')
         for dotpath in self._linked:
             self._f.write(f'[`{dotpath}`]: {self.resolve_dotpath(dotpath)}\n')

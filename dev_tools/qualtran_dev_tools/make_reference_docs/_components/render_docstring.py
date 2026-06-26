@@ -11,9 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import re
 import warnings
 from typing import Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .._linking_writer import Writable
 
 from griffe import (
     DocstringSection,
@@ -64,12 +69,12 @@ def split_docstring(obj: 'griffe.Object') -> tuple[str, list[DocstringSection]]:
     return first_line, rest
 
 
-def _write_text(f, part: DocstringSectionText, level: int):
+def _write_text(f: Writable, part: DocstringSectionText, level: int) -> None:
     f.write(part.value.strip())
     f.write('\n\n')
 
 
-def _write_parameters(f, part: DocstringSectionParameters, level: int):
+def _write_parameters(f: Writable, part: DocstringSectionParameters, level: int) -> None:
     lvl = '#' * level
     f.write(f'###{lvl} Args\n')
     for param in part.value:
@@ -81,7 +86,7 @@ def _write_parameters(f, part: DocstringSectionParameters, level: int):
         f.write('\n\n')
 
 
-def _write_attributes(f, part: DocstringSectionAttributes, level: int):
+def _write_attributes(f: Writable, part: DocstringSectionAttributes, level: int) -> None:
     lvl = '#' * level
     f.write(f'###{lvl} Attributes\n')
     for attr in part.value:
@@ -93,7 +98,7 @@ def _write_attributes(f, part: DocstringSectionAttributes, level: int):
         f.write('\n\n')
 
 
-def _write_returns(f, part: DocstringSectionReturns, level: int):
+def _write_returns(f: Writable, part: DocstringSectionReturns, level: int) -> None:
     lvl = '#' * level
     f.write(f'###{lvl} Returns\n')
 
@@ -112,7 +117,7 @@ def _write_returns(f, part: DocstringSectionReturns, level: int):
             f.write('\n\n')
 
 
-def _write_admonition(f, part: DocstringSectionAdmonition, level: int):
+def _write_admonition(f: Writable, part: DocstringSectionAdmonition, level: int) -> None:
     lvl = '#' * level
     part = part.value
     if part.kind == 'see-also':
@@ -131,7 +136,7 @@ def _write_admonition(f, part: DocstringSectionAdmonition, level: int):
         warnings.warn(f"Unknown admonition type {part.kind}")
 
 
-def _write_examples(f, part: DocstringSectionExamples, level: int):
+def _write_examples(f: Writable, part: DocstringSectionExamples, level: int) -> None:
     part = part.value
     for subkind, subtext in part:
         if subkind is DocstringSectionKind.examples:
@@ -146,7 +151,7 @@ def _write_examples(f, part: DocstringSectionExamples, level: int):
     f.write('\n\n')
 
 
-def _write_raises(f, part: DocstringSectionRaises, level: int):
+def _write_raises(f: Writable, part: DocstringSectionRaises, level: int) -> None:
     lvl = '#' * level
     f.write(f'###{lvl} Raises\n')
     for subpart in part.value:
@@ -157,7 +162,7 @@ def _write_raises(f, part: DocstringSectionRaises, level: int):
         f.write('\n\n')
 
 
-def _write_yields(f, part: DocstringSectionYields, level: int):
+def _write_yields(f: Writable, part: DocstringSectionYields, level: int) -> None:
     lvl = '#' * level
     f.write(f'###{lvl} Yields\n')
 
@@ -175,7 +180,7 @@ def _write_yields(f, part: DocstringSectionYields, level: int):
             f.write('\n\n')
 
 
-def _write_unknown(f, part: DocstringSection, level: int):
+def _write_unknown(f: Writable, part: DocstringSection, level: int) -> None:
     f.write(str(part))
     f.write('\n')
     warnings.warn(f"Unknown docstring {part}")
@@ -193,8 +198,8 @@ _DISPATCH = {
 }
 
 
-def write_docstring_parts(f, parts: list[DocstringSection], level: int):
+def write_docstring_parts(f: Writable, parts: list[DocstringSection], level: int) -> None:
     for part in parts:
         _write = _DISPATCH.get(part.kind, _write_unknown)
-        _write(f, part, level)  # type: ignore
+        _write(f, part, level)  # type: ignore[operator]
     f.write('\n\n')

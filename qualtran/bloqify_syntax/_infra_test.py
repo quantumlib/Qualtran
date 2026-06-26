@@ -16,6 +16,7 @@ import inspect
 import pytest
 
 import qualtran as qlt
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, QVar
 
 
@@ -112,3 +113,13 @@ def test_bloqify_missing_bb():
         @qlt.bloqify  # type: ignore[arg-type]
         def no_bb_func(x: 'QVar'):
             return {'x': x}
+
+
+@pytest.mark.notebook
+def test_bloqify_notebook():
+    qlt_testing.execute_notebook('bloqify-syntactic-sugar')
+
+
+@pytest.mark.notebook
+def test_bb_helper_notebook():
+    qlt_testing.execute_notebook('bloq-builder-gate-helpers')

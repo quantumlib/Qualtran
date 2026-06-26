@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, CBit, ConnectionT, QBit, Register, Side, Signature
+from qualtran import Bloq, CBit, ConnectionT, QBit, QVar, Register, Side, Signature
 from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
@@ -29,6 +29,10 @@ class Discard(Bloq):
 
     This is an allowed operation.
     """
+
+    @classmethod
+    def qcall(cls, c: 'QVar') -> None:
+        return c.bb.add(cls(), c=c)
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -58,6 +62,10 @@ class DiscardQ(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('q', QBit(), side=Side.LEFT)])
+
+    @classmethod
+    def qcall(cls, q: 'QVar') -> None:
+        return q.bb.add(cls(), q=q)
 
     def my_tensors(
         self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']

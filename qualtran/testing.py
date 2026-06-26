@@ -123,10 +123,14 @@ def assert_connections_compatible(cbloq: CompositeBloq):
         lr = cxn.left.reg
         rr = cxn.right.reg
 
-        if not is_symbolic(lr.dtype.num_qubits) and lr.dtype.num_qubits <= 0:
-            raise BloqError(f"{cxn} has an invalid number of qubits: {lr.dtype}")
-        if not is_symbolic(rr.dtype.num_qubits) and rr.dtype.num_qubits <= 0:
-            raise BloqError(f"{cxn} has an invalid number of qubits: {rr.dtype}")
+        if not is_symbolic(lr.dtype.num_qubits) and lr.dtype.num_bits <= 0:
+            raise BloqError(
+                f"{cxn} has an invalid number of bits: {lr.dtype} with {lr.dtype.num_bits}"
+            )
+        if not is_symbolic(rr.dtype.num_qubits) and rr.dtype.num_bits <= 0:
+            raise BloqError(
+                f"{cxn} has an invalid number of bits: {rr.dtype} with {rr.dtype.num_bits}"
+            )
 
         if not check_dtypes_consistent(lr.dtype, rr.dtype):
             raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
@@ -278,7 +282,10 @@ def execute_notebook(name: str):
     Args:
         name: The name of the notebook without extension.
     """
-    import nbformat
+    import pytest
+
+    nbformat = pytest.importorskip('nbformat')
+    _nbconvert = pytest.importorskip('nbconvert')
     from nbconvert.preprocessors import ExecutePreprocessor
 
     # Assumes that the notebook is in the same path from where the function was called,

@@ -13,12 +13,14 @@
 #  limitations under the License.
 
 """Plumbing for bloq-to-bloq `Connection`s."""
+
 import warnings
 from functools import cached_property
 from typing import Optional, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
+import sympy
 from attrs import field, frozen
 
 if TYPE_CHECKING:
@@ -172,11 +174,19 @@ class _QVar:
     def __hash__(self):
         raise TypeError("QVar objects during bloq building are *not* hashable.")
 
+    def __str__(self) -> str:
+        if self.ssa_name is not None:
+            return self.ssa_name
+        return str(self.soquet)
+
     def __getitem__(self, item):
         if self._split_components is None:
             self._split_components = self.bb.split(self)
 
         return self._split_components[item]
+
+    def __setitem__(self, key, value):
+        raise TypeError("Cannot assign to a component of an individual QVar.")
 
     def __len__(self):
         return self.dtype.num_bits
@@ -191,6 +201,31 @@ class _QVar:
         if copy:
             raise NotImplementedError()
         return arr
+
+    def __invert__(self):
+        import qualtran.dtype as qdt
+        from qualtran.bloqs.arithmetic import BitwiseNot
+        from qualtran.bloqs.basic_gates import XGate
+
+        if self.dtype == qdt.QBit():
+            return XGate.qcall(self)
+
+        return BitwiseNot.qcall(self)
+
+    def __add__(self, other):
+        from qualtran.bloqs.arithmetic import Add
+
+        if isinstance(other, _QVar):
+            return Add.qcall(self, other)
+
+        return NotImplemented
+
+    def __iadd__(self, other):
+        if isinstance(other, (int, sympy.Expr)):
+            from qualtran.bloqs.arithmetic import AddK
+
+            return AddK.qcall(k=other, x=self)
+        return NotImplemented
 
 
 LeftDangle = DanglingT("LeftDangle")

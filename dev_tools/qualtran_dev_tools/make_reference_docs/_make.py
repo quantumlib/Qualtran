@@ -343,7 +343,7 @@ def make_reference_docs(
     repo_root_path: Path,
     refdoc_relpath: Path = Path("reference"),
     rootmod_dotpath: str = "qualtran",
-):
+) -> None:
     """Make the reference documentation.
 
     The steps are

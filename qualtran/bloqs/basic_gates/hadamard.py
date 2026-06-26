@@ -29,6 +29,7 @@ from qualtran import (
     ConnectionT,
     CtrlSpec,
     DecomposeTypeError,
+    QVar,
     Register,
     Signature,
     SoquetT,
@@ -73,6 +74,10 @@ class Hadamard(Bloq):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    @classmethod
+    def qcall(cls, q: 'QVar'):
+        return q.bb.add(cls(), q=q)
 
     def my_tensors(
         self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
@@ -149,6 +154,10 @@ class CHadamard(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    @classmethod
+    def qcall(cls, ctrl: 'QVar', target: 'QVar'):
+        return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def my_tensors(
         self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']

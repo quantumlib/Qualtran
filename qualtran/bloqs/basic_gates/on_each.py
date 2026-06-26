@@ -26,6 +26,7 @@ from qualtran import (
     DecomposeTypeError,
     QAny,
     QDType,
+    QVar,
     Register,
     Signature,
     Soquet,
@@ -70,6 +71,10 @@ class OnEach(Bloq):
             'q', QAny(bitsize=self.n) if self.target_dtype is None else self.target_dtype
         )
         return Signature([reg])
+
+    @classmethod
+    def qcall(cls, q: 'QVar', *, gate: Bloq) -> 'QVar':
+        return q.bb.add(cls(n=q.dtype.num_qubits, gate=gate, target_dtype=q.dtype), q=q)  # type: ignore[arg-type]
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> dict[str, SoquetT]:
         if isinstance(self.n, sympy.Expr):

@@ -35,6 +35,7 @@ from qualtran import (
     QInt,
     QMontgomeryUInt,
     QUInt,
+    QVar,
     Register,
     Side,
     Signature,
@@ -46,7 +47,7 @@ from qualtran.bloqs.bookkeeping import Always
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.drawing import directional_text_box, Text
+from qualtran.drawing import directional_text_box, Text, TextBox
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import add_ints
 from qualtran.symbolics import is_symbolic, SymbolicInt
@@ -112,6 +113,12 @@ class Add(Bloq):
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    @classmethod
+    def qcall(cls, a: 'QVar', b: 'QVar'):
+        bloq = cls(a_dtype=a.dtype, b_dtype=b.dtype)  # type: ignore[arg-type]
+        bb = a.bb
+        return bb.add(bloq, a=a, b=b)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -424,12 +431,18 @@ class AddK(Bloq):
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, (QInt, QUInt, QMontgomeryUInt)):
             raise NotImplementedError(
-                "Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition."
+                f"Only QInt, QUInt and QMontgomeryUInt types are supported for composite addition, not {self.dtype}"
             )
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(x=self.dtype)
+
+    @classmethod
+    def qcall(cls, x: 'QVar', *, k: 'SymbolicInt') -> 'QVar':
+        bb = x.bb
+        dtype = x.dtype
+        return bb.add(cls(dtype=dtype, k=k), x=x)  # type: ignore[arg-type]
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
@@ -480,6 +493,15 @@ class AddK(Bloq):
         counts[self._load_k_bloq.adjoint()] += 1
 
         return counts
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'x':
+            return TextBox(f'+={self.k}')
+        raise ValueError(f"Unknown register {reg}")
 
     def __str__(self):
         return f'AddK(k={self.k})'

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 from pathlib import Path
 from typing import cast, TYPE_CHECKING
 
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
     from .._linking_writer import Writable
 
 
-def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Object):
+def write_major_class_member(f: Writable, obj: griffe.Class, obj2: griffe.Object) -> None:
     if obj2.is_private:
         return
     if obj2.name == '__init__':
@@ -57,7 +59,7 @@ def write_major_class_member(f: 'Writable', obj: griffe.Class, obj2: griffe.Obje
 
 def write_major_class(
     f: LinkingWriter, obj: griffe.Class, pref_dotpath: str, aliases_d: dict[str, str]
-):
+) -> None:
     # Title
     f.write(f"# {obj.name}\n\n")
 
@@ -80,7 +82,7 @@ def write_major_class(
         write_major_class_member(f, obj, cast(griffe.Object, obj2))
 
 
-def render_major_class(base_dir: Path, page: MajorClassPage, render_context: RenderContext):
+def render_major_class(base_dir: Path, page: MajorClassPage, render_context: RenderContext) -> None:
     assert page.pref_path is not None, f'Uninitialized {page}'
     segments = page.pref_path.split('.')
     out_path = base_dir / '/'.join(segments[:-1]) / f'{segments[-1]}.md'
