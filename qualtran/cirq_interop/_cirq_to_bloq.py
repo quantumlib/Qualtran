@@ -19,7 +19,7 @@ import itertools
 import warnings
 from collections.abc import Callable, Sequence
 from functools import cached_property
-from typing import Any, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import Any, Optional, TYPE_CHECKING, TypeVar
 
 import cirq
 import numpy as np
@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 _QidType = TypeVar('_QidType', bound=np.generic)
 
 CirqQuregT = NDArray[_QidType]
-CirqQuregInT = Union[NDArray[_QidType], Sequence[cirq.Qid]]
+CirqQuregInT = NDArray[_QidType] | Sequence[cirq.Qid]
 
 
 def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
@@ -134,7 +134,7 @@ class CirqGateAsBloqBase(Bloq, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         qubits = in_quregs.get('q', np.array([])).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 

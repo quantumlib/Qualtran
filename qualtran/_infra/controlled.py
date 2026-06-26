@@ -439,7 +439,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def basis_state_phase(
         self, **vals: 'ClassicalValT'
-    ) -> Union[complex, 'MeasurementPhase', None]:
+    ) -> Optional[Union[complex, 'MeasurementPhase']]:
         """Phasing action of controlled bloqs.
 
         This involves conditionally doing the phasing action of `subbloq`. All implementers
@@ -543,7 +543,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
         sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)

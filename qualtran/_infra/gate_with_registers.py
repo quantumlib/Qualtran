@@ -285,7 +285,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
         Args:

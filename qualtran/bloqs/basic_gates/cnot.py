@@ -68,7 +68,7 @@ class CNOT(Bloq):
         return Signature.build(ctrl=1, target=1)
 
     @classmethod
-    def qcall(cls, ctrl: 'QVar', target: 'QVar') -> Tuple['QVar', 'QVar']:
+    def qcall(cls, ctrl: 'QVar', target: 'QVar') -> tuple['QVar', 'QVar']:
         return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def decompose_bloq(self) -> 'CompositeBloq':

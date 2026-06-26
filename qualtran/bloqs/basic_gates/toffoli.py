@@ -125,7 +125,7 @@ class Toffoli(Bloq):
         qubit_manager: 'cirq.QubitManager',
         ctrl: 'CirqQuregT',
         target: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (trg,) = target

@@ -14,7 +14,6 @@
 
 from collections.abc import Iterator, Sequence
 from functools import cached_property
-from typing import Union
 
 import attrs
 import cirq
@@ -63,7 +62,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         cls,
         *,
         target_gate=cirq.Y,
-        **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]],  # type: ignore[type-var]
+        **quregs: Sequence[cirq.Qid] | NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce selection_regs attribute."""
         return SelectedMajoranaFermion(
@@ -160,7 +159,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
         return {control_name: control, selection_name: selection, 'target': target}
 
-    def basis_state_phase(self, **vals) -> Union[complex, None]:
+    def basis_state_phase(self, **vals) -> complex | None:
         if self.target_gate != cirq.X and self.target_gate != cirq.Z:
             return None
         if len(self.control_registers) != 1 or len(self.selection_registers) != 1:

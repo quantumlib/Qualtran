@@ -15,7 +15,7 @@
 import functools
 import itertools
 from collections.abc import Mapping, Sequence
-from typing import cast, Optional, Union
+from typing import cast, Optional
 
 import attrs
 import numpy as np
@@ -104,7 +104,7 @@ class SU2CliffordT:
     def adjoint(self) -> "SU2CliffordT":
         return SU2CliffordT(self.matrix.T.conj())
 
-    def scale_down(self) -> Union["SU2CliffordT", None]:
+    def scale_down(self) -> Optional["SU2CliffordT"]:
         for v in self.matrix.flat:
             if not v.is_divisible_by(_zw.LAMBDA_KLIUCHNIKOV):
                 return None

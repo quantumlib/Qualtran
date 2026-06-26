@@ -17,7 +17,7 @@
 import abc
 import numbers
 from functools import cached_property
-from typing import cast, Optional, TypeVar, Union
+from typing import cast, TypeVar, Union
 
 import attrs
 import numpy as np
@@ -31,7 +31,7 @@ from qualtran.symbolics import bit_length, is_symbolic, shape, Shaped, SymbolicI
 QROM_T = TypeVar('QROM_T', bound='QROMBase')
 
 
-def _data_or_shape_to_tuple(data_or_shape: tuple[Union[NDArray, Shaped], ...]) -> tuple:
+def _data_or_shape_to_tuple(data_or_shape: tuple[NDArray | Shaped, ...]) -> tuple:
     return tuple(tuple(d.flatten()) if isinstance(d, np.ndarray) else d for d in data_or_shape)
 
 
@@ -151,7 +151,7 @@ class QROMBase(metaclass=abc.ABCMeta):
         num_controls: The number of controls to instanstiate a controlled version of this bloq.
     """
 
-    data_or_shape: tuple[Union[NDArray, Shaped], ...] = attrs.field(
+    data_or_shape: tuple[NDArray | Shaped, ...] = attrs.field(
         converter=lambda x: tuple(np.array(y) if isinstance(y, (list, tuple)) else y for y in x),
         eq=_data_or_shape_to_tuple,
     )
@@ -221,7 +221,7 @@ class QROMBase(metaclass=abc.ABCMeta):
     def _build_from_data(
         cls: type[QROM_T],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
     ) -> QROM_T:
@@ -251,8 +251,8 @@ class QROMBase(metaclass=abc.ABCMeta):
     @classmethod
     def _build_from_bitsize(
         cls: type[QROM_T],
-        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
@@ -322,7 +322,7 @@ class QROMBase(metaclass=abc.ABCMeta):
 
         n_dim = len(self.selection_registers)
         if n_dim == 0:
-            idx: Union[int, tuple[int, ...]] = 0
+            idx: int | tuple[int, ...] = 0
             selections = {}
         elif n_dim == 1:
             idx = int(vals.pop('selection', 0))

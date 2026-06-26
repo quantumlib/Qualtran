@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Optional, TYPE_CHECKING, TypeVar, Union
+from typing import cast, Optional, TYPE_CHECKING, TypeVar
 
 import attrs
 import cirq
@@ -170,9 +170,9 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def build_from_data(
         cls: type['SelectSwapQROM'],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
     ) -> 'SelectSwapQROM':
         qroam: 'SelectSwapQROM' = cls._build_from_data(
@@ -186,12 +186,12 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
     @classmethod
     def build_from_bitsize(
         cls: type['SelectSwapQROM'],
-        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         use_dirty_ancilla: bool = True,
     ) -> 'SelectSwapQROM':
         qroam: 'SelectSwapQROM' = cls._build_from_bitsize(
@@ -207,7 +207,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     def with_log_block_sizes(
         self: SelSwapQROM_T,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'SelSwapQROM_T':
         if log_block_sizes is None:
             return self

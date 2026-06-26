@@ -269,7 +269,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def basis_state_phase(
         self, **vals: 'ClassicalValT'
-    ) -> Union[complex, 'MeasurementPhase', None]:
+    ) -> Optional[Union[complex, 'MeasurementPhase']]:
         """How this bloq phases classical basis states.
 
         Override this method if your bloq represents classical logic with basis-state
@@ -544,7 +544,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overriden, the default implementation will wrap this bloq

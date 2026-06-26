@@ -1830,7 +1830,7 @@ class BloqBuilder:
 
         return SGate.qcall(q=q, is_adjoint=is_adjoint)
 
-    def swap(self, x: 'QVar', y: 'QVar') -> Tuple['QVar', 'QVar']:
+    def swap(self, x: 'QVar', y: 'QVar') -> tuple['QVar', 'QVar']:
         """Applies the Swap bloq."""
         from qualtran.bloqs.basic_gates import Swap
 

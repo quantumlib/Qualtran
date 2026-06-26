@@ -178,7 +178,7 @@ class CHadamard(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         import cirq
 
         (ctrl,) = ctrl

@@ -101,7 +101,7 @@ class _XVector(Bloq, metaclass=abc.ABCMeta):
         self,
         qubit_manager: 'cirq.QubitManager',
         **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 

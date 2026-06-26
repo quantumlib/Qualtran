@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 import sympy
 from attrs import frozen
@@ -102,7 +102,7 @@ class Free(_BookkeepingBloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', reg: 'CirqQuregT'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         qubit_manager.qfree(reg.flatten().tolist())
         return (None, {})
 

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -93,7 +93,7 @@ class Allocate(_BookkeepingBloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager'
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         shape = (*self.signature[0].shape, self.signature[0].bitsize)
         qubits = (
             qubit_manager.qborrow(self.signature.n_qubits())

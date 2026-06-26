@@ -131,10 +131,10 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     def build_from_data(
         cls: type['QROAMCleanAdjoint'],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMCleanAdjoint':
         qroam: 'QROAMCleanAdjoint' = cls._build_from_data(
             *data,
@@ -147,13 +147,13 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
     @classmethod
     def build_from_bitsize(
         cls: type['QROAMCleanAdjoint'],
-        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMCleanAdjoint':
         qroam: 'QROAMCleanAdjoint' = cls._build_from_bitsize(
             data_len_or_shape,
@@ -175,7 +175,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
         )
 
     def with_log_block_sizes(
-        self, log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None
+        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMCleanAdjoint':
         if log_block_sizes is None:
             return self
@@ -288,7 +288,7 @@ class QROAMCleanAdjointWrapper(Bloq):
         return self.qroam_clean
 
     def with_log_block_sizes(
-        self, log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None
+        self, log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMCleanAdjointWrapper':
         return attrs.evolve(self, log_block_sizes=log_block_sizes)
 
@@ -380,9 +380,9 @@ class QROAMClean(SelectSwapQROM):
     def build_from_data(
         cls: type['QROAMClean'],
         *data: ArrayLike,
-        target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMClean':
         qroam: 'QROAMClean' = cls._build_from_data(
             *data, target_bitsizes=target_bitsizes, num_controls=num_controls
@@ -392,12 +392,12 @@ class QROAMClean(SelectSwapQROM):
     @classmethod
     def build_from_bitsize(
         cls: type['QROAMClean'],
-        data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
-        target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
+        data_len_or_shape: SymbolicInt | tuple[SymbolicInt, ...],
+        target_bitsizes: SymbolicInt | tuple[SymbolicInt, ...],
         *,
         selection_bitsizes: tuple[SymbolicInt, ...] = (),
         num_controls: SymbolicInt = 0,
-        log_block_sizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
+        log_block_sizes: SymbolicInt | tuple[SymbolicInt, ...] | None = None,
     ) -> 'QROAMClean':
         qroam: 'QROAMClean' = cls._build_from_bitsize(
             data_len_or_shape,

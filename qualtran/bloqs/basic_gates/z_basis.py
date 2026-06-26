@@ -95,7 +95,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
             qtn.Tensor(data=_ONE if self.bit else _ZERO, inds=[(side['q'], 0)], tags=[str(self)])
         ]
 
-    def on_classical_vals(self, *, q: Optional[int] = None) -> dict[str, int]:
+    def on_classical_vals(self, *, q: int | None = None) -> dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -113,7 +113,7 @@ class _ZVector(Bloq, metaclass=abc.ABCMeta):
         self,
         qubit_manager: 'cirq.QubitManager',
         **cirq_quregs: 'CirqQuregT',  # type: ignore[type-var]
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -467,7 +467,7 @@ class MeasureZ(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
-    ) -> tuple[Union['cirq.Operation', None], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
 
         import cirq
 

@@ -152,7 +152,7 @@ class BloqDocSpec:
     bloq_cls: type
     examples: Sequence[BloqExample] = field(converter=_to_tuple, factory=tuple)
     import_line: str = field()
-    call_graph_example: Union[BloqExample, None] = field()
+    call_graph_example: BloqExample | None = field()
 
     @import_line.default
     def _import_line_default(self) -> str:
@@ -161,7 +161,7 @@ class BloqDocSpec:
         return line
 
     @call_graph_example.default
-    def _call_graph_example_default(self) -> Union[BloqExample, None]:
+    def _call_graph_example_default(self) -> BloqExample | None:
         if not self.examples:
             return None
         return self.examples[0]

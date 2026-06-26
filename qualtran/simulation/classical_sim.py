@@ -323,7 +323,7 @@ class ClassicalSimState:
         self._update(binst, out_vals, bloq_phase)
         return self
 
-    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: complex | None) -> None:
         """Overridable method to update the current simulator state."""
         self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
 
@@ -504,7 +504,7 @@ class PhasedClassicalSimState(ClassicalSimState):
         phase = sim.phase
         return final_vals, phase
 
-    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: Union[complex, None]) -> None:
+    def _update(self, binst: 'BloqInstance', out_vals, bloq_phase: complex | None) -> None:
         """Update the current simulator state, including phase tracking."""
         self._update_assign_from_vals(binst.bloq.signature.rights(), binst, out_vals)
 

@@ -14,7 +14,7 @@
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     import galois
 
 
-def _poly_converter(p) -> Union['galois.Poly', None]:
+def _poly_converter(p) -> Optional['galois.Poly']:
     import galois
 
     if p is None:
