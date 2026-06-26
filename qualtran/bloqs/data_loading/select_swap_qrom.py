@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Optional, Type, TYPE_CHECKING, TypeVar, Union
+from typing import cast, Optional, TYPE_CHECKING, TypeVar, Union
 
 import attrs
 import cirq
@@ -168,7 +168,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @classmethod
     def build_from_data(
-        cls: Type['SelectSwapQROM'],
+        cls: type['SelectSwapQROM'],
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
         num_controls: SymbolicInt = 0,
@@ -185,7 +185,7 @@ class SelectSwapQROM(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @classmethod
     def build_from_bitsize(
-        cls: Type['SelectSwapQROM'],
+        cls: type['SelectSwapQROM'],
         data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,

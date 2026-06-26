@@ -39,7 +39,7 @@ once) and are instantiations of registers. There is generally a 1-to-many relati
 
 `SoquetT` is a union type between `Soquet` and ndarray of `Soquet`. It means all the soquets
 for a given register. When you see variable names like `soqdict`, `in_soqs`, or `final_soqs`
-with type `Dict[str, SoquetT]`: this is a 1-to-1 mapping between register (by name) and 
+with type `dict[str, SoquetT]`: this is a 1-to-1 mapping between register (by name) and 
 all the `Soquet`s for that potentially-multidimensional register. When you see names 
 like `idxed_soq`, it means an individual `Soquet` has been plucked
 from a potentially-multidimensional array of them.

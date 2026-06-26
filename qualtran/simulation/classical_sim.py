@@ -17,7 +17,7 @@
 import abc
 import itertools
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Optional, Type, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 import attrs
 import networkx as nx
@@ -47,7 +47,7 @@ ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
 
 
-def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
+def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
     from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
 

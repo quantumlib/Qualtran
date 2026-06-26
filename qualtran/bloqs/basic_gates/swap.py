@@ -262,7 +262,7 @@ class Swap(Bloq):
         return Signature.build(x=self.bitsize, y=self.bitsize)
 
     @classmethod
-    def qcall(cls, x: 'QVar', y: 'QVar') -> Tuple['QVar', 'QVar']:
+    def qcall(cls, x: 'QVar', y: 'QVar') -> tuple['QVar', 'QVar']:
         if x.dtype.num_qubits != y.dtype.num_qubits:
             raise ValueError(f"Bitsizes of registers must match: {x.dtype} vs {y.dtype}")
         return x.bb.add(cls(bitsize=x.dtype.num_qubits), x=x, y=y)

@@ -44,7 +44,7 @@ with different costs.
 
 from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Optional, Type, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -529,7 +529,7 @@ def _rz() -> Rz:
 
 _RZ_DOC = BloqDocSpec(bloq_cls=Rz, examples=[_rz], call_graph_example=None)
 
-_PowClsT = Union[Type[XPowGate], Type[YPowGate], Type[ZPowGate]]
+_PowClsT = Union[type[XPowGate], type[YPowGate], type[ZPowGate]]
 
 
 def _controlled_rp_circuit(

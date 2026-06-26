@@ -17,7 +17,7 @@
 import abc
 import numbers
 from functools import cached_property
-from typing import cast, Optional, Type, TypeVar, Union
+from typing import cast, Optional, TypeVar, Union
 
 import attrs
 import numpy as np
@@ -219,7 +219,7 @@ class QROMBase(metaclass=abc.ABCMeta):
 
     @classmethod
     def _build_from_data(
-        cls: Type[QROM_T],
+        cls: type[QROM_T],
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
@@ -250,7 +250,7 @@ class QROMBase(metaclass=abc.ABCMeta):
 
     @classmethod
     def _build_from_bitsize(
-        cls: Type[QROM_T],
+        cls: type[QROM_T],
         data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,

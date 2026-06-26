@@ -26,8 +26,8 @@ if TYPE_CHECKING:
 
 
 def _add_classical_kets(
-    bb: BloqBuilder, registers: Iterable[Register], vals: Dict[str, 'ClassicalValT']
-) -> Dict[str, 'SoquetT']:
+    bb: BloqBuilder, registers: Iterable[Register], vals: dict[str, 'ClassicalValT']
+) -> dict[str, 'SoquetT']:
     """Use `bb` to add `QUIntState` for all the `vals`."""
     from qualtran.bloqs.basic_gates import QUIntState
 

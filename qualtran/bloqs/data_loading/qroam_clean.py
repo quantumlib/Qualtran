@@ -14,7 +14,7 @@
 import numbers
 from collections import defaultdict
 from functools import cached_property
-from typing import cast, Optional, Type, TYPE_CHECKING, Union
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -129,7 +129,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @classmethod
     def build_from_data(
-        cls: Type['QROAMCleanAdjoint'],
+        cls: type['QROAMCleanAdjoint'],
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
         target_shapes: tuple[tuple[SymbolicInt, ...], ...] = (),
@@ -146,7 +146,7 @@ class QROAMCleanAdjoint(QROMBase, GateWithRegisters):  # type: ignore[misc]
 
     @classmethod
     def build_from_bitsize(
-        cls: Type['QROAMCleanAdjoint'],
+        cls: type['QROAMCleanAdjoint'],
         data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,
@@ -378,7 +378,7 @@ class QROAMClean(SelectSwapQROM):
 
     @classmethod
     def build_from_data(
-        cls: Type['QROAMClean'],
+        cls: type['QROAMClean'],
         *data: ArrayLike,
         target_bitsizes: Optional[Union[SymbolicInt, tuple[SymbolicInt, ...]]] = None,
         num_controls: SymbolicInt = 0,
@@ -391,7 +391,7 @@ class QROAMClean(SelectSwapQROM):
 
     @classmethod
     def build_from_bitsize(
-        cls: Type['QROAMClean'],
+        cls: type['QROAMClean'],
         data_len_or_shape: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         target_bitsizes: Union[SymbolicInt, tuple[SymbolicInt, ...]],
         *,
