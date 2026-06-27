@@ -25,7 +25,7 @@ from qualtran.resource_counting import get_bloq_call_graph
 def test_format_counts_sigma():
     graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_sigma(sigma)
-    assert ret == """
+    assert ret == """\
 #### Counts totals:
  - `And`: 5"""
 
