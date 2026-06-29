@@ -42,7 +42,7 @@ jobs:
         run: |
           uv sync --frozen --no-dev --group test
       - run: |
-          uv run --no-sync check/pytest-quick
+          uv run --no-sync check/pytest-quick -n logical
 
   dev-tools:
     runs-on: ubuntu-slim
@@ -60,7 +60,7 @@ jobs:
         run: |
           uv sync --frozen
       - run: |
-          uv run --no-sync check/pytest-dev-tools
+          uv run --no-sync check/pytest-dev-tools -n logical
           uv run --no-sync check/mypy-dev-tools
 
   notebooks:
