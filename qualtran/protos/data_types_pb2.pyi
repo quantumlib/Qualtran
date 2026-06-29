@@ -17,211 +17,260 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import builtins
-import google.protobuf.descriptor
-import google.protobuf.message
-import qualtran.protos.args_pb2
-import typing
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from qualtran.protos import args_pb2 as _args_pb2
+import builtins as _builtins
+import sys
+import typing as _typing
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
+else:
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-@typing.final
-class QBit(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+DESCRIPTOR: _descriptor.FileDescriptor
+
+@_typing.final
+class QBit(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-global___QBit = QBit
+Global___QBit: _TypeAlias = QBit  # noqa: Y015
 
-@typing.final
-class QAny(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QAny(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    def __init__(
-        self,
-        *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
-
-global___QAny = QAny
-
-@typing.final
-class QInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    BITSIZE_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
 
-global___QInt = QInt
+Global___QAny: _TypeAlias = QAny  # noqa: Y015
 
-@typing.final
-class QIntOnesComp(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
 
-global___QIntOnesComp = QIntOnesComp
+Global___QInt: _TypeAlias = QInt  # noqa: Y015
 
-@typing.final
-class QUInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QIntOnesComp(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
 
-global___QUInt = QUInt
+Global___QIntOnesComp: _TypeAlias = QIntOnesComp  # noqa: Y015
 
-@typing.final
-class QMontgomeryUInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QUInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
 
-global___QMontgomeryUInt = QMontgomeryUInt
+Global___QUInt: _TypeAlias = QUInt  # noqa: Y015
 
-@typing.final
-class BQUInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QMontgomeryUInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    ITERATION_LENGTH_FIELD_NUMBER: builtins.int
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    @property
-    def iteration_length(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        iteration_length: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "_iteration_length", b"_iteration_length", "bitsize", b"bitsize", "iteration_length", b"iteration_length"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "_iteration_length", b"_iteration_length", "bitsize", b"bitsize", "iteration_length", b"iteration_length"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_iteration_length", b"_iteration_length"]) -> typing.Literal["iteration_length"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
 
-global___BQUInt = BQUInt
+Global___QMontgomeryUInt: _TypeAlias = QMontgomeryUInt  # noqa: Y015
 
-@typing.final
-class QFxp(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class BQUInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    NUM_FRAC_FIELD_NUMBER: builtins.int
-    SIGNED_FIELD_NUMBER: builtins.int
-    signed: builtins.bool
-    @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
-    @property
-    def num_frac(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    ITERATION_LENGTH_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
+    @_builtins.property
+    def iteration_length(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        num_frac: qualtran.protos.args_pb2.IntOrSympy | None = ...,
-        signed: builtins.bool | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
+        iteration_length: _args_pb2.IntOrSympy | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "_num_frac", b"_num_frac", "_signed", b"_signed", "bitsize", b"bitsize", "num_frac", b"num_frac", "signed", b"signed"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_bitsize", b"_bitsize", "_num_frac", b"_num_frac", "_signed", b"_signed", "bitsize", b"bitsize", "num_frac", b"num_frac", "signed", b"signed"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_bitsize", b"_bitsize"]) -> typing.Literal["bitsize"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_num_frac", b"_num_frac"]) -> typing.Literal["num_frac"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing.Literal["_signed", b"_signed"]) -> typing.Literal["signed"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "_iteration_length", b"_iteration_length", "bitsize", b"bitsize", "iteration_length", b"iteration_length"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "_iteration_length", b"_iteration_length", "bitsize", b"bitsize", "iteration_length", b"iteration_length"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    _WhichOneofReturnType__iteration_length: _TypeAlias = _typing.Literal["iteration_length"]  # noqa: Y015
+    _WhichOneofArgType__iteration_length: _TypeAlias = _typing.Literal["_iteration_length", b"_iteration_length"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__iteration_length) -> _WhichOneofReturnType__iteration_length | None: ...
 
-global___QFxp = QFxp
+Global___BQUInt: _TypeAlias = BQUInt  # noqa: Y015
 
-@typing.final
-class QDataType(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class QFxp(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    QBIT_FIELD_NUMBER: builtins.int
-    QANY_FIELD_NUMBER: builtins.int
-    QINT_FIELD_NUMBER: builtins.int
-    QINT_ONES_COMP_FIELD_NUMBER: builtins.int
-    QUINT_FIELD_NUMBER: builtins.int
-    BQUINT_FIELD_NUMBER: builtins.int
-    QFXP_FIELD_NUMBER: builtins.int
-    QMONTGOMERY_UINT_FIELD_NUMBER: builtins.int
-    @property
-    def qbit(self) -> global___QBit: ...
-    @property
-    def qany(self) -> global___QAny: ...
-    @property
-    def qint(self) -> global___QInt: ...
-    @property
-    def qint_ones_comp(self) -> global___QIntOnesComp: ...
-    @property
-    def quint(self) -> global___QUInt: ...
-    @property
-    def bquint(self) -> global___BQUInt: ...
-    @property
-    def qfxp(self) -> global___QFxp: ...
-    @property
-    def qmontgomery_uint(self) -> global___QMontgomeryUInt: ...
+    BITSIZE_FIELD_NUMBER: _builtins.int
+    NUM_FRAC_FIELD_NUMBER: _builtins.int
+    SIGNED_FIELD_NUMBER: _builtins.int
+    signed: _builtins.bool
+    @_builtins.property
+    def bitsize(self) -> _args_pb2.IntOrSympy: ...
+    @_builtins.property
+    def num_frac(self) -> _args_pb2.IntOrSympy: ...
     def __init__(
         self,
         *,
-        qbit: global___QBit | None = ...,
-        qany: global___QAny | None = ...,
-        qint: global___QInt | None = ...,
-        qint_ones_comp: global___QIntOnesComp | None = ...,
-        quint: global___QUInt | None = ...,
-        bquint: global___BQUInt | None = ...,
-        qfxp: global___QFxp | None = ...,
-        qmontgomery_uint: global___QMontgomeryUInt | None = ...,
+        bitsize: _args_pb2.IntOrSympy | None = ...,
+        num_frac: _args_pb2.IntOrSympy | None = ...,
+        signed: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["bquint", b"bquint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "qmontgomery_uint", b"qmontgomery_uint", "quint", b"quint", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["bquint", b"bquint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "qmontgomery_uint", b"qmontgomery_uint", "quint", b"quint", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["val", b"val"]) -> typing.Literal["qbit", "qany", "qint", "qint_ones_comp", "quint", "bquint", "qfxp", "qmontgomery_uint"] | None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "_num_frac", b"_num_frac", "_signed", b"_signed", "bitsize", b"bitsize", "num_frac", b"num_frac", "signed", b"signed"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize", "_num_frac", b"_num_frac", "_signed", b"_signed", "bitsize", b"bitsize", "num_frac", b"num_frac", "signed", b"signed"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType__bitsize: _TypeAlias = _typing.Literal["bitsize"]  # noqa: Y015
+    _WhichOneofArgType__bitsize: _TypeAlias = _typing.Literal["_bitsize", b"_bitsize"]  # noqa: Y015
+    _WhichOneofReturnType__num_frac: _TypeAlias = _typing.Literal["num_frac"]  # noqa: Y015
+    _WhichOneofArgType__num_frac: _TypeAlias = _typing.Literal["_num_frac", b"_num_frac"]  # noqa: Y015
+    _WhichOneofReturnType__signed: _TypeAlias = _typing.Literal["signed"]  # noqa: Y015
+    _WhichOneofArgType__signed: _TypeAlias = _typing.Literal["_signed", b"_signed"]  # noqa: Y015
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__bitsize) -> _WhichOneofReturnType__bitsize | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__num_frac) -> _WhichOneofReturnType__num_frac | None: ...
+    @_typing.overload
+    def WhichOneof(self, oneof_group: _WhichOneofArgType__signed) -> _WhichOneofReturnType__signed | None: ...
 
-global___QDataType = QDataType
+Global___QFxp: _TypeAlias = QFxp  # noqa: Y015
+
+@_typing.final
+class QDataType(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    QBIT_FIELD_NUMBER: _builtins.int
+    QANY_FIELD_NUMBER: _builtins.int
+    QINT_FIELD_NUMBER: _builtins.int
+    QINT_ONES_COMP_FIELD_NUMBER: _builtins.int
+    QUINT_FIELD_NUMBER: _builtins.int
+    BQUINT_FIELD_NUMBER: _builtins.int
+    QFXP_FIELD_NUMBER: _builtins.int
+    QMONTGOMERY_UINT_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def qbit(self) -> Global___QBit: ...
+    @_builtins.property
+    def qany(self) -> Global___QAny: ...
+    @_builtins.property
+    def qint(self) -> Global___QInt: ...
+    @_builtins.property
+    def qint_ones_comp(self) -> Global___QIntOnesComp: ...
+    @_builtins.property
+    def quint(self) -> Global___QUInt: ...
+    @_builtins.property
+    def bquint(self) -> Global___BQUInt: ...
+    @_builtins.property
+    def qfxp(self) -> Global___QFxp: ...
+    @_builtins.property
+    def qmontgomery_uint(self) -> Global___QMontgomeryUInt: ...
+    def __init__(
+        self,
+        *,
+        qbit: Global___QBit | None = ...,
+        qany: Global___QAny | None = ...,
+        qint: Global___QInt | None = ...,
+        qint_ones_comp: Global___QIntOnesComp | None = ...,
+        quint: Global___QUInt | None = ...,
+        bquint: Global___BQUInt | None = ...,
+        qfxp: Global___QFxp | None = ...,
+        qmontgomery_uint: Global___QMontgomeryUInt | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["bquint", b"bquint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "qmontgomery_uint", b"qmontgomery_uint", "quint", b"quint", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["bquint", b"bquint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "qmontgomery_uint", b"qmontgomery_uint", "quint", b"quint", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    _WhichOneofReturnType_val: _TypeAlias = _typing.Literal["qbit", "qany", "qint", "qint_ones_comp", "quint", "bquint", "qfxp", "qmontgomery_uint"]  # noqa: Y015
+    _WhichOneofArgType_val: _TypeAlias = _typing.Literal["val", b"val"]  # noqa: Y015
+    def WhichOneof(self, oneof_group: _WhichOneofArgType_val) -> _WhichOneofReturnType_val | None: ...
+
+Global___QDataType: _TypeAlias = QDataType  # noqa: Y015
