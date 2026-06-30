@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
 
 from attr import frozen
 
@@ -50,11 +49,11 @@ class BlackBoxPrepare(Bloq):
     prepare: PrepareOracle
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register(name='selection', dtype=QAny(self.selection_bitsize)),)
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return (Register(name='junk', dtype=QAny(self.junk_bitsize)),)
 
     @cached_property
@@ -73,7 +72,7 @@ class BlackBoxPrepare(Bloq):
     def signature(self) -> Signature:
         return Signature.build(selection=self.selection_bitsize, junk=self.junk_bitsize)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         if is_zero(self.selection_bitsize):
             return soqs
         partitions = [

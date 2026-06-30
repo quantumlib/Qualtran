@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -79,7 +80,7 @@ class PrepareHubbard(PrepareOracle):
             raise NotImplementedError("Currently only supports the case where x_dim=y_dim.")
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register('U', BQUInt(1, 2)),
             Register('V', BQUInt(1, 2)),
@@ -92,7 +93,7 @@ class PrepareHubbard(PrepareOracle):
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return (Register('temp', QAny(2)),)
 
     @cached_property
@@ -110,7 +111,7 @@ class PrepareHubbard(PrepareOracle):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         p_x, p_y, q_x, q_y = quregs['p_x'], quregs['p_y'], quregs['q_x'], quregs['q_y']
         U, V, alpha, beta = quregs['U'], quregs['V'], quregs['alpha'], quregs['beta']

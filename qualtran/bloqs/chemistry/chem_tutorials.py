@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Some utility functions for chemistry tutorials"""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ def linear(x: NDArray[np.float64], a: float, c: float) -> NDArray[np.float64]:
     return a * x + c
 
 
-def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> Tuple[float, float]:
+def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> tuple[float, float]:
     """Fit a line given x and y values.
 
     Args:

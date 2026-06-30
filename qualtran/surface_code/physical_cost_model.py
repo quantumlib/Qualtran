@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property, lru_cache
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from attrs import frozen
 
@@ -159,7 +159,7 @@ class PhysicalCostModel:
 
     @classmethod
     def make_beverland_et_al(
-        cls, data_d: int, data_block_name: str = 'compact', factory_ds: Tuple = (9, 3, 3)
+        cls, data_d: int, data_block_name: str = 'compact', factory_ds: tuple = (9, 3, 3)
     ):
         from qualtran.surface_code import (
             CompactDataBlock,

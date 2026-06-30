@@ -14,7 +14,7 @@
 
 import abc
 import functools
-from typing import Any, cast, Dict
+from typing import Any, cast
 
 import attrs
 
@@ -36,7 +36,7 @@ from ._parse import (
 
 class L1VisitorBase(metaclass=abc.ABCMeta):
     @functools.singledispatchmethod
-    def visit(self, node: L1ASTNode) -> Dict[str, Any]:
+    def visit(self, node: L1ASTNode) -> dict[str, Any]:
         record = attrs.asdict(cast(Any, node), recurse=False)
         record = {k: self.visit(v) if isinstance(v, L1ASTNode) else v for k, v in record.items()}
         return record
@@ -48,7 +48,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QDefImplNode):
-        record: Dict[str, Any] = {'bloq_key': node.bloq_key}
+        record: dict[str, Any] = {'bloq_key': node.bloq_key}
         record['qsignature'] = [self.visit(sig_entry) for sig_entry in node.qsignature]
         record['body'] = [self.visit(stmt) for stmt in node.body]
 
@@ -59,14 +59,14 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QDefExternNode):
-        record: Dict[str, Any] = {'bloq_key': node.bloq_key}
+        record: dict[str, Any] = {'bloq_key': node.bloq_key}
         record['qsignature'] = [self.visit(sig_entry) for sig_entry in node.qsignature]
         record['cobject_from'] = self.visit(node.cobject_from)
         return record
 
     @visit.register
     def _(self, node: QSignatureEntry):
-        record: Dict[str, Any] = {'name': node.name}
+        record: dict[str, Any] = {'name': node.name}
         if isinstance(node.dtype, QDTypeNode):
             record['dtype'] = self.visit(node.dtype)
         else:
@@ -78,14 +78,14 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QDTypeNode):
-        record: Dict[str, Any] = {'dtype': self.visit(node.dtype)}
+        record: dict[str, Any] = {'dtype': self.visit(node.dtype)}
         if node.shape is not None:
             record['shape'] = node.shape
         return record
 
     @visit.register
     def _(self, node: QCallNode):
-        record: Dict[str, Any] = {
+        record: dict[str, Any] = {
             'bloq_key': node.bloq_key,
             'lvalues': [lv for lv in node.lvalues],
             'qargs': [self.visit(qa) for qa in node.qargs],
@@ -94,7 +94,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QReturnNode):
-        record: Dict[str, Any] = {'ret_mapping': [self.visit(qa) for qa in node.ret_mapping]}
+        record: dict[str, Any] = {'ret_mapping': [self.visit(qa) for qa in node.ret_mapping]}
         return record
 
     def visit_nested_qarg_value(self, v):
@@ -104,7 +104,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QArgNode):
-        record: Dict[str, Any] = {'key': node.key}
+        record: dict[str, Any] = {'key': node.key}
         if isinstance(node.value, QArgValueNode):
             record['value'] = self.visit(node.value)
         else:
@@ -113,7 +113,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: CObjectNode):
-        record: Dict[str, Any] = {
+        record: dict[str, Any] = {
             'name': node.name,
             'cargs': [self.visit(carg) for carg in node.cargs],
         }
@@ -121,5 +121,5 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: TupleNode):
-        record: Dict[str, Any] = {'items': [self.visit(i) for i in node.items]}
+        record: dict[str, Any] = {'items': [self.visit(i) for i in node.items]}
         return record

@@ -14,7 +14,7 @@
 """Bloqs for computing the inverse Square root of a fixed point number."""
 
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
 
 
-def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
+def get_inverse_square_root_poly_coeffs() -> tuple[NDArray, NDArray]:
     """Polynomial coefficients for approximating inverse square root.
 
     This function returns the coefficients of a piecewise cubic polynomial
@@ -60,7 +60,7 @@ def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
 
 
 def build_qrom_data_for_poly_fit(
-    selection_bitsize: int, target_bitsize: int, poly_coeffs: Tuple[NDArray, NDArray]
+    selection_bitsize: int, target_bitsize: int, poly_coeffs: tuple[NDArray, NDArray]
 ) -> NDArray:
     """Build QROM data from polynomial coefficients from the referenence.
 
@@ -166,7 +166,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("y=x^{-1/2}")
         return super().wire_symbol(reg, idx)
@@ -218,7 +218,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("y~x^{-1/2}")
         return super().wire_symbol(reg, idx)

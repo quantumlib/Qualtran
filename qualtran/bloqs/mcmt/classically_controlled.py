@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Tuple
-
 import attrs
 
 from qualtran import AddControlledT, Bloq, CDType, CtrlSpec, QCDType
@@ -41,6 +39,6 @@ class ClassicallyControlled(_ControlledBase):
     @classmethod
     def make_ctrl_system(
         cls, bloq: 'Bloq', ctrl_spec: 'CtrlSpec'
-    ) -> Tuple['_ControlledBase', 'AddControlledT']:
+    ) -> tuple['_ControlledBase', 'AddControlledT']:
         cb = cls(subbloq=bloq, ctrl_spec=ctrl_spec)
         return cls._make_ctrl_system(cb)

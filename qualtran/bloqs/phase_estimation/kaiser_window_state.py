@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -106,8 +106,8 @@ class KaiserWindowState(QPEWindowStateBase):
         return KaiserWindowState(bitsize=m_bits, alpha=alpha)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         return [

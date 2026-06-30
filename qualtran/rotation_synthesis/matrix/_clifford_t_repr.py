@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import math
-from typing import cast, Mapping, Optional
+from collections.abc import Mapping
+from typing import cast, Optional
 
 import cirq
 import numpy as np

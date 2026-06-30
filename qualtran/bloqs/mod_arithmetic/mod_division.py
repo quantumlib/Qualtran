@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import cast, Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -68,7 +68,7 @@ class _KaliskiIterationStep1(Bloq):
 
     def on_classical_vals(
         self, v: int, m: int, f: int, is_terminal: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         m ^= f & (v == 0)
         assert is_terminal == 0
         is_terminal ^= m
@@ -77,7 +77,7 @@ class _KaliskiIterationStep1(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', v: Soquet, m: Soquet, f: Soquet, is_terminal: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         v_arr = bb.split(v)
@@ -96,7 +96,7 @@ class _KaliskiIterationStep1(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         if is_symbolic(self.bitsize):
-            cvs: Union[HasLength, List[int]] = HasLength(self.bitsize + 1)
+            cvs: Union[HasLength, list[int]] = HasLength(self.bitsize + 1)
         else:
             cvs = [0] * int(self.bitsize) + [1]
         return {MultiAnd(cvs=cvs): 1, MultiAnd(cvs=cvs).adjoint(): 1, CNOT(): 3}
@@ -123,7 +123,7 @@ class _KaliskiIterationStep2(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, b: int, a: int, m: int, f: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         a ^= ((u & 1) == 0) & f
         m ^= ((v & 1) == 0) & (a == 0) & f
         b ^= a
@@ -132,7 +132,7 @@ class _KaliskiIterationStep2(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -186,7 +186,7 @@ class _KaliskiIterationStep3(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, b: int, a: int, m: int, f: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         c = (u > v) & (b == 0) & f
         a ^= c
         m ^= c
@@ -194,7 +194,7 @@ class _KaliskiIterationStep3(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, b: Soquet, a: Soquet, m: Soquet, f: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         u, v, junk_c, greater_than = bb.add(
             LinearDepthHalfGreaterThan(QMontgomeryUInt(self.bitsize)), a=u, b=v
         )
@@ -248,7 +248,7 @@ class _KaliskiIterationStep4(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, a: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if a:
             u, v = v, u
             r, s = s, r
@@ -256,7 +256,7 @@ class _KaliskiIterationStep4(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, a: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         a, u, v = bb.add(CSwap(self.bitsize), ctrl=a, x=u, y=v)
         a, r, s = bb.add(CSwap(self.bitsize), ctrl=a, x=r, y=s)
         return {'u': u, 'v': v, 'r': r, 's': s, 'a': a}
@@ -286,7 +286,7 @@ class _KaliskiIterationStep5(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, b: int, f: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if f and b == 0:
             v -= u
             s += r
@@ -294,7 +294,7 @@ class _KaliskiIterationStep5(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', u: Soquet, v: Soquet, r: Soquet, s: Soquet, b: Soquet, f: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         (f, b), c = bb.add(And(1, 0), ctrl=(f, b))
         v = bb.add(BitwiseNot(QMontgomeryUInt(self.bitsize)), x=v)
         c, u, v = bb.add(CAdd(QMontgomeryUInt(self.bitsize)), ctrl=c, a=u, b=v)
@@ -336,7 +336,7 @@ class _KaliskiIterationStep6(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, b: int, a: int, m: int, f: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         b ^= m
         b ^= a
         if f:
@@ -360,7 +360,7 @@ class _KaliskiIterationStep6(Bloq):
         a: Soquet,
         m: Soquet,
         f: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize, self.mod):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
         m, b = bb.add(CNOT(), ctrl=m, target=b)
@@ -426,7 +426,7 @@ class _KaliskiIteration(Bloq):
         m: Soquet,
         f: Soquet,
         is_terminal: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         a = bb.allocate(1)
         b = bb.allocate(1)
 
@@ -463,7 +463,7 @@ class _KaliskiIteration(Bloq):
 
     def on_classical_vals(
         self, u: int, v: int, r: int, s: int, m: int, f: int, is_terminal: int
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         """This is the Kaliski algorithm as described in Fig7 of https://arxiv.org/pdf/2001.09580.
 
         The following implementation merges together the pseudocode from Fig7 of https://arxiv.org/pdf/2001.09580
@@ -539,7 +539,7 @@ class _KaliskiModInverseImpl(Bloq):
         m: Soquet,
         f: Soquet,
         terminal_condition: Soquet,
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -664,7 +664,7 @@ class KaliskiModInverse(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, junk: Optional[Soquet] = None
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `bitsize`.")
 
@@ -679,7 +679,7 @@ class KaliskiModInverse(Bloq):
             m = bb.join(junk_arr[: 2 * self.bitsize])
             terminal_condition = bb.join(junk_arr[2 * self.bitsize :])
             u, x, r, s, m, f, terminal_condition = cast(
-                Tuple[Soquet, Soquet, Soquet, Soquet, Soquet, Soquet, Soquet],
+                tuple[Soquet, Soquet, Soquet, Soquet, Soquet, Soquet, Soquet],
                 bb.add_from(
                     _KaliskiModInverseImpl(self.bitsize, self.mod).adjoint(),
                     u=u,
@@ -702,7 +702,7 @@ class KaliskiModInverse(Bloq):
         m = bb.allocate(2 * self.bitsize)
         terminal_condition = bb.allocate(2 * self.bitsize)
         u, v, x, s, m, f, terminal_condition = cast(
-            Tuple[Soquet, Soquet, Soquet, Soquet, Soquet, Soquet, Soquet],
+            tuple[Soquet, Soquet, Soquet, Soquet, Soquet, Soquet, Soquet],
             bb.add_from(
                 _KaliskiModInverseImpl(self.bitsize, self.mod),
                 u=u,
@@ -728,7 +728,7 @@ class KaliskiModInverse(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
         return _KaliskiModInverseImpl(self.bitsize, self.mod).build_call_graph(ssa)
 
-    def on_classical_vals(self, x: int, junk: int = 0) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: int, junk: int = 0) -> dict[str, 'ClassicalValT']:
         mod = int(self.mod)
         u, v, r, s, f = mod, x, 0, 1, 1
         terminal_condition = m = 0

@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Sequence
 
 import attrs
 import numpy as np
@@ -40,7 +40,7 @@ class _Bit(BitEncoding[int]):
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad bit value: {val} in {debug_str}")
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_val(x)
         return [int(x)]

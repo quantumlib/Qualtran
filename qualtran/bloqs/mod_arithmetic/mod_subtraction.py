@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
@@ -73,7 +73,7 @@ class ModNeg(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', self.dtype)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
@@ -106,7 +106,7 @@ class ModNeg(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -114,7 +114,7 @@ class ModNeg(Bloq):
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
 
-    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         if 0 < x < self.mod:
             x = self.mod - x
         return {'x': x}
@@ -153,7 +153,7 @@ class CModNeg(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         if not isinstance(self.dtype.bitsize, int):
             raise DecomposeTypeError(f'symbolic decomposition is not supported for {self}')
 
@@ -199,7 +199,7 @@ class CModNeg(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -211,7 +211,7 @@ class CModNeg(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == self.cv and 0 < x < self.mod:
             x = self.mod - x
         return {'ctrl': ctrl, 'x': x}
@@ -265,7 +265,7 @@ class ModSub(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', self.dtype), Register('y', self.dtype)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)
         x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         x, y = bb.add(ModAdd(self.dtype.bitsize, self.mod), x=x, y=y)
@@ -282,7 +282,7 @@ class ModSub(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -294,7 +294,7 @@ class ModSub(Bloq):
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if 0 <= x < self.mod and 0 <= y < self.mod:
             y -= x
             if y < 0:
@@ -345,7 +345,7 @@ class CModSub(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: Soquet, x: Soquet, y: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         x = bb.add(BitwiseNot(self.dtype), x=x)
         x = bb.add(AddK(self.dtype, self.mod + 1), x=x)
         ctrl, x, y = bb.add(CModAdd(self.dtype, self.mod, self.cv), ctrl=ctrl, x=x, y=y)
@@ -362,7 +362,7 @@ class CModSub(Bloq):
         }
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text("")
@@ -376,7 +376,7 @@ class CModSub(Bloq):
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl == self.cv and 0 <= x < self.mod and 0 <= y < self.mod:
             y -= x
             if y < 0:

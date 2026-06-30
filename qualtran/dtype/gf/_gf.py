@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Any, Iterable, List, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
     import galois
 
 
-def _poly_converter(p) -> Union['galois.Poly', None]:
+def _poly_converter(p) -> Optional['galois.Poly']:
     import galois
 
     if p is None:
@@ -89,7 +90,7 @@ class _GF(BitEncoding['galois.FieldArray']):
             compile='python-calculate',
         )
 
-    def to_bits(self, x) -> List[int]:
+    def to_bits(self, x) -> list[int]:
         self.assert_valid_val(x)
         return self._uint_encoder.to_bits(int(x))
 

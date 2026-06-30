@@ -13,7 +13,7 @@
 #  limitations under the License.
 import warnings
 from functools import cached_property
-from typing import cast, Dict, Set, TYPE_CHECKING, Union
+from typing import cast, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -158,7 +158,7 @@ class GF2Inverse(Bloq):
     def gf2_multiplier(self) -> Bloq:
         return GF2MulViaKaratsuba(self.qgf)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'Soquet') -> dict[str, 'SoquetT']:
         if is_symbolic(self.bitsize):
             raise DecomposeTypeError(f"Cannot decompose symbolic {self}")
 
@@ -200,7 +200,7 @@ class GF2Inverse(Bloq):
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'
-    ) -> Union['BloqCountDictT', Set['BloqCountT']]:
+    ) -> Union['BloqCountDictT', set['BloqCountT']]:
         if not is_symbolic(self.bitsize) and self.bitsize == 1:
             return {GF2Addition(self.qgf): 1}
         k1 = bit_length(self.bitsize - 1) - 1
@@ -230,7 +230,7 @@ class GF2Inverse(Bloq):
             bloq_counts[GF2Addition(self.qgf)] = add_count
         return bloq_counts
 
-    def on_classical_vals(self, *, x) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, x) -> dict[str, 'ClassicalValT']:
         assert isinstance(x, self.qgf.gf_type)
         t = (self.bitsize - 1).bit_count()
         k1 = bit_length(self.bitsize - 1) - 1

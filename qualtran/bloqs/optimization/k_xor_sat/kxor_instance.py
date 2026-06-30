@@ -25,8 +25,9 @@
 #  limitations under the License.
 import itertools
 from collections import defaultdict
+from collections.abc import Sequence
 from functools import cached_property
-from typing import cast, Sequence, TypeAlias, Union
+from typing import cast, TypeAlias, Union
 
 import numpy as np
 import sympy

@@ -14,7 +14,7 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -71,11 +71,11 @@ class SelectSparse(SelectOracle):
     control_val: Optional[int] = None
 
     @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
+    def control_registers(self) -> tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (
             Register(
                 "p",
@@ -111,10 +111,10 @@ class SelectSparse(SelectOracle):
         )
 
     @cached_property
-    def target_registers(self) -> Tuple[Register, ...]:
+    def target_registers(self) -> tuple[Register, ...]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb)),)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         p, q, r, s = soqs['p'], soqs['q'], soqs['r'], soqs['s']
         alpha, beta = soqs['alpha'], soqs['beta']
         flag_1b = soqs['flag_1b']
@@ -169,7 +169,7 @@ class SelectSparse(SelectOracle):
         c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
         return {SGate(): 1, maj_x: 1, c_maj_x: 1, maj_y: 1, c_maj_y: 1}
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
 
         return get_ctrl_system_1bit_cv(

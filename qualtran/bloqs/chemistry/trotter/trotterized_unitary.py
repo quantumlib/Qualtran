@@ -13,8 +13,8 @@
 #  limitations under the License.
 """Bloq for building a Trotterized unitary"""
 
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Sequence
 
 import attrs
 
@@ -102,7 +102,7 @@ class TrotterizedUnitary(Bloq):
     def signature(self) -> Signature:
         return self.bloqs[0].signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> dict[str, 'SoquetT']:
         for i, a in zip(self.indices, self.coeffs):
             # Bloqs passed in are supposed to be attrs dataclasses per docs
             # It would be nice to somehow specify that self.bloqs are both bloqs and AttrsInstance

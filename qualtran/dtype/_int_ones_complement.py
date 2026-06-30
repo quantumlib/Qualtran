@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Sequence
 
 import attrs
 import numpy as np
@@ -41,7 +41,7 @@ class _IntOnesComp(BitEncoding[int]):
             if self.bitsize == 1:
                 raise ValueError("bitsize must be > 1.")
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         self.assert_valid_val(x)
         return [int(x < 0)] + [y ^ int(x < 0) for y in _UInt(self.bitsize - 1).to_bits(abs(x))]
 

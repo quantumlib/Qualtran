@@ -14,7 +14,7 @@
 
 import logging
 from collections import defaultdict
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from numpy.typing import NDArray
 
@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 def _order_incoming_outgoing_indices(
-    signature: Signature, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-) -> List[Tuple[Connection, int]]:
+    signature: Signature, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+) -> list[tuple[Connection, int]]:
     """Order incoming and outgoing indices provided by the tensor protocol according to `signature`.
 
     This can be used if you have a well-ordered, dense numpy array.
@@ -41,7 +41,7 @@ def _order_incoming_outgoing_indices(
     >>> return [qtn.Tensor(data=data, inds=inds)]
     """
 
-    inds: List[Tuple[Connection, int]] = []
+    inds: list[tuple[Connection, int]] = []
 
     # Nested for loops:
     #   reg: each register in the signature
@@ -67,7 +67,7 @@ def _order_incoming_outgoing_indices(
 
 def _group_outer_inds(
     tn: 'qtn.TensorNetwork', signature: Signature, superoperator: bool = False
-) -> List[List[_IndT]]:
+) -> list[list[_IndT]]:
     """Group outer indices of a tensor network.
 
     This is used by 'bloq_to_dense` and `quimb_to_dense` to return a 1-, 2-, or 4-dimensional
@@ -80,17 +80,17 @@ def _group_outer_inds(
         superoperator: Whether `tn` is a pure-state or open-system tensor network.
     """
     reg_name: str
-    idx: Tuple[int, ...]
+    idx: tuple[int, ...]
     j: int
     group: str
-    _KeyT = Tuple[str, Tuple[int, ...], int]
-    ind_groups_d: Dict[str, Dict[_KeyT, _IndT]] = defaultdict(dict)
+    _KeyT = tuple[str, tuple[int, ...], int]
+    ind_groups_d: dict[str, dict[_KeyT, _IndT]] = defaultdict(dict)
 
     for ind in tn.outer_inds():
         reg_name, idx, j, group = ind
         ind_groups_d[group][reg_name, idx, j] = ind
 
-    ind_groups_l: Dict[str, List[_IndT]] = defaultdict(list)
+    ind_groups_l: dict[str, list[_IndT]] = defaultdict(list)
 
     def _sort_group(regs, group_name):
         for reg in regs:

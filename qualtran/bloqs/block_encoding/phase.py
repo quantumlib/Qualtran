@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
 
 from attrs import frozen
 
@@ -82,7 +81,7 @@ class Phase(BlockEncoding):
     def build_call_graph(self, ssa: SympySymbolAllocator) -> BloqCountDictT:
         return {self.block_encoding: 1, GlobalPhase(exponent=self.phi, eps=self.eps): 1}
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
         bb.add(GlobalPhase(exponent=self.phi, eps=self.eps))
 
         return bb.add_d(self.block_encoding, **soqs)

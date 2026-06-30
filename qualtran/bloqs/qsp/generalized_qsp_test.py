@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Optional, Sequence
+from typing import Optional
 
 import cirq
 import numpy as np
@@ -160,7 +161,7 @@ def test_call_graph(negative_power: int):
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts: Dict[Bloq, int] = {arbitrary_rotation: 3}
+    expected_counts: dict[Bloq, int] = {arbitrary_rotation: 3}
     if negative_power < 2:
         expected_counts[U.controlled(control_values=[0])] = 2 - negative_power
     if negative_power > 0:

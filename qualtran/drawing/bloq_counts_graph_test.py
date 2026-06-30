@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import random
-from typing import List
 
 import networkx as nx
 
@@ -26,27 +25,21 @@ from qualtran.resource_counting import get_bloq_call_graph
 def test_format_counts_sigma():
     graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_sigma(sigma)
-    assert (
-        ret
-        == """\
+    assert ret == """\
 #### Counts totals:
  - `And`: 5"""
-    )
 
 
 def test_format_counts_graph_markdown():
     graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_graph_markdown(graph)
-    assert (
-        ret
-        == """\
+    assert ret == """\
  - `MultiAnd(n=6)`
    - `And`: $\\displaystyle 5$
 """
-    )
 
 
-def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> List[str]:
+def _get_node_labels_from_pydot_graph(drawer: _CallGraphDrawerBase) -> list[str]:
     graph = drawer.get_graph()
     node_labels = [node.get_label() for node in graph.get_node_list()]  # type: ignore[attr-defined]
     random.shuffle(node_labels)  # don't rely on order of graphviz nodes

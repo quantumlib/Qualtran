@@ -15,7 +15,8 @@
 """The ring Z[w] where w = e^{i pi/4}"""
 
 import itertools
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import attrs
 import numpy as np

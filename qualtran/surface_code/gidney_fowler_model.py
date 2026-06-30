@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, cast, Iterable, Iterator, Optional, Tuple, TYPE_CHECKING
+from collections.abc import Callable, Iterable, Iterator
+from typing import cast, Optional, TYPE_CHECKING
 
 from .algorithm_summary import AlgorithmSummary
 from .ccz2t_factory import CCZ2TFactory
@@ -189,7 +190,7 @@ def get_ccz2t_costs_from_grid_search(
     factory_iter: Iterable[MagicStateFactory] = tuple(iter_ccz2t_factories()),
     data_block_iter: Iterable[DataBlock] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[PhysicalCostsSummary], float] = (lambda pc: pc.qubit_hours),
-) -> Tuple[PhysicalCostsSummary, MagicStateFactory, SimpleDataBlock]:
+) -> tuple[PhysicalCostsSummary, MagicStateFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize the space-time volume.
 
     Args:
@@ -213,7 +214,7 @@ def get_ccz2t_costs_from_grid_search(
         version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
     best_cost: Optional[PhysicalCostsSummary] = None
-    best_params: Optional[Tuple[MagicStateFactory, SimpleDataBlock]] = None
+    best_params: Optional[tuple[MagicStateFactory, SimpleDataBlock]] = None
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(

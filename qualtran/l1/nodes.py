@@ -14,7 +14,8 @@
 """The Qualtran-L1 AST Nodes."""
 
 import abc
-from typing import Optional, Sequence, Tuple, TypeAlias, Union
+from collections.abc import Sequence
+from typing import Optional, TypeAlias, Union
 
 import attrs
 
@@ -110,7 +111,7 @@ class QSignatureEntry(L1ASTNode):
     """A quantum signature entry."""
 
     name: str
-    dtype: Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
+    dtype: Union[QDTypeNode, tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
 
 
 class StatementNode(L1ASTNode, metaclass=abc.ABCMeta):

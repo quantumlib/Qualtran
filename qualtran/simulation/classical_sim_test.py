@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import Dict, Union
+from typing import Union
 
 import attrs
 import networkx as nx
@@ -100,7 +100,7 @@ class ApplyClassicalTest(Bloq):
             [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, *, x: NDArray[np.uint8]) -> dict[str, NDArray[np.uint8]]:
         const = np.array([1, 0, 1, 0, 1], dtype=np.uint8)
         z = np.logical_xor(x, const).astype(np.uint8)
         return {'x': x, 'z': z}
@@ -282,7 +282,7 @@ class ClassicalDistributionTest(Bloq):
             [Register('q', QBit(), side=Side.LEFT), Register('c', CBit(), side=Side.RIGHT)]
         )
 
-    def on_classical_vals(self, *, q: int) -> Dict[str, ClassicalValRetT]:
+    def on_classical_vals(self, *, q: int) -> dict[str, ClassicalValRetT]:
         return {'c': ClassicalValDistribution(2)}
 
 
@@ -352,7 +352,7 @@ class ComposedPhasing(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QBit(), side=Side.RIGHT)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         from qualtran.bloqs.basic_gates import OneState, ZGate
 
         x = bb.add(OneState())
