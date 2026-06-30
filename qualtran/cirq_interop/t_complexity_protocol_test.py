@@ -120,13 +120,11 @@ def test_gates():
     assert t_complexity_compat(cirq.FREDKIN) == TComplexity(t=7, clifford=14)
 
     # TODO: https://github.com/quantumlib/Qualtran/issues/237
-    assert t_complexity_compat(cirq.H.controlled()) == TComplexity(
-        clifford=4, rotations=2
-    ) or t_complexity_compat(  # cirq <=1.4
-        cirq.H.controlled()
-    ) == TComplexity(
-        t=2, clifford=4, rotations=2
-    )
+    assert t_complexity_compat(cirq.H.controlled()) in [
+        TComplexity(clifford=4, rotations=2),  # cirq >= 1.5
+        TComplexity(t=2, clifford=4, rotations=2),  # cirq <= 1.4
+        TComplexity(t=1, clifford=1, rotations=1),  # cirq >= 1.7 (CYPowGate)
+    ]
     assert t_complexity(CHadamard()) == TComplexity(clifford=4, rotations=2)
 
     # Global phase
