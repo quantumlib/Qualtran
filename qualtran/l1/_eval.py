@@ -227,7 +227,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
             return cls(*args, **kwargs)
 
         # Allowlisted importable bloq classes
-        if '.' in node.name and node.name in _get_safe_import_names():
+        if safe and '.' in node.name and node.name in _get_safe_import_names():
             try:
                 return _eval_imported(node.name, args, kwargs)
             except (ImportError, AttributeError) as e:
