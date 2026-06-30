@@ -13,6 +13,7 @@
 #  limitations under the License.
 import importlib
 import logging
+import warnings
 from functools import lru_cache
 from typing import (
     Any,
@@ -33,17 +34,7 @@ import attrs
 import numpy as np
 import sympy
 
-from qualtran import (
-    Bloq,
-    BloqBuilder,
-    BloqError,
-    CompositeBloq,
-    QCDType,
-    Register,
-    Side,
-    Signature,
-    SoquetT,
-)
+from qualtran import Bloq, BloqBuilder, BloqError, CompositeBloq, Register, Side, Signature, SoquetT
 from qualtran.bloqs.manifest import BLOQ_CLASS_NAMES
 
 from ._dtypes import get_builtin_qdtype_mapping
@@ -58,6 +49,7 @@ from .nodes import (
     QArgNode,
     QArgValueNode,
     QCallNode,
+    QCastNode,
     QDefExternNode,
     QDefImplNode,
     QDefNode,
@@ -77,17 +69,21 @@ BloqKey: TypeAlias = str
 
 
 @lru_cache
-def _get_custom_dtypes() -> Dict[str, type[QCDType]]:
-    # TODO: Custom data types.
-    dtypes: Dict[str, type[QCDType]] = {f'{k._pkg_()}.{k.__name__}': k for k in []}  # type: ignore
-    return dtypes
-
-
-@lru_cache
 def _get_safe_loadables() -> Dict[str, type[Any]]:
     from qualtran import CtrlSpec, Register
 
     return {'CtrlSpec': CtrlSpec, 'Register': Register}
+
+
+@lru_cache
+def _get_safe_import_names() -> frozenset[str]:
+    """Return the set of fully-qualified names that are safe to import.
+
+    These are the entries in the bloq manifest (`BLOQ_CLASS_NAMES`), each of
+    the form `'qualtran.bloqs.module.ClassName'`. Only names present in
+    this set will be resolved via `importlib` when `safe=True`.
+    """
+    return frozenset(BLOQ_CLASS_NAMES)
 
 
 def eval_carg_nodes(
@@ -192,6 +188,11 @@ class UnevaluatedCValue:
 
 
 def _eval_imported(name: str, args: Sequence[Any], kwargs: Dict[str, Any]):
+    """Import and instantiate a class by its fully-qualified dotted name.
+
+    This is inherently unsafe. Callers must gate access (e.g. via the
+    bloq manifest allowlist) before calling this function.
+    """
     name_parts = name.split('.')
     package = '.'.join(name_parts[:-1])
     logger.debug("importing %s", package)
@@ -226,16 +227,20 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
             return cls(*args, **kwargs)
 
         # Allowlisted importable bloq classes
-        if '.' in node.name and node.name in BLOQ_CLASS_NAMES:
-            return _eval_imported(node.name, args, kwargs)
+        if safe and '.' in node.name and node.name in _get_safe_import_names():
+            try:
+                return _eval_imported(node.name, args, kwargs)
+            except (ImportError, AttributeError) as e:
+                warnings.warn(f"Could not evaluate {node}: {e}")
+                # Fall through
 
-        # Unknown (safe mode): return unevaluated
+        # This is where our safe journey ends; anything left is returned unevaluated (no import).
         if safe:
             uneval_cargs: list[tuple[Optional[str], Any]] = [(None, arg) for arg in args]
             uneval_cargs.extend((k, v) for k, v in kwargs.items())
             return UnevaluatedCValue(name=node.name, cargs=uneval_cargs)
 
-        # Unknown, unsafe: use `importlib` to load the class.
+        # Otherwise, unsafe arbitrary import via importlib.
         if '.' not in node.name:
             raise ValueError(f"Unknown CValueNode {node}.")
         return _eval_imported(node.name, args, kwargs)
@@ -243,47 +248,78 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
     raise TypeError(f"Unknown AST node type: {type(node)}")
 
 
-def eval_qdtype_node(dt: QDTypeNode) -> Tuple['qualtran.QCDType', Sequence[int]]:
-    context = get_builtin_qdtype_mapping() | _get_custom_dtypes()
-    try:
-        dt_cls = context[dt.dtype.name]
-    except KeyError as e:
-        raise ValueError(f"Unknown data type {dt.dtype.name}") from e
-    args, kwargs = eval_carg_nodes(dt.dtype.cargs)
-    qdt = dt_cls(*args, **kwargs)
+def _resolve_cobject_dtype(cobject: CObjectNode, *, safe: bool = True) -> 'qualtran.QCDType':
+    """Resolve a CObjectNode to a QCDType instance.
 
+    Resolution priority:
+        1. Builtin dtype constructors (QAny, QUInt, etc.)
+        2. Manifest-gated import (dotted names)
+
+    Raises:
+        ImportError: If ``safe=True`` and a dotted name is not on the manifest.
+        ValueError: If the dtype name cannot be resolved.
+    """
+
+    # 1. Builtin dtype constructors
+    builtins = get_builtin_qdtype_mapping()
+    if cobject.name in builtins:
+        dt_cls = builtins[cobject.name]
+        args, kwargs = eval_carg_nodes(cobject.cargs, safe=safe)
+        return dt_cls(*args, **kwargs)
+
+    # 2. Manifest-gated import for dotted names
+    if '.' in cobject.name:
+        if safe and cobject.name not in _get_safe_import_names():
+            raise ImportError(
+                f"Cannot import dtype '{cobject.name}' with safe=True: "
+                f"not in the bloq manifest allowlist."
+            )
+        args, kwargs = eval_carg_nodes(cobject.cargs, safe=safe)
+        return _eval_imported(cobject.name, args, kwargs)
+
+    raise ValueError(f"Unknown data type '{cobject.name}'")
+
+
+def eval_qdtype_node(
+    dt: QDTypeNode, *, safe: bool = True
+) -> Tuple['qualtran.QCDType', Sequence[int]]:
+    """Evaluate a QDTypeNode to a (QCDType, shape) pair."""
+    resolved_dt = _resolve_cobject_dtype(dt.dtype, safe=safe)
     if dt.shape is not None:
-        qshape = tuple(v for v in dt.shape)
-    else:
-        qshape = ()
-    return qdt, qshape
+        return resolved_dt, tuple(dt.shape)
+    return resolved_dt, ()
 
 
-def eval_qsignature(entries: Sequence[QSignatureEntry]) -> 'qualtran.Signature':
+def eval_qsignature(
+    entries: Sequence[QSignatureEntry], *, safe: bool = True
+) -> 'qualtran.Signature':
     registers = []
     for entry in entries:
         # One dtype: THRU register.
         if isinstance(entry.dtype, QDTypeNode):
-            dtype, shape = eval_qdtype_node(entry.dtype)
+            dtype, shape = eval_qdtype_node(entry.dtype, safe=safe)
             registers.append(
                 Register(name=entry.name, dtype=dtype, side=Side.THRU, shape=tuple(shape))
             )
             continue
 
         # Two dtypes: LEFT and/or RIGHT registers
-        assert isinstance(entry.dtype, tuple)
-        assert len(entry.dtype) == 2
+        if not isinstance(entry.dtype, tuple) or len(entry.dtype) != 2:
+            raise ValueError(
+                f"Expected a 2-tuple of QDTypeNodes for entry '{entry.name}', got {entry.dtype!r}"
+            )
         d1, d2 = entry.dtype
-        assert d1 is not None or d2 is not None
+        if d1 is None and d2 is None:
+            raise ValueError(f"Both LEFT and RIGHT dtypes are None for entry '{entry.name}'")
         # LEFT
         if d1 is not None:
-            d1type, d1shape = eval_qdtype_node(d1)
+            d1type, d1shape = eval_qdtype_node(d1, safe=safe)
             registers.append(
                 Register(name=entry.name, dtype=d1type, side=Side.LEFT, shape=tuple(d1shape))
             )
         # RIGHT
         if d2 is not None:
-            d2type, d2shape = eval_qdtype_node(d2)
+            d2type, d2shape = eval_qdtype_node(d2, safe=safe)
             registers.append(
                 Register(name=entry.name, dtype=d2type, side=Side.RIGHT, shape=tuple(d2shape))
             )
@@ -293,16 +329,44 @@ def eval_qsignature(entries: Sequence[QSignatureEntry]) -> 'qualtran.Signature':
     return sig
 
 
+@attrs.frozen
+class _PlaceholderBloq(Bloq):
+    """Could not evaluate an extern qdef, but got a valid signature."""
+
+    signature: Signature
+
+
 def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtran.Bloq':
     """Evaluate an extern node by loading in the bloq using Python."""
-    logger.info("Linking qdef extern %s from %s", qdef.bloq_key, qdef.cobject_from)
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
+
     if qdef.cobject_from is None:
         raise ValueError("The `from` clause is required for an extern qdef.")
+    from_str = qdef.cobject_from.canonical_str()
+    logger.info("Linking qdef extern %s from %s", qdef.bloq_key, from_str)
     try:
         bloq = eval_cvalue_node(qdef.cobject_from, safe=safe)
     except (ValueError, ImportError, AttributeError, TypeError) as e:
-        raise ValueError(*e.args, f'in {qdef}') from e
+        warnings.warn(f'{e} in {qdef}')
+        bloq = None
+
+    if not isinstance(bloq, Bloq):
+        warnings.warn(
+            f"Error linking qdef extern {qdef.bloq_key} from {from_str}: "
+            f"The from clause evaluated to {bloq!r} instead of a Bloq object."
+        )
+        return _PlaceholderBloq(signature=signature)
+
     return bloq
+
+
+def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> 'qualtran.Bloq':
+    """Evaluate a qcast node by constructing a QCast bloq from its signature."""
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
+    logger.info("Evaluating qcast %s", qdef.bloq_key)
+    return QCast(signature=signature)
 
 
 def eval_bloq_maybe_aliased(
@@ -310,6 +374,7 @@ def eval_bloq_maybe_aliased(
     qdefs: Dict[BloqKey, QDefNode],
     qlocals: Mapping[BloqKey, Union[BloqKey, 'SoquetT']],
     bloqs: Dict[BloqKey, Bloq],
+    safe: bool = True,
 ) -> 'qualtran.Bloq':
     """Recursively load bloqs.
 
@@ -329,26 +394,27 @@ def eval_bloq_maybe_aliased(
     if key in qlocals:
         alias = qlocals[key]
         if not isinstance(alias, str):
-            raise ValueError(f"Expected a bloq key local varibale, but got {alias} for {key}")
-        return eval_bloq_maybe_aliased(alias, qdefs, qlocals, bloqs)
+            raise ValueError(f"Expected a bloq key local variable, but got {alias} for {key}")
+        return eval_bloq_maybe_aliased(alias, qdefs, qlocals, bloqs, safe=safe)
 
     if key in qdefs:
         qdef = qdefs[key]
         if isinstance(qdef, QDefExternNode):
-            bloq = eval_qdef_extern_node(qdef)
+            bloq = eval_qdef_extern_node(qdef, safe=safe)
+            bloqs[key] = bloq
+            return bloq
+        elif isinstance(qdef, QCastNode):
+            bloq = eval_qcast_node(qdef, safe=safe)
             bloqs[key] = bloq
             return bloq
         elif isinstance(qdef, QDefImplNode):
-            bloq = eval_qdef_impl_node(qdef, qdefs, bloqs)
+            bloq = eval_qdef_impl_node(qdef, qdefs, bloqs, safe=safe)
             bloqs[key] = bloq
             return bloq
         else:
             raise TypeError(f"Unknown qdef type {qdef}")
 
-    if key not in qdefs:
-        raise ValueError(f"Could not resolve {key}")
-
-    raise TypeError(f"Could not resolve {key}")
+    raise ValueError(f"Could not resolve {key}")
 
 
 def eval_qarg_value(val: NestedQArgValue, qlocals: Mapping[str, 'qualtran.SoquetT']):
@@ -391,9 +457,10 @@ def _eval_qdef_impl_node(
     """
     logger.info("Evaluating qdef impl %s", qdef.bloq_key)
 
-    signature: Signature = eval_qsignature(qdef.qsignature)
-    qlocals: Mapping[str, Union['SoquetT', BloqKey]]
-    bb, qlocals = BloqBuilder.from_signature(signature)
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
+    qlocals: Dict[str, Union['SoquetT', BloqKey]] = {}
+    bb, initial_qlocals = BloqBuilder.from_signature(signature)
+    qlocals.update(initial_qlocals)
     subbloq_aliases: Dict[Bloq, str] = {}
 
     stmt: StatementNode
@@ -403,22 +470,22 @@ def _eval_qdef_impl_node(
 
         if isinstance(stmt, AliasAssignmentNode):
             qlocals[stmt.alias] = stmt.bloq_key  # type: ignore[assignment]
-            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs)
+            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
             subbloq_aliases[bloq] = stmt.alias
 
         elif isinstance(stmt, QCallNode):
-            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs)
-            qkwargs = eval_qarg_nodes(stmt.qargs, qlocals)
+            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
+            qkwargs = eval_qarg_nodes(stmt.qargs, qlocals)  # type: ignore[arg-type]
             qrets = bb.add_t(bloq, **qkwargs)
             if len(qrets) != len(stmt.lvalues):
                 raise BloqError(
                     f"Calling {stmt.bloq_key} gives {len(qrets)} return values, but {len(stmt.lvalues)} lvalues were written"
                 )
             for qret, lval in zip(qrets, stmt.lvalues):
-                qlocals[lval] = qret
+                qlocals[lval.name] = qret
 
         elif isinstance(stmt, QReturnNode):
-            qkwargs = eval_qarg_nodes(stmt.ret_mapping, qlocals)
+            qkwargs = eval_qarg_nodes(stmt.ret_mapping, qlocals)  # type: ignore[arg-type]
             cbloq = bb.finalize(**qkwargs)
             break
 
@@ -465,7 +532,7 @@ def eval_qdef_impl_node(
     except Exception as e:
         logger.error("%s", e)
         logger.error("During evaluation of %s", qdef.bloq_key)
-        raise e
+        raise
 
 
 def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bloq']:
@@ -492,6 +559,10 @@ def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bl
 
         elif isinstance(qdef, QDefExternNode):
             bloq = eval_qdef_extern_node(qdef, safe=safe)
+            bloqs[bk] = bloq
+
+        elif isinstance(qdef, QCastNode):
+            bloq = eval_qcast_node(qdef, safe=safe)
             bloqs[bk] = bloq
 
         else:

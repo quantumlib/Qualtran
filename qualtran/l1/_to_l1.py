@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import io
 import itertools
 import logging
 import uuid
+import warnings
 from typing import (
     Callable,
     cast,
@@ -25,6 +28,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     TypeAlias,
     Union,
 )
@@ -35,24 +39,23 @@ import numpy as np
 import qualtran as qlt
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns, _cxns_to_soq_dict
+from qualtran._infra.quantum_graph import _Soquet
 
-from .._infra.quantum_graph import _Soquet
+from . import nodes as qualtran_l1_nodes
 from ._dtypes import reg_to_qdtype_node
-from ._to_cobject_node import to_cobject_node
-from .nodes import (
-    AliasAssignmentNode,
-    CObjectNode,
-    L1Module,
-    QArgNode,
-    QArgValueNode,
-    QCallNode,
-    QDefExternNode,
-    QDefImplNode,
-    QDefNode,
-    QReturnNode,
-    QSignatureEntry,
-    StatementNode,
-)
+from ._to_cobject_node import to_cobject_node, unserializable_object
+from .nodes import L1Nodes
+
+if TYPE_CHECKING:
+    from .nodes import (
+        CObjectNode,
+        L1Module,
+        QArgNode,
+        QArgValueNode,
+        QDefNode,
+        QSignatureEntry,
+        StatementNode,
+    )
 
 BloqKey: TypeAlias = str
 
@@ -78,6 +81,7 @@ class Locals:
     soqvars: Dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
     bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
     varnames: Set[str] = attrs.field(factory=set)
+    nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
 
     def get_unique_name(self, prefix: str) -> str:
         """Get and register a unique name."""
@@ -98,7 +102,7 @@ class Locals:
 
     def assign_soq(self, soq: _Soquet, prefix: str) -> str:
         name = self.get_unique_name(prefix)
-        self.soqvars[soq] = QArgValueNode(name, ())
+        self.soqvars[soq] = self.nodes.QArgValueNode(name, ())
         return name
 
     def assign_bloq(self, bloq: qlt.Bloq, prefix: str) -> str:
@@ -107,40 +111,105 @@ class Locals:
         return name
 
 
+def regs_to_sig_entry(
+    reg_name: str, regs: Sequence['qlt.Register'], *, nodes: L1Nodes = qualtran_l1_nodes
+) -> QSignatureEntry:
+    """Convert a register group (from `Signature.groups()`) to a `QSignatureEntry`.
+
+    This is the pure conversion logic without any side effects such as
+    annotation or local-variable registration.
+
+    Args:
+        reg_name: The register group name.
+        regs: The 1- or 2-element sequence of registers for this group.
+        nodes: The module providing the AST node constructors.
+    """
+    if len(regs) not in [1, 2]:
+        raise ValueError(f'Bad regs for {reg_name}')
+
+    if len(regs) == 2:
+        r1, r2 = regs
+        if r1.side is qlt.Side.LEFT and r2.side is qlt.Side.RIGHT:
+            return nodes.QSignatureEntry(
+                reg_name, (reg_to_qdtype_node(r1, nodes=nodes), reg_to_qdtype_node(r2, nodes=nodes))
+            )
+        elif r2.side is qlt.Side.LEFT and r1.side is qlt.Side.RIGHT:
+            return nodes.QSignatureEntry(
+                reg_name, (reg_to_qdtype_node(r2, nodes=nodes), reg_to_qdtype_node(r1, nodes=nodes))
+            )
+        raise ValueError(f'Bad register sides for {reg_name}: {regs}')
+
+    (r,) = regs
+    if r.side is qlt.Side.THRU:
+        return nodes.QSignatureEntry(reg_name, reg_to_qdtype_node(r, nodes=nodes))
+    elif r.side is qlt.Side.RIGHT:
+        return nodes.QSignatureEntry(reg_name, (None, reg_to_qdtype_node(r, nodes=nodes)))
+    elif r.side is qlt.Side.LEFT:
+        return nodes.QSignatureEntry(reg_name, (reg_to_qdtype_node(r, nodes=nodes), None))
+    else:
+        raise ValueError(f'Bad side for {r}')
+
+
+def signature_to_l1_entries(
+    signature: 'qlt.Signature', *, nodes: L1Nodes = qualtran_l1_nodes
+) -> List[QSignatureEntry]:
+    """Convert a `qualtran.Signature` to a list of `QSignatureEntry` AST nodes.
+
+    This is a convenience wrapper around `regs_to_sig_entry` for all register
+    groups in the signature.
+    """
+    return [regs_to_sig_entry(reg_name, regs, nodes=nodes) for reg_name, regs in signature.groups()]
+
+
 @attrs.mutable
 class QDefBuilder:
     bloq: qlt.Bloq
     bloq_key: str
     qglobals: Dict[qlt.Bloq, str]
+    nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     qlocals: Locals = attrs.field(factory=Locals)
 
     _sig_entries: List[QSignatureEntry] = attrs.field(factory=list)
     _stmnts: List[StatementNode] = attrs.field(factory=list)
 
+    def __attrs_post_init__(self):
+        if self.qlocals.nodes is qualtran_l1_nodes and self.nodes is not qualtran_l1_nodes:
+            self.qlocals.nodes = self.nodes
+
+    def _get_sig_entry_annotation(self, reg: 'qlt.Register') -> Optional[CObjectNode]:
+        """Determine annotation based on wire symbol."""
+        from qualtran.drawing import Circle, ModPlus
+
+        if reg.shape:
+            # TODO: Support for shaped registers.
+            return None
+
+        annotation: Optional[CObjectNode] = None
+        symbol = self.bloq.wire_symbol(reg)
+        if isinstance(symbol, Circle):
+            if symbol.filled:
+                annotation = self.nodes.CObjectNode('dot', cargs=())
+            else:
+                annotation = self.nodes.CObjectNode('circle', cargs=())
+        elif isinstance(symbol, ModPlus):
+            annotation = self.nodes.CObjectNode('oplus', cargs=())
+        return annotation
+
     def _get_sig_entry(self, reg_name: str, regs: Sequence['qlt.Register']) -> QSignatureEntry:
-        if len(regs) not in [1, 2]:
-            raise ValueError(f'Bad regs for {reg_name}')
+        entry = regs_to_sig_entry(reg_name, regs, nodes=self.nodes)
 
-        if len(regs) == 2:
-            r1, r2 = regs
-            if r1.side is qlt.Side.LEFT and r2.side is qlt.Side.RIGHT:
-                self.qlocals.register_name(r1.name)
-                return QSignatureEntry(reg_name, (reg_to_qdtype_node(r1), reg_to_qdtype_node(r2)))
-            elif r2.side is qlt.Side.LEFT and r1.side is qlt.Side.RIGHT:
-                self.qlocals.register_name(r2.name)
-                return QSignatureEntry(reg_name, (reg_to_qdtype_node(r2), reg_to_qdtype_node(r1)))
+        # Layer on annotation from wire symbols
+        # TODO: Handle the case for different r1 vs r2
+        annotation = self._get_sig_entry_annotation(regs[0])
+        if annotation is not None:
+            entry = attrs.evolve(entry, annotation=annotation)
 
-        (r,) = regs
-        if r.side is qlt.Side.THRU:
-            self.qlocals.register_name(r.name)
-            return QSignatureEntry(reg_name, reg_to_qdtype_node(r))
-        elif r.side is qlt.Side.RIGHT:
-            return QSignatureEntry(reg_name, (None, reg_to_qdtype_node(r)))
-        elif r.side is qlt.Side.LEFT:
-            self.qlocals.register_name(r.name)
-            return QSignatureEntry(reg_name, (reg_to_qdtype_node(r), None))
-        else:
-            raise ValueError(f'Bad side for {r}')
+        # Register local variable names for LEFT/THRU registers
+        for r in regs:
+            if r.side in (qlt.Side.LEFT, qlt.Side.THRU):
+                self.qlocals.register_name(r.name)
+
+        return entry
 
     def add_signature(self, signature: 'qlt.Signature') -> None:
         for reg_name, regs in signature.groups():
@@ -148,11 +217,14 @@ class QDefBuilder:
             self._sig_entries.append(entry)
 
     def finalize_extern(self, reason: str = ''):
-        cobject_from_val = to_cobject_node(self.bloq)
-        assert isinstance(cobject_from_val, CObjectNode)
-        cobject_from = cobject_from_val
+        cobject_from: CObjectNode
+        if isinstance(self.bloq, qlt.CompositeBloq):
+            warnings.warn("Tried to `extern` a CompositeBloq. You will not be able to load this.")
+            cobject_from = unserializable_object('CompositeBloq', nodes=self.nodes)
+        else:
+            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)  # type: ignore[assignment]
         return QDefWithContext(
-            qdef=QDefExternNode(
+            qdef=self.nodes.QDefExternNode(
                 bloq_key=self.bloq_key, qsignature=self._sig_entries, cobject_from=cobject_from
             ),
             bloq=self.bloq,
@@ -160,10 +232,19 @@ class QDefBuilder:
             extern_reason=reason,
         )
 
+    def finalize_qcast(self) -> QDefWithContext:
+        """Finalize as a qcast (casting operation) definition."""
+        return QDefWithContext(
+            qdef=self.nodes.QCastNode(bloq_key=self.bloq_key, qsignature=self._sig_entries),
+            bloq=self.bloq,
+            implemented=False,
+            extern_reason='qcast',
+        )
+
     def add_alias_assignment_heuristically(self, bloq: qlt.Bloq) -> None:
 
         if bloq not in self.qglobals:
-            bloq_key = _get_unique_bloq_key(bloq, self.qglobals.values())
+            bloq_key = _get_unique_bloq_key(bloq, self.qglobals.values(), nodes=self.nodes)
             self.qglobals[bloq] = bloq_key
         else:
             bloq_key = self.qglobals[bloq]
@@ -175,9 +256,9 @@ class QDefBuilder:
         # If it's longer than 20 characters, make an alias.
         should_alias = len(bloq_key) > 20
         if should_alias:
-            prefix = _guess_good_alias_prefix(bloq)
+            prefix = _guess_good_alias_prefix(bloq, nodes=self.nodes)
             alias_str = self.qlocals.assign_bloq(bloq, prefix=prefix)
-            self._stmnts.append(AliasAssignmentNode(alias=alias_str, bloq_key=bloq_key))
+            self._stmnts.append(self.nodes.AliasAssignmentNode(alias=alias_str, bloq_key=bloq_key))
         else:
             self.qlocals.bloqvars[bloq] = bloq_key
 
@@ -194,10 +275,10 @@ class QDefBuilder:
             for suc in succs:
                 reg = suc.left.reg
                 if reg.shape:
-                    v = QArgValueNode(reg.name, suc.left.idx)
+                    v = self.nodes.QArgValueNode(reg.name, suc.left.idx)
                     self.qlocals.soqvars[suc.left] = v
                 else:
-                    v = QArgValueNode(reg.name, ())
+                    v = self.nodes.QArgValueNode(reg.name, ())
                     self.qlocals.soqvars[suc.left] = v
             return
 
@@ -219,11 +300,13 @@ class QDefBuilder:
                     arr = np.empty(soqs.shape, dtype=object)
                     for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
                         arr[idx] = self.qlocals.soqvars[soqs[idx]]
-                    kwargs.append(QArgNode(regname, arr.tolist()))
+                    kwargs.append(self.nodes.QArgNode(regname, arr.tolist()))
                 else:
-                    kwargs.append(QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)]))
+                    kwargs.append(
+                        self.nodes.QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)])
+                    )
 
-            self._stmnts.append(QReturnNode(ret_mapping=kwargs))
+            self._stmnts.append(self.nodes.QReturnNode(ret_mapping=kwargs))
             return
 
         # Otherwise, this is a qcall to a sub-bloq.
@@ -241,9 +324,11 @@ class QDefBuilder:
                 arr = np.empty(soqs.shape, dtype=object)
                 for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
                     arr[idx] = self.qlocals.soqvars[soqs[idx]]
-                kwargs.append(QArgNode(regname, arr.tolist()))
+                kwargs.append(self.nodes.QArgNode(regname, arr.tolist()))
             else:
-                kwargs.append(QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)]))
+                kwargs.append(
+                    self.nodes.QArgNode(regname, self.qlocals.soqvars[cast(_Soquet, soqs)])
+                )
 
         # B: Handle output variables from the subbloq
         retsoqs = _cxns_to_soq_dict(
@@ -261,30 +346,32 @@ class QDefBuilder:
             if qlt.BloqBuilder.is_ndarray(soqs):
                 for idx in itertools.product(*[range(sh) for sh in soqs.shape]):
                     # Track indexed soquets as independent local variables
-                    self.qlocals.soqvars[soqs[idx]] = QArgValueNode(basename, idx)
+                    self.qlocals.soqvars[soqs[idx]] = self.nodes.QArgValueNode(basename, idx)
                 # But syntactically, we assign to an indexless basename.
                 rets.append(basename)
             else:
-                self.qlocals.soqvars[cast(_Soquet, soqs)] = QArgValueNode(basename, ())
+                self.qlocals.soqvars[cast(_Soquet, soqs)] = self.nodes.QArgValueNode(basename, ())
                 rets.append(basename)
 
         # C. Record the call itself to `binst.bloq`.
         self._stmnts.append(
-            QCallNode(bloq_key=self.qlocals.bloqvars[binst.bloq], lvalues=rets, qargs=kwargs)
+            self.nodes.QCallNode(
+                bloq_key=self.qlocals.bloqvars[binst.bloq],
+                lvalues=[self.nodes.LValueNode(r) for r in rets],
+                qargs=kwargs,
+            )
         )
 
-    def finalize(self, extern_only_from: bool):
+    def finalize(self, extern_only_from: bool) -> QDefWithContext:
         if extern_only_from:
             cobject_from = None
         elif isinstance(self.bloq, qlt.CompositeBloq):
             cobject_from = None
         else:
-            cobject_from_val = to_cobject_node(self.bloq)
-            assert isinstance(cobject_from_val, CObjectNode)
-            cobject_from = cobject_from_val
+            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)  # type: ignore[assignment]
 
         return QDefWithContext(
-            qdef=QDefImplNode(
+            qdef=self.nodes.QDefImplNode(
                 bloq_key=self.bloq_key,
                 qsignature=self._sig_entries,
                 body=self._stmnts,
@@ -294,20 +381,15 @@ class QDefBuilder:
             implemented=True,
         )
 
-    # qlocals: Locals = attrs.field(factory=Locals)
-    # calls: List[FormattedCall] = attrs.field(factory=list)
-    # aliases: List[Alias] = attrs.field(factory=list)
-    # ret_qargs: str = ''
-    # implemented: bool = True
-    # extern_only_from: bool = False
 
-
-def bloq_to_code(
+def bloq_to_ast(
     bloq: qlt.Bloq,
     qglobals: Dict[qlt.Bloq, BloqKey],
     *,
     extern_only_from: bool,
     force_extern: bool = False,
+    level: int = 0,
+    nodes: L1Nodes = qualtran_l1_nodes,
 ) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
     """Turn a bloq into Qualtran-L1 code.
 
@@ -321,11 +403,14 @@ def bloq_to_code(
     if bloq in qglobals:
         bloq_key = qglobals[bloq]
     else:
-        bloq_key = _get_unique_bloq_key(bloq, qglobals.values())
+        bloq_key = _get_unique_bloq_key(bloq, qglobals.values(), nodes=nodes)
         qglobals[bloq] = bloq_key
 
-    qdb = QDefBuilder(bloq=bloq, bloq_key=bloq_key, qglobals=qglobals)
-    log.info("Compiling %s -> %s", repr(bloq), bloq_key)
+    qdb = QDefBuilder(
+        bloq=bloq, bloq_key=bloq_key, qglobals=qglobals, nodes=nodes, qlocals=Locals(nodes=nodes)
+    )
+    indent = ' ' * level
+    log.info("%sCompiling %s -> %s", indent, repr(bloq), bloq_key)
 
     # Signature
     qdb.add_signature(bloq.signature)
@@ -333,6 +418,17 @@ def bloq_to_code(
     if force_extern:
         return qdb.finalize_extern(reason='force_extern'), []
 
+    # Detect bookkeeping / casting bloqs and emit as qcast.
+    # Alloc and Free are _BookkeepingBloqs but are *not* casts.
+    from qualtran.bloqs.bookkeeping._bookkeeping_bloq import _BookkeepingBloq
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
+    if isinstance(bloq, (Allocate, Free)):
+        return qdb.finalize_extern(reason='alloc/free'), []
+    if isinstance(bloq, (_BookkeepingBloq, QCast)):
+        return qdb.finalize_qcast(), []
     if isinstance(bloq, qlt.CompositeBloq):
         cbloq = bloq
     else:
@@ -368,6 +464,7 @@ class L1ModuleBuilder:
     done: Set[qlt.Bloq] = attrs.field(factory=set)
     qdefs: List[QDefWithContext] = attrs.field(factory=list)
     extern_qdefs: List[QDefWithContext] = attrs.field(factory=list)
+    nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     # all_costs: Dict['CostKey', Dict] = attrs.field(factory=dict)
 
     def add_bloqs(
@@ -378,27 +475,30 @@ class L1ModuleBuilder:
         extern_only_from: bool = True,
         force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
     ) -> BloqKey:
-        # returns the bloq key of the root bloq
-        subbloqs = [root]
+
+        # Stack of (Bloq, level) indices where `level` is the level of recursion
+        subbloqs: List[Tuple[qlt.Bloq, int]] = [(root, 0)]
 
         # cks = [QECGatesCost(), QubitCount()]
         # if not self.all_costs:
         #     self.all_costs = {ck: {} for ck in cks}
 
         while subbloqs:
-            bloq: qlt.Bloq = subbloqs.pop(0)
+            bloq, level = subbloqs.pop(0)
             if bloq in self.done:
                 continue
 
             force_extern = force_extern_pred(bloq)
 
-            qdef, new_subbloqs = bloq_to_code(
+            qdef, new_subbloqs = bloq_to_ast(
                 bloq=bloq,
                 qglobals=self.qglobals,
                 extern_only_from=extern_only_from,
                 force_extern=force_extern,
+                level=level,
+                nodes=self.nodes,
             )
-            subbloqs += new_subbloqs
+            subbloqs += [(nsb, level + 1) for nsb in new_subbloqs]
 
             # if annotate_costs:
             #     lines = get_cost_lines(bloq, cks, self.all_costs)
@@ -414,7 +514,7 @@ class L1ModuleBuilder:
         return self.qglobals[root]
 
     def finalize(self) -> L1Module:
-        return L1Module(qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs))
+        return self.nodes.L1Module(qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs))
 
     def pretty_print_qdef(self, bloq_or_bloq_key: Union[qlt.Bloq, BloqKey], f=None) -> None:
         from qualtran.l1 import L1ASTPrinter
@@ -449,10 +549,11 @@ def dump_l1(
     annotate_costs: bool = False,
     extern_only_from: bool = False,
     force_extern_pred: Callable[['qlt.Bloq'], bool] = lambda b: False,
+    nodes: L1Nodes = qualtran_l1_nodes,
 ) -> Optional[str]:
     from qualtran.l1 import L1ASTPrinter
 
-    l1_mb = L1ModuleBuilder()
+    l1_mb = L1ModuleBuilder(nodes=nodes)
     root_bloq_key = l1_mb.add_bloqs(
         root=bloq,
         annotate_costs=annotate_costs,
@@ -469,7 +570,7 @@ def dump_l1(
     return root_bloq_key
 
 
-def dump_root_l1(bloq: qlt.Bloq) -> str:
+def dump_root_l1(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes) -> str:
     from qualtran.l1 import L1ASTPrinter
 
     def extern_all_but_root(b: qlt.Bloq) -> bool:
@@ -477,7 +578,7 @@ def dump_root_l1(bloq: qlt.Bloq) -> str:
             return False
         return True
 
-    l1_mb = L1ModuleBuilder()
+    l1_mb = L1ModuleBuilder(nodes=nodes)
     _root_bloq_key = l1_mb.add_bloqs(
         root=bloq, extern_only_from=True, force_extern_pred=extern_all_but_root
     )
@@ -487,14 +588,15 @@ def dump_root_l1(bloq: qlt.Bloq) -> str:
     return l1_txt
 
 
-def _get_unique_bloq_key(bloq: qlt.Bloq, bloq_keys: Container[str]) -> str:
+def _get_unique_bloq_key(
+    bloq: qlt.Bloq, bloq_keys: Container[str], *, nodes: L1Nodes = qualtran_l1_nodes
+) -> str:
     """Heuristic for writing a human-readable bloq key"""
     from qualtran.l1 import parse_objectstring
-    from qualtran.l1.nodes import CArgNode, LiteralNode
 
     key = str(bloq).replace('†', '_dag')
     try:
-        structured_key = parse_objectstring(key)
+        structured_key = parse_objectstring(key, nodes=nodes)
         key = structured_key.canonical_str()
         if key not in bloq_keys:
             log.debug("Using structured __str__ for %s", bloq)
@@ -502,7 +604,7 @@ def _get_unique_bloq_key(bloq: qlt.Bloq, bloq_keys: Container[str]) -> str:
         i = 1
         while True:
             new_cargs = tuple(structured_key.cargs) + (
-                CArgNode(key='variant', value=LiteralNode(value=i)),
+                nodes.CArgNode(key='variant', value=nodes.LiteralNode(value=i)),
             )
             key = attrs.evolve(structured_key, cargs=new_cargs).canonical_str()
             if key not in bloq_keys:
@@ -516,14 +618,14 @@ def _get_unique_bloq_key(bloq: qlt.Bloq, bloq_keys: Container[str]) -> str:
         return f'bloq{uuid.uuid4().hex}'
 
 
-def _guess_good_alias_prefix(bloq: qlt.Bloq):
+def _guess_good_alias_prefix(bloq: qlt.Bloq, *, nodes: L1Nodes = qualtran_l1_nodes):
     """Heuristic for coming up with a good bloq object alias name"""
 
     from qualtran.l1 import parse_objectstring
 
     key = str(bloq).replace('†', '_dag')
     try:
-        structured_key = parse_objectstring(key)
+        structured_key = parse_objectstring(key, nodes=nodes)
         name = structured_key.name
     except ValueError:
         name = bloq.__class__.__name__

@@ -34,7 +34,6 @@ def test_issue_1713():
     assert bloq
 
 
-@pytest.mark.xfail(reason="Missing _pkg_")
 def test_load_bloq():
     s = "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.chemistry.hubbard_model.qubitization.PrepareHubbard(5, 5, 2.0, 0.1), None, -1, 1e-11)"
     bloq = load_bloq(s)
@@ -62,8 +61,7 @@ def test_load_objectstring_unsafe_import():
 
 
 def test_load_negate():
-    module = load_module(
-        """
+    module = load_module("""
     # Qualtran-L1
     # 1.0.0
 
@@ -83,8 +81,7 @@ def test_load_negate():
 
     extern qdef AddK(k=1)
     from qualtran.bloqs.arithmetic.AddK(QUInt(8), 1)
-    [x: QUInt(8)]"""
-    )
+    [x: QUInt(8)]""")
 
     assert set(module.keys()) == {'Negate', 'BitwiseNot(8)', 'AddK(k=1)'}
     cbloq = cast(qlt.CompositeBloq, module['Negate'])
