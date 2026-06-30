@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import networkx as nx
+import pytest
 
 import qualtran as qlt
 import qualtran.bloqs.arithmetic
@@ -148,6 +149,7 @@ def test_multiand_roundtrip():
     )
 
 
+@pytest.mark.slow
 def test_select_hubbard_roundtrip():
     check_roundtrip(
         'qualtran.bloqs.chemistry.hubbard_model.qubitization.SelectHubbard(x_dim=5, y_dim=5)',
