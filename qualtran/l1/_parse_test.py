@@ -33,6 +33,7 @@ from qualtran.l1.nodes import (
     LiteralNode,
     QArgValueNode,
     QCallNode,
+    QCastNode,
     QDefImplNode,
     QDTypeNode,
     QReturnNode,
@@ -458,3 +459,26 @@ def test_parse_signature_with_annotation():
     module = parse_module(code)
     qdef = module.qdefs[0]
     assert qdef.qsignature[0].annotation.value == 1
+
+
+def test_parse_qcast():
+    code = """# Qualtran-L1
+# 1.0.0
+
+qcast Split(QUInt(4))
+[reg: QUInt(4) -> QBit[4]]
+"""
+    module = parse_module(code)
+    assert len(module.qdefs) == 1
+    qdef = module.qdefs[0]
+    assert isinstance(qdef, QCastNode)
+    assert qdef.bloq_key == "Split(QUInt(4))"
+    assert len(qdef.qsignature) == 1
+    assert qdef.cobject_from is None
+
+    # Check the signature entry
+    sig = qdef.qsignature[0]
+    assert sig.name == "reg"
+    # It's a casting register: t1 -> t2
+    assert isinstance(sig.dtype, tuple)
+    assert len(sig.dtype) == 2

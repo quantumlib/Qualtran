@@ -106,7 +106,6 @@ def to_qdtype_node(
         from ._to_cobject_node import to_cobject_node
 
         cval_node = to_cobject_node(dtype, nodes=nodes)
-        assert isinstance(cval_node, nodes.CObjectNode)
         dtype_node = cval_node
 
     return dtype_node

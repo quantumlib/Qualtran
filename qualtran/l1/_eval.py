@@ -85,8 +85,9 @@ def _get_safe_loadables() -> Dict[str, type[Any]]:
 def _get_safe_import_names() -> frozenset[str]:
     """Return the set of fully-qualified names that are safe to import.
 
-    This is derived from `BLOQ_CLASS_NAMES` plus the module prefixes of the
-    safe-loadable types and builtin dtypes.
+    These are the entries in the bloq manifest (`BLOQ_CLASS_NAMES`), each of
+    the form `'qualtran.bloqs.module.ClassName'`. Only names present in
+    this set will be resolved via `importlib` when `safe=True`.
     """
     return frozenset(BLOQ_CLASS_NAMES)
 

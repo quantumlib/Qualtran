@@ -417,7 +417,7 @@ class QualtranL1Parser:
         qargs = self.parse_qargs()
         return self.nodes.QReturnNode(qargs)
 
-    def parse_lvalues(self) -> List[str]:
+    def parse_lvalues(self) -> List[LValueNode]:
         """Parse a comma-separated list of l-values.
 
         L-values are the targets of an assignment statement, typically

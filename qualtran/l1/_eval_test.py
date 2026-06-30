@@ -278,3 +278,37 @@ from collections.OrderedDict()
     # Verify that safe=True returns UnevaluatedCValue for the same node.
     result_safe_direct = eval_cvalue_node(impl_qdef.cobject_from, safe=True)
     assert isinstance(result_safe_direct, UnevaluatedCValue)
+
+
+def test_eval_qcast_node():
+    from qualtran.l1._eval import eval_qcast_node
+    from qualtran.l1.nodes import CObjectNode, QCastNode, QDTypeNode, QSignatureEntry
+
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
+    # Build a QCastNode for Split(QUInt(4)): reg: QUInt(4) -> QBit[4]
+    quint4 = QDTypeNode(dtype=CObjectNode(name='QUInt', cargs=[CArgNode(None, LiteralNode(4))]), shape=None)
+    qbit_arr = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=[4])
+    sig_entry = QSignatureEntry(name='reg', dtype=(quint4, qbit_arr))
+    qcast_node = QCastNode(bloq_key='Split(QUInt(4))', qsignature=[sig_entry])
+
+    result = eval_qcast_node(qcast_node, safe=True)
+    assert isinstance(result, QCast)
+    assert len(result.signature) == 2  # LEFT reg and RIGHT reg
+
+
+def test_qcast_roundtrip():
+    from qualtran.l1 import eval_module, parse_module
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
+    l1_code = """# Qualtran-L1
+# 1.0.0
+
+qcast Split(QUInt(4))
+[reg: QUInt(4) -> QBit[4]]
+"""
+    mod = parse_module(l1_code)
+    bloqs = eval_module(mod, safe=True)
+    assert 'Split(QUInt(4))' in bloqs
+    bloq = bloqs['Split(QUInt(4))']
+    assert isinstance(bloq, QCast)

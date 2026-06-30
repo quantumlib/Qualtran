@@ -22,6 +22,7 @@ from .nodes import (
     CObjectNode,
     L1ASTNode,
     L1Module,
+    LValueNode,
     QArgNode,
     QArgValueNode,
     QCallNode,
@@ -94,10 +95,17 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
         return record
 
     @visit.register
+    def _(self, node: LValueNode):
+        record: Dict[str, Any] = {'name': node.name}
+        if node.annotation is not None:
+            record['annotation'] = self.visit(node.annotation)
+        return record
+
+    @visit.register
     def _(self, node: QCallNode):
         record: Dict[str, Any] = {
             'bloq_key': node.bloq_key,
-            'lvalues': [lv for lv in node.lvalues],
+            'lvalues': [self.visit(lv) for lv in node.lvalues],
             'qargs': [self.visit(qa) for qa in node.qargs],
         }
         return record

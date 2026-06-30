@@ -248,7 +248,6 @@ class QDefBuilder:
             cobject_from_val = unserializable_object('CompositeBloq', nodes=self.nodes)
         else:
             cobject_from_val = to_cobject_node(self.bloq, nodes=self.nodes)
-        assert isinstance(cobject_from_val, self.nodes.CObjectNode)
         cobject_from = cobject_from_val
         return QDefWithContext(
             qdef=self.nodes.QDefExternNode(
@@ -396,7 +395,6 @@ class QDefBuilder:
             cobject_from = None
         else:
             cobject_from_val = to_cobject_node(self.bloq, nodes=self.nodes)
-            assert isinstance(cobject_from_val, self.nodes.CObjectNode)
             cobject_from = cobject_from_val
 
         return QDefWithContext(
