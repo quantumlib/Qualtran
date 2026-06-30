@@ -11,6 +11,7 @@
 #  limitations under the License.
 
 name: Nightly CI
+run-name: Nightly CI full tests
 
 on:
   schedule:
@@ -18,6 +19,11 @@ on:
 
   # Allow manual invocation – useful for debugging.
   workflow_dispatch:
+    inputs:
+      processes:
+        description: 'Value of "-n" option passed to pytest'
+        type: string
+        default: ""
 
 concurrency:
   # Cancel any previously-started but still active runs on the same branch.
@@ -27,19 +33,32 @@ concurrency:
 # Declare default permissions as read only.
 permissions: read-all
 
+env:
+  # Default value for "-n" argument to pytest with pytest-xdist plugin.
+  pytest-n: ${{inputs.processes || 'logical'}}
+
 jobs:
   pytest:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04-x64-8-core
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
       - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
+
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
           python-version: "3.12"
+
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
       - name: Install dependencies
-        run: |
-          uv sync --frozen --no-dev --group test
-      - run: |
-          uv run --no-sync check/pytest-full --durations=10 -v -n=0
+        run: uv sync --frozen --no-dev --group test
+
+      - name: Run the full Pytest suite
+        env:
+          # Adding xtrace makes Bash commands & scripts run with "-x".
+          SHELLOPTS: ${{runner.debug && 'xtrace'}}
+        run: uv run --no-sync check/pytest-full --durations 10 -v -n ${{env.pytest-n}}
