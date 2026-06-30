@@ -137,7 +137,7 @@ class L1ASTPrinter(L1VisitorBase):
         r = super().visit(node)
 
         if r['lvalues']:
-            rets = ', '.join(self.visit(lv) for lv in r['lvalues'])
+            rets = ', '.join(str(lv) for lv in r['lvalues'])
         else:
             rets = '|'
         qargs = ', '.join(r['qargs'])
