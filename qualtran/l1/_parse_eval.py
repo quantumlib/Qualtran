@@ -15,7 +15,7 @@ import logging
 from typing import Dict
 
 import qualtran as qlt
-from qualtran.l1._eval import BloqKey, eval_module
+from qualtran.l1._eval import eval_module, SymbolID
 from qualtran.l1._parse import parse_module
 
 from ._eval import eval_cvalue_node
@@ -29,7 +29,7 @@ def load_objectstring(objectstring: str, *, safe: bool = True) -> object:
     return eval_cvalue_node(cobject_node, safe=safe)
 
 
-def load_module(l1_code: str, *, safe: bool = True) -> Dict[BloqKey, 'qlt.Bloq']:
+def load_module(l1_code: str, *, safe: bool = True) -> Dict[SymbolID, 'qlt.Bloq']:
     m = parse_module(l1_code)
     return eval_module(m, safe=safe)
 

@@ -17,10 +17,11 @@
 import json
 import logging
 import re
-from typing import List
+from typing import List, Optional, Tuple
 
 import attrs
 
+from . import nodes as qualtran_l1_nodes
 from .nodes import (
     AliasAssignmentNode,
     CArgNode,
@@ -28,11 +29,14 @@ from .nodes import (
     CValueNode,
     L1ASTNode,
     L1Module,
+    L1Nodes,
     LiteralNode,
+    LValueNode,
     NestedQArgValue,
     QArgNode,
     QArgValueNode,
     QCallNode,
+    QCastNode,
     QDefExternNode,
     QDefImplNode,
     QDefNode,
@@ -73,6 +77,7 @@ def tokenize(code: str) -> List[Token]:
         ('DOT', r'\.'),
         ('COLON', r':'),
         ('PIPE', r'\|'),
+        ('AT', r'@'),
         ('NEWLINE', r'\n'),
         ('SKIP', r'[ \t]+'),
         ('MISMATCH', r'.'),
@@ -107,9 +112,10 @@ def tokenize(code: str) -> List[Token]:
 class QualtranL1Parser:
     """A recursive-descent parser for bloq strings."""
 
-    def __init__(self, tokens: List[Token]):
+    def __init__(self, tokens: List[Token], nodes: L1Nodes = qualtran_l1_nodes):
         self.tokens = tokens
         self.pos = 0
+        self.nodes = nodes
 
     def peek(self) -> Token:
         """Look at the next token without consuming it."""
@@ -165,6 +171,12 @@ class QualtranL1Parser:
             return True
         return False
 
+    def parse_annotation(self) -> Optional[CValueNode]:
+        if self.check('AT'):
+            self.advance()
+            return self.parse_cvalue()
+        return None
+
     def parse_module(self) -> L1Module:
         """Parse an L1 module consisting of multiple quantum definitions.
 
@@ -175,21 +187,21 @@ class QualtranL1Parser:
             An L1Module containing the parsed quantum definitions.
         """
         if self.check('EOF'):
-            return L1Module(qdefs=[])
+            return self.nodes.L1Module(qdefs=[])
 
         qdefs = self.parse_qdefs()
 
         self.consume('EOF', "Expected EOF")
-        return L1Module(qdefs=qdefs)
+        return self.nodes.L1Module(qdefs=qdefs)
 
     def parse_qdefs(self) -> List[QDefNode]:
-        """Parse a sequence of quantum definitions.
+        """Parse a sequence of quantum function, or cast definitions.
 
-        Reads zero or more `qdef` or `extern qdef` keywords and parses them
+        Reads zero or more `qcast`, `qdef` or `extern qdef` keywords and parses them
         into QDefNode instances.
 
         Returns:
-            A list of QDefNode blocks (either implementations or externs).
+            qdefs: A list of QDefNode (implementations, externs, or casts).
         """
         qdefs = []
         while True:
@@ -206,10 +218,34 @@ class QualtranL1Parser:
                     raise ValueError(f"Expected 'extern qdef', not 'extern {tok}'")
                 qdef = self.parse_qdef(extern=True)
                 qdefs.append(qdef)
+            elif tok.value == 'qcast':
+                qcast = self.parse_qcast()
+                qdefs.append(qcast)
+            else:
+                raise ValueError(f"Unexpected identifier {tok}")
+
         return qdefs
 
+    def parse_qcast(self) -> QCastNode:
+        """Parse a qcast (casting operation) definition.
+
+        A qcast consists of a bloq key and a quantum signature.
+        It has no ``from`` clause and no body.
+
+        ```qlt
+        qcast Split(QUInt(4))
+        [reg: QUInt(4) -> QBit[4]]
+        ```
+
+        Returns:
+            A QCastNode.
+        """
+        bloq_key = self.parse_bloq_key()
+        qsig = self.parse_qdef_signature()
+        return self.nodes.QCastNode(bloq_key=bloq_key, qsignature=qsig)
+
     def parse_qdef(self, extern: bool = False) -> QDefNode:
-        """Parse a single quantum definition.
+        """Parse a single quantum function definition.
 
         A qdef consists of a signature, an optional classical 'from' binding,
         and either a body (for implementations) or no body (for externs).
@@ -229,10 +265,12 @@ class QualtranL1Parser:
         qsig = self.parse_qdef_signature()
 
         if extern:
-            return QDefExternNode(bloq_key=bloq_key, qsignature=qsig, cobject_from=bobj_cval)
+            return self.nodes.QDefExternNode(
+                bloq_key=bloq_key, qsignature=qsig, cobject_from=bobj_cval
+            )
         else:
             statements = self.parse_qdef_body()
-            return QDefImplNode(
+            return self.nodes.QDefImplNode(
                 bloq_key=bloq_key, qsignature=qsig, body=statements, cobject_from=bobj_cval
             )
 
@@ -279,7 +317,10 @@ class QualtranL1Parser:
             self.advance()
             self.consume('RARROW', 'output-only datatypes must be formulated | -> t')
             dtype = self.parse_qsig_dtype()
-            return QSignatureEntry(name=name_tok.value, dtype=(None, dtype))
+            annotation = self.parse_annotation()
+            return self.nodes.QSignatureEntry(
+                name=name_tok.value, dtype=(None, dtype), annotation=annotation
+            )
 
         # Per docstring, there are 3 out of 4 possible formulations for the datatype portion of
         # the signature entry. 't', 't -> |', 't1 -> t2'. Each starts with a data type.
@@ -290,21 +331,28 @@ class QualtranL1Parser:
             if self.peek().type == 'PIPE':
                 # t -> |
                 self.advance()
-                return QSignatureEntry(name=name_tok.value, dtype=(t1, None))
+                annotation = self.parse_annotation()
+                return self.nodes.QSignatureEntry(
+                    name=name_tok.value, dtype=(t1, None), annotation=annotation
+                )
             # t1 -> t2
             t2 = self.parse_qsig_dtype()
-            return QSignatureEntry(name=name_tok.value, dtype=(t1, t2))
+            annotation = self.parse_annotation()
+            return self.nodes.QSignatureEntry(
+                name=name_tok.value, dtype=(t1, t2), annotation=annotation
+            )
 
         # We've eliminated all possibilities except the basic 't' syntax.
-        return QSignatureEntry(name=name_tok.value, dtype=t1)
+        annotation = self.parse_annotation()
+        return self.nodes.QSignatureEntry(name=name_tok.value, dtype=t1, annotation=annotation)
 
     def parse_qsig_dtype(self) -> QDTypeNode:
         """QDType(k=v)[2, 4]"""
         cls = self.parse_cobject_node()
         if self.check('LBRACK'):
             shape = self.parse_shape_list()
-            return QDTypeNode(dtype=cls, shape=shape)
-        return QDTypeNode(dtype=cls, shape=None)
+            return self.nodes.QDTypeNode(dtype=cls, shape=shape)
+        return self.nodes.QDTypeNode(dtype=cls, shape=None)
 
     def parse_shape_list(self) -> List[int]:
         """[1, 2, 3]"""
@@ -345,16 +393,21 @@ class QualtranL1Parser:
         lvalues = self.parse_lvalues()
         self.consume('EQUALS', "Assignment operator '=' expected")
         bloq_key = self.parse_bloq_key()
+        annotation = self.parse_annotation()
         if self.check('LBRACK'):
             qargs = self.parse_qargs()
-            return QCallNode(bloq_key=bloq_key, lvalues=lvalues, qargs=qargs)
+            return self.nodes.QCallNode(
+                bloq_key=bloq_key, lvalues=lvalues, qargs=qargs, annotation=annotation
+            )
         else:
             if len(lvalues) != 1:
                 raise ValueError(
                     f"Syntax error: during alias assignment, only one lvalue may be specified (at {self.peek()})"
                 )
-            alias = lvalues[0]
-            return AliasAssignmentNode(alias=alias, bloq_key=bloq_key)
+            if lvalues[0].annotation is not None:
+                raise ValueError(f"Syntax error: alias assignment lvalue cannot have an annotation")
+            alias = lvalues[0].name
+            return self.nodes.AliasAssignmentNode(alias=alias, bloq_key=bloq_key)
 
     def parse_return_statement(self) -> QReturnNode:
         ret_tok = self.consume('NAME', "return statement must start with 'return'")
@@ -362,7 +415,7 @@ class QualtranL1Parser:
             raise ValueError("return statement must start with 'return'")
 
         qargs = self.parse_qargs()
-        return QReturnNode(qargs)
+        return self.nodes.QReturnNode(qargs)
 
     def parse_lvalues(self) -> List[str]:
         """Parse a comma-separated list of l-values.
@@ -383,7 +436,8 @@ class QualtranL1Parser:
         lvalues = []
         while True:
             ident_tok = self.consume('NAME', 'Expected identifier for lvalue')
-            lvalues.append(ident_tok.value)
+            annotation = self.parse_annotation()
+            lvalues.append(self.nodes.LValueNode(name=ident_tok.value, annotation=annotation))
 
             done = self._advance_to_next_list_item(
                 'EQUALS', consume_rbrack=False, list_name='lvalues'
@@ -411,6 +465,14 @@ class QualtranL1Parser:
     def parse_qarg(self) -> QArgNode:
         """ctrl=[qvar[0], qvar[1]]"""
         key = self.consume('NAME', 'invalid qarg key').value
+
+        # Support array indexing on key e.g. reg[0]=...
+        if self.check('LBRACK'):
+            self.advance()
+            idx = self.parse_int_literal('qarg key index')
+            self.consume('RBRACK', 'missing closing bracket for qarg key index')
+            key = f"{key}[{idx}]"
+
         self.consume('EQUALS', 'invalid qargs k=v specification')
 
         val: NestedQArgValue
@@ -420,7 +482,8 @@ class QualtranL1Parser:
         else:
             val = self.parse_qarg_value()
 
-        return QArgNode(key=key, value=val)
+        annotation = self.parse_annotation()
+        return self.nodes.QArgNode(key=key, value=val, annotation=annotation)
 
     def parse_qarg_value_list(self) -> List[NestedQArgValue]:
         """[qvar[0], qvar[1]].
@@ -458,9 +521,9 @@ class QualtranL1Parser:
 
                 done = self._advance_to_next_list_item('RBRACK', list_name='qarg value index')
                 if done:
-                    return QArgValueNode(name=value_tok.value, idx=tuple(idx))
+                    return self.nodes.QArgValueNode(name=value_tok.value, idx=tuple(idx))
         else:
-            return QArgValueNode(name=value_tok.value, idx=tuple())
+            return self.nodes.QArgValueNode(name=value_tok.value, idx=tuple())
 
     def parse_cobject_only(self) -> CObjectNode:
         ret = self.parse_cobject_node()
@@ -482,13 +545,13 @@ class QualtranL1Parser:
         name = self.parse_qualified_identifier()
 
         if not self.check('LPAREN'):
-            return CObjectNode(name=name, cargs=())
+            return self.nodes.CObjectNode(name=name, cargs=())
         self.advance()  # LPAREN
 
         if self.check('RPAREN'):
             # Empty arg list
             self.advance()  # RPAREN
-            return CObjectNode(name=name, cargs=tuple())
+            return self.nodes.CObjectNode(name=name, cargs=tuple())
 
         cargs = []
         while True:
@@ -497,7 +560,7 @@ class QualtranL1Parser:
 
             done = self._advance_to_next_list_item('RPAREN', list_name='classical args')
             if done:
-                return CObjectNode(name=name, cargs=tuple(cargs))
+                return self.nodes.CObjectNode(name=name, cargs=tuple(cargs))
 
     def parse_qualified_identifier(self) -> str:
         """Parse a dot-separated identifier.
@@ -526,10 +589,10 @@ class QualtranL1Parser:
                 key = self.advance().value  # NAME
                 self.advance()  # EQUALS
                 value = self.parse_cvalue()
-                return CArgNode(key=key, value=value)
+                return self.nodes.CArgNode(key=key, value=value)
 
         value = self.parse_cvalue()
-        return CArgNode(key=None, value=value)
+        return self.nodes.CArgNode(key=None, value=value)
 
     def parse_int_literal(self, err_ctx: str = 'parsing') -> int:
         """Parse an integer literal.
@@ -577,7 +640,7 @@ class QualtranL1Parser:
             # Check for empty list
             if self.check('RPAREN'):
                 self.advance()  # RPAREN
-                return TupleNode(items=())
+                return self.nodes.TupleNode(items=())
 
             # Get values
             vals = []
@@ -586,18 +649,18 @@ class QualtranL1Parser:
                 vals.append(val)
                 done = self._advance_to_next_list_item('RPAREN', list_name='cvalue list')
                 if done:
-                    return TupleNode(items=tuple(vals))
+                    return self.nodes.TupleNode(items=tuple(vals))
 
         if token.type == 'NUMBER':
             # The cvalue is a number
             self.advance()  # NUMBER
             if '.' in token.value or 'e' in token.value:
-                return LiteralNode(value=float(token.value))
-            return LiteralNode(value=int(token.value))
+                return self.nodes.LiteralNode(value=float(token.value))
+            return self.nodes.LiteralNode(value=int(token.value))
         if token.type == 'STRING':
             # The cvalue is a string
             self.advance()  # STRING
-            return LiteralNode(value=str(token.value))
+            return self.nodes.LiteralNode(value=str(token.value))
         if token.type == 'NAME':
             # The cvalue is a cobject
             return self.parse_cobject_node()
@@ -605,32 +668,34 @@ class QualtranL1Parser:
         raise ValueError(f"Unexpected token {token} when parsing value")
 
 
-def parse_objectstring(objectstring: str) -> CObjectNode:
+def parse_objectstring(objectstring: str, *, nodes: L1Nodes = qualtran_l1_nodes) -> CObjectNode:
     """Parse a classical object string representing a Bloq instance.
 
     Args:
         objectstring: The string representation of the object, e.g., 'MyBloq(1)'.
+        nodes: The module providing the AST node constructors.
 
     Returns:
         A CObjectNode representing the parsed classical object.
     """
     tokens = tokenize(objectstring)
-    parser = QualtranL1Parser(tokens)
+    parser = QualtranL1Parser(tokens, nodes=nodes)
     cval_node: CObjectNode = parser.parse_cobject_only()
     return cval_node
 
 
-def parse_module(l1_code: str) -> L1Module:
+def parse_module(l1_code: str, *, nodes: L1Nodes = qualtran_l1_nodes) -> L1Module:
     """Parse an entire L1 code string into an L1Module.
 
     Args:
         l1_code: The Qualtran-L1 source code as a string.
+        nodes: The module providing the AST node constructors.
 
     Returns:
         An L1Module containing the root AST of the parsed code.
     """
     tokens = tokenize(l1_code)
-    parser = QualtranL1Parser(tokens)
+    parser = QualtranL1Parser(tokens, nodes=nodes)
     return parser.parse_module()
 
 

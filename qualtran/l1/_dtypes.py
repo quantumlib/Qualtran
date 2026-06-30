@@ -13,12 +13,13 @@
 #  limitations under the License.
 
 from functools import lru_cache
-from typing import cast, Dict, Tuple, Type
+from typing import cast, Dict, Optional, Tuple, Type
 
 import qualtran as qlt
 import qualtran.dtype as qdt
 
-from .nodes import CArgNode, CObjectNode, LiteralNode, QDTypeNode
+from . import nodes as qualtran_l1_nodes
+from .nodes import CArgNode, CObjectNode, L1Nodes, LiteralNode, QDTypeNode
 
 
 @lru_cache
@@ -59,46 +60,69 @@ def get_builtin_qdtypes() -> Tuple[Type['qdt.QCDType'], ...]:
     return tuple(get_builtin_qdtype_mapping().values())
 
 
-def reg_to_qdtype_node(reg: 'qlt.Register') -> QDTypeNode:
-    """Extract the shaped dtype from a register and return it as an AST node.
+def to_qdtype_node(
+    dtype: 'qlt.QCDType',
+    *,
+    nodes: L1Nodes = qualtran_l1_nodes,
+) -> CObjectNode:
+    """Convert a QCDType object to its equivalent AST node.
 
     This includes special casing for 'builtin' datatypes. Otherwise, it uses
     the generic `object_to_cobject_node` for the data type object, which may not load if
     `safe=True`.
+
+    Args:
+        dtype: The data type to serialize.
+        nodes: The module providing the AST node constructors.
     """
-    dtype = reg.dtype
     if dtype == qdt.QBit():
-        dtype_node = CObjectNode('QBit', [])
+        dtype_node = nodes.CObjectNode('QBit', [])
     elif dtype == qdt.CBit():
-        dtype_node = CObjectNode('CBit', [])
+        dtype_node = nodes.CObjectNode('CBit', [])
     elif isinstance(dtype, (qdt.QAny, qdt.QInt, qdt.QUInt, qdt.QIntSignMag, qdt.QIntOnesComp)):
-        dtype_node = CObjectNode(
-            dtype.__class__.__name__, cargs=[CArgNode(None, LiteralNode(cast(int, dtype.bitsize)))]
+        dtype_node = nodes.CObjectNode(
+            dtype.__class__.__name__,
+            cargs=[nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.bitsize)))],
         )
     elif isinstance(dtype, qdt.BQUInt):
-        dtype_node = CObjectNode(
+        dtype_node = nodes.CObjectNode(
             'BQUInt',
             cargs=[
-                CArgNode(None, LiteralNode(cast(int, dtype.bitsize))),
-                CArgNode(None, LiteralNode(cast(int, dtype.iteration_length))),
+                nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.bitsize))),
+                nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.iteration_length))),
             ],
         )
     elif isinstance(dtype, qdt.QFxp):
-        dtype_node = CObjectNode(
+        dtype_node = nodes.CObjectNode(
             'QFxp',
             cargs=[
-                CArgNode(None, LiteralNode(cast(int, dtype.bitsize))),
-                CArgNode(None, LiteralNode(cast(int, dtype.num_frac))),
-                CArgNode('signed', LiteralNode(dtype.signed)),
+                nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.bitsize))),
+                nodes.CArgNode(None, nodes.LiteralNode(cast(int, dtype.num_frac))),
+                nodes.CArgNode('signed', nodes.LiteralNode(dtype.signed)),
             ],
         )
 
     else:
         from ._to_cobject_node import to_cobject_node
 
-        cval_node = to_cobject_node(dtype)
-        assert isinstance(cval_node, CObjectNode)
+        cval_node = to_cobject_node(dtype, nodes=nodes)
+        assert isinstance(cval_node, nodes.CObjectNode)
         dtype_node = cval_node
 
+    return dtype_node
+
+
+def reg_to_qdtype_node(
+    reg: 'qlt.Register',
+    *,
+    nodes: L1Nodes = qualtran_l1_nodes,
+) -> QDTypeNode:
+    """Extract the shaped dtype from a register and return it as an AST node.
+
+    This includes special casing for 'builtin' datatypes. Otherwise, it uses
+    the generic `object_to_cobject_node` for the data type object, which may not load if
+    `safe=True`.
+    """
+    dtype_node = to_qdtype_node(reg.dtype, nodes=nodes)
     shape = reg.shape if reg._shape else None
-    return QDTypeNode(dtype=dtype_node, shape=shape)
+    return nodes.QDTypeNode(dtype=dtype_node, shape=shape)

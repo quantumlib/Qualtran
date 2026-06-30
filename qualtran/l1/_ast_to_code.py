@@ -24,9 +24,11 @@ from .nodes import (
     L1ASTNode,
     L1Module,
     LiteralNode,
+    LValueNode,
     QArgNode,
     QArgValueNode,
     QCallNode,
+    QCastNode,
     QDefExternNode,
     QDefImplNode,
     QDTypeNode,
@@ -51,6 +53,7 @@ class L1ASTPrinter(L1VisitorBase):
         s += '\n\n'.join(r['qdefs'])
         return s
 
+
     @visit.register
     def _(self, node: QDefExternNode):
         r = super().visit(node)
@@ -59,6 +62,14 @@ class L1ASTPrinter(L1VisitorBase):
         signature = ', '.join(r['qsignature'])
         s += f"[{signature}]"
 
+        return s
+
+    @visit.register
+    def _(self, node: QCastNode):
+        r = super().visit(node)
+        s = f"qcast {r['bloq_key']}\n"
+        signature = ', '.join(r['qsignature'])
+        s += f"[{signature}]"
         return s
 
     @visit.register
@@ -94,6 +105,8 @@ class L1ASTPrinter(L1VisitorBase):
             dt1 = dts[1] if dts[1] is not None else '|'
             dtype = f"{dt0} -> {dt1}"
         s = f"{r['name']}: {dtype}"
+        if node.annotation:
+            s += f" @ {node.annotation.canonical_str()}"
         return s
 
     @visit.register
@@ -109,6 +122,12 @@ class L1ASTPrinter(L1VisitorBase):
         return f"{r['dtype']}"
 
     @visit.register
+    def _(self, node: LValueNode):
+        if node.annotation:
+            return f"{node.name} @ {node.annotation.canonical_str()}"
+        return node.name
+
+    @visit.register
     def _(self, node: AliasAssignmentNode):
         super().visit(node)
         return f"{node.alias}", f" = {node.bloq_key}"
@@ -118,11 +137,14 @@ class L1ASTPrinter(L1VisitorBase):
         r = super().visit(node)
 
         if r['lvalues']:
-            rets = ', '.join(r['lvalues'])
+            rets = ', '.join(self.visit(lv) for lv in r['lvalues'])
         else:
             rets = '|'
         qargs = ', '.join(r['qargs'])
-        return (rets, f" = {r['bloq_key']}", f"[{qargs}]")
+        s = f" = {r['bloq_key']}"
+        if node.annotation:
+            s += f" @ {node.annotation.canonical_str()}"
+        return (rets, s, f"[{qargs}]")
 
     @visit.register
     def _(self, node: QReturnNode):
@@ -141,7 +163,10 @@ class L1ASTPrinter(L1VisitorBase):
     def _(self, node: QArgNode):
         r = super().visit(node)
         value = self.nested_val_str(r['value'])
-        return f"{r['key']}={value}"
+        s = f"{r['key']}={value}"
+        if node.annotation:
+            s += f" @ {node.annotation.canonical_str()}"
+        return s
 
     @visit.register
     def _(self, node: QArgValueNode):

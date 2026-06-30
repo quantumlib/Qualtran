@@ -18,13 +18,14 @@ from typing import Any, cast, Dict
 
 import attrs
 
-from ._parse import (
+from .nodes import (
     CObjectNode,
     L1ASTNode,
     L1Module,
     QArgNode,
     QArgValueNode,
     QCallNode,
+    QCastNode,
     QDefExternNode,
     QDefImplNode,
     QDTypeNode,
@@ -43,7 +44,9 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: L1Module):
-        record = {'qdefs': [self.visit(qdef) for qdef in node.qdefs]}
+        record = {
+            'qdefs': [self.visit(qdef) for qdef in node.qdefs],
+        }
         return record
 
     @visit.register
@@ -63,6 +66,13 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
         record['qsignature'] = [self.visit(sig_entry) for sig_entry in node.qsignature]
         record['cobject_from'] = self.visit(node.cobject_from)
         return record
+
+    @visit.register
+    def _(self, node: QCastNode):
+        record: Dict[str, Any] = {'bloq_key': node.bloq_key}
+        record['qsignature'] = [self.visit(sig_entry) for sig_entry in node.qsignature]
+        return record
+
 
     @visit.register
     def _(self, node: QSignatureEntry):
