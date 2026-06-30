@@ -23,7 +23,10 @@ from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 from .decompose_protocol import _decompose_once_considering_known_decomposition
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
-_ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
+_ROTS_GATES = [cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate]
+if hasattr(cirq, 'CYPowGate'):
+    _ROTS_GATES.append(cirq.CYPowGate)
+_ROTS_GATESET = cirq.Gateset(*_ROTS_GATES)
 
 
 @attrs.frozen
