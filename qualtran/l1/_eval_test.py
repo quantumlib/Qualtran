@@ -17,6 +17,7 @@ import pytest
 import sympy
 
 from qualtran import Register, Side
+from qualtran.l1 import eval_module, parse_module
 from qualtran.l1._eval import (
     _CVALUE_EVALUATORS,
     _eval_imported,
@@ -29,8 +30,6 @@ from qualtran.l1._eval import (
     UnevaluatedCValue,
 )
 from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
-
-from qualtran.l1 import eval_module, parse_module
 
 
 def test_safe_eval_prevents_arbitrary_code():
