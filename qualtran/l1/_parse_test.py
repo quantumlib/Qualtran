@@ -280,9 +280,12 @@ qdef OtherBloq() from qualtran.bloqs.OtherBloq() [
     assert len(module.qdefs) == 2
     assert module.qdefs[0].bloq_key == "MyBloq"
     assert module.qdefs[0].qsignature[0].name == "q"
-    assert len(module.qdefs[1].body[0].lvalues) == 1
-    assert module.qdefs[1].body[0].lvalues[0].name == "q"
-    assert module.qdefs[1].body[0].bloq_key == "MyBloq"  # type: ignore
+    assert isinstance(module.qdefs[1], QDefImplNode)
+    stmt0 = module.qdefs[1].body[0]
+    assert isinstance(stmt0, QCallNode)
+    assert len(stmt0.lvalues) == 1
+    assert stmt0.lvalues[0].name == "q"
+    assert stmt0.bloq_key == "MyBloq"
 
 
 def test_parse_lvalues_pipe():
@@ -343,8 +346,6 @@ def test_parse_empty_brackets():
     assert module.qdefs[1].body[0].alias == "c"  # type: ignore[attr-defined]
 
 
-
-
 def test_parse_annotations():
     code = """# Qualtran-L1
 # 1.0.0
@@ -389,6 +390,7 @@ from qualtran.bloqs.bookkeeping.Join(QAny(4))
     assert len(sig.annotation.items) == 2
 
     # Check body statements
+    assert isinstance(qdef, QDefImplNode)
     assert len(qdef.body) == 7
 
     # Split call
@@ -436,8 +438,12 @@ def test_parse_lvalues_with_annotation():
     lvals = parser.parse_lvalues()
     assert len(lvals) == 2
     assert lvals[0].name == "a"
+    assert lvals[0].annotation is not None
+    assert isinstance(lvals[0].annotation, LiteralNode)
     assert lvals[0].annotation.value == 1
     assert lvals[1].name == "b"
+    assert lvals[1].annotation is not None
+    assert isinstance(lvals[1].annotation, LiteralNode)
     assert lvals[1].annotation.value == 2
 
 
@@ -445,12 +451,16 @@ def test_parse_qarg_with_annotation():
     parser = QualtranL1Parser(tokenize("ctrl=qvar @ 1"))
     qarg = parser.parse_qarg()
     assert qarg.key == "ctrl"
+    assert qarg.annotation is not None
+    assert isinstance(qarg.annotation, LiteralNode)
     assert qarg.annotation.value == 1
 
     # Test array indexing on key too
     parser = QualtranL1Parser(tokenize("reg[0]=qvar @ 2"))
     qarg = parser.parse_qarg()
     assert qarg.key == "reg[0]"
+    assert qarg.annotation is not None
+    assert isinstance(qarg.annotation, LiteralNode)
     assert qarg.annotation.value == 2
 
 
@@ -458,6 +468,8 @@ def test_parse_signature_with_annotation():
     code = "qdef Foo() [ a: t @ 1 ] {}"
     module = parse_module(code)
     qdef = module.qdefs[0]
+    assert qdef.qsignature[0].annotation is not None
+    assert isinstance(qdef.qsignature[0].annotation, LiteralNode)
     assert qdef.qsignature[0].annotation.value == 1
 
 

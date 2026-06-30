@@ -114,8 +114,6 @@ class QSignatureEntry(L1ASTNode):
     annotation: Optional[CValueNode] = None
 
 
-
-
 @attrs.frozen
 class LValueNode(L1ASTNode):
     """An l-value with an optional annotation."""
@@ -287,8 +285,6 @@ class QCastNode(QDefNode):
     @property
     def cobject_from(self) -> Optional[CObjectNode]:
         return None
-
-
 
 
 @attrs.frozen

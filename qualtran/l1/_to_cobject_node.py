@@ -21,7 +21,7 @@ from qualtran import CtrlSpec, QDType, Side
 
 from . import nodes as qualtran_l1_nodes
 from ._dtypes import get_builtin_qdtypes
-from .nodes import CArgNode, CObjectNode, CValueNode, L1Nodes, LiteralNode, TupleNode
+from .nodes import CArgNode, CObjectNode, CValueNode, L1Nodes, TupleNode
 
 
 def _get_pkg(cls) -> str:

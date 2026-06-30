@@ -14,38 +14,36 @@
 
 """A recursive-descent parser for bloq string representation."""
 
+from __future__ import annotations
+
 import json
 import logging
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional, TYPE_CHECKING
 
 import attrs
 
 from . import nodes as qualtran_l1_nodes
-from .nodes import (
-    AliasAssignmentNode,
-    CArgNode,
-    CObjectNode,
-    CValueNode,
-    L1ASTNode,
-    L1Module,
-    L1Nodes,
-    LiteralNode,
-    LValueNode,
-    NestedQArgValue,
-    QArgNode,
-    QArgValueNode,
-    QCallNode,
-    QCastNode,
-    QDefExternNode,
-    QDefImplNode,
-    QDefNode,
-    QDTypeNode,
-    QReturnNode,
-    QSignatureEntry,
-    StatementNode,
-    TupleNode,
-)
+from .nodes import L1Nodes
+
+if TYPE_CHECKING:
+    from .nodes import (
+        CArgNode,
+        CObjectNode,
+        CValueNode,
+        L1ASTNode,
+        L1Module,
+        LValueNode,
+        NestedQArgValue,
+        QArgNode,
+        QArgValueNode,
+        QCastNode,
+        QDefNode,
+        QDTypeNode,
+        QReturnNode,
+        QSignatureEntry,
+        StatementNode,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -405,7 +403,7 @@ class QualtranL1Parser:
                     f"Syntax error: during alias assignment, only one lvalue may be specified (at {self.peek()})"
                 )
             if lvalues[0].annotation is not None:
-                raise ValueError(f"Syntax error: alias assignment lvalue cannot have an annotation")
+                raise ValueError("Syntax error: alias assignment lvalue cannot have an annotation")
             alias = lvalues[0].name
             return self.nodes.AliasAssignmentNode(alias=alias, bloq_key=bloq_key)
 
@@ -708,6 +706,8 @@ def _l1_to_json_dict(self):
 
 
 def l1_ast_node_to_json(o: object):
+    from .nodes import L1ASTNode
+
     if isinstance(o, L1ASTNode):
         return _l1_to_json_dict(o)
     return o

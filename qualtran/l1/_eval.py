@@ -34,7 +34,6 @@ import attrs
 import numpy as np
 import sympy
 
-import qualtran.dtype as qdt
 from qualtran import Bloq, BloqBuilder, BloqError, CompositeBloq, Register, Side, Signature, SoquetT
 from qualtran.bloqs.manifest import BLOQ_CLASS_NAMES
 
@@ -67,7 +66,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 BloqKey: TypeAlias = str
-
 
 
 @lru_cache
@@ -250,11 +248,7 @@ def eval_cvalue_node(node: CValueNode, *, safe: bool = True) -> Any:
     raise TypeError(f"Unknown AST node type: {type(node)}")
 
 
-def _resolve_cobject_dtype(
-    cobject: CObjectNode,
-    *,
-    safe: bool = True,
-) -> 'qualtran.QCDType':
+def _resolve_cobject_dtype(cobject: CObjectNode, *, safe: bool = True) -> 'qualtran.QCDType':
     """Resolve a CObjectNode to a QCDType instance.
 
     Resolution priority:
@@ -287,9 +281,7 @@ def _resolve_cobject_dtype(
 
 
 def eval_qdtype_node(
-    dt: QDTypeNode,
-    *,
-    safe: bool = True,
+    dt: QDTypeNode, *, safe: bool = True
 ) -> Tuple['qualtran.QCDType', Sequence[int]]:
     """Evaluate a QDTypeNode to a (QCDType, shape) pair."""
     resolved_dt = _resolve_cobject_dtype(dt.dtype, safe=safe)
@@ -299,9 +291,7 @@ def eval_qdtype_node(
 
 
 def eval_qsignature(
-    entries: Sequence[QSignatureEntry],
-    *,
-    safe: bool = True,
+    entries: Sequence[QSignatureEntry], *, safe: bool = True
 ) -> 'qualtran.Signature':
     registers = []
     for entry in entries:
@@ -342,18 +332,13 @@ def eval_qsignature(
 @attrs.frozen
 class _PlaceholderBloq(Bloq):
     """Could not evaluate an extern qdef, but got a valid signature."""
+
     signature: Signature
 
 
-def eval_qdef_extern_node(
-    qdef: QDefExternNode,
-    *,
-    safe: bool = True,
-) -> 'qualtran.Bloq':
+def eval_qdef_extern_node(qdef: QDefExternNode, *, safe: bool = True) -> 'qualtran.Bloq':
     """Evaluate an extern node by loading in the bloq using Python."""
-    signature: Signature = eval_qsignature(
-        qdef.qsignature, safe=safe
-    )
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
 
     if qdef.cobject_from is None:
         raise ValueError("The `from` clause is required for an extern qdef.")
@@ -375,17 +360,11 @@ def eval_qdef_extern_node(
     return bloq
 
 
-def eval_qcast_node(
-    qdef: QCastNode,
-    *,
-    safe: bool = True,
-) -> 'qualtran.Bloq':
+def eval_qcast_node(qdef: QCastNode, *, safe: bool = True) -> 'qualtran.Bloq':
     """Evaluate a qcast node by constructing a QCast bloq from its signature."""
     from qualtran.bloqs.bookkeeping.qcast import QCast
 
-    signature: Signature = eval_qsignature(
-        qdef.qsignature, safe=safe
-    )
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
     logger.info("Evaluating qcast %s", qdef.bloq_key)
     return QCast(signature=signature)
 
@@ -416,22 +395,20 @@ def eval_bloq_maybe_aliased(
         alias = qlocals[key]
         if not isinstance(alias, str):
             raise ValueError(f"Expected a bloq key local variable, but got {alias} for {key}")
-        return eval_bloq_maybe_aliased(
-            alias, qdefs, qlocals, bloqs, safe=safe,
-        )
+        return eval_bloq_maybe_aliased(alias, qdefs, qlocals, bloqs, safe=safe)
 
     if key in qdefs:
         qdef = qdefs[key]
         if isinstance(qdef, QDefExternNode):
-            bloq = eval_qdef_extern_node(qdef, safe=safe, )
+            bloq = eval_qdef_extern_node(qdef, safe=safe)
             bloqs[key] = bloq
             return bloq
         elif isinstance(qdef, QCastNode):
-            bloq = eval_qcast_node(qdef, safe=safe, )
+            bloq = eval_qcast_node(qdef, safe=safe)
             bloqs[key] = bloq
             return bloq
         elif isinstance(qdef, QDefImplNode):
-            bloq = eval_qdef_impl_node(qdef, qdefs, bloqs, safe=safe, )
+            bloq = eval_qdef_impl_node(qdef, qdefs, bloqs, safe=safe)
             bloqs[key] = bloq
             return bloq
         else:
@@ -458,11 +435,7 @@ def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, 'qualtran.S
 
 
 def _eval_qdef_impl_node(
-    qdef: QDefImplNode,
-    qdefs: Dict[BloqKey, QDefNode],
-    bloqs: Dict[BloqKey, Bloq],
-    *,
-    safe: bool,
+    qdef: QDefImplNode, qdefs: Dict[BloqKey, QDefNode], bloqs: Dict[BloqKey, Bloq], *, safe: bool
 ) -> 'qualtran.CompositeBloq':
     """Evaluate a QDefImplNode, which defines a bloq implementation through a series of statements.
 
@@ -473,10 +446,10 @@ def _eval_qdef_impl_node(
 
     Args:
         qdef: The node to evaluate.
-        qdefs: A registry mapping symbol_id to its un-evaluated qdef _or_ another symbol_id.
-            This function will add symbol_id-to-symbol_id alias mappings when evaluating
+        qdefs: A registry mapping bloq key to its un-evaluated qdef _or_ another bloq key.
+            This function will add bloq-key-to-bloq-key alias mappings when evaluating
             AliasAssignmentNode statements.
-        bloqs: A registry mapping symbol_id to previously-evaluated bloqs.
+        bloqs: A registry mapping bloq key to previously-evaluated bloqs.
 
     Returns:
         An evaluated qualtran.Bloq. The *caller* of this function is responsible for updating
@@ -484,11 +457,10 @@ def _eval_qdef_impl_node(
     """
     logger.info("Evaluating qdef impl %s", qdef.bloq_key)
 
-    signature: Signature = eval_qsignature(
-        qdef.qsignature, safe=safe
-    )
-    qlocals: Dict[str, Union['SoquetT', BloqKey]]
-    bb, qlocals = BloqBuilder.from_signature(signature)
+    signature: Signature = eval_qsignature(qdef.qsignature, safe=safe)
+    qlocals: Dict[str, Union['SoquetT', BloqKey]] = {}
+    bb, initial_qlocals = BloqBuilder.from_signature(signature)
+    qlocals.update(initial_qlocals)
     subbloq_aliases: Dict[Bloq, str] = {}
 
     stmt: StatementNode
@@ -498,16 +470,12 @@ def _eval_qdef_impl_node(
 
         if isinstance(stmt, AliasAssignmentNode):
             qlocals[stmt.alias] = stmt.bloq_key  # type: ignore[assignment]
-            bloq = eval_bloq_maybe_aliased(
-                stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe,
-            )
+            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
             subbloq_aliases[bloq] = stmt.alias
 
         elif isinstance(stmt, QCallNode):
-            bloq = eval_bloq_maybe_aliased(
-                stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe,
-            )
-            qkwargs = eval_qarg_nodes(stmt.qargs, qlocals)
+            bloq = eval_bloq_maybe_aliased(stmt.bloq_key, qdefs, qlocals, bloqs, safe=safe)
+            qkwargs = eval_qarg_nodes(stmt.qargs, qlocals)  # type: ignore[arg-type]
             qrets = bb.add_t(bloq, **qkwargs)
             if len(qrets) != len(stmt.lvalues):
                 raise BloqError(
@@ -517,7 +485,7 @@ def _eval_qdef_impl_node(
                 qlocals[lval.name] = qret
 
         elif isinstance(stmt, QReturnNode):
-            qkwargs = eval_qarg_nodes(stmt.ret_mapping, qlocals)
+            qkwargs = eval_qarg_nodes(stmt.ret_mapping, qlocals)  # type: ignore[arg-type]
             cbloq = bb.finalize(**qkwargs)
             break
 
@@ -560,9 +528,7 @@ def eval_qdef_impl_node(
     # Wrapper to un-roll error messages.
     # See `_eval_qdef_impl_node` for details about this function.
     try:
-        return _eval_qdef_impl_node(
-            qdef=qdef, qdefs=qdefs, bloqs=bloqs, safe=safe,
-        )
+        return _eval_qdef_impl_node(qdef=qdef, qdefs=qdefs, bloqs=bloqs, safe=safe)
     except Exception as e:
         logger.error("%s", e)
         logger.error("During evaluation of %s", qdef.bloq_key)
@@ -575,7 +541,6 @@ def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bl
     This will call `eval_qdef_impl_node` or `eval_qdef_extern_node` on each qdef in the
     L1Module. Note that `eval_qdef_impl_node` is recursive, so bloqs will be evaluated
     in a depth-first traversal.
-
     """
 
     qdefs: Dict[BloqKey, QDefNode] = {qdef.bloq_key: qdef for qdef in m.qdefs}

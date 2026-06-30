@@ -53,7 +53,6 @@ class L1ASTPrinter(L1VisitorBase):
         s += '\n\n'.join(r['qdefs'])
         return s
 
-
     @visit.register
     def _(self, node: QDefExternNode):
         r = super().visit(node)

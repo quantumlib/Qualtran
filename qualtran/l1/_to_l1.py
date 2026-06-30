@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from __future__ import annotations
+
 import io
 import itertools
 import logging
@@ -26,6 +28,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     TypeAlias,
     Union,
 )
@@ -34,32 +37,25 @@ import attrs
 import numpy as np
 
 import qualtran as qlt
-import qualtran.dtype as qdt
 from qualtran._infra.binst_graph_iterators import greedy_topological_sort
 from qualtran._infra.composite_bloq import _binst_to_cxns, _cxns_to_soq_dict
 from qualtran._infra.quantum_graph import _Soquet
 
 from . import nodes as qualtran_l1_nodes
-from ._dtypes import reg_to_qdtype_node, to_qdtype_node
+from ._dtypes import reg_to_qdtype_node
 from ._to_cobject_node import to_cobject_node, unserializable_object
-from .nodes import (
-    AliasAssignmentNode,
-    CObjectNode,
-    L1Module,
-    L1Nodes,
-    LValueNode,
-    QArgNode,
-    QArgValueNode,
-    QCallNode,
-    QCastNode,
-    QDefExternNode,
-    QDefImplNode,
-    QDefNode,
-    QDTypeNode,
-    QReturnNode,
-    QSignatureEntry,
-    StatementNode,
-)
+from .nodes import L1Nodes
+
+if TYPE_CHECKING:
+    from .nodes import (
+        CObjectNode,
+        L1Module,
+        QArgNode,
+        QArgValueNode,
+        QDefNode,
+        QSignatureEntry,
+        StatementNode,
+    )
 
 BloqKey: TypeAlias = str
 
@@ -116,10 +112,7 @@ class Locals:
 
 
 def regs_to_sig_entry(
-    reg_name: str,
-    regs: Sequence['qlt.Register'],
-    *,
-    nodes: L1Nodes = qualtran_l1_nodes,
+    reg_name: str, regs: Sequence['qlt.Register'], *, nodes: L1Nodes = qualtran_l1_nodes
 ) -> QSignatureEntry:
     """Convert a register group (from `Signature.groups()`) to a `QSignatureEntry`.
 
@@ -138,53 +131,34 @@ def regs_to_sig_entry(
         r1, r2 = regs
         if r1.side is qlt.Side.LEFT and r2.side is qlt.Side.RIGHT:
             return nodes.QSignatureEntry(
-                reg_name,
-                (
-                    reg_to_qdtype_node(r1, nodes=nodes),
-                    reg_to_qdtype_node(r2, nodes=nodes),
-                ),
+                reg_name, (reg_to_qdtype_node(r1, nodes=nodes), reg_to_qdtype_node(r2, nodes=nodes))
             )
         elif r2.side is qlt.Side.LEFT and r1.side is qlt.Side.RIGHT:
             return nodes.QSignatureEntry(
-                reg_name,
-                (
-                    reg_to_qdtype_node(r2, nodes=nodes),
-                    reg_to_qdtype_node(r1, nodes=nodes),
-                ),
+                reg_name, (reg_to_qdtype_node(r2, nodes=nodes), reg_to_qdtype_node(r1, nodes=nodes))
             )
         raise ValueError(f'Bad register sides for {reg_name}: {regs}')
 
     (r,) = regs
     if r.side is qlt.Side.THRU:
-        return nodes.QSignatureEntry(
-            reg_name, reg_to_qdtype_node(r, nodes=nodes)
-        )
+        return nodes.QSignatureEntry(reg_name, reg_to_qdtype_node(r, nodes=nodes))
     elif r.side is qlt.Side.RIGHT:
-        return nodes.QSignatureEntry(
-            reg_name, (None, reg_to_qdtype_node(r, nodes=nodes))
-        )
+        return nodes.QSignatureEntry(reg_name, (None, reg_to_qdtype_node(r, nodes=nodes)))
     elif r.side is qlt.Side.LEFT:
-        return nodes.QSignatureEntry(
-            reg_name, (reg_to_qdtype_node(r, nodes=nodes), None)
-        )
+        return nodes.QSignatureEntry(reg_name, (reg_to_qdtype_node(r, nodes=nodes), None))
     else:
         raise ValueError(f'Bad side for {r}')
 
 
 def signature_to_l1_entries(
-    signature: 'qlt.Signature',
-    *,
-    nodes: L1Nodes = qualtran_l1_nodes,
+    signature: 'qlt.Signature', *, nodes: L1Nodes = qualtran_l1_nodes
 ) -> List[QSignatureEntry]:
     """Convert a `qualtran.Signature` to a list of `QSignatureEntry` AST nodes.
 
     This is a convenience wrapper around `regs_to_sig_entry` for all register
     groups in the signature.
     """
-    return [
-        regs_to_sig_entry(reg_name, regs, nodes=nodes)
-        for reg_name, regs in signature.groups()
-    ]
+    return [regs_to_sig_entry(reg_name, regs, nodes=nodes) for reg_name, regs in signature.groups()]
 
 
 @attrs.mutable
@@ -243,12 +217,12 @@ class QDefBuilder:
             self._sig_entries.append(entry)
 
     def finalize_extern(self, reason: str = ''):
+        cobject_from: CObjectNode
         if isinstance(self.bloq, qlt.CompositeBloq):
             warnings.warn("Tried to `extern` a CompositeBloq. You will not be able to load this.")
-            cobject_from_val = unserializable_object('CompositeBloq', nodes=self.nodes)
+            cobject_from = unserializable_object('CompositeBloq', nodes=self.nodes)
         else:
-            cobject_from_val = to_cobject_node(self.bloq, nodes=self.nodes)
-        cobject_from = cobject_from_val
+            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)  # type: ignore[assignment]
         return QDefWithContext(
             qdef=self.nodes.QDefExternNode(
                 bloq_key=self.bloq_key, qsignature=self._sig_entries, cobject_from=cobject_from
@@ -394,8 +368,7 @@ class QDefBuilder:
         elif isinstance(self.bloq, qlt.CompositeBloq):
             cobject_from = None
         else:
-            cobject_from_val = to_cobject_node(self.bloq, nodes=self.nodes)
-            cobject_from = cobject_from_val
+            cobject_from = to_cobject_node(self.bloq, nodes=self.nodes)  # type: ignore[assignment]
 
         return QDefWithContext(
             qdef=self.nodes.QDefImplNode(
@@ -483,8 +456,6 @@ def bloq_to_ast(
     return qdb.finalize(extern_only_from=extern_only_from), list(qdb.qlocals.bloqvars.keys())
 
 
-
-
 @attrs.mutable(kw_only=True)
 class L1ModuleBuilder:
     """Format and export a Qualtran-L1 'module': a collection of 'qdef' bloq definitions."""
@@ -495,7 +466,6 @@ class L1ModuleBuilder:
     extern_qdefs: List[QDefWithContext] = attrs.field(factory=list)
     nodes: L1Nodes = attrs.field(default=qualtran_l1_nodes)
     # all_costs: Dict['CostKey', Dict] = attrs.field(factory=dict)
-
 
     def add_bloqs(
         self,
@@ -544,9 +514,7 @@ class L1ModuleBuilder:
         return self.qglobals[root]
 
     def finalize(self) -> L1Module:
-        return self.nodes.L1Module(
-            qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs),
-        )
+        return self.nodes.L1Module(qdefs=tuple(qdef_with_ctx.qdef for qdef_with_ctx in self.qdefs))
 
     def pretty_print_qdef(self, bloq_or_bloq_key: Union[qlt.Bloq, BloqKey], f=None) -> None:
         from qualtran.l1 import L1ASTPrinter
