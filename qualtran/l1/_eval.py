@@ -66,11 +66,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SymbolID: TypeAlias = str
-
-# Backwards compatibility alias
-BloqKey = SymbolID
-
+BloqKey: TypeAlias = str
 
 
 
@@ -395,10 +391,10 @@ def eval_qcast_node(
 
 
 def eval_bloq_maybe_aliased(
-    key: SymbolID,
-    qdefs: Dict[SymbolID, QDefNode],
-    qlocals: Mapping[SymbolID, Union[SymbolID, 'SoquetT']],
-    bloqs: Dict[SymbolID, Bloq],
+    key: BloqKey,
+    qdefs: Dict[BloqKey, QDefNode],
+    qlocals: Mapping[BloqKey, Union[BloqKey, 'SoquetT']],
+    bloqs: Dict[BloqKey, Bloq],
     safe: bool = True,
 ) -> 'qualtran.Bloq':
     """Recursively load bloqs.
@@ -463,8 +459,8 @@ def eval_qarg_nodes(qargs: Sequence[QArgNode], qlocals: Mapping[str, 'qualtran.S
 
 def _eval_qdef_impl_node(
     qdef: QDefImplNode,
-    qdefs: Dict[SymbolID, QDefNode],
-    bloqs: Dict[SymbolID, Bloq],
+    qdefs: Dict[BloqKey, QDefNode],
+    bloqs: Dict[BloqKey, Bloq],
     *,
     safe: bool,
 ) -> 'qualtran.CompositeBloq':
@@ -491,7 +487,7 @@ def _eval_qdef_impl_node(
     signature: Signature = eval_qsignature(
         qdef.qsignature, safe=safe
     )
-    qlocals: Dict[str, Union['SoquetT', SymbolID]]
+    qlocals: Dict[str, Union['SoquetT', BloqKey]]
     bb, qlocals = BloqBuilder.from_signature(signature)
     subbloq_aliases: Dict[Bloq, str] = {}
 
@@ -556,8 +552,8 @@ def _eval_qdef_impl_node(
 
 def eval_qdef_impl_node(
     qdef: QDefImplNode,
-    qdefs: Dict[SymbolID, QDefNode],
-    bloqs: Dict[SymbolID, Bloq],
+    qdefs: Dict[BloqKey, QDefNode],
+    bloqs: Dict[BloqKey, Bloq],
     *,
     safe: bool = True,
 ) -> 'qualtran.CompositeBloq':
@@ -573,7 +569,7 @@ def eval_qdef_impl_node(
         raise
 
 
-def eval_module(m: L1Module, *, safe: bool = True) -> Dict[SymbolID, 'qualtran.Bloq']:
+def eval_module(m: L1Module, *, safe: bool = True) -> Dict[BloqKey, 'qualtran.Bloq']:
     """Evaluate a parsed L1Module.
 
     This will call `eval_qdef_impl_node` or `eval_qdef_extern_node` on each qdef in the
@@ -582,8 +578,8 @@ def eval_module(m: L1Module, *, safe: bool = True) -> Dict[SymbolID, 'qualtran.B
 
     """
 
-    qdefs: Dict[SymbolID, QDefNode] = {qdef.bloq_key: qdef for qdef in m.qdefs}
-    bloqs: Dict[SymbolID, Bloq] = {}
+    qdefs: Dict[BloqKey, QDefNode] = {qdef.bloq_key: qdef for qdef in m.qdefs}
+    bloqs: Dict[BloqKey, Bloq] = {}
     for qdef in m.qdefs:
         bk = qdef.bloq_key
 
