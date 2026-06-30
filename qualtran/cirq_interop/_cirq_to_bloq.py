@@ -416,14 +416,15 @@ def cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         cirq.TOFFOLI: Toffoli(),
         cirq.X: XGate(),
         cirq.Y: YGate(),
-        # cirq.CY in Cirq >= 1.7
-        getattr(cirq, 'CY', cirq.ControlledGate(cirq.Y)): CYGate(),
+        cirq.ControlledGate(cirq.Y): CYGate(),
         cirq.Z: ZGate(),
         cirq.CZ: CZ(),
         cirq.SWAP: TwoBitSwap(),
         cirq.CSWAP: CSwap(1),
         cirq.I: Identity(),
     }
+    if hasattr(cirq, 'CY'):
+        CIRQ_GATE_TO_BLOQ_MAP[cirq.CY] = CYGate()  # cirq >= 1.7
     if gate in CIRQ_GATE_TO_BLOQ_MAP:
         return CIRQ_GATE_TO_BLOQ_MAP[gate]
 
