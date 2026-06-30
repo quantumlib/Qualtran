@@ -404,6 +404,10 @@ class QualtranL1Parser:
                 )
             if lvalues[0].annotation is not None:
                 raise ValueError("Syntax error: alias assignment lvalue cannot have an annotation")
+            if annotation is not None:
+                raise ValueError(
+                    "Syntax error: alias assignment bloq_key cannot have an annotation"
+                )
             alias = lvalues[0].name
             return self.nodes.AliasAssignmentNode(alias=alias, bloq_key=bloq_key)
 
