@@ -23,7 +23,11 @@ from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 from .decompose_protocol import _decompose_once_considering_known_decomposition
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
-_ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
+_ROTS_GATES: list[type[cirq.Gate]] = [cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate]
+if hasattr(cirq, 'CYPowGate'):
+    # cirq.CY in Cirq >= 1.7
+    _ROTS_GATES.append(cirq.CYPowGate)
+_ROTS_GATESET = cirq.Gateset(*_ROTS_GATES)
 
 
 @attrs.frozen
@@ -165,7 +169,7 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq],
 ) -> Optional[TComplexity]:
     if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
         gate_or_op = gate_or_op.gate
