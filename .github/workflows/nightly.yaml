@@ -25,12 +25,17 @@ on:
         type: string
         default: ""
 
+concurrency:
+  # Cancel any previously-started but still active runs on the same branch.
+  cancel-in-progress: true
+  group: ${{github.workflow}}-${{github.event.pull_request.number||github.ref}}
+
 # Declare default permissions as read only.
 permissions: read-all
 
 env:
   # Default value for "-n" argument to pytest with pytest-xdist plugin.
-  pytest-n: ${{inputs.processes || 'auto'}}
+  pytest-n: ${{inputs.processes || 'logical'}}
 
 jobs:
   pytest:
