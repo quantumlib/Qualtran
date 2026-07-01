@@ -35,7 +35,7 @@ permissions: read-all
 
 env:
   # Default value for "-n" argument to pytest with pytest-xdist plugin.
-  pytest-n: ${{inputs.processes || 'logical'}}
+  pytest-n: ${{inputs.processes || 'auto'}}
 
 jobs:
   pytest:
@@ -56,6 +56,18 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen --no-dev --group test
+
+      - name: Continuously monitor memory and disk space during execution
+        run: |
+          while true; do
+            printf '%0.s-' {1..80}
+            free -h
+            echo
+            df -h .
+            printf '%0.s-' {1..80}
+            echo
+            sleep 10
+          done &
 
       - name: Run the full Pytest suite
         env:
