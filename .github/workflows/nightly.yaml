@@ -35,7 +35,7 @@ permissions: read-all
 
 env:
   # Default value for "-n" argument to pytest with pytest-xdist plugin.
-  pytest-n: ${{inputs.processes || 'logical'}}
+  pytest-n: ${{inputs.processes || 'auto'}}
 
 jobs:
   pytest:
