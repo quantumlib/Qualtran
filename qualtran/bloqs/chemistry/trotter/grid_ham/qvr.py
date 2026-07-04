@@ -14,7 +14,7 @@
 """Quantum Variable Rotation."""
 
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -54,7 +54,7 @@ class QuantumVariableRotation(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('phi', QAny(bitsize=self.phi_bitsize))])
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("e^{i*phi}")
         return super().wire_symbol(reg, idx)

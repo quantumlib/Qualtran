@@ -15,19 +15,8 @@ import io
 import itertools
 import logging
 import uuid
-from typing import (
-    Callable,
-    cast,
-    Container,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TypeAlias,
-    Union,
-)
+from collections.abc import Callable, Container, Sequence
+from typing import cast, Optional, TypeAlias, Union
 
 import attrs
 import numpy as np
@@ -75,9 +64,9 @@ class QDefWithContext:
 class Locals:
     """Handles assigning variable names for our variable *objects*, i.e. soquets and bloqs."""
 
-    soqvars: Dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
-    bloqvars: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
-    varnames: Set[str] = attrs.field(factory=set)
+    soqvars: dict[_Soquet, QArgValueNode] = attrs.field(factory=dict)
+    bloqvars: dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    varnames: set[str] = attrs.field(factory=set)
 
     def get_unique_name(self, prefix: str) -> str:
         """Get and register a unique name."""
@@ -111,11 +100,11 @@ class Locals:
 class QDefBuilder:
     bloq: qlt.Bloq
     bloq_key: str
-    qglobals: Dict[qlt.Bloq, str]
+    qglobals: dict[qlt.Bloq, str]
     qlocals: Locals = attrs.field(factory=Locals)
 
-    _sig_entries: List[QSignatureEntry] = attrs.field(factory=list)
-    _stmnts: List[StatementNode] = attrs.field(factory=list)
+    _sig_entries: list[QSignatureEntry] = attrs.field(factory=list)
+    _stmnts: list[StatementNode] = attrs.field(factory=list)
 
     def _get_sig_entry(self, reg_name: str, regs: Sequence['qlt.Register']) -> QSignatureEntry:
         if len(regs) not in [1, 2]:
@@ -201,7 +190,7 @@ class QDefBuilder:
                     self.qlocals.soqvars[suc.left] = v
             return
 
-        kwargs: List[QArgNode] = []
+        kwargs: list[QArgNode] = []
 
         # Case: this bloqnection represents an output from self.bloq to the outside world.
         if binst is qlt.RightDangle:
@@ -252,7 +241,7 @@ class QDefBuilder:
             get_me=lambda cxn: cxn.left,
             get_assign=lambda cxn: cxn.left,
         )
-        rets: List[str] = []
+        rets: list[str] = []
         for reg in binst.bloq.signature.rights():
             regname = reg.name
             soqs = retsoqs[regname]
@@ -295,8 +284,8 @@ class QDefBuilder:
         )
 
     # qlocals: Locals = attrs.field(factory=Locals)
-    # calls: List[FormattedCall] = attrs.field(factory=list)
-    # aliases: List[Alias] = attrs.field(factory=list)
+    # calls: list[FormattedCall] = attrs.field(factory=list)
+    # aliases: list[Alias] = attrs.field(factory=list)
     # ret_qargs: str = ''
     # implemented: bool = True
     # extern_only_from: bool = False
@@ -304,11 +293,11 @@ class QDefBuilder:
 
 def bloq_to_code(
     bloq: qlt.Bloq,
-    qglobals: Dict[qlt.Bloq, BloqKey],
+    qglobals: dict[qlt.Bloq, BloqKey],
     *,
     extern_only_from: bool,
     force_extern: bool = False,
-) -> Tuple[QDefWithContext, List['qlt.Bloq']]:
+) -> tuple[QDefWithContext, list['qlt.Bloq']]:
     """Turn a bloq into Qualtran-L1 code.
 
     Generally just calls the right methods on `SubroutineFormatter`.
@@ -364,11 +353,11 @@ def bloq_to_code(
 class L1ModuleBuilder:
     """Format and export a Qualtran-L1 'module': a collection of 'qdef' bloq definitions."""
 
-    qglobals: Dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
-    done: Set[qlt.Bloq] = attrs.field(factory=set)
-    qdefs: List[QDefWithContext] = attrs.field(factory=list)
-    extern_qdefs: List[QDefWithContext] = attrs.field(factory=list)
-    # all_costs: Dict['CostKey', Dict] = attrs.field(factory=dict)
+    qglobals: dict[qlt.Bloq, BloqKey] = attrs.field(factory=dict)
+    done: set[qlt.Bloq] = attrs.field(factory=set)
+    qdefs: list[QDefWithContext] = attrs.field(factory=list)
+    extern_qdefs: list[QDefWithContext] = attrs.field(factory=list)
+    # all_costs: dict['CostKey', dict] = attrs.field(factory=dict)
 
     def add_bloqs(
         self,

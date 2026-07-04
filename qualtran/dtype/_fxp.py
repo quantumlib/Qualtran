@@ -12,7 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterable, List, Sequence, TYPE_CHECKING, Union
+from collections.abc import Iterable, Sequence
+from typing import TYPE_CHECKING, Union
 
 import attrs
 
@@ -74,7 +75,7 @@ class _Fxp(BitEncoding[int]):
         # Use the classical domain for the underlying raw integer encoding.
         yield from self._int_encoding.get_domain()
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         # Use the underlying raw integer encoding.
         return self._int_encoding.to_bits(x)
 
@@ -170,7 +171,7 @@ class _Fxp(BitEncoding[int]):
 
     def _fxp_to_bits(
         self, x: Union[float, 'fxpmath.Fxp'], require_exact: bool = True, complement: bool = True
-    ) -> List[int]:
+    ) -> list[int]:
         """Yields individual bits corresponding to binary representation of `x`.
 
         Args:

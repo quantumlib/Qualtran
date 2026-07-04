@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
@@ -38,7 +38,7 @@ class TestQFTWithPhaseGradient(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(q=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> dict[str, 'SoquetT']:
         phase_grad = bb.add(PhaseGradientState(self.bitsize))
         q, phase_grad = bb.add(
             QFTPhaseGradient(self.bitsize, self.with_reverse), q=q, phase_grad=phase_grad

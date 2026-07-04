@@ -14,23 +14,10 @@
 
 """Functionality for the `Bloq.call_graph()` protocol."""
 
-import collections.abc
 import warnings
 from collections import defaultdict
-from typing import (
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from typing import cast, Optional, Union
 
 import networkx as nx
 import sympy
@@ -39,7 +26,7 @@ from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, Decompos
 
 from ._generalization import _make_composite_generalizer, GeneralizerT
 
-BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
+BloqCountT = tuple[Bloq, Union[int, sympy.Expr]]
 BloqCountDictT = Mapping[Bloq, Union[int, sympy.Expr]]
 MutableBloqCountDictT = MutableMapping[Bloq, Union[int, sympy.Expr]]
 
@@ -61,7 +48,7 @@ class SympySymbolAllocator:
     """
 
     def __init__(self):
-        self._idxs: Dict[str, int] = defaultdict(lambda: 0)
+        self._idxs: dict[str, int] = defaultdict(lambda: 0)
 
     def new_symbol(self, prefix: str) -> sympy.Symbol:
         """Return a unique symbol beginning with _prefix."""
@@ -78,7 +65,7 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> BloqCountDictT:
     Args:
         cbloq: The composite bloq.
     """
-    counts: Dict[Bloq, int] = defaultdict(lambda: 0)
+    counts: dict[Bloq, int] = defaultdict(lambda: 0)
     for binst in cbloq.bloq_instances:
         counts[binst.bloq] += 1
 
@@ -86,14 +73,14 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> BloqCountDictT:
 
 
 def _generalize_callees(
-    raw_callee_counts: Union[BloqCountDictT, Set[BloqCountT]], generalizer: GeneralizerT
-) -> List[BloqCountT]:
+    raw_callee_counts: Union[BloqCountDictT, set[BloqCountT]], generalizer: GeneralizerT
+) -> list[BloqCountT]:
     """Apply `generalizer` to the results of `bloq.build_call_graph`.
 
     This calls `generalizer` on each of the callees returned from that function,
     and filters out cases where `generalizer` returns `None`.
     """
-    callee_counts: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
+    callee_counts: dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     if isinstance(raw_callee_counts, set):
         raw_callee_iterator: Iterable[BloqCountT] = raw_callee_counts
         warnings.warn(
@@ -117,7 +104,7 @@ def get_bloq_callee_counts(
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
     ssa: Optional[SympySymbolAllocator] = None,
     ignore_decomp_failure: bool = True,
-) -> List[BloqCountT]:
+) -> list[BloqCountT]:
     """Get the direct callees of a bloq and the number of times they are called.
 
     This calls `bloq.build_call_graph()` with the correct configuration options.
@@ -204,9 +191,9 @@ def _build_call_graph(
             g.add_edge(bloq, callee, n=n)
 
 
-def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
+def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> dict[Bloq, Union[int, sympy.Expr]]:
     """Iterate over nodes to sum up the counts of leaf bloqs."""
-    bloq_sigmas: Dict[Bloq, Dict[Bloq, Union[int, sympy.Expr]]] = defaultdict(
+    bloq_sigmas: dict[Bloq, dict[Bloq, Union[int, sympy.Expr]]] = defaultdict(
         lambda: defaultdict(lambda: 0)
     )
     for bloq in reversed(list(nx.topological_sort(g))):
@@ -233,7 +220,7 @@ def get_bloq_call_graph(
     ssa: Optional[SympySymbolAllocator] = None,
     keep: Optional[Callable[[Bloq], bool]] = None,
     max_depth: Optional[int] = None,
-) -> Tuple[nx.DiGraph, Dict[Bloq, Union[int, sympy.Expr]]]:
+) -> tuple[nx.DiGraph, dict[Bloq, Union[int, sympy.Expr]]]:
     """Recursively build the bloq call graph and call totals.
 
     See `Bloq.call_graph()` as a convenient way of calling this function.
@@ -264,7 +251,7 @@ def get_bloq_call_graph(
         keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, collections.abc.Sequence):
+    if isinstance(generalizer, Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     g = nx.DiGraph()

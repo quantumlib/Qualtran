@@ -22,7 +22,7 @@ $$
 
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingTile, HoppingTileHWP
 from qualtran.bloqs.chemistry.trotter.hubbard.interaction import Interaction, InteractionHWP

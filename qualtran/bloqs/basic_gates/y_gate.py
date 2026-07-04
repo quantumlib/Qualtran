@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -71,8 +72,8 @@ class YGate(Bloq):
         return q.bb.add(cls(), q=q)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         return [
@@ -81,15 +82,15 @@ class YGate(Bloq):
             )
         ]
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         if ctrl_spec != CtrlSpec():
             return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
         bloq = CYGate()
 
         def _add_ctrled(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
             (ctrl,) = ctrl_soqs
             ctrl, q = bb.add(bloq, ctrl=ctrl, target=in_soqs['q'])
             return ((ctrl,), (q,))
@@ -98,7 +99,7 @@ class YGate(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    ) -> tuple['cirq.Operation', dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
@@ -110,7 +111,7 @@ class YGate(Bloq):
         return qml.PauliY(wires=wires)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -150,8 +151,8 @@ class CYGate(Bloq):
         return ctrl.bb.add(cls(), ctrl=ctrl, target=target)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         unitary = np.eye(4, dtype=np.complex128).reshape((2, 2, 2, 2))
@@ -168,7 +169,7 @@ class CYGate(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+    ) -> tuple[Optional['cirq.Operation'], dict[str, 'CirqQuregT']]:
         import cirq
 
         (ctrl,) = ctrl
@@ -184,7 +185,7 @@ class CYGate(Bloq):
         return qml.CY(wires=wires)
 
     def wire_symbol(
-        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
             return Text('')
@@ -194,7 +195,7 @@ class CYGate(Bloq):
             return TextBox('Y')
         raise ValueError(f"Unknown register {reg}.")
 
-    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: 'CtrlSpec') -> tuple['Bloq', 'AddControlledT']:
         from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv_from_bloqs
 
         return get_ctrl_system_1bit_cv_from_bloqs(

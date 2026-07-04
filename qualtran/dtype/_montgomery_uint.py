@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Iterable, Sequence
 from functools import cached_property
-from typing import Iterable, List, Optional, Sequence
+from typing import Optional
 
 import attrs
 import numpy as np
@@ -42,7 +43,7 @@ class _MontgomeryUInt(BitEncoding[int]):
             return range(2**self.bitsize)
         return range(1, int(self.modulus))
 
-    def to_bits(self, x: int) -> List[int]:
+    def to_bits(self, x: int) -> list[int]:
         self.assert_valid_val(x)
         return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 

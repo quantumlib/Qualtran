@@ -14,7 +14,7 @@
 import abc
 import warnings
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -51,7 +51,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cvs(self) -> Union[HasLength, Tuple[int, ...]]: ...
+    def cvs(self) -> Union[HasLength, tuple[int, ...]]: ...
 
     @property
     @abc.abstractmethod
@@ -70,7 +70,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return slen(self.cvs)
 
     @property
-    def concrete_cvs(self) -> Tuple[int, ...]:
+    def concrete_cvs(self) -> tuple[int, ...]:
         if isinstance(self.cvs, HasLength):
             raise ValueError(f"{self.cvs} is symbolic")
         return self.cvs
@@ -83,7 +83,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl_spec = CtrlSpec(cvs=(cvs,))
         return ControlledViaAnd(self.target_bloq, ctrl_spec)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if is_symbolic(self.cvs):
             raise DecomposeTypeError(f"cannot decompose {self} with symbolic {self.cvs=}")
 
@@ -111,7 +111,7 @@ class MultiControlPauliBase(GateWithRegisters, metaclass=abc.ABCMeta):
         ctrl = f'C^{n}' if is_symbolic(n) or n > 2 else ['', 'C', 'CC'][int(n)]
         return f'{ctrl}{self.target_bloq!s}'
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return TextBox(str(self))
         if reg.name == 'target':
@@ -164,7 +164,7 @@ class MultiControlPauli(MultiControlPauliBase):
         [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
-    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
     target_bloq: Bloq
 
     def __attrs_post_init__(self):
@@ -194,7 +194,7 @@ class MultiControlX(MultiControlPauliBase):
         target: single qubit target register.
     """
 
-    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
     def target_bloq(self) -> 'Bloq':
@@ -241,7 +241,7 @@ class MultiControlZ(MultiControlPauliBase):
         target: single qubit target register.
     """
 
-    cvs: Union[HasLength, Tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
+    cvs: Union[HasLength, tuple[int, ...]] = field(converter=_to_tuple_or_has_length)
 
     @cached_property
     def target_bloq(self) -> 'Bloq':

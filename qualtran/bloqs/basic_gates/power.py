@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -61,7 +61,7 @@ class Power(GateWithRegisters):
     def signature(self) -> Signature:
         return self.bloq.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         if not isinstance(self.power, int):
             raise ValueError(f'Symbolic power {self.power} not supported')
         for _ in range(self.power):
@@ -89,7 +89,7 @@ class Power(GateWithRegisters):
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
 
         if reg is None:
             sub_title = self.bloq.wire_symbol(None, idx)

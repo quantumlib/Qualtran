@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Tuple
 
 import attrs
 import numpy as np
@@ -50,7 +49,7 @@ from qualtran.resource_counting.classify_bloqs import (
 class TestBundleOfBloqs(Bloq):
     """A fake bloq which just defines a call graph"""
 
-    bloqs: Tuple[BloqCountT, ...]
+    bloqs: tuple[BloqCountT, ...]
 
     @cached_property
     def signature(self) -> 'Signature':

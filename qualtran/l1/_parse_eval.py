@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import logging
-from typing import Dict
 
 import qualtran as qlt
 from qualtran.l1._eval import BloqKey, eval_module
@@ -29,7 +28,7 @@ def load_objectstring(objectstring: str, *, safe: bool = True) -> object:
     return eval_cvalue_node(cobject_node, safe=safe)
 
 
-def load_module(l1_code: str, *, safe: bool = True) -> Dict[BloqKey, 'qlt.Bloq']:
+def load_module(l1_code: str, *, safe: bool = True) -> dict[BloqKey, 'qlt.Bloq']:
     m = parse_module(l1_code)
     return eval_module(m, safe=safe)
 

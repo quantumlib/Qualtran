@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -70,7 +70,7 @@ class InnerPrepareSingleFactorization(Bloq):
     kp1: int = 1
     kp2: int = 1
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("In-Prep")
         return super().wire_symbol(reg, idx)
@@ -136,7 +136,7 @@ class OuterPrepareSingleFactorization(Bloq):
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
 
-    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
             return Text("OuterPrep")
         return super().wire_symbol(reg, idx)

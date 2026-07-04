@@ -13,7 +13,8 @@
 #  limitations under the License.
 import abc
 from collections import Counter
-from typing import Any, Dict, Iterable, List
+from collections.abc import Iterable
+from typing import Any
 
 import attrs
 import numpy as np
@@ -23,7 +24,7 @@ from qualtran import Bloq, CompositeBloq, Register
 
 
 def _mock_return_values(regs: Iterable[Register]):
-    soqdict: Dict[str, Any] = {}
+    soqdict: dict[str, Any] = {}
 
     # Initialize multi-dimensional dictionary values.
     for reg in regs:
@@ -41,7 +42,7 @@ def _mock_return_values(regs: Iterable[Register]):
 @attrs.mutable
 class StackFrame:
     bloq_str: str
-    qlocals: Dict[str, Any] = attrs.field(factory=dict)
+    qlocals: dict[str, Any] = attrs.field(factory=dict)
 
 
 class Problem(metaclass=abc.ABCMeta):
@@ -59,8 +60,8 @@ class UnsupportedAtomicBloqProblem(Problem):
 
 @attrs.mutable(kw_only=True)
 class StandardQualtranArchitectureAgnosticVirtualMachine:
-    frames: List[StackFrame] = attrs.field(factory=list)
-    problems: List[Problem] = attrs.field(factory=list)
+    frames: list[StackFrame] = attrs.field(factory=list)
+    problems: list[Problem] = attrs.field(factory=list)
     n_calls: int = 0
     n_atoms: int = 0
 

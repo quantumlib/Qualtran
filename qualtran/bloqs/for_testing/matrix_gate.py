@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -36,7 +36,7 @@ class MatrixGate(GateWithRegisters):
     """
 
     bitsize: int
-    matrix: Tuple[Tuple[complex, ...], ...] = field(
+    matrix: tuple[tuple[complex, ...], ...] = field(
         converter=lambda mat: tuple(tuple(row) for row in mat)
     )
     atol: float = 1e-10
@@ -64,8 +64,8 @@ class MatrixGate(GateWithRegisters):
         return cls(bitsize, matrix)
 
     def my_tensors(
-        self, incoming: Dict[str, 'ConnectionT'], outgoing: Dict[str, 'ConnectionT']
-    ) -> List['qtn.Tensor']:
+        self, incoming: dict[str, 'ConnectionT'], outgoing: dict[str, 'ConnectionT']
+    ) -> list['qtn.Tensor']:
         import quimb.tensor as qtn
 
         data = np.array(self.matrix).reshape((2,) * (self.bitsize * 2))

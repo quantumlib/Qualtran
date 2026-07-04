@@ -14,7 +14,7 @@
 
 import math
 from functools import cached_property
-from typing import Dict, Optional
+from typing import Optional
 
 import attrs
 import numpy as np
@@ -104,7 +104,7 @@ class RSAPhaseEstimate(Bloq):
         """Helper method to return a `CModMulK` with attributes forwarded."""
         return CModMulK(QUInt(self.n), k=k, mod=self.mod)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> dict[str, 'SoquetT']:
         if is_symbolic(self.n):
             raise DecomposeTypeError(f"Cannot decompose {self} with symbolic `n`.")
         exponent = [bb.add(PlusState()) for _ in range(2 * self.n)]

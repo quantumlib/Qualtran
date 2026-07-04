@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Iterator
 from functools import cached_property
-from typing import Iterator, Tuple
 
 import attrs
 import cirq
@@ -31,17 +31,17 @@ from qualtran.symbolics import SymbolicFloat
 @attrs.frozen
 class PrepareUniformSuperpositionTest(PrepareOracle):
     n: int
-    cvs: Tuple[int, ...] = attrs.field(
+    cvs: tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
     qlambda: float = 0.0
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
+    def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BQUInt((self.n - 1).bit_length(), self.n)),)
 
     @cached_property
-    def junk_registers(self) -> Tuple[Register, ...]:
+    def junk_registers(self) -> tuple[Register, ...]:
         return ()
 
     @cached_property

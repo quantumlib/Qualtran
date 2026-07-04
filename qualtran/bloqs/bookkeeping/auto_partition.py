@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections.abc import Sequence
 from functools import cached_property
 from itertools import chain
-from typing import Dict, Sequence, Tuple, Union
+from typing import Union
 
 from attrs import evolve, field, frozen
 
@@ -70,7 +71,7 @@ class AutoPartition(Bloq):
     """
 
     bloq: Bloq
-    partitions: Sequence[Tuple[Register, Sequence[Union[str, Unused]]]] = field(
+    partitions: Sequence[tuple[Register, Sequence[Union[str, Unused]]]] = field(
         converter=lambda s: tuple((r, tuple(rs)) for r, rs in s)
     )
     left_only: bool = False
@@ -99,10 +100,10 @@ class AutoPartition(Bloq):
         else:
             return Signature(r for r, _ in self.partitions)
 
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
-        parts: Dict[str, Partition] = dict()
-        in_regs: Dict[str, SoquetT] = dict()
-        unused_regs: Dict[str, SoquetT] = dict()
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> dict[str, SoquetT]:
+        parts: dict[str, Partition] = dict()
+        in_regs: dict[str, SoquetT] = dict()
+        unused_regs: dict[str, SoquetT] = dict()
         for parti, (out_reg, bloq_regs) in enumerate(self.partitions):
             part = Partition(
                 out_reg.bitsize,

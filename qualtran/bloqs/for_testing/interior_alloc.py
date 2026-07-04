@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Union
+from typing import Union
 
 import sympy
 from attrs import frozen
@@ -34,7 +34,7 @@ class InteriorAlloc(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.n, y=self.n)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
         middle = bb.allocate(self.n)
         x, middle = bb.add(Swap(self.n), x=x, y=middle)
         middle, y = bb.add(Swap(self.n), x=middle, y=y)

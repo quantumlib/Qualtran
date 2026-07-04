@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, cast, Dict
+from typing import Any, cast
 
 import attrs
 import networkx as nx
@@ -82,7 +82,7 @@ class TestTwoCNOT(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         q1, q2 = bb.add(CNOT(), ctrl=q1, target=q2)
         q1, q2 = bb.add(CNOT(), ctrl=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -104,9 +104,7 @@ def test_composite_bloq():
     cxns, signature = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(connections=cxns, signature=signature)
 
-    assert (
-        cbloq.debug_text()
-        == """\
+    assert cbloq.debug_text() == """\
 TestTwoBitOp<1>
   LeftDangle.q1 -> ctrl
   LeftDangle.q2 -> target
@@ -118,7 +116,6 @@ TestTwoBitOp<2>
   TestTwoBitOp<1>.target -> ctrl
   ctrl -> RightDangle.q1
   target -> RightDangle.q2"""
-    )
 
 
 def test_iter_bloqnections():
@@ -369,7 +366,7 @@ class TestMultiCNOT(Bloq):
         bb: 'BloqBuilder',
         control: 'Soquet',
         target: NDArray['Soquet'],  # type: ignore[type-var]
-    ) -> Dict[str, SoquetT]:
+    ) -> dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
                 control, target[i, j] = bb.add(CNOT(), ctrl=control, target=target[i, j])
@@ -496,9 +493,7 @@ def test_add_from(call_decompose):
     else:
         (stuff,) = bb.add_from(TestParallelCombo(), reg=stuff)
     bloq = bb.finalize(stuff=stuff)
-    assert (
-        bloq.debug_text()
-        == """\
+    assert bloq.debug_text() == """\
 TestParallelCombo<0>
   LeftDangle.stuff -> reg
   reg -> Split<1>.reg
@@ -524,7 +519,6 @@ Join<5>
   TestAtom<3>.q -> reg[1]
   TestAtom<4>.q -> reg[2]
   reg -> RightDangle.stuff"""
-    )
 
 
 def test_final_soqs():

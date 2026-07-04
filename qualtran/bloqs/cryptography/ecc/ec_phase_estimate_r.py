@@ -14,7 +14,7 @@
 
 import functools
 from functools import cached_property
-from typing import Dict, Union
+from typing import Union
 
 import numpy as np
 import sympy
@@ -83,7 +83,7 @@ class ECPhaseEstimateR(Bloq):
     def num_windows(self) -> int:
         return self.n // self.add_window_size
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> dict[str, 'SoquetT']:
         if isinstance(self.n, sympy.Expr):
             raise DecomposeTypeError("Cannot decompose symbolic `n`.")
         ctrl = [bb.add(PlusState()) for _ in range(self.n)]

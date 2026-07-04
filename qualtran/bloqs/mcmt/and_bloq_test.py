@@ -14,7 +14,6 @@
 
 import itertools
 from functools import cached_property
-from typing import Dict
 
 import cirq
 import numpy as np
@@ -194,7 +193,7 @@ class AndIdentity(Bloq):
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    ) -> dict[str, 'SoquetT']:
         assert BloqBuilder.is_single(q0)
         assert BloqBuilder.is_single(q1)
         qs, trg = bb.add(And(), ctrl=[q0, q1])

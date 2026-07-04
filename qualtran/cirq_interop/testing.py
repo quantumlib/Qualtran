@@ -12,9 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any
 
 import cirq
 import numpy as np
@@ -46,12 +47,12 @@ class GateHelper:
         return self.gate.signature
 
     @cached_property
-    def quregs(self) -> Dict[str, NDArray[cirq.Qid]]:  # type: ignore[type-var]
+    def quregs(self) -> dict[str, NDArray[cirq.Qid]]:  # type: ignore[type-var]
         """A dictionary of named qubits appropriate for the signature for the gate."""
         return get_named_qubits(self.r)
 
     @cached_property
-    def all_qubits(self) -> List[cirq.Qid]:
+    def all_qubits(self) -> list[cirq.Qid]:
         """All qubits in Register order."""
         merged_qubits = merge_qubits(self.r, **self.quregs)
         decomposed_qubits = self.decomposed_circuit.all_qubits()
@@ -101,7 +102,7 @@ def get_circuit_inp_out_cirqsim(
     inputs: Sequence[int],
     outputs: Sequence[int],
     decimals: int = 2,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """Use a Cirq simulator to get a outputs of a `circuit`.
 
     Args:
