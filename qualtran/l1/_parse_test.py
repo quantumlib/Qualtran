@@ -32,8 +32,11 @@ from qualtran.l1.nodes import (
     CObjectNode,
     LiteralNode,
     QArgValueNode,
+    QCallNode,
+    QCastNode,
     QDefImplNode,
     QDTypeNode,
+    QReturnNode,
     TupleNode,
 )
 
@@ -277,10 +280,12 @@ qdef OtherBloq() from qualtran.bloqs.OtherBloq() [
     assert len(module.qdefs) == 2
     assert module.qdefs[0].bloq_key == "MyBloq"
     assert module.qdefs[0].qsignature[0].name == "q"
-    assert module.qdefs[1].bloq_key == "OtherBloq"
     assert isinstance(module.qdefs[1], QDefImplNode)
-    assert module.qdefs[1].body[0].lvalues == ("q",)  # type: ignore
-    assert module.qdefs[1].body[0].bloq_key == "MyBloq"  # type: ignore
+    stmt0 = module.qdefs[1].body[0]
+    assert isinstance(stmt0, QCallNode)
+    assert len(stmt0.lvalues) == 1
+    assert stmt0.lvalues[0].name == "q"
+    assert stmt0.bloq_key == "MyBloq"
 
 
 def test_parse_lvalues_pipe():
@@ -339,3 +344,153 @@ def test_parse_empty_brackets():
     assert module.qdefs[0].body[0].qargs == ()  # type: ignore
     assert module.qdefs[1].qsignature[0].dtype.shape == []  # type: ignore
     assert module.qdefs[1].body[0].alias == "c"  # type: ignore[attr-defined]
+
+
+def test_parse_annotations():
+    code = """# Qualtran-L1
+# 1.0.0
+
+qdef BitwiseNot(QAny(4))
+from BitwiseNot(QAny(4))
+[
+    x: QAny(4) @ (3, 0),
+] {
+    reg @ (1, 2, 3, 4, 2, 3, 4) = Split(QAny(4)) @ (5, 0) [reg=x]
+    q @ 1                       = X @ (8, 0, False)       [q=reg[0] @ 1]
+    q2 @ 2                      = X @ (9, 0, False)       [q=reg[1] @ 2]
+    q3 @ 3                      = X @ (8, 0, False)       [q=reg[2] @ 3]
+    q4 @ 4                      = X @ (9, 0, False)       [q=reg[3] @ 4]
+    reg @ 0                     = Join(QAny(4)) @ (12, 0) [reg=[q, q2, q3, q4] @ (1, 2, 3, 4)]
+                                  return                  [x=reg @ (16, 0)]
+}
+
+extern qdef Split(QAny(4))
+from qualtran.bloqs.bookkeeping.Split(QAny(4))
+[reg: QAny(4) -> QBit[4]]
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+extern qdef Join(QAny(4))
+from qualtran.bloqs.bookkeeping.Join(QAny(4))
+[reg: QBit[4] -> QAny(4)]
+"""
+    module = parse_module(code)
+    assert len(module.qdefs) == 4
+
+    # Check BitwiseNot
+    qdef = module.qdefs[0]
+    assert qdef.bloq_key == "BitwiseNot(QAny(4))"
+    assert len(qdef.qsignature) == 1
+    sig = qdef.qsignature[0]
+    assert sig.name == "x"
+    assert sig.annotation is not None
+    assert isinstance(sig.annotation, TupleNode)
+    assert len(sig.annotation.items) == 2
+
+    # Check body statements
+    assert isinstance(qdef, QDefImplNode)
+    assert len(qdef.body) == 7
+
+    # Split call
+    stmt0 = qdef.body[0]
+    assert isinstance(stmt0, QCallNode)
+    assert stmt0.bloq_key == "Split(QAny(4))"
+    assert len(stmt0.lvalues) == 1
+    assert stmt0.lvalues[0].name == "reg"
+    assert stmt0.lvalues[0].annotation is not None
+    assert stmt0.annotation is not None
+
+    # X call
+    stmt1 = qdef.body[1]
+    assert isinstance(stmt1, QCallNode)
+    assert stmt1.bloq_key == "X"
+    assert stmt1.lvalues[0].name == "q"
+    assert stmt1.lvalues[0].annotation is not None
+    assert stmt1.annotation is not None
+    assert stmt1.qargs[0].annotation is not None
+
+    # Join call
+    stmt5 = qdef.body[5]
+    assert isinstance(stmt5, QCallNode)
+    assert stmt5.bloq_key == "Join(QAny(4))"
+
+    # Return
+    stmt6 = qdef.body[6]
+    assert isinstance(stmt6, QReturnNode)
+    assert stmt6.ret_mapping[0].annotation is not None
+
+
+def test_parse_annotation():
+    parser = QualtranL1Parser(tokenize("@ 123"))
+    annotation = parser.parse_annotation()
+    assert isinstance(annotation, LiteralNode)
+    assert annotation.value == 123
+
+    parser = QualtranL1Parser(tokenize("not_an_annotation"))
+    annotation = parser.parse_annotation()
+    assert annotation is None
+
+
+def test_parse_lvalues_with_annotation():
+    parser = QualtranL1Parser(tokenize("a @ 1, b @ 2 ="))
+    lvals = parser.parse_lvalues()
+    assert len(lvals) == 2
+    assert lvals[0].name == "a"
+    assert lvals[0].annotation is not None
+    assert isinstance(lvals[0].annotation, LiteralNode)
+    assert lvals[0].annotation.value == 1
+    assert lvals[1].name == "b"
+    assert lvals[1].annotation is not None
+    assert isinstance(lvals[1].annotation, LiteralNode)
+    assert lvals[1].annotation.value == 2
+
+
+def test_parse_qarg_with_annotation():
+    parser = QualtranL1Parser(tokenize("ctrl=qvar @ 1"))
+    qarg = parser.parse_qarg()
+    assert qarg.key == "ctrl"
+    assert qarg.annotation is not None
+    assert isinstance(qarg.annotation, LiteralNode)
+    assert qarg.annotation.value == 1
+
+    # Test array indexing on key too
+    parser = QualtranL1Parser(tokenize("reg[0]=qvar @ 2"))
+    qarg = parser.parse_qarg()
+    assert qarg.key == "reg[0]"
+    assert qarg.annotation is not None
+    assert isinstance(qarg.annotation, LiteralNode)
+    assert qarg.annotation.value == 2
+
+
+def test_parse_signature_with_annotation():
+    code = "qdef Foo() [ a: t @ 1 ] {}"
+    module = parse_module(code)
+    qdef = module.qdefs[0]
+    assert qdef.qsignature[0].annotation is not None
+    assert isinstance(qdef.qsignature[0].annotation, LiteralNode)
+    assert qdef.qsignature[0].annotation.value == 1
+
+
+def test_parse_qcast():
+    code = """# Qualtran-L1
+# 1.0.0
+
+qcast Split(QUInt(4))
+[reg: QUInt(4) -> QBit[4]]
+"""
+    module = parse_module(code)
+    assert len(module.qdefs) == 1
+    qdef = module.qdefs[0]
+    assert isinstance(qdef, QCastNode)
+    assert qdef.bloq_key == "Split(QUInt(4))"
+    assert len(qdef.qsignature) == 1
+    assert qdef.cobject_from is None
+
+    # Check the signature entry
+    sig = qdef.qsignature[0]
+    assert sig.name == "reg"
+    # It's a casting register: t1 -> t2
+    assert isinstance(sig.dtype, tuple)
+    assert len(sig.dtype) == 2

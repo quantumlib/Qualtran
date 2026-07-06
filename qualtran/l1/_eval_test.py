@@ -17,6 +17,7 @@ import pytest
 import sympy
 
 from qualtran import Register, Side
+from qualtran.l1 import eval_module, parse_module
 from qualtran.l1._eval import (
     _CVALUE_EVALUATORS,
     _eval_imported,
@@ -222,3 +223,97 @@ def test_too_many_values():
 
     with pytest.raises(ValueError, match=r'Too many.*'):
         _ = eval_cvalue_node(node, safe=True)
+
+
+def test_safe_false_propagates_to_impl_qdefs():
+    # Verify that safe=False propagates through eval_module into impl qdefs.
+
+    # Regression test: eval_bloq_maybe_aliased was not forwarding the `safe`
+    # flag when calling eval_qdef_impl_node for QDefImplNode, causing the
+    # `from` clause to silently default to safe=True and return
+    # UnevaluatedCValue for non-manifest dotted names.
+
+    # An impl qdef whose `from` clause uses a dotted name NOT in the bloq
+    # manifest (collections.OrderedDict is a harmless stdlib class).
+    l1_code = """\
+# Qualtran-L1
+# 1.0.0
+
+extern qdef XGate
+from qualtran.bloqs.basic_gates.XGate()
+[q: QBit()]
+
+qdef MyBloq
+from collections.OrderedDict()
+[q: QBit()] {
+    q = XGate [q=q]
+    return [q=q]
+}
+"""
+    mod = parse_module(l1_code)
+
+    # With safe=True, the `from` clause of the impl qdef should fail to
+    # resolve (OrderedDict is not on the manifest), producing an
+    # UnevaluatedCValue internally. The bloq still builds but
+    # decomposed_from is None.
+    result_safe = eval_module(mod, safe=True)
+    safe_bloq = result_safe['MyBloq']
+    from qualtran import CompositeBloq
+
+    assert isinstance(safe_bloq, CompositeBloq)
+    assert safe_bloq.decomposed_from is None
+
+    # With safe=False, the `from` clause should fully resolve to an
+    # OrderedDict instance (not a Bloq, but not UnevaluatedCValue either).
+    # decomposed_from will still be None because OrderedDict isn't a Bloq,
+    # but we can verify the resolution by calling eval_cvalue_node directly
+    # on the impl qdef's cobject_from node.
+    impl_qdef = [q for q in mod.qdefs if q.bloq_key == 'MyBloq'][0]
+    assert impl_qdef.cobject_from is not None
+    result = eval_cvalue_node(impl_qdef.cobject_from, safe=False)
+    import collections
+
+    assert isinstance(
+        result, collections.OrderedDict
+    ), f"Expected OrderedDict, got {type(result).__name__}: {result!r}"
+
+    # Verify that safe=True returns UnevaluatedCValue for the same node.
+    result_safe_direct = eval_cvalue_node(
+        impl_qdef.cobject_from, safe=True
+    )  # cobject_from asserted not None above
+    assert isinstance(result_safe_direct, UnevaluatedCValue)
+
+
+def test_eval_qcast_node():
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+    from qualtran.l1._eval import eval_qcast_node
+    from qualtran.l1.nodes import CObjectNode, QCastNode, QDTypeNode, QSignatureEntry
+
+    # Build a QCastNode for Split(QUInt(4)): reg: QUInt(4) -> QBit[4]
+    quint4 = QDTypeNode(
+        dtype=CObjectNode(name='QUInt', cargs=[CArgNode(None, LiteralNode(4))]), shape=None
+    )
+    qbit_arr = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=[4])
+    sig_entry = QSignatureEntry(name='reg', dtype=(quint4, qbit_arr))
+    qcast_node = QCastNode(bloq_key='Split(QUInt(4))', qsignature=[sig_entry])
+
+    result = eval_qcast_node(qcast_node, safe=True)
+    assert isinstance(result, QCast)
+    assert len(result.signature) == 2  # LEFT reg and RIGHT reg
+
+
+def test_qcast_roundtrip():
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+    from qualtran.l1 import eval_module, parse_module
+
+    l1_code = """# Qualtran-L1
+# 1.0.0
+
+qcast Split(QUInt(4))
+[reg: QUInt(4) -> QBit[4]]
+"""
+    mod = parse_module(l1_code)
+    bloqs = eval_module(mod, safe=True)
+    assert 'Split(QUInt(4))' in bloqs
+    bloq = bloqs['Split(QUInt(4))']
+    assert isinstance(bloq, QCast)

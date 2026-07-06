@@ -50,10 +50,17 @@ def check_signatures(original, loaded):
 
 
 def check_bloq_object_roundtrip(original, loaded) -> list[str]:
+    from qualtran.bloqs.bookkeeping.qcast import QCast
+
     problems = []
     for bloq_key in original.keys():
         ref = original[bloq_key]
         tst = loaded[bloq_key]
+
+        # QCast bloqs intentionally lose object identity; signature
+        # equality (checked separately) is the right invariant for them.
+        if isinstance(tst, QCast):
+            continue
 
         if isinstance(tst, qlt.CompositeBloq):
 

@@ -14,7 +14,7 @@
 """The Qualtran-L1 AST Nodes."""
 
 import abc
-from typing import Optional, Sequence, Tuple, TypeAlias, Union
+from typing import Any, Optional, Protocol, Sequence, Tuple, TypeAlias, Union
 
 import attrs
 
@@ -111,6 +111,20 @@ class QSignatureEntry(L1ASTNode):
 
     name: str
     dtype: Union[QDTypeNode, Tuple[Optional[QDTypeNode], Optional[QDTypeNode]]]
+    annotation: Optional[CValueNode] = None
+
+
+@attrs.frozen
+class LValueNode(L1ASTNode):
+    """An l-value with an optional annotation."""
+
+    name: str
+    annotation: Optional[CValueNode] = None
+
+    def __str__(self):
+        if self.annotation:
+            return f'{self.name} @ {self.annotation.canonical_str()}'
+        return self.name
 
 
 class StatementNode(L1ASTNode, metaclass=abc.ABCMeta):
@@ -160,6 +174,7 @@ class QArgNode(L1ASTNode):
 
     key: str
     value: NestedQArgValue  # TODO: turn all to tuple
+    annotation: Optional[CValueNode] = None
 
 
 @attrs.frozen
@@ -167,8 +182,9 @@ class QCallNode(StatementNode):
     """A statement that calls a quantum subroutine."""
 
     bloq_key: str
-    lvalues: Sequence[str] = attrs.field(converter=tuple[str])
+    lvalues: Sequence[LValueNode] = attrs.field(converter=tuple[LValueNode])
     qargs: Sequence[QArgNode] = attrs.field(converter=tuple[QArgNode])
+    annotation: Optional[CValueNode] = None
 
 
 @attrs.frozen
@@ -245,6 +261,33 @@ class QDefExternNode(QDefNode):
 
 
 @attrs.frozen
+class QCastNode(QDefNode):
+    """A qcast declaring a casting (bookkeeping) operation.
+
+    A ``qcast`` is syntactic sugar for bookkeeping bloqs such as Split, Join,
+    Partition, Destructure, and Restructure. Unlike ``extern qdef``, it does
+    *not* have a ``from`` clause — the casting is fully determined by the
+    quantum signature.
+
+    Args:
+        bloq_key: The symbol id for this casting operation.
+        qsignature: The quantum signature describing the cast.
+
+    ```qlt
+    qcast Split(QUInt(4))
+    [reg: QUInt(4) -> QBit[4]]
+    ```
+    """
+
+    bloq_key: str
+    qsignature: Sequence[QSignatureEntry] = attrs.field(converter=tuple[QSignatureEntry])
+
+    @property
+    def cobject_from(self) -> Optional[CObjectNode]:
+        return None
+
+
+@attrs.frozen
 class L1Module(L1ASTNode):
     """A module consisting of a sequence of qdefs.
 
@@ -265,3 +308,36 @@ class L1Module(L1ASTNode):
     """
 
     qdefs: Sequence[QDefNode] = attrs.field(converter=tuple[QDefNode])
+
+
+class L1Nodes(Protocol):
+    def LiteralNode(self, value: Union[int, float, str]) -> Any: ...
+    def TupleNode(self, items: Sequence[Any]) -> Any: ...
+    def CArgNode(self, key: Optional[str], value: Any) -> Any: ...
+    def CObjectNode(self, name: str, cargs: Sequence[Any]) -> Any: ...
+    def QDTypeNode(self, dtype: Any, shape: Optional[Sequence[int]]) -> Any: ...
+    def QSignatureEntry(self, name: str, dtype: Any, annotation: Optional[Any] = None) -> Any: ...
+    def LValueNode(self, name: str, annotation: Optional[Any] = None) -> Any: ...
+    def AliasAssignmentNode(self, alias: str, bloq_key: str) -> Any: ...
+    def QArgValueNode(self, name: str, idx: Sequence[int]) -> Any: ...
+    def QArgNode(self, key: str, value: Any, annotation: Optional[Any] = None) -> Any: ...
+    def QCallNode(
+        self,
+        bloq_key: str,
+        lvalues: Sequence[Any],
+        qargs: Sequence[Any],
+        annotation: Optional[Any] = None,
+    ) -> Any: ...
+    def QReturnNode(self, ret_mapping: Sequence[Any]) -> Any: ...
+    def QDefImplNode(
+        self,
+        bloq_key: str,
+        qsignature: Sequence[Any],
+        body: Sequence[Any],
+        cobject_from: Optional[Any],
+    ) -> Any: ...
+    def QDefExternNode(
+        self, bloq_key: str, qsignature: Sequence[Any], cobject_from: Optional[Any]
+    ) -> Any: ...
+    def QCastNode(self, bloq_key: str, qsignature: Sequence[Any]) -> Any: ...
+    def L1Module(self, qdefs: Sequence[Any]) -> Any: ...
