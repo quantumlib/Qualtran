@@ -1,0 +1,30 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef TestND3Grid
+from qualtran.bloqs.for_testing.TestND3Grid
+[
+    cube: QBit[2, 2, 2],
+    aux: QBit,
+] {
+    q                    = X                [q=cube[0, 0, 0]]   
+    ctrl, target         = CNOT             [ctrl=cube[0, 0, 1], target=cube[0, 1, 0]]
+    ctrl2, target2       = CNOT             [ctrl=cube[0, 1, 1], target=cube[1, 0, 0]]
+    ctrl3, target3       = Toffoli          [ctrl=[target2, cube[1, 0, 1]], target=cube[1, 1, 0]]
+    ctrl4, target4       = CNOT             [ctrl=target3, target=cube[1, 1, 1]]
+    ctrl5, target5       = CNOT             [ctrl=target4, target=aux]
+                           return           [cube=[[[q, ctrl], [target, ctrl2]], [[ctrl3[0], ctrl3[1]], [ctrl4, ctrl5]]], aux=target5]
+}
+
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+extern qdef Toffoli
+from qualtran.bloqs.basic_gates.Toffoli
+[ctrl: QBit[2], target: QBit @ oplus]
