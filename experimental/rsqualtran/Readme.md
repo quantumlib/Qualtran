@@ -1,24 +1,6 @@
 # rsqualtran
 
-A Rust implementation of the Qualtran-L1 parser and classical simulator, with Python and
-WebAssembly frontends.
-
-The core library provides:
-
-- **Parser** — Tokenizes and parses `.qlt` (Qualtran IR) source files into a typed AST
-  (`L1Module`). The AST represents quantum definitions (`qdef`, `extern qdef`, `qcast`),
-  their signatures, and their bodies (calls, aliases, returns, ...).
-
-- **Visitor** — A trait-based AST visitor (`L1Visitor`) with default walker functions for
-  every node type, allowing analyses and transforms over parsed modules.
-
-- **Fastsim** — A bytecode compiler and stack-based VM for fast classical simulation of
-  quantum programs. The compiler translates the parsed AST into subroutines containing
-  bytecode instructions. The VM executes these against basis-state inputs — tracking a bit
-  vector and an accumulated phase exponent. Supported gates include classical gates (X,
-  CNOT, And, ...), diagonal/phase gates (Z, S, T, ...), and bookkeeping operations
-  (Split, Join, Allocate, Free, ...).
-
+A Rust backend for Qualtran programs that can be used standalone via QLT IR or via Python bindings.
 
 ## qlt_fastsim CLI
 
@@ -61,22 +43,10 @@ cargo test --no-default-features
 
 ### Python bindings
 
-Uses [Maturin](https://www.maturin.rs/) + PyO3 to expose the parser, AST nodes, and a
-`BloqBuilder` implementation as a Python extension module.
+Uses [Maturin](https://www.maturin.rs/) + PyO3 to expose Python bindings, see
+`python/rsqualtran/__init__.py` for the public API.
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
 pip install maturin
 maturin develop
-```
-
-### WebAssembly
-
-The parser can be compiled to WASM for use in web applications. The `javascript/`
-directory contains a Vue.js app that demonstrates the WASM parser.
-
-```bash
-cd javascript
-npm install
-npm run dev  # builds WASM automatically, then starts the dev server
 ```

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Runs Rust (cargo test) and Python (pytest) tests for experimental/rsqualtran.
+#
+# Usage:
+#     check/experimental-rsqualtran [--flags for pytest]
+#
+################################################################################
+
+set -euo pipefail
+
+# Get the working directory to the repo root.
+thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
+topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
+
+cd "${topdir}/experimental/rsqualtran" || exit $?
+
+echo "Running Rust tests (cargo test)..."
+cargo test --all-targets
+
+echo "Running Python tests (pytest)..."
+pytest_args=()
+for arg in "$@"; do
+    if [[ "${arg}" != "check" ]]; then
+        pytest_args+=("${arg}")
+    fi
+done
+
+if command -v uv >/dev/null 2>&1; then
+    uv run pytest "${pytest_args[@]}"
+else
+    pytest "${pytest_args[@]}"
+fi
