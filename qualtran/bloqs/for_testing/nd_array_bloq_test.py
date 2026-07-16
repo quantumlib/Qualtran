@@ -18,6 +18,7 @@
 import itertools
 
 import numpy as np
+import pytest
 
 from qualtran.bloqs.for_testing.nd_array_bloq import TestND3Grid, TestNDGrid
 
@@ -214,11 +215,8 @@ def test_nd3_grid_exhaustive_vs_reference():
 
 
 def test_nd3_grid_exhaustive_vs_reference_fastsim():
-    """Compare call_classically against the reference for all 2^9 inputs.
-
-    # pylint: disable=unbalanced-tuple-unpacking
-    """
-    import rsqualtran  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+    """Compare call_classically against the reference for all 2^9 inputs."""
+    rsqualtran = pytest.importorskip('rsqualtran')
 
     bloq = TestND3Grid()
     simulator = rsqualtran.QLTFastsim.from_bloq(bloq)
