@@ -649,3 +649,32 @@ fn formatting_4096bit_no_overflow() {
     let s = bits_to_int_str(&bits);
     assert_eq!(s, "123456789012345678901234567890");
 }
+
+// ============================================================
+// 21. Overflow validations in string and integer bit conversion
+// ============================================================
+
+#[test]
+#[should_panic(expected = "exceeds maximum negative value")]
+fn edge_signed_decimal_str_to_bits_overflow_negative() {
+    signed_decimal_str_to_bits("-129", 8);
+}
+
+#[test]
+#[should_panic(expected = "exceeds maximum positive value for 8 signed bits")]
+fn edge_signed_decimal_str_to_bits_overflow_positive() {
+    signed_decimal_str_to_bits("128", 8);
+}
+
+#[test]
+#[should_panic(expected = "exceeds minimum representable negative value for 8 bits")]
+fn edge_int_to_bits_overflow_negative() {
+    int_to_bits(-129, 8);
+}
+
+#[test]
+#[should_panic(expected = "exceeds maximum representable value for 8 bits")]
+fn edge_int_to_bits_overflow_positive() {
+    int_to_bits(256, 8);
+}
+

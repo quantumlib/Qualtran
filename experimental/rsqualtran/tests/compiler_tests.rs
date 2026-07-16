@@ -372,3 +372,50 @@ fn test_extremely_long_subroutine_key() {
     let compiled = _rsqlt::fastsim::compiler::compile(&module).unwrap();
     assert!(compiled.has_subroutine(&long_key));
 }
+
+#[test]
+fn test_compiler_zero_shape_dimension() {
+    let dtype = _rsqlt::nodes::QDTypeNode {
+        dtype: _rsqlt::nodes::CObjectNode {
+            name: "QBit".to_string(),
+            cargs: vec![],
+            span: _rsqlt::nodes::Span::default(),
+        },
+        shape: Some(vec![0, 2]),
+        span: _rsqlt::nodes::Span::default(),
+    };
+    let result = _rsqlt::fastsim::compiler::compute_dtype_bits(&dtype);
+    assert_eq!(
+        result,
+        Err("Shape dimensions must be greater than 0, got 0".to_string())
+    );
+}
+
+#[test]
+fn test_compiler_negative_shape_dimension() {
+    let dtype = _rsqlt::nodes::QDTypeNode {
+        dtype: _rsqlt::nodes::CObjectNode {
+            name: "QBit".to_string(),
+            cargs: vec![],
+            span: _rsqlt::nodes::Span::default(),
+        },
+        shape: Some(vec![-1, 2]),
+        span: _rsqlt::nodes::Span::default(),
+    };
+    let result = _rsqlt::fastsim::compiler::compute_dtype_bits(&dtype);
+    assert_eq!(
+        result,
+        Err("Shape dimensions must be greater than 0, got -1".to_string())
+    );
+}
+
+#[test]
+fn test_unknown_dtype_signedness() {
+    let err = _rsqlt::fastsim::compiler::is_signed_dtype("UnknownType");
+    assert_eq!(
+        err,
+        Err("Unknown quantum data type for signedness classification: UnknownType".to_string())
+    );
+}
+
+

@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-# pylint: disable=c-extension-no-member,no-member
 """Python bindings for qlt_fastsim."""
 
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
@@ -25,7 +24,25 @@ if TYPE_CHECKING:
 
 from . import _rsqlt
 
-_SUPPORTED_INT_DTYPES = frozenset(("QInt", "QUInt", "QBit", "QAny"))
+_SIGNED_DTYPES = frozenset(("QInt",))
+_UNSIGNED_DTYPES = frozenset(("QUInt", "QBit", "QAny", "QMontgomeryUInt", "QFxp"))
+_SUPPORTED_INT_DTYPES = _SIGNED_DTYPES | _UNSIGNED_DTYPES
+
+
+def _is_signed_dtype(dtype: str) -> bool:
+    """Check whether a quantum dtype uses signed two's-complement representation.
+
+    Raises:
+        ValueError: If the dtype is not explicitly defined in _SIGNED_DTYPES or _UNSIGNED_DTYPES.
+    """
+    if dtype in _SIGNED_DTYPES:
+        return True
+    if dtype in _UNSIGNED_DTYPES:
+        return False
+    raise ValueError(
+        f"Unknown quantum data type '{dtype}' for signedness classification. "
+        f"Must explicitly be assigned to _SIGNED_DTYPES or _UNSIGNED_DTYPES."
+    )
 
 
 def compile_l1_to_fastsim(module: _rsqlt.L1Module) -> _rsqlt.CompiledModule:
@@ -61,6 +78,10 @@ def _convert_output_value(
         return int(val_str)
 
     # Shaped register: split the flat integer into per-element values.
+    if any(d <= 0 for d in shape):
+        raise ValueError(
+            f"Shape dimensions for register '{name}' must be greater than 0, got {shape}"
+        )
     total_elements = 1
     for d in shape:
         total_elements *= d
@@ -74,13 +95,35 @@ def _convert_output_value(
     # Extract per-element values from the flat integer.
     # The Rust VM packs elements in row-major order with the first element
     # in the most-significant bits: value = e0 * 2^((N-1)*eb) + ... + e_{N-1}.
-    flat_values = np.empty(total_elements, dtype=np.uint64)
+    if element_bits <= 64:
+        dtype = np.int64 if _is_signed_dtype(dtype_str) else np.uint64
+    else:
+        dtype = object
+
+    flat_values = np.empty(total_elements, dtype=dtype)
     element_mask = (1 << element_bits) - 1
+    sign_bit = 1 << (element_bits - 1)
     for i in range(total_elements - 1, -1, -1):
-        flat_values[i] = flat_int & element_mask
+        elem = flat_int & element_mask
+        if _is_signed_dtype(dtype_str) and (elem & sign_bit):
+            elem -= 1 << element_bits
+        flat_values[i] = elem
         flat_int >>= element_bits
 
     return flat_values.reshape(shape)
+
+
+def _int_to_bits(val: int, n_bits: int, dtype: str) -> List[bool]:
+    """Convert an integer value to a bit vector right-sized for n_bits and dtype."""
+    if n_bits <= 63:
+        if not _is_signed_dtype(dtype) and val < 0:
+            raise ValueError(f"Negative integer {val} not permitted for unsigned dtype '{dtype}'.")
+        return _rsqlt.int_to_bits(val, n_bits)
+    if _is_signed_dtype(dtype):
+        return _rsqlt.signed_decimal_str_to_bits(str(val), n_bits)
+    if val < 0:
+        raise ValueError(f"Negative integer {val} not permitted for unsigned dtype '{dtype}'.")
+    return _rsqlt.decimal_str_to_bits(str(val), n_bits)
 
 
 def _ndarray_to_bits(
@@ -113,6 +156,10 @@ def _ndarray_to_bits(
             f"expected shape {expected_shape}."
         )
 
+    if any(d <= 0 for d in shape):
+        raise ValueError(
+            f"Shape dimensions for register '{name}' must be greater than 0, got {shape}"
+        )
     total_elements = 1
     for d in shape:
         total_elements *= d
@@ -128,7 +175,7 @@ def _ndarray_to_bits(
     bits: List[bool] = []
     for val in arr.flat:
         elem_val = int(val)
-        elem_bits = _rsqlt.int_to_bits(elem_val, element_bits)
+        elem_bits = _int_to_bits(elem_val, element_bits, dtype)
         bits.extend(elem_bits)
 
     assert len(bits) == n_bits, f"Expected {n_bits} bits for register '{name}', got {len(bits)}."
@@ -188,7 +235,7 @@ class QLTFastsim:
         for key in kwargs:
             if key not in self._inputs:
                 raise ValueError(
-                    f"Unexpected input register '{key}' " f"for subroutine '{self._entrypoint}'"
+                    f"Unexpected input register '{key}' for subroutine '{self._entrypoint}'"
                 )
 
         input_values: List[Tuple[str, List[bool]]] = []
@@ -199,14 +246,13 @@ class QLTFastsim:
             if isinstance(val, np.ndarray):
                 if shape is None:
                     raise TypeError(
-                        f"Got np.ndarray for scalar register '{name}'. "
-                        f"Use an int or str instead."
+                        f"Got np.ndarray for scalar register '{name}'. Use an int or str instead."
                     )
                 bits = _ndarray_to_bits(val, n_bits, shape, dtype, name)
             elif isinstance(val, int):
-                bits = _rsqlt.int_to_bits(val, n_bits)
+                bits = _int_to_bits(val, n_bits, dtype)
             elif isinstance(val, str):
-                if dtype == "QInt":
+                if _is_signed_dtype(dtype):
                     bits = _rsqlt.signed_decimal_str_to_bits(val, n_bits)
                 else:
                     bits = _rsqlt.decimal_str_to_bits(val, n_bits)

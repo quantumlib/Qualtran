@@ -93,6 +93,28 @@ pub struct RegisterInfo {
     pub shape: Option<Vec<usize>>,
 }
 
+impl RegisterInfo {
+    /// Returns true if this register uses signed two's-complement representation.
+    pub fn is_signed(&self, intern: &InternTable) -> bool {
+        let name = intern.resolve(self.dtype_name);
+        is_signed_dtype(name).unwrap_or_else(|e| panic!("RegisterInfo::is_signed: {}", e))
+    }
+}
+
+/// Returns true if the quantum data type uses signed two's-complement bit representation.
+/// Returns an explicit error if the data type string is unrecognized.
+pub fn is_signed_dtype(dtype_str: &str) -> Result<bool, String> {
+    match dtype_str {
+        "QInt" => Ok(true),
+        "QUInt" | "QBit" | "QAny" | "QMontgomeryUInt" | "QFxp" => Ok(false),
+        _ => Err(format!(
+            "Unknown quantum data type for signedness classification: {}",
+            dtype_str
+        )),
+    }
+}
+
+
 /// The direction of a register in a signature.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RegisterDirection {
@@ -1617,6 +1639,12 @@ fn nd_indices_to_flat(indices: &[i64], shape: &[usize]) -> usize {
 
 /// Converts a flat index back to ND indices (row-major order).
 fn flat_index_to_nd_indices(flat: usize, shape: &[usize]) -> Vec<usize> {
+    assert!(!shape.is_empty(), "flat_index_to_nd_indices called with empty shape");
+    assert!(
+        shape.iter().all(|&d| d > 0),
+        "flat_index_to_nd_indices called with zero dimension in shape: {:?}",
+        shape
+    );
     let mut indices = vec![0usize; shape.len()];
     let mut remaining = flat;
     for i in (0..shape.len()).rev() {
@@ -1652,20 +1680,23 @@ fn compile_signature(
                 SignatureDType::Single(t) => {
                     let nb = compute_dtype_bits(t)?;
                     let dn = t.dtype.name.clone();
-                    let sh = extract_shape(t);
+                    is_signed_dtype(&dn)?;
+                    let sh = extract_shape(t)?;
                     Ok((RegisterDirection::Thru, nb, dn, sh))
                 }
                 SignatureDType::Pair((left, right)) => match (left, right) {
                     (None, Some(t)) => {
                         let nb = compute_dtype_bits(t)?;
                         let dn = t.dtype.name.clone();
-                        let sh = extract_shape(t);
+                        is_signed_dtype(&dn)?;
+                        let sh = extract_shape(t)?;
                         Ok((RegisterDirection::RightOnly, nb, dn, sh))
                     }
                     (Some(t), None) => {
                         let nb = compute_dtype_bits(t)?;
                         let dn = t.dtype.name.clone();
-                        let sh = extract_shape(t);
+                        is_signed_dtype(&dn)?;
+                        let sh = extract_shape(t)?;
                         Ok((RegisterDirection::LeftOnly, nb, dn, sh))
                     }
                     (Some(left_t), Some(right_t)) => {
@@ -1679,7 +1710,8 @@ fn compile_signature(
                             ));
                         }
                         let dn = right_t.dtype.name.clone();
-                        let sh = extract_shape(right_t);
+                        is_signed_dtype(&dn)?;
+                        let sh = extract_shape(right_t)?;
                         Ok((RegisterDirection::Cast, nb_left, dn, sh))
                     }
                     (None, None) => Err("Invalid signature: both left and right are None".to_string()),
@@ -1697,15 +1729,24 @@ fn compile_signature(
         .collect()
 }
 
-/// Extracts the shape from a [`QDTypeNode`] as `Option<Vec<usize>>`.
+/// Extracts the shape from a [`QDTypeNode`] as `Result<Option<Vec<usize>>, String>`.
 ///
-/// Returns `Some(shape)` if the dtype has a shape (e.g. `QBit[2,2,2]`),
-/// or `None` for scalar types (e.g. `QBit`, `QInt(8)`).
-fn extract_shape(dtype: &QDTypeNode) -> Option<Vec<usize>> {
-    dtype
-        .shape
-        .as_ref()
-        .map(|s| s.iter().map(|&d| d as usize).collect())
+/// Returns `Ok(Some(shape))` if the dtype has a shape (e.g. `QBit[2,2,2]`),
+/// or `Ok(None)` for scalar types (e.g. `QBit`, `QInt(8)`).
+/// Returns `Err` if any shape dimension is zero or negative.
+fn extract_shape(dtype: &QDTypeNode) -> Result<Option<Vec<usize>>, String> {
+    if let Some(ref shape) = dtype.shape {
+        let mut result = Vec::with_capacity(shape.len());
+        for &d in shape {
+            if d <= 0 {
+                return Err(format!("Shape dimensions must be greater than 0, got {}", d));
+            }
+            result.push(d as usize);
+        }
+        Ok(Some(result))
+    } else {
+        Ok(None)
+    }
 }
 
 /// Computes the total bit count for a [`QDTypeNode`], including shape.
@@ -1726,8 +1767,8 @@ pub fn compute_dtype_bits(dtype: &QDTypeNode) -> Result<usize, String> {
     };
 
     // Handle shape: QBit[8] means 8 qubits
-    if let Some(ref shape) = dtype.shape {
-        let total: usize = shape.iter().map(|&s| s as usize).product();
+    if let Some(shape) = extract_shape(dtype)? {
+        let total: usize = shape.iter().product();
         Ok(base_bits * total)
     } else {
         Ok(base_bits)

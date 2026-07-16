@@ -23,7 +23,7 @@ def main():
     simulator = QLTFastsim.from_bloq(bloq)
     print(simulator)
     for x in range(2**7):
-        (result_x,) = simulator.call_classically(x=x)  # pylint: disable=unbalanced-tuple-unpacking
+        (result_x,) = simulator.call_classically(x=x)
         print(f"x={x} -> result_x={result_x}")
 
 

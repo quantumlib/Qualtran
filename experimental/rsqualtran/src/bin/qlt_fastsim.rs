@@ -287,8 +287,11 @@ fn main() {
                         .iter()
                         .zip(values.iter())
                         .map(|(reg, &val)| {
-                            let bits =
-                                _rsqlt::fastsim::vm::signed_decimal_str_to_bits(val, reg.n_bits);
+                            let bits = if reg.is_signed(&compiled.intern_table) {
+                                _rsqlt::fastsim::vm::signed_decimal_str_to_bits(val, reg.n_bits)
+                            } else {
+                                _rsqlt::fastsim::vm::decimal_str_to_bits(val, reg.n_bits)
+                            };
                             (compiled.intern_table.resolve(reg.name).to_string(), bits)
                         })
                         .collect();

@@ -1183,6 +1183,23 @@ pub fn int_to_bits(value: i64, n_bits: usize) -> Vec<bool> {
         "int_to_bits: n_bits={} exceeds i64 capacity (max 63). Use decimal_str_to_bits for larger values.",
         n_bits
     );
+    if value < 0 {
+        let min_neg = if n_bits == 0 { 0 } else { -(1i64 << (n_bits - 1)) };
+        assert!(
+            value >= min_neg,
+            "int_to_bits: value {} exceeds minimum representable negative value for {} bits",
+            value,
+            n_bits
+        );
+    } else if n_bits < 63 {
+        let max_pos = (1i64 << n_bits) - 1;
+        assert!(
+            value <= max_pos,
+            "int_to_bits: value {} exceeds maximum representable value for {} bits",
+            value,
+            n_bits
+        );
+    }
     // Treat value as unsigned for bit representation
     let unsigned_val = if value < 0 {
         // Two's complement: value + 2^n_bits
@@ -1271,7 +1288,7 @@ fn extract_outputs(
         let bit_values: Vec<bool> = indices.iter().map(|&i| state.get_bit(i)).collect();
 
         let dtype_str = compiled.intern_table.resolve(reg.dtype_name);
-        let value_str = if dtype_str == "QInt" {
+        let value_str = if reg.is_signed(&compiled.intern_table) {
             bits_to_int_str(&bit_values)
         } else {
             bits_to_uint_str(&bit_values)
@@ -1421,6 +1438,13 @@ pub fn signed_decimal_str_to_bits(s: &str, n_bits: usize) -> Vec<bool> {
         }
         // Parse positive part, convert to bits, then two's complement (invert + add 1)
         let mut bits = decimal_str_to_bits(positive_part, n_bits);
+        // Check for signed overflow: if MSB is 1, no other bit can be 1
+        assert!(
+            bits.is_empty() || !bits[0] || !bits[1..].iter().any(|&b| b),
+            "Value {} exceeds maximum negative value for {} bits",
+            s,
+            n_bits
+        );
         // Invert all bits
         for b in bits.iter_mut() {
             *b = !*b;
@@ -1429,7 +1453,14 @@ pub fn signed_decimal_str_to_bits(s: &str, n_bits: usize) -> Vec<bool> {
         add_one_to_bits(&mut bits);
         bits
     } else {
-        decimal_str_to_bits(s, n_bits)
+        let bits = decimal_str_to_bits(s, n_bits);
+        assert!(
+            bits.is_empty() || !bits[0],
+            "Value {} exceeds maximum positive value for {} signed bits",
+            s,
+            n_bits
+        );
+        bits
     }
 }
 

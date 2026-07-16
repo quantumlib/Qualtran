@@ -252,3 +252,66 @@ def test_multi_register_partition_cmodadd():
         ref = tuple(bloq.call_classically(ctrl=ctrl, x=x, y=y))
         got = tuple(sim.call_classically(ctrl=ctrl, x=x, y=y))
         assert got == ref, f"input=(ctrl={ctrl}, x={x}, y={y}): got {got}, expected {ref}"
+
+
+def test_convert_output_value_large_bitwidth():
+    """Shaped registers with element bit width > 64 dynamically choose object dtype to prevent truncation."""
+    val1 = (1 << 100) - 5
+    val2 = 1234567891011121314
+    combined = (val1 << 100) | val2
+    out = fastsim._convert_output_value(str(combined), "QUInt", "big_reg", 200, [2])
+    assert out.dtype == object
+    assert out.shape == (2,)
+    assert out[0] == val1 and out[1] == val2
+
+
+def test_convert_output_value_qint_signed():
+    """Shaped registers with QInt dtype produce signed elements instead of raw unsigned bits."""
+    # -5 (0xFB), 3 (0x03) -> combined 0xFB03 -> -1277 in 16-bit two's complement decimal string from Rust VM.
+    out = fastsim._convert_output_value("-1277", "QInt", "signed_reg", 16, [2])
+    assert out.dtype == np.int64
+    np.testing.assert_array_equal(out, np.array([-5, 3], dtype=np.int64))
+
+
+def test_ndarray_to_bits_exceeds_63_bits():
+    """_ndarray_to_bits falls back to arbitrary precision conversion when element_bits > 63."""
+    arr = np.array([(1 << 75) + 42], dtype=object)
+    bits = fastsim._ndarray_to_bits(arr, 80, [1], "QUInt", "wide_reg")
+    assert len(bits) == 80
+    # Bit position 79 is LSB, 2^75 is index 80 - 1 - 75 = 4.
+    assert bits[4] is True
+    assert bits[-1] is False and bits[-2] is True
+
+
+def test_scalar_int_input_exceeds_63_bits():
+    """_int_to_bits handles integers for registers exceeding 63 bits and cleanly errors on illegal negative input."""
+    bits = fastsim._int_to_bits((1 << 70) + 1, 100, "QUInt")
+    assert len(bits) == 100
+    assert bits[-1] is True
+
+    with pytest.raises(
+        ValueError, match="Negative integer -10 not permitted for unsigned dtype 'QUInt'"
+    ):
+        fastsim._int_to_bits(-10, 32, "QUInt")
+
+
+def test_zero_dimension_shape_validation():
+    """_convert_output_value and _ndarray_to_bits reject zero dimensions explicitly."""
+    with pytest.raises(
+        ValueError, match="Shape dimensions for register 'z_reg' must be greater than 0"
+    ):
+        fastsim._convert_output_value("0", "QUInt", "z_reg", 0, [0, 5])
+
+    arr = np.empty((0, 5), dtype=np.uint64)
+    with pytest.raises(
+        ValueError, match="Shape dimensions for register 'z_reg' must be greater than 0"
+    ):
+        fastsim._ndarray_to_bits(arr, 0, [0, 5], "QUInt", "z_reg")
+
+
+def test_unknown_dtype_signedness():
+    """_is_signed_dtype raises explicit ValueError for unrecognized data types without fallback defaults."""
+    with pytest.raises(
+        ValueError, match="Unknown quantum data type 'UnknownType' for signedness classification"
+    ):
+        fastsim._is_signed_dtype("UnknownType")
