@@ -13,31 +13,29 @@
 #  limitations under the License.
 
 import pytest
-from typing import Union
-
 from rsqualtran.nodes import (
     AliasAssignmentNode,
     CArgNode,
     CObjectNode,
+    CValueNode,
+    L1ASTNode,
     L1Module,
     LiteralNode,
+    LValueNode,
     QArgNode,
     QArgValueNode,
     QCallNode,
     QCastNode,
     QDefExternNode,
     QDefImplNode,
+    QDefNode,
     QDTypeNode,
     QReturnNode,
     QSignatureEntry,
-    TupleNode,
     QStructEntry,
-    LValueNode,
     QStructNode,
-    CValueNode,
-    L1ASTNode,
-    QDefNode,
     StatementNode,
+    TupleNode,
 )
 
 
@@ -194,10 +192,7 @@ def test_statement_nodes():
         QArgNode(key="ctrl", value="invalid")
 
     qcall = QCallNode(
-        bloq_key="XGate",
-        lvalues=[LValueNode("ret")],
-        qargs=[qarg],
-        annotation=LiteralNode("ann"),
+        bloq_key="XGate", lvalues=[LValueNode("ret")], qargs=[qarg], annotation=LiteralNode("ann")
     )
     assert isinstance(qcall, QCallNode)
     assert isinstance(qcall, StatementNode)
@@ -228,37 +223,21 @@ def test_qdef_nodes():
     stmt = AliasAssignmentNode(alias="a", bloq_key="b")
     cobj_from = CObjectNode("XGate", [])
 
-    qimpl = QDefImplNode(
-        bloq_key="MyBloq", qsignature=[qsig], body=[stmt], cobject_from=cobj_from
-    )
+    qimpl = QDefImplNode(bloq_key="MyBloq", qsignature=[qsig], body=[stmt], cobject_from=cobj_from)
     assert isinstance(qimpl, QDefImplNode)
     assert isinstance(qimpl, QDefNode)
     assert isinstance(qimpl, L1ASTNode)
 
     with pytest.raises(TypeError):
-        QDefImplNode(
-            bloq_key=123, qsignature=[qsig], body=[stmt], cobject_from=cobj_from
-        )
+        QDefImplNode(bloq_key=123, qsignature=[qsig], body=[stmt], cobject_from=cobj_from)
 
     with pytest.raises(TypeError):
-        QDefImplNode(
-            bloq_key="MyBloq",
-            qsignature=["invalid"],
-            body=[stmt],
-            cobject_from=cobj_from,
-        )
+        QDefImplNode(bloq_key="MyBloq", qsignature=["invalid"], body=[stmt], cobject_from=cobj_from)
 
     with pytest.raises(TypeError):
-        QDefImplNode(
-            bloq_key="MyBloq",
-            qsignature=[qsig],
-            body=["invalid"],
-            cobject_from=cobj_from,
-        )
+        QDefImplNode(bloq_key="MyBloq", qsignature=[qsig], body=["invalid"], cobject_from=cobj_from)
 
-    qextern = QDefExternNode(
-        bloq_key="ExternBloq", qsignature=[qsig], cobject_from=cobj_from
-    )
+    qextern = QDefExternNode(bloq_key="ExternBloq", qsignature=[qsig], cobject_from=cobj_from)
     assert isinstance(qextern, QDefExternNode)
     assert isinstance(qextern, QDefNode)
 

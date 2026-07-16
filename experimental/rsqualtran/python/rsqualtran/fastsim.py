@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# pylint: disable=c-extension-no-member,no-member
 """Python bindings for qlt_fastsim."""
 
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
+
 from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
@@ -32,11 +34,7 @@ def compile_l1_to_fastsim(module: _rsqlt.L1Module) -> _rsqlt.CompiledModule:
 
 
 def _convert_output_value(
-    val_str: str,
-    dtype_str: str,
-    name: str,
-    n_bits: int,
-    shape: Optional[List[int]],
+    val_str: str, dtype_str: str, name: str, n_bits: int, shape: Optional[List[int]]
 ) -> ClassicalValT:
     """Convert a string output value to its appropriate Python type.
 
@@ -86,11 +84,7 @@ def _convert_output_value(
 
 
 def _ndarray_to_bits(
-    arr: np.ndarray,
-    n_bits: int,
-    shape: List[int],
-    dtype: str,
-    name: str,
+    arr: np.ndarray, n_bits: int, shape: List[int], dtype: str, name: str
 ) -> List[bool]:
     """Convert an np.ndarray input to a flat bit vector.
 
@@ -129,9 +123,7 @@ def _ndarray_to_bits(
     element_bits = n_bits // total_elements
 
     if dtype not in _SUPPORTED_INT_DTYPES:
-        raise TypeError(
-            f"Unsupported dtype '{dtype}' for nd-array register '{name}'."
-        )
+        raise TypeError(f"Unsupported dtype '{dtype}' for nd-array register '{name}'.")
 
     bits: List[bool] = []
     for val in arr.flat:
@@ -139,9 +131,7 @@ def _ndarray_to_bits(
         elem_bits = _rsqlt.int_to_bits(elem_val, element_bits)
         bits.extend(elem_bits)
 
-    assert len(bits) == n_bits, (
-        f"Expected {n_bits} bits for register '{name}', got {len(bits)}."
-    )
+    assert len(bits) == n_bits, f"Expected {n_bits} bits for register '{name}', got {len(bits)}."
     return bits
 
 
@@ -172,6 +162,7 @@ class QLTFastsim:
     def from_bloq(cls, bloq: "qlt.Bloq") -> "QLTFastsim":
         """Construct a QLTFastsim simulator for a specific bloq."""
         from qualtran.l1 import L1ModuleBuilder
+
         from . import nodes as rust_nodes
 
         l1_mb = L1ModuleBuilder(nodes=rust_nodes)
@@ -197,8 +188,7 @@ class QLTFastsim:
         for key in kwargs:
             if key not in self._inputs:
                 raise ValueError(
-                    f"Unexpected input register '{key}' "
-                    f"for subroutine '{self._entrypoint}'"
+                    f"Unexpected input register '{key}' " f"for subroutine '{self._entrypoint}'"
                 )
 
         input_values: List[Tuple[str, List[bool]]] = []
@@ -223,16 +213,12 @@ class QLTFastsim:
             elif isinstance(val, (list, tuple)):
                 bits = list(val)
             else:
-                raise TypeError(
-                    f"Unsupported input type for register '{name}': {type(val)}"
-                )
+                raise TypeError(f"Unsupported input type for register '{name}': {type(val)}")
             input_values.append((name, bits))
 
         return input_values
 
-    def call_classically(
-        self, **kwargs: Any
-    ) -> Tuple[ClassicalValT, ...]:
+    def call_classically(self, **kwargs: Any) -> Tuple[ClassicalValT, ...]:
         """Execute a simulation run and return output values.
 
         Compatible with the `qualtran.Bloq.call_classically` interface:
@@ -267,14 +253,10 @@ class QLTFastsim:
         results = []
         for name, val_str, dtype_str in raw_outputs:
             out_n_bits, _, out_shape = self._outputs[name]
-            results.append(
-                _convert_output_value(val_str, dtype_str, name, out_n_bits, out_shape)
-            )
+            results.append(_convert_output_value(val_str, dtype_str, name, out_n_bits, out_shape))
         return tuple(results)
 
-    def simulate(
-        self, **kwargs: Any
-    ) -> Tuple[Dict[str, ClassicalValT], float]:
+    def simulate(self, **kwargs: Any) -> Tuple[Dict[str, ClassicalValT], float]:
         """Execute a simulation run and return outputs as a dict with phase exponent.
 
         Unlike `call_classically`, this method does not require the
@@ -304,8 +286,6 @@ class QLTFastsim:
         outputs: Dict[str, ClassicalValT] = {}
         for name, val_str, dtype_str in raw_outputs:
             out_n_bits, _, out_shape = self._outputs[name]
-            outputs[name] = _convert_output_value(
-                val_str, dtype_str, name, out_n_bits, out_shape
-            )
+            outputs[name] = _convert_output_value(val_str, dtype_str, name, out_n_bits, out_shape)
 
         return outputs, phase_exponent

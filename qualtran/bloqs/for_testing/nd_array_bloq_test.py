@@ -12,15 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+# pylint: disable=unbalanced-tuple-unpacking
 """Tests for multi-dimensional quantum variable array test bloqs."""
 
 import itertools
 
 import numpy as np
-import pytest
 
 from qualtran.bloqs.for_testing.nd_array_bloq import TestND3Grid, TestNDGrid
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -78,6 +77,7 @@ def test_nd_grid_ctrl0_set():
     grid = np.zeros((3, 2), dtype=np.uint8)
     ctrl = np.array([1, 0], dtype=np.uint8)
     out_grid, out_ctrl, out_flag = bloq.call_classically(grid=grid, ctrl=ctrl, flag=0)
+    assert isinstance(out_grid, np.ndarray)
     assert out_grid[1, 1] == 1  # ctrl[0] XOR'd into grid[1,1]
     assert out_grid[0, 0] == 1  # X gate
     assert out_flag == 0
@@ -90,6 +90,7 @@ def test_nd_grid_toffoli_fires():
     grid[2, 0] = 1
     ctrl = np.array([0, 1], dtype=np.uint8)
     out_grid, _, out_flag = bloq.call_classically(grid=grid, ctrl=ctrl, flag=0)
+    assert isinstance(out_grid, np.ndarray)
     assert out_grid[2, 1] == 1  # Toffoli fired
     assert out_flag == 1  # CNOT from grid[2,1] into flag
 
@@ -101,6 +102,7 @@ def test_nd_grid_toffoli_no_fire_one_ctrl():
     grid[2, 0] = 1
     ctrl = np.array([0, 0], dtype=np.uint8)
     out_grid, _, out_flag = bloq.call_classically(grid=grid, ctrl=ctrl, flag=0)
+    assert isinstance(out_grid, np.ndarray)
     assert out_grid[2, 1] == 0
     assert out_flag == 0
 
@@ -194,30 +196,38 @@ def test_nd3_grid_single_bit_positions_distinct():
         cube = np.zeros((2, 2, 2), dtype=np.uint8)
         cube[idx] = 1
         out_cube, out_aux = bloq.call_classically(cube=cube, aux=0)
+        assert isinstance(out_cube, np.ndarray)
         results.add((tuple(out_cube.flat), out_aux))
     assert len(results) == 8
 
 
 def test_nd3_grid_exhaustive_vs_reference():
     """Compare call_classically against the reference for all 2^9 inputs."""
-    bloq = TestND3Grid()
+    bloq = TestNDGrid() if False else TestND3Grid()  # pylint: disable=using-constant-test
     for bits in itertools.product([0, 1], repeat=9):
-        cube = np.array(bits[:8], dtype=np.uint8).reshape(2, 2, 2)
+        cube = np.array(bits[:8], dtype=np.uint8).reshape((2, 2, 2))
         aux = bits[8]
         out_cube, out_aux = bloq.call_classically(cube=cube, aux=aux)
         ref_cube, ref_aux = _reference_nd3_grid(cube, aux)
         np.testing.assert_array_equal(out_cube, ref_cube, err_msg=f"cube mismatch for {bits}")
         assert out_aux == ref_aux, f"aux mismatch for {bits}"
 
+
 def test_nd3_grid_exhaustive_vs_reference_fastsim():
-    """Compare call_classically against the reference for all 2^9 inputs."""
-    from rsqualtran import QLTFastsim
+    """Compare call_classically against the reference for all 2^9 inputs.
+
+    # pylint: disable=unbalanced-tuple-unpacking
+    """
+    import rsqualtran  # type: ignore[import-untyped]  # pylint: disable=import-outside-toplevel
+
     bloq = TestND3Grid()
-    simulator = QLTFastsim.from_bloq(bloq)
+    simulator = rsqualtran.QLTFastsim.from_bloq(bloq)
     for bits in itertools.product([0, 1], repeat=9):
-        cube = np.array(bits[:8], dtype=np.uint8).reshape(2, 2, 2)
+        cube = np.array(bits[:8], dtype=np.uint8).reshape((2, 2, 2))
         aux = bits[8]
-        out_cube, out_aux = simulator.call_classically(cube=cube, aux=aux)
+        out_cube, out_aux = simulator.call_classically(
+            cube=cube, aux=aux
+        )  # pylint: disable=unbalanced-tuple-unpacking
         ref_cube, ref_aux = _reference_nd3_grid(cube, aux)
         np.testing.assert_array_equal(out_cube, ref_cube, err_msg=f"cube mismatch for {bits}")
         assert out_aux == ref_aux, f"aux mismatch for {bits}"

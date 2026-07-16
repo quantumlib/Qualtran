@@ -13,15 +13,13 @@
 #  limitations under the License.
 
 import itertools
-import pytest
 
 import numpy as np
-import qualtran as qlt
-from qualtran.bloqs.for_testing.nd_array_bloq import TestND3Grid
-from qualtran.l1 import load_bloq as lb, L1ModuleBuilder
-
+import pytest
 from rsqualtran import fastsim
-from rsqualtran import nodes as rust_nodes_module
+
+from qualtran.bloqs.for_testing.nd_array_bloq import TestND3Grid
+from qualtran.l1 import load_bloq as lb
 
 
 @pytest.fixture(scope="module")
@@ -195,9 +193,7 @@ def test_ndarray_simulate_returns_ndarray_in_dict(nd3grid_simulator):
 def test_ndarray_int_input_still_works(nd3grid_simulator):
     """Passing a plain int for a shaped register still works (flat value)."""
     result_int = nd3grid_simulator.call_classically(cube=0, aux=0)
-    result_arr = nd3grid_simulator.call_classically(
-        cube=np.zeros((2, 2, 2), dtype=np.uint8), aux=0
-    )
+    result_arr = nd3grid_simulator.call_classically(cube=np.zeros((2, 2, 2), dtype=np.uint8), aux=0)
 
     # Both should produce the same ndarray output.
     np.testing.assert_array_equal(result_int[0], result_arr[0])
@@ -256,4 +252,3 @@ def test_multi_register_partition_cmodadd():
         ref = tuple(bloq.call_classically(ctrl=ctrl, x=x, y=y))
         got = tuple(sim.call_classically(ctrl=ctrl, x=x, y=y))
         assert got == ref, f"input=(ctrl={ctrl}, x={x}, y={y}): got {got}, expected {ref}"
-

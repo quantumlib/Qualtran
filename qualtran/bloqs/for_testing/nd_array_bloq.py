@@ -30,7 +30,6 @@ from numpy.typing import NDArray
 from qualtran import Bloq, BloqBuilder, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.basic_gates.toffoli import Toffoli
-
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -77,11 +76,7 @@ class TestNDGrid(Bloq):
         )
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        grid: 'SoquetT',
-        ctrl: 'SoquetT',
-        flag: Soquet,
+        self, bb: 'BloqBuilder', grid: 'SoquetT', ctrl: 'SoquetT', flag: Soquet
     ) -> Dict[str, 'SoquetT']:
         # Step 1: X on grid[0, 0]
         grid[0, 0] = bb.add(XGate(), q=grid[0, 0])
@@ -106,10 +101,7 @@ class TestNDGrid(Bloq):
         return {'grid': grid, 'ctrl': ctrl, 'flag': flag}
 
     def on_classical_vals(
-        self,
-        grid: NDArray[np.integer],
-        ctrl: NDArray[np.integer],
-        flag: int,
+        self, grid: NDArray[np.integer], ctrl: NDArray[np.integer], flag: int
     ) -> Dict[str, ClassicalValT]:
         # Work on copies so we don't mutate the caller's arrays.
         g = grid.copy()
@@ -151,47 +143,29 @@ class TestND3Grid(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('cube', QBit(), shape=(2, 2, 2)),
-                Register('aux', QBit()),
-            ]
-        )
+        return Signature([Register('cube', QBit(), shape=(2, 2, 2)), Register('aux', QBit())])
 
     def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        cube: 'SoquetT',
-        aux: Soquet,
+        self, bb: 'BloqBuilder', cube: 'SoquetT', aux: Soquet
     ) -> Dict[str, 'SoquetT']:
         # Step 1
         cube[0, 0, 0] = bb.add(XGate(), q=cube[0, 0, 0])
         # Step 2
-        cube[0, 0, 1], cube[0, 1, 0] = bb.add(
-            CNOT(), ctrl=cube[0, 0, 1], target=cube[0, 1, 0]
-        )
+        cube[0, 0, 1], cube[0, 1, 0] = bb.add(CNOT(), ctrl=cube[0, 0, 1], target=cube[0, 1, 0])
         # Step 3
-        cube[0, 1, 1], cube[1, 0, 0] = bb.add(
-            CNOT(), ctrl=cube[0, 1, 1], target=cube[1, 0, 0]
-        )
+        cube[0, 1, 1], cube[1, 0, 0] = bb.add(CNOT(), ctrl=cube[0, 1, 1], target=cube[1, 0, 0])
         # Step 4
         (cube[1, 0, 0], cube[1, 0, 1]), cube[1, 1, 0] = bb.add(
             Toffoli(), ctrl=np.array([cube[1, 0, 0], cube[1, 0, 1]]), target=cube[1, 1, 0]
         )
         # Step 5
-        cube[1, 1, 0], cube[1, 1, 1] = bb.add(
-            CNOT(), ctrl=cube[1, 1, 0], target=cube[1, 1, 1]
-        )
+        cube[1, 1, 0], cube[1, 1, 1] = bb.add(CNOT(), ctrl=cube[1, 1, 0], target=cube[1, 1, 1])
         # Step 6
         cube[1, 1, 1], aux = bb.add(CNOT(), ctrl=cube[1, 1, 1], target=aux)
 
         return {'cube': cube, 'aux': aux}
 
-    def on_classical_vals(
-        self,
-        cube: NDArray[np.integer],
-        aux: int,
-    ) -> Dict[str, ClassicalValT]:
+    def on_classical_vals(self, cube: NDArray[np.integer], aux: int) -> Dict[str, ClassicalValT]:
         c = cube.copy()
         a = int(aux)
 

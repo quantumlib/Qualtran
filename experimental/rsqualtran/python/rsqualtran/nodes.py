@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# pylint: disable=c-extension-no-member,no-member
 """The Qualtran-L1 AST Nodes backed by Rust PyO3 classes."""
 
 import abc
-from typing import Optional, Sequence, Tuple, TypeAlias, Union, Any
+from typing import Optional, Sequence, Tuple, TypeAlias, Union
 
 import attrs
 
@@ -66,11 +67,7 @@ class L1ASTNode(metaclass=_NodeMeta):
 class CValueNode(L1ASTNode, metaclass=_NodeMeta):
     """Nodes corresponding to classical values."""
 
-    _rsqlt_cls = (
-        _rsqlt.LiteralNode,
-        _rsqlt.TupleNode,
-        _rsqlt.CObjectNode,
-    )
+    _rsqlt_cls = (_rsqlt.LiteralNode, _rsqlt.TupleNode, _rsqlt.CObjectNode)
 
     @abc.abstractmethod
     def canonical_str(self): ...
@@ -114,9 +111,7 @@ class LiteralNode(CValueNode):
 
     def __new__(cls, value: Union[int, float, str]):
         if not isinstance(value, (int, float, str)):
-            raise TypeError(
-                f"LiteralNode value must be int, float, or str, got {type(value)}"
-            )
+            raise TypeError(f"LiteralNode value must be int, float, or str, got {type(value)}")
         return _rsqlt.LiteralNode(value)
 
 
@@ -173,9 +168,7 @@ class QDTypeNode(L1ASTNode):
         if shape_list is not None:
             for s in shape_list:
                 if not isinstance(s, int):
-                    raise TypeError(
-                        f"QDTypeNode shape must be sequence of int, got {type(s)}"
-                    )
+                    raise TypeError(f"QDTypeNode shape must be sequence of int, got {type(s)}")
         return _rsqlt.QDTypeNode(dtype, shape=shape_list)
 
 
@@ -193,9 +186,7 @@ class QSignatureEntry(L1ASTNode):
         if not isinstance(name, str):
             raise TypeError(f"QSignatureEntry name must be str, got {type(name)}")
         if not isinstance(dtype, _rsqlt.QDTypeNode) and not isinstance(dtype, tuple):
-            raise TypeError(
-                f"QSignatureEntry dtype must be QDTypeNode or tuple, got {type(dtype)}"
-            )
+            raise TypeError(f"QSignatureEntry dtype must be QDTypeNode or tuple, got {type(dtype)}")
         if isinstance(dtype, tuple):
             if len(dtype) != 2:
                 raise ValueError(
@@ -260,11 +251,7 @@ class LValueNode(L1ASTNode):
 class StatementNode(L1ASTNode, metaclass=_NodeMeta):
     """Nodes which can serve as statements in a qdef."""
 
-    _rsqlt_cls = (
-        _rsqlt.AliasAssignmentNode,
-        _rsqlt.QCallNode,
-        _rsqlt.QReturnNode,
-    )
+    _rsqlt_cls = (_rsqlt.AliasAssignmentNode, _rsqlt.QCallNode, _rsqlt.QReturnNode)
 
 
 class AliasAssignmentNode(StatementNode):
@@ -276,9 +263,7 @@ class AliasAssignmentNode(StatementNode):
         if not isinstance(alias, str):
             raise TypeError(f"AliasAssignmentNode alias must be str, got {type(alias)}")
         if not isinstance(bloq_key, str):
-            raise TypeError(
-                f"AliasAssignmentNode bloq_key must be str, got {type(bloq_key)}"
-            )
+            raise TypeError(f"AliasAssignmentNode bloq_key must be str, got {type(bloq_key)}")
         return _rsqlt.AliasAssignmentNode(alias, bloq_key)
 
 
@@ -293,9 +278,7 @@ class QArgValueNode(L1ASTNode):
         idx_list = list(idx)
         for i in idx_list:
             if not isinstance(i, int):
-                raise TypeError(
-                    f"QArgValueNode idx must be sequence of int, got {type(i)}"
-                )
+                raise TypeError(f"QArgValueNode idx must be sequence of int, got {type(i)}")
         return _rsqlt.QArgValueNode(name, idx_list)
 
 
@@ -307,9 +290,7 @@ class QArgNode(L1ASTNode):
 
     _rsqlt_cls = _rsqlt.QArgNode
 
-    def __new__(
-        cls, key: str, value: NestedQArgValue, annotation: Optional[CValueNode] = None
-    ):
+    def __new__(cls, key: str, value: NestedQArgValue, annotation: Optional[CValueNode] = None):
         if not isinstance(key, str):
             raise TypeError(f"QArgNode key must be str, got {type(key)}")
         if annotation is not None and not isinstance(annotation, CValueNode._rsqlt_cls):
@@ -352,9 +333,7 @@ class QCallNode(StatementNode):
             elif isinstance(lv, str):
                 lvalues_list.append(lv)
             else:
-                raise TypeError(
-                    f"QCallNode lvalues must be LValueNode or str, got {type(lv)}"
-                )
+                raise TypeError(f"QCallNode lvalues must be LValueNode or str, got {type(lv)}")
 
         qargs_list = list(qargs)
         for qa in qargs_list:
@@ -378,20 +357,14 @@ class QReturnNode(StatementNode):
         ret_list = list(ret_mapping)
         for qa in ret_list:
             if not isinstance(qa, _rsqlt.QArgNode):
-                raise TypeError(
-                    f"QReturnNode ret_mapping must be QArgNode, got {type(qa)}"
-                )
+                raise TypeError(f"QReturnNode ret_mapping must be QArgNode, got {type(qa)}")
         return _rsqlt.QReturnNode(ret_list)
 
 
 class QDefNode(L1ASTNode, metaclass=_NodeMeta):
     """Nodes that serve as 'qdefs'."""
 
-    _rsqlt_cls = (
-        _rsqlt.QDefImplNode,
-        _rsqlt.QDefExternNode,
-        _rsqlt.QCastNode,
-    )
+    _rsqlt_cls = (_rsqlt.QDefImplNode, _rsqlt.QDefExternNode, _rsqlt.QCastNode)
 
     @property
     @abc.abstractmethod
@@ -423,25 +396,17 @@ class QDefImplNode(QDefNode):
         qsig_list = list(qsignature)
         for qs in qsig_list:
             if not isinstance(qs, _rsqlt.QSignatureEntry):
-                raise TypeError(
-                    f"QDefImplNode qsignature must be QSignatureEntry, got {type(qs)}"
-                )
+                raise TypeError(f"QDefImplNode qsignature must be QSignatureEntry, got {type(qs)}")
         body_list = list(body)
         for stmt in body_list:
             if not isinstance(stmt, StatementNode._rsqlt_cls):
-                raise TypeError(
-                    f"QDefImplNode body must be StatementNode, got {type(stmt)}"
-                )
-        if cobject_from is not None and not isinstance(
-            cobject_from, _rsqlt.CObjectNode
-        ):
+                raise TypeError(f"QDefImplNode body must be StatementNode, got {type(stmt)}")
+        if cobject_from is not None and not isinstance(cobject_from, _rsqlt.CObjectNode):
             raise TypeError(
                 f"QDefImplNode cobject_from must be CObjectNode or None, got {type(cobject_from)}"
             )
 
-        return _rsqlt.QDefImplNode(
-            bloq_key, qsig_list, body_list, cobject_from=cobject_from
-        )
+        return _rsqlt.QDefImplNode(bloq_key, qsig_list, body_list, cobject_from=cobject_from)
 
 
 class QDefExternNode(QDefNode):
@@ -456,18 +421,14 @@ class QDefExternNode(QDefNode):
         cobject_from: Optional[CObjectNode],
     ):
         if not isinstance(bloq_key, str):
-            raise TypeError(
-                f"QDefExternNode bloq_key must be str, got {type(bloq_key)}"
-            )
+            raise TypeError(f"QDefExternNode bloq_key must be str, got {type(bloq_key)}")
         qsig_list = list(qsignature)
         for qs in qsig_list:
             if not isinstance(qs, _rsqlt.QSignatureEntry):
                 raise TypeError(
                     f"QDefExternNode qsignature must be QSignatureEntry, got {type(qs)}"
                 )
-        if cobject_from is not None and not isinstance(
-            cobject_from, _rsqlt.CObjectNode
-        ):
+        if cobject_from is not None and not isinstance(cobject_from, _rsqlt.CObjectNode):
             raise TypeError(
                 f"QDefExternNode cobject_from must be CObjectNode or None, got {type(cobject_from)}"
             )
@@ -488,9 +449,7 @@ class QCastNode(QDefNode):
         qsig_list = list(qsignature)
         for qs in qsig_list:
             if not isinstance(qs, _rsqlt.QSignatureEntry):
-                raise TypeError(
-                    f"QCastNode qsignature must be QSignatureEntry, got {type(qs)}"
-                )
+                raise TypeError(f"QCastNode qsignature must be QSignatureEntry, got {type(qs)}")
 
         return _rsqlt.QCastNode(bloq_key, qsig_list)
 
@@ -523,8 +482,6 @@ class L1Module(L1ASTNode):
         qstructs_list = list(qstructs)
         for qs in qstructs_list:
             if not isinstance(qs, QStructNode):
-                raise TypeError(
-                    f"L1Module qstructs must be QStructNode, got {type(qs)}"
-                )
+                raise TypeError(f"L1Module qstructs must be QStructNode, got {type(qs)}")
 
         return _rsqlt.L1Module(qdefs_list)
