@@ -1749,7 +1749,7 @@ def test_should_use_fastsim_env_var(monkeypatch):
     # Test unset variable falls back to testing import rsqualtran
     monkeypatch.delenv('QLT_USE_FASTSIM', raising=False)
     try:
-        import rsqualtran  # type: ignore[import-untyped] # noqa: F401
+        import rsqualtran  # type: ignore[import-untyped,import-not-found] # noqa: F401
 
         assert _should_use_fastsim() is True
     except ImportError:
@@ -1766,7 +1766,7 @@ def test_verify_structural_induction_engine_code_paths(qlt_use_fastsim, capsys):
     """
     if qlt_use_fastsim == '1':
         try:
-            import rsqualtran  # type: ignore[import-untyped] # noqa: F401
+            import rsqualtran  # type: ignore[import-untyped,import-not-found] # noqa: F401
         except ImportError:
             pytest.skip("rsqualtran (`QLTFastsim`) is not installed in this environment.")
 

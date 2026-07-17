@@ -434,7 +434,7 @@ logger = logging.getLogger(__name__)
 def _get_qlt_fastsim_cls() -> Any | None:
     """Memoize attempting to import `rsqualtran.QLTFastsim` to avoid repetitive `sys.path` searches."""
     try:
-        from rsqualtran import QLTFastsim  # type: ignore[import-untyped]
+        from rsqualtran import QLTFastsim  # type: ignore[import-untyped,import-not-found]
 
         return QLTFastsim
     except ImportError:
