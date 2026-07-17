@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -123,15 +123,19 @@ class CAdd(Bloq):
     def short_name(self) -> str:
         return "a+b"
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        if soq.reg.name == 'ctrl':
-            return directional_text_box('ctrl', side=soq.reg.side)
-        if soq.reg.name == 'a':
-            return directional_text_box('a', side=soq.reg.side)
-        elif soq.reg.name == 'b':
-            return directional_text_box('a+b', side=soq.reg.side)
+        if reg is None:
+            return super().wire_symbol(reg, idx)
+        if reg.name == 'ctrl':
+            return directional_text_box('ctrl', side=reg.side)
+        if reg.name == 'a':
+            return directional_text_box('a', side=reg.side)
+        elif reg.name == 'b':
+            return directional_text_box('a+b', side=reg.side)
         else:
             raise ValueError()
 
