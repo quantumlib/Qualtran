@@ -421,7 +421,7 @@ def _verify_leaf_bloq(
 
         return VerificationResult(bloq, VerificationStatus.LEAF_VERIFIED, n_inputs_checked=n_ok)
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         return VerificationResult(
             bloq, VerificationStatus.ERROR, error_message=f"Leaf verification failed: {e}"
         )
@@ -491,7 +491,7 @@ def _verify_decomposable_bloq(
         if fastsim_cls is not None:
             try:
                 sim = fastsim_cls.from_bloq(bloq)
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 # Fall back to Python simulation for mock or custom test bloqs.
                 sim = None
 
@@ -556,7 +556,7 @@ def _verify_decomposable_bloq(
             bloq, VerificationStatus.FAILED, error_message=str(e), children=child_bloqs
         )
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         return VerificationResult(
             bloq,
             VerificationStatus.ERROR,
@@ -629,7 +629,7 @@ def verify_structural_induction(
         # Generate input values.
         try:
             input_vals_list = generate_input_vals(bloq, n_samples, rng)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             result = VerificationResult(
                 bloq, VerificationStatus.ERROR, error_message=f"Input generation failed: {e}"
             )
