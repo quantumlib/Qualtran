@@ -489,11 +489,7 @@ def _verify_decomposable_bloq(
     if use_fastsim:
         fastsim_cls = _get_qlt_fastsim_cls()
         if fastsim_cls is not None:
-            try:
-                sim = fastsim_cls.from_bloq(bloq)
-            except Exception:  # pylint: disable=broad-exception-caught
-                # Fall back to Python simulation for mock or custom test bloqs.
-                sim = None
+            sim = fastsim_cls.from_bloq(bloq)
 
     try:
         n_checked = 0
