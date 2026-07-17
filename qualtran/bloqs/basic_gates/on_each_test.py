@@ -47,6 +47,18 @@ def test_classical_simulation():
         h_on_each.call_classically(q=0)
 
 
+def test_classical_simulation_signed_dtype():
+    """on_classical_vals must respect the register's dtype signedness."""
+    from qualtran import QInt
+
+    bloq = OnEach(n=2, gate=XGate(), target_dtype=QInt(2))
+    # QInt(2) domain: {-2, -1, 0, 1}. Flipping all bits of 0 → -1, not 3.
+    assert bloq.on_classical_vals(q=0) == {'q': -1}
+    assert bloq.on_classical_vals(q=-1) == {'q': 0}
+    assert bloq.on_classical_vals(q=1) == {'q': -2}
+    assert bloq.on_classical_vals(q=-2) == {'q': 1}
+
+
 def test_call_graph():
     x_on_each = OnEach(10, XGate())
     g, sigma = x_on_each.call_graph()
