@@ -106,6 +106,7 @@ def _negate() -> Negate:
 
 @bloq_example
 def _negate_symb() -> Negate:
+    import sympy
 
     n = sympy.Symbol("n")
     negate_symb = Negate(QInt(n))
