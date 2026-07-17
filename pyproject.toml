@@ -111,7 +111,6 @@ typing = [
 ]
 
 lint = [
-    "pylint~=3.3.1",
     "ruff~=0.15.0",
 
     # for checking _test.py files
@@ -160,14 +159,24 @@ exclude = [
     "*_pb2.py",
     "*.ipynb",
 ]
+# Recursively exclude notebooks and generated protos across all subdirectories
+extend-exclude = [
+    "*.ipynb",
+    "*_pb2.py",
+]
 
 [tool.ruff.lint]
+# Preview mode is required for CPY001 (flake8-copyright); explicit-preview-rules limits
+# preview behaviors to explicitly selected rules rather than all enabled linters.
+preview = true
+explicit-preview-rules = true
 select = [
     "E", # pycodestyle
     "F", # pyflakes
     # "I", # isort (disabled until we switch formatters)
     "W", # pycodestyle warnings
     "PL", # pylint
+    "CPY001", # missing-copyright-notice
 ]
 ignore = [
     # From the default ruleset:
@@ -207,6 +216,13 @@ ignore = [
     # automated fix isn't in the stable release yet.
     "F401", # Unused import
 ]
+# Preview mode flags parent module & unused imports in these files
+"qualtran/serialization/resolver_dict.py" = ["F401"]
+"dev_tools/qualtran_dev_tools/notebook_specs.py" = ["F401"]
+
+[tool.ruff.lint.flake8-copyright]
+notice-rgx = '(?i)Copyright (\d{4}|\d{4}-\d{4}|20XX) Google LLC'
+min-file-size = 10
 
 
 [tool.ruff.lint.isort]
