@@ -52,7 +52,7 @@ import math
 import os
 import sys
 from collections import Counter, OrderedDict, deque
-from typing import IO, Callable, Sequence
+from typing import Any, Callable, IO, Sequence
 
 import attrs
 import numpy as np
@@ -223,16 +223,16 @@ def generate_input_vals(
         # Random sampling.
         results = []
         for _ in range(n_samples):
-            vals: dict[str, ClassicalValT] = {}
+            sampled_vals: dict[str, ClassicalValT] = {}
             for reg in left_regs:
                 if reg.shape:
                     n_elems = int(np.prod(reg.shape))
-                    vals[reg.name] = np.array(
+                    sampled_vals[reg.name] = np.array(
                         [_sample_from_register(reg, rng) for _ in range(n_elems)]
                     ).reshape(reg.shape)
                 else:
-                    vals[reg.name] = _sample_from_register(reg, rng)
-            results.append(vals)
+                    sampled_vals[reg.name] = _sample_from_register(reg, rng)
+            results.append(sampled_vals)
         return results
 
 
@@ -433,10 +433,10 @@ logger = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
-def _get_qlt_fastsim_cls() -> type | None:
+def _get_qlt_fastsim_cls() -> Any | None:
     """Memoize attempting to import `rsqualtran.QLTFastsim` to avoid repetitive `sys.path` searches."""
     try:
-        from rsqualtran import QLTFastsim
+        from rsqualtran import QLTFastsim  # type: ignore[import-untyped]
 
         return QLTFastsim
     except ImportError:
@@ -824,7 +824,7 @@ def print_verification_summary(
             _write()
 
     # Status totals.
-    status_counts: Counter[str] = Counter(r.status for r in results)
+    status_counts: Counter[VerificationStatus] = Counter(r.status for r in results)
     _write('-' * 70)
     for status, count in sorted(status_counts.items()):
         icon = _STATUS_ICONS.get(status, '?')

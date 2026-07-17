@@ -15,7 +15,7 @@
 """Classes to apply single qubit bloq to multiple qubits."""
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import sympy
@@ -89,14 +89,17 @@ class OnEach(Bloq):
         return {'q': bb.join(qs, self.target_dtype)}
 
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+        n = self.n
+        if isinstance(n, sympy.Expr):
+            raise ValueError(f'Cannot simulate symbolic bloq {self}')
         dtype = self.signature[0].dtype
         bits = dtype.to_bits(q)
         out_bits = list(bits)
-        for i in range(self.n):
+        for i in range(n):
             out = self.gate.on_classical_vals(q=bits[i])
             if out is NotImplemented:
                 return NotImplemented
-            out_bits[i] = out['q']
+            out_bits[i] = int(cast(int, out['q']))
         return {'q': dtype.from_bits(out_bits)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':

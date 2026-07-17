@@ -488,7 +488,7 @@ class _KeyErrorInOnClassicalVals(Bloq):
         return Signature([Register('q', QBit())])
 
     def on_classical_vals(self, q):
-        d = {}
+        d: dict[str, int] = {}
         return {'q': d['missing_key']}  # Bug: KeyError
 
     def build_composite_bloq(self, bb: BloqBuilder, q: SoquetT) -> dict[str, SoquetT]:
@@ -707,6 +707,7 @@ def test_generate_shaped_register_values_in_domain():
     vals = generate_input_vals(bloq, n_samples=10, rng=rng)
     for v in vals:
         arr = v['arr']
+        assert isinstance(arr, np.ndarray)
         for elem in arr.flat:
             assert elem in (0, 1), f"QBit element {elem} not in {{0, 1}}"
 
@@ -1747,7 +1748,8 @@ def test_should_use_fastsim_env_var(monkeypatch):
     # Test unset variable falls back to testing import rsqualtran
     monkeypatch.delenv('QLT_USE_FASTSIM', raising=False)
     try:
-        import rsqualtran  # noqa: F401
+        import rsqualtran  # type: ignore[import-untyped] # noqa: F401
+
         assert _should_use_fastsim() is True
     except ImportError:
         assert _should_use_fastsim() is False
@@ -1763,7 +1765,7 @@ def test_verify_structural_induction_engine_code_paths(qlt_use_fastsim, capsys):
     """
     if qlt_use_fastsim == '1':
         try:
-            import rsqualtran  # noqa: F401
+            import rsqualtran  # type: ignore[import-untyped] # noqa: F401
         except ImportError:
             pytest.skip("rsqualtran (`QLTFastsim`) is not installed in this environment.")
 
