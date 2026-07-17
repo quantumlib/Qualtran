@@ -526,3 +526,31 @@ def _add_k_large() -> AddK:
 
 
 _ADD_K_DOC = BloqDocSpec(bloq_cls=AddK, examples=[_add_k, _add_k_small, _add_k_large])
+
+
+
+def _get_add_k_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `AddK` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    # Unsigned.
+    for bs, k in itertools.product([3, 4, 5], [1, 3, 7]):
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=AddK(QUInt(bs), k=k), name=f"AddK(QUInt({bs}), k={k})"
+            )
+        )
+    # Signed.
+    for bs, k in itertools.product([4, 5], [-3, 2]):
+        cases.append(
+            ClassicalSimTestCase(
+                bloq=AddK(QInt(bs), k=k), name=f"AddK(QInt({bs}), k={k})"
+            )
+        )
+    return cases
