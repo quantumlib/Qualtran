@@ -78,7 +78,7 @@ locally during development. Wrapper scripts are located in the
 
 *   Run `check/pytest-quick` to run the Pytest suite
 *   Run `check/mypy` to run the Mypy type checker
-*   Run `check/pylint` to run the Pylint code linter
+*   Run `check/ruff` to run the Ruff code linter
 
 ### Pull requests and code reviews
 
