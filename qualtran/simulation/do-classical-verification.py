@@ -64,9 +64,19 @@ from qualtran.simulation.verification import (
 
 def _build_registry() -> dict[str, TestCaseProvider]:
     """Build the registry of test-case providers."""
-    from qualtran.bloqs.arithmetic.addition import _get_add_k_classical_sim_test_cases
-    from qualtran.bloqs.arithmetic.negate import _get_negate_classical_sim_test_cases
-    from qualtran.bloqs.basic_gates.on_each import _get_on_each_classical_sim_test_cases
+    # fmt: off
+    # isort: off
+    from qualtran.bloqs.arithmetic.addition import (
+        _get_add_k_classical_sim_test_cases,
+    )
+    from qualtran.bloqs.arithmetic.negate import (
+        _get_negate_classical_sim_test_cases,
+    )
+    from qualtran.bloqs.basic_gates.on_each import (
+        _get_on_each_classical_sim_test_cases,
+    )
+    # isort: on
+    # fmt: on
 
     return {
         'add_k': _get_add_k_classical_sim_test_cases,
