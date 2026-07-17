@@ -66,7 +66,7 @@ from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountDictT, MutableBloqCountDictT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import generalize_cvs, ignore_cliffords
-from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.simulation.classical_sim import ClassicalValT, QCDTypeDomainError
 from qualtran.symbolics import HasLength, is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
@@ -138,7 +138,7 @@ class And(GateWithRegisters):
 
         # Uncompute
         if target != out:
-            raise ValueError(
+            raise QCDTypeDomainError(
                 f"Inconsistent `target` found for uncomputing `And`: {ctrl=}, {target=}. Expected target={out}"
             )
         return {'ctrl': ctrl}
