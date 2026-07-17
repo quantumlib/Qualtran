@@ -39,6 +39,7 @@ from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @attrs.frozen

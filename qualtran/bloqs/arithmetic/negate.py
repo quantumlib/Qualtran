@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
@@ -29,11 +29,11 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic import AddK
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
-from qualtran.resource_counting import GateCounts
-from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
+    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -106,7 +106,6 @@ def _negate() -> Negate:
 
 @bloq_example
 def _negate_symb() -> Negate:
-    import sympy
 
     n = sympy.Symbol("n")
     negate_symb = Negate(QInt(n))
