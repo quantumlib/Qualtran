@@ -51,7 +51,7 @@ import logging
 import math
 import os
 import sys
-from collections import Counter, OrderedDict, deque
+from collections import Counter, deque, OrderedDict
 from typing import Any, Callable, IO, Sequence
 
 import attrs
@@ -315,8 +315,6 @@ BFS, so every subbloq is also verified.
     keyed by a test suite alias and run with
     `python do-classical-verification.py --[your testsuite alias]`.
 """
-
-
 
 
 def validate_test_cases(name: str, cases: list[ClassicalSimTestCase]) -> None:
@@ -606,7 +604,9 @@ def verify_structural_induction(
         rng = np.random.default_rng(42)
 
     use_fastsim = _should_use_fastsim()
-    sim_style = "QLTFastsim (Rust)" if use_fastsim else "Python (simulate_via_subbloq_classical_vals)"
+    sim_style = (
+        "QLTFastsim (Rust)" if use_fastsim else "Python (simulate_via_subbloq_classical_vals)"
+    )
     sys.stderr.write(f"[verify_structural_induction] Simulation style: {sim_style}\n")
     logger.info("[verify_structural_induction] Simulation style: %s", sim_style)
 

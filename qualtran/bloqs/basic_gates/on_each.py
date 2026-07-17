@@ -137,10 +137,7 @@ def _get_on_each_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     for n in [2, 3, 4]:
         # Default dtype (QAny)
         cases.append(
-            ClassicalSimTestCase(
-                bloq=OnEach(n=n, gate=XGate()),
-                name=f"OnEach(XGate, n={n})",
-            )
+            ClassicalSimTestCase(bloq=OnEach(n=n, gate=XGate()), name=f"OnEach(XGate, n={n})")
         )
         # Unsigned
         cases.append(

@@ -127,17 +127,10 @@ def _get_negate_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     cases: list[ClassicalSimTestCase] = []
     for bitsize in [1, 2, 3, 4]:
         cases.append(
-            ClassicalSimTestCase(
-                bloq=Negate(QUInt(bitsize)),
-                name=f"Negate(QUInt({bitsize}))",
-            )
+            ClassicalSimTestCase(bloq=Negate(QUInt(bitsize)), name=f"Negate(QUInt({bitsize}))")
         )
     for bitsize in [2, 3, 4]:
         cases.append(
-            ClassicalSimTestCase(
-                bloq=Negate(QInt(bitsize)),
-                name=f"Negate(QInt({bitsize}))",
-            )
+            ClassicalSimTestCase(bloq=Negate(QInt(bitsize)), name=f"Negate(QInt({bitsize}))")
         )
     return cases
-

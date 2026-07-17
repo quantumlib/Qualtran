@@ -40,11 +40,11 @@ from qualtran.simulation.classical_sim import QCDTypeDomainError
 from qualtran.simulation.verification import (
     _assert_results_equal,
     _should_use_fastsim,
-    simulate_via_subbloq_classical_vals,
     ClassicalSimTestCase,
     generate_input_vals,
     MissingClassicalValsError,
     print_verification_summary,
+    simulate_via_subbloq_classical_vals,
     VerificationResult,
     VerificationStatus,
     verify_structural_induction,
@@ -71,6 +71,8 @@ def default_python_verification_engine(monkeypatch, request):
 def qlt_use_fastsim(request, monkeypatch):
     monkeypatch.setenv('QLT_USE_FASTSIM', request.param)
     return request.param
+
+
 #
 # These are organised by role:
 #
@@ -607,7 +609,6 @@ def test_call_no_decomposition_raises():
     bloq = _IdentityBloq()
     with pytest.raises(DecomposeNotImplementedError):
         simulate_via_subbloq_classical_vals(bloq, q=0)
-
 
 
 # ===========================================================================
@@ -1780,6 +1781,8 @@ def test_verify_structural_induction_engine_code_paths(qlt_use_fastsim, capsys):
 
     captured = capsys.readouterr()
     expected_style = (
-        "QLTFastsim (Rust)" if qlt_use_fastsim == '1' else "Python (simulate_via_subbloq_classical_vals)"
+        "QLTFastsim (Rust)"
+        if qlt_use_fastsim == '1'
+        else "Python (simulate_via_subbloq_classical_vals)"
     )
     assert f"[verify_structural_induction] Simulation style: {expected_style}" in captured.err
