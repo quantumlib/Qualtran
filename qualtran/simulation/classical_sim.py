@@ -58,6 +58,27 @@ ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
 
 
+class QCDTypeDomainError(ValueError):
+    """Raised by `on_classical_vals` when an input is outside the bloq's valid domain.
+
+    Bloqs should raise this (instead of bare ``ValueError`` or ``AssertionError``)
+    to signal that the input is invalid for *this* bloq but not indicative of a
+    programming error. The verification framework catches only this type when
+    skipping domain-constrained inputs, so genuine bugs (``TypeError``,
+    ``KeyError``, etc.) propagate immediately.
+
+    Subclasses ``ValueError`` for backward compatibility with existing code that
+    catches ``ValueError``.
+
+    Example usage in a bloq::
+
+        def on_classical_vals(self, x):
+            if x % 2 != 0:
+                raise QCDTypeDomainError(f"Only even inputs allowed, got {x}")
+            return {'x': x}
+    """
+
+
 def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> Type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
     from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
@@ -147,7 +168,7 @@ class _RandomClassicalValHandler(_ClassicalValHandler):
         self._gen = rng
 
     def get(self, binst, distribution: ClassicalValDistribution):
-        return self._gen.choice(distribution.a, p=distribution.p)  # type:ignore[arg-type]
+        return self._gen.choice(distribution.a, p=distribution.p)  # type: ignore[arg-type]
 
 
 class _FixedClassicalValHandler(_ClassicalValHandler):
