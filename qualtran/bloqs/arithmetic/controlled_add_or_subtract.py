@@ -20,9 +20,13 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QInt, QMontgomeryUIn
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.arithmetic.bitwise import BitwiseNot
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.simulation.classical_sim import add_ints
+from qualtran.symbolics import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -79,6 +83,22 @@ class ControlledAddOrSubtract(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(ctrl=QBit(), a=self.a_dtype, b=self.b_dtype)
 
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> dict[str, 'ClassicalValT']:
+        if is_symbolic(self.a_dtype.bitsize, self.b_dtype.bitsize):
+            raise ValueError(f"Cannot simulate symbolic bloq {self}")
+
+        is_add = bool(ctrl) == self.add_when_ctrl_is_on
+        unsigned = isinstance(self.b_dtype, (QUInt, QMontgomeryUInt))
+        b_out = add_ints(
+            int(b),
+            int(a) if is_add else -int(a),
+            num_bits=int(self.b_dtype.bitsize),
+            is_signed=not unsigned,
+        )
+        return {'ctrl': ctrl, 'a': a, 'b': b_out}
+
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'Soquet', a: 'Soquet', b: 'Soquet'
     ) -> dict[str, 'SoquetT']:
@@ -130,3 +150,42 @@ _CONTROLLED_ADD_OR_SUBTRACT_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.arithmetic.controlled_add_or_subtract import ControlledAddOrSubtract',
     examples=[_ctrl_add_or_sub_signed_symb, _ctrl_add_or_sub_unsigned, _ctrl_add_or_sub_signed],
 )
+
+
+def _get_controlled_add_or_subtract_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `ControlledAddOrSubtract` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    # Unsigned test cases (equal and differing bitsizes).
+    for a_bitsize, b_bitsize in [(2, 2), (3, 3), (4, 4), (2, 3), (3, 4)]:
+        for add_when_ctrl_is_on in [True, False]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=ControlledAddOrSubtract(
+                        QUInt(a_bitsize),
+                        QUInt(b_bitsize),
+                        add_when_ctrl_is_on=add_when_ctrl_is_on,
+                    ),
+                    name=f"ControlledAddOrSubtract(QUInt({a_bitsize}), QUInt({b_bitsize}), add_when_ctrl_is_on={add_when_ctrl_is_on})",
+                )
+            )
+    # Signed test cases (equal bitsizes).
+    for bitsize in [2, 3, 4]:
+        for add_when_ctrl_is_on in [True, False]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=ControlledAddOrSubtract(
+                        QInt(bitsize),
+                        QInt(bitsize),
+                        add_when_ctrl_is_on=add_when_ctrl_is_on,
+                    ),
+                    name=f"ControlledAddOrSubtract(QInt({bitsize}), QInt({bitsize}), add_when_ctrl_is_on={add_when_ctrl_is_on})",
+                )
+            )
+    return cases
