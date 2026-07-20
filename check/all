@@ -13,8 +13,8 @@ topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
 cd "${topdir}" || exit $?
 
 if [ "$#" -ne 0 ]; then
-    echo "Note: check/all does not accept arguments. To run customized checks, please invoke the individual check/* scripts directly."
-    echo ""
+    echo "Error: check/all does not accept arguments. To run customized checks, please invoke the individual check/* scripts directly." >&2
+    exit 1
 fi
 
 run_check() {
