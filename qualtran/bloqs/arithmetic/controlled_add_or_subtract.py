@@ -168,9 +168,7 @@ def _get_controlled_add_or_subtract_classical_sim_test_cases() -> list['Classica
             cases.append(
                 ClassicalSimTestCase(
                     bloq=ControlledAddOrSubtract(
-                        QUInt(a_bitsize),
-                        QUInt(b_bitsize),
-                        add_when_ctrl_is_on=add_when_ctrl_is_on,
+                        QUInt(a_bitsize), QUInt(b_bitsize), add_when_ctrl_is_on=add_when_ctrl_is_on
                     ),
                     name=f"ControlledAddOrSubtract(QUInt({a_bitsize}), QUInt({b_bitsize}), add_when_ctrl_is_on={add_when_ctrl_is_on})",
                 )
@@ -181,9 +179,7 @@ def _get_controlled_add_or_subtract_classical_sim_test_cases() -> list['Classica
             cases.append(
                 ClassicalSimTestCase(
                     bloq=ControlledAddOrSubtract(
-                        QInt(bitsize),
-                        QInt(bitsize),
-                        add_when_ctrl_is_on=add_when_ctrl_is_on,
+                        QInt(bitsize), QInt(bitsize), add_when_ctrl_is_on=add_when_ctrl_is_on
                     ),
                     name=f"ControlledAddOrSubtract(QInt({bitsize}), QInt({bitsize}), add_when_ctrl_is_on={add_when_ctrl_is_on})",
                 )
