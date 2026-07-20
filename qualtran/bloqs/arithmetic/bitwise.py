@@ -100,7 +100,7 @@ class XorK(Bloq):
     def on_classical_vals(self, x: 'ClassicalValT') -> dict[str, 'ClassicalValT']:
         if self.is_symbolic():
             raise ValueError(f"cannot classically simulate with symbolic {self}")
-
+        assert isinstance(self.k, int)
         k: 'ClassicalValT' = self.k
         if isinstance(x, np.integer):
             k = np.array(k, dtype=x.dtype)[()]
@@ -238,6 +238,9 @@ class BitwiseNot(Bloq):
             raise DecomposeTypeError(f"cannot decompose symbolic {self}")
         x = bb.add(OnEach(self.dtype.num_qubits, XGate(), self.dtype), q=x)
         return {'x': x}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> 'BloqCountDictT':
+        return {XGate(): self.dtype.num_qubits}
 
     def wire_symbol(
         self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
