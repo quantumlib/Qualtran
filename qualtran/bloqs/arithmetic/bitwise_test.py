@@ -20,6 +20,9 @@ from qualtran import BloqBuilder, QAny, QInt, QMontgomeryUInt, QUInt
 from qualtran.bloqs.arithmetic.bitwise import (
     _bitwise_not,
     _bitwise_not_symb,
+    _get_bitwise_not_classical_sim_test_cases,
+    _get_xor_classical_sim_test_cases,
+    _get_xork_classical_sim_test_cases,
     _xor,
     _xor_symb,
     _xork,
@@ -189,3 +192,19 @@ def test_bitwisenot_classical_action(dtype, bitsize):
 def test_bitwise_not_str():
     bloq = BitwiseNot(QUInt(5))
     assert str(bloq) == "BitwiseNot(5)"
+
+
+def test_test_case_providers():
+    from qualtran.simulation.verification import validate_test_cases
+
+    xork_cases = _get_xork_classical_sim_test_cases()
+    validate_test_cases("xork", xork_cases)
+    assert len(xork_cases) > 0
+
+    xor_cases = _get_xor_classical_sim_test_cases()
+    validate_test_cases("xor", xor_cases)
+    assert len(xor_cases) > 0
+
+    bitwise_not_cases = _get_bitwise_not_classical_sim_test_cases()
+    validate_test_cases("bitwise_not", bitwise_not_cases)
+    assert len(bitwise_not_cases) > 0
