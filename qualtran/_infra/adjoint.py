@@ -179,8 +179,7 @@ class Adjoint(GateWithRegisters):
         return counts
 
     def __str__(self) -> str:
-        """Delegate to subbloq's `__str__` method."""
-        return f'{str(self.subbloq)}†'
+        return f'Adj({self.subbloq!s})'
 
     @classmethod
     def _pkg_(cls) -> str:

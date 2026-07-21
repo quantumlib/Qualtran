@@ -28,9 +28,7 @@ from qualtran.drawing import LarrowTextBox, RarrowTextBox, Text
 
 def test_serial_combo_adjoint():
     # The normal decomposition is three `TestAtom` tagged atom{0,1,2}.
-    assert (
-        TestSerialCombo().decompose_bloq().debug_text()
-        == """\
+    assert TestSerialCombo().decompose_bloq().debug_text() == """\
 TestAtom('atom0')<0>
   LeftDangle.reg -> q
   q -> TestAtom('atom1')<1>.q
@@ -42,24 +40,20 @@ TestAtom('atom1')<1>
 TestAtom('atom2')<2>
   TestAtom('atom1')<1>.q -> q
   q -> RightDangle.reg"""
-    )
 
     # The adjoint reverses the order to atom{2,1,0} and wraps each in `Adjoint`.
-    assert (
-        TestSerialCombo().adjoint().decompose_bloq().debug_text()
-        == """\
-TestAtom('atom2')†<0>
+    assert TestSerialCombo().adjoint().decompose_bloq().debug_text() == """\
+Adj(TestAtom('atom2'))<0>
   LeftDangle.reg -> q
-  q -> TestAtom('atom1')†<1>.q
+  q -> Adj(TestAtom('atom1'))<1>.q
 --------------------
-TestAtom('atom1')†<1>
-  TestAtom('atom2')†<0>.q -> q
-  q -> TestAtom('atom0')†<2>.q
+Adj(TestAtom('atom1'))<1>
+  Adj(TestAtom('atom2'))<0>.q -> q
+  q -> Adj(TestAtom('atom0'))<2>.q
 --------------------
-TestAtom('atom0')†<2>
-  TestAtom('atom1')†<1>.q -> q
+Adj(TestAtom('atom0'))<2>
+  Adj(TestAtom('atom1'))<1>.q -> q
   q -> RightDangle.reg"""
-    )
 
 
 def test_cbloq_adjoint_function():
@@ -69,21 +63,18 @@ def test_cbloq_adjoint_function():
     assert isinstance(adj_cbloq, CompositeBloq)
     qlt_testing.assert_valid_cbloq(adj_cbloq)
 
-    assert (
-        adj_cbloq.debug_text()
-        == """\
-TestAtom('atom2')†<0>
+    assert adj_cbloq.debug_text() == """\
+Adj(TestAtom('atom2'))<0>
   LeftDangle.reg -> q
-  q -> TestAtom('atom1')†<1>.q
+  q -> Adj(TestAtom('atom1'))<1>.q
 --------------------
-TestAtom('atom1')†<1>
-  TestAtom('atom2')†<0>.q -> q
-  q -> TestAtom('atom0')†<2>.q
+Adj(TestAtom('atom1'))<1>
+  Adj(TestAtom('atom2'))<0>.q -> q
+  q -> Adj(TestAtom('atom0'))<2>.q
 --------------------
-TestAtom('atom0')†<2>
-  TestAtom('atom1')†<1>.q -> q
+Adj(TestAtom('atom0'))<2>
+  Adj(TestAtom('atom1'))<1>.q -> q
   q -> RightDangle.reg"""
-    )
 
 
 def test_adjoint_signature():
@@ -139,7 +130,7 @@ def test_names():
     assert cast(Text, atom.wire_symbol(reg=None)).text == "TestAtom"
 
     adj_atom = Adjoint(atom)
-    assert str(adj_atom) == "TestAtom†"
+    assert str(adj_atom) == "Adj(TestAtom)"
     assert cast(Text, adj_atom.wire_symbol(reg=None)).text == "TestAtom†"
 
 
