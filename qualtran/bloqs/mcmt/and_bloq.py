@@ -186,8 +186,9 @@ class And(GateWithRegisters):
         return Circle(filled)
 
     def __str__(self):
-        dag = '†' if self.uncompute else ''
-        return f'And{dag}'
+        cvs = '' if (self.cv1, self.cv2) == (1, 1) else f'{self.cv1}{self.cv2}'
+        suffix = '_adj' if self.uncompute else ''
+        return f'And{cvs}{suffix}'
 
     def decompose_from_registers(
         self,

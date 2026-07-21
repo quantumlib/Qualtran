@@ -549,9 +549,7 @@ class _ControlledBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return self.ctrl_spec.wire_symbol(i, reg, idx)
 
     def __str__(self) -> str:
-        num_ctrls = self.ctrl_spec.num_bits
-        ctrl_string = 'C' if num_ctrls == 1 else f'C[{num_ctrls}]'
-        return f'{ctrl_string}[{self.subbloq}]'
+        return f'C({self.subbloq!s})'
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
