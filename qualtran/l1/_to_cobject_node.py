@@ -176,6 +176,17 @@ def to_cobject_node(x: Any, *, nodes: L1Nodes = qualtran_l1_nodes) -> CValueNode
     if x is None:
         return nodes.CObjectNode(name='None', cargs=[])
 
+    # Normalize numpy scalar types to their native Python equivalents so they
+    # serialize as plain literals rather than as `Unserializable`. This is
+    # important because e.g. `CtrlSpec` control values are frequently stored as
+    # numpy integers (`np.uint8`) rather than Python `int`s.
+    if isinstance(x, np.bool_):
+        x = bool(x)
+    elif isinstance(x, np.integer):
+        x = int(x)
+    elif isinstance(x, np.floating):
+        x = float(x)
+
     if isinstance(x, bool):
         if x:
             return nodes.CObjectNode(name='True', cargs=[])

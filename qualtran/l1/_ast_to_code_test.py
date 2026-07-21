@@ -66,3 +66,61 @@ def test_pretty_print_roundtrip(original_code):
     # 4. Compare ASTs
     # Use standard assert for equality on the parsed outputs
     assert original_ast == re_parsed_ast
+
+
+# ---------------------------------------------------------------------------
+# Direct-node rendering (annotations, empty tuples, shape validation)
+# ---------------------------------------------------------------------------
+
+
+def _annotation():
+    from qualtran.l1.nodes import CObjectNode
+
+    return CObjectNode(name='circle', cargs=[])
+
+
+def test_lvalue_annotation_rendered():
+    from qualtran.l1.nodes import LValueNode
+
+    node = LValueNode(name='q', annotation=_annotation())
+    assert L1ASTPrinter().visit(node) == 'q @ circle'
+
+
+def test_lvalue_without_annotation():
+    from qualtran.l1.nodes import LValueNode
+
+    assert L1ASTPrinter().visit(LValueNode(name='q')) == 'q'
+
+
+def test_qarg_annotation_rendered():
+    from qualtran.l1.nodes import QArgNode, QArgValueNode
+
+    node = QArgNode(key='x', value=QArgValueNode(name='q', idx=()), annotation=_annotation())
+    assert L1ASTPrinter().visit(node) == 'x=q @ circle'
+
+
+def test_qcall_annotation_rendered():
+    from qualtran.l1.nodes import LValueNode, QArgNode, QArgValueNode, QCallNode
+
+    node = QCallNode(
+        bloq_key='B',
+        lvalues=[LValueNode(name='q')],
+        qargs=[QArgNode(key='x', value=QArgValueNode(name='q', idx=()))],
+        annotation=_annotation(),
+    )
+    _rets, mid, _qargs = L1ASTPrinter().visit(node)
+    assert '@ circle' in mid
+
+
+def test_empty_tuple_node():
+    from qualtran.l1.nodes import TupleNode
+
+    assert L1ASTPrinter().visit(TupleNode(items=[])) == '()'
+
+
+def test_qdtype_node_invalid_shape_raises():
+    from qualtran.l1.nodes import CObjectNode, QDTypeNode
+
+    node = QDTypeNode(dtype=CObjectNode(name='QBit', cargs=[]), shape=['not_an_int'])  # type: ignore[list-item]
+    with pytest.raises(ValueError, match='Invalid shape'):
+        L1ASTPrinter().visit(node)
