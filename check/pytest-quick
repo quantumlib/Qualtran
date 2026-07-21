@@ -14,9 +14,11 @@
 cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
-# Run in parallel by default.  Pass the `-n0` option for a single-process run.
-# (the last `-n` option wins)
-PYTEST_ARGS=( "-n=auto" "-m" 'not slow and not notebook' "$@" )
+# Run in parallel by default.  `-n=auto` detects the physical CPU count, and
+# `--maxprocesses=16` caps that at a maximum of 16 workers.  Pass the `-n0`
+# option for a single-process run, or `-n<N>` to override the default (the last
+# `-n` option wins; `--maxprocesses` only applies to `-n=auto`/`logical`).
+PYTEST_ARGS=( "-n=auto" "--maxprocesses=16" "-m" 'not slow and not notebook' "$@" )
 pytest "${PYTEST_ARGS[@]}" qualtran/
 RESULT=$?
 
