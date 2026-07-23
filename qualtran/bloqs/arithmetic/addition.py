@@ -14,7 +14,7 @@
 import itertools
 from collections import Counter
 from functools import cached_property
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterator, List, Optional, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -555,9 +555,7 @@ def _get_add_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
     # Montgomery unsigned.
     for bs in [3, 4]:
         cases.append(
-            ClassicalSimTestCase(
-                bloq=Add(QMontgomeryUInt(bs)), name=f"Add(QMontgomeryUInt({bs}))"
-            )
+            ClassicalSimTestCase(bloq=Add(QMontgomeryUInt(bs)), name=f"Add(QMontgomeryUInt({bs}))")
         )
     return cases
 
