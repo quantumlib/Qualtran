@@ -16,20 +16,37 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import Register, Side
-from qualtran.l1 import eval_module, parse_module
+from qualtran.l1 import eval_module, parse_module, to_cobject_node
 from qualtran.l1._eval import (
     _CVALUE_EVALUATORS,
     _eval_imported,
+    _PlaceholderBloq,
+    _resolve_cobject_dtype,
+    BloqError,
+    eval_bloq_maybe_aliased,
     eval_carg_nodes,
     eval_cvalue_node,
     eval_ndarr_node,
+    eval_qcast_node,
+    eval_qdef_extern_node,
+    eval_qdef_impl_node,
+    eval_qsignature,
     eval_side_node,
     eval_symbol_node,
     eval_unserializable,
     UnevaluatedCValue,
 )
-from qualtran.l1.nodes import CArgNode, CObjectNode, LiteralNode, TupleNode
+from qualtran.l1.nodes import (
+    CArgNode,
+    CObjectNode,
+    LiteralNode,
+    QCastNode,
+    QDefExternNode,
+    QDefImplNode,
+    QDTypeNode,
+    QSignatureEntry,
+    TupleNode,
+)
 
 
 def test_safe_eval_prevents_arbitrary_code():
@@ -45,20 +62,60 @@ def test_safe_eval_prevents_arbitrary_code():
 
 
 def test_safe_eval_allows_whitelisted():
-    # Register is whitelisted
-    # We need valid args for Register
+    # `qualtran.Register` is the canonical, allow-listed spelling.
+    # We need to construct a node that evaluates to QBit() first.
+    from qualtran import Register
 
-    # We need to construct a node that evaluates to QBit() first
     qbit_node = CObjectNode(name='QBit', cargs=[])
 
     node = CObjectNode(
-        name='Register', cargs=[CArgNode('name', LiteralNode('q')), CArgNode('dtype', qbit_node)]
+        name='qualtran.Register',
+        cargs=[CArgNode('name', LiteralNode('q')), CArgNode('dtype', qbit_node)],
     )
 
     result = eval_cvalue_node(node, safe=True)
 
     assert isinstance(result, Register)
     assert result.name == 'q'
+
+
+def test_safe_eval_ctrl_spec_canonical():
+    # `CtrlSpec` is serialized (and loaded) under its canonical
+    # `qualtran.`-qualified name.
+    from qualtran import CtrlSpec
+
+    node = CObjectNode(
+        name='qualtran.CtrlSpec',
+        cargs=[
+            CArgNode('qdtypes', CObjectNode(name='QBit', cargs=[])),
+            CArgNode('cvs', LiteralNode(1)),
+        ],
+    )
+    result = eval_cvalue_node(node, safe=True)
+    assert isinstance(result, CtrlSpec)
+
+
+def test_safe_eval_adjoint_and_controlled():
+    # `Adjoint` and `Controlled` are meta-bloqs allow-listed for safe loading.
+    # Their inner bloq argument is resolved recursively via the manifest, so we
+    # serialize real instances and confirm they reload under safe=True.
+    from qualtran import Adjoint, Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates import TGate, XGate
+
+    meta_bloqs = [(Adjoint(TGate()), Adjoint), (Controlled(XGate(), CtrlSpec()), Controlled)]
+    for bloq, cls in meta_bloqs:
+        node = to_cobject_node(bloq)
+        result = eval_cvalue_node(node, safe=True)
+        assert isinstance(result, cls)
+
+
+@pytest.mark.parametrize('name', ['CtrlSpec', 'Register', 'Adjoint', 'Controlled'])
+def test_safe_eval_rejects_bare_infra_names(name):
+    # The bare spelling is not canonical and must not resolve under safe=True;
+    # it degrades to an UnevaluatedCValue rather than being imported.
+    node = CObjectNode(name=name, cargs=[])
+    result = eval_cvalue_node(node, safe=True)
+    assert isinstance(result, UnevaluatedCValue)
 
 
 def test_safe_eval_symbol_enforces_string():
@@ -74,8 +131,6 @@ def test_safe_eval_propagates_safe_flag():
     inner_node = CObjectNode(name='os.system', cargs=[CArgNode(None, LiteralNode('echo hacked'))])
 
     # Tuple containing the unsafe node
-    from qualtran.l1.nodes import TupleNode
-
     tuple_node = TupleNode([inner_node])
 
     # Should return tuple of UnevaluatedCValue
@@ -122,6 +177,7 @@ def test_eval_symbol_node_valid():
 
 
 def test_eval_side_node():
+    from qualtran import Side
 
     with pytest.raises(TypeError, match="Side nodes should be positional only"):
         eval_side_node(CObjectNode(name='Side', cargs=[CArgNode('k', LiteralNode(1))]), safe=True)
@@ -286,8 +342,6 @@ from collections.OrderedDict()
 
 def test_eval_qcast_node():
     from qualtran.bloqs.bookkeeping.qcast import QCast
-    from qualtran.l1._eval import eval_qcast_node
-    from qualtran.l1.nodes import CObjectNode, QCastNode, QDTypeNode, QSignatureEntry
 
     # Build a QCastNode for Split(QUInt(4)): reg: QUInt(4) -> QBit[4]
     quint4 = QDTypeNode(
@@ -304,7 +358,6 @@ def test_eval_qcast_node():
 
 def test_qcast_roundtrip():
     from qualtran.bloqs.bookkeeping.qcast import QCast
-    from qualtran.l1 import eval_module, parse_module
 
     l1_code = """# Qualtran-L1
 # 1.0.0
@@ -317,3 +370,135 @@ qcast Split(QUInt(4))
     assert 'Split(QUInt(4))' in bloqs
     bloq = bloqs['Split(QUInt(4))']
     assert isinstance(bloq, QCast)
+
+
+# ---------------------------------------------------------------------------
+# _resolve_cobject_dtype
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_cobject_dtype_unknown_name():
+    with pytest.raises(ValueError, match='Unknown data type'):
+        _resolve_cobject_dtype(CObjectNode(name='NotADtype', cargs=[]), safe=True)
+
+
+def test_resolve_cobject_dtype_dotted_not_on_manifest_safe():
+    with pytest.raises(ImportError, match='not in the bloq manifest'):
+        _resolve_cobject_dtype(CObjectNode(name='some.fake.Dtype', cargs=[]), safe=True)
+
+
+def test_resolve_cobject_dtype_dotted_import_unsafe():
+    from qualtran import QUInt
+
+    # A dotted name is importable directly when safe=False.
+    result = _resolve_cobject_dtype(
+        CObjectNode(name='qualtran.QUInt', cargs=[CArgNode(None, LiteralNode(4))]), safe=False
+    )
+    assert result == QUInt(4)
+
+
+# ---------------------------------------------------------------------------
+# eval_qsignature
+# ---------------------------------------------------------------------------
+
+
+def test_eval_qsignature_bad_tuple_length():
+    entry = QSignatureEntry(name='x', dtype=(None,))  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match='Expected a 2-tuple'):
+        eval_qsignature([entry], safe=True)
+
+
+def test_eval_qsignature_both_sides_none():
+    entry = QSignatureEntry(name='x', dtype=(None, None))
+    with pytest.raises(ValueError, match='Both LEFT and RIGHT'):
+        eval_qsignature([entry], safe=True)
+
+
+# ---------------------------------------------------------------------------
+# eval_qdef_extern_node
+# ---------------------------------------------------------------------------
+
+
+def test_eval_qdef_extern_node_missing_from():
+    qdef = QDefExternNode(bloq_key='X', qsignature=[], cobject_from=None)
+    with pytest.raises(ValueError, match='`from` clause is required'):
+        eval_qdef_extern_node(qdef, safe=True)
+
+
+def test_eval_qdef_extern_node_from_not_a_bloq_returns_placeholder():
+    # The `from` clause resolves to a QBit dtype, which is not a Bloq.
+    qdef = QDefExternNode(
+        bloq_key='X', qsignature=[], cobject_from=CObjectNode(name='QBit', cargs=[])
+    )
+    with pytest.warns(UserWarning, match='instead of a Bloq object'):
+        result = eval_qdef_extern_node(qdef, safe=True)
+    assert isinstance(result, _PlaceholderBloq)
+
+
+# ---------------------------------------------------------------------------
+# eval_bloq_maybe_aliased
+# ---------------------------------------------------------------------------
+
+
+def test_eval_bloq_maybe_aliased_unresolvable():
+    with pytest.raises(ValueError, match='Could not resolve'):
+        eval_bloq_maybe_aliased('nope', {}, {}, {}, safe=True)
+
+
+def test_eval_bloq_maybe_aliased_unknown_qdef_type():
+    # A value that is neither an extern, qcast, nor impl qdef.
+    qdefs = {'x': object()}
+    with pytest.raises(TypeError, match='Unknown qdef type'):
+        eval_bloq_maybe_aliased('x', qdefs, {}, {}, safe=True)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# eval_qdef_impl_node
+# ---------------------------------------------------------------------------
+
+
+def test_eval_qdef_impl_node_missing_return():
+    qdef = QDefImplNode(bloq_key='x', qsignature=[], body=[], cobject_from=None)
+    with pytest.raises(ValueError, match='lacks a `return`'):
+        eval_qdef_impl_node(qdef, {}, {}, safe=True)
+
+
+def test_eval_qdef_impl_node_bad_statement():
+    qdef = QDefImplNode(
+        bloq_key='x', qsignature=[], body=[object()], cobject_from=None  # type: ignore[list-item]
+    )
+    with pytest.raises(ValueError, match='Bad stmt'):
+        eval_qdef_impl_node(qdef, {}, {}, safe=True)
+
+
+def test_eval_qdef_extern_node_from_clause_raises():
+    # With safe=False, a bad dotted import raises inside eval_cvalue_node,
+    # which is caught and downgraded to a placeholder with a warning.
+    qdef = QDefExternNode(
+        bloq_key='X',
+        qsignature=[],
+        cobject_from=CObjectNode(name='nonexistent_module_xyz.Foo', cargs=[]),
+    )
+    with pytest.warns(UserWarning):
+        result = eval_qdef_extern_node(qdef, safe=False)
+    assert isinstance(result, _PlaceholderBloq)
+
+
+def test_eval_qcall_return_count_mismatch():
+    # XGate returns a single wire, but the call writes two lvalues.
+    l1_code = """# Qualtran-L1
+# 1.0.0
+
+extern qdef XGate
+from qualtran.bloqs.basic_gates.XGate()
+[q: QBit()]
+
+qdef Bad
+[q: QBit()] {
+    a, b = XGate [q=q]
+    return [q=a]
+}
+"""
+    mod = parse_module(l1_code)
+    with pytest.raises(BloqError, match='return values'):
+        eval_module(mod, safe=True)

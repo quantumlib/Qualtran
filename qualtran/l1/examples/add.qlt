@@ -1,0 +1,55 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef Add
+from qualtran.bloqs.arithmetic.Add(QUInt(4), QUInt(4))
+[
+    a: QUInt(4),
+    b: QUInt(4),
+] {
+    reg                  = Split            [reg=a]             
+    reg2                 = Split            [reg=b]             
+    ctrl, target         = And              [ctrl=[reg[3], reg2[3]]]
+    ctrl2, target2       = CNOT             [ctrl=target, target=reg[2]]
+    ctrl3, target3       = CNOT             [ctrl=ctrl2, target=reg2[2]]
+    ctrl4, target4       = And              [ctrl=[target2, target3]]
+    ctrl5, target5       = CNOT             [ctrl=ctrl3, target=target4]
+    ctrl6, target6       = CNOT             [ctrl=target5, target=reg[1]]
+    ctrl7, target7       = CNOT             [ctrl=ctrl6, target=reg2[1]]
+    ctrl8, target8       = And              [ctrl=[target6, target7]]
+    ctrl9, target9       = CNOT             [ctrl=ctrl7, target=target8]
+    ctrl10, target10     = CNOT             [ctrl=target9, target=reg2[0]]
+    ctrl11, target11     = CNOT             [ctrl=reg[0], target=target10]
+    ctrl12, target12     = CNOT             [ctrl=ctrl9, target=ctrl10]
+    ctrl13               = And_adj          [ctrl=[ctrl8[0], ctrl8[1]], target=target12]
+    ctrl14, target13     = CNOT             [ctrl=ctrl12, target=ctrl13[0]]
+    ctrl15, target14     = CNOT             [ctrl=target13, target=ctrl13[1]]
+    ctrl16, target15     = CNOT             [ctrl=ctrl5, target=ctrl14]
+    ctrl17               = And_adj          [ctrl=[ctrl4[0], ctrl4[1]], target=target15]
+    ctrl18, target16     = CNOT             [ctrl=ctrl16, target=ctrl17[0]]
+    ctrl19               = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=ctrl18]
+    ctrl20, target17     = CNOT             [ctrl=target16, target=ctrl17[1]]
+    ctrl21, target18     = CNOT             [ctrl=ctrl19[0], target=ctrl19[1]]
+    reg3                 = Join             [reg=[ctrl11, ctrl15, ctrl20, ctrl21]]
+    reg4                 = Join             [reg=[target11, target14, target17, target18]]
+                           return           [a=reg3, b=reg4]    
+}
+
+
+qcast Split
+[reg: QUInt(4) -> QBit[4]]
+
+extern qdef And
+from qualtran.bloqs.mcmt.And(1, 1, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]
+
+qcast Join
+[reg: QBit[4] -> QUInt(4)]

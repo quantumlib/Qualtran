@@ -1,0 +1,176 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef Negate
+from qualtran.bloqs.arithmetic.Negate(QInt(8))
+[
+    x: QInt(8),
+] {
+    x2                   = BitwiseNot(8)    [x=x]               
+    x3                   = AddK(k=1)        [x=x2]              
+                           return           [x=x3]              
+}
+
+
+qdef BitwiseNot(8)
+from qualtran.bloqs.arithmetic.BitwiseNot(QInt(8))
+[
+    x: QInt(8),
+] {
+    q                    = X(oneach=8)      [q=x]               
+                           return           [x=q]               
+}
+
+
+qdef AddK(k=1)
+from qualtran.bloqs.arithmetic.AddK(QInt(8), 1)
+[
+    x: QInt(8),
+] {
+    reg                  = Allocate         []                  
+    x2                   = XorK(1)          [x=reg]             
+    a, b                 = Add              [a=x2, b=x]         
+    x3                   = XorK(1)          [x=a]               
+    |                    = Free(QInt(8))    [reg=x3]            
+                           return           [x=b]               
+}
+
+
+qdef X(oneach=8)
+from qualtran.bloqs.basic_gates.OnEach(8, qualtran.bloqs.basic_gates.XGate, QInt(8))
+[
+    q: QInt(8),
+] {
+    reg                  = Split            [reg=q]             
+    q2                   = X                [q=reg[0]]          
+    q3                   = X                [q=reg[1]]          
+    q4                   = X                [q=reg[2]]          
+    q5                   = X                [q=reg[3]]          
+    q6                   = X                [q=reg[4]]          
+    q7                   = X                [q=reg[5]]          
+    q8                   = X                [q=reg[6]]          
+    q9                   = X                [q=reg[7]]          
+    reg2                 = Join             [reg=[q2, q3, q4, q5, q6, q7, q8, q9]]
+                           return           [q=reg2]            
+}
+
+
+extern qdef Allocate
+from qualtran.bloqs.bookkeeping.Allocate(QInt(8), False)
+[reg: | -> QInt(8)]
+
+qdef XorK(1)
+from qualtran.bloqs.arithmetic.XorK(QInt(8), 1)
+[
+    x: QInt(8),
+] {
+    reg                  = Split            [reg=x]             
+    q                    = X                [q=reg[7]]          
+    reg2                 = Join             [reg=[reg[0], reg[1], reg[2], reg[3], reg[4], reg[5], reg[6], q]]
+                           return           [x=reg2]            
+}
+
+
+qdef Add
+from qualtran.bloqs.bookkeeping.Always(qualtran.bloqs.arithmetic.Add(QInt(8), QInt(8)))
+[
+    a: QInt(8),
+    b: QInt(8),
+] {
+    a2, b2               = Add(variant=1)   [a=a, b=b]          
+                           return           [a=a2, b=b2]        
+}
+
+
+extern qdef Free(QInt(8))
+from qualtran.bloqs.bookkeeping.Free(QInt(8), False)
+[reg: QInt(8) -> |]
+
+qcast Split
+[reg: QInt(8) -> QBit[8]]
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+qcast Join
+[reg: QBit[8] -> QInt(8)]
+
+qdef Add(variant=1)
+from qualtran.bloqs.arithmetic.Add(QInt(8), QInt(8))
+[
+    a: QInt(8),
+    b: QInt(8),
+] {
+    reg                  = Split            [reg=a]             
+    reg2                 = Split            [reg=b]             
+    ctrl, target         = And              [ctrl=[reg[7], reg2[7]]]
+    ctrl2, target2       = CNOT             [ctrl=target, target=reg[6]]
+    ctrl3, target3       = CNOT             [ctrl=ctrl2, target=reg2[6]]
+    ctrl4, target4       = And              [ctrl=[target2, target3]]
+    ctrl5, target5       = CNOT             [ctrl=ctrl3, target=target4]
+    ctrl6, target6       = CNOT             [ctrl=target5, target=reg[5]]
+    ctrl7, target7       = CNOT             [ctrl=ctrl6, target=reg2[5]]
+    ctrl8, target8       = And              [ctrl=[target6, target7]]
+    ctrl9, target9       = CNOT             [ctrl=ctrl7, target=target8]
+    ctrl10, target10     = CNOT             [ctrl=target9, target=reg[4]]
+    ctrl11, target11     = CNOT             [ctrl=ctrl10, target=reg2[4]]
+    ctrl12, target12     = And              [ctrl=[target10, target11]]
+    ctrl13, target13     = CNOT             [ctrl=ctrl11, target=target12]
+    ctrl14, target14     = CNOT             [ctrl=target13, target=reg[3]]
+    ctrl15, target15     = CNOT             [ctrl=ctrl14, target=reg2[3]]
+    ctrl16, target16     = And              [ctrl=[target14, target15]]
+    ctrl17, target17     = CNOT             [ctrl=ctrl15, target=target16]
+    ctrl18, target18     = CNOT             [ctrl=target17, target=reg[2]]
+    ctrl19, target19     = CNOT             [ctrl=ctrl18, target=reg2[2]]
+    ctrl20, target20     = And              [ctrl=[target18, target19]]
+    ctrl21, target21     = CNOT             [ctrl=ctrl19, target=target20]
+    ctrl22, target22     = CNOT             [ctrl=target21, target=reg[1]]
+    ctrl23, target23     = CNOT             [ctrl=ctrl22, target=reg2[1]]
+    ctrl24, target24     = And              [ctrl=[target22, target23]]
+    ctrl25, target25     = CNOT             [ctrl=ctrl23, target=target24]
+    ctrl26, target26     = CNOT             [ctrl=target25, target=reg2[0]]
+    ctrl27, target27     = CNOT             [ctrl=reg[0], target=target26]
+    ctrl28, target28     = CNOT             [ctrl=ctrl25, target=ctrl26]
+    ctrl29               = And_adj          [ctrl=[ctrl24[0], ctrl24[1]], target=target28]
+    ctrl30, target29     = CNOT             [ctrl=ctrl28, target=ctrl29[0]]
+    ctrl31, target30     = CNOT             [ctrl=target29, target=ctrl29[1]]
+    ctrl32, target31     = CNOT             [ctrl=ctrl21, target=ctrl30]
+    ctrl33               = And_adj          [ctrl=[ctrl20[0], ctrl20[1]], target=target31]
+    ctrl34, target32     = CNOT             [ctrl=ctrl32, target=ctrl33[0]]
+    ctrl35, target33     = CNOT             [ctrl=target32, target=ctrl33[1]]
+    ctrl36, target34     = CNOT             [ctrl=ctrl17, target=ctrl34]
+    ctrl37               = And_adj          [ctrl=[ctrl16[0], ctrl16[1]], target=target34]
+    ctrl38, target35     = CNOT             [ctrl=ctrl36, target=ctrl37[0]]
+    ctrl39, target36     = CNOT             [ctrl=target35, target=ctrl37[1]]
+    ctrl40, target37     = CNOT             [ctrl=ctrl13, target=ctrl38]
+    ctrl41               = And_adj          [ctrl=[ctrl12[0], ctrl12[1]], target=target37]
+    ctrl42, target38     = CNOT             [ctrl=ctrl40, target=ctrl41[0]]
+    ctrl43, target39     = CNOT             [ctrl=target38, target=ctrl41[1]]
+    ctrl44, target40     = CNOT             [ctrl=ctrl9, target=ctrl42]
+    ctrl45               = And_adj          [ctrl=[ctrl8[0], ctrl8[1]], target=target40]
+    ctrl46, target41     = CNOT             [ctrl=ctrl44, target=ctrl45[0]]
+    ctrl47, target42     = CNOT             [ctrl=target41, target=ctrl45[1]]
+    ctrl48, target43     = CNOT             [ctrl=ctrl5, target=ctrl46]
+    ctrl49               = And_adj          [ctrl=[ctrl4[0], ctrl4[1]], target=target43]
+    ctrl50, target44     = CNOT             [ctrl=ctrl48, target=ctrl49[0]]
+    ctrl51               = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=ctrl50]
+    ctrl52, target45     = CNOT             [ctrl=target44, target=ctrl49[1]]
+    ctrl53, target46     = CNOT             [ctrl=ctrl51[0], target=ctrl51[1]]
+    reg3                 = Join             [reg=[ctrl27, ctrl31, ctrl35, ctrl39, ctrl43, ctrl47, ctrl52, ctrl53]]
+    reg4                 = Join             [reg=[target27, target30, target33, target36, target39, target42, target45, target46]]
+                           return           [a=reg3, b=reg4]    
+}
+
+
+extern qdef And
+from qualtran.bloqs.mcmt.And(1, 1, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]

@@ -70,9 +70,20 @@ BloqKey: TypeAlias = str
 
 @lru_cache
 def _get_safe_loadables() -> Dict[str, type[Any]]:
-    from qualtran import CtrlSpec, Register
+    from qualtran import Adjoint, Controlled, CtrlSpec, Register
 
-    return {'CtrlSpec': CtrlSpec, 'Register': Register}
+    # Classes that appear inside serialized bloq arguments but are absent from
+    # the bloq manifest (which scans only `qualtran/bloqs/`) and the builtin
+    # dtypes. Each is serialized under its canonical `qualtran.`-qualified name
+    # (via `_pkg_`), which is the spelling allow-listed here. `Adjoint` and
+    # `Controlled` take an inner bloq argument, resolved recursively via the
+    # manifest.
+    return {
+        'qualtran.Adjoint': Adjoint,
+        'qualtran.Controlled': Controlled,
+        'qualtran.CtrlSpec': CtrlSpec,
+        'qualtran.Register': Register,
+    }
 
 
 @lru_cache

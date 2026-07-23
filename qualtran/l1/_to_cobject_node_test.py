@@ -159,6 +159,33 @@ def test_ctrl_spec():
     assert arg_keys == ['qdtypes', 'cvs']
 
 
+@pytest.mark.parametrize('dtype', [np.uint8, np.int32, np.int64])
+def test_numpy_integer_scalar(dtype):
+    # Numpy integer scalars (common in e.g. `CtrlSpec` control values) must
+    # serialize as plain integer literals, not as `Unserializable`.
+    node = to_cobject_node(dtype(7))
+    assert isinstance(node, LiteralNode)
+    assert node.value == 7
+    assert type(node.value) is int
+
+
+def test_numpy_floating_scalar():
+    node = to_cobject_node(np.float64(2.5))
+    assert isinstance(node, LiteralNode)
+    assert node.value == 2.5
+    assert type(node.value) is float
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'), [(np.bool_(True), 'True'), (np.bool_(False), 'False')]
+)
+def test_numpy_bool_scalar(value, expected):
+    node = to_cobject_node(value)
+    assert isinstance(node, CObjectNode)
+    assert node.name == expected
+    assert not node.cargs
+
+
 def test_unserializable_fallback():
     class UnserializableClass:
         pass
@@ -179,3 +206,11 @@ def test_to_cobject_node_not_attrs():
     obj = NonAttrsClass()
     with pytest.raises(TypeError, match="is not an attrs class"):
         object_to_object_node(obj)
+
+
+def test_dump_objectstring():
+    from qualtran.l1._to_cobject_node import dump_objectstring
+
+    # dump_objectstring is the canonical text form of to_cobject_node.
+    assert dump_objectstring(SimpleClass(x=1, y='hi')).endswith("SimpleClass(1, 'hi')")
+    assert dump_objectstring(QBit()) == 'QBit'

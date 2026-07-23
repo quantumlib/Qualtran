@@ -1,0 +1,125 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef QFTTextBook
+from qualtran.bloqs.qft.QFTTextBook(3, True)
+[
+    q: QUInt(3),
+] {
+    pgu                  = PhaseGradientUnitary(variant=1)
+    reg                  = Split            [reg=q]             
+    q2                   = H                [q=reg[0]]          
+    ctrl, phase_grad     = PhaseGradientUnitary[ctrl=reg[1], phase_grad=q2]
+    q3                   = H                [q=ctrl]            
+    reg2                 = Join             [reg=[q3, phase_grad]]
+    ctrl2, phase_grad2   = pgu              [ctrl=reg[2], phase_grad=reg2]
+    q4                   = H                [q=ctrl2]           
+    reg3                 = Split(variant=1) [reg=phase_grad2]   
+    x, y                 = TwoBitSwap       [x=reg3[1], y=q4]   
+    reg4                 = Join(variant=1)  [reg=[x, reg3[0], y]]
+                           return           [q=reg4]            
+}
+
+
+qcast Split
+[reg: QUInt(3) -> QBit[3]]
+
+extern qdef H
+from qualtran.bloqs.basic_gates.Hadamard
+[q: QBit]
+
+qdef PhaseGradientUnitary
+from qualtran.bloqs.rotations.PhaseGradientUnitary(1, 0.5, True, 1e-10)
+[
+    ctrl: QBit @ dot,
+    phase_grad: QFxp(1, 1, signed=False),
+] {
+    q                    = CZ(pow=0.5)      [q=[ctrl, phase_grad]]
+                           return           [ctrl=q[0], phase_grad=q[1]]
+}
+
+
+qcast Join
+[reg: QBit[2] -> QFxp(2, 2, signed=False)]
+
+qdef PhaseGradientUnitary(variant=1)
+from qualtran.bloqs.rotations.PhaseGradientUnitary(2, 0.5, True, 1e-10)
+[
+    ctrl: QBit @ dot,
+    phase_grad: QFxp(2, 2, signed=False),
+] {
+    cz                   = CZ(pow=0.5, variant=1)
+    reg                  = Split(variant=1) [reg=phase_grad]    
+    q                    = cz               [q=[ctrl, reg[0]]]  
+    q2                   = CZ(pow=0.25)     [q=[q[0], reg[1]]]  
+    reg2                 = Join             [reg=[q[1], q2[1]]] 
+                           return           [ctrl=q2[0], phase_grad=reg2]
+}
+
+
+qcast Split(variant=1)
+[reg: QFxp(2, 2, signed=False) -> QBit[2]]
+
+extern qdef TwoBitSwap
+from qualtran.bloqs.basic_gates.TwoBitSwap
+[x: QBit, y: QBit]
+
+qcast Join(variant=1)
+[reg: QBit[3] -> QUInt(3)]
+
+qdef CZ(pow=0.5)
+from qualtran.bloqs.basic_gates.CZPowGate(0.5, 1e-10)
+[
+    q: QBit[2],
+] {
+    ctrl, target         = And              [ctrl=[q[0], q[1]]] 
+    q2                   = Z(pow=0.5)       [q=target]          
+    ctrl2                = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=q2]
+                           return           [q=[ctrl2[0], ctrl2[1]]]
+}
+
+
+qdef CZ(pow=0.5, variant=1)
+from qualtran.bloqs.basic_gates.CZPowGate(0.5, 5e-11)
+[
+    q: QBit[2],
+] {
+    z                    = Z(pow=0.5, variant=1)
+    ctrl, target         = And              [ctrl=[q[0], q[1]]] 
+    q2                   = z                [q=target]          
+    ctrl2                = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=q2]
+                           return           [q=[ctrl2[0], ctrl2[1]]]
+}
+
+
+qdef CZ(pow=0.25)
+from qualtran.bloqs.basic_gates.CZPowGate(0.25, 5e-11)
+[
+    q: QBit[2],
+] {
+    ctrl, target         = And              [ctrl=[q[0], q[1]]] 
+    q2                   = Z(pow=0.25)      [q=target]          
+    ctrl2                = And_adj          [ctrl=[ctrl[0], ctrl[1]], target=q2]
+                           return           [q=[ctrl2[0], ctrl2[1]]]
+}
+
+
+extern qdef And
+from qualtran.bloqs.mcmt.And(1, 1, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef Z(pow=0.5)
+from qualtran.bloqs.basic_gates.ZPowGate(0.5, 1e-10)
+[q: QBit]
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]
+
+extern qdef Z(pow=0.5, variant=1)
+from qualtran.bloqs.basic_gates.ZPowGate(0.5, 5e-11)
+[q: QBit]
+
+extern qdef Z(pow=0.25)
+from qualtran.bloqs.basic_gates.ZPowGate(0.25, 5e-11)
+[q: QBit]

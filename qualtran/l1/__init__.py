@@ -15,8 +15,18 @@
 from ._ast_to_code import L1ASTPrinter
 from ._ast_visitor_base import L1VisitorBase
 from ._eval import eval_cvalue_node, eval_module
+from ._examples import get_l1_examples, L1_EXAMPLES, L1Example
 from ._parse import dump_ast, parse_module, parse_objectstring
 from ._parse_eval import load_bloq, load_module, load_objectstring
+from ._roundtrip import (
+    assert_bloq_roundtrips,
+    check_artifacts,
+    check_bloq_roundtrip,
+    compile_bloq_to_l1,
+    RoundtripArtifacts,
+    save_bloq_qlt,
+    validate_bloq,
+)
 from ._to_cobject_node import dump_objectstring, to_cobject_node
 from ._to_l1 import dump_l1, dump_root_l1, L1ModuleBuilder, signature_to_l1_entries
 from ._vm import StandardQualtranArchitectureAgnosticVirtualMachine

@@ -21,23 +21,35 @@ from qualtran.l1 import load_bloq, load_module, load_objectstring
 
 
 def test_load_objectstring_safe():
-    # Normal loading of safe context object
-    obj = load_objectstring("CtrlSpec()")
+    # Normal loading of safe context object, using the canonical qualified name.
+    obj = load_objectstring("qualtran.CtrlSpec()")
     assert isinstance(obj, qlt.CtrlSpec)
     assert obj.cvs == (1,)
 
 
 def test_issue_1713():
     # https://github.com/quantumlib/Qualtran/issues/1713
+    from qualtran.bloqs.mcmt import MultiControlZ
+
     s = "qualtran.bloqs.mcmt.MultiControlZ((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))"
     bloq = load_bloq(s)
-    assert bloq
+    assert isinstance(bloq, MultiControlZ)
+    assert bloq.cvs == (0,) * 16
 
 
 def test_load_bloq():
+    from qualtran.bloqs.reflections import ReflectionUsingPrepare
+
     s = "qualtran.bloqs.reflections.ReflectionUsingPrepare(qualtran.bloqs.chemistry.hubbard_model.qubitization.PrepareHubbard(5, 5, 2.0, 0.1), None, -1, 1e-11)"
     bloq = load_bloq(s)
-    assert bloq
+    assert isinstance(bloq, ReflectionUsingPrepare)
+    assert bloq.global_phase == -1
+
+
+def test_load_bloq_non_bloq_raises():
+    # CtrlSpec is safely loadable but is not a Bloq.
+    with pytest.raises(TypeError, match='not a `qualtran.Bloq`'):
+        load_bloq("qualtran.CtrlSpec()")
 
 
 def test_load_objectstring_unsafe():

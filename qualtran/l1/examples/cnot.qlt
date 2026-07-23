@@ -1,0 +1,6 @@
+# Qualtran-L1
+# 1.0.0
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]

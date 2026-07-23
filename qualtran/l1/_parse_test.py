@@ -336,6 +336,15 @@ def test_parse_errors():
     with pytest.raises(ValueError, match="only one lvalue may be specified"):
         parse_module("qdef Foo() [] { a, b = qualtran.bloqs.Bloq }")
 
+    with pytest.raises(ValueError, match="Unexpected identifier"):
+        parse_module("foobar Baz")
+
+    with pytest.raises(ValueError, match="alias assignment lvalue cannot have an annotation"):
+        parse_module("qdef Foo() [] { a @ 1 = qualtran.bloqs.Bloq }")
+
+    with pytest.raises(ValueError, match="alias assignment bloq_key cannot have an annotation"):
+        parse_module("qdef Foo() [] { a = qualtran.bloqs.Bloq @ 1 }")
+
 
 def test_parse_empty_brackets():
     code = "qdef Foo() [] { a = MyBloq()[] } qdef Bar() [a: t[]] { c = qualtran.bloqs.Bloq }"
@@ -398,18 +407,26 @@ from qualtran.bloqs.bookkeeping.Join(QAny(4))
     assert isinstance(stmt0, QCallNode)
     assert stmt0.bloq_key == "Split(QAny(4))"
     assert len(stmt0.lvalues) == 1
-    assert stmt0.lvalues[0].name == "reg"
-    assert stmt0.lvalues[0].annotation is not None
+    lval0 = stmt0.lvalues[0]
+    assert lval0.name == "reg"
+    assert lval0.annotation is not None
+    assert lval0.annotation.canonical_str() == '(1, 2, 3, 4, 2, 3, 4)'
     assert stmt0.annotation is not None
+    assert stmt0.annotation.canonical_str() == '(5, 0)'
 
     # X call
     stmt1 = qdef.body[1]
     assert isinstance(stmt1, QCallNode)
     assert stmt1.bloq_key == "X"
-    assert stmt1.lvalues[0].name == "q"
-    assert stmt1.lvalues[0].annotation is not None
+    lval1 = stmt1.lvalues[0]
+    assert lval1.name == "q"
+    assert lval1.annotation is not None
+    assert lval1.annotation.canonical_str() == '1'
     assert stmt1.annotation is not None
-    assert stmt1.qargs[0].annotation is not None
+    assert stmt1.annotation.canonical_str() == '(8, 0, False)'
+    qarg1 = stmt1.qargs[0]
+    assert qarg1.annotation is not None
+    assert qarg1.annotation.canonical_str() == '1'
 
     # Join call
     stmt5 = qdef.body[5]
@@ -419,7 +436,9 @@ from qualtran.bloqs.bookkeeping.Join(QAny(4))
     # Return
     stmt6 = qdef.body[6]
     assert isinstance(stmt6, QReturnNode)
-    assert stmt6.ret_mapping[0].annotation is not None
+    ret0 = stmt6.ret_mapping[0]
+    assert ret0.annotation is not None
+    assert ret0.annotation.canonical_str() == '(16, 0)'
 
 
 def test_parse_annotation():
