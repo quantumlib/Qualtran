@@ -34,5 +34,6 @@ from ._costing import get_cost_value, get_cost_cache, query_costs, CostKey, Cost
 from ._success_prob import SuccessProb
 from ._qubit_counts import QubitCount
 from ._bloq_counts import BloqCount, QECGatesCost, GateCounts
+from .classify_bloqs import bloq_is_t_like
 
 from . import generalizers

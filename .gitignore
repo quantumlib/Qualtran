@@ -142,3 +142,6 @@ jupyter_kernel.lock
 
 # Mac OS
 .DS_Store
+
+# FLASQ generated PDFs
+*.pdf
