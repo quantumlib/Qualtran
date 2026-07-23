@@ -77,6 +77,9 @@ def _build_registry() -> dict[str, TestCaseProvider]:
     from qualtran.bloqs.arithmetic.controlled_add_or_subtract import (
         _get_controlled_add_or_subtract_classical_sim_test_cases,
     )
+    from qualtran.bloqs.arithmetic.controlled_addition import (
+        _get_cadd_classical_sim_test_cases,
+    )
     from qualtran.bloqs.arithmetic.negate import (
         _get_negate_classical_sim_test_cases,
     )
@@ -90,6 +93,7 @@ def _build_registry() -> dict[str, TestCaseProvider]:
         'add_k': _get_add_k_classical_sim_test_cases,
         'bitwise_not': _get_bitwise_not_classical_sim_test_cases,
         'controlled_add_or_subtract': _get_controlled_add_or_subtract_classical_sim_test_cases,
+        'cadd': _get_cadd_classical_sim_test_cases,
         'negate': _get_negate_classical_sim_test_cases,
         'on_each': _get_on_each_classical_sim_test_cases,
         'xor': _get_xor_classical_sim_test_cases,
