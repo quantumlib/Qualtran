@@ -689,7 +689,9 @@ def format_classical_truth_table(
     return '\n'.join([heading] + entries)
 
 
-def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
+def add_ints(
+    a: ClassicalValT, b: ClassicalValT, *, num_bits: Optional[int] = None, is_signed: bool = False
+) -> ClassicalValT:
     r"""Classically performs addition modulo $2^n$ of two integers in a reversible way.
 
     Addition of integers can result in an overflow. In C/C++, overflow behavior is left as an
@@ -698,8 +700,9 @@ def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool 
     around.
 
     Args:
-        a: left operand of addition.
-        b: right operand of addition.
+        a: left operand of addition. An integer classical value (`int`, `np.integer`, or an
+            `np.ndarray` of integers for element-wise addition).
+        b: right operand of addition. Same accepted types as `a`.
         num_bits: When specified, addition is done in the interval `[0, 2**num_bits)` or
             `[-2**(num_bits-1), 2**(num_bits-1))` based on the value of `is_signed`. Otherwise,
             arbitrary-precision Python integer addition is performed.

@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -104,21 +105,20 @@ class CAdd(Bloq):
             [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
         )
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
-        a, b = kwargs['a'], kwargs['b']
-        ctrl = kwargs['ctrl']
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
-        else:
-            if not isinstance(self.b_dtype.bitsize, int):
-                raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
-            return {
-                'ctrl': ctrl,
-                'a': a,
-                'b': add_ints(
-                    a, b, num_bits=self.b_dtype.bitsize, is_signed=isinstance(self.b_dtype, QInt)
-                ),
-            }
+        if not isinstance(self.b_dtype.bitsize, int):
+            raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
+        return {
+            'ctrl': ctrl,
+            'a': a,
+            'b': add_ints(
+                a, b, num_bits=self.b_dtype.bitsize, is_signed=isinstance(self.b_dtype, QInt)
+            ),
+        }
 
     def short_name(self) -> str:
         return "a+b"
@@ -200,3 +200,38 @@ def _cadd_large() -> CAdd:
 
 
 _CADD_DOC = BloqDocSpec(bloq_cls=CAdd, examples=[_cadd_small, _cadd_large])
+
+
+def _get_cadd_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `CAdd` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for cv in [0, 1]:
+        for a_bits, b_bits in [(1, 1), (2, 2), (2, 3), (3, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QUInt(a_bits), QUInt(b_bits), cv=cv),
+                    name=f"CAdd(QUInt({a_bits}), QUInt({b_bits}), cv={cv})",
+                )
+            )
+        for a_bits, b_bits in [(1, 1), (2, 2), (2, 3), (3, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QMontgomeryUInt(a_bits), QMontgomeryUInt(b_bits), cv=cv),
+                    name=f"CAdd(QMontgomeryUInt({a_bits}), QMontgomeryUInt({b_bits}), cv={cv})",
+                )
+            )
+        for a_bits, b_bits in [(2, 2), (3, 3), (4, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QInt(a_bits), QInt(b_bits), cv=cv),
+                    name=f"CAdd(QInt({a_bits}), QInt({b_bits}), cv={cv})",
+                )
+            )
+    return cases
