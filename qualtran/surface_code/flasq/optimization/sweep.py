@@ -131,7 +131,7 @@ def run_sweep(
     ]
 
     param_lists = [list(it) for it in param_iterables]
-    total_iterations = np.prod([len(p_list) for p_list in param_lists])
+    total_iterations = int(np.prod([len(p_list) for p_list in param_lists]))
 
     iterable_product = itertools.product(*param_lists)
     progress_bar = tqdm(

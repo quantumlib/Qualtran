@@ -124,16 +124,16 @@ def test_filtered_data_monotonicity():
         sorted_df = filtered_df.sort_values("gap").reset_index(drop=True)
 
         assert np.all(
-            np.diff(sorted_df["expected_volume"].values) >= -epsilon
+            np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon
         ), f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}"
 
         # Noise means data is NOT QUITE monotonic in the t gate error rate...
         # assert np.all(np.diff(sorted_df["t_gate_cultivation_error_rate"].values) <= epsilon), f"t_gate_cultivation_error_rate not non-increasing for ER={error_rate_val}, dist={distance_val}"
         assert np.all(
-            np.diff(sorted_df["keep_rate"].values) <= epsilon
+            np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon
         ), f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}"
         assert np.all(
-            np.diff(sorted_df["attempts_per_kept_shot"].values) >= -epsilon
+            np.diff(sorted_df["attempts_per_kept_shot"].to_numpy(dtype=float)) >= -epsilon
         ), f"attempts_per_kept_shot not non-decreasing for ER={error_rate_val}, dist={distance_val}"
 
 
@@ -162,19 +162,19 @@ def test_regularized_filtered_data_monotonicity_and_structure():  # Renamed for 
         assert len(sorted_df) > 40
 
         assert np.all(
-            np.diff(sorted_df["expected_volume"].values) >= -epsilon
+            np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon
         ), f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
 
         assert np.all(
-            np.diff(sorted_df["t_gate_cultivation_error_rate"].values) <= epsilon
+            np.diff(sorted_df["t_gate_cultivation_error_rate"].to_numpy(dtype=float)) <= epsilon
         ), f"t_gate_cultivation_error_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
 
         assert np.all(
-            np.diff(sorted_df["keep_rate"].values) <= epsilon
+            np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon
         ), f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
 
         assert np.all(
-            np.diff(sorted_df["attempts_per_kept_shot"].values) >= -epsilon
+            np.diff(sorted_df["attempts_per_kept_shot"].to_numpy(dtype=float)) >= -epsilon
         ), f"attempts_per_kept_shot not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
 
 

@@ -309,6 +309,7 @@ def find_best_cultivation_parameters(
                 best_row_for_dist = filtered_by_target.loc[
                     filtered_by_target["t_gate_cultivation_error_rate"].idxmax()
                 ]
+                assert isinstance(best_row_for_dist, pd.Series)
                 if dist == 3:
                     best_row_dist3 = best_row_for_dist
                 else:  # dist == 5
