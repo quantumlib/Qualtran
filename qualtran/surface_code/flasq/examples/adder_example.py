@@ -22,8 +22,6 @@ if TYPE_CHECKING:
 import cirq
 import numpy as np
 
-import qualtran
-import qualtran.bloqs
 import qualtran.bloqs.mcmt
 from qualtran import QUInt, Signature
 from qualtran.bloqs.arithmetic.addition import Add

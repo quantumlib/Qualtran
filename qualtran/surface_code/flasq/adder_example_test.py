@@ -74,7 +74,6 @@ def test_decomposed_adder_flasq_and_span_costs():
 import numpy as np
 
 from qualtran import QUInt
-
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq

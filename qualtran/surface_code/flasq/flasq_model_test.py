@@ -1023,8 +1023,6 @@ def test_end_to_end_summary_from_hwp_circuit_repr():
 
 
 from qualtran.surface_code.flasq.flasq_model import get_rotation_depth
-from qualtran.surface_code.flasq.measurement_depth import MeasurementDepth
-from qualtran.surface_code.flasq.symbols import MIXED_FALLBACK_T_COUNT, ROTATION_ERROR
 
 
 class ApplyFlasqCostModelWarningsTestSuite:
