@@ -71,10 +71,10 @@ def test_decomposed_adder_flasq_and_span_costs():
     assert len(list(decomposed_circuit.all_operations())) > 0
 
 
-import cirq
 import numpy as np
 
 from qualtran import QUInt
+
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq
