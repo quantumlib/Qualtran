@@ -217,14 +217,7 @@ def test_hwp_qubit_count_logic(n_qubits_data):
     This test is expected to fail for some values, highlighting the difference
     between these two quantities.
     """
-    # 1. Manual calculation of total unique qubits expected to be used.
-    (
-        n_qubits_data
-        + (n_qubits_data - _hamming_weight(n_qubits_data))
-        + math.ceil(math.log2(n_qubits_data + 1))
-    )
-
-    # 2. Build the circuit and the corresponding CompositeBloq.
+    # Build the circuit and the corresponding CompositeBloq.
     ancilla_qubit_manager = NaiveGridQubitManager(max_cols=20, negative=True)
     hwp_bloq, hwp_circuit, hwp_data_qubits = build_hwp_circuit(
         n_qubits_data=n_qubits_data,

@@ -189,7 +189,6 @@ def test_calculate_volumes_concrete():
 
 def test_calculate_clifford_volume_mixed():
     """Test Clifford volume calculation with mixed concrete/symbolic volumes and counts."""
-    sympy.symbols("N_t")
     # Use default model, which has symbolic rotation volumes
     model = FLASQCostModel(
         t_clifford_volume=4,  # Concrete Clifford T volume
