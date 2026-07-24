@@ -278,7 +278,7 @@ def test_both_counts_from_ising_model_circuit():
     original_circuit = build_ising_circuit(
         rows=rows, cols=cols, j_coupling=0.8, h_field=1.0, dt=0.03, n_steps=n_steps
     )
-    expected_num_ops_original = len(list(original_circuit.all_operations()))
+    len(list(original_circuit.all_operations()))
 
     # Convert using the span-aware function
     cbloq, decomposed_circuit = convert_circuit_for_flasq_analysis(original_circuit)
@@ -295,7 +295,7 @@ def test_both_counts_from_ising_model_circuit():
     # Vertical span per layer:
     #   There are `cols` columns. Each has `rows-1` CNOT pairs of dist=1 and 1 pair of dist=`rows-1`.
     #   Total vertical span = cols * ((rows-1)*1 + 1*(rows-1)) * 2 = 4 * cols * (rows-1)
-    span_per_layer = 4 * rows * (cols - 1) + 4 * cols * (rows - 1)
+    4 * rows * (cols - 1) + 4 * cols * (rows - 1)
     # The old implementation had a bug where it double-counted interactions.
     # The new one does not.
     # Each ZZ layer has 4 sets of interactions. Each set has 2 CNOT moments.

@@ -14,7 +14,12 @@
 
 # test_adder_example.py
 import cirq
+import numpy as np
 
+from qualtran import QUInt
+from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.mcmt import And
+from qualtran.cirq_interop import cirq_optree_to_cbloq
 from qualtran.resource_counting import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis
 
@@ -71,14 +76,6 @@ def test_decomposed_adder_flasq_and_span_costs():
     assert len(list(decomposed_circuit.all_operations())) > 0
 
 
-import numpy as np
-
-from qualtran import QUInt
-from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.mcmt import And
-from qualtran.cirq_interop import cirq_optree_to_cbloq
-
-
 def test_self_contained_adder_issue():
     adder_bloq = Add(a_dtype=QUInt(4), b_dtype=QUInt(4))
 
@@ -103,7 +100,7 @@ def test_self_contained_adder_issue():
 
     circuit = cirq.Circuit(cirq.decompose(circuit, keep=is_and_or_short))
 
-    cbloq = cirq_optree_to_cbloq(
+    cirq_optree_to_cbloq(
         circuit.all_operations(),
         signature=adder_bloq.signature,
         in_quregs={"a": a_qubits, "b": b_qubits},

@@ -455,7 +455,7 @@ class OptimizationFunctionsTestSuite:
 
             mock_convert.return_value = (TGate(), cirq.Circuit(cirq.T(cirq.q(0))))
 
-            res = analyze_logical_circuit(
+            analyze_logical_circuit(
                 circuit_builder_func=_tuple_returning_circuit_builder,
                 circuit_builder_kwargs=kwargs,
                 total_allowable_rotation_error=total_rot_error,
@@ -542,7 +542,7 @@ class OptimizationFunctionsTestSuite:
         )
         assert isinstance(flasq_summary_conservative, FLASQSummary)
 
-        resolved_flasq_summary = flasq_summary_conservative.resolve_symbols(
+        flasq_summary_conservative.resolve_symbols(
             frozendict(
                 {
                     ROTATION_ERROR: logical_analysis["individual_allowable_rotation_error"],

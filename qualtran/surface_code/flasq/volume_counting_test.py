@@ -13,13 +13,34 @@
 #  limitations under the License.
 
 import cirq
-
-# test_combined_counting.py
 import numpy as np
+import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import (
+    CNOT,
+    CZ,
+    Hadamard,
+    OneState,
+    Rx,
+    Rz,
+    SGate,
+    Toffoli,
+    XGate,
+    XPowGate,
+    YGate,
+    YPowGate,
+    ZeroEffect,
+    ZeroState,
+    ZGate,
+    ZPowGate,
+)
+from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+from qualtran.bloqs.basic_gates.identity import Identity
+from qualtran.bloqs.basic_gates.x_basis import MeasureX
+from qualtran.bloqs.basic_gates.z_basis import MeasureZ
+from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo
@@ -126,29 +147,6 @@ def test_flasq_counts_str_with_pow_gates():
 # =============================================================================
 # Phase 1: Characterization tests for untested branches in FLASQGateTotals.compute
 # =============================================================================
-
-import pytest
-
-from qualtran.bloqs.basic_gates import (
-    CZ,
-    OneState,
-    Rx,
-    Rz,
-    SGate,
-    XGate,
-    XPowGate,
-    YGate,
-    YPowGate,
-    ZeroEffect,
-    ZeroState,
-    ZGate,
-    ZPowGate,
-)
-from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
-from qualtran.bloqs.basic_gates.identity import Identity
-from qualtran.bloqs.basic_gates.x_basis import MeasureX
-from qualtran.bloqs.basic_gates.z_basis import MeasureZ
-from qualtran.bloqs.mcmt import And
 
 
 class FLASQGateTotalsBaseCasesTestSuite:

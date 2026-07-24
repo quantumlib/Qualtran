@@ -218,7 +218,7 @@ def test_hwp_qubit_count_logic(n_qubits_data):
     between these two quantities.
     """
     # 1. Manual calculation of total unique qubits expected to be used.
-    expected_total_unique_qubits = (
+    (
         n_qubits_data
         + (n_qubits_data - _hamming_weight(n_qubits_data))
         + math.ceil(math.log2(n_qubits_data + 1))

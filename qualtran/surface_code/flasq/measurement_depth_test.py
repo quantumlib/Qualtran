@@ -29,7 +29,7 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, OneState, TGate, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt import And
 from qualtran.resource_counting import CostKey, get_cost_value
 
@@ -286,8 +286,6 @@ def test_total_measurement_depth_with_rotation_depth():
 # =============================================================================
 # Phase 1: Characterization tests for untested measurement_depth branches
 # =============================================================================
-
-from qualtran.bloqs.basic_gates import OneState, ZeroEffect, ZeroState
 
 
 class TotalMeasurementDepthBaseCasesTestSuite:

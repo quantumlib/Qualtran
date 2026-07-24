@@ -20,12 +20,15 @@ import pytest
 
 from qualtran import CompositeBloq, Signature
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli, ZPowGate
+from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop import cirq_optree_to_cbloq
 from qualtran.resource_counting._costing import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import (
     _get_coords_from_op,
+    cirq_op_to_bloq_tolerate_classical_controls,
     cirq_op_to_bloq_with_span,
     convert_circuit_for_flasq_analysis,
+    flasq_decompose_keep,
 )
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan, TotalSpanCost
 from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts, FLASQGateTotals
@@ -175,7 +178,7 @@ def test_convert_circuit_zzpow_interception():
     assert len(list(decomposed_circuit.all_operations())) == 3  # CNOT, ZPow, CNOT
     # Verify the operations in the decomposed circuit match the expected decomposition
     # This is implicitly tested by the cbloq structure check above, but an explicit check is good.
-    expected_decomposed_ops = [
+    [
         cirq.CNOT(q0, q1),
         cirq.ZPowGate(exponent=exponent).on(
             q1
@@ -202,7 +205,7 @@ def test_convert_circuit_cnot_keep():
     )
     # Decompose without our special keep to see what cirq.decompose would do
     # This is just for understanding, not part of the main test logic for convert_circuit
-    decomposed_circuit_cirq_default = cirq.Circuit(cirq.decompose(original_circuit))
+    cirq.Circuit(cirq.decompose(original_circuit))
 
     cbloq, decomposed_circuit_flasq = convert_circuit_for_flasq_analysis(original_circuit)
     assert isinstance(cbloq, CompositeBloq)
@@ -314,12 +317,6 @@ def test_no_unknown_bloqs_for_fsim_circuit():
 # =============================================================================
 # Phase 1: Characterization tests for untested cirq_interop branches
 # =============================================================================
-
-from qualtran.bloqs.mcmt import And
-from qualtran.surface_code.flasq.cirq_interop import (
-    cirq_op_to_bloq_tolerate_classical_controls,
-    flasq_decompose_keep,
-)
 
 
 class TolerateClassicalControlsTestSuite:
