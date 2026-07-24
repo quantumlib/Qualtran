@@ -18,8 +18,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Signature
-from qualtran._infra.composite_bloq import Bloq, BloqBuilder
+from qualtran import Bloq, BloqBuilder, Signature
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting._costing import get_cost_value

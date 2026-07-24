@@ -18,8 +18,7 @@ import numpy as np
 # tests/cirq_interop_test.py
 import pytest
 
-from qualtran import Signature
-from qualtran._infra.composite_bloq import CompositeBloq
+from qualtran import CompositeBloq, Signature
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, Toffoli, ZPowGate
 from qualtran.cirq_interop import cirq_optree_to_cbloq
 from qualtran.resource_counting._costing import get_cost_value
