@@ -115,6 +115,9 @@ typing = [
     "mypy~=1.14",
     "mypy-protobuf",
     "sympy",
+    "pandas-stubs",
+    "types-tqdm",
+    "types-networkx",
 ]
 
 lint = [
@@ -262,3 +265,8 @@ markers = [
     "slow: slow tests.",
     "notebook: unit tests that execute a notebook."
 ]
+
+[[tool.mypy.overrides]]
+module = "sympy"
+ignore_missing_imports = true
+
