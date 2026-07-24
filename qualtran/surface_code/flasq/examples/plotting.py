@@ -24,7 +24,7 @@ from matplotlib.colors import LogNorm
 
 def _k_formatter(x: float, pos: int) -> str:
     """Matplotlib formatter to format numbers in thousands (e.g., 10000 -> 10k)."""
-    return f"{int(x/1000)}k"
+    return f"{int(x / 1000)}k"
 
 
 def _simple_float_formatter(x: float, pos: int) -> str:

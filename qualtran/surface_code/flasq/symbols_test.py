@@ -77,9 +77,9 @@ class MixedFallbackTCountTestSuite:
         """Substituting concrete ROTATION_ERROR values should match the formula."""
         result = MIXED_FALLBACK_T_COUNT.subs(ROTATION_ERROR, rotation_error)
         result_float = float(result)
-        assert result_float == pytest.approx(
-            expected_raw, rel=1e-10
-        ), f"For eps={rotation_error}: got {result_float}, expected {expected_raw}"
+        assert result_float == pytest.approx(expected_raw, rel=1e-10), (
+            f"For eps={rotation_error}: got {result_float}, expected {expected_raw}"
+        )
 
     def test_mixed_fallback_monotonically_increasing(self):
         """Smaller rotation error should require more T gates."""
@@ -89,5 +89,5 @@ class MixedFallbackTCountTestSuite:
             assert t_counts[i] <= t_counts[i + 1], (
                 f"T count should increase as error decreases: "
                 f"eps={errors[i]} -> {t_counts[i]}, "
-                f"eps={errors[i+1]} -> {t_counts[i+1]}"
+                f"eps={errors[i + 1]} -> {t_counts[i + 1]}"
             )

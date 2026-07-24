@@ -101,9 +101,9 @@ def test_get_filtered_cultivation_data():
             error_rate_val, distance_val, decimal_precision=8
         )
         assert isinstance(filtered_df, pd.DataFrame)
-        assert (
-            len(filtered_df) > 0
-        ), f"No data for error_rate={error_rate_val}, distance={distance_val}"
+        assert len(filtered_df) > 0, (
+            f"No data for error_rate={error_rate_val}, distance={distance_val}"
+        )
 
 
 def test_filtered_data_monotonicity():
@@ -123,15 +123,15 @@ def test_filtered_data_monotonicity():
 
         sorted_df = filtered_df.sort_values("gap").reset_index(drop=True)
 
-        assert np.all(
-            np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon
-        ), f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}"
+        assert np.all(np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon), (
+            f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}"
+        )
 
         # Noise means data is NOT QUITE monotonic in the t gate error rate...
         # assert np.all(np.diff(sorted_df["t_gate_cultivation_error_rate"].values) <= epsilon), f"t_gate_cultivation_error_rate not non-increasing for ER={error_rate_val}, dist={distance_val}"
-        assert np.all(
-            np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon
-        ), f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}"
+        assert np.all(np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon), (
+            f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}"
+        )
         assert np.all(
             np.diff(sorted_df["attempts_per_kept_shot"].to_numpy(dtype=float)) >= -epsilon
         ), f"attempts_per_kept_shot not non-decreasing for ER={error_rate_val}, dist={distance_val}"
@@ -152,7 +152,6 @@ def test_regularized_filtered_data_monotonicity_and_structure():  # Renamed for 
     for error_rate_val, distance_val, cutoff_val in itertools.product(
         unique_rates, distances, uncertainty_cutoffs
     ):
-
         regularized_df = cultivation_analysis.get_regularized_filtered_cultivation_data(
             error_rate_val, distance_val, decimal_precision=8, uncertainty_cutoff=cutoff_val
         )
@@ -161,21 +160,25 @@ def test_regularized_filtered_data_monotonicity_and_structure():  # Renamed for 
 
         assert len(sorted_df) > 40
 
-        assert np.all(
-            np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon
-        ), f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        assert np.all(np.diff(sorted_df["expected_volume"].to_numpy(dtype=float)) >= -epsilon), (
+            f"expected_volume not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        )
 
         assert np.all(
             np.diff(sorted_df["t_gate_cultivation_error_rate"].to_numpy(dtype=float)) <= epsilon
-        ), f"t_gate_cultivation_error_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        ), (
+            f"t_gate_cultivation_error_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        )
 
-        assert np.all(
-            np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon
-        ), f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        assert np.all(np.diff(sorted_df["keep_rate"].to_numpy(dtype=float)) <= epsilon), (
+            f"keep_rate not non-increasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        )
 
         assert np.all(
             np.diff(sorted_df["attempts_per_kept_shot"].to_numpy(dtype=float)) >= -epsilon
-        ), f"attempts_per_kept_shot not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        ), (
+            f"attempts_per_kept_shot not non-decreasing for ER={error_rate_val}, dist={distance_val}, cutoff={cutoff_val}"
+        )
 
 
 def test_get_regularized_filtered_combined_cultivation_data_structure_and_content():
@@ -205,9 +208,9 @@ def test_get_regularized_filtered_combined_cultivation_data_structure_and_conten
     # 3. Verify content and structure
     assert isinstance(combined_df, pd.DataFrame)
     expected_len = len(df_dist3) + len(df_dist5)
-    assert (
-        len(combined_df) == expected_len
-    ), "Combined DataFrame length mismatch with sum of individual lengths."
+    assert len(combined_df) == expected_len, (
+        "Combined DataFrame length mismatch with sum of individual lengths."
+    )
 
     # Check presence of both distances
     if not combined_df.empty:
@@ -240,9 +243,9 @@ def test_get_regularized_filtered_combined_cultivation_data_structure_and_conten
     final_cache_info = (
         cultivation_analysis.get_regularized_filtered_combined_cultivation_data.cache_info()
     )
-    assert (
-        final_cache_info.hits > initial_cache_info.hits
-    ), "Cache hit not registered for combined function."
+    assert final_cache_info.hits > initial_cache_info.hits, (
+        "Cache hit not registered for combined function."
+    )
     assert final_cache_info.misses == initial_cache_info.misses + 1
 
 
@@ -254,9 +257,9 @@ def test_find_best_cultivation_parameters():
     log_err_target = 1e-7
     result = cultivation_analysis.find_best_cultivation_parameters(phys_err, log_err_target)
     assert isinstance(result, pd.Series)
-    assert (
-        not result.empty
-    ), f"Expected non-empty result for phys_err={phys_err}, log_err_target={log_err_target}"
+    assert not result.empty, (
+        f"Expected non-empty result for phys_err={phys_err}, log_err_target={log_err_target}"
+    )
     assert "t_gate_cultivation_error_rate" in result
     assert result["t_gate_cultivation_error_rate"] < log_err_target
     assert "error_rate" in result
@@ -273,9 +276,9 @@ def test_find_best_cultivation_parameters():
         phys_err_high, log_err_target
     )
     assert isinstance(result_high_phys, pd.Series)
-    assert (
-        result_high_phys.empty
-    ), f"Expected empty result for very high physical error rate {phys_err_high}"
+    assert result_high_phys.empty, (
+        f"Expected empty result for very high physical error rate {phys_err_high}"
+    )
 
     # Test case 3: Target logical error rate too low
     log_err_target_low = 1e-20  # Lower than any achievable
@@ -283,9 +286,9 @@ def test_find_best_cultivation_parameters():
         phys_err, log_err_target_low
     )
     assert isinstance(result_low_target, pd.Series)
-    assert (
-        result_low_target.empty
-    ), f"Expected empty result for very low target logical error rate {log_err_target_low}"
+    assert result_low_target.empty, (
+        f"Expected empty result for very low target logical error rate {log_err_target_low}"
+    )
 
     # Test case 4: Ensure `uncertainty_cutoff` is passed through and can affect results
     # Find a scenario where default cutoff (100) gives a result, but a very strict one (e.g., 1.1) gives empty or different

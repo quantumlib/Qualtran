@@ -132,9 +132,11 @@ class MeasurementDepth:
         d = attrs.asdict(
             self,
             recurse=False,
-            filter=lambda attr, value: not (
-                (attr.name == "depth" and is_zero(value))
-                or (attr.name == "bloqs_with_unknown_depth" and not value)
+            filter=lambda attr, value: (
+                not (
+                    (attr.name == "depth" and is_zero(value))
+                    or (attr.name == "bloqs_with_unknown_depth" and not value)
+                )
             ),
         )
         return d
