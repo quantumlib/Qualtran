@@ -425,7 +425,7 @@ class FLASQSummary:
         """
         return self.total_spacetime_volume - self.cultivation_volume
 
-    @lru_cache(maxsize=4096)
+    @lru_cache(maxsize=65536)
     def resolve_symbols(
         self, assumptions: frozendict[typing.Union[sympy.Symbol, str], typing.Any]
     ) -> "FLASQSummary":
