@@ -23,8 +23,8 @@ from typing import Optional
 import attrs
 import filelock
 import nbconvert
-import zmq
 import nbformat
+import zmq
 from attrs import frozen
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbformat import NotebookNode
@@ -167,12 +167,12 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
                 executor._cleanup_kernel()
             except Exception:
                 pass
-            
+
             if attempt == 5:
                 print(f'{paths.nb_in} kernel failed to start after 6 attempts!')
                 print(e)
                 return e
-                
+
             print(f"Kernel startup failed for {paths.nb_in} (Attempt {attempt+1}). Retrying...")
             time.sleep(random.uniform(2, 6))
 
