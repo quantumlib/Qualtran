@@ -12,13 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import List
+from __future__ import annotations
+
+from typing import List, TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 from frozendict import frozendict
-from joblib import delayed, Parallel  # type: ignore[import-untyped]
-from tqdm.auto import tqdm
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 from qualtran.surface_code.flasq.error_mitigation import (
     calculate_error_mitigation_metrics,
@@ -88,12 +90,29 @@ def post_process_for_logical_depth(
     Returns:
         A pandas DataFrame containing the logical resource costs for each sweep point.
     """
-    parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
-        delayed(_process_single_result_for_logical_depth)(r) for r in sweep_results
-    )
-    processed_results = list(
-        tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing Logical Depth")
-    )
+    import pandas as pd
+    try:
+        from joblib import delayed, Parallel  # type: ignore[import-untyped]
+    except ImportError:
+        Parallel, delayed = None, None
+
+    try:
+        from tqdm.auto import tqdm
+    except ImportError:
+        tqdm = lambda x, **kw: x  # type: ignore[assignment, misc]
+
+    if Parallel is not None:
+        parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
+            delayed(_process_single_result_for_logical_depth)(r) for r in sweep_results
+        )
+        processed_results = list(
+            tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing Logical Depth")
+        )
+    else:
+        processed_results = [
+            _process_single_result_for_logical_depth(r)
+            for r in tqdm(sweep_results, desc="Post-processing Logical Depth")
+        ]
     return pd.DataFrame(processed_results)
 
 
@@ -169,13 +188,30 @@ def post_process_for_pec_runtime(
     Returns:
         A pandas DataFrame containing the fully processed and enriched results of the sweep.
     """
-    parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
-        delayed(_process_single_result_for_pec)(r, time_per_surface_code_cycle)
-        for r in sweep_results
-    )
-    processed_results = list(
-        tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing PEC results")
-    )
+    import pandas as pd
+    try:
+        from joblib import delayed, Parallel  # type: ignore[import-untyped]
+    except ImportError:
+        Parallel, delayed = None, None
+
+    try:
+        from tqdm.auto import tqdm
+    except ImportError:
+        tqdm = lambda x, **kw: x  # type: ignore[assignment, misc]
+
+    if Parallel is not None:
+        parallel_gen = Parallel(n_jobs=n_jobs, return_as="generator")(
+            delayed(_process_single_result_for_pec)(r, time_per_surface_code_cycle)
+            for r in sweep_results
+        )
+        processed_results = list(
+            tqdm(parallel_gen, total=len(sweep_results), desc="Post-processing PEC results")
+        )
+    else:
+        processed_results = [
+            _process_single_result_for_pec(r, time_per_surface_code_cycle)
+            for r in tqdm(sweep_results, desc="Post-processing PEC results")
+        ]
     df = pd.DataFrame(processed_results)
     df = convert_sympy_exprs_in_df(df)
     return df
@@ -197,6 +233,7 @@ def post_process_for_failure_budget(
 
     Assumes sweep was run with total_allowable_rotation_error matching error_budget.synthesis.
     """
+    import pandas as pd
     processed_results = []
 
     filtered_results = [

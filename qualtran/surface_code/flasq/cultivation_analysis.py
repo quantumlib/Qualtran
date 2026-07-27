@@ -29,17 +29,22 @@ Key CSV columns and paper terminology:
         results.
 """
 
+from __future__ import annotations
+
 import importlib.resources
 from functools import lru_cache
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 @lru_cache(maxsize=1)
 def get_cultivation_data() -> pd.DataFrame:
     """Loads the cultivation simulation summary data from the CSV file."""
+    import pandas as pd
     # Use importlib.resources to get a path to the data file
     # This assumes your package is named 'qualtran.surface_code.flasq' and the data
     # is in a 'data' subdirectory within that package.
@@ -243,6 +248,7 @@ def get_regularized_filtered_combined_cultivation_data(
         error_rate, 5, decimal_precision, uncertainty_cutoff
     )
 
+    import pandas as pd
     combined_df = pd.concat([df_dist3, df_dist5], ignore_index=True)
     return combined_df
 
@@ -275,6 +281,8 @@ def find_best_cultivation_parameters(
         A pandas Series representing the best row, or an empty Series if no
         suitable parameters are found.
     """
+    import pandas as pd
+
     # Get unique error rates, which are already rounded to decimal_precision
     current_unique_error_rates = get_unique_error_rates(decimal_precision)
 

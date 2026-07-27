@@ -44,15 +44,17 @@ Usage:
     python plot_cultivation_figure.py --grid-res 50 -o preview.png
 """
 
+from __future__ import annotations
+
 import argparse
 import pathlib
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import numpy as np
-import pandas as pd
+
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
+    import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Data loading
@@ -77,6 +79,7 @@ def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
       the surface code threshold region.  This removes the very high
       error-rate data points that are not useful for the FLASQ model.
     """
+    import pandas as pd
     df = pd.read_csv(csv_path)
 
     # The CSV may have a spurious index column from pandas serialization.
@@ -175,6 +178,8 @@ def _configure_axes(ax: plt.Axes) -> None:
     the paper (powers-of-2 spacing from 1.25e-4 to 4e-3).  Y-axis ticks
     are at powers of 10.
     """
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker as mticker
     x_ticks = sorted([4e-3, 2e-3, 1e-3, 5e-4, 2.5e-4, 1.25e-4])
     ax.xaxis.set_major_locator(mticker.FixedLocator(x_ticks))
     ax.xaxis.set_major_formatter(mticker.FixedFormatter([f"{v:.2e}" for v in x_ticks]))
@@ -197,6 +202,8 @@ def _configure_axes(ax: plt.Axes) -> None:
 def plot_cultivation_heatmap(
     filtered_df: pd.DataFrame, output_path: Optional[pathlib.Path] = None, grid_res: int = 400
 ) -> None:
+    import matplotlib.colors as mcolors
+    import matplotlib.pyplot as plt
     """Generate the paper's cultivation spacetime volume heatmap.
 
     Constructs a grid_res x grid_res grid over:

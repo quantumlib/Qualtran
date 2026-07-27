@@ -14,13 +14,17 @@
 
 """Utilities for resolving symbolic expressions in FLASQ cost formulas."""
 
+from __future__ import annotations
+
 from functools import lru_cache
-from typing import Any, Mapping, Union
+from typing import Any, Mapping, Union, TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 import sympy
 from frozendict import frozendict  # type: ignore[import-untyped]
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def _to_frozendict(val: Mapping[Any, Any]) -> frozendict:
@@ -164,6 +168,7 @@ def convert_sympy_exprs_in_df(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The processed DataFrame with SymPy numbers converted.
     """
+
     for col in df.columns:
         if df[col].apply(lambda x: isinstance(x, sympy.Expr)).any():
             df[col] = df[col].apply(

@@ -15,9 +15,11 @@
 import itertools
 
 import numpy as np
-import pandas as pd
+import pytest
 
 from qualtran.surface_code.flasq import cultivation_analysis
+
+pd = pytest.importorskip("pandas")
 
 
 def test_get_cultivation_data():

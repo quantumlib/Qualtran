@@ -18,7 +18,6 @@ from typing import Callable, Iterable, List, Tuple, Union
 import attrs
 import numpy as np
 from frozendict import frozendict
-from tqdm.auto import tqdm
 
 from qualtran.surface_code.flasq.flasq_model import FLASQCostModel, FLASQSummary
 from qualtran.surface_code.flasq.optimization.analysis import (
@@ -132,6 +131,11 @@ def run_sweep(
 
     param_lists = [list(it) for it in param_iterables]
     total_iterations = int(np.prod([len(p_list) for p_list in param_lists]))
+
+    try:
+        from tqdm.auto import tqdm
+    except ImportError:
+        tqdm = lambda x, **kw: x  # type: ignore[assignment, misc]
 
     iterable_product = itertools.product(*param_lists)
     progress_bar = tqdm(

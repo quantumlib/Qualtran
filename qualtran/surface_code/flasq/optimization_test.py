@@ -19,7 +19,6 @@ from unittest.mock import MagicMock, patch
 
 import cirq
 import numpy as np
-import pandas as pd
 import pytest
 import sympy
 
@@ -56,6 +55,8 @@ from qualtran.surface_code.flasq.optimization import (
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, GateSpan
 from qualtran.surface_code.flasq.symbols import T_REACT
 from qualtran.surface_code.flasq.volume_counting import FLASQGateCounts
+
+pd = pytest.importorskip("pandas")
 
 
 @frozen

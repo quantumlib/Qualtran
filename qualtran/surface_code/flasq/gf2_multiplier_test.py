@@ -14,6 +14,9 @@
 
 
 import cirq
+import pytest
+
+pytest.importorskip("galois")
 
 from qualtran.resource_counting import get_cost_value
 from qualtran.surface_code.flasq.cirq_interop import convert_circuit_for_flasq_analysis

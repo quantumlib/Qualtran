@@ -14,12 +14,13 @@
 
 """Visualization utilities for FLASQ analysis results."""
 
-from typing import Callable, Optional, Tuple
+from __future__ import annotations
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns  # type: ignore[import-untyped]
-from matplotlib.colors import LogNorm
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
+    import pandas as pd
 
 
 def _k_formatter(x: float, pos: int) -> str:
@@ -154,6 +155,10 @@ def plot_flasq_heatmap(
     Returns:
         A tuple of (Figure, Axes) for the plot.
     """
+    import matplotlib.pyplot as plt
+    import seaborn as sns  # type: ignore[import-untyped]
+    from matplotlib.colors import LogNorm
+
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
     else:
