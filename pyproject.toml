@@ -269,3 +269,7 @@ markers = [
 module = "sympy"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "dev_tools.qualtran_dev_tools.bloq_report_card"
+ignore_errors = true
+
