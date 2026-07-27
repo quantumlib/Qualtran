@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, Mapping, Union, TYPE_CHECKING
+from typing import Any, Mapping, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -175,9 +175,7 @@ def convert_sympy_exprs_in_df(df: pd.DataFrame) -> pd.DataFrame:
                 lambda x: (
                     float(x)
                     if isinstance(x, sympy.Expr) and x.is_number and not x.is_integer
-                    else int(x)
-                    if isinstance(x, sympy.Expr) and x.is_integer
-                    else x
+                    else int(x) if isinstance(x, sympy.Expr) and x.is_integer else x
                 )
             )
     return df

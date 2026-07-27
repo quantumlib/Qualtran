@@ -91,6 +91,7 @@ def post_process_for_logical_depth(
         A pandas DataFrame containing the logical resource costs for each sweep point.
     """
     import pandas as pd
+
     try:
         from joblib import delayed, Parallel  # type: ignore[import-untyped]
     except ImportError:
@@ -189,6 +190,7 @@ def post_process_for_pec_runtime(
         A pandas DataFrame containing the fully processed and enriched results of the sweep.
     """
     import pandas as pd
+
     try:
         from joblib import delayed, Parallel  # type: ignore[import-untyped]
     except ImportError:
@@ -234,6 +236,7 @@ def post_process_for_failure_budget(
     Assumes sweep was run with total_allowable_rotation_error matching error_budget.synthesis.
     """
     import pandas as pd
+
     processed_results = []
 
     filtered_results = [

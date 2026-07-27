@@ -80,6 +80,7 @@ def load_and_filter(csv_path: pathlib.Path) -> pd.DataFrame:
       error-rate data points that are not useful for the FLASQ model.
     """
     import pandas as pd
+
     df = pd.read_csv(csv_path)
 
     # The CSV may have a spurious index column from pandas serialization.
@@ -180,6 +181,7 @@ def _configure_axes(ax: plt.Axes) -> None:
     """
     import matplotlib.pyplot as plt
     import matplotlib.ticker as mticker
+
     x_ticks = sorted([4e-3, 2e-3, 1e-3, 5e-4, 2.5e-4, 1.25e-4])
     ax.xaxis.set_major_locator(mticker.FixedLocator(x_ticks))
     ax.xaxis.set_major_formatter(mticker.FixedFormatter([f"{v:.2e}" for v in x_ticks]))
@@ -204,6 +206,7 @@ def plot_cultivation_heatmap(
 ) -> None:
     import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
+
     """Generate the paper's cultivation spacetime volume heatmap.
 
     Constructs a grid_res x grid_res grid over:

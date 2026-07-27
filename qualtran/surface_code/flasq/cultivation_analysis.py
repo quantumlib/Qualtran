@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 def get_cultivation_data() -> pd.DataFrame:
     """Loads the cultivation simulation summary data from the CSV file."""
     import pandas as pd
+
     # Use importlib.resources to get a path to the data file
     # This assumes your package is named 'qualtran.surface_code.flasq' and the data
     # is in a 'data' subdirectory within that package.
@@ -249,6 +250,7 @@ def get_regularized_filtered_combined_cultivation_data(
     )
 
     import pandas as pd
+
     combined_df = pd.concat([df_dist3, df_dist5], ignore_index=True)
     return combined_df
 
