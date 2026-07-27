@@ -82,7 +82,6 @@ jobs:
           uv run --no-sync python dev_tools/execute-notebooks.py --n-workers=8
         env:
           NUMBA_NUM_THREADS: 4
-          FLASQ_FAST_MODE_OVERRIDE: 'True'
 
   format:
     runs-on: ubuntu-slim
@@ -187,7 +186,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
