@@ -30,16 +30,13 @@ on:
     branches:
       - main
 
-  # Allow manual invocation.
   workflow_dispatch:
 
 concurrency:
-  # Cancel any previously-started but still active runs on the same branch.
   cancel-in-progress: true
   group: ${{github.workflow}}-${{github.event.pull_request.number||github.ref}}
 
-# Declare default workflow permissions as read only.
-permissions: read-all
+permissions: {}
 
 jobs:
   run-scorecard:
@@ -53,6 +50,11 @@ jobs:
     permissions:
       security-events: write
       id-token: write
+      contents: read
+      actions: read
+      issues: read
+      pull-requests: read
+      checks: read
     timeout-minutes: 15
     steps:
       - name: Check out a copy of the git repository
