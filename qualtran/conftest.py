@@ -261,14 +261,13 @@ def pytest_configure(config: pytest.Config) -> None:
     if hasattr(config, "workerinput"):
         return
 
-    num_cpus = get_available_cpu_count()
-
     # Get the -n value from the pytest invocation.
     try:
         num_workers_str = config.getoption("numprocesses", default="1")
     except ValueError:
         num_workers_str = "1"
 
+    num_cpus = get_available_cpu_count()
     if num_workers_str in ("auto", "logical"):
         num_workers = num_cpus
     else:
@@ -277,7 +276,8 @@ def pytest_configure(config: pytest.Config) -> None:
         except (ValueError, TypeError):
             num_workers = 1
 
-    if num_workers > 0 and num_cpus > 0:
+    # Cap the number of threads when using multiple workers.
+    if num_workers > 1 and num_cpus > 0:
         limit = max(1, num_cpus // num_workers)
         env_vars = [
             "MKL_NUM_THREADS",
