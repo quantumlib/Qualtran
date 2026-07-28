@@ -240,14 +240,14 @@ def get_available_cpu_count() -> int:
     elif hasattr(os, "sched_getaffinity"):  # Unix/Linux
         try:
             cpus = len(os.sched_getaffinity(0))
-        except Exception:  # pylint: disable=broad-exception-caught
+        except OSError:
             cpus = os.cpu_count() or 1
     else:  # Fallback for older Python on Windows/macOS
         cpus = os.cpu_count() or 1
     return cpus
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     """Limit number of threads to prevent oversubscription with pytest-xdist.
 
     This only influences parallelism in some core numerical libraries used in
@@ -261,10 +261,30 @@ def pytest_configure(config):
     if hasattr(config, "workerinput"):
         return
 
+    num_cpus = get_available_cpu_count()
+
     # Get the -n value from the pytest invocation.
-    num_workers = config.getoption("numprocesses", default=0)
-    available_cpus = get_available_cpu_count()
-    if num_workers > 0 and available_cpus > 0:
-        limit = max(2, available_cpus // int(num_workers))
-        for var in ["MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS"]:
+    try:
+        num_workers_str = config.getoption("numprocesses", default="1")
+    except ValueError:
+        num_workers_str = "1"
+
+    if num_workers_str in ("auto", "logical"):
+        num_workers = num_cpus
+    else:
+        try:
+            num_workers = int(num_workers_str)
+        except (ValueError, TypeError):
+            num_workers = 1
+
+    if num_workers > 0 and num_cpus > 0:
+        limit = max(1, num_cpus // num_workers)
+        env_vars = [
+            "MKL_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS",
+        ]
+        for var in env_vars:
             os.environ[var] = str(limit)
