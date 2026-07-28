@@ -24,6 +24,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import os
+
 import pytest
 
 import qualtran
@@ -225,3 +227,44 @@ def bloq_autotester(request):
 def add_qlt(doctest_namespace):
     # Make qualtran available (without explicit import) in doctests
     doctest_namespace['qualtran'] = qualtran
+
+
+def get_available_cpu_count() -> int:
+    """Returns the number of CPU cores available to the current process.
+
+    This function respects active CPU limits such as process affinity and
+    container limits.
+    """
+    if hasattr(os, "process_cpu_count"):  # Python 3.13+
+        cpus = os.process_cpu_count() or 1
+    elif hasattr(os, "sched_getaffinity"):  # Unix/Linux
+        try:
+            cpus = len(os.sched_getaffinity(0))
+        except Exception:  # pylint: disable=broad-exception-caught
+            cpus = os.cpu_count() or 1
+    else:  # Fallback for older Python on Windows/macOS
+        cpus = os.cpu_count() or 1
+    return cpus
+
+
+def pytest_configure(config):
+    """Limit number of threads to prevent oversubscription with pytest-xdist.
+
+    This only influences parallelism in some core numerical libraries used in
+    packages such as NumPy by setting certain environment variables. When
+    pytest runs as many workers as CPUs, limiting the number of threads used by
+    the libraries greatly improves overall test performance. Without the limit,
+    numerical operations in some tests spawn as many parallel threads as CPUs,
+    overwhelming host resources when pytest runs the tests in parallel.
+    """
+    # Only run in the controlling process, before workers are started.
+    if hasattr(config, "workerinput"):
+        return
+
+    # Get the -n value from the pytest invocation.
+    num_workers = config.getoption("numprocesses", default=0)
+    available_cpus = get_available_cpu_count()
+    if num_workers > 0 and available_cpus > 0:
+        limit = max(2, available_cpus // int(num_workers))
+        for var in ["MKL_NUM_THREADS", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS"]:
+            os.environ[var] = str(limit)
