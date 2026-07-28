@@ -247,7 +247,7 @@ def get_available_cpu_count() -> int:
     return cpus
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config):
     """Limit number of threads to prevent oversubscription with pytest-xdist.
 
     This only influences parallelism in some core numerical libraries used in
@@ -261,20 +261,24 @@ def pytest_configure(config: pytest.Config) -> None:
     if hasattr(config, "workerinput"):
         return
 
-    # Get the -n value from the pytest invocation.
+    # Get the -n value from the Pytest invocation.
     try:
-        num_workers_str = config.getoption("numprocesses", default="1")
+        num_workers = config.getoption("numprocesses", default=1)
     except ValueError:
-        num_workers_str = "1"
+        # pytest-xdist is not being used.
+        return
+    if num_workers is None or not isinstance(num_workers, (int, str)):
+        num_workers = 1
 
     num_cpus = get_available_cpu_count()
-    if num_workers_str in ("auto", "logical"):
-        num_workers = num_cpus
-    else:
-        try:
-            num_workers = int(num_workers_str)
-        except (ValueError, TypeError):
-            num_workers = 1
+    if isinstance(num_workers, str):
+        if num_workers in ("auto", "logical"):
+            num_workers = num_cpus
+        else:
+            try:
+                num_workers = int(num_workers)
+            except ValueError:
+                num_workers = 1
 
     # Cap the number of threads when using multiple workers.
     if num_workers > 1 and num_cpus > 0:
