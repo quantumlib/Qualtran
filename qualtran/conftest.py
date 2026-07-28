@@ -263,7 +263,7 @@ def pytest_configure(config):
 
     # Get the -n value from the Pytest invocation.
     try:
-        num_workers = config.getoption("numprocesses", default=1)
+        num_workers = config.getoption("numprocesses")
     except ValueError:
         # pytest-xdist is not being used.
         return
