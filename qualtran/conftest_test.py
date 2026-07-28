@@ -100,8 +100,9 @@ def test_get_available_cpu_count_sched_getaffinity_os_error():
 
 def test_get_available_cpu_count_fallback():
     # Test fallback path when neither process_cpu_count nor sched_getaffinity is available.
-    with temporary_delete_attr(os, 'process_cpu_count'), temporary_delete_attr(
-        os, 'sched_getaffinity'
+    with (
+        temporary_delete_attr(os, 'process_cpu_count'),
+        temporary_delete_attr(os, 'sched_getaffinity'),
     ):
         with mock.patch('os.cpu_count', return_value=16):
             assert get_available_cpu_count() == 16
@@ -123,8 +124,9 @@ def test_pytest_configure_getoption_value_error():
     del config.workerinput  # Ensure hasattr returns False
     config.getoption.side_effect = ValueError('numprocesses is not configured')
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=4
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=4),
     ):
         pytest_configure(config)
         # Value error sets num_workers to "1".
@@ -145,8 +147,9 @@ def test_pytest_configure_auto_workers():
     del config.workerinput
     config.getoption.return_value = 'auto'
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=8
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8),
     ):
         pytest_configure(config)
         # num_workers is 8, limit is max(1, 8 // 8) = 1
@@ -166,8 +169,9 @@ def test_pytest_configure_invalid_workers():
     del config.workerinput
     config.getoption.return_value = 'invalid'
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=4
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=4),
     ):
         pytest_configure(config)
         # raises ValueError in int(), num_workers is set to 1.
@@ -187,8 +191,9 @@ def test_pytest_configure_type_error_workers():
     del config.workerinput
     config.getoption.return_value = []  # List raises TypeError in int()
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=4
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=4),
     ):
         pytest_configure(config)
         env_vars = [
@@ -207,8 +212,9 @@ def test_pytest_configure_set_env_vars():
     del config.workerinput
     config.getoption.return_value = '4'
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=12
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=12),
     ):
         pytest_configure(config)
         # num_workers = 4, num_cpus = 12, limit = max(1, 12 // 4) = 3
@@ -228,8 +234,9 @@ def test_pytest_configure_cpus_non_positive():
     del config.workerinput
     config.getoption.return_value = '4'
 
-    with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-        'qualtran.conftest.get_available_cpu_count', return_value=0
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch('qualtran.conftest.get_available_cpu_count', return_value=0),
     ):
         pytest_configure(config)
         # num_cpus <= 0, so thread limit is not set.
