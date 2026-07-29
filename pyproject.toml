@@ -259,7 +259,7 @@ filterwarnings = [
 # so if you really want to collect a class as a test use '*TestSuite'.
 # (but please stick to the convention of test_* functions)
 python_classes = '*TestSuite'
-addopts = '--strict-markers'
+addopts = '--strict-markers --dist worksteal'
 markers = [
     "slow: slow tests.",
     "notebook: unit tests that execute a notebook."
@@ -272,4 +272,3 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "dev_tools.qualtran_dev_tools.bloq_report_card"
 ignore_errors = true
-
