@@ -76,6 +76,13 @@ dependencies = [
 
     # rotation_synthesis
     "mpmath",
+
+    # flasq integration
+    "frozendict",
+    "pandas >= 2.0",
+    "seaborn",
+    "joblib",
+    "tqdm",
 ]
 
 [tool.hatch.version]
@@ -108,6 +115,8 @@ typing = [
     "mypy~=1.14",
     "mypy-protobuf",
     "sympy",
+    "pandas-stubs",
+    "types-tqdm",
 ]
 
 lint = [
@@ -255,3 +264,12 @@ markers = [
     "slow: slow tests.",
     "notebook: unit tests that execute a notebook."
 ]
+
+[[tool.mypy.overrides]]
+module = "sympy"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dev_tools.qualtran_dev_tools.bloq_report_card"
+ignore_errors = true
+
