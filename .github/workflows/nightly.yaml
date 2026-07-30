@@ -39,7 +39,7 @@ env:
 
 jobs:
   pytest:
-    runs-on: ubuntu-22.04-x64-8-core
+    runs-on: ubuntu-24.04-x64-8-core
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
