@@ -318,4 +318,4 @@ def pytest_configure(config):
         return
 
     _config_set_thread_limits(config)
-    # _config_set_xdist_worksteal(config)
+    _config_set_xdist_worksteal(config)

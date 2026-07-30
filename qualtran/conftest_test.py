@@ -260,9 +260,9 @@ def test_pytest_configure_sets_dist_worksteal():
     config.invocation_params = mock.MagicMock()
     config.invocation_params.args = ['-n', '4']
 
-    # with mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8):
-    #     pytest_configure(config)
-    #     assert config.option.dist == 'worksteal'
+    with mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8):
+        pytest_configure(config)
+        assert config.option.dist == 'worksteal'
 
 
 def test_pytest_configure_preserves_user_dist():
