@@ -44,10 +44,12 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --frozen --no-dev --group test
+        run: |
+          uv sync --frozen --no-dev --group test
+          uv pip install pytest-instafail
 
       - name: Run the full Pytest suite
         env:
           # Adding xtrace makes Bash commands & scripts run with "-x".
           SHELLOPTS: ${{runner.debug && 'xtrace'}}
-        run: uv run --no-sync check/pytest-full --durations 10 -v
+        run: uv run --no-sync check/pytest-full --instafail --durations 10 -v
