@@ -250,21 +250,34 @@ def get_available_cpu_count() -> int:
 def _config_set_xdist_worksteal(config) -> None:
     """Sets `--dist worksteal` as the default distribution mode if not
     explicitly overridden by the user."""
+    num_workers = config.getoption("numprocesses")
+    if num_workers in (None, 0, 1, "0", "1"):
+        return
+
     if (
         hasattr(config, "option")
         and hasattr(config.option, "dist")
         and config.getoption("dist") in (None, "no", "load")
     ):
         # Check if the user explicitly provided a distribution option. If they
-        # did, we shouldn't overwrite it. Since `dist` defaults to "load" when
-        # `-n` is set, we check if `--dist` is explicitly passed.
+        # did, we shouldn't overwrite it. Since dist defaults to "load" when
+        # -n is set, we check if --dist is explicitly passed.
+        args = []
         if hasattr(config, "invocation_params") and config.invocation_params is not None:
-            for arg in config.invocation_params.args:
-                if arg.startswith("--dist") or arg == "-d":
-                    break
-            else:
-                # Checked all args and didn't find --dist or -d.
-                config.option.dist = "worksteal"
+            args.extend(config.invocation_params.args)
+        try:
+            addopts = config.getini("addopts")
+            if isinstance(addopts, list):
+                args.extend(addopts)
+        except (ValueError, AttributeError):
+            pass
+
+        for arg in args:
+            if arg.startswith("--dist") or arg == "-d":
+                break
+        else:
+            # Checked all args and didn't find --dist or -d.
+            config.option.dist = "worksteal"
 
 
 def _config_set_thread_limits(config) -> None:
