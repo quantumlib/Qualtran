@@ -55,7 +55,7 @@ jobs:
           SHELLOPTS: ${{runner.debug && 'xtrace'}}
         run: |
           # Start continuous memory information printing.
-          free -hvl -s 1 &
+          free -hv -s 1 &
           # Get available CPU cores (fallback to 2 if nproc is unavailable).
           num_cpus=$(nproc 2>/dev/null || echo 2)
           # Calculate 1 less than total CPUs (ensuring at least 1 worker).
