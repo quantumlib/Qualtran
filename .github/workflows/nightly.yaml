@@ -48,22 +48,17 @@ jobs:
           uv sync --frozen --no-dev --group test
           uv pip install pytest-instafail
 
-      - name: Determine number of workers to use
-        id: calc-concurrency
-        run: |
-          # Get available CPU cores (fallback to 2 if nproc is unavailable).
-          NUM_CPUS=$(nproc 2>/dev/null || echo 2)
-          # Calculate 1 less than total CPUs (ensuring at least 1 worker).
-          NUM_PROCS=$(( NUM_CPUS > 1 ? NUM_CPUS - 1 : 1 ))
-          echo "num_workers=$NUM_PROCS" >> "$GITHUB_ENV"
-
       - name: Run the full Pytest suite
         id: pytest-full
         env:
           # Adding xtrace makes Bash commands & scripts run with "-x".
           SHELLOPTS: ${{runner.debug && 'xtrace'}}
-        run: uv run --no-sync check/pytest-full \
-            --instafail --durations 10 -n "${{env.num_workers}}"
+        run: |
+          # Get available CPU cores (fallback to 2 if nproc is unavailable).
+          num_cpus=$(nproc 2>/dev/null || echo 2)
+          # Calculate 1 less than total CPUs (ensuring at least 1 worker).
+          num_procs=$(( num_cpus > 1 ? num_cpus - 1 : 1 ))
+          uv run --no-sync check/pytest-full --instafail --durations 10 -n "${num_procs}"
 
       - name: Print diagnostics if test failed or was terminated
         if: (failure() || cancelled()) && steps.pytest-full.outcome != 'skipped'
