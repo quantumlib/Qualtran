@@ -56,8 +56,5 @@ jobs:
         run: |
           # Start continuous memory information printing.
           free -hv -s 1 &
-          # Get available CPU cores (fallback to 2 if nproc is unavailable).
-          num_cpus=$(nproc 2>/dev/null || echo 2)
-          # Calculate 1 less than total CPUs (ensuring at least 1 worker).
-          num_procs=$(( num_cpus > 1 ? num_cpus - 1 : 1 ))
-          uv run --no-sync check/pytest-full --instafail --durations 10 -n "${num_procs}"
+          # Use only 1/2 as many runners as cores, to avoid using too much RAM.
+          uv run --no-sync check/pytest-full --instafail --durations 10 -n 8
