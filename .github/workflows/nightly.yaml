@@ -28,7 +28,7 @@ jobs:
   pytest:
     permissions:
       contents: read
-    runs-on: ubuntu-24.04-x64-8-core
+    runs-on: ubuntu-24.04-x64-16-core
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,19 +55,6 @@ jobs:
           SHELLOPTS: ${{runner.debug && 'xtrace'}}
         run: |
           # Start continuous memory information printing.
-          free -hvl -s 1 &
-          # Get available CPU cores (fallback to 2 if nproc is unavailable).
-          num_cpus=$(nproc 2>/dev/null || echo 2)
-          # Calculate 1 less than total CPUs (ensuring at least 1 worker).
-          num_procs=$(( num_cpus > 1 ? num_cpus - 1 : 1 ))
-          uv run --no-sync check/pytest-full --instafail --durations 10 -n "${num_procs}"
-
-      - name: Print system resource info
-        if: always()
-        run: |
-          echo -e "\n--- RAM & SWAP USAGE ---"
-          free -h
-          echo -e "\n--- DISK SPACE USAGE ---"
-          df -h
-          echo -e "\n--- KERNEL & OOM KILLER LOGS ---"
-          sudo dmesg -T | grep -i -E 'oom|killed|memory|143|sigterm' | tail -n 100 || true
+          free -hv -s 1 &
+          # Use only 1/2 as many runners as cores, to avoid using too much RAM.
+          uv run --no-sync check/pytest-full --instafail --durations 10 -n 8
