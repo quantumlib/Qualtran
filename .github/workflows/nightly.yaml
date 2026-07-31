@@ -61,13 +61,3 @@ jobs:
           # Calculate 1 less than total CPUs (ensuring at least 1 worker).
           num_procs=$(( num_cpus > 1 ? num_cpus - 1 : 1 ))
           uv run --no-sync check/pytest-full --instafail --durations 10 -n "${num_procs}"
-
-      - name: Print system resource info
-        if: always()
-        run: |
-          echo -e "\n--- RAM & SWAP USAGE ---"
-          free -h
-          echo -e "\n--- DISK SPACE USAGE ---"
-          df -h
-          echo -e "\n--- KERNEL & OOM KILLER LOGS ---"
-          sudo dmesg -T | grep -i -E 'oom|killed|memory|143|sigterm' | tail -n 100 || true
