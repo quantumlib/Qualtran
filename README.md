@@ -54,7 +54,7 @@ pip install git+https://github.com/quantumlib/Qualtran
 > Some algorithms or library functionality may be incomplete or contain inaccuracies. Open issues or
 > contact the authors with bug reports or feedback.
 
-You should be able to import the `qualtran` package into your interactive Python environment as
+You should be able to import the `qualtran` package into your interactive Python environment
 as well as your programs:
 
 ```shell

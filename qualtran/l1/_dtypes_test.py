@@ -42,6 +42,16 @@ def test_qdtype_roundtrip(reg):
     assert shape == ()
 
 
+@pytest.mark.parametrize('shape', [(4,), (2, 3)])
+def test_qdtype_roundtrip_shaped(shape):
+    """Multi-dimensional register shapes survive the AST roundtrip."""
+    reg = qlt.Register('x', qdt.QAny(4), shape=shape)
+    qdtype_node = reg_to_qdtype_node(reg)
+    roundtripped, roundtripped_shape = eval_qdtype_node(qdtype_node)
+    assert roundtripped == reg.dtype
+    assert tuple(roundtripped_shape) == shape
+
+
 def test_builtin_mapping_contains_all_expected():
     """Verify all expected types are in the builtin mapping."""
     mapping = get_builtin_qdtype_mapping()

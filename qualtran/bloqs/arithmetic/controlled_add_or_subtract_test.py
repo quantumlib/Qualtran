@@ -45,26 +45,35 @@ def test_examples(bloq_autotester):
     bloq_autotester(_ctrl_add_or_sub_signed_symb)
 
 
+@pytest.mark.parametrize("dtype_cls", [QUInt, QInt])
 @pytest.mark.parametrize("bitsize", [2, 4, pytest.param(5, marks=pytest.mark.slow)])
-def test_controlled_add_or_subtract_classical_sim(bitsize: int):
-    # TODO use QInt once classical simulation is fixed
-    dtype = QUInt(bitsize)
-    bloq = ControlledAddOrSubtract(dtype, dtype)
-    for a_unsigned in dtype.get_classical_domain():
-        for b_unsigned in dtype.get_classical_domain():
+@pytest.mark.parametrize("add_when_ctrl_is_on", [True, False])
+def test_controlled_add_or_subtract_classical_sim(
+    dtype_cls, bitsize: int, add_when_ctrl_is_on: bool
+):
+    dtype = dtype_cls(bitsize)
+    bloq = ControlledAddOrSubtract(dtype, dtype, add_when_ctrl_is_on=add_when_ctrl_is_on)
+    for a_val in dtype.get_classical_domain():
+        for b_val in dtype.get_classical_domain():
             for ctrl in [0, 1]:
-                ctrl_out, a_out_unsigned, b_out_unsigned = bloq.call_classically(
-                    ctrl=ctrl, a=a_unsigned, b=b_unsigned
-                )
+                ctrl_out, a_out, b_out = bloq.call_classically(ctrl=ctrl, a=a_val, b=b_val)
                 assert ctrl_out == ctrl
-                assert a_out_unsigned == a_unsigned
+                assert a_out == a_val
 
-                if ctrl == 1:
-                    # ctrl = 1 => add
-                    assert b_out_unsigned == (b_unsigned + a_unsigned) % 2**bitsize
+                is_add = (ctrl == 1) if add_when_ctrl_is_on else (ctrl == 0)
+                if dtype_cls == QUInt:
+                    expected_b = (b_val + a_val if is_add else b_val - a_val) % 2**bitsize
                 else:
-                    # ctrl = 0 => subtract
-                    assert b_out_unsigned == (b_unsigned - a_unsigned + 2**bitsize) % 2**bitsize
+                    expected_b = (
+                        (b_val + a_val if is_add else b_val - a_val) + 2 ** (bitsize - 1)
+                    ) % 2**bitsize - 2 ** (bitsize - 1)
+                assert b_out == expected_b
+
+
+def test_controlled_add_or_subtract_symbolic_classical_sim():
+    bloq = _ctrl_add_or_sub_signed_symb()
+    with pytest.raises(ValueError, match="Cannot simulate symbolic bloq"):
+        bloq.on_classical_vals(ctrl=1, a=1, b=1)
 
 
 def test_caddsub_mixed_dtype():

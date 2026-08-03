@@ -1,0 +1,6 @@
+# Qualtran-L1
+# 1.0.0
+
+extern qdef Rz(0.25)
+from qualtran.bloqs.basic_gates.Rz(0.25, 1e-11)
+[q: QBit]

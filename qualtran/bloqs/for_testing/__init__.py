@@ -19,6 +19,7 @@ from .interior_alloc import InteriorAlloc
 from .large_bloq import LargeBloq
 from .many_registers import TestBoundedQUInt, TestMultiRegister, TestMultiTypedRegister, TestQFxp
 from .matrix_gate import MatrixGate
+from .nd_array_bloq import TestND3Grid, TestNDGrid
 from .qubit_count_many_alloc import TestManyAllocAbstracted, TestManyAllocMany, TestManyAllocOnce
 from .random_select_and_prepare import TestPauliSelectOracle, TestPrepareOracle
 from .with_call_graph import TestBloqWithCallGraph

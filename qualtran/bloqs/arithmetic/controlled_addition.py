@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountDictT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.simulation.verification import ClassicalSimTestCase
 
 
 @frozen
@@ -104,34 +105,37 @@ class CAdd(Bloq):
             [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
         )
 
-    def on_classical_vals(self, **kwargs) -> dict[str, 'ClassicalValT']:
-        a, b = kwargs['a'], kwargs['b']
-        ctrl = kwargs['ctrl']
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> dict[str, 'ClassicalValT']:
         if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
-        else:
-            if not isinstance(self.b_dtype.bitsize, int):
-                raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
-            return {
-                'ctrl': ctrl,
-                'a': a,
-                'b': add_ints(
-                    a, b, num_bits=self.b_dtype.bitsize, is_signed=isinstance(self.b_dtype, QInt)
-                ),
-            }
+        if not isinstance(self.b_dtype.bitsize, int):
+            raise ValueError(f'classical simulation is not supported for symbolic bloq {self}')
+        return {
+            'ctrl': ctrl,
+            'a': a,
+            'b': add_ints(
+                a, b, num_bits=self.b_dtype.bitsize, is_signed=isinstance(self.b_dtype, QInt)
+            ),
+        }
 
     def short_name(self) -> str:
         return "a+b"
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        if soq.reg.name == 'ctrl':
-            return directional_text_box('ctrl', side=soq.reg.side)
-        if soq.reg.name == 'a':
-            return directional_text_box('a', side=soq.reg.side)
-        elif soq.reg.name == 'b':
-            return directional_text_box('a+b', side=soq.reg.side)
+        if reg is None:
+            return super().wire_symbol(reg, idx)
+        if reg.name == 'ctrl':
+            return directional_text_box('ctrl', side=reg.side)
+        if reg.name == 'a':
+            return directional_text_box('a', side=reg.side)
+        elif reg.name == 'b':
+            return directional_text_box('a+b', side=reg.side)
         else:
             raise ValueError()
 
@@ -196,3 +200,38 @@ def _cadd_large() -> CAdd:
 
 
 _CADD_DOC = BloqDocSpec(bloq_cls=CAdd, examples=[_cadd_small, _cadd_large])
+
+
+def _get_cadd_classical_sim_test_cases() -> list['ClassicalSimTestCase']:
+    """Test cases for the `CAdd` bloq.
+
+    These specify concrete (non-symbolic) bloq instances with specific
+    compile-time parameter combinations. Runtime quantum inputs are
+    generated automatically by the verification framework.
+    """
+    from qualtran.simulation.verification import ClassicalSimTestCase
+
+    cases: list[ClassicalSimTestCase] = []
+    for cv in [0, 1]:
+        for a_bits, b_bits in [(1, 1), (2, 2), (2, 3), (3, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QUInt(a_bits), QUInt(b_bits), cv=cv),
+                    name=f"CAdd(QUInt({a_bits}), QUInt({b_bits}), cv={cv})",
+                )
+            )
+        for a_bits, b_bits in [(1, 1), (2, 2), (2, 3), (3, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QMontgomeryUInt(a_bits), QMontgomeryUInt(b_bits), cv=cv),
+                    name=f"CAdd(QMontgomeryUInt({a_bits}), QMontgomeryUInt({b_bits}), cv={cv})",
+                )
+            )
+        for a_bits, b_bits in [(2, 2), (3, 3), (4, 4)]:
+            cases.append(
+                ClassicalSimTestCase(
+                    bloq=CAdd(QInt(a_bits), QInt(b_bits), cv=cv),
+                    name=f"CAdd(QInt({a_bits}), QInt({b_bits}), cv={cv})",
+                )
+            )
+    return cases

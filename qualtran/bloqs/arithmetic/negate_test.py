@@ -54,3 +54,9 @@ def test_negate_unsigned_classical_sim(bitsize: int):
             assert x_out == 0
         else:
             assert x_out == 2**bitsize - x_in
+
+
+def test_negate_symbolic_classical_sim():
+    bloq = _negate_symb()
+    with pytest.raises(ValueError, match="Cannot simulate symbolic bloq"):
+        bloq.on_classical_vals(x=1)

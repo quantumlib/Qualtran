@@ -221,6 +221,44 @@ def test_add_ints_signed(n_bits: int):
         assert add_ints(x, y, num_bits=n_bits, is_signed=True) == z
 
 
+def test_add_ints_numpy_integer():
+    # `add_ints` accepts `np.integer` scalars (part of `ClassicalValT`) without coercion.
+    n_bits = 3
+    for x, y in itertools.product(range(1 << n_bits), repeat=2):
+        expected = (x + y) % (1 << n_bits)
+        assert add_ints(np.int64(x), np.int64(y), num_bits=n_bits, is_signed=False) == expected
+        # Mixing python int and numpy int also works.
+        assert add_ints(x, np.int64(y), num_bits=n_bits, is_signed=False) == expected
+
+
+def test_add_ints_ndarray_unsigned():
+    # `add_ints` accepts `np.ndarray` operands (part of `ClassicalValT`), adding element-wise.
+    n_bits = 3
+    a = np.array([0, 1, 5, 7], dtype=np.int64)
+    b = np.array([0, 7, 4, 7], dtype=np.int64)
+    result = add_ints(a, b, num_bits=n_bits, is_signed=False)
+    np.testing.assert_array_equal(result, (a + b) % (1 << n_bits))
+
+
+def test_add_ints_ndarray_signed():
+    n_bits = 3
+    half_n = 1 << (n_bits - 1)
+    a = np.array([-4, -1, 0, 3], dtype=np.int64)
+    b = np.array([-4, 2, 3, 3], dtype=np.int64)
+    result = add_ints(a, b, num_bits=n_bits, is_signed=True)
+    expected = (a + b + half_n) % (1 << n_bits) - half_n
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_add_ints_no_num_bits():
+    # Without `num_bits`, arbitrary-precision addition is performed for all accepted types.
+    assert add_ints(3, 4) == 7
+    assert add_ints(np.int64(3), np.int64(4)) == 7
+    np.testing.assert_array_equal(
+        add_ints(np.array([1, 2, 3]), np.array([4, 5, 6])), np.array([5, 7, 9])
+    )
+
+
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('classical_sim')

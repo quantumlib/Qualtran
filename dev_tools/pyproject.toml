@@ -7,6 +7,12 @@ name = "qualtran-dev-tools"
 version = "0.1.0"
 description = "Local development tools for the Qualtran project."
 requires-python = ">=3.12"
+dependencies = [
+    "qualtran",
+]
 
 [tool.setuptools]
 packages = ["qualtran_dev_tools"]
+
+[tool.uv.sources]
+qualtran = { path = "../" }

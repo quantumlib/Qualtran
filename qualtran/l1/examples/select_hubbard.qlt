@@ -1,0 +1,267 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef SelectHubbard(2, 2)
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.SelectHubbard(2, 2, control_val=None)
+[
+    U: BQUInt(1, 2),
+    V: BQUInt(1, 2),
+    p_x: BQUInt(1, 2),
+    p_y: BQUInt(1, 2),
+    alpha: BQUInt(1, 2),
+    q_x: BQUInt(1, 2),
+    q_y: BQUInt(1, 2),
+    beta: BQUInt(1, 2),
+    target: QAny(8),
+] {
+    hmo                  = HubbardMajorannaOperator(2, 2, Y)
+    hmo2                 = HubbardMajorannaOperator(2, 2, X)
+    x, y, spin, target2  = hmo              [x=p_x, y=p_y, spin=alpha, target=target]
+    q                    = ZGate            [q=U]               
+    ctrl, x2, y2         = CSwap            [ctrl=V, x=x, y=q_x]
+    ctrl2, x3, y3        = CSwap            [ctrl=ctrl, x=y, y=q_y]
+    ctrl3, x4, y4        = TwoBitCSwap      [ctrl=ctrl2, x=spin, y=beta]
+    x5, y5, spin2, target3 = hmo2             [x=y2, y=y3, spin=y4, target=target2]
+    ctrl4, x6, y6        = TwoBitCSwap      [ctrl=ctrl3, x=x4, y=spin2]
+    ctrl5, x7, y7        = CSwap            [ctrl=ctrl4, x=x3, y=y5]
+    ctrl6, x8, y8        = CSwap            [ctrl=ctrl5, x=x2, y=x5]
+    V2, x9, y9, target4  = HubbardSpinUpZ(2, 2)[V=ctrl6, x=y8, y=y7, target=target3]
+                           return           [U=q, V=V2, p_x=x8, p_y=x7, alpha=x6, q_x=x9, q_y=y9, beta=y6, target=target4]
+    |                    = GPhase(-0.5)     []                  
+}
+
+
+qdef HubbardMajorannaOperator(2, 2, Y)
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperator(2, 2, 'Y', control_val=None)
+[
+    x: BQUInt(1, 2),
+    y: BQUInt(1, 2),
+    spin: BQUInt(1, 2),
+    target: QAny(8),
+] {
+    q                    = X                [q=x]               
+    reg                  = Split            [reg=target]        
+    ctrl, target2        = And10            [ctrl=[q, y]]       
+    ctrl2, target3       = And10            [ctrl=[target2, spin]]
+    reg2                 = Allocate         []                  
+    q2                   = X                [q=reg2]            
+    ctrl3, target4       = CNOT             [ctrl=target3, target=q2]
+    ctrl4, target5       = CYGate           [ctrl=ctrl3, target=reg[0]]
+    q1, q22              = CZ               [q1=target4, q2=target5]
+    ctrl5, target6       = CNOT             [ctrl=ctrl2[0], target=ctrl4]
+    ctrl6, target7       = CNOT             [ctrl=target6, target=q1]
+    ctrl7, target8       = CYGate           [ctrl=ctrl6, target=reg[1]]
+    ctrl8                = And_adj          [ctrl=[ctrl5, ctrl2[1]], target=ctrl7]
+    q12, q23             = CZ               [q1=target7, q2=target8]
+    ctrl9, target9       = CNOT             [ctrl=ctrl[0], target=ctrl8[0]]
+    ctrl10, target10     = And10            [ctrl=[target9, ctrl8[1]]]
+    ctrl11, target11     = CNOT             [ctrl=target10, target=q12]
+    ctrl12, target12     = CYGate           [ctrl=ctrl11, target=reg[2]]
+    q13, q24             = CZ               [q1=target11, q2=target12]
+    ctrl13, target13     = CNOT             [ctrl=ctrl10[0], target=ctrl12]
+    ctrl14, target14     = CNOT             [ctrl=target13, target=q13]
+    ctrl15, target15     = CYGate           [ctrl=ctrl14, target=reg[3]]
+    ctrl16               = And_adj          [ctrl=[ctrl13, ctrl10[1]], target=ctrl15]
+    ctrl17               = And_adj          [ctrl=[ctrl9, ctrl[1]], target=ctrl16[0]]
+    q14, q25             = CZ               [q1=target14, q2=target15]
+    q3                   = X                [q=ctrl17[0]]       
+    ctrl18, target16     = And10            [ctrl=[q3, ctrl17[1]]]
+    ctrl19, target17     = And10            [ctrl=[target16, ctrl16[1]]]
+    ctrl20, target18     = CNOT             [ctrl=target17, target=q14]
+    ctrl21, target19     = CYGate           [ctrl=ctrl20, target=reg[4]]
+    q15, q26             = CZ               [q1=target18, q2=target19]
+    ctrl22, target20     = CNOT             [ctrl=ctrl19[0], target=ctrl21]
+    ctrl23, target21     = CNOT             [ctrl=target20, target=q15]
+    ctrl24, target22     = CYGate           [ctrl=ctrl23, target=reg[5]]
+    ctrl25               = And_adj          [ctrl=[ctrl22, ctrl19[1]], target=ctrl24]
+    q16, q27             = CZ               [q1=target21, q2=target22]
+    ctrl26, target23     = CNOT             [ctrl=ctrl18[0], target=ctrl25[0]]
+    ctrl27, target24     = And10            [ctrl=[target23, ctrl25[1]]]
+    ctrl28, target25     = CNOT             [ctrl=target24, target=q16]
+    ctrl29, target26     = CYGate           [ctrl=ctrl28, target=reg[6]]
+    q17, q28             = CZ               [q1=target25, q2=target26]
+    ctrl30, target27     = CNOT             [ctrl=ctrl27[0], target=ctrl29]
+    ctrl31, target28     = CNOT             [ctrl=target27, target=q17]
+    ctrl32, target29     = CYGate           [ctrl=ctrl31, target=reg[7]]
+    ctrl33               = And_adj          [ctrl=[ctrl30, ctrl27[1]], target=ctrl32]
+    ctrl34               = And_adj          [ctrl=[ctrl26, ctrl18[1]], target=ctrl33[0]]
+    q18, q29             = CZ               [q1=target28, q2=target29]
+    |                    = Free(QBit)       [reg=q18]           
+    reg3                 = Join             [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
+                           return           [x=ctrl34[0], y=ctrl34[1], spin=ctrl33[1], target=reg3]
+}
+
+
+extern qdef ZGate
+from qualtran.bloqs.basic_gates.ZGate
+[q: QBit]
+
+qdef CSwap
+from qualtran.bloqs.basic_gates.CSwap(1)
+[
+    ctrl: QBit @ dot,
+    x: QBit,
+    y: QBit,
+] {
+    reg                  = Split(variant=1) [reg=x]             
+    reg2                 = Split(variant=1) [reg=y]             
+    ctrl2, x2, y2        = TwoBitCSwap      [ctrl=ctrl, x=reg[0], y=reg2[0]]
+    reg3                 = Join(variant=1)  [reg=[x2]]          
+    reg4                 = Join(variant=1)  [reg=[y2]]          
+                           return           [ctrl=ctrl2, x=reg3, y=reg4]
+}
+
+
+extern qdef TwoBitCSwap
+from qualtran.bloqs.basic_gates.TwoBitCSwap
+[ctrl: QBit @ dot, x: QBit, y: QBit]
+
+qdef HubbardMajorannaOperator(2, 2, X)
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardMajorannaOperator(2, 2, 'X', control_val=None)
+[
+    x: BQUInt(1, 2),
+    y: BQUInt(1, 2),
+    spin: BQUInt(1, 2),
+    target: QAny(8),
+] {
+    q                    = X                [q=x]               
+    reg                  = Split            [reg=target]        
+    ctrl, target2        = And10            [ctrl=[q, y]]       
+    ctrl2, target3       = And10            [ctrl=[target2, spin]]
+    reg2                 = Allocate         []                  
+    q2                   = X                [q=reg2]            
+    ctrl3, target4       = CNOT             [ctrl=target3, target=q2]
+    ctrl4, target5       = CNOT             [ctrl=ctrl3, target=reg[0]]
+    q1, q22              = CZ               [q1=target4, q2=target5]
+    ctrl5, target6       = CNOT             [ctrl=ctrl2[0], target=ctrl4]
+    ctrl6, target7       = CNOT             [ctrl=target6, target=q1]
+    ctrl7, target8       = CNOT             [ctrl=ctrl6, target=reg[1]]
+    ctrl8                = And_adj          [ctrl=[ctrl5, ctrl2[1]], target=ctrl7]
+    q12, q23             = CZ               [q1=target7, q2=target8]
+    ctrl9, target9       = CNOT             [ctrl=ctrl[0], target=ctrl8[0]]
+    ctrl10, target10     = And10            [ctrl=[target9, ctrl8[1]]]
+    ctrl11, target11     = CNOT             [ctrl=target10, target=q12]
+    ctrl12, target12     = CNOT             [ctrl=ctrl11, target=reg[2]]
+    q13, q24             = CZ               [q1=target11, q2=target12]
+    ctrl13, target13     = CNOT             [ctrl=ctrl10[0], target=ctrl12]
+    ctrl14, target14     = CNOT             [ctrl=target13, target=q13]
+    ctrl15, target15     = CNOT             [ctrl=ctrl14, target=reg[3]]
+    ctrl16               = And_adj          [ctrl=[ctrl13, ctrl10[1]], target=ctrl15]
+    ctrl17               = And_adj          [ctrl=[ctrl9, ctrl[1]], target=ctrl16[0]]
+    q14, q25             = CZ               [q1=target14, q2=target15]
+    q3                   = X                [q=ctrl17[0]]       
+    ctrl18, target16     = And10            [ctrl=[q3, ctrl17[1]]]
+    ctrl19, target17     = And10            [ctrl=[target16, ctrl16[1]]]
+    ctrl20, target18     = CNOT             [ctrl=target17, target=q14]
+    ctrl21, target19     = CNOT             [ctrl=ctrl20, target=reg[4]]
+    q15, q26             = CZ               [q1=target18, q2=target19]
+    ctrl22, target20     = CNOT             [ctrl=ctrl19[0], target=ctrl21]
+    ctrl23, target21     = CNOT             [ctrl=target20, target=q15]
+    ctrl24, target22     = CNOT             [ctrl=ctrl23, target=reg[5]]
+    ctrl25               = And_adj          [ctrl=[ctrl22, ctrl19[1]], target=ctrl24]
+    q16, q27             = CZ               [q1=target21, q2=target22]
+    ctrl26, target23     = CNOT             [ctrl=ctrl18[0], target=ctrl25[0]]
+    ctrl27, target24     = And10            [ctrl=[target23, ctrl25[1]]]
+    ctrl28, target25     = CNOT             [ctrl=target24, target=q16]
+    ctrl29, target26     = CNOT             [ctrl=ctrl28, target=reg[6]]
+    q17, q28             = CZ               [q1=target25, q2=target26]
+    ctrl30, target27     = CNOT             [ctrl=ctrl27[0], target=ctrl29]
+    ctrl31, target28     = CNOT             [ctrl=target27, target=q17]
+    ctrl32, target29     = CNOT             [ctrl=ctrl31, target=reg[7]]
+    ctrl33               = And_adj          [ctrl=[ctrl30, ctrl27[1]], target=ctrl32]
+    ctrl34               = And_adj          [ctrl=[ctrl26, ctrl18[1]], target=ctrl33[0]]
+    q18, q29             = CZ               [q1=target28, q2=target29]
+    |                    = Free(QBit)       [reg=q18]           
+    reg3                 = Join             [reg=[q22, q23, q24, q25, q26, q27, q28, q29]]
+                           return           [x=ctrl34[0], y=ctrl34[1], spin=ctrl33[1], target=reg3]
+}
+
+
+qdef HubbardSpinUpZ(2, 2)
+from qualtran.bloqs.chemistry.hubbard_model.qubitization.HubbardSpinUpZ(2, 2, control_val=None)
+[
+    V: BQUInt(1, 2) @ dot,
+    x: BQUInt(1, 2),
+    y: BQUInt(1, 2),
+    target: QAny(8),
+] {
+    y1, y2               = Split2(4, 4)     [x=target]          
+    reg                  = Split(variant=2) [reg=y2]            
+    ctrl, target2        = And10            [ctrl=[V, y]]       
+    ctrl2, target3       = And10            [ctrl=[target2, x]] 
+    q1, q2               = CZ               [q1=target3, q2=reg[0]]
+    ctrl3, target4       = CNOT             [ctrl=ctrl2[0], target=q1]
+    q12, q22             = CZ               [q1=target4, q2=reg[1]]
+    ctrl4                = And_adj          [ctrl=[ctrl3, ctrl2[1]], target=q12]
+    ctrl5, target5       = CNOT             [ctrl=ctrl[0], target=ctrl4[0]]
+    ctrl6, target6       = And10            [ctrl=[target5, ctrl4[1]]]
+    q13, q23             = CZ               [q1=target6, q2=reg[2]]
+    ctrl7, target7       = CNOT             [ctrl=ctrl6[0], target=q13]
+    q14, q24             = CZ               [q1=target7, q2=reg[3]]
+    ctrl8                = And_adj          [ctrl=[ctrl7, ctrl6[1]], target=q14]
+    ctrl9                = And_adj          [ctrl=[ctrl5, ctrl[1]], target=ctrl8[0]]
+    reg2                 = Join(variant=2)  [reg=[q2, q22, q23, q24]]
+    x2                   = Join2(4, 4)      [y1=y1, y2=reg2]    
+                           return           [V=ctrl9[0], x=ctrl8[1], y=ctrl9[1], target=x2]
+}
+
+
+extern qdef GPhase(-0.5)
+from qualtran.bloqs.basic_gates.GlobalPhase(exponent=-0.5, eps=1e-11)
+[]
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+qcast Split
+[reg: QAny(8) -> QBit[8]]
+
+extern qdef And10
+from qualtran.bloqs.mcmt.And(1, 0, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+extern qdef Allocate
+from qualtran.bloqs.bookkeeping.Allocate(QAny(1), False)
+[reg: | -> QAny(1)]
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+extern qdef CYGate
+from qualtran.bloqs.basic_gates.CYGate
+[ctrl: QBit @ dot, target: QBit]
+
+extern qdef CZ
+from qualtran.bloqs.basic_gates.CZ
+[q1: QBit @ dot, q2: QBit @ dot]
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]
+
+extern qdef Free(QBit)
+from qualtran.bloqs.bookkeeping.Free(QBit, False)
+[reg: QBit -> |]
+
+qcast Join
+[reg: QBit[8] -> QAny(8)]
+
+qcast Split(variant=1)
+[reg: QBit -> QBit[1]]
+
+qcast Join(variant=1)
+[reg: QBit[1] -> QAny(1)]
+
+qcast Split2(4, 4)
+[x: QAny(8) -> |, y1: | -> QAny(4), y2: | -> QAny(4)]
+
+qcast Split(variant=2)
+[reg: QAny(4) -> QBit[4]]
+
+qcast Join(variant=2)
+[reg: QBit[4] -> QAny(4)]
+
+qcast Join2(4, 4)
+[x: | -> QAny(8), y1: QAny(4) -> |, y2: QAny(4) -> |]

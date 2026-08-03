@@ -47,6 +47,27 @@ ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 ClassicalValRetT = Union[int, np.integer, NDArray[np.integer], 'ClassicalValDistribution']
 
 
+class QCDTypeDomainError(ValueError):
+    """Raised by `on_classical_vals` when an input is outside the bloq's valid domain.
+
+    Bloqs should raise this (instead of bare ``ValueError`` or ``AssertionError``)
+    to signal that the input is invalid for *this* bloq but not indicative of a
+    programming error. The verification framework catches only this type when
+    skipping domain-constrained inputs, so genuine bugs (``TypeError``,
+    ``KeyError``, etc.) propagate immediately.
+
+    Subclasses ``ValueError`` for backward compatibility with existing code that
+    catches ``ValueError``.
+
+    Example usage in a bloq::
+
+        def on_classical_vals(self, x):
+            if x % 2 != 0:
+                raise QCDTypeDomainError(f"Only even inputs allowed, got {x}")
+            return {'x': x}
+    """
+
+
 def _numpy_dtype_from_qlt_dtype(dtype: 'QCDType') -> type:
     # TODO: Move to a method on QCDType. https://github.com/quantumlib/Qualtran/issues/1437.
     from qualtran._infra.data_types import CBit, QAny, QBit, QInt, QUInt
@@ -657,7 +678,9 @@ def format_classical_truth_table(
     return '\n'.join([heading] + entries)
 
 
-def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool = False) -> int:
+def add_ints(
+    a: ClassicalValT, b: ClassicalValT, *, num_bits: Optional[int] = None, is_signed: bool = False
+) -> ClassicalValT:
     r"""Classically performs addition modulo $2^n$ of two integers in a reversible way.
 
     Addition of integers can result in an overflow. In C/C++, overflow behavior is left as an
@@ -666,8 +689,9 @@ def add_ints(a: int, b: int, *, num_bits: Optional[int] = None, is_signed: bool 
     around.
 
     Args:
-        a: left operand of addition.
-        b: right operand of addition.
+        a: left operand of addition. An integer classical value (`int`, `np.integer`, or an
+            `np.ndarray` of integers for element-wise addition).
+        b: right operand of addition. Same accepted types as `a`.
         num_bits: When specified, addition is done in the interval `[0, 2**num_bits)` or
             `[-2**(num_bits-1), 2**(num_bits-1))` based on the value of `is_signed`. Otherwise,
             arbitrary-precision Python integer addition is performed.

@@ -237,21 +237,21 @@ def test_controlled_serial():
     bloq = Controlled(subbloq=TestSerialCombo(), ctrl_spec=CtrlSpec())
     cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert cbloq.debug_text() == """\
-C[TestAtom('atom0')]<0>
+C(TestAtom('atom0'))<0>
   LeftDangle.ctrl -> ctrl
   LeftDangle.reg -> q
-  ctrl -> C[TestAtom('atom1')]<1>.ctrl
-  q -> C[TestAtom('atom1')]<1>.q
+  ctrl -> C(TestAtom('atom1'))<1>.ctrl
+  q -> C(TestAtom('atom1'))<1>.q
 --------------------
-C[TestAtom('atom1')]<1>
-  C[TestAtom('atom0')]<0>.ctrl -> ctrl
-  C[TestAtom('atom0')]<0>.q -> q
-  ctrl -> C[TestAtom('atom2')]<2>.ctrl
-  q -> C[TestAtom('atom2')]<2>.q
+C(TestAtom('atom1'))<1>
+  C(TestAtom('atom0'))<0>.ctrl -> ctrl
+  C(TestAtom('atom0'))<0>.q -> q
+  ctrl -> C(TestAtom('atom2'))<2>.ctrl
+  q -> C(TestAtom('atom2'))<2>.q
 --------------------
-C[TestAtom('atom2')]<2>
-  C[TestAtom('atom1')]<1>.ctrl -> ctrl
-  C[TestAtom('atom1')]<1>.q -> q
+C(TestAtom('atom2'))<2>
+  C(TestAtom('atom1'))<1>.ctrl -> ctrl
+  C(TestAtom('atom1'))<1>.q -> q
   ctrl -> RightDangle.ctrl
   q -> RightDangle.reg"""
 
@@ -262,39 +262,39 @@ def test_controlled_parallel():
     assert cbloq.debug_text() == """\
 Split<0>
   LeftDangle.reg -> reg
-  reg[0] -> C[TestAtom]<1>.q
-  reg[1] -> C[TestAtom]<2>.q
-  reg[2] -> C[TestAtom]<3>.q
+  reg[0] -> C(TestAtom)<1>.q
+  reg[1] -> C(TestAtom)<2>.q
+  reg[2] -> C(TestAtom)<3>.q
 --------------------
-C[TestAtom]<1>
+C(TestAtom)<1>
   LeftDangle.ctrl -> ctrl
   Split<0>.reg[0] -> q
-  ctrl -> C[TestAtom]<2>.ctrl
+  ctrl -> C(TestAtom)<2>.ctrl
   q -> Join<4>.reg[0]
 --------------------
-C[TestAtom]<2>
-  C[TestAtom]<1>.ctrl -> ctrl
+C(TestAtom)<2>
+  C(TestAtom)<1>.ctrl -> ctrl
   Split<0>.reg[1] -> q
-  ctrl -> C[TestAtom]<3>.ctrl
+  ctrl -> C(TestAtom)<3>.ctrl
   q -> Join<4>.reg[1]
 --------------------
-C[TestAtom]<3>
-  C[TestAtom]<2>.ctrl -> ctrl
+C(TestAtom)<3>
+  C(TestAtom)<2>.ctrl -> ctrl
   Split<0>.reg[2] -> q
   q -> Join<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
 Join<4>
-  C[TestAtom]<1>.q -> reg[0]
-  C[TestAtom]<2>.q -> reg[1]
-  C[TestAtom]<3>.q -> reg[2]
+  C(TestAtom)<1>.q -> reg[0]
+  C(TestAtom)<2>.q -> reg[1]
+  C(TestAtom)<3>.q -> reg[2]
   reg -> RightDangle.reg"""
 
 
 def test_doubly_controlled():
     bloq = Controlled(Controlled(TestAtom(), ctrl_spec=CtrlSpec()), ctrl_spec=CtrlSpec())
     assert bloq.as_composite_bloq().debug_text() == """\
-C[C[TestAtom]]<0>
+C(C(TestAtom))<0>
   LeftDangle.ctrl2 -> ctrl2
   LeftDangle.ctrl -> ctrl
   LeftDangle.q -> q

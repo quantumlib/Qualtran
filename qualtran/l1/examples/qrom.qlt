@@ -1,0 +1,107 @@
+# Qualtran-L1
+# 1.0.0
+
+qdef QROM((4,), ((),), (3,))
+from qualtran.bloqs.data_loading.QROM((NDArr(shape=(4), data=(1, 2, 3, 4))), (2), (3), (()), 0)
+[
+    selection: BQUInt(2, 4),
+    target0_: QAny(3),
+] {
+    reg                  = Split            [reg=selection]     
+    q                    = X                [q=reg[0]]          
+    ctrl, target         = And10            [ctrl=[q, reg[1]]]  
+    ctrl2, x             = C(XorK(1))       [ctrl=target, x=target0_]
+    ctrl3, target2       = CNOT             [ctrl=ctrl[0], target=ctrl2]
+    ctrl4, x2            = C(XorK(2))       [ctrl=target2, x=x] 
+    ctrl5                = And_adj          [ctrl=[ctrl3, ctrl[1]], target=ctrl4]
+    q2                   = X                [q=ctrl5[0]]        
+    ctrl6, target3       = And10            [ctrl=[q2, ctrl5[1]]]
+    ctrl7, x3            = C(XorK(3))       [ctrl=target3, x=x2]
+    ctrl8, target4       = CNOT             [ctrl=ctrl6[0], target=ctrl7]
+    ctrl9, x4            = C(XorK(4))       [ctrl=target4, x=x3]
+    ctrl10               = And_adj          [ctrl=[ctrl8, ctrl6[1]], target=ctrl9]
+    reg2                 = Join             [reg=[ctrl10[0], ctrl10[1]]]
+                           return           [selection=reg2, target0_=x4]
+}
+
+
+qcast Split
+[reg: BQUInt(2, 4) -> QBit[2]]
+
+extern qdef X
+from qualtran.bloqs.basic_gates.XGate
+[q: QBit @ oplus]
+
+extern qdef And10
+from qualtran.bloqs.mcmt.And(1, 0, False)
+[ctrl: QBit[2], target: | -> QBit]
+
+qdef C(XorK(1))
+from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 1), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
+[
+    ctrl: QBit @ dot,
+    x: QUInt(3),
+] {
+    reg                  = Split(variant=1) [reg=x]             
+    ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[2]]
+    reg2                 = Join(variant=1)  [reg=[reg[0], reg[1], target]]
+                           return           [ctrl=ctrl2, x=reg2]
+}
+
+
+extern qdef CNOT
+from qualtran.bloqs.basic_gates.CNOT
+[ctrl: QBit @ dot, target: QBit @ oplus]
+
+qdef C(XorK(2))
+from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 2), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
+[
+    ctrl: QBit @ dot,
+    x: QUInt(3),
+] {
+    reg                  = Split(variant=1) [reg=x]             
+    ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[1]]
+    reg2                 = Join(variant=1)  [reg=[reg[0], target, reg[2]]]
+                           return           [ctrl=ctrl2, x=reg2]
+}
+
+
+extern qdef And_adj
+from qualtran.bloqs.mcmt.And(1, 1, True)
+[ctrl: QBit[2], target: QBit -> |]
+
+qdef C(XorK(3))
+from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 3), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
+[
+    ctrl: QBit @ dot,
+    x: QUInt(3),
+] {
+    reg                  = Split(variant=1) [reg=x]             
+    ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[1]]
+    ctrl3, target2       = CNOT             [ctrl=ctrl2, target=reg[2]]
+    reg2                 = Join(variant=1)  [reg=[reg[0], target, target2]]
+                           return           [ctrl=ctrl3, x=reg2]
+}
+
+
+qdef C(XorK(4))
+from qualtran.Controlled(qualtran.bloqs.arithmetic.XorK(QUInt(3), 4), qualtran.CtrlSpec(qdtypes=(QBit), cvs=(NDArr(shape=(), data=(1)))))
+[
+    ctrl: QBit @ dot,
+    x: QUInt(3),
+] {
+    reg                  = Split(variant=1) [reg=x]             
+    ctrl2, target        = CNOT             [ctrl=ctrl, target=reg[0]]
+    reg2                 = Join(variant=1)  [reg=[target, reg[1], reg[2]]]
+                           return           [ctrl=ctrl2, x=reg2]
+}
+
+
+qcast Join
+[reg: QBit[2] -> BQUInt(2, 4)]
+
+qcast Split(variant=1)
+[reg: QUInt(3) -> QBit[3]]
+
+qcast Join(variant=1)
+[reg: QBit[3] -> QUInt(3)]

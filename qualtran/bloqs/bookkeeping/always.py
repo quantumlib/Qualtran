@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from collections.abc import Iterable, Sequence
-from typing import Optional, Union
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Optional, TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from qualtran.simulation.classical_sim import ClassicalValRetT, ClassicalValT
 
 import attrs
 
@@ -68,6 +71,9 @@ class Always(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> dict[str, 'SoquetT']:
         return bb.add_d(self.subbloq, **soqs)
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Mapping[str, 'ClassicalValRetT']:
+        return self.subbloq.on_classical_vals(**vals)
 
     def build_call_graph(
         self, ssa: 'SympySymbolAllocator'

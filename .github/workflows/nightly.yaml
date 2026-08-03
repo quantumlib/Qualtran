@@ -11,35 +11,50 @@
 #  limitations under the License.
 
 name: Nightly CI
+run-name: Nightly CI full tests
 
 on:
   schedule:
     - cron: "0 11 * * 1-5"  # Mon-Fri at 11:00 AM UTC
-
-  # Allow manual invocation – useful for debugging.
   workflow_dispatch:
 
 concurrency:
-  # Cancel any previously-started but still active runs on the same branch.
   cancel-in-progress: true
   group: ${{github.workflow}}-${{github.event.pull_request.number||github.ref}}
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions: {}
 
 jobs:
   pytest:
-    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04-x64-16-core
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: ts-graphviz/setup-graphviz@c001ccfb5aff62e28bda6a6c39b59a7e061be5b9 # v1
-      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ts-graphviz/setup-graphviz@b1de5da23ed0a6d14e0aeee8ed52fdd87af2363c # v2.0.2
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+
       - name: Install dependencies
         run: |
           uv sync --frozen --no-dev --group test
-      - run: |
-          uv run --no-sync check/pytest-full --durations=10 -v -n=0
+          uv pip install pytest-instafail
+
+      - name: Run the full Pytest suite
+        id: pytest-full
+        env:
+          # Adding xtrace makes Bash commands & scripts run with "-x".
+          SHELLOPTS: ${{runner.debug && 'xtrace'}}
+        run: |
+          # Start continuous memory information printing.
+          free -hv -s 1 &
+          # Use only 1/2 as many runners as cores, to avoid using too much RAM.
+          uv run --no-sync check/pytest-full --instafail --durations 10 -n 8
