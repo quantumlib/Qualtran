@@ -17,6 +17,7 @@ import io
 import itertools
 import logging
 import uuid
+import warnings
 from collections.abc import Callable, Container, Sequence
 from typing import cast, Optional, TYPE_CHECKING, TypeAlias, Union
 
