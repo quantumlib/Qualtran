@@ -32,9 +32,10 @@ References:
     Theorem 4.17, proof para 2 for $U_j$.
 """
 
+from collections import Counter
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Counter, Union
+from typing import Union
 
 import attrs
 import numpy as np

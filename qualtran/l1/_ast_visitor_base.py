@@ -68,7 +68,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: QCastNode):
-        record: Dict[str, Any] = {'bloq_key': node.bloq_key}
+        record: dict[str, Any] = {'bloq_key': node.bloq_key}
         record['qsignature'] = [self.visit(sig_entry) for sig_entry in node.qsignature]
         return record
 
@@ -93,7 +93,7 @@ class L1VisitorBase(metaclass=abc.ABCMeta):
 
     @visit.register
     def _(self, node: LValueNode):
-        record: Dict[str, Any] = {'name': node.name}
+        record: dict[str, Any] = {'name': node.name}
         if node.annotation is not None:
             record['annotation'] = self.visit(node.annotation)
         return record

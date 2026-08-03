@@ -22,8 +22,9 @@ depth, and qubit counts), and the main analysis function apply_flasq_cost_model.
 import logging
 import typing
 import warnings
+from collections.abc import Mapping
 from functools import lru_cache
-from typing import Mapping, Optional
+from typing import Optional
 
 import sympy
 from attrs import field, fields, frozen

@@ -16,8 +16,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import lru_cache
-from typing import Any, Mapping, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy

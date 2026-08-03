@@ -14,7 +14,7 @@
 
 # pylint: disable=too-many-function-args,missing-kwoa
 
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union
 from unittest.mock import MagicMock, patch
 
 import cirq
@@ -82,7 +82,7 @@ def _simple_circuit_builder(num_qubits: int, add_rotation: bool):
 # A builder that returns a tuple of (circuit, kwargs)
 def _tuple_returning_circuit_builder(
     num_qubits: int, add_rotation: bool
-) -> Tuple[cirq.Circuit, Dict[str, Any]]:
+) -> tuple[cirq.Circuit, dict[str, Any]]:
     circuit = _simple_circuit_builder(num_qubits, add_rotation)
     conversion_kwargs = {"some_arg": "some_value"}
     return circuit, conversion_kwargs
@@ -95,12 +95,12 @@ def test_flasq_gate_counts_hashable():
     assert hash(counts1) is not None
 
     # Case 2: With unknown bloqs (using standard hashable Bloqs)
-    unknown_bloqs1: Dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}
+    unknown_bloqs1: dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}
     counts2 = FLASQGateCounts(t=10, bloqs_with_unknown_cost=unknown_bloqs1)
     assert hash(counts2) is not None
 
     # Case 3: With unknown bloqs (using custom hashable Bloqs)
-    unknown_bloqs2: Dict[Bloq, int] = {
+    unknown_bloqs2: dict[Bloq, int] = {
         _HashableUnknownBloq("custom1"): 3,
         _HashableUnknownBloq("custom2"): 1,
     }
@@ -112,7 +112,7 @@ def test_flasq_gate_counts_hashable():
     assert counts1 == counts4
     assert hash(counts1) == hash(counts4)
 
-    unknown_bloqs3: Dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}  # Same as unknown_bloqs1
+    unknown_bloqs3: dict[Bloq, int] = {CNOT(): 2, Toffoli(): 1}  # Same as unknown_bloqs1
     counts5 = FLASQGateCounts(t=10, bloqs_with_unknown_cost=unknown_bloqs3)
     assert counts2 == counts5
     assert hash(counts2) == hash(counts5)
@@ -125,12 +125,12 @@ def test_gate_span_hashable():
     assert hash(span1) is not None
 
     # Case 2: With uncounted bloqs (using standard hashable Bloqs)
-    uncounted_bloqs1: Dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}
+    uncounted_bloqs1: dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}
     span2 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs1)
     assert hash(span2) is not None
 
     # Case 3: With uncounted bloqs (using custom hashable Bloqs)
-    uncounted_bloqs2: Dict[Bloq, int] = {
+    uncounted_bloqs2: dict[Bloq, int] = {
         _HashableUnknownBloq("span_unknown1"): 2,
         _HashableUnknownBloq("span_unknown2"): 4,
     }
@@ -142,7 +142,7 @@ def test_gate_span_hashable():
     assert span1 == span4
     assert hash(span1) == hash(span4)
 
-    uncounted_bloqs3: Dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}  # Same as uncounted_bloqs1
+    uncounted_bloqs3: dict[Bloq, int] = {Hadamard(): 10, CNOT(): 5}  # Same as uncounted_bloqs1
     span5 = GateSpan(connect_span=100, compute_span=200, uncounted_bloqs=uncounted_bloqs3)
     assert span2 == span5
     assert hash(span2) == hash(span5)
@@ -160,12 +160,12 @@ def test_measurement_depth_hashable():
     assert hash(depth1) is not None
 
     # Case 2: With unknown bloqs (using standard hashable Bloqs)
-    unknown_bloqs1: Dict[Bloq, int] = {Ry(Symbol("theta")): 1, ZPowGate(exponent=0.1): 2}
+    unknown_bloqs1: dict[Bloq, int] = {Ry(Symbol("theta")): 1, ZPowGate(exponent=0.1): 2}
     depth2 = MeasurementDepth(depth=10.5, bloqs_with_unknown_depth=unknown_bloqs1)
     assert hash(depth2) is not None
 
     # Case 3: With unknown bloqs (using custom hashable Bloqs)
-    unknown_bloqs2: Dict[Bloq, int] = {
+    unknown_bloqs2: dict[Bloq, int] = {
         _HashableUnknownBloq("depth_unknown1"): 5,
         _HashableUnknownBloq("depth_unknown2"): 3,
     }
@@ -177,7 +177,7 @@ def test_measurement_depth_hashable():
     assert depth1 == depth4
     assert hash(depth1) == hash(depth4)
 
-    unknown_bloqs3: Dict[Bloq, int] = {
+    unknown_bloqs3: dict[Bloq, int] = {
         Ry(Symbol("theta")): 1,
         ZPowGate(exponent=0.1): 2,
     }  # Same as unknown_bloqs1
@@ -312,7 +312,7 @@ def test_flasq_summary_resolved_hashable():
         total_spacetime_volume=N * 8 + M * 4 + V_CULT_FACTOR + N * (N / 5),
     )
 
-    assumptions: Dict[Union[sympy.Symbol, str], Any] = {N: 100, M: 50, V_CULT_FACTOR: 6.0}
+    assumptions: dict[Union[sympy.Symbol, str], Any] = {N: 100, M: 50, V_CULT_FACTOR: 6.0}
 
     resolved_summary = symbolic_summary.resolve_symbols(frozendict(assumptions))
 

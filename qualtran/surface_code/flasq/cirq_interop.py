@@ -14,7 +14,7 @@
 
 """Cirq-to-Qualtran circuit conversion for FLASQ analysis."""
 
-from typing import cast, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import cast, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
@@ -29,7 +29,7 @@ from qualtran.cirq_interop import cirq_gate_to_bloq, cirq_optree_to_cbloq
 from qualtran.surface_code.flasq.span_counting import BloqWithSpanInfo, calculate_spans
 
 
-def _get_coords_from_op(op: cirq.Operation) -> List[Tuple[int, ...]]:
+def _get_coords_from_op(op: cirq.Operation) -> list[tuple[int, ...]]:
     """Extracts a list of (row, col) or (x, 0) coordinates from a cirq.Operation.
 
     The cirq operation must act only on GridQubits or only on LineQubits.
@@ -38,7 +38,7 @@ def _get_coords_from_op(op: cirq.Operation) -> List[Tuple[int, ...]]:
         TypeError: If the operation acts on unsupported qubit types or mixes types.
         ValueError: If an operation mixes LineQubits and GridQubits.
     """
-    qubits: Tuple[cirq.Qid, ...] = op.qubits
+    qubits: tuple[cirq.Qid, ...] = op.qubits
     if not qubits:
         return []
 
@@ -46,11 +46,11 @@ def _get_coords_from_op(op: cirq.Operation) -> List[Tuple[int, ...]]:
     if isinstance(first_qubit, cirq.GridQubit):
         if not all(isinstance(q, cirq.GridQubit) for q in qubits):
             raise ValueError(f"Operation {op} mixes qubit types.")
-        return [(q.row, q.col) for q in cast(Tuple[cirq.GridQubit, ...], qubits)]
+        return [(q.row, q.col) for q in cast(tuple[cirq.GridQubit, ...], qubits)]
     elif isinstance(first_qubit, cirq.LineQubit):
         if not all(isinstance(q, cirq.LineQubit) for q in qubits):
             raise ValueError(f"Operation {op} mixes qubit types.")
-        return [(q.x, 0) for q in cast(Tuple[cirq.LineQubit, ...], qubits)]
+        return [(q.x, 0) for q in cast(tuple[cirq.LineQubit, ...], qubits)]
     else:
         raise TypeError(
             f"Operation {op} acts on unsupported qubit type: {type(first_qubit)}. "
@@ -122,7 +122,7 @@ def cirq_op_to_bloq_with_span(
             return base_bloq
 
 
-def flasq_intercepting_decomposer(op: cirq.Operation) -> List[cirq.Operation]:
+def flasq_intercepting_decomposer(op: cirq.Operation) -> list[cirq.Operation]:
     """Intercepts cirq.decompose and keeps things FLASQ-friendly"""
     gate = op.gate
     if isinstance(gate, cirq.ZZPowGate):
@@ -154,10 +154,10 @@ def flasq_decompose_keep(op: cirq.Operation) -> bool:
 def convert_circuit_for_flasq_analysis(
     circuit: cirq.Circuit,
     signature: Optional[Signature] = None,
-    in_quregs: Optional[Dict[str, "CirqQuregT"]] = None,
-    out_quregs: Optional[Dict[str, "CirqQuregT"]] = None,
+    in_quregs: Optional[dict[str, "CirqQuregT"]] = None,
+    out_quregs: Optional[dict[str, "CirqQuregT"]] = None,
     qubit_manager=None,
-) -> Tuple[CompositeBloq, cirq.Circuit]:
+) -> tuple[CompositeBloq, cirq.Circuit]:
     """Uses a special set of decomposition rules for FLASQ analysis."""
 
     if qubit_manager is not None:

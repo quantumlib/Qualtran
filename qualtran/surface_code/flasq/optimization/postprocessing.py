@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from frozendict import frozendict
@@ -70,7 +70,7 @@ def _process_single_result_for_logical_depth(r: SweepResult) -> dict:
 
 
 def post_process_for_logical_depth(
-    sweep_results: List[SweepResult], *, n_jobs: int = -1
+    sweep_results: list[SweepResult], *, n_jobs: int = -1
 ) -> pd.DataFrame:
     """
     Post-processes `run_sweep` output to extract logical resource costs.
@@ -168,7 +168,7 @@ def _process_single_result_for_pec(r: SweepResult, time_per_surface_code_cycle: 
 
 
 def post_process_for_pec_runtime(
-    sweep_results: List[SweepResult], *, time_per_surface_code_cycle: float = 1e-6, n_jobs: int = -1
+    sweep_results: list[SweepResult], *, time_per_surface_code_cycle: float = 1e-6, n_jobs: int = -1
 ) -> pd.DataFrame:
     """
     Post-processes `run_sweep` output to calculate PEC runtime metrics.
@@ -220,7 +220,7 @@ def post_process_for_pec_runtime(
 
 
 def post_process_for_failure_budget(
-    sweep_results: List[SweepResult],
+    sweep_results: list[SweepResult],
     error_budget: ErrorBudget,
     *,
     time_per_surface_code_cycle: float = 1e-6,

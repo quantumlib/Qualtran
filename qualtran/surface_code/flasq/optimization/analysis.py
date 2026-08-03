@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections.abc import Callable, Iterable
 from functools import lru_cache
-from typing import Callable, Iterable, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import sympy
 from frozendict import frozendict
@@ -48,7 +49,7 @@ def analyze_logical_circuit(
     `circuit_builder_func` and handles two possible return types:
 
     1.  A `cirq.Circuit` object (or `None`).
-    2.  A tuple of `(cirq.Circuit, Dict[str, Any])` (or `None`). The dictionary
+    2.  A tuple of `(cirq.Circuit, dict[str, Any])` (or `None`). The dictionary
         contains keyword arguments that will be passed to
         `convert_circuit_for_flasq_analysis`. This is useful for circuits
         that require special handling during decomposition, like those with
@@ -167,7 +168,7 @@ def generate_circuit_specific_configs(
     total_cultivation_error: float,
     phys_error_rate: float,
     reference_code_distance: int,
-) -> Tuple[CoreParametersConfig, float]:
+) -> tuple[CoreParametersConfig, float]:
     """
     Derives circuit-specific core parameters for error budgeting.
 
@@ -227,7 +228,7 @@ def generate_configs_for_constrained_qec(
     cultivation_data_decimal_precision: int = 8,
     cultivation_data_uncertainty_cutoff: Optional[float] = 100,
     round_error_rate_up_to_simulated_cultivation_data: bool = True,
-) -> List[CoreParametersConfig]:
+) -> list[CoreParametersConfig]:
     """
     Generates CoreParametersConfig optimized for the constrained QEC approach.
 

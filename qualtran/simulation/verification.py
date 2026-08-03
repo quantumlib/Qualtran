@@ -52,7 +52,8 @@ import math
 import os
 import sys
 from collections import Counter, deque, OrderedDict
-from typing import Any, Callable, IO, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, IO
 
 import attrs
 import numpy as np

@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import os
 import pathlib
-from typing import Dict, List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 import attrs
 import networkx as nx
@@ -70,9 +70,9 @@ class RoundtripArtifacts:
     """
 
     root_bloq_key: str
-    original: Dict[str, QDefWithContext]
+    original: dict[str, QDefWithContext]
     l1_code: str
-    loaded: Dict[str, 'qlt.Bloq']
+    loaded: dict[str, 'qlt.Bloq']
 
 
 def compile_bloq_to_l1(
@@ -107,7 +107,7 @@ def compile_bloq_to_l1(
     )
 
 
-def check_bloq_keys(artifacts: RoundtripArtifacts) -> List[str]:
+def check_bloq_keys(artifacts: RoundtripArtifacts) -> list[str]:
     """Check that the set of bloq keys is preserved by the round trip."""
     problems = []
     ref = set(artifacts.original.keys())
@@ -119,7 +119,7 @@ def check_bloq_keys(artifacts: RoundtripArtifacts) -> List[str]:
     return problems
 
 
-def check_signatures(artifacts: RoundtripArtifacts) -> List[str]:
+def check_signatures(artifacts: RoundtripArtifacts) -> list[str]:
     """Check that every bloq's signature is preserved by the round trip."""
     problems = []
     for bloq_key in artifacts.original.keys():
@@ -132,7 +132,7 @@ def check_signatures(artifacts: RoundtripArtifacts) -> List[str]:
     return problems
 
 
-def check_no_placeholders(artifacts: RoundtripArtifacts) -> List[str]:
+def check_no_placeholders(artifacts: RoundtripArtifacts) -> list[str]:
     """Check that every extern bloq was successfully re-linked.
 
     When an `extern qdef` cannot be resolved back to a `qualtran.Bloq` (e.g. it is
@@ -149,7 +149,7 @@ def check_no_placeholders(artifacts: RoundtripArtifacts) -> List[str]:
     return problems
 
 
-def check_bloq_object_identity(artifacts: RoundtripArtifacts) -> List[str]:
+def check_bloq_object_identity(artifacts: RoundtripArtifacts) -> list[str]:
     """Check that re-linked/decomposed bloqs correspond to the originals.
 
     For each bloq key:
@@ -190,7 +190,7 @@ def _soquet_graph(cbloq: 'qlt.CompositeBloq') -> nx.DiGraph:
     return graph
 
 
-def check_soquet_graph_isomorphism(artifacts: RoundtripArtifacts) -> List[str]:
+def check_soquet_graph_isomorphism(artifacts: RoundtripArtifacts) -> list[str]:
     """Check that decomposition graphs are isomorphic across the round trip.
 
     For each original bloq that decomposes, we compare the soquet-connectivity
@@ -238,7 +238,7 @@ DEFAULT_CHECKS = (
 )
 
 
-def check_bloq_roundtrip(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) -> List[str]:
+def check_bloq_roundtrip(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) -> list[str]:
     """Round-trip a bloq through Qualtran-L1 and return a list of problems.
 
     This compiles `bloq` to `.qlt`, parses and evaluates it back, and then runs
@@ -256,9 +256,9 @@ def check_bloq_roundtrip(bloq: 'qlt.Bloq', *, extern_only_from: bool = False) ->
     return check_artifacts(artifacts)
 
 
-def check_artifacts(artifacts: RoundtripArtifacts) -> List[str]:
+def check_artifacts(artifacts: RoundtripArtifacts) -> list[str]:
     """Run every check in `DEFAULT_CHECKS` against already-computed artifacts."""
-    problems: List[str] = []
+    problems: list[str] = []
     for check in DEFAULT_CHECKS:
         problems.extend(check(artifacts))
     return problems
