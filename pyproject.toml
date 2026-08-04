@@ -101,6 +101,7 @@ test = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "pytest-randomly",
     "pytest-xdist",
 
     # test executing notebooks
@@ -272,4 +273,3 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "dev_tools.qualtran_dev_tools.bloq_report_card"
 ignore_errors = true
-
