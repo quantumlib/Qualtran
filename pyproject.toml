@@ -101,6 +101,7 @@ test = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "pytest-randomly",
     "pytest-xdist",
 
     # test executing notebooks
