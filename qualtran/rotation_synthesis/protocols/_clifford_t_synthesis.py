@@ -512,3 +512,137 @@ def magnitude_approx(
     return channels.UnitaryChannel.from_unitaries(
         rz1_approx, _su2_ct.HSqrt2, rx_approx, _su2_ct.HSqrt2.adjoint(), rz2_approx
     )
+
+
+def mixed_magnitude_approx(
+    unitary: np.ndarray,
+    eps: rst.Real,
+    max_n: int,
+    config: mc.MathConfig,
+    relative_norm_solver: relative_norm.CliffordTRelativeNormSolver = _DEFAULT_RELATIVE_NORM_SOLVER,
+    verbose: bool = False,
+):
+    """Approximates a unitary using the mixed magnitude approximation protocol.
+
+    This protocol does the following:
+        *   Like magnitude approximation, reduces a unitary to a series of rotations ZXZ.
+        *   Approximates X under- and over-rotations by producing Z rotations via mixed diagonal
+            approximation of equal rotational degree, and rotates it by applying an H channel.
+        *   Based on the X approximations, approximates the two Z rotations.
+        *   Computes a probability of each produced gate sequence and returns the probability
+            channel.
+    
+    Args:
+        unitary: the target unitary, this can be 2x2 numpy array of mpmath.mpc objects.
+        eps: Target error.
+        max_n: Maximum number of T gates to check.
+        config: A math config.
+        relative_norm_solver: The relative norm solver to use.
+        verbose: whether to print debug statements or not.
+    Returns:
+        A ProbabilisticChannel or None.
+
+    References:
+        [Shorter quantum circuits via single-qubit gate approximation](https://arxiv.org/abs/2203.10064)
+        section 3.5
+    """
+    # From Proposition 3.21, this algorithm produces an estimation that is a
+    # $3\epsilon$-approximation to the target unitary.
+    eps = config.number(eps) / 3
+
+    alpha, theta, beta = matrix.su_unitary_to_zxz_angles(
+        unitary,
+        config,
+    )
+
+    rz_prob_approx = protocols.mixed_diagonal_protocol(
+        theta=-theta/2,
+        eps=eps,
+        max_n=max_n,
+        config=config,
+        verbose=verbose,
+    )
+    if rz_prob_approx is None:
+        return None
+
+    rz_under_rotation = rz_prob_approx.c2.to_matrix()
+    rz_over_rotation = rz_prob_approx.c1.to_matrix()
+    rx_under_rotation = (su2.HSqrt2 @ rz_under_rotation @ su2.HSqrt2.adjoint()).numpy(config)
+    rx_over_rotation = (su2.HSqrt2 @ rz_over_rotation @ su2.HSqrt2.adjoint()).numpy(config)
+
+    # Probabilities produced by `mixed_diagonal_protocol` (Theorem 3.12) differ from what is
+    # calculated via mixed magnitue approximation (Proposition 3.21), so we need to recalculate
+    # them. Furthermore, rotating the under and over Z-approximations from mixed diagonalization
+    # to become X-approximations can add error proportional to Im(|rz[1, 0]|) ocasionally producing
+    # two under-rotations (and thus a negative probability value).
+    delta_under = config.arccos(abs(rx_under_rotation[0, 0])) + (-theta / 2)
+    delta_over = config.arccos(abs(rx_over_rotation[0, 0])) + (-theta / 2)
+    p = (
+        config.sin(2 * delta_over) / (
+            config.sin(2 * delta_over) - config.sin(2 * delta_under)
+        )
+    )
+    if p < 0:
+        return None
+
+    zxz_under_rotation = matrix.su_unitary_to_zxz_angles(
+        rx_under_rotation,
+        config,
+    )
+    zxz_over_rotation = matrix.su_unitary_to_zxz_angles(
+        rx_over_rotation,
+        config,
+    )
+
+    z_under_rotations = (
+        protocols.diagonal_unitary_approx(
+            theta=-(alpha - zxz_under_rotation[0]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+        ),
+        protocols.diagonal_unitary_approx(
+            theta=-(beta - zxz_under_rotation[2]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+        ),
+    )
+
+    z_over_rotations = (
+        protocols.diagonal_unitary_approx(
+            theta=-(alpha - zxz_over_rotation[0]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            verbose=verbose,
+        ),
+        protocols.diagonal_unitary_approx(
+            theta=-(beta - zxz_over_rotation[2]) / 2,
+            eps=eps,
+            max_n=max_n,
+            config=config,
+            verbose=verbose,
+        ),
+    )
+
+    if None in [*z_under_rotations, *z_over_rotations]:
+        return None
+
+    return rs.channels.ProbabilisticChannel(
+        c1=rs.channels.UnitaryChannel.from_unitaries(
+            z_under_rotations[0].to_matrix(),
+            su2.HSqrt2,
+            rz_under_rotation,
+            su2.HSqrt2.adjoint(),
+            z_under_rotations[1].to_matrix(),
+        ),
+        c2=rs.channels.UnitaryChannel.from_unitaries(
+            z_over_rotations[0].to_matrix(),
+            su2.HSqrt2,
+            rz_over_rotation,
+            su2.HSqrt2.adjoint(),
+            z_over_rotations[1].to_matrix(),
+        ),
+        probability=p,
+    )
