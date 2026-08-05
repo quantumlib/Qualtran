@@ -249,3 +249,45 @@ def test_pytest_configure_cpus_non_positive():
         ]
         for var in env_vars:
             assert var not in os.environ
+
+
+def test_pytest_configure_sets_dist_worksteal():
+    config = mock.MagicMock(spec=pytest.Config)
+    del config.workerinput
+    config.getoption.side_effect = lambda name: '4' if name == 'numprocesses' else 'load'
+    config.option = mock.MagicMock()
+    config.option.dist = 'load'
+    config.invocation_params = mock.MagicMock()
+    config.invocation_params.args = ['-n', '4']
+
+    with mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8):
+        pytest_configure(config)
+        assert config.option.dist == 'worksteal'
+
+
+def test_pytest_configure_preserves_user_dist():
+    config = mock.MagicMock(spec=pytest.Config)
+    del config.workerinput
+    config.getoption.side_effect = lambda name: '4' if name == 'numprocesses' else 'loadscope'
+    config.option = mock.MagicMock()
+    config.option.dist = 'loadscope'
+    config.invocation_params = mock.MagicMock()
+    config.invocation_params.args = ['-n', '4', '--dist', 'loadscope']
+
+    with mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8):
+        pytest_configure(config)
+        assert config.option.dist == 'loadscope'
+
+
+def test_pytest_configure_preserves_user_dist_equals():
+    config = mock.MagicMock(spec=pytest.Config)
+    del config.workerinput
+    config.getoption.side_effect = lambda name: '4' if name == 'numprocesses' else 'each'
+    config.option = mock.MagicMock()
+    config.option.dist = 'each'
+    config.invocation_params = mock.MagicMock()
+    config.invocation_params.args = ['-n', '4', '--dist=each']
+
+    with mock.patch('qualtran.conftest.get_available_cpu_count', return_value=8):
+        pytest_configure(config)
+        assert config.option.dist == 'each'
